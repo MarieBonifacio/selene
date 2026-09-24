@@ -2,13 +2,21 @@
 
 Tableau de bord personnel : chantier de l'appartement, pratique de kundalini, écriture, october.moth, Phidippus, musique et capture rapide, sous la lune du jour et une lisière de sapins.
 
-Un seul fichier, `index.html`, sans dépendance à installer ni étape de compilation.
+Aucune dépendance à installer. `selene.html` est la source (version claude.ai) ; `python3 build.py` en tire `index.html`, la version hébergée et installable sur iPhone (manifeste, icônes, service worker, politique de sécurité du contenu).
 
 ## Publier avec GitHub Pages
 
 1. Pousser ce dépôt sur GitHub.
 2. Settings → Pages → Source : « Deploy from a branch », branche `main`, dossier `/ (root)`.
 3. Le site est servi à `https://<utilisateur>.github.io/<dépôt>/`.
+
+## Installer sur iPhone
+
+1. Ouvrir l'adresse GitHub Pages dans **Safari** (pas un autre navigateur).
+2. Bouton Partager → « Sur l'écran d'accueil ».
+3. L'app s'ouvre en plein écran, fonctionne hors ligne (sauf l'assistant) et garde ses données sur l'appareil.
+
+Les données de l'app installée sont séparées de celles de Safari : exporter depuis l'ancienne version, importer dans l'app.
 
 ## Assistant (Claude)
 
