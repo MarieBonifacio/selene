@@ -156,6 +156,15 @@ input[type=checkbox],input[type=radio]{width:auto}
 .toast.show{opacity:1}
 .saving{font-size:.78rem;color:var(--muted)}
 .empty{color:var(--muted);font-style:italic;padding:8px 0}
+.room.over .fill{background:var(--alarm);opacity:.25}.room.over b{color:var(--alarm)}
+.stats{display:flex;gap:28px;flex-wrap:wrap;margin:10px 0 22px}.stats div span{display:block;color:var(--muted);font-size:.85rem}
+.pos{color:var(--ok)}.neg{color:var(--alarm)}
+.chat{display:flex;flex-direction:column;gap:14px;margin:12px 0 18px}
+.msg{max-width:78ch;padding:12px 14px;border:1px solid var(--rule);background:var(--surface);border-radius:2px;white-space:pre-wrap}
+.msg.user{align-self:flex-end;background:transparent;border-style:dashed}
+.msg.claude{border-left:3px solid var(--accent)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.status{font-size:.88rem;color:var(--muted);border-left:2px solid var(--accent);padding-left:10px;margin:6px 0 14px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -228,13 +237,18 @@ function makeStore(key, path, seed) {
 
 const MODULE_DEFS = {
   chantier: "Chantier", kundalini: "Kundalini", ecriture: "Écriture",
-  moth: "october.moth", phidippus: "Phidippus", musique: "Musique", inbox: "Capture"
+  moth: "october.moth", phidippus: "Phidippus", musique: "Musique", budget: "Budget", assistant: "Assistant", inbox: "Capture"
 };
+const OFF_BY_DEFAULT = ["assistant"];
+const money = n => (+n || 0).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+let budMonth = new Date().toISOString().slice(0, 7);
 function siteSeed() {
   return {
     updatedAt: 0,
     config: { name: "Selene", palette: "nigredo", mode: "auto", labels: {}, groups: {},
-      modules: Object.keys(MODULE_DEFS).map(id => ({ id, on: true })) },
+      modules: Object.keys(MODULE_DEFS).map(id => ({ id, on: !OFF_BY_DEFAULT.includes(id) })),
+      assistant: { model: "claude-sonnet-5", actions: true, share: { chantier: true, kundalini: true, ecriture: true, moth: true, phidippus: true, musique: true, budget: false, inbox: true } } },
+    budget: { entries: [], envelopes: [["Travaux", 500], ["Courses", 300], ["Loisirs", 100], ["Abonnements", 50]].map(([name, limit]) => ({ id: uid(), name, limit })) },
     kundalini: { start: null, weeks: 12, perWeek: 5, sessions: [] },
     ecriture: { title: "La spiritualité du spectre dissociatif", goal: 40000, chapters: [], sessions: [], fragments: [] },
     moth: { posts: [] },
@@ -253,7 +267,7 @@ function S() { // site data with defaults filled in
   const d = site.data, seed = siteSeed();
   for (const k of Object.keys(seed)) if (d[k] == null) d[k] = seed[k];
   for (const k of Object.keys(seed.config)) if (d.config[k] == null) d.config[k] = seed.config[k];
-  for (const id of Object.keys(MODULE_DEFS)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: true });
+  for (const id of Object.keys(MODULE_DEFS)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: !OFF_BY_DEFAULT.includes(id) });
   for (const [mod, g] of Object.entries(GROUPERS)) d.config.groups[mod] = { on: true, by: Object.keys(g.fields)[0], sort: "name", hideDone: false, title: "", ...(d.config.groups[mod] || {}) };
   for (const k of Object.keys(seed)) if (typeof seed[k] === "object" && !Array.isArray(seed[k])) for (const f of Object.keys(seed[k])) if (d[k][f] == null) d[k][f] = seed[k][f];
   return d;
@@ -364,6 +378,17 @@ const GROUPERS = {
     }
   }
 };
+GROUPERS.budget = {
+  fields: { cat: "Enveloppe" }, renamable: ["cat"], filterable: true,
+  items: () => S().budget.entries, key: e => e.cat || "Sans enveloppe", store: () => site,
+  groups() {
+    const b = S().budget, sums = new Map();
+    b.entries.filter(e => e.type === "dépense" && (e.date || "").slice(0, 7) === budMonth).forEach(e => { const k = e.cat || "Sans enveloppe"; sums.set(k, (sums.get(k) || 0) + (+e.amount || 0)); });
+    const out = b.envelopes.map((v, i) => { const s = sums.get(v.name) || 0; sums.delete(v.name); return { name: v.name, num: s, den: +v.limit || 0, pct: +v.limit ? Math.round(100 * s / v.limit) : null, sub: `${money(s)} sur ${money(v.limit)}`, order: i }; });
+    for (const [n, s] of sums) out.push({ name: n, num: s, den: 0, pct: null, sub: money(s), order: 900 });
+    return out;
+  }
+};
 const gcfg = mod => S().config.groups[mod];
 function groupPanel(mod, hint) {
   const G = GROUPERS[mod], c = gcfg(mod);
@@ -376,7 +401,7 @@ function groupPanel(mod, hint) {
   const title = c.title || `Par ${G.fields[c.by].toLowerCase()}`;
   return `<section><div class="row" style="margin-bottom:4px"><h3 style="margin:0">${esc(title)}</h3><span class="spacer"></span><a class="btn ghost sm" href="#reglages" data-act="goto-groups" data-mod="${mod}">régler</a></div>
     <p class="hint">${hint}</p>
-    <div class="rooms">${gs.map(g => `<button class="room ${active === g.name ? "active" : ""}" ${G.filterable ? `data-act="grp-filter" data-mod="${mod}" data-g="${esc(g.name)}"` : "disabled"}><div class="fill" style="height:${g.pct ?? 0}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></button>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
+    <div class="rooms">${gs.map(g => `<button class="room ${active === g.name ? "active" : ""} ${g.pct > 100 ? "over" : ""}" ${G.filterable ? `data-act="grp-filter" data-mod="${mod}" data-g="${esc(g.name)}"` : "disabled"}><div class="fill" style="height:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></button>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
 }
 const gMatch = (mod, it) => { const v = gFilter[mod]; if (!v) return true; const G = GROUPERS[mod]; return (G.key(it, gcfg(mod).by) || "Sans groupe") === v; };
 
@@ -500,6 +525,8 @@ const SUMMARY = {
   moth: () => { const p = S().moth.posts; const c = st => p.filter(x => x.status === st).length; return `${c("Idée")} idées, ${c("Brouillon")} brouillons, ${c("Prêt")} prêts`; },
   phidippus: () => { const ph = S().phidippus; const f = ph.log.filter(l => l.type === "repas").map(l => l.date).sort().pop(); return `Dernier repas ${ago(f)}`; },
   musique: () => { const a = S().musique.albums; return `${a.filter(x => x.status === "À écouter").length} à écouter, ${a.filter(x => x.status === "Retenu").length} retenus`; },
+  budget: () => { const m = new Date().toISOString().slice(0, 7), es = S().budget.entries.filter(e => (e.date || "").slice(0, 7) === m); const out = es.filter(e => e.type === "dépense").reduce((a, e) => a + +e.amount, 0), inn = es.filter(e => e.type === "revenu").reduce((a, e) => a + +e.amount, 0); return `Ce mois-ci : ${money(out)} dépensés, solde <span class="${inn - out < 0 ? "neg" : "pos"}">${money(inn - out)}</span>`; },
+  assistant: () => { const b = backend(); return b === "sample" ? "Branché via claude.ai" : b === "api" ? "Branché via ta clé API" : "Pas encore branché"; },
   inbox: () => `${S().inbox.items.length} à trier`
 };
 
@@ -625,6 +652,120 @@ VIEWS.inbox = () => {
     <button class="btn ghost sm" data-act="cap-del">suppr.</button></li>`).join("") || `<li class="empty">Vide. Le silence d'une clairière, ou celui d'un cerveau.</li>`}</ul>`;
 };
 
+
+VIEWS.budget = () => {
+  const b = S().budget, es = b.entries.filter(e => (e.date || "").slice(0, 7) === budMonth);
+  const out = es.filter(e => e.type === "dépense").reduce((a, e) => a + +e.amount, 0), inn = es.filter(e => e.type === "revenu").reduce((a, e) => a + +e.amount, 0);
+  const shown = es.filter(e => gMatch("budget", e)).sort((a, x) => x.date.localeCompare(a.date));
+  const mLabel = new Date(budMonth + "-15").toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  const chantierLeft = enabled("chantier") ? openTasks().filter(t => t.cost).reduce((a, t) => a + +t.cost, 0) : 0;
+  const defDate = budMonth === todayISO().slice(0, 7) ? todayISO() : budMonth + "-01";
+  return `<div class="row" style="margin-bottom:6px"><h2 style="margin:0">${esc(label("budget"))}</h2><span class="spacer"></span>
+    <button class="btn ghost" data-act="bud-month" data-d="-1" aria-label="Mois précédent">‹</button><b style="min-width:9ch;text-align:center;text-transform:capitalize">${mLabel}</b><button class="btn ghost" data-act="bud-month" data-d="1" aria-label="Mois suivant">›</button></div>
+  <div class="stats"><div><span>Revenus</span><b class="big pos">${money(inn)}</b></div><div><span>Dépenses</span><b class="big">${money(out)}</b></div><div><span>Solde</span><b class="big ${inn - out < 0 ? "neg" : "pos"}">${money(inn - out)}</b></div></div>
+  <datalist id="envList">${b.envelopes.map(v => `<option value="${esc(v.name)}">`).join("")}</datalist>
+  <div class="row" style="margin-bottom:26px">
+    <select id="bType" style="max-width:130px" aria-label="Type"><option>dépense</option><option>revenu</option></select>
+    <input id="bAmt" type="number" step="0.01" min="0" placeholder="Montant" style="max-width:130px" inputmode="decimal" aria-label="Montant">
+    <input id="bCat" list="envList" placeholder="Enveloppe" style="max-width:170px" aria-label="Enveloppe">
+    <input id="bNote" placeholder="Note" style="max-width:220px" aria-label="Note">
+    <input id="bDate" type="date" value="${defDate}" style="max-width:160px" aria-label="Date">
+    <button class="btn acc" data-act="bud-add">Ajouter</button></div>
+  <div class="two"><section><h3>Opérations</h3><p class="hint">L'argent ne disparaît pas, il change simplement de propriétaire.</p>
+    <ul class="plain">${shown.map(e => `<li class="item" data-id="${e.id}"><span></span><div>${esc(e.note || e.cat || e.type)}<div class="meta">${fmt(e.date)}${e.cat ? `<span class="tag">${esc(e.cat)}</span>` : ""}</div></div><div class="row"><b class="${e.type === "revenu" ? "pos" : ""}">${e.type === "revenu" ? "+" : "−"}${money(e.amount)}</b><button class="btn ghost sm" data-act="bud-del">suppr.</button></div></li>`).join("") || `<li class="empty">Aucune opération ce mois-ci. Suspect.</li>`}</ul></section>
+  <div>${groupPanel("budget", "Part de chaque enveloppe mensuelle déjà consommée. Le rouge signale le dépassement.")}
+    ${chantierLeft ? `<p class="hint">Le chantier estime encore ${money(chantierLeft)} de dépenses à venir.</p>` : ""}</div></div>`;
+};
+
+/* ---------- assistant ---------- */
+let sampleNS = null, downloadsNS = null, chatBusy = false;
+const hosted = () => !window.claude;
+const getKey = () => { try { return localStorage.getItem("selene-api-key") || ""; } catch { return ""; } };
+function backend() { if (!enabled("assistant")) return "off"; if (sampleNS) return "sample"; if (hosted() && getKey()) return "api"; return "none"; }
+const chatLog = { get() { try { return JSON.parse(localStorage.getItem("selene-chat") || "[]"); } catch { return []; } }, set(v) { try { localStorage.setItem("selene-chat", JSON.stringify(v.slice(-40))); } catch {} } };
+function contextText() {
+  const s = S(), sh = s.config.assistant.share, now = todayISO(), m = moon(), L = [];
+  L.push(`Date : ${fmt(now, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}. Lune : ${m.name.toLowerCase()}, éclairée à ${Math.round(m.illum * 100)} %.`);
+  if (sh.chantier && enabled("chantier")) { const o = openTasks().sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")); L.push(`\nCHANTIER (appartement) : ${o.length} tâches ouvertes sur ${board.data.tasks.length}.`); o.slice(0, 40).forEach(t => L.push(`- [${t.id}] ${t.title} | ${t.room || "?"} | ${t.due ? "échéance " + t.due : "sans date"}${t.today ? " | choisie pour aujourd'hui" : ""}${t.cost ? " | " + t.cost + " €" : ""}`)); }
+  if (sh.kundalini && enabled("kundalini")) { const k = s.kundalini; L.push(`\nKUNDALINI : ${k.start ? `protocole de ${k.weeks} semaines commencé le ${k.start}, ${k.sessions.length} séances, objectif ${k.perWeek}/semaine. Dernières notes : ${k.sessions.slice(-3).map(x => `${x.date} ${x.min || "?"} min ${x.note || ""}`).join(" ; ")}` : "pas commencé"}`); }
+  if (sh.ecriture && enabled("ecriture")) { const e = s.ecriture, tot = e.sessions.reduce((a, x) => a + (+x.words || 0), 0); L.push(`\nÉCRITURE « ${e.title} » : ${tot} mots sur ${e.goal}. Chapitres : ${e.chapters.map(c => c.name).join(", ") || "aucun"}. Derniers fragments : ${e.fragments.slice(-3).map(f => f.text.slice(0, 200)).join(" / ") || "aucun"}`); }
+  if (sh.moth && enabled("moth")) L.push(`\nOCTOBER.MOTH (Instagram) : ${s.moth.posts.map(p => `${p.title} [${p.status}${p.theme ? ", " + p.theme : ""}]`).join(" ; ") || "aucun post"}`);
+  if (sh.phidippus && enabled("phidippus")) { const ph = s.phidippus, last = t => ph.log.filter(l => l.type === t).map(l => l.date).sort().pop() || "jamais"; L.push(`\nPHIDIPPUS${ph.name ? " (" + ph.name + ")" : ""} : dernier repas ${last("repas")}, brumisation ${last("brumisation")}, mue ${last("mue")}.`); }
+  if (sh.musique && enabled("musique")) L.push(`\nMUSIQUE (albums de l'éveil) : ${s.musique.albums.map(a => `${a.artist}${a.album ? " – " + a.album : ""} [${a.status}]`).join(" ; ")}`);
+  if (sh.budget && enabled("budget")) { const mo = now.slice(0, 7), es = s.budget.entries.filter(e => (e.date || "").slice(0, 7) === mo); L.push(`\nBUDGET (${mo}) : dépenses ${es.filter(e => e.type === "dépense").reduce((a, e) => a + +e.amount, 0)} €, revenus ${es.filter(e => e.type === "revenu").reduce((a, e) => a + +e.amount, 0)} €. Enveloppes : ${GROUPERS.budget.groups().map(g => `${g.name} ${g.sub}`).join(" ; ")}`); }
+  if (sh.inbox && enabled("inbox")) L.push(`\nCAPTURE (à trier) : ${s.inbox.items.map(i => i.text).join(" ; ") || "vide"}`);
+  return L.join("\n").slice(0, 14000);
+}
+function instructions() {
+  const a = S().config.assistant, name = S().config.name || "Selene";
+  return `Tu es Claude, intégré au tableau de bord personnel de ${name}. Réponds en français, en prose, sans listes à puces sauf demande. Ton : lucide, cynique, humour noir glissé naturellement ; jamais de morale non demandée ni de justifications répétées. Chaque fois que tu emploies un terme technique ou savant, définis-le brièvement dans la phrase. Sois concis. Tu ne connais que les données ci-dessous, qu'elle a choisi de partager ; tu n'as aucun souvenir d'autres conversations.
+${a.actions ? "Tu peux agir sur le tableau de bord avec les outils fournis (ajouter une tâche, terminer une tâche, capturer une note, enregistrer une opération de budget). Ne les utilise que si c'est demandé ou clairement voulu, et dis ce que tu as fait." : "Tu ne peux rien modifier : conseille seulement."}
+
+DONNÉES DU TABLEAU DE BORD
+${contextText()}`;
+}
+const TOOLS = [
+  { name: "ajouter_tache", description: "Ajoute une tâche au module Chantier. Renvoie une confirmation.", inputSchema: { type: "object", properties: { titre: { type: "string" }, piece: { type: "string" }, echeance: { type: "string", description: "AAAA-MM-JJ" }, type: { type: "string", enum: ["Bricolage", "Administratif", "Achat", "Artisan", "Rangement", "Ménage"] } }, required: ["titre"] },
+    execute(i) { const t = { id: uid(), title: String(i.titre).slice(0, 140), room: String(i.piece || ""), cat: String(i.type || "Bricolage"), due: /^\d{4}-\d{2}-\d{2}$/.test(i.echeance || "") ? i.echeance : null, effort: 1, cost: null, note: "Ajoutée par l'assistant", today: false, done: false, doneAt: null, created: todayISO(), steps: [] }; board.data.tasks.push(t); board.save(); render(); return `Tâche ajoutée : ${t.title}`; } },
+  { name: "terminer_tache", description: "Marque comme faite une tâche du Chantier, par son identifiant entre crochets.", inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
+    execute(i) { const t = board.data.tasks.find(x => x.id === String(i.id)); if (!t) throw new Error("tâche introuvable"); t.done = true; t.doneAt = todayISO(); t.today = false; board.save(); render(); return `Terminée : ${t.title}`; } },
+  { name: "capturer", description: "Dépose une note dans la boîte Capture, à trier plus tard.", inputSchema: { type: "object", properties: { texte: { type: "string" } }, required: ["texte"] },
+    execute(i) { S().inbox.items.push({ id: uid(), text: String(i.texte).slice(0, 500), date: todayISO() }); site.save(); render(); return "Capturé."; } },
+  { name: "ajouter_operation", description: "Enregistre une dépense ou un revenu dans le Budget.", inputSchema: { type: "object", properties: { montant: { type: "number" }, type: { type: "string", enum: ["dépense", "revenu"] }, enveloppe: { type: "string" }, note: { type: "string" }, date: { type: "string", description: "AAAA-MM-JJ, aujourd'hui par défaut" } }, required: ["montant"] },
+    execute(i) { const amt = Math.abs(+i.montant); if (!amt) throw new Error("montant invalide"); S().budget.entries.push({ id: uid(), type: i.type === "revenu" ? "revenu" : "dépense", amount: amt, cat: String(i.enveloppe || ""), note: String(i.note || ""), date: /^\d{4}-\d{2}-\d{2}$/.test(i.date || "") ? i.date : todayISO() }); site.save(); render(); return `Enregistré : ${money(amt)}`; } }
+];
+async function askAPI(history) {
+  const a = S().config.assistant, tools = a.actions ? TOOLS.map(t => ({ name: t.name, description: t.description, input_schema: t.inputSchema })) : undefined;
+  const msgs = history.map(m => ({ role: m.role, content: m.content })); let out = "";
+  for (let round = 0; round < 5; round++) {
+    const res = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "content-type": "application/json", "x-api-key": getKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+      body: JSON.stringify({ model: a.model, max_tokens: 1500, system: instructions(), messages: msgs, ...(tools ? { tools } : {}) }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
+    const txt = data.content.filter(b => b.type === "text").map(b => b.text).join("\n"); if (txt) out += (out ? "\n\n" : "") + txt;
+    if (data.stop_reason !== "tool_use") break;
+    msgs.push({ role: "assistant", content: data.content });
+    const results = [];
+    for (const b of data.content.filter(b => b.type === "tool_use")) { let r; try { r = await TOOLS.find(t => t.name === b.name).execute(b.input || {}); } catch (e) { r = "Erreur : " + e.message; } results.push({ type: "tool_result", tool_use_id: b.id, content: String(r) }); }
+    msgs.push({ role: "user", content: results });
+  }
+  return out || "(pas de réponse)";
+}
+async function askSample(history, onText) {
+  const input = [{ role: "user", content: instructions() }, ...history];
+  const opts = { onText: ({ text }) => onText(text) };
+  if (S().config.assistant.actions) opts.tools = TOOLS.map(t => ({ name: t.name, description: t.description, inputSchema: t.inputSchema, execute: i => t.execute(i) }));
+  try { return (await sampleNS(input, opts)).text; }
+  catch (e) { if (e && e.code === "tools_unavailable") { delete opts.tools; return (await sampleNS(input, opts)).text; } throw e; }
+}
+const mdLite = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*(?!\s)(.+?)\*/g, "$1<i>$2</i>");
+async function sendChat(text) {
+  if (chatBusy || !text.trim()) return;
+  const b = backend(); if (b !== "sample" && b !== "api") return toast("L'assistant n'est pas branché. Voir Réglages.");
+  const log = chatLog.get(); log.push({ role: "user", content: text.trim() }); chatLog.set(log); chatBusy = true; render();
+  const pending = document.getElementById("pending"), onText = t => { if (pending) pending.textContent = t; };
+  try {
+    const hist = log.slice(-20); while (hist.length && hist[0].role !== "user") hist.shift();
+    const reply = b === "sample" ? await askSample(hist, onText) : await askAPI(hist);
+    const l2 = chatLog.get(); l2.push({ role: "assistant", content: reply }); chatLog.set(l2);
+  } catch (e) {
+    const code = e && e.code, msg = code === "not_granted" ? "Accès refusé à Claude pour cette page." : code === "rate_limited" ? "Trop de demandes, réessaie dans un moment." : (e && e.message) || "Erreur inconnue.";
+    toast(msg);
+  }
+  chatBusy = false; render();
+  const log2 = document.querySelector(".chat"); if (log2) log2.lastElementChild?.scrollIntoView({ block: "nearest" });
+}
+VIEWS.assistant = () => {
+  const b = backend(), a = S().config.assistant, log = chatLog.get();
+  const status = b === "sample" ? "Branché via claude.ai : aucune clé requise, la première question te demandera ton accord." : b === "api" ? `Branché via ta clé API, modèle ${esc(a.model)}. Chaque échange est facturé sur ton compte.` : hosted() ? `Pas encore branché. Colle ta clé API dans <a href="#reglages">Réglages</a>.` : "Indisponible dans cette vue.";
+  const shared = Object.entries(a.share).filter(([k, v]) => v && enabled(k)).map(([k]) => label(k)).join(", ") || "rien";
+  return `<div class="row"><h2 style="margin:0">${esc(label("assistant"))}</h2><span class="spacer"></span>${log.length ? `<button class="btn ghost sm" data-act="chat-clear">Effacer la conversation</button>` : ""}</div>
+  <p class="status">${status}<br>Données partagées : ${esc(shared)}. ${a.actions ? "Peut agir sur le tableau de bord." : "Lecture seule."}</p>
+  <div class="chat">${log.map(m => `<div class="msg ${m.role === "user" ? "user" : "claude"}">${m.role === "user" ? esc(m.content) : mdLite(m.content)}</div>`).join("")}${chatBusy ? `<div class="msg claude" id="pending">…</div>` : ""}</div>
+  ${!log.length ? `<div class="chips">${["Qu'est-ce que je fais aujourd'hui ?", "Fais le point sur le chantier", "Où en est mon budget ce mois-ci ?", "Propose trois idées de posts pour october.moth"].map(q => `<button class="btn sm" data-act="chat-chip">${q}</button>`).join("")}</div>` : ""}
+  <div class="capture"><textarea id="chatIn" rows="2" placeholder="Écris à Claude…" aria-label="Message" ${b === "sample" || b === "api" ? "" : "disabled"}></textarea><button class="btn acc" data-act="chat-send" ${chatBusy ? "disabled" : ""}>Envoyer</button></div>`;
+};
+
 const PALETTES = [["nigredo", "Nigredo, mousse", "#6f9a68"], ["albedo", "Albedo, lichen", "#aab7a6"], ["citrinitas", "Citrinitas, résine", "#c99a3c"], ["rubedo", "Rubedo, amanite", "#c0554a"]];
 VIEWS.reglages = () => {
   const s = S(), c = s.config;
@@ -645,10 +786,19 @@ VIEWS.reglages = () => {
           <div class="field-row" style="margin-top:8px"><label>Titre du bloc<input data-act="grp-title" value="${esc(g.title)}" placeholder="Par ${esc(G.fields[g.by].toLowerCase())}"></label>
           <label style="display:flex;gap:8px;align-items:center;align-self:end;padding-bottom:10px"><input type="checkbox" data-act="grp-hide" ${g.hideDone ? "checked" : ""}>Masquer les groupes à 100 %</label></div>
           ${names.length ? `<details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">Renommer ou fusionner des ${esc(G.fields[g.by].toLowerCase())}s</summary><p class="hint" style="margin:6px 0">Donne le même nom à deux groupes pour les fusionner.</p>${names.map(n => `<div class="set" style="grid-template-columns:1fr"><input data-act="grp-rename" data-old="${esc(n)}" value="${esc(n)}" aria-label="Renommer ${esc(n)}"></div>`).join("")}</details>` : ""}
+          ${mod === "budget" ? `<div style="margin-top:10px"><span class="hint" style="margin:0">Enveloppes mensuelles</span>${S().budget.envelopes.map((v, i) => `<div class="set" data-vi="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="env-name" value="${esc(v.name)}" aria-label="Nom de l'enveloppe"><input type="number" min="0" data-act="env-limit" value="${v.limit || ""}" placeholder="€ / mois" aria-label="Plafond mensuel"><button class="btn ghost sm" data-act="env-del">suppr.</button></div>`).join("")}<button class="btn sm" data-act="env-add" style="margin-top:8px">Ajouter une enveloppe</button></div>` : ""}
           ${mod === "kundalini" ? `<label style="margin-top:8px;max-width:260px">Séances visées par semaine<input type="number" min="1" max="7" data-set="kundalini.perWeek" value="${s.kundalini.perWeek}"></label>` : ""}
           ${mod === "ecriture" ? `<div style="margin-top:10px"><span class="hint" style="margin:0">Chapitres</span>${s.ecriture.chapters.map((c, i) => `<div class="set" data-ci="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="ch-name" value="${esc(c.name)}" aria-label="Nom du chapitre"><input type="number" min="0" data-act="ch-goal" value="${c.goal || ""}" placeholder="Objectif" aria-label="Objectif en mots"><div class="row"><button class="btn ghost sm" data-act="ch-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="ch-del">suppr.</button></div></div>`).join("")}<button class="btn sm" data-act="ch-add" style="margin-top:8px">Ajouter un chapitre</button></div>` : ""}` : ""}
       </div>`; }).join("")}
   </section>
+  ${enabled("assistant") ? `<section id="assistant-cfg"><h3>Assistant</h3><p class="hint">Claude dans le tableau de bord. Sur claude.ai, il passe par ton compte. Hébergé ailleurs (GitHub Pages), il faut ta propre clé API, gardée uniquement dans ce navigateur.</p>
+    <div class="field-row"><label>Clé API Anthropic (hébergé uniquement)<input type="password" data-act="as-key" value="${getKey() ? "••••••••" : ""}" placeholder="sk-ant-…" autocomplete="off"></label>
+    <label>Modèle<select data-act="as-model">${[["claude-haiku-4-5-20251001", "Haiku 4.5, rapide et peu cher"], ["claude-sonnet-5", "Sonnet 5, équilibré"], ["claude-opus-5-5", "Opus 5.5, le plus capable"]].map(([k, l]) => `<option value="${k}" ${s.config.assistant.model === k ? "selected" : ""}>${l}</option>`).join("")}</select></label></div>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" data-act="as-actions" ${s.config.assistant.actions ? "checked" : ""}>Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)</label>
+    <p class="hint" style="margin:12px 0 4px">Ce que Claude peut lire :</p><div class="row">${Object.keys(s.config.assistant.share).filter(enabled).map(k => `<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" data-act="as-share" data-k="${k}" ${s.config.assistant.share[k] ? "checked" : ""}>${esc(label(k))}</label>`).join("")}</div>
+    ${getKey() ? `<button class="btn ghost sm" data-act="as-forget" style="margin-top:10px">Oublier la clé sur cet appareil</button>` : ""}</section>` : ""}
+  <section><h3>Sauvegarde</h3><p class="hint">Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.</p>
+    <div class="row"><button class="btn" data-act="exp">Exporter</button><label class="btn" style="display:inline-block;font-weight:500">Importer<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label></div></section>
   <section><h3>Paramètres</h3>
     <div class="field-row"><label>Début du protocole kundalini<input type="date" data-set="kundalini.start" value="${esc(s.kundalini.start || "")}"></label><label>Durée (semaines)<input type="number" min="1" data-set="kundalini.weeks" value="${s.kundalini.weeks}"></label></div>
     <div class="field-row" style="margin-top:10px"><label>Titre du projet d'écriture<input data-set="ecriture.title" value="${esc(s.ecriture.title)}"></label><label>Objectif (mots)<input type="number" min="1" data-set="ecriture.goal" value="${s.ecriture.goal}"></label></div>
@@ -674,9 +824,11 @@ function render() {
   $("#dateline").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
   const links = [["accueil", "Accueil"], ...s.config.modules.filter(x => x.on).map(x => [x.id, label(x.id)]), ["reglages", "Réglages"]];
   $("#nav").innerHTML = links.map(([id, l]) => `<a href="#${id}" class="${id === view ? "on" : ""}">${esc(l)}${id === "inbox" && s.inbox.items.length ? ` (${s.inbox.items.length})` : ""}</a>`).join("");
-  const ae = document.activeElement, focused = ae && ae.dataset && (ae.dataset.set || (ae.tagName === "INPUT" && ae.type !== "checkbox" && ae.closest && ae.closest("#groupes")));
+  const ae = document.activeElement, focused = ae && ae.dataset && (ae.dataset.set || (ae.tagName === "INPUT" && ae.type !== "checkbox" && ae.closest && (ae.closest("#groupes") || ae.closest("#assistant-cfg"))));
   if (focused && view === "reglages") return; // ne pas casser la saisie en cours
+  const draft = $("#chatIn") ? $("#chatIn").value : "";
   $("#main").innerHTML = VIEWS[view]();
+  if ($("#chatIn") && !chatBusy && draft && !chatLog.get().some(m => m.content === draft.trim())) $("#chatIn").value = draft;
 }
 window.addEventListener("hashchange", () => { openId = null; render(); const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t); if (el) el.scrollIntoView(); else window.scrollTo(0, 0); });
 
@@ -738,12 +890,26 @@ const CLICK = {
   "ch-add": () => { S().ecriture.chapters.push({ id: uid(), name: `Chapitre ${S().ecriture.chapters.length + 1}`, goal: 5000 }); site.save(); render(); },
   "ch-del": el => { const e = S().ecriture, i = +el.closest("[data-ci]").dataset.ci, c = e.chapters[i]; if (!confirm(`Supprimer « ${c.name} » ? Les mots déjà écrits passeront hors chapitre.`)) return; e.sessions.forEach(s => { if (s.chapter === c.id) s.chapter = ""; }); e.chapters.splice(i, 1); site.save(); render(); },
   "ch-up": el => { const a = S().ecriture.chapters, i = +el.closest("[data-ci]").dataset.ci; if (i > 0) { [a[i - 1], a[i]] = [a[i], a[i - 1]]; site.save(); render(); } },
+  "bud-month": el => { const d = new Date(budMonth + "-15"); d.setMonth(d.getMonth() + +el.dataset.d); budMonth = d.toISOString().slice(0, 7); gFilter.budget = ""; render(); },
+  "bud-add": () => { const amt = Math.abs(+$("#bAmt").value); if (!amt) return toast("Un montant, même symbolique."); S().budget.entries.push({ id: uid(), type: $("#bType").value, amount: amt, cat: $("#bCat").value.trim(), note: $("#bNote").value.trim(), date: $("#bDate").value || todayISO() }); site.save(); render(); },
+  "bud-del": el => { const b = S().budget; b.entries = b.entries.filter(e => e.id !== idOf(el)); site.save(); render(); },
+  "env-add": () => { S().budget.envelopes.push({ id: uid(), name: "Nouvelle enveloppe", limit: 100 }); site.save(); render(); },
+  "env-del": el => { const b = S().budget, i = +el.closest("[data-vi]").dataset.vi; if (confirm(`Supprimer l'enveloppe « ${b.envelopes[i].name} » ? Les opérations restent.`)) { b.envelopes.splice(i, 1); site.save(); render(); } },
+  "chat-send": () => { const t = $("#chatIn").value; sendChat(t); },
+  "chat-chip": el => sendChat(el.textContent),
+  "chat-clear": () => { if (confirm("Effacer la conversation ?")) { chatLog.set([]); render(); } },
+  "as-forget": () => { try { localStorage.removeItem("selene-api-key"); } catch {} render(); toast("Clé oubliée sur cet appareil."); },
+  "exp": async () => {
+    const data = JSON.stringify({ format: "selene-v1", exportedAt: new Date().toISOString(), board: board.data, site: site.data }, null, 2), filename = `selene-${todayISO()}.json`;
+    if (downloadsNS) { try { await downloadsNS.save({ filename, data }); } catch (e) { toast("Export annulé."); } return; }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([data], { type: "application/json" })); a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  },
   "pal": el => { S().config.palette = el.dataset.p; site.save(); render(); },
   "mod-up": el => moveMod(el, -1), "mod-down": el => moveMod(el, 1)
 };
 function moveMod(el, d) { const ms = S().config.modules, i = +el.closest("[data-i]").dataset.i, j = i + d; if (j < 0 || j >= ms.length) return; [ms[i], ms[j]] = [ms[j], ms[i]]; site.save(); render(); }
 document.addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (a && CLICK[a.dataset.act] && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) CLICK[a.dataset.act](a); });
-document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); });
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
 document.addEventListener("change", e => {
   const el = e.target, act = el.dataset.act;
   if (act === "task-done") { const t = taskOf(el); t.done = el.checked; t.doneAt = el.checked ? todayISO() : null; if (el.checked) t.today = false; board.save(); render(); if (el.checked) toast(doneLines[Math.floor(Math.random() * doneLines.length)]); }
@@ -762,11 +928,21 @@ document.addEventListener("change", e => {
     else if (act === "grp-rename") {
       const from = el.dataset.old, to = el.value.trim(); if (!to || to === from) return;
       G.items().forEach(it => { if (it[g.by] === from) it[g.by] = to; });
+      if (mod === "budget") S().budget.envelopes.forEach(v => { if (v.name === from) v.name = to; });
       if (gFilter[mod] === from) gFilter[mod] = to;
       if (mod === "chantier" && roomFilter === from) roomFilter = to;
       G.store().save(); toast(`« ${from} » s'appelle désormais « ${to} ».`);
     }
     site.save(); el.blur(); render();
+  }
+  else if (act === "env-name" || act === "env-limit") { const b = S().budget, v = b.envelopes[+el.closest("[data-vi]").dataset.vi]; if (act === "env-name") { const to = el.value.trim(); if (to && to !== v.name) { b.entries.forEach(e => { if (e.cat === v.name) e.cat = to; }); v.name = to; } } else v.limit = Math.max(0, +el.value || 0); site.save(); el.blur(); render(); }
+  else if (act === "as-key") { const v = el.value.trim(); if (v && !v.startsWith("•")) { try { localStorage.setItem("selene-api-key", v); } catch {} toast(hosted() ? "Clé enregistrée dans ce navigateur." : "Clé enregistrée. Elle servira une fois le site hébergé."); } el.blur(); render(); }
+  else if (act === "as-model") { S().config.assistant.model = el.value; site.save(); render(); }
+  else if (act === "as-actions") { S().config.assistant.actions = el.checked; site.save(); render(); }
+  else if (act === "as-share") { S().config.assistant.share[el.dataset.k] = el.checked; site.save(); render(); }
+  else if (act === "imp") {
+    const f = el.files && el.files[0]; if (!f) return;
+    f.text().then(t => { const d = JSON.parse(t); if (d.format !== "selene-v1" || !d.board || !d.site) throw new Error(); if (!confirm("Remplacer tout l'état actuel par celui du fichier ?")) return; board.data = d.board; site.data = d.site; board.save(); site.save(); render(); toast("Importé. Rien ne s'est perdu en route, a priori."); }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene."));
   }
   else if (act === "ch-name" || act === "ch-goal") { const c = S().ecriture.chapters[+el.closest("[data-ci]").dataset.ci]; if (act === "ch-name") c.name = el.value.trim() || c.name; else c.goal = Math.max(0, +el.value || 0); site.save(); el.blur(); render(); }
   else if (act === "mod-on") { S().config.modules[+el.closest("[data-i]").dataset.i].on = el.checked; site.save(); render(); }
@@ -795,9 +971,9 @@ render();
   try {
     if (!window.claude || !window.claude.use) return;
     const db = await window.claude.use("db");
-    if (!db) return;
-    await Promise.all([board.connect(db), site.connect(db)]);
+    if (db) await Promise.all([board.connect(db), site.connect(db)]);
   } catch {}
+  try { if (window.claude && window.claude.use) { sampleNS = await window.claude.use("sample"); downloadsNS = await window.claude.use("downloads"); render(); } } catch {}
 })();
 })();
 </script>
