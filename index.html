@@ -807,29 +807,35 @@ function contextText() {
   return L.join("\n").slice(0, 14000);
 }
 function instructions() {
-  const a = S().config.assistant, name = S().config.name || "Selene";
+  const name = S().config.name || "Selene", permitted = availableTools();
   return `Tu es Claude, intégré au tableau de bord personnel de ${name}. Réponds en français, en prose, sans listes à puces sauf demande. Ton : lucide, cynique, humour noir glissé naturellement ; jamais de morale non demandée ni de justifications répétées. Chaque fois que tu emploies un terme technique ou savant, définis-le brièvement dans la phrase. Sois concis. Tu ne connais que les données ci-dessous, qu'elle a choisi de partager ; tu n'as aucun souvenir d'autres conversations.
-${a.actions ? "Tu peux agir sur le tableau de bord avec les outils fournis (ajouter une tâche, terminer une tâche, capturer une note, enregistrer une opération de budget). Ne les utilise que si c'est demandé ou clairement voulu, et dis ce que tu as fait." : "Tu ne peux rien modifier : conseille seulement."}
+${permitted.length ? "Tu peux agir uniquement avec les outils fournis. Ne les utilise que si c'est demandé ou clairement voulu, et dis ce que tu as fait." : "Tu ne peux rien modifier : conseille seulement."}
 
 DONNÉES DU TABLEAU DE BORD
 ${contextText()}`;
 }
 const TOOLS = [
-  { name: "ajouter_tache", description: "Ajoute une tâche au module Chantier. Renvoie une confirmation.", inputSchema: { type: "object", properties: { titre: { type: "string" }, piece: { type: "string" }, echeance: { type: "string", description: "AAAA-MM-JJ" }, type: { type: "string", enum: ["Bricolage", "Administratif", "Achat", "Artisan", "Rangement", "Ménage"] } }, required: ["titre"] },
+  { name: "ajouter_tache", module: "chantier", description: "Ajoute une tâche au module Chantier. Renvoie une confirmation.", inputSchema: { type: "object", properties: { titre: { type: "string" }, piece: { type: "string" }, echeance: { type: "string", description: "AAAA-MM-JJ" }, type: { type: "string", enum: ["Bricolage", "Administratif", "Achat", "Artisan", "Rangement", "Ménage"] } }, required: ["titre"] },
     execute(i) { const t = addTask(board.data.tasks, { title: i.titre, room: i.piece, cat: i.type, due: i.echeance, note: "Ajoutée par l'assistant" }, uid(), todayISO()); board.save(); render(); return `Tâche ajoutée : ${t.title}`; } },
-  { name: "terminer_tache", description: "Marque comme faite une tâche du Chantier, par son identifiant entre crochets.", inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
+  { name: "terminer_tache", module: "chantier", description: "Marque comme faite une tâche du Chantier, par son identifiant entre crochets.", inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
     execute(i) { const t = setTaskDone(board.data.tasks, i.id, true, todayISO()); board.save(); render(); return `Terminée : ${t.title}`; } },
-  { name: "capturer", description: "Dépose une note dans la boîte Capture, à trier plus tard.", inputSchema: { type: "object", properties: { texte: { type: "string" } }, required: ["texte"] },
+  { name: "capturer", module: "inbox", description: "Dépose une note dans la boîte Capture, à trier plus tard.", inputSchema: { type: "object", properties: { texte: { type: "string" } }, required: ["texte"] },
     execute(i) { addCapture(S().inbox.items, i.texte, uid(), todayISO()); site.save(); render(); return "Capturé."; } },
-  { name: "ajouter_operation", description: "Enregistre une dépense ou un revenu dans le Budget.", inputSchema: { type: "object", properties: { montant: { type: "number" }, type: { type: "string", enum: ["dépense", "revenu"] }, enveloppe: { type: "string" }, note: { type: "string" }, date: { type: "string", description: "AAAA-MM-JJ, aujourd'hui par défaut" } }, required: ["montant"] },
+  { name: "ajouter_operation", module: "budget", description: "Enregistre une dépense ou un revenu dans le Budget.", inputSchema: { type: "object", properties: { montant: { type: "number" }, type: { type: "string", enum: ["dépense", "revenu"] }, enveloppe: { type: "string" }, note: { type: "string" }, date: { type: "string", description: "AAAA-MM-JJ, aujourd'hui par défaut" } }, required: ["montant"] },
     execute(i) { const entry = addBudgetEntry(S().budget.entries, { amount: i.montant, type: i.type, cat: i.enveloppe, note: i.note, date: i.date }, uid(), todayISO()); site.save(); render(); return `Enregistré : ${money(entry.amount)}`; } }
 ];
+const availableTools = () => S().config.assistant.actions ? TOOLS.filter(t => enabled(t.module)) : [];
+const executeTool = (name, input) => {
+  const tool = availableTools().find(t => t.name === name);
+  if (!tool) throw new Error("Action non autorisée ou module désactivé");
+  return tool.execute(input);
+};
 async function askAPI(history) {
-  const a = S().config.assistant, tools = a.actions ? TOOLS.map(t => ({ name: t.name, description: t.description, input_schema: t.inputSchema })) : undefined;
+  const a = S().config.assistant, tools = availableTools().map(t => ({ name: t.name, description: t.description, input_schema: t.inputSchema }));
   const msgs = history.map(m => ({ role: m.role, content: m.content })); let out = "";
   for (let round = 0; round < 5; round++) {
     const res = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "content-type": "application/json", "x-api-key": getKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
-      body: JSON.stringify({ model: a.model, max_tokens: 1500, system: instructions(), messages: msgs, ...(tools ? { tools } : {}) }) });
+      body: JSON.stringify({ model: a.model, max_tokens: 1500, system: instructions(), messages: msgs, ...(tools.length ? { tools } : {}) }) });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
     if (!Array.isArray(data.content)) throw new Error("réponse inattendue de l'API");
@@ -837,7 +843,7 @@ async function askAPI(history) {
     if (data.stop_reason !== "tool_use") break;
     msgs.push({ role: "assistant", content: data.content });
     const results = [];
-    for (const b of data.content.filter(b => b.type === "tool_use")) { let r; try { r = await TOOLS.find(t => t.name === b.name).execute(b.input || {}); } catch (e) { r = "Erreur : " + e.message; } results.push({ type: "tool_result", tool_use_id: b.id, content: String(r) }); }
+    for (const b of data.content.filter(b => b.type === "tool_use")) { let r; try { r = await executeTool(b.name, b.input || {}); } catch (e) { r = "Erreur : " + e.message; } results.push({ type: "tool_result", tool_use_id: b.id, content: String(r) }); }
     msgs.push({ role: "user", content: results });
   }
   return out || "(pas de réponse)";
@@ -845,7 +851,7 @@ async function askAPI(history) {
 async function askSample(history, onText) {
   const input = [{ role: "user", content: instructions() }, ...history];
   const opts = { onText: ({ text }) => onText(text) };
-  if (S().config.assistant.actions) opts.tools = TOOLS.map(t => ({ name: t.name, description: t.description, inputSchema: t.inputSchema, execute: i => t.execute(i) }));
+  if (availableTools().length) opts.tools = availableTools().map(t => ({ name: t.name, description: t.description, inputSchema: t.inputSchema, execute: i => executeTool(t.name, i) }));
   try { return (await sampleNS(input, opts)).text; }
   catch (e) { if (e && e.code === "tools_unavailable") { delete opts.tools; return (await sampleNS(input, opts)).text; } throw e; }
 }

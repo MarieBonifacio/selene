@@ -19,9 +19,9 @@ Les opérations de création de tâche, choix des tâches du jour, terminaison, 
 
 Conserver les clés v1 pendant la transition. Introduire une interface de dépôt locale et une version de schéma interne ; migrer une copie des données vers IndexedDB uniquement après un test de rechargement et de restauration, puis garder un chemin de retour par export JSON. Vérifier les cas quota plein, fermeture pendant l'écriture et deux onglets ouverts. Ne jamais effacer les données v1 à la première migration.
 
-## Étape 4 — assistant et rendu
+## Étape 4 — assistant et rendu (contrôle d'accès aux outils livré)
 
-Valider les arguments des outils avant mutation ; refuser les identifiants inconnus, dates impossibles et montants non finis. Faire dépendre les outils des fonctions métier. Revoir les chemins `innerHTML` et la CSP, puis décider si l'usage de clé API dans le navigateur est encore acceptable pour une diffusion hors usage personnel.
+Les outils ne sont proposés que pour les modules actifs et l'autorisation globale d'écriture est revérifiée au moment de l'exécution. Les fonctions métier refusent les identifiants inconnus, dates impossibles et montants non finis avant mutation. Il reste à revoir les chemins `innerHTML` et la CSP, puis à décider si l'usage de clé API dans le navigateur est encore acceptable pour une diffusion hors usage personnel. Les cases « Ce que Claude peut lire » contrôlent le contexte envoyé à l'assistant ; elles ne sont pas des permissions d'écriture.
 
 ## Critères de validation avant fusion
 
