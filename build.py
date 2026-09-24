@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "src"
 shell = (SOURCE / "shell.html").read_text(encoding="utf-8")
 assert shell.count("<!-- SELENE_SCRIPT -->") == 1
-scripts = ["store.js", "backup.js", "app.js"]
+scripts = ["store.js", "backup.js", "domain.js", "app.js"]
 js = "\n".join((SOURCE / name).read_text(encoding="utf-8") for name in scripts)
 standalone = shell.replace("<!-- SELENE_SCRIPT -->", "<script>\n(() => {\n" + js + "})();\n</script>")
 
