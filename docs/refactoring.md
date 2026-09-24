@@ -11,9 +11,9 @@
 
 La source éditable est désormais `src/shell.html`, `src/store.js`, `src/backup.js` et `src/app.js`. `python3 build.py` régénère les deux fichiers HTML publics ; `python3 build.py --check` vérifie leur synchronisation. Les exports v1 gardent le même format et l'import valide les collections et la configuration avant de remplacer l'état. Une CI vérifie le build, la syntaxe et les cas de sauvegarde critiques.
 
-## Étape 2 — logique métier
+## Étape 2 — logique métier (première partie livrée)
 
-Extraire progressivement les opérations Chantier, Budget et Capture de `src/app.js` en fonctions sans DOM. Faire appeler ces fonctions par les formulaires et les outils de l'assistant. Ajouter des tests de règles métier (plafond de trois tâches du jour, statut et date de fin, montants positifs). Mesurer la parité fonctionnelle dans les deux HTML avant chaque extraction.
+Les opérations de création de tâche, choix des tâches du jour, terminaison, capture et ajout au budget sont dans `src/domain.js`, sans DOM ni stockage. Les formulaires et outils de l'assistant appellent ces mêmes fonctions. Les règles (plafond de trois tâches du jour, statut et date de fin, montants finis et positifs, date réelle) sont testées. Les opérations restantes (édition et suppression, étapes, renommage des groupes) seront extraites selon leur complexité réelle et après validation sur les deux environnements.
 
 ## Étape 3 — persistance et migrations
 

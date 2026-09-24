@@ -260,6 +260,60 @@ function createBackup(boardData, siteData, exportedAt = new Date().toISOString()
   return JSON.stringify({ format: "selene-v1", exportedAt, board: boardData, site: siteData }, null, 2);
 }
 
+/* Business operations shared by the UI and assistant. No DOM or storage access. */
+const requireText = (value, label, max) => {
+  if (typeof value !== "string" || !value.trim()) throw new Error(`${label} manquant`);
+  return value.trim().slice(0, max);
+};
+const validDate = value => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const d = new Date(value + "T12:00:00Z");
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === value;
+};
+function addTask(tasks, input, id, date) {
+  const t = {
+    id, title: requireText(input.title, "Tâche", 140), room: input.room || "",
+    cat: input.cat || "Bricolage", due: input.due && validDate(input.due) ? input.due : null,
+    effort: input.effort || 1, cost: input.cost ?? null, note: input.note || "",
+    today: false, done: false, doneAt: null, created: date,
+    steps: (input.steps || []).map(s => ({ t: s.t, d: !!s.d }))
+  };
+  tasks.push(t);
+  return t;
+}
+function setTaskDone(tasks, id, done, date) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) throw new Error("Tâche introuvable");
+  t.done = !!done;
+  t.doneAt = done ? date : null;
+  if (done) t.today = false;
+  return t;
+}
+function setTaskToday(tasks, id, value) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) throw new Error("Tâche introuvable");
+  if (value && !t.today && tasks.filter(x => !x.done && x.today).length >= 3) throw new Error("Trois tâches du jour maximum");
+  t.today = !!value;
+  return t;
+}
+function addCapture(items, text, id, date) {
+  const item = { id, text: requireText(text, "Note", 500), date };
+  items.push(item);
+  return item;
+}
+function addBudgetEntry(entries, input, id, defaultDate) {
+  const amount = Number(input.amount);
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Montant invalide");
+  const date = input.date || defaultDate;
+  if (!validDate(date)) throw new Error("Date invalide");
+  const entry = {
+    id, type: input.type === "revenu" ? "revenu" : "dépense",
+    amount, cat: input.cat || "", note: input.note || "", date
+  };
+  entries.push(entry);
+  return entry;
+}
+
 /* ================= utils ================= */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -488,7 +542,7 @@ function taskForm(t) {
     const lines = v.steps.split("\n").map(s => s.trim()).filter(Boolean);
     const data = { title: v.title, room: v.room, cat: v.cat, due: v.due || null, effort: +v.effort, cost: v.cost ? +v.cost : null, note: v.note };
     if (t) t = board.data.tasks.find(x => x.id === t.id);
-    if (!t) { board.data.tasks.push({ id: uid(), ...data, today: false, done: false, doneAt: null, created: todayISO(), steps: lines.map(l => ({ t: l, d: false })) }); board.save(); render(); return; }
+    if (!t) { addTask(board.data.tasks, { ...data, steps: lines.map(l => ({ t: l, d: false })) }, uid(), todayISO()); board.save(); render(); return; }
     { const old = new Map((t.steps || []).map(s => [s.t, s.d])); Object.assign(t, data, { steps: lines.map(l => ({ t: l, d: old.get(l) || false })) }); }
     board.save(); render();
   });
@@ -752,13 +806,13 @@ ${contextText()}`;
 }
 const TOOLS = [
   { name: "ajouter_tache", description: "Ajoute une tâche au module Chantier. Renvoie une confirmation.", inputSchema: { type: "object", properties: { titre: { type: "string" }, piece: { type: "string" }, echeance: { type: "string", description: "AAAA-MM-JJ" }, type: { type: "string", enum: ["Bricolage", "Administratif", "Achat", "Artisan", "Rangement", "Ménage"] } }, required: ["titre"] },
-    execute(i) { const t = { id: uid(), title: String(i.titre).slice(0, 140), room: String(i.piece || ""), cat: String(i.type || "Bricolage"), due: /^\d{4}-\d{2}-\d{2}$/.test(i.echeance || "") ? i.echeance : null, effort: 1, cost: null, note: "Ajoutée par l'assistant", today: false, done: false, doneAt: null, created: todayISO(), steps: [] }; board.data.tasks.push(t); board.save(); render(); return `Tâche ajoutée : ${t.title}`; } },
+    execute(i) { const t = addTask(board.data.tasks, { title: i.titre, room: i.piece, cat: i.type, due: i.echeance, note: "Ajoutée par l'assistant" }, uid(), todayISO()); board.save(); render(); return `Tâche ajoutée : ${t.title}`; } },
   { name: "terminer_tache", description: "Marque comme faite une tâche du Chantier, par son identifiant entre crochets.", inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
-    execute(i) { const t = board.data.tasks.find(x => x.id === String(i.id)); if (!t) throw new Error("tâche introuvable"); t.done = true; t.doneAt = todayISO(); t.today = false; board.save(); render(); return `Terminée : ${t.title}`; } },
+    execute(i) { const t = setTaskDone(board.data.tasks, i.id, true, todayISO()); board.save(); render(); return `Terminée : ${t.title}`; } },
   { name: "capturer", description: "Dépose une note dans la boîte Capture, à trier plus tard.", inputSchema: { type: "object", properties: { texte: { type: "string" } }, required: ["texte"] },
-    execute(i) { S().inbox.items.push({ id: uid(), text: String(i.texte).slice(0, 500), date: todayISO() }); site.save(); render(); return "Capturé."; } },
+    execute(i) { addCapture(S().inbox.items, i.texte, uid(), todayISO()); site.save(); render(); return "Capturé."; } },
   { name: "ajouter_operation", description: "Enregistre une dépense ou un revenu dans le Budget.", inputSchema: { type: "object", properties: { montant: { type: "number" }, type: { type: "string", enum: ["dépense", "revenu"] }, enveloppe: { type: "string" }, note: { type: "string" }, date: { type: "string", description: "AAAA-MM-JJ, aujourd'hui par défaut" } }, required: ["montant"] },
-    execute(i) { const amt = Math.abs(+i.montant); if (!amt) throw new Error("montant invalide"); S().budget.entries.push({ id: uid(), type: i.type === "revenu" ? "revenu" : "dépense", amount: amt, cat: String(i.enveloppe || ""), note: String(i.note || ""), date: /^\d{4}-\d{2}-\d{2}$/.test(i.date || "") ? i.date : todayISO() }); site.save(); render(); return `Enregistré : ${money(amt)}`; } }
+    execute(i) { const entry = addBudgetEntry(S().budget.entries, { amount: i.montant, type: i.type, cat: i.enveloppe, note: i.note, date: i.date }, uid(), todayISO()); site.save(); render(); return `Enregistré : ${money(entry.amount)}`; } }
 ];
 async function askAPI(history) {
   const a = S().config.assistant, tools = a.actions ? TOOLS.map(t => ({ name: t.name, description: t.description, input_schema: t.inputSchema })) : undefined;
@@ -889,14 +943,14 @@ const taskOf = el => { const li = el.closest("[data-task]"); return (li && board
 const idOf = el => el.closest("[data-id]")?.dataset.id;
 function capture() {
   const inp = $("#capIn"); if (!inp || !inp.value.trim()) return;
-  S().inbox.items.push({ id: uid(), text: inp.value.trim(), date: todayISO() }); site.save(); inp.value = ""; render(); toast("Gardé. Tu peux oublier, c'est écrit.");
+  addCapture(S().inbox.items, inp.value, uid(), todayISO()); site.save(); inp.value = ""; render(); toast("Gardé. Tu peux oublier, c'est écrit.");
 }
 function pickTask() {
   const o = openTasks().filter(t => !t.today);
   if (openTasks().filter(t => t.today).length >= 3) return toast("Aujourd'hui est plein. Le hasard respecte les plafonds.");
   if (!o.length) return toast("Rien à tirer.");
   const small = o.filter(t => t.effort === 1), pool = (small.length ? small : o).sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")).slice(0, 5);
-  const t = pool[Math.floor(Math.random() * pool.length)]; t.today = true; board.save(); render();
+  const t = pool[Math.floor(Math.random() * pool.length)]; setTaskToday(board.data.tasks, t.id, true); board.save(); render();
   toast(`Le sort a désigné : « ${t.title} ». Pas de recours possible.`);
 }
 function kAdd() {
@@ -905,10 +959,10 @@ function kAdd() {
 }
 const CLICK = {
   "task-open": el => { const t = taskOf(el); openId = openId === t.id ? null : t.id; render(); },
-  "task-today": el => { const t = taskOf(el); if (!t.today && openTasks().filter(x => x.today).length >= 3) return toast("Trois, c'est le plafond. Termine ou retire-en une."); t.today = !t.today; board.save(); render(); },
+  "task-today": el => { const t = taskOf(el); try { setTaskToday(board.data.tasks, t.id, !t.today); } catch { return toast("Trois, c'est le plafond. Termine ou retire-en une."); } board.save(); render(); },
   "task-edit": el => taskForm(taskOf(el)),
   "task-del": async el => { const t = taskOf(el); if (await ask(`Supprimer « ${t.title} » ?`)) { board.data.tasks = board.data.tasks.filter(x => x !== t); board.save(); render(); } },
-  "task-undo": el => { const t = taskOf(el); t.done = false; t.doneAt = null; board.save(); render(); },
+  "task-undo": el => { setTaskDone(board.data.tasks, taskOf(el).id, false, todayISO()); board.save(); render(); },
   "task-new": () => taskForm(null),
   "task-pick": pickTask,
   "grp-filter": el => { const m = el.dataset.mod, g = el.dataset.g; gFilter[m] = gFilter[m] === g ? "" : g; render(); },
@@ -919,7 +973,7 @@ const CLICK = {
     const s = S(), it = s.inbox.items.find(x => x.id === idOf(el)), to = el.dataset.to;
     const drop = () => { s.inbox.items = s.inbox.items.filter(x => x !== it); site.save(); };
     if (to === "ecriture") { s.ecriture.fragments.push({ id: uid(), text: it.text, date: it.date }); drop(); render(); toast("Rangé dans les fragments."); }
-    else if (to === "chantier") { const t = { id: uid(), title: it.text, room: "", cat: "Bricolage", due: null, effort: 1, cost: null, note: "", today: false, done: false, doneAt: null, created: todayISO(), steps: [] }; board.data.tasks.push(t); board.save(); drop(); taskForm(t); }
+    else if (to === "chantier") { const t = addTask(board.data.tasks, { title: it.text }, uid(), todayISO()); board.save(); drop(); taskForm(t); }
     else if (to === "moth") { const p = { id: uid(), title: it.text, theme: "", due: "", status: "Idée", caption: "" }; s.moth.posts.push(p); drop(); render(); toast("Ajouté aux idées de posts."); }
     else if (to === "musique") { s.musique.albums.push({ id: uid(), artist: it.text, album: "", status: "À écouter", note: "" }); drop(); render(); toast("Ajouté à la musique."); }
   },
@@ -943,7 +997,7 @@ const CLICK = {
   "ch-del": async el => { const e = S().ecriture, i = +el.closest("[data-ci]").dataset.ci, c = e.chapters[i]; if (!await ask(`Supprimer « ${c.name} » ? Les mots déjà écrits passeront hors chapitre.`)) return; e.sessions.forEach(s => { if (s.chapter === c.id) s.chapter = ""; }); e.chapters.splice(i, 1); site.save(); render(); },
   "ch-up": el => { const a = S().ecriture.chapters, i = +el.closest("[data-ci]").dataset.ci; if (i > 0) { [a[i - 1], a[i]] = [a[i], a[i - 1]]; site.save(); render(); } },
   "bud-month": el => { const [y, mo] = budMonth.split("-").map(Number), d = new Date(y, mo - 1 + +el.dataset.d, 15); budMonth = iso(d).slice(0, 7); gFilter.budget = ""; render(); },
-  "bud-add": () => { const amt = Math.abs(+$("#bAmt").value); if (!amt) return toast("Un montant, même symbolique."); S().budget.entries.push({ id: uid(), type: $("#bType").value, amount: amt, cat: $("#bCat").value.trim(), note: $("#bNote").value.trim(), date: $("#bDate").value || todayISO() }); ["#bAmt", "#bNote"].forEach(s => $(s).value = ""); site.save(); render(); },
+  "bud-add": () => { const amt = Math.abs(+$("#bAmt").value); if (!Number.isFinite(amt) || !amt) return toast("Un montant, même symbolique."); try { addBudgetEntry(S().budget.entries, { amount: amt, type: $("#bType").value, cat: $("#bCat").value.trim(), note: $("#bNote").value.trim(), date: $("#bDate").value }, uid(), todayISO()); } catch (e) { return toast(e.message); } ["#bAmt", "#bNote"].forEach(s => $(s).value = ""); site.save(); render(); },
   "bud-del": el => { const b = S().budget; b.entries = b.entries.filter(e => e.id !== idOf(el)); site.save(); render(); },
   "env-add": () => { S().budget.envelopes.push({ id: uid(), name: "Nouvelle enveloppe", limit: 100 }); site.save(); render(); },
   "env-del": async el => { const b = S().budget, i = +el.closest("[data-vi]").dataset.vi; if (await ask(`Supprimer l'enveloppe « ${b.envelopes[i].name} » ? Les opérations restent.`)) { b.envelopes.splice(i, 1); site.save(); render(); } },
@@ -965,7 +1019,7 @@ document.addEventListener("click", e => { const a = e.target.closest("[data-act]
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
 document.addEventListener("change", e => {
   const el = e.target, act = el.dataset.act;
-  if (act === "task-done") { const t = taskOf(el); t.done = el.checked; t.doneAt = el.checked ? todayISO() : null; if (el.checked) t.today = false; board.save(); render(); if (el.checked) toast(doneLines[Math.floor(Math.random() * doneLines.length)]); }
+  if (act === "task-done") { setTaskDone(board.data.tasks, taskOf(el).id, el.checked, todayISO()); board.save(); render(); if (el.checked) toast(doneLines[Math.floor(Math.random() * doneLines.length)]); }
   else if (act === "task-step") { const t = taskOf(el); t.steps[+el.dataset.i].d = el.checked; board.save(); render(); }
   else if (act === "f-room") { roomFilter = el.value; render(); }
   else if (act === "f-cat") { catFilter = el.value; render(); }
