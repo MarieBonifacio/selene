@@ -2,7 +2,9 @@
 
 Tableau de bord personnel : chantier de l'appartement, pratique de kundalini, écriture, october.moth, Phidippus, musique et capture rapide, sous la lune du jour et une lisière de sapins.
 
-Aucune dépendance à installer. `selene.html` est la source (version claude.ai) ; `python3 build.py` en tire `index.html`, la version hébergée et installable sur iPhone (manifeste, icônes, service worker, politique de sécurité du contenu).
+Aucune dépendance de production à installer. La source éditable est dans `src/` : `shell.html` (interface), `store.js` (persistance), `backup.js` (sauvegarde) et `app.js` (application). `python3 build.py` génère `selene.html` pour claude.ai et `index.html` pour GitHub Pages. Ne modifie pas directement les HTML générés.
+
+Vérification locale : `python3 build.py --check` puis `node --test tests/*.test.js` (Node 22). [Plan de refactorisation](docs/refactoring.md).
 
 ## Publier avec GitHub Pages
 

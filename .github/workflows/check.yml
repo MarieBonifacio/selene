@@ -1,0 +1,17 @@
+name: Check
+on:
+  push:
+  pull_request:
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python3 build.py --check
+      - run: node --test tests/*.test.js
+      - run: node --check src/app.js
+      - run: node --check src/store.js
+      - run: node --check src/backup.js
