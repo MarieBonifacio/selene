@@ -200,21 +200,6 @@ input[type=checkbox],input[type=radio]{width:auto}
 
 <script>
 (() => {
-/* ================= utils ================= */
-const $ = s => document.querySelector(s);
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const uid = () => Math.random().toString(36).slice(2, 10);
-const iso = d => { const z = new Date(d); z.setMinutes(z.getMinutes() - z.getTimezoneOffset()); return z.toISOString().slice(0, 10); };
-const todayISO = () => iso(new Date());
-const addDaysTo = (s, n) => { const d = new Date(s + "T12:00"); d.setDate(d.getDate() + n); return iso(d); };
-const diffDays = (a, b) => Math.round((new Date(a + "T12:00") - new Date(b + "T12:00")) / 86400000);
-const fmt = (s, o = { day: "numeric", month: "short" }) => s ? new Date(s + "T12:00").toLocaleDateString("fr-FR", o) : "";
-const clone = o => JSON.parse(JSON.stringify(o));
-const ago = s => { if (!s) return "jamais"; const n = diffDays(todayISO(), s); return n === 0 ? "aujourd'hui" : n === 1 ? "hier" : `il y a ${n} j`; };
-function toast(msg) { const el = $("#toast"); el.textContent = msg; el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 3400); }
-function setSaving(t) { $("#saving").textContent = t; }
-
-/* ================= stores ================= */
 function makeStore(key, path, seed) {
   const s = { db: null, timer: null };
   try { const v = localStorage.getItem(key); s.data = v ? JSON.parse(v) : seed(); } catch { s.data = seed(); }
@@ -247,6 +232,59 @@ function makeStore(key, path, seed) {
   };
   return s;
 }
+
+/* Backup contract v1. Keep the existing format and browser storage keys stable. */
+const record = value => value !== null && typeof value === "object" && !Array.isArray(value);
+const collection = (value, name) => {
+  if (!Array.isArray(value) || value.some(item => !record(item))) throw new Error(`${name} invalide`);
+};
+function parseBackup(text) {
+  if (typeof text !== "string" || text.length > 5_000_000) throw new Error("Sauvegarde trop volumineuse");
+  const data = JSON.parse(text);
+  if (!record(data) || data.format !== "selene-v1" || !record(data.board) || !record(data.site)) throw new Error("Format de sauvegarde invalide");
+  const { board, site } = data;
+  collection(board.tasks, "Tâches");
+  if (board.tasks.some(t => typeof t.id !== "string" || typeof t.title !== "string" ||
+      (t.steps != null && (!Array.isArray(t.steps) || t.steps.some(s => !record(s) || typeof s.t !== "string"))))) throw new Error("Tâche invalide");
+  if (!record(site.config) || (site.config.modules != null &&
+      (!Array.isArray(site.config.modules) || site.config.modules.some(m => !record(m) || typeof m.id !== "string" || typeof m.on !== "boolean"))) ||
+      (site.config.groups != null && !record(site.config.groups)) ||
+      (site.config.labels != null && !record(site.config.labels)) ||
+      (site.config.assistant != null && (!record(site.config.assistant) ||
+        (site.config.assistant.share != null && !record(site.config.assistant.share))))) throw new Error("Configuration invalide");
+  const sections = {
+    budget: ["entries", "envelopes"], kundalini: ["sessions"],
+    ecriture: ["chapters", "sessions", "fragments"], moth: ["posts"],
+    phidippus: ["log"], musique: ["albums"], inbox: ["items"]
+  };
+  for (const [name, fields] of Object.entries(sections)) {
+    if (site[name] == null) continue; // Older v1 exports are filled by S().
+    if (!record(site[name])) throw new Error(`${name} invalide`);
+    for (const field of fields) if (site[name][field] != null) collection(site[name][field], `${name}.${field}`);
+  }
+  for (const state of [board, site]) if (state.updatedAt != null &&
+      (typeof state.updatedAt !== "number" || !Number.isFinite(state.updatedAt) || state.updatedAt < 0)) throw new Error("Date de modification invalide");
+  return { board, site };
+}
+function createBackup(boardData, siteData, exportedAt = new Date().toISOString()) {
+  return JSON.stringify({ format: "selene-v1", exportedAt, board: boardData, site: siteData }, null, 2);
+}
+
+/* ================= utils ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => Math.random().toString(36).slice(2, 10);
+const iso = d => { const z = new Date(d); z.setMinutes(z.getMinutes() - z.getTimezoneOffset()); return z.toISOString().slice(0, 10); };
+const todayISO = () => iso(new Date());
+const addDaysTo = (s, n) => { const d = new Date(s + "T12:00"); d.setDate(d.getDate() + n); return iso(d); };
+const diffDays = (a, b) => Math.round((new Date(a + "T12:00") - new Date(b + "T12:00")) / 86400000);
+const fmt = (s, o = { day: "numeric", month: "short" }) => s ? new Date(s + "T12:00").toLocaleDateString("fr-FR", o) : "";
+const clone = o => JSON.parse(JSON.stringify(o));
+const ago = s => { if (!s) return "jamais"; const n = diffDays(todayISO(), s); return n === 0 ? "aujourd'hui" : n === 1 ? "hier" : `il y a ${n} j`; };
+function toast(msg) { const el = $("#toast"); el.textContent = msg; el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 3400); }
+function setSaving(t) { $("#saving").textContent = t; }
+
+/* ================= stores ================= */
 
 const MODULE_DEFS = {
   chantier: "Chantier", kundalini: "Kundalini", ecriture: "Écriture",
@@ -924,7 +962,7 @@ const CLICK = {
   "chat-clear": async () => { if (await ask("Effacer la conversation ?")) { chatLog.set([]); render(); } },
   "as-forget": () => { try { localStorage.removeItem("selene-api-key"); } catch {} render(); toast("Clé oubliée sur cet appareil."); },
   "exp": async () => {
-    const data = JSON.stringify({ format: "selene-v1", exportedAt: new Date().toISOString(), board: board.data, site: site.data }, null, 2), filename = `selene-${todayISO()}.json`;
+    const data = createBackup(board.data, site.data), filename = `selene-${todayISO()}.json`;
     if (downloadsNS) { try { await downloadsNS.save({ filename, data }); } catch (e) { toast("Export annulé."); } return; }
     try { const file = new File([data], filename, { type: "application/json" }); if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "Sauvegarde Selene" }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([data], { type: "application/json" })); a.download = filename; document.body.appendChild(a); a.click(); a.remove();
@@ -967,7 +1005,7 @@ document.addEventListener("change", e => {
   else if (act === "as-share") { S().config.assistant.share[el.dataset.k] = el.checked; site.save(); render(); }
   else if (act === "imp") {
     const f = el.files && el.files[0]; if (!f) return;
-    f.text().then(async t => { const d = JSON.parse(t); if (d.format !== "selene-v1" || !d.board || !Array.isArray(d.board.tasks) || !d.site || typeof d.site.config !== "object") throw new Error(); if (!await ask("Remplacer tout l'état actuel par celui du fichier ?")) return; board.data = d.board; site.data = d.site; el.value = ""; board.save(); site.save(); render(); toast("Importé. Rien ne s'est perdu en route, a priori."); }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene."));
+    f.text().then(async t => { const d = parseBackup(t); if (!await ask("Remplacer tout l'état actuel par celui du fichier ?")) return; board.data = d.board; site.data = d.site; board.save(); site.save(); render(); toast("Sauvegarde importée."); }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene.")).finally(() => { el.value = ""; });
   }
   else if (act === "ch-name" || act === "ch-goal") { const c = S().ecriture.chapters[+el.closest("[data-ci]").dataset.ci]; if (act === "ch-name") c.name = el.value.trim() || c.name; else c.goal = Math.max(0, +el.value || 0); site.save(); el.blur(); render(); }
   else if (act === "mod-on") { S().config.modules[+el.closest("[data-i]").dataset.i].on = el.checked; site.save(); render(); }
