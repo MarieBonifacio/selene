@@ -8,6 +8,8 @@
      alerts(id, inst, now) rappels du bloc « Aujourd'hui » : [{ text (HTML), href? , quick? }]
      context(inst, name)   paragraphe envoyé à l'assistant (texte brut)
      add(id, inst)         bouton « noter / ajouter » (data-act="entry-add")
+     accept(id, inst, note) recevoir une note triée depuis un module Notes ; canAccept(inst) pour conditionner
+     badge(inst)           nombre affiché à côté du nom dans la navigation
      click / change        actions propres au type, fusionnées dans CLICK / CHANGE */
 
 const lastOf = (inst, type) => inst.entries.filter(x => x.type === type).map(x => x.date).sort().pop();
@@ -105,6 +107,8 @@ const TYPE_UI = {
       const c = inst.config;
       return `\n${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur ${c.goal}.${c.categories.length ? ` ${c.categoryLabel}s : ${c.categories.map(x => x.name).join(", ")}.` : ""}${c.scraps ? ` Derniers ${c.scrapsLabel.toLowerCase()} : ${inst.scraps.slice(-3).map(f => f.text.slice(0, 200)).join(" / ") || "aucun"}` : ""}`;
     },
+    canAccept: inst => !!inst.config.scraps,
+    accept: (id, inst, note) => { inst.scraps.push({ id: uid(), text: note.text, date: note.date }); },
     add(id, inst) {
       const v = +$("#cumIn").value; if (!v) return;
       addJournalEntry(inst, { date: todayISO(), value: v, category: $("#cumCat") ? $("#cumCat").value : "" }, uid(), todayISO());
@@ -145,6 +149,7 @@ const TYPE_UI = {
       const l = lastOf(inst, t.id);
       return !l || diffDays(now, l) >= t.every ? [{ text: `${esc(t.label)} : ${esc(label(id))} (${ago(l)})`, href: `#${id}` }] : [];
     }),
+    accept: (id, inst, note) => { addJournalEntry(inst, { date: note.date, type: "note", note: note.text }, uid(), todayISO()); },
     context(inst, nm) {
       const c = inst.config;
       return `\n${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map(t => `${t.label.toLowerCase()} ${lastOf(inst, t.id) || "jamais"}`).join(", ")}.`;
@@ -212,6 +217,7 @@ TYPE_UI.collection = {
     <div style="margin-top:10px"><span class="hint" style="margin:0">${esc(c.statusLabel)}s, dans l'ordre</span>${c.statuses.map((st, i) => `<div class="set" data-si="${i}" style="grid-template-columns:1fr auto"><input data-act="st-name" data-mod="${fid}" value="${esc(st)}" aria-label="Nom du statut"><div class="row"><button class="btn ghost sm" data-act="st-up" data-mod="${fid}" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="st-del" data-mod="${fid}">suppr.</button></div></div>`).join("")}<button class="btn sm" data-act="st-add" data-mod="${fid}" style="margin-top:8px">Ajouter un statut</button></div>
     <div class="field-row" style="margin-top:10px"><label>Compte comme fait à partir de<select data-act="col-done" data-mod="${fid}">${c.statuses.map((st, i) => i ? `<option value="${i}" ${c.doneFrom === i ? "selected" : ""}>${esc(st)}</option>` : "").join("")}</select></label><span></span></div>`;
   },
+  accept: (id, inst, note) => { saveCollectionItem(inst, { title: note.text }, uid()); },
   summary: (id, inst) => inst.config.statuses.map(st => [st, inst.entries.filter(e => e.status === st).length]).filter(([, n]) => n).map(([st, n]) => `${esc(st)} : ${n}`).join(", ") || "Vide",
   context(inst, nm) {
     const c = inst.config;
@@ -260,6 +266,54 @@ TYPE_UI.collection = {
       if (c.statuses.includes(to)) { toast(`« ${to} » existe déjà.`); return render(); }
       c.statuses[i] = to; inst.entries.forEach(e => { if (e.status === from) e.status = to; });
       site.save(); el.blur(); render();
+    }
+  }
+};
+/* ---- notes : textes datés ; l'une des boîtes reçoit la capture rapide de l'accueil ---- */
+/* Où une note peut être rangée : les modules actifs qui savent la recevoir, dans l'ordre de la navigation.
+   Le Chantier (module encore fixe) reçoit une tâche. */
+function noteTargets(fromId) {
+  const s = S();
+  return s.config.modules.filter(m => m.on && m.id !== fromId).map(m => m.id).filter(id => {
+    if (id === "chantier" && Object.hasOwn(MODULE_DEFS, "chantier")) return true;
+    const inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null, ui = inst && TYPE_UI[inst.type];
+    return ui && ui.accept && (!ui.canAccept || ui.canAccept(inst));
+  });
+}
+TYPE_UI.notes = {
+  view(id) {
+    const inst = S().modules[id], c = inst.config, targets = noteTargets(id);
+    return `<div data-mod="${esc(id)}"><h2>${esc(label(id))}</h2>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}
+  <div class="capture" style="margin-bottom:18px"><input id="noteIn" placeholder="${esc(c.placeholder)}" aria-label="Nouvelle note"><button class="btn acc" data-act="note-add">Garder</button></div>
+  <ul class="plain">${[...inst.entries].reverse().map(x => `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}</div>
+    ${targets.length ? `<div class="row" style="margin-top:6px">${targets.map(k => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
+    <button class="btn ghost sm" data-act="note-del">suppr.</button></li>`).join("") || `<li class="empty">${c.inbox ? "Vide. Le silence d'une clairière, ou celui d'un cerveau." : "Rien pour l'instant."}</li>`}</ul></div>`;
+  },
+  settings: (id, { config: c }) => `<label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="notes-inbox" data-mod="${esc(id)}" ${c.inbox ? "checked" : ""}>Boîte de réception : reçoit la capture rapide de l'accueil</label>
+    <div class="field-row" style="margin-top:8px"><label>Description<input data-set-mod="${esc(id)}.description" value="${esc(c.description)}" placeholder="Une phrase sous le titre"></label><label>Texte d'invite<input data-set-mod="${esc(id)}.placeholder" value="${esc(c.placeholder)}" required></label></div>`,
+  summary: (id, inst) => inst.config.inbox ? `${inst.entries.length} à trier` : plural(inst.entries.length, "note"),
+  context: (inst, nm) => `\n${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map(x => x.text).join(" ; ") || "vide"}`,
+  badge: inst => inst.config.inbox ? inst.entries.length : 0,
+  accept: (id, inst, note) => { addCapture(inst.entries, note.text, uid(), note.date); },
+  click: {
+    "note-add": el => {
+      const inp = $("#noteIn"); if (!inp || !inp.value.trim()) return;
+      addCapture(S().modules[modOf(el)].entries, inp.value, uid(), todayISO()); inp.value = ""; site.save(); render();
+    },
+    "note-del": el => { const inst = S().modules[modOf(el)]; inst.entries = inst.entries.filter(x => x.id !== idOf(el)); site.save(); render(); },
+    "note-to": el => {
+      const s = S(), src = s.modules[modOf(el)], note = src.entries.find(x => x.id === idOf(el)), to = el.dataset.to;
+      const drop = () => { src.entries = src.entries.filter(x => x !== note); site.save(); };
+      if (to === "chantier" && Object.hasOwn(MODULE_DEFS, "chantier")) { const t = addTask(board.data.tasks, { title: note.text }, uid(), todayISO()); board.save(); drop(); taskForm(t); return; }
+      const target = s.modules[to];
+      TYPE_UI[target.type].accept(to, target, note); drop(); render(); toast(`Rangé dans ${label(to)}.`);
+    }
+  },
+  change: {
+    "notes-inbox": el => {
+      const id = el.dataset.mod;
+      for (const [k, inst] of Object.entries(S().modules)) if (inst.type === "notes") inst.config.inbox = el.checked ? k === id : (k === id ? false : inst.config.inbox);
+      site.save(); render();
     }
   }
 };

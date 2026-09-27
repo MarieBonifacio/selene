@@ -142,11 +142,11 @@ test('an outdated app never merges into data written by a newer schema', async (
   const { server, a } = await twoDevices();
   server.rows.get('u1').site.schemaVersion = 99; // un appareil déjà mis à jour vers un futur format
   const patches = server.calls.filter(c => c.startsWith('PATCH')).length;
-  a.site.data.inbox.items.push({ id: 'i1', text: 'x', date: '2026-09-27' }); a.site.save(); clearTimeout(a.site.timer); a.site.timer = null;
+  a.site.data.modules.inbox.entries.push({ id: 'i1', text: 'x', date: '2026-09-27' }); a.site.save(); clearTimeout(a.site.timer); a.site.timer = null;
   assert.equal(await a.site.sync(), false);
   assert.equal(server.calls.filter(c => c.startsWith('PATCH')).length, patches, 'nothing written');
   assert.match(a.nodes.get('#saving').textContent, /recharge la page/);
-  assert.equal(JSON.parse(a.storage.get('selene-site-v1')).inbox.items.length, 1, 'local edit kept for later');
+  assert.equal(JSON.parse(a.storage.get('selene-site-v1')).modules.inbox.entries.length, 1, 'local edit kept for later');
 });
 
 test('signing out removes the chat history and the API key from the device', async () => {

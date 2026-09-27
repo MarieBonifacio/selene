@@ -29,7 +29,7 @@ function launch(storage, { claude = null } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture };\n})();');
   vm.runInNewContext(instrumented, context);
   return { ...context.__test, nodes, location, document };
 }
@@ -172,7 +172,7 @@ test('journal entries reject non-numeric values instead of storing NaN', () => {
   assert.equal(d.modules.kundalini.entries.length, 0);
   app.addJournalEntry(d.modules.ecriture, { date: '2026-09-27', value: -300 }, 'e2', '2026-09-27'); // retirer des mots coupés
   assert.equal(d.modules.ecriture.entries[0].value, -300);
-  assert.equal(d.schemaVersion, 3);
+  assert.equal(d.schemaVersion, app.SCHEMA_VERSION);
 });
 
 test('type registries: the pure and the UI halves declare exactly the same types', () => {
@@ -250,7 +250,7 @@ const schema2 = () => ({
 test('format 2 → 3: october.moth and Musique become collections without losing anything', () => {
   const app = launch(new Map([['selene-site-v1', JSON.stringify(schema2())]]));
   const d = app.S();
-  assert.equal(d.schemaVersion, 3);
+  assert.equal(d.schemaVersion, app.SCHEMA_VERSION);
   assert.equal(d.moth, undefined); assert.equal(d.musique, undefined);
   const moth = d.modules.moth, mus = d.modules.musique;
   assert.equal(moth.type, 'collection'); assert.equal(moth.config.display, 'colonnes');
@@ -314,4 +314,50 @@ test('backup: collections are validated (statuses, dates) but need no journal da
     const y = JSON.parse(JSON.stringify(d)); mutate(y);
     assert.throws(() => app.parseBackup(JSON.stringify(y)));
   }
+});
+
+test('format 3 → 4: the Capture becomes the designated Notes inbox, items and privacy kept', () => {
+  const doc = schema2(); doc.inbox = { items: [{ id: 'i1', text: 'acheter des clous', date: '2026-09-20' }] };
+  doc.config.labels.inbox = 'Vrac'; doc.config.assistant.share.inbox = false;
+  const app = launch(new Map([['selene-site-v1', JSON.stringify(doc)]]));
+  const d = app.S(), inbox = d.modules.inbox;
+  assert.equal(d.inbox, undefined);
+  assert.equal(inbox.type, 'notes'); assert.equal(inbox.config.inbox, true); assert.equal(inbox.label, 'Vrac');
+  assert.equal(inbox.entries[0].text, 'acheter des clous');
+  assert.equal(app.inboxId(d.modules), 'inbox');
+  assert.equal(d.config.assistant.share.inbox, false);
+});
+
+test('only one inbox survives, even when two devices each designated one', () => {
+  const app = launch(new Map());
+  const d = JSON.parse(JSON.stringify(app.site.data));
+  d.modules.vrac = { type: 'notes', label: 'Vrac', config: { inbox: true, description: '', placeholder: '…' }, entries: [] };
+  app.site.replaceAll(d);
+  const inboxes = Object.values(app.S().modules).filter(m => m.type === 'notes' && m.config.inbox);
+  assert.equal(inboxes.length, 1);
+});
+
+test('a note can be filed into any module that accepts it, and nowhere else', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  const targets = app.noteTargets('inbox');
+  for (const id of ['chantier', 'ecriture', 'moth', 'musique', 'phidippus']) assert.ok(targets.includes(id), id);
+  assert.ok(!targets.includes('kundalini'), 'a programme does not take free notes');
+  assert.ok(!targets.includes('inbox'), 'not into itself');
+  d.modules.ecriture.config.scraps = false;
+  assert.ok(!app.noteTargets('inbox').includes('ecriture'), 'a counter without a notebook does not either');
+  // Ranger une note dans Phidippus : elle devient une observation de son journal et quitte la boîte.
+  app.addCapture(d.modules.inbox.entries, 'toile neuve', 'n1', '2026-09-27');
+  const el = { dataset: { to: 'phidippus' }, closest: sel => sel === '[data-mod]' ? { dataset: { mod: 'inbox' } } : sel === '[data-id]' ? { dataset: { id: 'n1' } } : null };
+  app.CLICK['note-to'](el);
+  assert.equal(d.modules.inbox.entries.length, 0);
+  assert.equal(d.modules.phidippus.entries.at(-1).note, 'toile neuve');
+  assert.equal(d.modules.phidippus.entries.at(-1).type, 'note');
+});
+
+test('without an inbox, the assistant loses its capture tool instead of failing', () => {
+  const app = launch(new Map());
+  assert.ok(app.availableTools().some(t => t.name === 'capturer'));
+  app.S().modules.inbox.config.inbox = false;
+  assert.ok(!app.availableTools().some(t => t.name === 'capturer'));
 });

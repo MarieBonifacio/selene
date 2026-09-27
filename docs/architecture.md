@@ -43,8 +43,9 @@ Deux documents JSON par personne, chacun géré par un store (`makeStore`) :
 - `site` (clé `selene-site-v1`) : tout le reste — configuration, budget, moth, musique, capture et
   les **modules génériques** sous `modules`.
 
-`site.schemaVersion` vaut 3 (1 = anciennes sections `kundalini`, `ecriture`, `phidippus` à la racine ;
-2 = modules génériques ; 3 = october.moth et Musique deviennent des collections). Chaque ancienne section
+`site.schemaVersion` vaut 4 (1 = anciennes sections `kundalini`, `ecriture`, `phidippus` à la racine ;
+2 = modules génériques ; 3 = october.moth et Musique deviennent des collections ; 4 = la Capture devient
+un module Notes). Chaque ancienne section
 est convertie par `SECTION_TO_MODULE` (`domain.js`) ; si une ancienne version de l'app la réécrit après
 coup, ses entrées absentes sont absorbées dans le module au lieu d'être perdues. Une version de l'app qui lit un numéro plus grand que le sien
 refuse de fusionner et d'écrire (« recharge la page ») ; un import plus récent est refusé.
@@ -59,10 +60,17 @@ Un module absent n'est jamais recréé : il a été supprimé exprès.
 ### Modules
 
 - **Génériques** (`site.modules[id] = { type, label, config, entries, scraps? }`) : instances d'un
-  type du registre (programme, cumul, rappels, collection). Kundalini, Écriture, Phidippus,
-  october.moth et Musique en sont ; on peut en créer et en supprimer.
-- **Encore fixes** (`MODULE_DEFS`) : chantier, budget et capture, en cours de généralisation (types
-  Tâches, Budget et Notes) ; l'assistant restera une fonction système, comme les Réglages.
+  type du registre (programme, cumul, rappels, collection, notes). Kundalini, Écriture, Phidippus,
+  october.moth, Musique et la Capture en sont ; on peut en créer et en supprimer.
+- **Encore fixes** (`MODULE_DEFS`) : chantier et budget, en cours de généralisation (types Tâches et
+  Budget) ; l'assistant restera une fonction système, comme les Réglages.
+
+**Boîte de réception** : le module Notes marqué `config.inbox` (un seul à la fois, garanti par
+`normalizeSite`, y compris après une fusion entre appareils) reçoit la capture rapide de l'accueil et
+l'outil `capturer` de l'assistant. Sans boîte, l'accueil l'explique et l'outil disparaît.
+
+**Ranger une note** : chaque type qui peut recevoir une note déclare `accept` (et `canAccept` s'il
+faut une condition, comme le carnet d'un cumul) ; `noteTargets()` en déduit les boutons « → module ».
 
 Le regroupement en pourcentage d'un module passe par `grouperFor(id)` : `GROUPERS` pour un module
 fixe, `TYPE_UI[type].grouper(inst)` pour une instance (réglage stocké dans `inst.config.groups`).

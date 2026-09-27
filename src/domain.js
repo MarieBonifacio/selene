@@ -54,10 +54,11 @@ function addBudgetEntry(entries, input, id, defaultDate) {
 
 /* ---- modules génériques ---- */
 /* Version du format des données du site. 1 = sections en dur (kundalini, ecriture, phidippus à la racine),
-   2 = modules génériques sous `modules`, 3 = october.moth et Musique deviennent des collections.
+   2 = modules génériques sous `modules`, 3 = october.moth et Musique deviennent des collections,
+   4 = la Capture devient un module Notes.
    Une version de l'app qui lit un numéro plus grand que le sien ne doit ni fusionner ni écrire :
    elle ne connaît pas la forme de ces données. */
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 /* Anciennes sections à la racine du document → instances de module. Chaque conversion reçoit l'ancienne
    section, le nom personnalisé et le réglage de regroupement éventuels. Sert aussi aux données de départ. */
 const SECTION_TO_MODULE = {
@@ -91,6 +92,11 @@ const SECTION_TO_MODULE = {
       fields: { title: "Artiste", subtitle: "Album", tag: "", due: "", text: "Note" },
       groups: { on: true, sort: "name", hideDone: false, title: "", ...(groups || {}), by: "title" } },
     entries: (old.albums || []).map(a => ({ id: a.id, title: a.artist || "", subtitle: a.album || "", tag: "", due: "", text: a.note || "", status: a.status }))
+  }),
+  inbox: (old, name) => ({
+    type: "notes", label: name || "Capture",
+    config: { inbox: true, description: "Tout ce qui traîne dans ta tête, en attendant d'avoir une place.", placeholder: "Une idée, une course, un rêve…" },
+    entries: (old.items || []).map(x => ({ id: x.id, text: x.text, date: x.date }))
   })
 };
 /* Ne recrée jamais un module manquant : un module absent chez un site existant a été supprimé exprès.
@@ -144,6 +150,19 @@ const MODULE_TYPES = {
     entry: (e, input) => { e.type = input.type || "note"; },
     validate(inst, v) { if (inst.config.types != null) v.list(inst.config.types, "types").forEach(x => v.num(x.every, "fréquence", 0, 3650)); }
   },
+  notes: {
+    label: "Notes (textes datés, à garder ou à trier)",
+    defaults: () => ({ config: { inbox: false, description: "", placeholder: "Une note…" }, entries: [] }),
+    entry: (e, input) => { e.text = requireText(input.text ?? input.note, "Note", 2000); delete e.note; },
+    normalize(inst) {
+      const def = MODULE_TYPES.notes.defaults().config;
+      for (const k of Object.keys(def)) if (inst.config[k] == null) inst.config[k] = def[k];
+    },
+    validate(inst, v) {
+      if (inst.config.inbox != null && typeof inst.config.inbox !== "boolean") v.fail("boîte de réception");
+      for (const e of inst.entries) if (typeof e.text !== "string") v.fail("texte");
+    }
+  },
   collection: {
     label: "Collection (éléments à statuts, en colonnes ou en liste)",
     datedEntries: false, // un élément n'a pas de date de journal ; `due` est facultative
@@ -174,6 +193,8 @@ const MODULE_TYPES = {
     }
   }
 };
+/* Une seule boîte de réception à la fois : c'est elle que remplit la capture rapide de l'accueil. */
+const inboxId = modules => Object.keys(modules).find(k => modules[k].type === "notes" && modules[k].config.inbox) || null;
 /* Crée ou met à jour un élément de collection. Un champ désactivé (absent du formulaire) garde sa valeur. */
 function saveCollectionItem(inst, input, id) {
   const c = inst.config, item = inst.entries.find(x => x.id === id) || null, keep = f => input[f] ?? (item ? item[f] : "");

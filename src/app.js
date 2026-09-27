@@ -15,7 +15,7 @@ function setSaving(t) { $("#saving").textContent = t; }
 /* ================= stores ================= */
 
 const MODULE_DEFS = {
-  chantier: "Chantier", budget: "Budget", assistant: "Assistant", inbox: "Capture"
+  chantier: "Chantier", budget: "Budget", assistant: "Assistant"
 };
 const MODULE_ORDER = ["chantier", "kundalini", "ecriture", "moth", "phidippus", "musique", "budget", "assistant", "inbox"];
 const OFF_BY_DEFAULT = ["assistant"];
@@ -28,7 +28,8 @@ function siteSeed() {
     phidippus: { type: "rappels", label: "Phidippus", config: { subtitle: "", types: [{ id: "repas", label: "Repas", every: 6 }, { id: "brumisation", label: "Brumisation", every: 3 }, { id: "mue", label: "Mue", every: 0 }] }, entries: [] },
     moth: SECTION_TO_MODULE.moth({ posts: [] }),
     musique: SECTION_TO_MODULE.musique({ albums: ["Ulver", "Dead Can Dance", "Kate Bush", "Jonathan Hultén", "Chelsea Wolfe", "Zola Jesus", "iamamiwhoami"]
-      .map(a => ({ id: uid(), artist: a, album: "", status: "À écouter", note: "" })) })
+      .map(a => ({ id: uid(), artist: a, album: "", status: "À écouter", note: "" })) }),
+    inbox: SECTION_TO_MODULE.inbox({ items: [] })
   };
   return {
     updatedAt: 0, schemaVersion: SCHEMA_VERSION,
@@ -36,8 +37,7 @@ function siteSeed() {
       modules: MODULE_ORDER.map(id => ({ id, on: !OFF_BY_DEFAULT.includes(id) })),
       assistant: { model: "claude-sonnet-5", actions: true, share: { chantier: true, kundalini: true, ecriture: true, moth: true, phidippus: true, musique: true, budget: false, inbox: true } } },
     budget: { entries: [], envelopes: [["Travaux", 500], ["Courses", 300], ["Loisirs", 100], ["Abonnements", 50]].map(([name, limit]) => ({ id: uid(), name, limit })) },
-    modules,
-    inbox: { items: [] }
+    modules
   };
 }
 /* ================= moon ================= */
@@ -141,6 +141,8 @@ function normalizeSite(d) {
   for (const [mod, g] of Object.entries(GROUPERS)) d.config.groups[mod] = { on: true, by: Object.keys(g.fields)[0], sort: "name", hideDone: false, title: "", ...(d.config.groups[mod] || {}) };
   for (const k of Object.keys(seed)) if (k !== "modules" && typeof seed[k] === "object" && !Array.isArray(seed[k])) for (const f of Object.keys(seed[k])) if (d[k][f] == null) d[k][f] = seed[k][f];
   for (const inst of Object.values(d.modules)) if (Object.hasOwn(MODULE_TYPES, inst.type) && MODULE_TYPES[inst.type].normalize) MODULE_TYPES[inst.type].normalize(inst);
+  const inbox = inboxId(d.modules); // une seule boîte de réception, même après une fusion entre appareils
+  for (const [id, inst] of Object.entries(d.modules)) if (inst.type === "notes" && inst.config.inbox && id !== inbox) inst.config.inbox = false;
   return d;
 }
 const board = makeStore("selene-board-v1", "board/state", () => ({ updatedAt: 0, tasks: [] }));
@@ -261,7 +263,8 @@ VIEWS.accueil = () => {
   const tod = openTasks().filter(t => t.today).slice(0, 3);
   const alerts = [];
   for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) alerts.push(...TYPE_UI[inst.type].alerts(id, inst, now));
-  const rows = s.config.modules.filter(x => x.on && x.id !== "inbox").map(x => `<a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}</span><em class="hint" style="margin:0">ouvrir</em></a>`).join("");
+  const inbox = inboxId(s.modules), pending = inbox ? s.modules[inbox].entries.length : 0;
+  const rows = s.config.modules.filter(x => x.on && x.id !== inbox).map(x => `<a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}</span><em class="hint" style="margin:0">ouvrir</em></a>`).join("");
   return `
   <section class="hero">${forestSVG(m.p)}<div class="txt">
     <div class="phase">${m.name}</div>
@@ -276,8 +279,9 @@ VIEWS.accueil = () => {
       ${!tod.length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : ""}
     </section>
     <section><h2>Capturer</h2><p class="hint">Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.</p>
-      <div class="capture"><input id="capIn" placeholder="Une idée, une course, un rêve…" aria-label="Capture rapide"><button class="btn acc" data-act="cap-add">Garder</button></div>
-      ${s.inbox.items.length ? `<p class="hint" style="margin-top:8px"><a href="#inbox">${s.inbox.items.length} élément${s.inbox.items.length > 1 ? "s" : ""} à trier</a></p>` : ""}
+      ${inbox ? `<div class="capture"><input id="capIn" placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="Capture rapide"><button class="btn acc" data-act="cap-add">Garder</button></div>
+      ${pending ? `<p class="hint" style="margin-top:8px"><a href="#${esc(inbox)}">${pending} élément${pending > 1 ? "s" : ""} à trier</a></p>` : ""}`
+      : `<p class="hint">Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans <a href="#reglages">Réglages</a>.</p>`}
     </section>
   </div>
   <section><h2>Où en sont les choses</h2>${rows}</section>`;
@@ -286,8 +290,7 @@ VIEWS.accueil = () => {
 const SUMMARY = {
   chantier: () => { const o = openTasks(), now = todayISO(), late = o.filter(t => t.due && t.due < now).length; const all = board.data.tasks.length; return `${late ? `<span class="late">${late} en retard</span>, ` : ""}${o.length} à faire, ${all ? Math.round(100 * (all - o.length) / all) : 0} % du chantier`; },
   budget: () => { const m = todayISO().slice(0, 7), es = S().budget.entries.filter(e => (e.date || "").slice(0, 7) === m); const out = es.filter(e => e.type === "dépense").reduce((a, e) => a + +e.amount, 0), inn = es.filter(e => e.type === "revenu").reduce((a, e) => a + +e.amount, 0); return `Ce mois-ci : ${money(out)} dépensés, solde <span class="${inn - out < 0 ? "neg" : "pos"}">${money(inn - out)}</span>`; },
-  assistant: () => { const b = backend(); return b === "sample" ? "Branché via claude.ai" : b === "api" ? "Branché via ta clé API" : "Pas encore branché"; },
-  inbox: () => `${S().inbox.items.length} à trier`
+  assistant: () => { const b = backend(); return b === "sample" ? "Branché via claude.ai" : b === "api" ? "Branché via ta clé API" : "Pas encore branché"; }
 };
 function summaryFor(id) {
   const inst = Object.hasOwn(S().modules, id) ? S().modules[id] : null;
@@ -322,14 +325,6 @@ VIEWS.chantier = () => {
   </aside></div>`;
 };
 
-VIEWS.inbox = () => {
-  const it = S().inbox.items;
-  return `<h2>${esc(label("inbox"))}</h2><p class="hint">Tout ce qui traîne dans ta tête, en attendant d'avoir une place.</p>
-  <div class="capture" style="margin-bottom:18px"><input id="capIn" placeholder="Une idée, une course, un rêve…" aria-label="Capture rapide"><button class="btn acc" data-act="cap-add">Garder</button></div>
-  <ul class="plain">${[...it].reverse().map(x => `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}</div>
-    <div class="row" style="margin-top:6px">${enabled("chantier") ? `<button class="btn sm" data-act="cap-to" data-to="chantier">→ Chantier</button>` : ""}${enabled("ecriture") ? `<button class="btn sm" data-act="cap-to" data-to="ecriture">→ Fragment</button>` : ""}${Object.entries(S().modules).filter(([k, m]) => m.type === "collection" && enabled(k)).map(([k]) => `<button class="btn sm" data-act="cap-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div></div>
-    <button class="btn ghost sm" data-act="cap-del">suppr.</button></li>`).join("") || `<li class="empty">Vide. Le silence d'une clairière, ou celui d'un cerveau.</li>`}</ul>`;
-};
 
 
 VIEWS.budget = () => {
@@ -421,8 +416,9 @@ function render() {
   document.title = s.config.name || "Selene";
   $("#miniMoon").innerHTML = moonSVG(m.p, 40);
   $("#dateline").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
+  const badge = id => { const m = Object.hasOwn(s.modules, id) && s.modules[id], n = m && TYPE_UI[m.type].badge ? TYPE_UI[m.type].badge(m) : 0; return n ? ` (${n})` : ""; };
   const links = [["accueil", "Accueil"], ...s.config.modules.filter(x => x.on).map(x => [x.id, label(x.id)]), ["reglages", "Réglages"]];
-  $("#nav").innerHTML = links.map(([id, l]) => `<a href="#${esc(id)}" class="${id === view ? "on" : ""}">${esc(l)}${id === "inbox" && s.inbox.items.length ? ` (${s.inbox.items.length})` : ""}</a>`).join("");
+  $("#nav").innerHTML = links.map(([id, l]) => `<a href="#${esc(id)}" class="${id === view ? "on" : ""}">${esc(l)}${badge(id)}</a>`).join("");
   // Les champs des Réglages n'ont pas d'id (donc pas de restauration ci-dessous) : tant que l'un d'eux
   // a le focus, ne pas redessiner, sinon une synchro arrivant pendant la frappe effacerait la saisie.
   const ae = document.activeElement, typing = ae && ae.closest && ae.closest("#main") &&
@@ -443,7 +439,8 @@ const taskOf = el => { const li = el.closest("[data-task]"); return (li && board
 const idOf = el => el.closest("[data-id]")?.dataset.id;
 function capture() {
   const inp = $("#capIn"); if (!inp || !inp.value.trim()) return;
-  addCapture(S().inbox.items, inp.value, uid(), todayISO()); site.save(); inp.value = ""; render(); toast("Gardé. Tu peux oublier, c'est écrit.");
+  const id = inboxId(S().modules); if (!id) return toast("Aucune boîte de réception : voir Réglages.");
+  addCapture(S().modules[id].entries, inp.value, uid(), todayISO()); site.save(); inp.value = ""; render(); toast("Gardé. Tu peux oublier, c'est écrit.");
 }
 function pickTask() {
   const o = openTasks().filter(t => !t.today);
@@ -468,14 +465,6 @@ const CLICK = {
   "grp-filter": el => { const m = el.dataset.mod, g = el.dataset.g; gFilter[m] = gFilter[m] === g ? "" : g; render(); },
   "goto-groups": el => { const id = "mreg-" + el.dataset.mod; if (location.hash === "#reglages") { const d = document.getElementById(id); if (d) { d.open = true; d.scrollIntoView(); } } else sessionStorage.setItem("selene-scroll", id); },
   "cap-add": capture,
-  "cap-del": el => { const s = S(); s.inbox.items = s.inbox.items.filter(x => x.id !== idOf(el)); site.save(); render(); },
-  "cap-to": el => {
-    const s = S(), it = s.inbox.items.find(x => x.id === idOf(el)), to = el.dataset.to;
-    const drop = () => { s.inbox.items = s.inbox.items.filter(x => x !== it); site.save(); };
-    if (to === "ecriture") { s.modules.ecriture.scraps.push({ id: uid(), text: it.text, date: it.date }); drop(); render(); toast("Rangé dans les fragments."); }
-    else if (to === "chantier") { const t = addTask(board.data.tasks, { title: it.text }, uid(), todayISO()); board.save(); drop(); taskForm(t); }
-    else if (Object.hasOwn(s.modules, to) && s.modules[to].type === "collection") { saveCollectionItem(s.modules[to], { title: it.text }, uid()); drop(); render(); toast(`Ajouté à ${label(to)}.`); }
-  },
   "entry-add": el => entryAdd(el.dataset.mod),
   "entry-del": el => { deleteJournalEntry(S().modules[el.dataset.mod], idOf(el)); site.save(); render(); },
   "mod-add": () => {
@@ -521,7 +510,7 @@ const CLICK = {
 };
 function moveMod(el, d) { const ms = S().config.modules, i = +el.closest("[data-i]").dataset.i, j = i + d; if (j < 0 || j >= ms.length) return; [ms[i], ms[j]] = [ms[j], ms[i]]; site.save(); render(); }
 document.addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (a && CLICK[a.dataset.act] && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) CLICK[a.dataset.act](a); });
-document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
 const CHANGE = {}; // actions « change » des types de module (remplie par types.js)
 document.addEventListener("change", e => {
   const el = e.target, act = el.dataset.act;
