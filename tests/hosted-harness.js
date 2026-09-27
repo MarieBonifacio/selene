@@ -69,7 +69,9 @@ function launchHosted({ storage = new Map(), fetch, session = 'valid', bare = fa
   const localStorage = {
     getItem(key) { return storage.get(key) ?? null; },
     setItem(key, value) { storage.set(key, value); },
-    removeItem(key) { storage.delete(key); }
+    removeItem(key) { storage.delete(key); },
+    key(i) { return [...storage.keys()][i] ?? null; },
+    get length() { return storage.size; }
   };
   // Minuteurs « unref » (ne retiennent pas le process) ; les setInterval sont enregistrés
   // pour pouvoir déclencher un tour de polling à la main et vérifier qu'ils sont bien arrêtés.

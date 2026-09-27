@@ -25,6 +25,7 @@ function authResetLocal() {
   board.reset({ updatedAt: 0, tasks: [] });
   site.reset(siteSeed());
   try { for (const k of PERSONAL_KEYS) localStorage.removeItem(k); } catch {}
+  try { for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith(DRAFT_PREFIX)) localStorage.removeItem(k); } } catch {} // brouillons
 }
 function authTimeout(ms = 10000) { const c = new AbortController(); setTimeout(() => c.abort(), ms); return c.signal; }
 async function authApi(path, opts = {}) {

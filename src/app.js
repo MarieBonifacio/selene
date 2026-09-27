@@ -9,7 +9,27 @@ const diffDays = (a, b) => Math.round((new Date(a + "T12:00") - new Date(b + "T1
 const fmt = (s, o = { day: "numeric", month: "short" }) => s ? new Date(s + "T12:00").toLocaleDateString("fr-FR", o) : "";
 const clone = o => JSON.parse(JSON.stringify(o));
 const ago = s => { if (!s) return "jamais"; const n = diffDays(todayISO(), s); return n === 0 ? "aujourd'hui" : n === 1 ? "hier" : `il y a ${n} j`; };
-function toast(msg) { const el = $("#toast"); el.textContent = msg; el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 3400); }
+function toast(msg) { undoFn = null; const el = $("#toast"); el.textContent = msg; el.classList.remove("act"); el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 3400); }
+/* « Annuler » pendant quelques secondes, au lieu d'une confirmation avant d'agir. */
+let undoFn = null;
+function toastUndo(msg, undo) {
+  const el = $("#toast");
+  el.innerHTML = `${esc(msg)} <button class="btn sm" data-act="undo">Annuler</button>`;
+  el.classList.add("show", "act"); undoFn = undo;
+  clearTimeout(toast.t); toast.t = setTimeout(() => { el.classList.remove("show", "act"); undoFn = null; }, 6000);
+}
+/* Retire un élément d'une liste d'un module (entries, scraps…) ; « Annuler » le remet à sa place. */
+function removeWithUndo(id, list, itemId) {
+  const inst = S().modules[id], i = inst[list].findIndex(x => x.id === itemId);
+  if (i < 0) return;
+  const item = inst[list][i], name = String(item.title || item.text || item.note || item.type || "l'élément");
+  inst[list] = inst[list].filter(x => x.id !== itemId); site.save(); render();
+  toastUndo(`Supprimé : « ${name.length > 40 ? name.slice(0, 40) + "…" : name} ».`, () => {
+    const cur = S().modules[id]; // relu : une synchro a pu passer entre-temps
+    if (!cur || cur[list].some(x => x.id === itemId)) return;
+    cur[list].splice(Math.min(i, cur[list].length), 0, item); site.save(); render(); toast("Rétabli. Rien ne s'est passé.");
+  });
+}
 function setSaving(t) { $("#saving").textContent = t; }
 
 /* ================= stores ================= */
@@ -198,18 +218,25 @@ $("#dlg").addEventListener("close", () => {
 /* ================= views ================= */
 const VIEWS = {};
 
+/* Sur téléphone, le paysage se réduit à un bandeau à partir de la deuxième ouverture du jour ; décidé une fois
+   par chargement, pour qu'il ne se replie pas sous les yeux en cours d'utilisation. */
+const HERO_COMPACT = (() => { try { const seen = localStorage.getItem("selene-hero-day") === todayISO(); localStorage.setItem("selene-hero-day", todayISO()); return seen; } catch { return false; } })();
 VIEWS.accueil = () => {
   const m = moon(), s = S(), now = todayISO();
   const tod = todayTasks().slice(0, 3);
   const alerts = [];
   for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) alerts.push(...TYPE_UI[inst.type].alerts(id, inst, now));
   const inbox = inboxId(s.modules), pending = inbox ? s.modules[inbox].entries.length : 0;
-  const rows = s.config.modules.filter(x => x.on && x.id !== inbox).map(x => `<a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}</span><em class="hint" style="margin:0">ouvrir</em></a>`).join("");
+  // Chaque ligne se déplie sur les derniers éléments du module, sans avoir à l'ouvrir.
+  const rows = s.config.modules.filter(x => x.on && x.id !== inbox).map(x => {
+    const inst = Object.hasOwn(s.modules, x.id) ? s.modules[x.id] : null, more = inst && TYPE_UI[inst.type].recent ? TYPE_UI[inst.type].recent(inst) : [];
+    return `<div class="over-wrap"><a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}</span><em class="hint" style="margin:0">ouvrir</em></a>${more.length ? `<details class="more"><summary>derniers éléments</summary><ul>${more.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
+  }).join("");
   return `
   ${s.config.welcome ? `<section><h2>Composer ton espace</h2><p class="hint">Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.</p>
     ${MODULE_TEMPLATES.map(t => `<div class="set" style="grid-template-columns:1fr auto"><div><b>${esc(t.name)}</b><div class="hint" style="margin:2px 0 0">${esc(t.hint)}</div></div><button class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}">Ajouter</button></div>`).join("")}
     <div class="row" style="margin-top:12px"><button class="btn acc" data-act="welcome-done">C'est bon</button></div></section>` : ""}
-  <section class="hero">${forestSVG(m.p)}<div class="txt">
+  <section class="hero${HERO_COMPACT ? " compact" : ""}">${forestSVG(m.p)}<div class="txt">
     <div class="phase">${m.name}</div>
     <p>Éclairée à ${Math.round(m.illum * 100)} %, jour ${Math.floor(m.age) + 1} du cycle. ${m.p < .5 ? `Pleine lune dans ${m.nextFull} j.` : `Nouvelle lune dans ${m.nextNew} j.`}</p>
   </div></section>
@@ -217,12 +244,12 @@ VIEWS.accueil = () => {
     <section><h2>Aujourd'hui</h2><p class="hint">Trois choses. La forêt pousse très bien sans que tu la surveilles.</p>
       <ul class="plain">
         ${tod.map(([id, t]) => taskHTML(id, t)).join("")}
-        ${alerts.map(a => `<li class="item"><span></span><div>${a.text}</div>${a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">voir</a>` : a.quick ? `<button class="btn ghost sm" data-act="entry-add" data-mod="${esc(a.quick)}">noter</button>` : ""}</li>`).join("")}
+        ${alerts.map(a => `<li class="item"><span></span><div>${a.text}</div>${a.actions ? `<div class="row">${a.actions}</div>` : a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">voir</a>` : ""}</li>`).join("")}
       </ul>
       ${!tod.length ? (taskModules().length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : `<p class="empty">Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.</p>`) : ""}
     </section>
     <section><h2>Capturer</h2><p class="hint">Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.</p>
-      ${inbox ? `<div class="capture"><input id="capIn" placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="Capture rapide"><button class="btn acc" data-act="cap-add">Garder</button></div>
+      ${inbox ? `<div class="capture"><input id="capIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="Capture rapide"><button class="btn acc" data-act="cap-add">Garder</button></div>
       ${pending ? `<p class="hint" style="margin-top:8px"><a href="#${esc(inbox)}">${pending} élément${pending > 1 ? "s" : ""} à trier</a></p>` : ""}`
       : `<p class="hint">Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans <a href="#reglages">Réglages</a>.</p>`}
     </section>
@@ -293,6 +320,13 @@ function applyTheme() {
   if (c.mode === "auto") delete r.dataset.mode; else r.dataset.mode = c.mode;
 }
 let lastView = null;
+/* Brouillons : le texte en cours d'un champ libre survit à la fermeture de l'app (iOS tue volontiers une PWA
+   en arrière-plan). Propres à l'appareil ; effacés quand le champ est envoyé, et à la déconnexion. */
+const DRAFT_PREFIX = "selene-draft:";
+const draftKey = (view, el) => `${DRAFT_PREFIX}${view}:${el.id}`;
+function saveDraft(view, el) { if (!view || !el.id) return; try { if (el.value.trim()) localStorage.setItem(draftKey(view, el), el.value); else localStorage.removeItem(draftKey(view, el)); } catch {} }
+function loadDraft(view, el) { try { return localStorage.getItem(draftKey(view, el)) || ""; } catch { return ""; } }
+document.addEventListener("input", e => { if (e.target.dataset && e.target.dataset.draft !== undefined) saveDraft(lastView, e.target); });
 function render() {
   applyTheme();
   if (hosted() && authReady() && !authSession) { $("#nav").innerHTML = ""; $("#main").innerHTML = authView(); return; }
@@ -315,10 +349,12 @@ function render() {
     (ae.tagName === "TEXTAREA" || (ae.tagName === "INPUT" && !["checkbox", "radio", "file", "button"].includes(ae.type)));
   if (typing && view === "reglages" && lastView === "reglages") return;
   const keep = {}; let focusId = null, caret = null;
+  $("#main").querySelectorAll("[data-draft]").forEach(el => saveDraft(lastView, el)); // un champ vidé par l'envoi efface son brouillon
   if (view === lastView) $("#main").querySelectorAll("input[id],textarea[id],select[id]").forEach(el => { if (el.type !== "file" && el.type !== "checkbox") keep[el.id] = el.value; });
   if (document.activeElement && document.activeElement.id && keep[document.activeElement.id] != null) { focusId = document.activeElement.id; try { caret = document.activeElement.selectionStart; } catch {} }
   $("#main").innerHTML = inst ? TYPE_UI[inst.type].view(view) : VIEWS[view]();
   for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && v !== "" && el.value !== v) el.value = v; }
+  if (view !== lastView) $("#main").querySelectorAll("[data-draft]").forEach(el => { const v = loadDraft(view, el); if (v) el.value = v; });
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
   lastView = view;
 }
@@ -340,7 +376,8 @@ const CLICK = {
   "goto-groups": el => { const id = "mreg-" + el.dataset.mod; if (location.hash === "#reglages") { const d = document.getElementById(id); if (d) { d.open = true; d.scrollIntoView(); } } else sessionStorage.setItem("selene-scroll", id); },
   "cap-add": capture,
   "entry-add": el => entryAdd(el.dataset.mod),
-  "entry-del": el => { deleteJournalEntry(S().modules[el.dataset.mod], idOf(el)); site.save(); render(); },
+  "entry-del": el => removeWithUndo(el.dataset.mod, "entries", idOf(el)),
+  "undo": () => { const f = undoFn; undoFn = null; $("#toast").classList.remove("show", "act"); if (f) f(); },
   "mod-add": () => {
     const choice = $("#newModType").value, tpl = MODULE_TEMPLATES.find(t => "tpl:" + t.id === choice);
     const name = $("#newModName").value.trim() || (tpl ? tpl.name : "");

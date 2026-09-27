@@ -154,7 +154,9 @@ test('signing out removes the chat history and the API key from the device', asy
   const { a } = await twoDevices();
   a.storage.set('selene-chat', '[{"role":"user","content":"secret"}]');
   a.storage.set('selene-api-key', 'sk-ant-xxx');
+  a.storage.set('selene-draft:inbox:noteIn', 'un brouillon');
   await a.authSignOut();
+  assert.equal(a.storage.get('selene-draft:inbox:noteIn'), undefined, 'drafts are personal too');
   assert.equal(a.storage.get('selene-chat'), undefined);
   assert.equal(a.storage.get('selene-api-key'), undefined);
 });

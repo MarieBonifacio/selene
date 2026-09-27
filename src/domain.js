@@ -158,10 +158,11 @@ const MODULE_TYPES = {
   },
   cumul: {
     label: "Objectif cumulatif (compteur + catégories)",
-    defaults: () => ({ config: { unitLabel: "unités", goal: 100, title: "", categories: [], categoryLabel: "Catégorie", scraps: false, scrapsLabel: "Notes" }, entries: [], scraps: [] }),
+    defaults: () => ({ config: { unitLabel: "unités", goal: 100, title: "", categories: [], categoryLabel: "Catégorie", scraps: false, scrapsLabel: "Notes", entryMode: "delta" }, entries: [], scraps: [] }),
     entry: (e, input) => { e.value = numericValue(input.value); if (input.category != null) e.category = input.category; },
     validate(inst, v) {
       v.num(inst.config.goal, "objectif", 0);
+      if (inst.config.entryMode != null && inst.config.entryMode !== "delta" && inst.config.entryMode !== "total") v.fail("mode de saisie");
       if (inst.config.categories != null) v.list(inst.config.categories, "catégories").forEach(x => v.num(x.goal, "objectif de catégorie", 0));
       for (const e of inst.entries) v.num(e.value, "valeur");
     }
@@ -280,7 +281,6 @@ function addJournalEntry(instance, input, id, defaultDate) {
   instance.entries.push(entry);
   return entry;
 }
-function deleteJournalEntry(instance, id) { instance.entries = instance.entries.filter(x => x.id !== id); }
 /* L'identifiant d'un module sert aussi de route (#id) : il ne doit jamais masquer une vue fixe
    ni un nom hérité d'Object.prototype (« constructor », « toString »…), que `obj[id]` trouverait.
    Les noms de types ne sont pas réservés : un type n'est pas une route (le module « budget » est
@@ -308,7 +308,7 @@ const MODULE_TEMPLATES = [
   { id: "taches", name: "Tâches", type: "taches", hint: "Échéances, étapes, et trois tâches du jour au plus" },
   { id: "protocole", name: "Protocole", type: "programme", hint: "Une pratique sur N semaines, un calendrier, un objectif hebdomadaire" },
   { id: "ecriture", name: "Écriture", type: "cumul", hint: "Un compteur de mots, des chapitres, un carnet de fragments",
-    config: { unitLabel: "mots", goal: 50000, categoryLabel: "Chapitre", scraps: true, scrapsLabel: "Fragments" } },
+    config: { unitLabel: "mots", goal: 50000, categoryLabel: "Chapitre", scraps: true, scrapsLabel: "Fragments", entryMode: "total" } },
   { id: "budget", name: "Budget", type: "budget", hint: "Dépenses et revenus du mois, des enveloppes à plafond",
     config: { envelopes: [{ id: "courses", name: "Courses", limit: 300 }, { id: "loisirs", name: "Loisirs", limit: 100 }] } },
   { id: "tableau", name: "Tableau de production", type: "collection", hint: "Des idées qui avancent de colonne en colonne jusqu'à publication",

@@ -24,13 +24,16 @@ function launch(storage, { claude = null, bare = false } = {}) {
   };
   const localStorage = {
     getItem(key) { return storage.get(key) ?? null; },
-    setItem(key, value) { storage.set(key, value); }
+    setItem(key, value) { storage.set(key, value); },
+    removeItem(key) { storage.delete(key); },
+    key(i) { return [...storage.keys()][i] ?? null; },
+    get length() { return storage.size; }
   };
   const window = { addEventListener() {}, claude };
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS };\n})();');
   vm.runInNewContext(instrumented, context);
   return { ...context.__test, nodes, location, document };
 }
@@ -206,6 +209,8 @@ test('every registered type works end to end through the registry alone', () => 
     assert.equal(typeof ui.settings(id, inst), 'string');
     assert.equal(typeof app.summaryFor(id), 'string');
     assert.match(ui.context(inst, 'NOM'), /NOM/);
+    assert.equal(typeof ui.recent, 'function', `${type}.recent`);
+    assert.ok(ui.recent(inst).every(x => typeof x === 'string'), `${type}.recent returns text`);
   }
   assert.doesNotMatch(app.contextText(), /ESSAI/, 'modules not shared with the assistant stay private');
   for (const k of Object.keys(d.modules)) if (k.startsWith('essai-')) d.config.assistant.share[k] = true;
@@ -447,4 +452,74 @@ test('the seed stays pristine: a fresh device adopts the server instead of mergi
   const a = app.siteSeed(), b = app.siteSeed();
   assert.equal(a.updatedAt, 0);
   assert.deepEqual(JSON.parse(JSON.stringify(a)), JSON.parse(JSON.stringify(b)), 'no random ids in the seed');
+});
+
+const today = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+test('deleting an item offers « Annuler », which puts it back where it was', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const inbox = app.S().modules.inbox;
+  for (const t of ['un', 'deux', 'trois']) app.addCapture(inbox.entries, t, t, '2026-09-27');
+  app.removeWithUndo('inbox', 'entries', 'deux');
+  assert.deepEqual([...inbox.entries.map(x => x.id)], ['un', 'trois']);
+  assert.match(app.nodes.get('#toast').innerHTML, /Supprimé : « deux »/);
+  app.CLICK.undo();
+  assert.deepEqual([...app.S().modules.inbox.entries.map(x => x.id)], ['un', 'deux', 'trois']);
+  app.CLICK.undo(); // un second « Annuler » ne fait rien
+  assert.equal(app.S().modules.inbox.entries.length, 3);
+});
+
+test('writing: in « total » mode the app records the difference, cuts included', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const ecr = app.S().modules.ecriture;
+  ecr.config.entryMode = 'total';
+  const $ = sel => app.document.querySelector(sel); // le faux DOM crée l'élément au premier accès
+  $('#cumCat').value = '';
+  app.addJournalEntry(ecr, { date: today(), value: 1000 }, 'e0', today());
+  $('#cumIn').value = '1600'; app.TYPE_UI.cumul.add('ecriture', ecr);
+  assert.equal(ecr.entries.at(-1).value, 600);
+  $('#cumIn').value = '1450'; app.TYPE_UI.cumul.add('ecriture', ecr);
+  assert.equal(ecr.entries.at(-1).value, -150, 'a lower total is a cut, not an error');
+  const n = ecr.entries.length;
+  $('#cumIn').value = '1450'; app.TYPE_UI.cumul.add('ecriture', ecr);
+  assert.equal(ecr.entries.length, n, 'same total: nothing recorded');
+});
+
+test('writing: a projected end date from the last 30 days, and honest when there is no pace', () => {
+  const app = launch(new Map());
+  const ecr = app.S().modules.ecriture; // objectif 40 000
+  assert.match(app.projection(ecr), /Pas assez d'élan/);
+  app.addJournalEntry(ecr, { date: today(), value: 30000 }, 'a', today()); // 1 000 par jour sur 30 jours
+  assert.match(app.projection(ecr), /1\s000 mots par jour/); // espace fine insécable, comme le veut la typographie française
+  app.addJournalEntry(ecr, { date: today(), value: 10000 }, 'b', today());
+  assert.match(app.projection(ecr), /Objectif atteint/);
+});
+
+test('home: a due reminder can be done, a session logged with the last duration, due items surface', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  d.modules.kundalini.config.start = '2026-01-05';
+  app.addJournalEntry(d.modules.kundalini, { date: '2026-01-05', value: 25 }, 'k1', '2026-01-05');
+  app.saveCollectionItem(d.modules.moth, { title: 'Le lichen', due: '2020-01-01', status: 'Prêt' }, 'p1');
+  app.location.hash = '#accueil'; app.render();
+  const html = app.nodes.get('#main').innerHTML;
+  assert.match(html, /data-act="entry-log" data-mod="phidippus"/, 'reminder: « fait » right on the home page');
+  assert.match(html, /data-act="prog-quick" data-mod="kundalini">Noter 25 min/);
+  assert.match(html, /« Le lichen » : en retard \(october.moth\)/);
+  app.CLICK['prog-quick']({ dataset: { mod: 'kundalini' } });
+  assert.equal(d.modules.kundalini.entries.at(-1).value, 25);
+  assert.equal(d.modules.kundalini.entries.at(-1).date, today());
+  app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /Séance de kundalini faite/);
+});
+
+test('drafts are kept per view and field, and emptied when the field is sent', () => {
+  const storage = new Map(), app = launch(storage);
+  const el = { id: 'scrapIn', value: 'une phrase à moitié' };
+  app.saveDraft('ecriture', el);
+  assert.equal(app.loadDraft('ecriture', el), 'une phrase à moitié');
+  assert.equal(app.loadDraft('inbox', el), '', 'per view');
+  el.value = '';
+  app.saveDraft('ecriture', el);
+  assert.equal(storage.get('selene-draft:ecriture:scrapIn'), undefined);
 });
