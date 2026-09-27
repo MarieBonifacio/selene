@@ -48,6 +48,8 @@ Pour ajouter un *type* de module au code, voir [docs/architecture.md](docs/archi
 - **Minuteur** : à la fin des 15 minutes, le module ouvert propose la suite (noter la séance, donner le nouveau total).
 - **Écriture** : saisie du total atteint (l'app calcule la différence), dernier chapitre présélectionné, fin estimée au rythme des 30 derniers jours.
 - **Tâches → Budget** : terminer une tâche qui a un coût propose de l'ajouter en dépense (enveloppe réglable).
+- **Atelier d'écriture** : un fragment se rattache à un chapitre (le dernier utilisé par défaut), la liste se filtre par chapitre, et « Exporter en Markdown » assemble les fragments sous leurs chapitres.
+- **Capture qui comprend** trois motifs, et seulement trois : « 12 € courses » (une dépense), « 25 min kundalini » (une séance), « Phidippus : une note » (rangée dans le module nommé). La note part toujours d'abord dans la boîte de réception ; l'app propose seulement de la ranger (bandeau, puis bouton « Ranger » dans la boîte).
 
 ## Assistant (Claude)
 

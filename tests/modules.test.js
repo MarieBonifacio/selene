@@ -33,7 +33,7 @@ function launch(storage, { claude = null, bare = false } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown };\n})();');
   vm.runInNewContext(instrumented, context);
   return { ...context.__test, nodes, location, document };
 }
@@ -563,4 +563,38 @@ test('a finished task with a cost offers to move it into the budget envelope', (
   app.CLICK.undo(); // « Ajouter »
   const op = d.modules.budget.entries.at(-1);
   assert.equal(op.amount, 250); assert.equal(op.cat, 'Travaux'); assert.equal(op.note, 'Velux'); assert.equal(op.type, 'dépense');
+});
+
+test('capture patterns: money, minutes and « module : text » are recognised, nothing else', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  const i1 = app.captureIntent('12,50 € courses du marché');
+  assert.equal(i1.to, 'budget'); assert.equal(i1.amount, 12.5); assert.equal(i1.cat, 'Courses');
+  const i2 = app.captureIntent('25 min kundalini, souffle de feu');
+  assert.equal(i2.to, 'kundalini'); assert.equal(i2.value, 25);
+  const i3 = app.captureIntent('Phidippus : refus de proie');
+  assert.equal(i3.to, 'phidippus'); assert.equal(i3.text, 'refus de proie');
+  assert.equal(app.captureIntent('Écriture: une phrase').to, 'ecriture', 'accents and spacing ignored');
+  for (const plain of ['acheter du pain', 'rdv : 14h chez le dentiste', '25 min de marche', '0 € rien']) assert.equal(app.captureIntent(plain), null, plain);
+  // Rangement : la note quitte la boîte et arrive au bon endroit.
+  app.addCapture(d.modules.inbox.entries, 'Phidippus : refus de proie', 'n1', '2026-09-20');
+  app.fileIntent(app.captureIntent('Phidippus : refus de proie'), 'inbox', 'n1');
+  assert.equal(d.modules.inbox.entries.length, 0);
+  const obs = d.modules.phidippus.entries.at(-1);
+  assert.equal(obs.note, 'refus de proie'); assert.equal(obs.date, '2026-09-20');
+  app.addCapture(d.modules.inbox.entries, '12 € courses', 'n2', '2026-09-21');
+  app.fileIntent(app.captureIntent('12 € courses'), 'inbox', 'n2');
+  assert.equal(d.modules.budget.entries.at(-1).amount, 12);
+});
+
+test('writing workshop: fragments follow chapters and export as Markdown', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const e = app.S().modules.ecriture;
+  e.config.categories = [{ id: 'c1', name: 'Prologue', goal: 0 }, { id: 'c2', name: 'La forêt', goal: 0 }];
+  e.scraps.push({ id: 'a', text: 'Le brouillard.', date: '2026-09-01', category: 'c2' }, { id: 'b', text: 'Il était une fois.', date: '2026-09-02', category: 'c1' }, { id: 'c', text: 'Sans place.', date: '2026-09-03' });
+  const md = app.scrapsMarkdown('ecriture', e);
+  assert.ok(md.indexOf('## Prologue') < md.indexOf('Il était une fois.') && md.indexOf('Il était une fois.') < md.indexOf('## La forêt'), 'chapter order, fragments under their chapter');
+  assert.match(md, /## Hors chapitre\n\nSans place\./);
+  app.location.hash = '#ecriture'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /1 fragment/, 'chapter panel counts fragments');
 });

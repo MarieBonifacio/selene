@@ -824,6 +824,7 @@ const MODULE_TYPES = {
       if (inst.config.entryMode != null && inst.config.entryMode !== "delta" && inst.config.entryMode !== "total") v.fail("mode de saisie");
       if (inst.config.categories != null) v.list(inst.config.categories, "catégories").forEach(x => v.num(x.goal, "objectif de catégorie", 0));
       for (const e of inst.entries) v.num(e.value, "valeur");
+      for (const f of inst.scraps || []) if (f.category != null && typeof f.category !== "string") v.fail("fragment");
     }
   },
   rappels: {
@@ -1395,7 +1396,8 @@ const idOf = el => el.closest("[data-id]")?.dataset.id;
 function capture() {
   const inp = $("#capIn"); if (!inp || !inp.value.trim()) return;
   const id = inboxId(S().modules); if (!id) return toast("Aucune boîte de réception : voir Réglages.");
-  addCapture(S().modules[id].entries, inp.value, uid(), todayISO()); site.save(); inp.value = ""; render(); toast("Gardé. Tu peux oublier, c'est écrit.");
+  const item = addCapture(S().modules[id].entries, inp.value, uid(), todayISO()); site.save(); inp.value = ""; render();
+  afterCapture(id, item, "Gardé. Tu peux oublier, c'est écrit.");
 }
 function entryAdd(id) {
   const inst = S().modules[id], ui = TYPE_UI[inst.type];
@@ -1430,17 +1432,18 @@ const CLICK = {
   "chat-chip": el => sendChat(el.textContent),
   "chat-clear": async () => { if (await ask("Effacer la conversation ?")) { chatLog.set([]); render(); } },
   "as-forget": () => { try { localStorage.removeItem("selene-api-key"); } catch {} render(); toast("Clé oubliée sur cet appareil."); },
-  "exp": async () => {
-    const data = createBackup(board.data, site.data), filename = `selene-${todayISO()}.json`;
-    if (downloadsNS) { try { await downloadsNS.save({ filename, data }); } catch (e) { toast("Export annulé."); } return; }
-    try { const file = new File([data], filename, { type: "application/json" }); if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "Sauvegarde Selene" }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
-    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([data], { type: "application/json" })); a.download = filename; document.body.appendChild(a); a.click(); a.remove();
-  },
+  "exp": () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, site.data), "application/json", "Sauvegarde Selene"),
   "pal": el => { S().config.palette = el.dataset.p; site.save(); render(); },
   "mod-up": el => moveMod(el, -1), "mod-down": el => moveMod(el, 1),
   "auth-switch": () => { authMode = authMode === "signup" ? "signin" : "signup"; render(); },
   "auth-out": () => authSignOut()
 };
+/* Donne un fichier à l'utilisatrice : via claude.ai, le partage natif (téléphone) ou un téléchargement. */
+async function downloadFile(filename, data, type, title) {
+  if (downloadsNS) { try { await downloadsNS.save({ filename, data }); } catch (e) { toast("Export annulé."); } return; }
+  try { const file = new File([data], filename, { type }); if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([data], { type })); a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+}
 /* Ajoute un module (depuis un modèle ou un type vide), actif et partagé avec l'assistant. */
 function addModule(tpl, name) {
   try {
@@ -1575,10 +1578,22 @@ function programmeGroupPanel(id) {
   return `<section><h3 style="margin:0 0 4px">Par semaine</h3><p class="hint">Objectif : ${esc(c.perWeek)} séances par semaine, réglable dans Réglages.</p>
     <div class="rooms">${out.map(g => `<div class="room ${g.pct > 100 ? "over" : ""}"><div class="fill" style="height:${Math.min(100, g.pct)}%"></div><small>${esc(g.name)}</small><b>${g.pct} %</b><small>${esc(g.sub)}</small></div>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
 }
+const fragFilter = {}; // filtre des fragments par chapitre, par module (propre à l'appareil)
+/* Les fragments d'un cumul, rangés sous leurs chapitres, en Markdown : pour les reprendre dans un outil d'écriture. */
+function scrapsMarkdown(id, inst) {
+  const c = inst.config, block = list => list.map(f => f.text.trim()).join("\n\n");
+  const parts = [`# ${label(id)}`, c.title ? `*${c.title}*` : ""];
+  for (const cat of c.categories) { const fs = inst.scraps.filter(f => f.category === cat.id); if (fs.length) parts.push(`## ${cat.name}`, block(fs)); }
+  const loose = inst.scraps.filter(f => !c.categories.some(cat => cat.id === f.category));
+  if (loose.length) parts.push(c.categories.length ? `## Hors ${c.categoryLabel.toLowerCase()}` : "", block(loose));
+  return parts.filter(Boolean).join("\n\n") + "\n";
+}
 function cumulGroupPanel(id) {
   const inst = S().modules[id], c = inst.config;
   const sum = catId => inst.entries.filter(x => (x.category || "") === catId).reduce((a, x) => a + (+x.value || 0), 0);
   const out = c.categories.map(cat => { const v = sum(cat.id), g = +cat.goal || 0; return { name: cat.name || "Sans titre", pct: g ? Math.min(100, Math.round(100 * v / g)) : null, sub: g ? `${v.toLocaleString("fr-FR")} / ${g.toLocaleString("fr-FR")} ${c.unitLabel}` : `${v.toLocaleString("fr-FR")} ${c.unitLabel}` }; });
+  const frags = catId => c.scraps ? (inst.scraps || []).filter(f => (f.category || "") === catId).length : 0;
+  out.forEach((g, i) => { const n = frags(c.categories[i].id); if (n) g.sub += ` · ${plural(n, c.scrapsLabel.toLowerCase().replace(/s$/, ""))}`; });
   const loose = sum(""); if (loose && c.categories.length) out.push({ name: `Hors ${c.categoryLabel.toLowerCase()}`, pct: null, sub: `${loose.toLocaleString("fr-FR")} ${c.unitLabel}` });
   return `<section><h3 style="margin:0 0 4px">Par ${esc(c.categoryLabel).toLowerCase()}</h3><p class="hint">Chaque ${esc(c.categoryLabel).toLowerCase()} a son propre objectif.</p>
     <div class="rooms">${out.map(g => `<div class="room"><div class="fill" style="height:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></div>`).join("")}</div></section>`;
@@ -1651,6 +1666,9 @@ const TYPE_UI = {
       const tot = totalOf(inst), pct = Math.min(100, Math.round(100 * tot / (+c.goal || 1)));
       const last = inst.entries.map(x => x.date).sort().pop(), total = c.entryMode === "total";
       const lastCat = ([...inst.entries].reverse().find(x => x.category != null) || {}).category || ""; // la dernière catégorie servie
+      const lastScrapCat = ([...(inst.scraps || [])].reverse().find(x => x.category != null) || {}).category ?? lastCat, ff = fragFilter[id] ?? "*";
+      // Un menu des catégories (chapitres) : pour un nouveau fragment, ou pour en déplacer un.
+      const catSelect = (domId, value, fallback, attrs = "") => c.categories.length ? `<select ${domId ? `id="${domId}"` : ""} ${attrs} aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">Hors ${esc(c.categoryLabel).toLowerCase()}</option>${c.categories.map(x => `<option value="${esc(x.id)}" ${x.id === (value || fallback) ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>` : "";
       return `<h2>${esc(label(id))}</h2>${c.title ? `<p class="hint">${esc(c.title)}</p>` : ""}
   <div class="two"><section>
     <div class="big">${tot.toLocaleString("fr-FR")} <span class="hint" style="font-size:1.1rem">${esc(c.unitLabel)} sur ${(+c.goal).toLocaleString("fr-FR")}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
@@ -1658,8 +1676,9 @@ const TYPE_UI = {
     <div class="row"><input type="number" id="cumIn" min="${total ? 0 : 1}" placeholder="${total ? `Total atteint (${esc(c.unitLabel)})` : `${esc(c.unitLabel)} aujourd'hui`}" style="max-width:200px" inputmode="numeric" aria-label="${total ? "Total atteint" : "Ajout du jour"}">${c.categories.length ? `<select id="cumCat" aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">Hors ${esc(c.categoryLabel).toLowerCase()}</option>${c.categories.map(x => `<option value="${esc(x.id)}" ${x.id === lastCat ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>` : ""}<button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">Ajouter</button></div>
     <div style="margin-top:28px">${c.categories.length ? cumulGroupPanel(id) : `<p class="hint">Ajoute des ${esc(c.categoryLabel).toLowerCase()}s dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a> pour suivre chacune en pourcentage.</p>`}</div>
   </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">Une phrase qui passe, avant qu'elle ne reparte.</p>
-    <textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="Nouveau"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-act="scrap-add" data-mod="${esc(id)}">Garder</button></div>
-    <ul class="plain" style="margin-top:14px">${[...inst.scraps].reverse().map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}</div></div><button class="btn ghost sm" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Rien pour l'instant.</li>`}</ul>
+    <textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="Nouveau"></textarea><div class="row" style="margin-top:8px">${catSelect("scrapCat", "", lastScrapCat)}<button class="btn" data-act="scrap-add" data-mod="${esc(id)}">Garder</button></div>
+    ${c.categories.length || inst.scraps.length ? `<div class="row" style="margin-top:14px">${c.categories.length ? `<select data-act="scrap-f" data-mod="${esc(id)}" aria-label="Filtrer"><option value="*">Tous</option>${[["", `Hors ${c.categoryLabel.toLowerCase()}`], ...c.categories.map(x => [x.id, x.name])].map(([k, n]) => `<option value="${esc(k)}" ${ff === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : ""}<span class="spacer"></span>${inst.scraps.length ? `<button class="btn ghost sm" data-act="scrap-md" data-mod="${esc(id)}">Exporter en Markdown</button>` : ""}</div>` : ""}
+    <ul class="plain" style="margin-top:10px">${[...inst.scraps].reverse().filter(f => ff === "*" || (f.category || "") === ff).map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}</div></div><button class="btn ghost sm" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Rien pour l'instant.</li>`}</ul>
   </section>` : ""}</div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>Titre / sous-titre<input data-set-mod="${esc(id)}.title" value="${esc(c.title || "")}"></label><label>Objectif<input type="number" min="1" data-set-mod="${esc(id)}.goal" value="${esc(c.goal)}"></label></div>
@@ -1683,7 +1702,7 @@ const TYPE_UI = {
       return true;
     },
     canAccept: inst => !!inst.config.scraps,
-    accept: (id, inst, note) => { inst.scraps.push({ id: uid(), text: note.text, date: note.date }); },
+    accept: (id, inst, note) => { const cat = ([...inst.scraps].reverse().find(x => x.category) || {}).category; inst.scraps.push({ id: uid(), text: note.text, date: note.date, ...(cat ? { category: cat } : {}) }); },
     add(id, inst) {
       const raw = $("#cumIn").value.trim(), n = +raw, unit = inst.config.unitLabel;
       if (!raw || !Number.isFinite(n)) return;
@@ -1695,13 +1714,16 @@ const TYPE_UI = {
       toast(v > 0 ? `+${v.toLocaleString("fr-FR")} ${unit}. Ça avance, que tu y croies ou non.` : `${v.toLocaleString("fr-FR")} ${unit}. Couper, c'est aussi écrire.`);
     },
     click: {
-      "scrap-add": el => { const v = $("#scrapIn").value.trim(); if (!v) return; instOf(el).scraps.push({ id: uid(), text: v, date: todayISO() }); $("#scrapIn").value = ""; site.save(); render(); },
+      "scrap-add": el => { const v = $("#scrapIn").value.trim(); if (!v) return; const cat = $("#scrapCat") ? $("#scrapCat").value : ""; instOf(el).scraps.push({ id: uid(), text: v, date: todayISO(), ...(cat ? { category: cat } : {}) }); $("#scrapIn").value = ""; site.save(); render(); },
+      "scrap-md": el => { const id = el.dataset.mod; downloadFile(`${id}-${todayISO()}.md`, scrapsMarkdown(id, S().modules[id]), "text/markdown", label(id)); },
       "scrap-del": el => removeWithUndo(el.dataset.mod, "scraps", idOf(el)),
       "cat-add": el => { const inst = instOf(el); inst.config.categories.push({ id: uid(), name: `${inst.config.categoryLabel} ${inst.config.categories.length + 1}`, goal: 0 }); site.save(); render(); },
-      "cat-del": async el => { const inst = instOf(el), i = +el.closest("[data-ci]").dataset.ci, cat = inst.config.categories[i]; if (!await ask(`Supprimer « ${cat.name} » ? Les entrées déjà ajoutées passeront hors catégorie.`)) return; inst.entries.forEach(x => { if (x.category === cat.id) x.category = ""; }); inst.config.categories.splice(i, 1); site.save(); render(); },
+      "cat-del": async el => { const inst = instOf(el), i = +el.closest("[data-ci]").dataset.ci, cat = inst.config.categories[i]; if (!await ask(`Supprimer « ${cat.name} » ? Les entrées déjà ajoutées passeront hors catégorie.`)) return; inst.entries.forEach(x => { if (x.category === cat.id) x.category = ""; }); (inst.scraps || []).forEach(f => { if (f.category === cat.id) delete f.category; }); inst.config.categories.splice(i, 1); site.save(); render(); },
       "cat-up": el => { const a = instOf(el).config.categories, i = +el.closest("[data-ci]").dataset.ci; if (i > 0) { [a[i - 1], a[i]] = [a[i], a[i - 1]]; site.save(); render(); } }
     },
     change: {
+      "scrap-cat": el => { const f = instOf(el).scraps.find(x => x.id === idOf(el)); if (f) { if (el.value) f.category = el.value; else delete f.category; site.save(); render(); } },
+      "scrap-f": el => { fragFilter[el.dataset.mod] = el.value; render(); },
       "cat-name": el => { const cat = instOf(el).config.categories[+el.closest("[data-ci]").dataset.ci]; cat.name = el.value.trim() || cat.name; site.save(); el.blur(); render(); },
       "cat-goal": el => { const cat = instOf(el).config.categories[+el.closest("[data-ci]").dataset.ci]; cat.goal = Math.max(0, +el.value || 0); site.save(); el.blur(); render(); }
     }
@@ -2079,6 +2101,50 @@ TYPE_UI.budget = {
 };
 
 /* ---- notes : textes datés ; l'une des boîtes reçoit la capture rapide de l'accueil ---- */
+/* Trois motifs reconnus à la capture, pas davantage, pour rester prévisible :
+     « 12 € courses »          → une dépense dans le premier budget (enveloppe devinée d'après le texte)
+     « 25 min kundalini »      → une séance dans le protocole nommé
+     « phidippus : une note »  → la note rangée dans le module nommé
+   La note part toujours d'abord dans la boîte : reconnaître ne fait que proposer un rangement. */
+function captureIntent(text) {
+  const s = S(), t = String(text).trim();
+  const mods = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id)).map(m => ({ id: m.id, inst: s.modules[m.id], name: fold(label(m.id)) }));
+  let m = t.match(/^(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur(?:os?)?\b)\s*(.*)$/i);
+  const bud = firstOfType("budget");
+  if (m && bud && +m[1].replace(",", ".") > 0) {
+    const amount = +m[1].replace(",", "."), rest = m[2].trim(), env = rest && s.modules[bud].config.envelopes.find(v => fold(rest).includes(fold(v.name)));
+    return { to: bud, kind: "budget", amount, note: rest, cat: env ? env.name : "", say: `${money(amount)} en dépense dans ${label(bud)}${env ? ` (${env.name})` : ""}` };
+  }
+  m = t.match(/^(\d+)\s*min(?:utes?)?\s+(.+)$/i);
+  if (m) {
+    const target = mods.find(x => x.inst.type === "programme" && fold(m[2]).includes(x.name));
+    if (target) return { to: target.id, kind: "minutes", value: +m[1], say: `${m[1]} min dans ${label(target.id)}` };
+  }
+  m = t.match(/^([^:]{2,40}?)\s*:\s*(.+)$/);
+  if (m) {
+    const target = mods.find(x => x.name === fold(m[1].trim())), ui = target && TYPE_UI[target.inst.type];
+    if (target && ui.accept && (!ui.canAccept || ui.canAccept(target.inst)))
+      return { to: target.id, kind: "accept", text: m[2].trim(), say: `« ${m[2].trim().slice(0, 40)} » dans ${label(target.id)}` };
+  }
+  return null;
+}
+/* Range une note de la boîte selon un motif reconnu, puis l'en retire. */
+function fileIntent(intent, fromId, noteId) {
+  const s = S(), src = s.modules[fromId], note = src && src.entries.find(x => x.id === noteId), target = s.modules[intent.to];
+  if (!note || !target || intent.to === fromId) return;
+  let then;
+  if (intent.kind === "budget") addBudgetEntry(target.entries, { amount: intent.amount, type: "dépense", cat: intent.cat, note: intent.note, date: note.date }, uid(), todayISO());
+  else if (intent.kind === "minutes") addJournalEntry(target, { date: note.date, value: intent.value }, uid(), todayISO());
+  else then = TYPE_UI[target.type].accept(intent.to, target, { ...note, text: intent.text });
+  src.entries = src.entries.filter(x => x.id !== noteId); site.save(); render();
+  if (typeof then === "function") then(); else toast(`Rangé : ${intent.say}.`);
+}
+/* Après une capture : proposer le rangement reconnu, sinon le message habituel. */
+function afterCapture(boxId, item, fallback) {
+  const intent = captureIntent(item.text);
+  if (intent && intent.to !== boxId) toastAction(`${intent.say} ?`, "Ranger", () => fileIntent(intent, boxId, item.id), 10000);
+  else if (fallback) toast(fallback);
+}
 /* Où une note peut être rangée : les modules actifs qui savent la recevoir, dans l'ordre de la navigation.
    Un type peut renvoyer une suite à donner (le formulaire d'une tâche, pour la compléter). */
 function noteTargets(fromId) {
@@ -2093,9 +2159,10 @@ TYPE_UI.notes = {
     const inst = S().modules[id], c = inst.config, targets = noteTargets(id);
     return `<div data-mod="${esc(id)}"><h2>${esc(label(id))}</h2>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}
   <div class="capture" style="margin-bottom:18px"><input id="noteIn" data-draft placeholder="${esc(c.placeholder)}" aria-label="Nouvelle note"><button class="btn acc" data-act="note-add">Garder</button></div>
-  <ul class="plain">${[...inst.entries].reverse().map(x => `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}</div>
+  <ul class="plain">${[...inst.entries].reverse().map(x => { const intent = captureIntent(x.text); return `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}</div>
+    ${intent && intent.to !== id ? `<div class="row" style="margin-top:6px"><button class="btn sm acc" data-act="note-file">Ranger : ${esc(intent.say)}</button></div>` : ""}
     ${targets.length ? `<div class="row" style="margin-top:6px">${targets.map(k => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
-    <button class="btn ghost sm" data-act="note-del">suppr.</button></li>`).join("") || `<li class="empty">${c.inbox ? "Vide. Le silence d'une clairière, ou celui d'un cerveau." : "Rien pour l'instant."}</li>`}</ul></div>`;
+    <button class="btn ghost sm" data-act="note-del">suppr.</button></li>`; }).join("") || `<li class="empty">${c.inbox ? "Vide. Le silence d'une clairière, ou celui d'un cerveau." : "Rien pour l'instant."}</li>`}</ul></div>`;
   },
   settings: (id, { config: c }) => `<label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="notes-inbox" data-mod="${esc(id)}" ${c.inbox ? "checked" : ""}>Boîte de réception : reçoit la capture rapide de l'accueil</label>
     <div class="field-row" style="margin-top:8px"><label>Description<input data-set-mod="${esc(id)}.description" value="${esc(c.description)}" placeholder="Une phrase sous le titre"></label><label>Texte d'invite<input data-set-mod="${esc(id)}.placeholder" value="${esc(c.placeholder)}" required></label></div>`,
@@ -2108,8 +2175,10 @@ TYPE_UI.notes = {
   click: {
     "note-add": el => {
       const inp = $("#noteIn"); if (!inp || !inp.value.trim()) return;
-      addCapture(S().modules[modOf(el)].entries, inp.value, uid(), todayISO()); inp.value = ""; site.save(); render();
+      const id = modOf(el), item = addCapture(S().modules[id].entries, inp.value, uid(), todayISO()); inp.value = ""; site.save(); render();
+      afterCapture(id, item);
     },
+    "note-file": el => { const id = modOf(el), note = S().modules[id].entries.find(x => x.id === idOf(el)), intent = note && captureIntent(note.text); if (intent) fileIntent(intent, id, note.id); },
     "note-del": el => removeWithUndo(modOf(el), "entries", idOf(el)),
     "note-to": el => {
       const s = S(), src = s.modules[modOf(el)], note = src.entries.find(x => x.id === idOf(el)), to = el.dataset.to;

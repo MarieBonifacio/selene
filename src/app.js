@@ -399,7 +399,8 @@ const idOf = el => el.closest("[data-id]")?.dataset.id;
 function capture() {
   const inp = $("#capIn"); if (!inp || !inp.value.trim()) return;
   const id = inboxId(S().modules); if (!id) return toast("Aucune boîte de réception : voir Réglages.");
-  addCapture(S().modules[id].entries, inp.value, uid(), todayISO()); site.save(); inp.value = ""; render(); toast("Gardé. Tu peux oublier, c'est écrit.");
+  const item = addCapture(S().modules[id].entries, inp.value, uid(), todayISO()); site.save(); inp.value = ""; render();
+  afterCapture(id, item, "Gardé. Tu peux oublier, c'est écrit.");
 }
 function entryAdd(id) {
   const inst = S().modules[id], ui = TYPE_UI[inst.type];
@@ -434,17 +435,18 @@ const CLICK = {
   "chat-chip": el => sendChat(el.textContent),
   "chat-clear": async () => { if (await ask("Effacer la conversation ?")) { chatLog.set([]); render(); } },
   "as-forget": () => { try { localStorage.removeItem("selene-api-key"); } catch {} render(); toast("Clé oubliée sur cet appareil."); },
-  "exp": async () => {
-    const data = createBackup(board.data, site.data), filename = `selene-${todayISO()}.json`;
-    if (downloadsNS) { try { await downloadsNS.save({ filename, data }); } catch (e) { toast("Export annulé."); } return; }
-    try { const file = new File([data], filename, { type: "application/json" }); if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "Sauvegarde Selene" }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
-    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([data], { type: "application/json" })); a.download = filename; document.body.appendChild(a); a.click(); a.remove();
-  },
+  "exp": () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, site.data), "application/json", "Sauvegarde Selene"),
   "pal": el => { S().config.palette = el.dataset.p; site.save(); render(); },
   "mod-up": el => moveMod(el, -1), "mod-down": el => moveMod(el, 1),
   "auth-switch": () => { authMode = authMode === "signup" ? "signin" : "signup"; render(); },
   "auth-out": () => authSignOut()
 };
+/* Donne un fichier à l'utilisatrice : via claude.ai, le partage natif (téléphone) ou un téléchargement. */
+async function downloadFile(filename, data, type, title) {
+  if (downloadsNS) { try { await downloadsNS.save({ filename, data }); } catch (e) { toast("Export annulé."); } return; }
+  try { const file = new File([data], filename, { type }); if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([data], { type })); a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+}
 /* Ajoute un module (depuis un modèle ou un type vide), actif et partagé avec l'assistant. */
 function addModule(tpl, name) {
   try {

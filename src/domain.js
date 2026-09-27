@@ -165,6 +165,7 @@ const MODULE_TYPES = {
       if (inst.config.entryMode != null && inst.config.entryMode !== "delta" && inst.config.entryMode !== "total") v.fail("mode de saisie");
       if (inst.config.categories != null) v.list(inst.config.categories, "catégories").forEach(x => v.num(x.goal, "objectif de catégorie", 0));
       for (const e of inst.entries) v.num(e.value, "valeur");
+      for (const f of inst.scraps || []) if (f.category != null && typeof f.category !== "string") v.fail("fragment");
     }
   },
   rappels: {
