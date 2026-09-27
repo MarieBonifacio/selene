@@ -25,11 +25,12 @@ Les données de l'app installée sont séparées de celles de Safari : exporter 
 
 Réglages → Modules : activer, renommer, réordonner. Deux familles :
 
-- **Fixes** : Chantier, october.moth, Musique, Budget, Assistant, Capture. Activables et renommables, pas supprimables.
+- **Encore fixes** : Chantier, Budget, Capture (en cours de généralisation), et l'Assistant, qui restera une fonction. Activables et renommables, pas supprimables.
 - **Génériques**, créés depuis « + Créer un module », d'un de ces types :
   - *Programme* : un protocole de N semaines, un calendrier et un objectif de séances par semaine (ex. Kundalini) ;
   - *Objectif cumulatif* : un compteur vers un objectif, avec des catégories et, en option, un carnet de notes libres (ex. Écriture et ses fragments) ;
   - *Rappels* : des types d'événements récurrents avec une fréquence, et un journal (ex. Phidippus).
+  - *Collection* : des éléments à statuts (titre, sous-titre, étiquette, date, texte : chaque champ se renomme ou se masque), affichés en colonnes ou en liste filtrable (ex. october.moth en colonnes, Musique en liste).
 
 Un module générique se supprime définitivement (✕, puis retaper son nom) : ses données partent avec lui, sur tous les appareils. Ses réglages propres sont dans Réglages → Réglages par module. Un nouveau module est partagé par défaut avec l'assistant ; décocher dans Réglages → Assistant pour le garder privé.
 

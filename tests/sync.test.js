@@ -27,9 +27,10 @@ const titles = dev => dev.board.data.tasks.map(t => t.title).sort();
 test('a fresh device adopts the server as is, without duplicating seeded items', async () => {
   const { server, a, b } = await twoDevices();
   const remote = server.rows.get('u1').site;
-  assert.ok(remote.musique.albums.length > 0, 'first device seeded the server');
-  same(b.site.data.musique.albums.map(x => x.id), remote.musique.albums.map(x => x.id));
-  same(a.site.data.musique.albums.map(x => x.id), remote.musique.albums.map(x => x.id));
+  const ids = dev => dev.modules.musique.entries.map(x => x.id);
+  assert.ok(ids(remote).length > 0, 'first device seeded the server');
+  same(ids(b.site.data), ids(remote));
+  same(ids(a.site.data), ids(remote));
 });
 
 test('concurrent additions on two devices are both kept', async () => {

@@ -43,8 +43,10 @@ Deux documents JSON par personne, chacun géré par un store (`makeStore`) :
 - `site` (clé `selene-site-v1`) : tout le reste — configuration, budget, moth, musique, capture et
   les **modules génériques** sous `modules`.
 
-`site.schemaVersion` vaut 2 depuis les modules génériques (1 = anciennes sections `kundalini`,
-`ecriture`, `phidippus` à la racine). Une version de l'app qui lit un numéro plus grand que le sien
+`site.schemaVersion` vaut 3 (1 = anciennes sections `kundalini`, `ecriture`, `phidippus` à la racine ;
+2 = modules génériques ; 3 = october.moth et Musique deviennent des collections). Chaque ancienne section
+est convertie par `SECTION_TO_MODULE` (`domain.js`) ; si une ancienne version de l'app la réécrit après
+coup, ses entrées absentes sont absorbées dans le module au lieu d'être perdues. Une version de l'app qui lit un numéro plus grand que le sien
 refuse de fusionner et d'écrire (« recharge la page ») ; un import plus récent est refusé.
 
 ### Normalisation à l'entrée, lecture pure
@@ -56,10 +58,14 @@ Un module absent n'est jamais recréé : il a été supprimé exprès.
 
 ### Modules
 
-- **Fixes** (`MODULE_DEFS`) : chantier, october.moth, musique, budget, assistant, capture. Code dédié,
-  activables et renommables, pas supprimables.
 - **Génériques** (`site.modules[id] = { type, label, config, entries, scraps? }`) : instances d'un
-  type du registre. Kundalini, Écriture et Phidippus en sont ; on peut en créer et en supprimer.
+  type du registre (programme, cumul, rappels, collection). Kundalini, Écriture, Phidippus,
+  october.moth et Musique en sont ; on peut en créer et en supprimer.
+- **Encore fixes** (`MODULE_DEFS`) : chantier, budget et capture, en cours de généralisation (types
+  Tâches, Budget et Notes) ; l'assistant restera une fonction système, comme les Réglages.
+
+Le regroupement en pourcentage d'un module passe par `grouperFor(id)` : `GROUPERS` pour un module
+fixe, `TYPE_UI[type].grouper(inst)` pour une instance (réglage stocké dans `inst.config.groups`).
 
 Un identifiant de module sert aussi de route (`#id`) et d'attribut HTML : il doit respecter
 `MODULE_ID` (`[a-z0-9-]`, 64 caractères), ne pas être réservé (`accueil`, `reglages`, noms de types,
@@ -191,8 +197,9 @@ installée sur iPhone, artefact claude.ai.
 - **Écarté** : un registre unique (la validation des sauvegardes et les règles métier dépendraient du
   code d'affichage et ne seraient plus testables sans DOM) ; des classes par type (même découpage,
   plus de cérémonie).
-- **Conséquences** : ajouter un type = deux entrées ; les modules fixes restent du code dédié tant
-  qu'aucun besoin de les dupliquer n'apparaît.
+- **Conséquences** : ajouter un type = deux entrées. Décision ultérieure : tous les modules deviennent
+  génériques, par étapes (collection d'abord, puis notes, budget, tâches), chacune avec sa version de
+  format ; l'assistant reste une fonction système.
 
 ### ADR 6 — Normaliser à l'entrée des données
 

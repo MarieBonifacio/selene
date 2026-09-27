@@ -629,7 +629,8 @@ function parseBackup(text) {
       if (!record(inst) || !Object.hasOwn(MODULE_TYPES, inst.type) || typeof inst.label !== "string" || !record(inst.config)) throw new Error(`module ${id} invalide`);
       const where = `module ${id}`;
       collection(inst.entries, `${where} entries`);
-      ids(inst.entries, where); dated(inst.entries, where);
+      ids(inst.entries, where);
+      if (MODULE_TYPES[inst.type].datedEntries !== false) dated(inst.entries, where);
       if (inst.scraps != null) { collection(inst.scraps, `${where} scraps`); ids(inst.scraps, where); }
       // Règles propres au type : déclarées dans le registre (domain.js), appliquées ici.
       MODULE_TYPES[inst.type].validate(inst, {
@@ -701,40 +702,67 @@ function addBudgetEntry(entries, input, id, defaultDate) {
   return entry;
 }
 
-/* ---- modules génériques : programme (calendrier + objectif/semaine), cumul (compteur + catégories), rappels (types récurrents) ----
-   Ne recrée jamais un module par défaut manquant : un module neuf en a déjà un exemplaire via siteSeed(),
-   et un module absent chez un site existant a été supprimé exprès (ne pas ressusciter). */
+/* ---- modules génériques ---- */
 /* Version du format des données du site. 1 = sections en dur (kundalini, ecriture, phidippus à la racine),
-   2 = modules génériques sous `modules`. Une version de l'app qui lit un numéro plus grand que le sien
-   ne doit ni fusionner ni écrire : elle ne connaît pas la forme de ces données. */
-const SCHEMA_VERSION = 2;
+   2 = modules génériques sous `modules`, 3 = october.moth et Musique deviennent des collections.
+   Une version de l'app qui lit un numéro plus grand que le sien ne doit ni fusionner ni écrire :
+   elle ne connaît pas la forme de ces données. */
+const SCHEMA_VERSION = 3;
+/* Anciennes sections à la racine du document → instances de module. Chaque conversion reçoit l'ancienne
+   section, le nom personnalisé et le réglage de regroupement éventuels. Sert aussi aux données de départ. */
+const SECTION_TO_MODULE = {
+  kundalini: (old, name) => ({
+    type: "programme", label: name || "Kundalini",
+    config: { unitLabel: "min", start: old.start ?? null, weeks: old.weeks ?? 12, perWeek: old.perWeek ?? 5 },
+    entries: (old.sessions || []).map(x => ({ id: x.id, date: x.date, value: x.min ?? null, note: x.note || "" }))
+  }),
+  ecriture: (old, name) => ({
+    type: "cumul", label: name || "Écriture",
+    config: { unitLabel: "mots", goal: old.goal ?? 40000, title: old.title || "", categories: (old.chapters || []).map(x => ({ id: x.id, name: x.name, goal: x.goal })), categoryLabel: "Chapitre", scraps: true, scrapsLabel: "Fragments" },
+    entries: (old.sessions || []).map(x => ({ id: x.id, date: x.date, value: x.words ?? null, category: x.chapter || "" })),
+    scraps: (old.fragments || []).map(f => ({ id: f.id, date: f.date, text: f.text }))
+  }),
+  phidippus: (old, name) => ({
+    type: "rappels", label: name || "Phidippus",
+    config: { subtitle: old.name || "", types: [{ id: "repas", label: "Repas", every: old.feedEvery ?? 6 }, { id: "brumisation", label: "Brumisation", every: old.mistEvery ?? 3 }, { id: "mue", label: "Mue", every: 0 }] },
+    entries: (old.log || []).map(x => ({ id: x.id, date: x.date, type: x.type, note: x.note || "" }))
+  }),
+  moth: (old, name, groups) => ({
+    type: "collection", label: name || "october.moth",
+    config: { display: "colonnes", description: "", statuses: ["Idée", "Brouillon", "Prêt", "Publié"], doneFrom: 3, statusLabel: "Étape", addLabel: "Nouvelle idée de post",
+      fields: { title: "Titre ou accroche", subtitle: "", tag: "Thème, archétype", due: "Publication prévue", text: "Légende" },
+      groups: { on: true, sort: "name", hideDone: false, title: "", ...(groups || {}), by: "tag" } },
+    entries: (old.posts || []).map(p => ({ id: p.id, title: p.title || "", subtitle: "", tag: p.theme || "", due: p.due || "", text: p.caption || "", status: p.status }))
+  }),
+  musique: (old, name, groups) => ({
+    type: "collection", label: name || "Musique",
+    config: { display: "liste", description: "Albums de l'éveil, et artistes dont la mue stylistique fait elle-même le récit d'une transformation.",
+      statuses: ["À écouter", "Écouté", "Retenu"], doneFrom: 1, statusLabel: "Statut", addLabel: "Ajouter un album",
+      fields: { title: "Artiste", subtitle: "Album", tag: "", due: "", text: "Note" },
+      groups: { on: true, sort: "name", hideDone: false, title: "", ...(groups || {}), by: "title" } },
+    entries: (old.albums || []).map(a => ({ id: a.id, title: a.artist || "", subtitle: a.album || "", tag: "", due: "", text: a.note || "", status: a.status }))
+  })
+};
+/* Ne recrée jamais un module manquant : un module absent chez un site existant a été supprimé exprès.
+   Si le module existe déjà alors que l'ancienne section réapparaît (une ancienne version de l'app, restée
+   ouverte sur un autre appareil, a pu y écrire entre-temps), ses entrées absentes sont absorbées, pas perdues. */
 function migrateModules(d) {
   d.modules = d.modules || {};
-  if (d.kundalini) {
-    if (!d.modules.kundalini) d.modules.kundalini = {
-      type: "programme", label: (d.config && d.config.labels && d.config.labels.kundalini) || "Kundalini",
-      config: { unitLabel: "min", start: d.kundalini.start ?? null, weeks: d.kundalini.weeks ?? 12, perWeek: d.kundalini.perWeek ?? 5 },
-      entries: (d.kundalini.sessions || []).map(x => ({ id: x.id, date: x.date, value: x.min ?? null, note: x.note || "" }))
-    };
-    delete d.kundalini;
+  const cfg = d.config || {}, labels = cfg.labels || {}, groups = cfg.groups || {};
+  for (const [key, convert] of Object.entries(SECTION_TO_MODULE)) {
+    if (!d[key]) continue;
+    const inst = convert(d[key], labels[key], groups[key]), cur = d.modules[key];
+    if (!cur) d.modules[key] = inst;
+    else if (cur.type === inst.type) for (const list of ["entries", "scraps"]) if (inst[list]) {
+      cur[list] = cur[list] || [];
+      for (const x of inst[list]) if (!cur[list].some(y => y.id === x.id)) cur[list].push(x);
+    }
+    delete d[key];
+    if (inst.type === "collection") delete groups[key]; // le regroupement vit désormais dans l'instance
   }
-  if (d.ecriture) {
-    if (!d.modules.ecriture) d.modules.ecriture = {
-      type: "cumul", label: (d.config && d.config.labels && d.config.labels.ecriture) || "Écriture",
-      config: { unitLabel: "mots", goal: d.ecriture.goal ?? 40000, title: d.ecriture.title || "", categories: (d.ecriture.chapters || []).map(x => ({ id: x.id, name: x.name, goal: x.goal })), categoryLabel: "Chapitre", scraps: true, scrapsLabel: "Fragments" },
-      entries: (d.ecriture.sessions || []).map(x => ({ id: x.id, date: x.date, value: x.words ?? null, category: x.chapter || "" })),
-      scraps: (d.ecriture.fragments || []).map(f => ({ id: f.id, date: f.date, text: f.text }))
-    };
-    delete d.ecriture;
-  }
-  if (d.phidippus) {
-    if (!d.modules.phidippus) d.modules.phidippus = {
-      type: "rappels", label: (d.config && d.config.labels && d.config.labels.phidippus) || "Phidippus",
-      config: { subtitle: d.phidippus.name || "", types: [{ id: "repas", label: "Repas", every: d.phidippus.feedEvery ?? 6 }, { id: "brumisation", label: "Brumisation", every: d.phidippus.mistEvery ?? 3 }, { id: "mue", label: "Mue", every: 0 }] },
-      entries: (d.phidippus.log || []).map(x => ({ id: x.id, date: x.date, type: x.type, note: x.note || "" }))
-    };
-    delete d.phidippus;
-  }
+  // Le nom d'une instance vit dans l'instance : un ancien nom personnalisé resté dans config.labels
+  // masquerait tout renommage ultérieur.
+  for (const [id, inst] of Object.entries(d.modules)) if (Object.hasOwn(labels, id)) { if (labels[id]) inst.label = labels[id]; delete labels[id]; }
 }
 /* ---- registre des types de module : la partie pure (sans DOM) ----
    Chaque type déclare ses valeurs par défaut, la forme de ses entrées et ses règles de validation.
@@ -765,8 +793,51 @@ const MODULE_TYPES = {
     defaults: () => ({ config: { subtitle: "", types: [{ id: "fait", label: "Fait", every: 0 }] }, entries: [] }),
     entry: (e, input) => { e.type = input.type || "note"; },
     validate(inst, v) { if (inst.config.types != null) v.list(inst.config.types, "types").forEach(x => v.num(x.every, "fréquence", 0, 3650)); }
+  },
+  collection: {
+    label: "Collection (éléments à statuts, en colonnes ou en liste)",
+    datedEntries: false, // un élément n'a pas de date de journal ; `due` est facultative
+    defaults: () => ({ config: { display: "liste", description: "", statuses: ["À faire", "En cours", "Fait"], doneFrom: 2, statusLabel: "Statut", addLabel: "Ajouter",
+      fields: { title: "Titre", subtitle: "", tag: "Étiquette", due: "", text: "Note" },
+      groups: { on: true, by: "tag", sort: "name", hideDone: false, title: "" } }, entries: [] }),
+    normalize(inst) {
+      const c = inst.config, def = MODULE_TYPES.collection.defaults().config;
+      for (const k of Object.keys(def)) if (c[k] == null) c[k] = def[k];
+      c.fields = { ...def.fields, ...c.fields };
+      if (!c.fields.title) c.fields.title = def.fields.title;
+      c.groups = { ...def.groups, ...c.groups };
+      if (!Array.isArray(c.statuses) || c.statuses.length < 2) c.statuses = def.statuses;
+      c.doneFrom = Math.min(c.statuses.length - 1, Math.max(1, Math.round(+c.doneFrom) || 1));
+      for (const e of inst.entries) if (!c.statuses.includes(e.status)) e.status = c.statuses[0];
+    },
+    validate(inst, v) {
+      const c = inst.config;
+      if (c.statuses != null && (!Array.isArray(c.statuses) || c.statuses.length < 2 || c.statuses.length > 12 ||
+          c.statuses.some(x => typeof x !== "string" || !x.trim() || x.length > 40))) v.fail("statuts");
+      v.num(c.doneFrom, "statut « fait »", 0, 12);
+      if (c.display != null && !["liste", "colonnes"].includes(c.display)) v.fail("affichage");
+      if (c.fields != null && (typeof c.fields !== "object" || Object.values(c.fields).some(x => typeof x !== "string"))) v.fail("champs");
+      for (const e of inst.entries) {
+        if (typeof e.title !== "string") v.fail("titre");
+        if (e.due && !(typeof e.due === "string" && validDate(e.due))) v.fail("date");
+      }
+    }
   }
 };
+/* Crée ou met à jour un élément de collection. Un champ désactivé (absent du formulaire) garde sa valeur. */
+function saveCollectionItem(inst, input, id) {
+  const c = inst.config, item = inst.entries.find(x => x.id === id) || null, keep = f => input[f] ?? (item ? item[f] : "");
+  const v = {
+    title: requireText(input.title, c.fields.title, 300),
+    subtitle: String(keep("subtitle")).trim(), tag: String(keep("tag")).trim(), text: String(keep("text")),
+    due: input.due !== undefined ? (input.due && validDate(input.due) ? input.due : "") : (item ? item.due : ""),
+    status: c.statuses.includes(input.status) ? input.status : item ? item.status : c.statuses[0]
+  };
+  if (item) return Object.assign(item, v);
+  const e = { id, ...v };
+  inst.entries.push(e);
+  return e;
+}
 function numericValue(raw) {
   const value = raw != null && raw !== "" ? Number(raw) : null;
   if (value !== null && !Number.isFinite(value)) throw new Error("Valeur invalide"); // un NaN contaminerait tous les totaux
@@ -774,8 +845,10 @@ function numericValue(raw) {
 }
 function addJournalEntry(instance, input, id, defaultDate) {
   const date = input.date && validDate(input.date) ? input.date : defaultDate;
+  const type = MODULE_TYPES[instance.type];
+  if (!type.entry) throw new Error("Ce module ne tient pas de journal");
   const entry = { id, date, note: input.note || "" };
-  MODULE_TYPES[instance.type].entry(entry, input);
+  type.entry(entry, input);
   instance.entries.push(entry);
   return entry;
 }
@@ -823,7 +896,7 @@ function setSaving(t) { $("#saving").textContent = t; }
 /* ================= stores ================= */
 
 const MODULE_DEFS = {
-  chantier: "Chantier", moth: "october.moth", musique: "Musique", budget: "Budget", assistant: "Assistant", inbox: "Capture"
+  chantier: "Chantier", budget: "Budget", assistant: "Assistant", inbox: "Capture"
 };
 const MODULE_ORDER = ["chantier", "kundalini", "ecriture", "moth", "phidippus", "musique", "budget", "assistant", "inbox"];
 const OFF_BY_DEFAULT = ["assistant"];
@@ -833,7 +906,10 @@ function siteSeed() {
   const modules = {
     kundalini: { type: "programme", label: "Kundalini", config: { unitLabel: "min", start: null, weeks: 12, perWeek: 5 }, entries: [] },
     ecriture: { type: "cumul", label: "Écriture", config: { unitLabel: "mots", goal: 40000, title: "La spiritualité du spectre dissociatif", categories: [], categoryLabel: "Chapitre", scraps: true, scrapsLabel: "Fragments" }, entries: [], scraps: [] },
-    phidippus: { type: "rappels", label: "Phidippus", config: { subtitle: "", types: [{ id: "repas", label: "Repas", every: 6 }, { id: "brumisation", label: "Brumisation", every: 3 }, { id: "mue", label: "Mue", every: 0 }] }, entries: [] }
+    phidippus: { type: "rappels", label: "Phidippus", config: { subtitle: "", types: [{ id: "repas", label: "Repas", every: 6 }, { id: "brumisation", label: "Brumisation", every: 3 }, { id: "mue", label: "Mue", every: 0 }] }, entries: [] },
+    moth: SECTION_TO_MODULE.moth({ posts: [] }),
+    musique: SECTION_TO_MODULE.musique({ albums: ["Ulver", "Dead Can Dance", "Kate Bush", "Jonathan Hultén", "Chelsea Wolfe", "Zola Jesus", "iamamiwhoami"]
+      .map(a => ({ id: uid(), artist: a, album: "", status: "À écouter", note: "" })) })
   };
   return {
     updatedAt: 0, schemaVersion: SCHEMA_VERSION,
@@ -842,9 +918,6 @@ function siteSeed() {
       assistant: { model: "claude-sonnet-5", actions: true, share: { chantier: true, kundalini: true, ecriture: true, moth: true, phidippus: true, musique: true, budget: false, inbox: true } } },
     budget: { entries: [], envelopes: [["Travaux", 500], ["Courses", 300], ["Loisirs", 100], ["Abonnements", 50]].map(([name, limit]) => ({ id: uid(), name, limit })) },
     modules,
-    moth: { posts: [] },
-    musique: { albums: ["Ulver", "Dead Can Dance", "Kate Bush", "Jonathan Hultén", "Chelsea Wolfe", "Zola Jesus", "iamamiwhoami"]
-      .map(a => ({ id: uid(), artist: a, album: "", status: "À écouter", note: "" })) },
     inbox: { items: [] }
   };
 }
@@ -922,16 +995,7 @@ const GROUPERS = {
     items: () => board.data.tasks, key: (t, f) => f === "effort" ? ["", "Petit", "Moyen", "Gros"][t.effort || 1] : t[f], store: () => board,
     groups(f) { return itemGroups(this.items(), t => this.key(t, f), t => t.done); }
   },
-  moth: {
-    fields: { theme: "Thème" }, renamable: ["theme"], filterable: true,
-    items: () => S().moth.posts, key: (p, f) => p[f], store: () => site,
-    groups(f) { return itemGroups(this.items(), p => p[f], p => p.status === "Publié"); }
-  },
-  musique: {
-    fields: { artist: "Artiste" }, renamable: ["artist"], filterable: true,
-    items: () => S().musique.albums, key: (a, f) => a[f], store: () => site,
-    groups(f) { return itemGroups(this.items(), a => a[f], a => a.status !== "À écouter"); }
-  }
+
 };
 GROUPERS.budget = {
   fields: { cat: "Enveloppe" }, renamable: ["cat"], filterable: true,
@@ -957,8 +1021,7 @@ function normalizeSite(d) {
   for (const id of Object.keys(d.modules)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: true });
   for (const [mod, g] of Object.entries(GROUPERS)) d.config.groups[mod] = { on: true, by: Object.keys(g.fields)[0], sort: "name", hideDone: false, title: "", ...(d.config.groups[mod] || {}) };
   for (const k of Object.keys(seed)) if (k !== "modules" && typeof seed[k] === "object" && !Array.isArray(seed[k])) for (const f of Object.keys(seed[k])) if (d[k][f] == null) d[k][f] = seed[k][f];
-  if (!Array.isArray(d.moth.posts)) d.moth.posts = [];
-  d.moth.posts.forEach(p => { if (!["Idée", "Brouillon", "Prêt", "Publié"].includes(p.status)) p.status = "Idée"; });
+  for (const inst of Object.values(d.modules)) if (Object.hasOwn(MODULE_TYPES, inst.type) && MODULE_TYPES[inst.type].normalize) MODULE_TYPES[inst.type].normalize(inst);
   return d;
 }
 const board = makeStore("selene-board-v1", "board/state", () => ({ updatedAt: 0, tasks: [] }));
@@ -967,21 +1030,29 @@ const S = () => site.data; // lecture seule : la normalisation a lieu à l'entr�
 const label = id => { const s = S(); return s.config.labels[id] || (s.modules[id] && s.modules[id].label) || MODULE_DEFS[id]; };
 const enabled = id => { const m = S().config.modules.find(m => m.id === id); return m ? m.on : false; };
 
-const gcfg = mod => S().config.groups[mod];
+/* Regroupement d'un module : défini en dur pour les modules fixes (GROUPERS), fourni par le type pour une instance. */
+function grouperFor(mod) {
+  if (Object.hasOwn(GROUPERS, mod)) return GROUPERS[mod];
+  const inst = Object.hasOwn(S().modules, mod) ? S().modules[mod] : null;
+  return inst && TYPE_UI[inst.type].grouper ? TYPE_UI[inst.type].grouper(inst) : null;
+}
+const gcfg = mod => Object.hasOwn(GROUPERS, mod) ? S().config.groups[mod] : S().modules[mod].config.groups;
+const groupBy = mod => { const G = grouperFor(mod), by = gcfg(mod).by; return G.fields[by] ? by : Object.keys(G.fields)[0]; }; // un champ désactivé depuis ne casse rien
 function groupPanel(mod, hint) {
-  const G = GROUPERS[mod], c = gcfg(mod);
-  if (!c || !c.on) return "";
-  let gs = G.groups(c.by);
+  const G = grouperFor(mod), c = gcfg(mod);
+  if (!G || !c || !c.on) return "";
+  const by = groupBy(mod);
+  let gs = G.groups(by);
   if (c.hideDone) gs = gs.filter(g => g.pct !== 100);
   const sorters = { name: (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name, "fr"), pct: (a, b) => (b.pct ?? -1) - (a.pct ?? -1), left: (a, b) => ((a.pct ?? 101)) - ((b.pct ?? 101)) };
   gs.sort(sorters[c.sort] || sorters.name);
   const active = gFilter[mod];
-  const title = c.title || `Par ${G.fields[c.by].toLowerCase()}`;
+  const title = c.title || `Par ${G.fields[by].toLowerCase()}`;
   return `<section><div class="row" style="margin-bottom:4px"><h3 style="margin:0">${esc(title)}</h3><span class="spacer"></span><a class="btn ghost sm" href="#reglages" data-act="goto-groups" data-mod="${esc(mod)}">régler</a></div>
     <p class="hint">${hint}</p>
     <div class="rooms">${gs.map(g => `<button class="room ${active === g.name ? "active" : ""} ${g.pct > 100 ? "over" : ""}" ${G.filterable ? `data-act="grp-filter" data-mod="${esc(mod)}" data-g="${esc(g.name)}"` : "disabled"}><div class="fill" style="height:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></button>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
 }
-const gMatch = (mod, it) => { const v = gFilter[mod]; if (!v) return true; const G = GROUPERS[mod]; return (G.key(it, gcfg(mod).by) || "Sans groupe") === v; };
+const gMatch = (mod, it) => { const v = gFilter[mod]; if (!v) return true; return (grouperFor(mod).key(it, groupBy(mod)) || "Sans groupe") === v; };
 
 /* ================= chantier logic ================= */
 function dueLabel(t) {
@@ -1095,8 +1166,6 @@ VIEWS.accueil = () => {
 
 const SUMMARY = {
   chantier: () => { const o = openTasks(), now = todayISO(), late = o.filter(t => t.due && t.due < now).length; const all = board.data.tasks.length; return `${late ? `<span class="late">${late} en retard</span>, ` : ""}${o.length} à faire, ${all ? Math.round(100 * (all - o.length) / all) : 0} % du chantier`; },
-  moth: () => { const p = S().moth.posts; const c = st => p.filter(x => x.status === st).length; return `${c("Idée")} idées, ${c("Brouillon")} brouillons, ${c("Prêt")} prêts`; },
-  musique: () => { const a = S().musique.albums; return `${a.filter(x => x.status === "À écouter").length} à écouter, ${a.filter(x => x.status === "Retenu").length} retenus`; },
   budget: () => { const m = todayISO().slice(0, 7), es = S().budget.entries.filter(e => (e.date || "").slice(0, 7) === m); const out = es.filter(e => e.type === "dépense").reduce((a, e) => a + +e.amount, 0), inn = es.filter(e => e.type === "revenu").reduce((a, e) => a + +e.amount, 0); return `Ce mois-ci : ${money(out)} dépensés, solde <span class="${inn - out < 0 ? "neg" : "pos"}">${money(inn - out)}</span>`; },
   assistant: () => { const b = backend(); return b === "sample" ? "Branché via claude.ai" : b === "api" ? "Branché via ta clé API" : "Pas encore branché"; },
   inbox: () => `${S().inbox.items.length} à trier`
@@ -1134,50 +1203,12 @@ VIEWS.chantier = () => {
   </aside></div>`;
 };
 
-const MOTH_COLS = ["Idée", "Brouillon", "Prêt", "Publié"];
-VIEWS.moth = () => {
-  const posts = S().moth.posts.filter(p => gMatch("moth", p));
-  return `<div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label("moth"))}</h2><span class="spacer"></span><button class="btn acc" data-act="post-new">Nouvelle idée de post</button></div>
-  <div class="board" style="margin-bottom:34px">${MOTH_COLS.map((c, ci) => `<div class="col"><h3>${c} <span class="hint" style="font-size:.95rem">${posts.filter(p => p.status === c).length}</span></h3>
-    ${posts.filter(p => p.status === c).sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")).map(p => `<div class="card" data-id="${esc(p.id)}"><b>${esc(p.title)}</b>${p.theme ? `<div class="meta"><span class="tag">${esc(p.theme)}</span>${p.due ? `<span>${fmt(p.due)}</span>` : ""}</div>` : p.due ? `<div class="meta">${fmt(p.due)}</div>` : ""}${p.caption ? `<p>${esc(p.caption.slice(0, 160))}${p.caption.length > 160 ? "…" : ""}</p>` : ""}
-      <div class="row">${ci > 0 ? `<button class="btn ghost sm" data-act="post-move" data-d="-1" aria-label="Reculer">←</button>` : ""}${ci < 3 ? `<button class="btn ghost sm" data-act="post-move" data-d="1" aria-label="Avancer">→</button>` : ""}<span class="spacer"></span><button class="btn ghost sm" data-act="post-edit">modifier</button><button class="btn ghost sm" data-act="post-del">suppr.</button></div></div>`).join("") || `<p class="empty">Vide.</p>`}</div>`).join("")}</div>
-  ${groupPanel("moth", "Part publiée de chaque thème. Clique pour filtrer le tableau.")}`;
-};
-function postForm(p) {
-  openForm(p ? "Modifier le post" : "Nouvelle idée de post", [
-    { n: "title", l: "Titre ou accroche", req: true },
-    { row: [{ n: "theme", l: "Thème, archétype" }, { n: "due", l: "Publication prévue", t: "date" }] },
-    { n: "status", l: "Étape", t: "select", o: MOTH_COLS },
-    { n: "caption", l: "Légende", t: "textarea", rows: 6 }
-  ], p || { status: "Idée" }, v => {
-    const cur = p && S().moth.posts.find(x => x.id === p.id); if (cur) Object.assign(cur, v); else S().moth.posts.push({ id: uid(), ...v });
-    site.save(); render();
-  });
-}
-
-const MUS_ST = ["À écouter", "Écouté", "Retenu"];
-let musFilter = "";
-VIEWS.musique = () => {
-  const al = S().musique.albums.filter(a => (!musFilter || a.status === musFilter) && gMatch("musique", a));
-  return `<div class="row" style="margin-bottom:8px"><h2 style="margin:0">${esc(label("musique"))}</h2><span class="spacer"></span><button class="btn acc" data-act="alb-new">Ajouter un album</button></div>
-  <p class="hint">Albums de l'éveil, et artistes dont la mue stylistique fait elle-même le récit d'une transformation.</p>
-  <div class="row" style="margin-bottom:10px"><select data-act="mus-f" aria-label="Filtrer"><option value="">Tous</option>${MUS_ST.map(s => `<option ${s === musFilter ? "selected" : ""}>${s}</option>`).join("")}</select></div>
-  <div class="two"><div><ul class="plain">${al.map(a => `<li class="item" data-id="${esc(a.id)}"><span></span><div><b>${esc(a.artist)}</b>${a.album ? `, <i>${esc(a.album)}</i>` : ` <span class="hint">album à préciser</span>`}${a.note ? `<div class="note" style="margin:2px 0 0">${esc(a.note)}</div>` : ""}</div>
-    <div class="row"><select data-act="alb-st" aria-label="Statut">${MUS_ST.map(s => `<option ${s === a.status ? "selected" : ""}>${s}</option>`).join("")}</select><button class="btn ghost sm" data-act="alb-edit">modifier</button><button class="btn ghost sm" data-act="alb-del">suppr.</button></div></li>`).join("") || `<li class="empty">Rien dans ce filtre.</li>`}</ul></div><div>${groupPanel("musique", "Part écoutée de chaque artiste. Clique pour filtrer.")}</div></div>`;
-};
-function albForm(a) {
-  openForm(a ? "Modifier l'album" : "Ajouter un album", [
-    { row: [{ n: "artist", l: "Artiste", req: true }, { n: "album", l: "Album" }] },
-    { n: "status", l: "Statut", t: "select", o: MUS_ST }, { n: "note", l: "Note", t: "textarea", rows: 3 }
-  ], a || { status: "À écouter" }, v => { const cur = a && S().musique.albums.find(x => x.id === a.id); if (cur) Object.assign(cur, v); else S().musique.albums.push({ id: uid(), ...v }); site.save(); render(); });
-}
-
 VIEWS.inbox = () => {
   const it = S().inbox.items;
   return `<h2>${esc(label("inbox"))}</h2><p class="hint">Tout ce qui traîne dans ta tête, en attendant d'avoir une place.</p>
   <div class="capture" style="margin-bottom:18px"><input id="capIn" placeholder="Une idée, une course, un rêve…" aria-label="Capture rapide"><button class="btn acc" data-act="cap-add">Garder</button></div>
   <ul class="plain">${[...it].reverse().map(x => `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}</div>
-    <div class="row" style="margin-top:6px">${enabled("chantier") ? `<button class="btn sm" data-act="cap-to" data-to="chantier">→ Chantier</button>` : ""}${enabled("ecriture") ? `<button class="btn sm" data-act="cap-to" data-to="ecriture">→ Fragment</button>` : ""}${enabled("moth") ? `<button class="btn sm" data-act="cap-to" data-to="moth">→ Post</button>` : ""}${enabled("musique") ? `<button class="btn sm" data-act="cap-to" data-to="musique">→ Album</button>` : ""}</div></div>
+    <div class="row" style="margin-top:6px">${enabled("chantier") ? `<button class="btn sm" data-act="cap-to" data-to="chantier">→ Chantier</button>` : ""}${enabled("ecriture") ? `<button class="btn sm" data-act="cap-to" data-to="ecriture">→ Fragment</button>` : ""}${Object.entries(S().modules).filter(([k, m]) => m.type === "collection" && enabled(k)).map(([k]) => `<button class="btn sm" data-act="cap-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div></div>
     <button class="btn ghost sm" data-act="cap-del">suppr.</button></li>`).join("") || `<li class="empty">Vide. Le silence d'une clairière, ou celui d'un cerveau.</li>`}</ul>`;
 };
 
@@ -1222,19 +1253,19 @@ VIEWS.reglages = () => {
       <button class="btn sm" data-act="mod-add" style="margin-top:8px">Créer</button></details>
   </section>
   <section id="modreg"><h3>Réglages par module</h3><p class="hint">Un bloc par module actif, dans l'ordre de la navigation : ses réglages propres, et le regroupement en pourcentage quand il existe.</p>
-    ${c.modules.filter(m => enabled(m.id) && (s.modules[m.id] || GROUPERS[m.id])).map(m => { const mod = m.id, inst = s.modules[mod], G = !inst && GROUPERS[mod], g = G ? gcfg(mod) : null;
-      const names = G && G.renamable.includes(g.by) ? [...new Set(G.items().map(it => it[g.by]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr")) : [];
+    ${c.modules.filter(m => enabled(m.id) && (s.modules[m.id] || grouperFor(m.id))).map(m => { const mod = m.id, inst = s.modules[mod], G = grouperFor(mod), g = G ? gcfg(mod) : null, by = G ? groupBy(mod) : null;
+      const names = G && G.renamable.includes(by) ? [...new Set(G.items().map(it => it[by]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr")) : [];
       return `<details id="mreg-${esc(mod)}" data-mod="${esc(mod)}" style="border-top:1px solid var(--rule);padding:12px 0">
         <summary style="cursor:pointer;font-size:1.05rem;font-weight:600">${esc(label(mod))}</summary>
         <div style="margin-top:10px">
         ${inst ? TYPE_UI[inst.type].settings(mod, inst) : ""}
         ${G ? `<div class="row" style="margin-top:0"><label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="grp-on" ${g.on ? "checked" : ""}>Regrouper en pourcentage</label></div>
           ${g.on ? `<div class="field-row" style="margin-top:8px">
-            <label>Regrouper par<select data-act="grp-by">${Object.entries(G.fields).map(([k, l]) => `<option value="${k}" ${g.by === k ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+            <label>Regrouper par<select data-act="grp-by">${Object.entries(G.fields).map(([k, l]) => `<option value="${esc(k)}" ${by === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
             <label>Trier par<select data-act="grp-sort"><option value="name" ${g.sort === "name" ? "selected" : ""}>Ordre naturel</option><option value="pct" ${g.sort === "pct" ? "selected" : ""}>Le plus avancé d'abord</option><option value="left" ${g.sort === "left" ? "selected" : ""}>Le plus en retard d'abord</option></select></label></div>
-            <div class="field-row" style="margin-top:8px"><label>Titre du bloc<input data-act="grp-title" value="${esc(g.title)}" placeholder="Par ${esc(G.fields[g.by].toLowerCase())}"></label>
+            <div class="field-row" style="margin-top:8px"><label>Titre du bloc<input data-act="grp-title" value="${esc(g.title)}" placeholder="Par ${esc(G.fields[by].toLowerCase())}"></label>
             <label style="display:flex;gap:8px;align-items:center;align-self:end;padding-bottom:10px"><input type="checkbox" data-act="grp-hide" ${g.hideDone ? "checked" : ""}>Masquer les groupes à 100 %</label></div>
-            ${names.length ? `<details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">Renommer ou fusionner des ${esc(G.fields[g.by].toLowerCase())}s</summary><p class="hint" style="margin:6px 0">Donne le même nom à deux groupes pour les fusionner.</p>${names.map(n => `<div class="set" style="grid-template-columns:1fr"><input data-act="grp-rename" data-old="${esc(n)}" value="${esc(n)}" aria-label="Renommer ${esc(n)}"></div>`).join("")}</details>` : ""}
+            ${names.length ? `<details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">Renommer ou fusionner des ${esc(G.fields[by].toLowerCase())}s</summary><p class="hint" style="margin:6px 0">Donne le même nom à deux groupes pour les fusionner.</p>${names.map(n => `<div class="set" style="grid-template-columns:1fr"><input data-act="grp-rename" data-old="${esc(n)}" value="${esc(n)}" aria-label="Renommer ${esc(n)}"></div>`).join("")}</details>` : ""}
             ${mod === "budget" ? `<div style="margin-top:10px"><span class="hint" style="margin:0">Enveloppes mensuelles</span>${S().budget.envelopes.map((v, i) => `<div class="set" data-vi="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="env-name" value="${esc(v.name)}" aria-label="Nom de l'enveloppe"><input type="number" min="0" data-act="env-limit" value="${v.limit || ""}" placeholder="€ / mois" aria-label="Plafond mensuel"><button class="btn ghost sm" data-act="env-del">suppr.</button></div>`).join("")}<button class="btn sm" data-act="env-add" style="margin-top:8px">Ajouter une enveloppe</button></div>` : ""}` : ""}` : ""}
         </div>
       </details>`; }).join("")}
@@ -1324,18 +1355,10 @@ const CLICK = {
     const drop = () => { s.inbox.items = s.inbox.items.filter(x => x !== it); site.save(); };
     if (to === "ecriture") { s.modules.ecriture.scraps.push({ id: uid(), text: it.text, date: it.date }); drop(); render(); toast("Rangé dans les fragments."); }
     else if (to === "chantier") { const t = addTask(board.data.tasks, { title: it.text }, uid(), todayISO()); board.save(); drop(); taskForm(t); }
-    else if (to === "moth") { const p = { id: uid(), title: it.text, theme: "", due: "", status: "Idée", caption: "" }; s.moth.posts.push(p); drop(); render(); toast("Ajouté aux idées de posts."); }
-    else if (to === "musique") { s.musique.albums.push({ id: uid(), artist: it.text, album: "", status: "À écouter", note: "" }); drop(); render(); toast("Ajouté à la musique."); }
+    else if (Object.hasOwn(s.modules, to) && s.modules[to].type === "collection") { saveCollectionItem(s.modules[to], { title: it.text }, uid()); drop(); render(); toast(`Ajouté à ${label(to)}.`); }
   },
   "entry-add": el => entryAdd(el.dataset.mod),
   "entry-del": el => { deleteJournalEntry(S().modules[el.dataset.mod], idOf(el)); site.save(); render(); },
-  "post-new": () => postForm(null),
-  "post-edit": el => postForm(S().moth.posts.find(p => p.id === idOf(el))),
-  "post-del": async el => { const m = S().moth; if (await ask("Supprimer ce post ?")) { m.posts = m.posts.filter(p => p.id !== idOf(el)); site.save(); render(); } },
-  "post-move": el => { const p = S().moth.posts.find(x => x.id === idOf(el)); const i = MOTH_COLS.indexOf(p.status) + +el.dataset.d; p.status = MOTH_COLS[Math.max(0, Math.min(3, i))]; site.save(); render(); if (p.status === "Publié") toast("Publié. L'algorithme décidera de ta valeur."); },
-  "alb-new": () => albForm(null),
-  "alb-edit": el => albForm(S().musique.albums.find(a => a.id === idOf(el))),
-  "alb-del": el => { const m = S().musique; m.albums = m.albums.filter(a => a.id !== idOf(el)); site.save(); render(); },
   "mod-add": () => {
     const type = $("#newModType").value, name = $("#newModName").value.trim();
     if (!name) return toast("Donne un nom au module.");
@@ -1388,10 +1411,8 @@ document.addEventListener("change", e => {
   else if (act === "task-step") { const t = taskOf(el); t.steps[+el.dataset.i].d = el.checked; board.save(); render(); }
   else if (act === "f-room") { roomFilter = el.value; render(); }
   else if (act === "f-cat") { catFilter = el.value; render(); }
-  else if (act === "mus-f") { musFilter = el.value; render(); }
-  else if (act === "alb-st") { S().musique.albums.find(a => a.id === idOf(el)).status = el.value; site.save(); render(); }
   else if (act && act.startsWith("grp-") && act !== "grp-filter") {
-    const mod = el.closest("[data-mod]").dataset.mod, g = gcfg(mod), G = GROUPERS[mod];
+    const mod = el.closest("[data-mod]").dataset.mod, g = gcfg(mod), G = grouperFor(mod);
     if (act === "grp-on") g.on = el.checked;
     else if (act === "grp-by") { g.by = el.value; gFilter[mod] = ""; }
     else if (act === "grp-sort") g.sort = el.value;
@@ -1399,7 +1420,7 @@ document.addEventListener("change", e => {
     else if (act === "grp-title") g.title = el.value.trim();
     else if (act === "grp-rename") {
       const from = el.dataset.old, to = el.value.trim(); if (!to || to === from) return;
-      G.items().forEach(it => { if (it[g.by] === from) it[g.by] = to; });
+      const by = groupBy(mod); G.items().forEach(it => { if (it[by] === from) it[by] = to; });
       if (mod === "budget") S().budget.envelopes.forEach(v => { if (v.name === from) v.name = to; });
       if (gFilter[mod] === from) gFilter[mod] = to;
       if (mod === "chantier" && roomFilter === from) roomFilter = to;
@@ -1424,8 +1445,12 @@ document.addEventListener("change", e => {
     site.save(); render();
   }
   else if (el.dataset.setMod) {
-    const [id, f] = el.dataset.setMod.split("."), cfg = S().modules[id].config;
+    // « id.champ » ou « id.groupe.champ » ; jamais un chemin vers le prototype des objets.
+    const [id, ...path] = el.dataset.setMod.split("."), f = path.pop();
+    if ([...path, f].some(k => k === "__proto__" || k === "constructor" || k === "prototype")) return;
+    const cfg = path.reduce((o, k) => o[k], S().modules[id].config);
     let v = el.value; if (el.type === "number") v = Math.max(1, +v || 1); if (el.type === "date") v = v || null;
+    if (el.required && !String(v).trim()) { el.blur(); return render(); } // champ obligatoire vidé : on garde l'ancienne valeur
     cfg[f] = v; site.save(); el.blur(); render();
   }
   else if (el.dataset.set) {
@@ -1615,6 +1640,108 @@ const TYPE_UI = {
     }
   }
 };
+/* ---- collection : éléments à statuts, en colonnes (tableau de production) ou en liste filtrable ---- */
+const colFilter = {}; // filtre de statut du mode liste, par module (propre à l'appareil, non enregistré)
+const modOf = el => el.closest("[data-mod]").dataset.mod;
+const itemOf = el => S().modules[modOf(el)].entries.find(x => x.id === idOf(el));
+const collectionDoneLines = ["« %t » est passé à « %s ». Le monde n'a rien remarqué, comme prévu.", "« %t » : %s. Une chose de moins qui attend ton attention.", "%s : « %t ». L'Œuvre avance, à pas de lichen."];
+function collectionForm(id, item) {
+  const c = S().modules[id].config, f = c.fields;
+  const extra = [f.subtitle && { n: "subtitle", l: f.subtitle }, f.tag && { n: "tag", l: f.tag }, f.due && { n: "due", l: f.due, t: "date" }].filter(Boolean);
+  const fields = [{ n: "title", l: f.title, req: true }];
+  for (let i = 0; i < extra.length; i += 2) fields.push({ row: extra.slice(i, i + 2) });
+  fields.push({ n: "status", l: c.statusLabel, t: "select", o: c.statuses });
+  if (f.text) fields.push({ n: "text", l: f.text, t: "textarea", rows: c.display === "colonnes" ? 6 : 3 });
+  openForm(item ? `Modifier « ${item.title} »` : c.addLabel, fields, item || { status: c.statuses[0] }, v => {
+    const inst = S().modules[id]; // relu : une synchro a pu remplacer les données pendant la saisie
+    if (!inst) return toast("Ce module a été supprimé entre-temps.");
+    saveCollectionItem(inst, v, item ? item.id : uid()); site.save(); render();
+  });
+}
+function collectionCard(id, e, ci, last) {
+  const f = S().modules[id].config.fields, meta = [f.tag && e.tag ? `<span class="tag">${esc(e.tag)}</span>` : "", f.due && e.due ? `<span>${fmt(e.due)}</span>` : ""].join("");
+  return `<div class="card" data-id="${esc(e.id)}"><b>${esc(e.title)}</b>${f.subtitle && e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ""}${meta ? `<div class="meta">${meta}</div>` : ""}${f.text && e.text ? `<p>${esc(e.text.slice(0, 160))}${e.text.length > 160 ? "…" : ""}</p>` : ""}
+      <div class="row">${ci > 0 ? `<button class="btn ghost sm" data-act="col-move" data-d="-1" aria-label="Reculer">←</button>` : ""}${ci < last ? `<button class="btn ghost sm" data-act="col-move" data-d="1" aria-label="Avancer">→</button>` : ""}<span class="spacer"></span><button class="btn ghost sm" data-act="col-edit">modifier</button><button class="btn ghost sm" data-act="col-del">suppr.</button></div></div>`;
+}
+TYPE_UI.collection = {
+  view(id) {
+    const inst = S().modules[id], c = inst.config, f = c.fields, items = inst.entries.filter(e => gMatch(id, e));
+    const head = `<div class="row" style="margin-bottom:${c.display === "colonnes" ? 20 : 8}px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="col-new">${esc(c.addLabel)}</button></div>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}`;
+    const panel = groupPanel(id, `Part arrivée à « ${esc(c.statuses[c.doneFrom])} » dans chaque groupe. Clique pour filtrer.`);
+    if (c.display === "colonnes") {
+      const byDue = (a, b) => (a.due || "9999").localeCompare(b.due || "9999");
+      return `<div data-mod="${esc(id)}">${head}<div class="board" style="margin-bottom:34px">${c.statuses.map((st, ci) => { const col = items.filter(e => e.status === st).sort(byDue);
+        return `<div class="col"><h3>${esc(st)} <span class="hint" style="font-size:.95rem">${col.length}</span></h3>${col.map(e => collectionCard(id, e, ci, c.statuses.length - 1)).join("") || `<p class="empty">Vide.</p>`}</div>`; }).join("")}</div>${panel}</div>`;
+    }
+    const filter = colFilter[id] || "", shown = items.filter(e => !filter || e.status === filter);
+    return `<div data-mod="${esc(id)}">${head}
+  <div class="row" style="margin-bottom:10px"><select data-act="col-f" aria-label="Filtrer"><option value="">Tous</option>${c.statuses.map(st => `<option ${st === filter ? "selected" : ""}>${esc(st)}</option>`).join("")}</select></div>
+  <div class="two"><div><ul class="plain">${shown.map(e => `<li class="item" data-id="${esc(e.id)}"><span></span><div><b>${esc(e.title)}</b>${f.subtitle ? (e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ` <span class="hint">${esc(f.subtitle.toLowerCase())} à préciser</span>`) : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}</div>
+    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm" data-act="col-edit">modifier</button><button class="btn ghost sm" data-act="col-del">suppr.</button></div></li>`).join("") || `<li class="empty">Rien dans ce filtre.</li>`}</ul></div><div>${panel}</div></div></div>`;
+  },
+  settings: (id, { config: c }) => {
+    const f = c.fields, fid = esc(id);
+    const field = (k, l, hint) => `<label>${l}<input data-set-mod="${fid}.fields.${k}" value="${esc(f[k])}" placeholder="${hint}" ${k === "title" ? "required" : ""}></label>`;
+    return `<div class="field-row"><label>Affichage<select data-set-mod="${fid}.display"><option value="liste" ${c.display === "liste" ? "selected" : ""}>Liste filtrable</option><option value="colonnes" ${c.display === "colonnes" ? "selected" : ""}>Colonnes (une par statut)</option></select></label><label>Bouton d'ajout<input data-set-mod="${fid}.addLabel" value="${esc(c.addLabel)}" required></label></div>
+    <div class="field-row" style="margin-top:8px"><label>Description<input data-set-mod="${fid}.description" value="${esc(c.description)}" placeholder="Une phrase sous le titre"></label><label>Nom des statuts<input data-set-mod="${fid}.statusLabel" value="${esc(c.statusLabel)}" required></label></div>
+    <p class="hint" style="margin:12px 0 4px">Champs d'un élément. Laisser un nom vide masque le champ.</p>
+    <div class="field-row">${field("title", "Titre", "Titre")}${field("subtitle", "Sous-titre", "(masqué)")}</div>
+    <div class="field-row" style="margin-top:8px">${field("tag", "Étiquette (sert au regroupement)", "(masquée)")}${field("due", "Date", "(masquée)")}</div>
+    <div class="field-row" style="margin-top:8px">${field("text", "Texte long", "(masqué)")}<span></span></div>
+    <div style="margin-top:10px"><span class="hint" style="margin:0">${esc(c.statusLabel)}s, dans l'ordre</span>${c.statuses.map((st, i) => `<div class="set" data-si="${i}" style="grid-template-columns:1fr auto"><input data-act="st-name" data-mod="${fid}" value="${esc(st)}" aria-label="Nom du statut"><div class="row"><button class="btn ghost sm" data-act="st-up" data-mod="${fid}" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="st-del" data-mod="${fid}">suppr.</button></div></div>`).join("")}<button class="btn sm" data-act="st-add" data-mod="${fid}" style="margin-top:8px">Ajouter un statut</button></div>
+    <div class="field-row" style="margin-top:10px"><label>Compte comme fait à partir de<select data-act="col-done" data-mod="${fid}">${c.statuses.map((st, i) => i ? `<option value="${i}" ${c.doneFrom === i ? "selected" : ""}>${esc(st)}</option>` : "").join("")}</select></label><span></span></div>`;
+  },
+  summary: (id, inst) => inst.config.statuses.map(st => [st, inst.entries.filter(e => e.status === st).length]).filter(([, n]) => n).map(([st, n]) => `${esc(st)} : ${n}`).join(", ") || "Vide",
+  context(inst, nm) {
+    const c = inst.config;
+    return `\n${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map(e => `${e.title}${e.subtitle ? " – " + e.subtitle : ""} [${e.status}${e.tag ? ", " + e.tag : ""}${e.due ? ", " + e.due : ""}]`).join(" ; ") || "vide"}`;
+  },
+  grouper(inst) {
+    const c = inst.config, fields = Object.fromEntries(["tag", "title", "subtitle"].filter(k => c.fields[k]).map(k => [k, c.fields[k]]));
+    return { fields, renamable: Object.keys(fields), filterable: true, items: () => inst.entries, key: (e, k) => e[k], store: () => site,
+      groups: k => itemGroups(inst.entries, e => e[k], e => c.statuses.indexOf(e.status) >= c.doneFrom) };
+  },
+  click: {
+    "col-new": el => collectionForm(modOf(el), null),
+    "col-edit": el => collectionForm(modOf(el), itemOf(el)),
+    "col-del": async el => { const id = modOf(el), e = itemOf(el); if (!await ask(`Supprimer « ${e.title} » ?`)) return; const inst = S().modules[id]; inst.entries = inst.entries.filter(x => x.id !== e.id); site.save(); render(); },
+    "col-move": el => {
+      const c = S().modules[modOf(el)].config, e = itemOf(el), i = Math.max(0, Math.min(c.statuses.length - 1, c.statuses.indexOf(e.status) + +el.dataset.d));
+      e.status = c.statuses[i]; site.save(); render();
+      if (i === c.statuses.length - 1) toast(collectionDoneLines[Math.floor(Math.random() * collectionDoneLines.length)].replace("%t", e.title).replace("%s", e.status));
+    },
+    "st-add": el => { const c = instOf(el).config; if (c.statuses.length >= 12) return toast("Douze statuts. Au-delà, ce n'est plus un suivi, c'est une bureaucratie."); c.statuses.push(`Statut ${c.statuses.length + 1}`); site.save(); render(); },
+    "st-up": el => {
+      const c = instOf(el).config, a = c.statuses, i = +el.closest("[data-si]").dataset.si;
+      if (i <= 0) return;
+      const done = a[c.doneFrom]; // le seuil « fait » suit son statut, pas sa position
+      [a[i - 1], a[i]] = [a[i], a[i - 1]];
+      c.doneFrom = Math.min(a.length - 1, Math.max(1, a.indexOf(done)));
+      site.save(); render();
+    },
+    "st-del": async el => {
+      const inst = instOf(el), c = inst.config, i = +el.closest("[data-si]").dataset.si, st = c.statuses[i];
+      if (c.statuses.length <= 2) return toast("Deux statuts minimum : sinon rien ne peut avancer.");
+      const n = inst.entries.filter(e => e.status === st).length, to = c.statuses[i === 0 ? 1 : i - 1];
+      if (!await ask(`Supprimer le statut « ${st} » ?${n ? ` Ses ${n} élément(s) passeront à « ${to} ».` : ""}`)) return;
+      inst.entries.forEach(e => { if (e.status === st) e.status = to; });
+      c.statuses.splice(i, 1); c.doneFrom = Math.min(c.statuses.length - 1, Math.max(1, c.doneFrom - (i < c.doneFrom ? 1 : 0)));
+      site.save(); render();
+    }
+  },
+  change: {
+    "col-f": el => { colFilter[modOf(el)] = el.value; render(); },
+    "col-st": el => { itemOf(el).status = el.value; site.save(); render(); },
+    "col-done": el => { instOf(el).config.doneFrom = +el.value; site.save(); render(); },
+    "st-name": el => {
+      const inst = instOf(el), c = inst.config, i = +el.closest("[data-si]").dataset.si, from = c.statuses[i], to = el.value.trim();
+      if (!to || to === from) return render();
+      if (c.statuses.includes(to)) { toast(`« ${to} » existe déjà.`); return render(); }
+      c.statuses[i] = to; inst.entries.forEach(e => { if (e.status === from) e.status = to; });
+      site.save(); el.blur(); render();
+    }
+  }
+};
 // Les actions propres à chaque type rejoignent les tables d'actions globales (un nom en double serait un bug).
 for (const [type, ui] of Object.entries(TYPE_UI)) for (const [table, acts] of [[CLICK, ui.click], [CHANGE, ui.change]]) for (const [act, fn] of Object.entries(acts || {})) {
   if (Object.hasOwn(table, act)) throw new Error(`Action « ${act} » du type ${type} déjà définie`);
@@ -1637,8 +1764,6 @@ function contextText() {
     if (!sh[id] || !enabled(id)) continue;
     L.push(TYPE_UI[inst.type].context(inst, label(id).toUpperCase()));
   }
-  if (sh.moth && enabled("moth")) L.push(`\nOCTOBER.MOTH (Instagram) : ${s.moth.posts.map(p => `${p.title} [${p.status}${p.theme ? ", " + p.theme : ""}]`).join(" ; ") || "aucun post"}`);
-  if (sh.musique && enabled("musique")) L.push(`\nMUSIQUE (albums de l'éveil) : ${s.musique.albums.map(a => `${a.artist}${a.album ? " – " + a.album : ""} [${a.status}]`).join(" ; ")}`);
   if (sh.budget && enabled("budget")) { const mo = now.slice(0, 7), es = s.budget.entries.filter(e => (e.date || "").slice(0, 7) === mo); L.push(`\nBUDGET (${mo}) : dépenses ${es.filter(e => e.type === "dépense").reduce((a, e) => a + +e.amount, 0)} €, revenus ${es.filter(e => e.type === "revenu").reduce((a, e) => a + +e.amount, 0)} €. Enveloppes : ${GROUPERS.budget.groups().map(g => `${g.name} ${g.sub}`).join(" ; ")}`); }
   if (sh.inbox && enabled("inbox")) L.push(`\nCAPTURE (à trier) : ${s.inbox.items.map(i => i.text).join(" ; ") || "vide"}`);
   return L.join("\n").slice(0, 14000);
@@ -1709,6 +1834,8 @@ async function sendChat(text) {
   chatBusy = false; render();
   const log2 = document.querySelector(".chat"); if (log2) log2.lastElementChild?.scrollIntoView({ block: "nearest" });
 }
+// Une suggestion d'idées pour la première collection affichée en colonnes (un tableau de production).
+const ideaChip = () => { const id = Object.keys(S().modules).find(k => S().modules[k].type === "collection" && S().modules[k].config.display === "colonnes" && enabled(k)); return id ? [`Propose trois idées pour ${label(id)}`] : []; };
 VIEWS.assistant = () => {
   const b = backend(), a = S().config.assistant, log = chatLog.get();
   const status = b === "sample" ? "Branché via claude.ai : aucune clé requise, la première question te demandera ton accord." : b === "api" ? `Branché via ta clé API, modèle ${esc(a.model)}. Chaque échange est facturé sur ton compte.` : hosted() ? `Pas encore branché. Colle ta clé API dans <a href="#reglages">Réglages</a>.` : "Indisponible dans cette vue.";
@@ -1716,7 +1843,7 @@ VIEWS.assistant = () => {
   return `<div class="row"><h2 style="margin:0">${esc(label("assistant"))}</h2><span class="spacer"></span>${log.length ? `<button class="btn ghost sm" data-act="chat-clear">Effacer la conversation</button>` : ""}</div>
   <p class="status">${status}<br>Données partagées : ${esc(shared)}. ${a.actions ? "Peut agir sur le tableau de bord." : "Lecture seule."}</p>
   <div class="chat">${log.map(m => `<div class="msg ${m.role === "user" ? "user" : "claude"}">${m.role === "user" ? esc(m.content) : mdLite(m.content)}</div>`).join("")}${chatBusy ? `<div class="msg claude" id="pending">…</div>` : ""}</div>
-  ${!log.length ? `<div class="chips">${["Qu'est-ce que je fais aujourd'hui ?", "Fais le point sur le chantier", "Où en est mon budget ce mois-ci ?", "Propose trois idées de posts pour october.moth"].map(q => `<button class="btn sm" data-act="chat-chip">${q}</button>`).join("")}</div>` : ""}
+  ${!log.length ? `<div class="chips">${["Qu'est-ce que je fais aujourd'hui ?", "Fais le point sur le chantier", "Où en est mon budget ce mois-ci ?", ...ideaChip()].map(q => `<button class="btn sm" data-act="chat-chip">${esc(q)}</button>`).join("")}</div>` : ""}
   <div class="capture"><textarea id="chatIn" rows="2" placeholder="Écris à Claude…" aria-label="Message" ${b === "sample" || b === "api" ? "" : "disabled"}></textarea><button class="btn acc" data-act="chat-send" ${chatBusy ? "disabled" : ""}>Envoyer</button></div>`;
 };
 

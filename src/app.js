@@ -15,7 +15,7 @@ function setSaving(t) { $("#saving").textContent = t; }
 /* ================= stores ================= */
 
 const MODULE_DEFS = {
-  chantier: "Chantier", moth: "october.moth", musique: "Musique", budget: "Budget", assistant: "Assistant", inbox: "Capture"
+  chantier: "Chantier", budget: "Budget", assistant: "Assistant", inbox: "Capture"
 };
 const MODULE_ORDER = ["chantier", "kundalini", "ecriture", "moth", "phidippus", "musique", "budget", "assistant", "inbox"];
 const OFF_BY_DEFAULT = ["assistant"];
@@ -25,7 +25,10 @@ function siteSeed() {
   const modules = {
     kundalini: { type: "programme", label: "Kundalini", config: { unitLabel: "min", start: null, weeks: 12, perWeek: 5 }, entries: [] },
     ecriture: { type: "cumul", label: "Écriture", config: { unitLabel: "mots", goal: 40000, title: "La spiritualité du spectre dissociatif", categories: [], categoryLabel: "Chapitre", scraps: true, scrapsLabel: "Fragments" }, entries: [], scraps: [] },
-    phidippus: { type: "rappels", label: "Phidippus", config: { subtitle: "", types: [{ id: "repas", label: "Repas", every: 6 }, { id: "brumisation", label: "Brumisation", every: 3 }, { id: "mue", label: "Mue", every: 0 }] }, entries: [] }
+    phidippus: { type: "rappels", label: "Phidippus", config: { subtitle: "", types: [{ id: "repas", label: "Repas", every: 6 }, { id: "brumisation", label: "Brumisation", every: 3 }, { id: "mue", label: "Mue", every: 0 }] }, entries: [] },
+    moth: SECTION_TO_MODULE.moth({ posts: [] }),
+    musique: SECTION_TO_MODULE.musique({ albums: ["Ulver", "Dead Can Dance", "Kate Bush", "Jonathan Hultén", "Chelsea Wolfe", "Zola Jesus", "iamamiwhoami"]
+      .map(a => ({ id: uid(), artist: a, album: "", status: "À écouter", note: "" })) })
   };
   return {
     updatedAt: 0, schemaVersion: SCHEMA_VERSION,
@@ -34,9 +37,6 @@ function siteSeed() {
       assistant: { model: "claude-sonnet-5", actions: true, share: { chantier: true, kundalini: true, ecriture: true, moth: true, phidippus: true, musique: true, budget: false, inbox: true } } },
     budget: { entries: [], envelopes: [["Travaux", 500], ["Courses", 300], ["Loisirs", 100], ["Abonnements", 50]].map(([name, limit]) => ({ id: uid(), name, limit })) },
     modules,
-    moth: { posts: [] },
-    musique: { albums: ["Ulver", "Dead Can Dance", "Kate Bush", "Jonathan Hultén", "Chelsea Wolfe", "Zola Jesus", "iamamiwhoami"]
-      .map(a => ({ id: uid(), artist: a, album: "", status: "À écouter", note: "" })) },
     inbox: { items: [] }
   };
 }
@@ -114,16 +114,7 @@ const GROUPERS = {
     items: () => board.data.tasks, key: (t, f) => f === "effort" ? ["", "Petit", "Moyen", "Gros"][t.effort || 1] : t[f], store: () => board,
     groups(f) { return itemGroups(this.items(), t => this.key(t, f), t => t.done); }
   },
-  moth: {
-    fields: { theme: "Thème" }, renamable: ["theme"], filterable: true,
-    items: () => S().moth.posts, key: (p, f) => p[f], store: () => site,
-    groups(f) { return itemGroups(this.items(), p => p[f], p => p.status === "Publié"); }
-  },
-  musique: {
-    fields: { artist: "Artiste" }, renamable: ["artist"], filterable: true,
-    items: () => S().musique.albums, key: (a, f) => a[f], store: () => site,
-    groups(f) { return itemGroups(this.items(), a => a[f], a => a.status !== "À écouter"); }
-  }
+
 };
 GROUPERS.budget = {
   fields: { cat: "Enveloppe" }, renamable: ["cat"], filterable: true,
@@ -149,8 +140,7 @@ function normalizeSite(d) {
   for (const id of Object.keys(d.modules)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: true });
   for (const [mod, g] of Object.entries(GROUPERS)) d.config.groups[mod] = { on: true, by: Object.keys(g.fields)[0], sort: "name", hideDone: false, title: "", ...(d.config.groups[mod] || {}) };
   for (const k of Object.keys(seed)) if (k !== "modules" && typeof seed[k] === "object" && !Array.isArray(seed[k])) for (const f of Object.keys(seed[k])) if (d[k][f] == null) d[k][f] = seed[k][f];
-  if (!Array.isArray(d.moth.posts)) d.moth.posts = [];
-  d.moth.posts.forEach(p => { if (!["Idée", "Brouillon", "Prêt", "Publié"].includes(p.status)) p.status = "Idée"; });
+  for (const inst of Object.values(d.modules)) if (Object.hasOwn(MODULE_TYPES, inst.type) && MODULE_TYPES[inst.type].normalize) MODULE_TYPES[inst.type].normalize(inst);
   return d;
 }
 const board = makeStore("selene-board-v1", "board/state", () => ({ updatedAt: 0, tasks: [] }));
@@ -159,21 +149,29 @@ const S = () => site.data; // lecture seule : la normalisation a lieu à l'entr�
 const label = id => { const s = S(); return s.config.labels[id] || (s.modules[id] && s.modules[id].label) || MODULE_DEFS[id]; };
 const enabled = id => { const m = S().config.modules.find(m => m.id === id); return m ? m.on : false; };
 
-const gcfg = mod => S().config.groups[mod];
+/* Regroupement d'un module : défini en dur pour les modules fixes (GROUPERS), fourni par le type pour une instance. */
+function grouperFor(mod) {
+  if (Object.hasOwn(GROUPERS, mod)) return GROUPERS[mod];
+  const inst = Object.hasOwn(S().modules, mod) ? S().modules[mod] : null;
+  return inst && TYPE_UI[inst.type].grouper ? TYPE_UI[inst.type].grouper(inst) : null;
+}
+const gcfg = mod => Object.hasOwn(GROUPERS, mod) ? S().config.groups[mod] : S().modules[mod].config.groups;
+const groupBy = mod => { const G = grouperFor(mod), by = gcfg(mod).by; return G.fields[by] ? by : Object.keys(G.fields)[0]; }; // un champ désactivé depuis ne casse rien
 function groupPanel(mod, hint) {
-  const G = GROUPERS[mod], c = gcfg(mod);
-  if (!c || !c.on) return "";
-  let gs = G.groups(c.by);
+  const G = grouperFor(mod), c = gcfg(mod);
+  if (!G || !c || !c.on) return "";
+  const by = groupBy(mod);
+  let gs = G.groups(by);
   if (c.hideDone) gs = gs.filter(g => g.pct !== 100);
   const sorters = { name: (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name, "fr"), pct: (a, b) => (b.pct ?? -1) - (a.pct ?? -1), left: (a, b) => ((a.pct ?? 101)) - ((b.pct ?? 101)) };
   gs.sort(sorters[c.sort] || sorters.name);
   const active = gFilter[mod];
-  const title = c.title || `Par ${G.fields[c.by].toLowerCase()}`;
+  const title = c.title || `Par ${G.fields[by].toLowerCase()}`;
   return `<section><div class="row" style="margin-bottom:4px"><h3 style="margin:0">${esc(title)}</h3><span class="spacer"></span><a class="btn ghost sm" href="#reglages" data-act="goto-groups" data-mod="${esc(mod)}">régler</a></div>
     <p class="hint">${hint}</p>
     <div class="rooms">${gs.map(g => `<button class="room ${active === g.name ? "active" : ""} ${g.pct > 100 ? "over" : ""}" ${G.filterable ? `data-act="grp-filter" data-mod="${esc(mod)}" data-g="${esc(g.name)}"` : "disabled"}><div class="fill" style="height:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></button>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
 }
-const gMatch = (mod, it) => { const v = gFilter[mod]; if (!v) return true; const G = GROUPERS[mod]; return (G.key(it, gcfg(mod).by) || "Sans groupe") === v; };
+const gMatch = (mod, it) => { const v = gFilter[mod]; if (!v) return true; return (grouperFor(mod).key(it, groupBy(mod)) || "Sans groupe") === v; };
 
 /* ================= chantier logic ================= */
 function dueLabel(t) {
@@ -287,8 +285,6 @@ VIEWS.accueil = () => {
 
 const SUMMARY = {
   chantier: () => { const o = openTasks(), now = todayISO(), late = o.filter(t => t.due && t.due < now).length; const all = board.data.tasks.length; return `${late ? `<span class="late">${late} en retard</span>, ` : ""}${o.length} à faire, ${all ? Math.round(100 * (all - o.length) / all) : 0} % du chantier`; },
-  moth: () => { const p = S().moth.posts; const c = st => p.filter(x => x.status === st).length; return `${c("Idée")} idées, ${c("Brouillon")} brouillons, ${c("Prêt")} prêts`; },
-  musique: () => { const a = S().musique.albums; return `${a.filter(x => x.status === "À écouter").length} à écouter, ${a.filter(x => x.status === "Retenu").length} retenus`; },
   budget: () => { const m = todayISO().slice(0, 7), es = S().budget.entries.filter(e => (e.date || "").slice(0, 7) === m); const out = es.filter(e => e.type === "dépense").reduce((a, e) => a + +e.amount, 0), inn = es.filter(e => e.type === "revenu").reduce((a, e) => a + +e.amount, 0); return `Ce mois-ci : ${money(out)} dépensés, solde <span class="${inn - out < 0 ? "neg" : "pos"}">${money(inn - out)}</span>`; },
   assistant: () => { const b = backend(); return b === "sample" ? "Branché via claude.ai" : b === "api" ? "Branché via ta clé API" : "Pas encore branché"; },
   inbox: () => `${S().inbox.items.length} à trier`
@@ -326,50 +322,12 @@ VIEWS.chantier = () => {
   </aside></div>`;
 };
 
-const MOTH_COLS = ["Idée", "Brouillon", "Prêt", "Publié"];
-VIEWS.moth = () => {
-  const posts = S().moth.posts.filter(p => gMatch("moth", p));
-  return `<div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label("moth"))}</h2><span class="spacer"></span><button class="btn acc" data-act="post-new">Nouvelle idée de post</button></div>
-  <div class="board" style="margin-bottom:34px">${MOTH_COLS.map((c, ci) => `<div class="col"><h3>${c} <span class="hint" style="font-size:.95rem">${posts.filter(p => p.status === c).length}</span></h3>
-    ${posts.filter(p => p.status === c).sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")).map(p => `<div class="card" data-id="${esc(p.id)}"><b>${esc(p.title)}</b>${p.theme ? `<div class="meta"><span class="tag">${esc(p.theme)}</span>${p.due ? `<span>${fmt(p.due)}</span>` : ""}</div>` : p.due ? `<div class="meta">${fmt(p.due)}</div>` : ""}${p.caption ? `<p>${esc(p.caption.slice(0, 160))}${p.caption.length > 160 ? "…" : ""}</p>` : ""}
-      <div class="row">${ci > 0 ? `<button class="btn ghost sm" data-act="post-move" data-d="-1" aria-label="Reculer">←</button>` : ""}${ci < 3 ? `<button class="btn ghost sm" data-act="post-move" data-d="1" aria-label="Avancer">→</button>` : ""}<span class="spacer"></span><button class="btn ghost sm" data-act="post-edit">modifier</button><button class="btn ghost sm" data-act="post-del">suppr.</button></div></div>`).join("") || `<p class="empty">Vide.</p>`}</div>`).join("")}</div>
-  ${groupPanel("moth", "Part publiée de chaque thème. Clique pour filtrer le tableau.")}`;
-};
-function postForm(p) {
-  openForm(p ? "Modifier le post" : "Nouvelle idée de post", [
-    { n: "title", l: "Titre ou accroche", req: true },
-    { row: [{ n: "theme", l: "Thème, archétype" }, { n: "due", l: "Publication prévue", t: "date" }] },
-    { n: "status", l: "Étape", t: "select", o: MOTH_COLS },
-    { n: "caption", l: "Légende", t: "textarea", rows: 6 }
-  ], p || { status: "Idée" }, v => {
-    const cur = p && S().moth.posts.find(x => x.id === p.id); if (cur) Object.assign(cur, v); else S().moth.posts.push({ id: uid(), ...v });
-    site.save(); render();
-  });
-}
-
-const MUS_ST = ["À écouter", "Écouté", "Retenu"];
-let musFilter = "";
-VIEWS.musique = () => {
-  const al = S().musique.albums.filter(a => (!musFilter || a.status === musFilter) && gMatch("musique", a));
-  return `<div class="row" style="margin-bottom:8px"><h2 style="margin:0">${esc(label("musique"))}</h2><span class="spacer"></span><button class="btn acc" data-act="alb-new">Ajouter un album</button></div>
-  <p class="hint">Albums de l'éveil, et artistes dont la mue stylistique fait elle-même le récit d'une transformation.</p>
-  <div class="row" style="margin-bottom:10px"><select data-act="mus-f" aria-label="Filtrer"><option value="">Tous</option>${MUS_ST.map(s => `<option ${s === musFilter ? "selected" : ""}>${s}</option>`).join("")}</select></div>
-  <div class="two"><div><ul class="plain">${al.map(a => `<li class="item" data-id="${esc(a.id)}"><span></span><div><b>${esc(a.artist)}</b>${a.album ? `, <i>${esc(a.album)}</i>` : ` <span class="hint">album à préciser</span>`}${a.note ? `<div class="note" style="margin:2px 0 0">${esc(a.note)}</div>` : ""}</div>
-    <div class="row"><select data-act="alb-st" aria-label="Statut">${MUS_ST.map(s => `<option ${s === a.status ? "selected" : ""}>${s}</option>`).join("")}</select><button class="btn ghost sm" data-act="alb-edit">modifier</button><button class="btn ghost sm" data-act="alb-del">suppr.</button></div></li>`).join("") || `<li class="empty">Rien dans ce filtre.</li>`}</ul></div><div>${groupPanel("musique", "Part écoutée de chaque artiste. Clique pour filtrer.")}</div></div>`;
-};
-function albForm(a) {
-  openForm(a ? "Modifier l'album" : "Ajouter un album", [
-    { row: [{ n: "artist", l: "Artiste", req: true }, { n: "album", l: "Album" }] },
-    { n: "status", l: "Statut", t: "select", o: MUS_ST }, { n: "note", l: "Note", t: "textarea", rows: 3 }
-  ], a || { status: "À écouter" }, v => { const cur = a && S().musique.albums.find(x => x.id === a.id); if (cur) Object.assign(cur, v); else S().musique.albums.push({ id: uid(), ...v }); site.save(); render(); });
-}
-
 VIEWS.inbox = () => {
   const it = S().inbox.items;
   return `<h2>${esc(label("inbox"))}</h2><p class="hint">Tout ce qui traîne dans ta tête, en attendant d'avoir une place.</p>
   <div class="capture" style="margin-bottom:18px"><input id="capIn" placeholder="Une idée, une course, un rêve…" aria-label="Capture rapide"><button class="btn acc" data-act="cap-add">Garder</button></div>
   <ul class="plain">${[...it].reverse().map(x => `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}</div>
-    <div class="row" style="margin-top:6px">${enabled("chantier") ? `<button class="btn sm" data-act="cap-to" data-to="chantier">→ Chantier</button>` : ""}${enabled("ecriture") ? `<button class="btn sm" data-act="cap-to" data-to="ecriture">→ Fragment</button>` : ""}${enabled("moth") ? `<button class="btn sm" data-act="cap-to" data-to="moth">→ Post</button>` : ""}${enabled("musique") ? `<button class="btn sm" data-act="cap-to" data-to="musique">→ Album</button>` : ""}</div></div>
+    <div class="row" style="margin-top:6px">${enabled("chantier") ? `<button class="btn sm" data-act="cap-to" data-to="chantier">→ Chantier</button>` : ""}${enabled("ecriture") ? `<button class="btn sm" data-act="cap-to" data-to="ecriture">→ Fragment</button>` : ""}${Object.entries(S().modules).filter(([k, m]) => m.type === "collection" && enabled(k)).map(([k]) => `<button class="btn sm" data-act="cap-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div></div>
     <button class="btn ghost sm" data-act="cap-del">suppr.</button></li>`).join("") || `<li class="empty">Vide. Le silence d'une clairière, ou celui d'un cerveau.</li>`}</ul>`;
 };
 
@@ -414,19 +372,19 @@ VIEWS.reglages = () => {
       <button class="btn sm" data-act="mod-add" style="margin-top:8px">Créer</button></details>
   </section>
   <section id="modreg"><h3>Réglages par module</h3><p class="hint">Un bloc par module actif, dans l'ordre de la navigation : ses réglages propres, et le regroupement en pourcentage quand il existe.</p>
-    ${c.modules.filter(m => enabled(m.id) && (s.modules[m.id] || GROUPERS[m.id])).map(m => { const mod = m.id, inst = s.modules[mod], G = !inst && GROUPERS[mod], g = G ? gcfg(mod) : null;
-      const names = G && G.renamable.includes(g.by) ? [...new Set(G.items().map(it => it[g.by]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr")) : [];
+    ${c.modules.filter(m => enabled(m.id) && (s.modules[m.id] || grouperFor(m.id))).map(m => { const mod = m.id, inst = s.modules[mod], G = grouperFor(mod), g = G ? gcfg(mod) : null, by = G ? groupBy(mod) : null;
+      const names = G && G.renamable.includes(by) ? [...new Set(G.items().map(it => it[by]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr")) : [];
       return `<details id="mreg-${esc(mod)}" data-mod="${esc(mod)}" style="border-top:1px solid var(--rule);padding:12px 0">
         <summary style="cursor:pointer;font-size:1.05rem;font-weight:600">${esc(label(mod))}</summary>
         <div style="margin-top:10px">
         ${inst ? TYPE_UI[inst.type].settings(mod, inst) : ""}
         ${G ? `<div class="row" style="margin-top:0"><label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="grp-on" ${g.on ? "checked" : ""}>Regrouper en pourcentage</label></div>
           ${g.on ? `<div class="field-row" style="margin-top:8px">
-            <label>Regrouper par<select data-act="grp-by">${Object.entries(G.fields).map(([k, l]) => `<option value="${k}" ${g.by === k ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+            <label>Regrouper par<select data-act="grp-by">${Object.entries(G.fields).map(([k, l]) => `<option value="${esc(k)}" ${by === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
             <label>Trier par<select data-act="grp-sort"><option value="name" ${g.sort === "name" ? "selected" : ""}>Ordre naturel</option><option value="pct" ${g.sort === "pct" ? "selected" : ""}>Le plus avancé d'abord</option><option value="left" ${g.sort === "left" ? "selected" : ""}>Le plus en retard d'abord</option></select></label></div>
-            <div class="field-row" style="margin-top:8px"><label>Titre du bloc<input data-act="grp-title" value="${esc(g.title)}" placeholder="Par ${esc(G.fields[g.by].toLowerCase())}"></label>
+            <div class="field-row" style="margin-top:8px"><label>Titre du bloc<input data-act="grp-title" value="${esc(g.title)}" placeholder="Par ${esc(G.fields[by].toLowerCase())}"></label>
             <label style="display:flex;gap:8px;align-items:center;align-self:end;padding-bottom:10px"><input type="checkbox" data-act="grp-hide" ${g.hideDone ? "checked" : ""}>Masquer les groupes à 100 %</label></div>
-            ${names.length ? `<details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">Renommer ou fusionner des ${esc(G.fields[g.by].toLowerCase())}s</summary><p class="hint" style="margin:6px 0">Donne le même nom à deux groupes pour les fusionner.</p>${names.map(n => `<div class="set" style="grid-template-columns:1fr"><input data-act="grp-rename" data-old="${esc(n)}" value="${esc(n)}" aria-label="Renommer ${esc(n)}"></div>`).join("")}</details>` : ""}
+            ${names.length ? `<details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">Renommer ou fusionner des ${esc(G.fields[by].toLowerCase())}s</summary><p class="hint" style="margin:6px 0">Donne le même nom à deux groupes pour les fusionner.</p>${names.map(n => `<div class="set" style="grid-template-columns:1fr"><input data-act="grp-rename" data-old="${esc(n)}" value="${esc(n)}" aria-label="Renommer ${esc(n)}"></div>`).join("")}</details>` : ""}
             ${mod === "budget" ? `<div style="margin-top:10px"><span class="hint" style="margin:0">Enveloppes mensuelles</span>${S().budget.envelopes.map((v, i) => `<div class="set" data-vi="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="env-name" value="${esc(v.name)}" aria-label="Nom de l'enveloppe"><input type="number" min="0" data-act="env-limit" value="${v.limit || ""}" placeholder="€ / mois" aria-label="Plafond mensuel"><button class="btn ghost sm" data-act="env-del">suppr.</button></div>`).join("")}<button class="btn sm" data-act="env-add" style="margin-top:8px">Ajouter une enveloppe</button></div>` : ""}` : ""}` : ""}
         </div>
       </details>`; }).join("")}
@@ -516,18 +474,10 @@ const CLICK = {
     const drop = () => { s.inbox.items = s.inbox.items.filter(x => x !== it); site.save(); };
     if (to === "ecriture") { s.modules.ecriture.scraps.push({ id: uid(), text: it.text, date: it.date }); drop(); render(); toast("Rangé dans les fragments."); }
     else if (to === "chantier") { const t = addTask(board.data.tasks, { title: it.text }, uid(), todayISO()); board.save(); drop(); taskForm(t); }
-    else if (to === "moth") { const p = { id: uid(), title: it.text, theme: "", due: "", status: "Idée", caption: "" }; s.moth.posts.push(p); drop(); render(); toast("Ajouté aux idées de posts."); }
-    else if (to === "musique") { s.musique.albums.push({ id: uid(), artist: it.text, album: "", status: "À écouter", note: "" }); drop(); render(); toast("Ajouté à la musique."); }
+    else if (Object.hasOwn(s.modules, to) && s.modules[to].type === "collection") { saveCollectionItem(s.modules[to], { title: it.text }, uid()); drop(); render(); toast(`Ajouté à ${label(to)}.`); }
   },
   "entry-add": el => entryAdd(el.dataset.mod),
   "entry-del": el => { deleteJournalEntry(S().modules[el.dataset.mod], idOf(el)); site.save(); render(); },
-  "post-new": () => postForm(null),
-  "post-edit": el => postForm(S().moth.posts.find(p => p.id === idOf(el))),
-  "post-del": async el => { const m = S().moth; if (await ask("Supprimer ce post ?")) { m.posts = m.posts.filter(p => p.id !== idOf(el)); site.save(); render(); } },
-  "post-move": el => { const p = S().moth.posts.find(x => x.id === idOf(el)); const i = MOTH_COLS.indexOf(p.status) + +el.dataset.d; p.status = MOTH_COLS[Math.max(0, Math.min(3, i))]; site.save(); render(); if (p.status === "Publié") toast("Publié. L'algorithme décidera de ta valeur."); },
-  "alb-new": () => albForm(null),
-  "alb-edit": el => albForm(S().musique.albums.find(a => a.id === idOf(el))),
-  "alb-del": el => { const m = S().musique; m.albums = m.albums.filter(a => a.id !== idOf(el)); site.save(); render(); },
   "mod-add": () => {
     const type = $("#newModType").value, name = $("#newModName").value.trim();
     if (!name) return toast("Donne un nom au module.");
@@ -580,10 +530,8 @@ document.addEventListener("change", e => {
   else if (act === "task-step") { const t = taskOf(el); t.steps[+el.dataset.i].d = el.checked; board.save(); render(); }
   else if (act === "f-room") { roomFilter = el.value; render(); }
   else if (act === "f-cat") { catFilter = el.value; render(); }
-  else if (act === "mus-f") { musFilter = el.value; render(); }
-  else if (act === "alb-st") { S().musique.albums.find(a => a.id === idOf(el)).status = el.value; site.save(); render(); }
   else if (act && act.startsWith("grp-") && act !== "grp-filter") {
-    const mod = el.closest("[data-mod]").dataset.mod, g = gcfg(mod), G = GROUPERS[mod];
+    const mod = el.closest("[data-mod]").dataset.mod, g = gcfg(mod), G = grouperFor(mod);
     if (act === "grp-on") g.on = el.checked;
     else if (act === "grp-by") { g.by = el.value; gFilter[mod] = ""; }
     else if (act === "grp-sort") g.sort = el.value;
@@ -591,7 +539,7 @@ document.addEventListener("change", e => {
     else if (act === "grp-title") g.title = el.value.trim();
     else if (act === "grp-rename") {
       const from = el.dataset.old, to = el.value.trim(); if (!to || to === from) return;
-      G.items().forEach(it => { if (it[g.by] === from) it[g.by] = to; });
+      const by = groupBy(mod); G.items().forEach(it => { if (it[by] === from) it[by] = to; });
       if (mod === "budget") S().budget.envelopes.forEach(v => { if (v.name === from) v.name = to; });
       if (gFilter[mod] === from) gFilter[mod] = to;
       if (mod === "chantier" && roomFilter === from) roomFilter = to;
@@ -616,8 +564,12 @@ document.addEventListener("change", e => {
     site.save(); render();
   }
   else if (el.dataset.setMod) {
-    const [id, f] = el.dataset.setMod.split("."), cfg = S().modules[id].config;
+    // « id.champ » ou « id.groupe.champ » ; jamais un chemin vers le prototype des objets.
+    const [id, ...path] = el.dataset.setMod.split("."), f = path.pop();
+    if ([...path, f].some(k => k === "__proto__" || k === "constructor" || k === "prototype")) return;
+    const cfg = path.reduce((o, k) => o[k], S().modules[id].config);
     let v = el.value; if (el.type === "number") v = Math.max(1, +v || 1); if (el.type === "date") v = v || null;
+    if (el.required && !String(v).trim()) { el.blur(); return render(); } // champ obligatoire vidé : on garde l'ancienne valeur
     cfg[f] = v; site.save(); el.blur(); render();
   }
   else if (el.dataset.set) {

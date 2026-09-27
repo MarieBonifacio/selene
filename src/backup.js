@@ -53,7 +53,8 @@ function parseBackup(text) {
       if (!record(inst) || !Object.hasOwn(MODULE_TYPES, inst.type) || typeof inst.label !== "string" || !record(inst.config)) throw new Error(`module ${id} invalide`);
       const where = `module ${id}`;
       collection(inst.entries, `${where} entries`);
-      ids(inst.entries, where); dated(inst.entries, where);
+      ids(inst.entries, where);
+      if (MODULE_TYPES[inst.type].datedEntries !== false) dated(inst.entries, where);
       if (inst.scraps != null) { collection(inst.scraps, `${where} scraps`); ids(inst.scraps, where); }
       // Règles propres au type : déclarées dans le registre (domain.js), appliquées ici.
       MODULE_TYPES[inst.type].validate(inst, {

@@ -14,8 +14,6 @@ function contextText() {
     if (!sh[id] || !enabled(id)) continue;
     L.push(TYPE_UI[inst.type].context(inst, label(id).toUpperCase()));
   }
-  if (sh.moth && enabled("moth")) L.push(`\nOCTOBER.MOTH (Instagram) : ${s.moth.posts.map(p => `${p.title} [${p.status}${p.theme ? ", " + p.theme : ""}]`).join(" ; ") || "aucun post"}`);
-  if (sh.musique && enabled("musique")) L.push(`\nMUSIQUE (albums de l'éveil) : ${s.musique.albums.map(a => `${a.artist}${a.album ? " – " + a.album : ""} [${a.status}]`).join(" ; ")}`);
   if (sh.budget && enabled("budget")) { const mo = now.slice(0, 7), es = s.budget.entries.filter(e => (e.date || "").slice(0, 7) === mo); L.push(`\nBUDGET (${mo}) : dépenses ${es.filter(e => e.type === "dépense").reduce((a, e) => a + +e.amount, 0)} €, revenus ${es.filter(e => e.type === "revenu").reduce((a, e) => a + +e.amount, 0)} €. Enveloppes : ${GROUPERS.budget.groups().map(g => `${g.name} ${g.sub}`).join(" ; ")}`); }
   if (sh.inbox && enabled("inbox")) L.push(`\nCAPTURE (à trier) : ${s.inbox.items.map(i => i.text).join(" ; ") || "vide"}`);
   return L.join("\n").slice(0, 14000);
@@ -86,6 +84,8 @@ async function sendChat(text) {
   chatBusy = false; render();
   const log2 = document.querySelector(".chat"); if (log2) log2.lastElementChild?.scrollIntoView({ block: "nearest" });
 }
+// Une suggestion d'idées pour la première collection affichée en colonnes (un tableau de production).
+const ideaChip = () => { const id = Object.keys(S().modules).find(k => S().modules[k].type === "collection" && S().modules[k].config.display === "colonnes" && enabled(k)); return id ? [`Propose trois idées pour ${label(id)}`] : []; };
 VIEWS.assistant = () => {
   const b = backend(), a = S().config.assistant, log = chatLog.get();
   const status = b === "sample" ? "Branché via claude.ai : aucune clé requise, la première question te demandera ton accord." : b === "api" ? `Branché via ta clé API, modèle ${esc(a.model)}. Chaque échange est facturé sur ton compte.` : hosted() ? `Pas encore branché. Colle ta clé API dans <a href="#reglages">Réglages</a>.` : "Indisponible dans cette vue.";
@@ -93,6 +93,6 @@ VIEWS.assistant = () => {
   return `<div class="row"><h2 style="margin:0">${esc(label("assistant"))}</h2><span class="spacer"></span>${log.length ? `<button class="btn ghost sm" data-act="chat-clear">Effacer la conversation</button>` : ""}</div>
   <p class="status">${status}<br>Données partagées : ${esc(shared)}. ${a.actions ? "Peut agir sur le tableau de bord." : "Lecture seule."}</p>
   <div class="chat">${log.map(m => `<div class="msg ${m.role === "user" ? "user" : "claude"}">${m.role === "user" ? esc(m.content) : mdLite(m.content)}</div>`).join("")}${chatBusy ? `<div class="msg claude" id="pending">…</div>` : ""}</div>
-  ${!log.length ? `<div class="chips">${["Qu'est-ce que je fais aujourd'hui ?", "Fais le point sur le chantier", "Où en est mon budget ce mois-ci ?", "Propose trois idées de posts pour october.moth"].map(q => `<button class="btn sm" data-act="chat-chip">${q}</button>`).join("")}</div>` : ""}
+  ${!log.length ? `<div class="chips">${["Qu'est-ce que je fais aujourd'hui ?", "Fais le point sur le chantier", "Où en est mon budget ce mois-ci ?", ...ideaChip()].map(q => `<button class="btn sm" data-act="chat-chip">${esc(q)}</button>`).join("")}</div>` : ""}
   <div class="capture"><textarea id="chatIn" rows="2" placeholder="Écris à Claude…" aria-label="Message" ${b === "sample" || b === "api" ? "" : "disabled"}></textarea><button class="btn acc" data-act="chat-send" ${chatBusy ? "disabled" : ""}>Envoyer</button></div>`;
 };
