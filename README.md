@@ -2,7 +2,7 @@
 
 Tableau de bord personnel : chantier de l'appartement, pratique de kundalini, écriture, october.moth, Phidippus, musique et capture rapide, sous la lune du jour et une lisière de sapins.
 
-Aucune dépendance de production côté claude.ai. Le build hébergé (GitHub Pages) charge en plus, en local (`vendor/supabase.js`, pas de CDN), le client Supabase utilisé pour les comptes multi-utilisateurs — voir « Comptes et synchronisation » plus bas. La source éditable est dans `src/` : `shell.html` (interface), `store.js` (persistance), `auth.js` (comptes Supabase, hébergé uniquement), `backup.js` (sauvegarde), `domain.js` (règles métier) et `app.js` (interface et orchestration). `python3 build.py` génère `selene.html` pour claude.ai et `index.html` pour GitHub Pages. Ne modifie pas directement les HTML générés.
+Aucune dépendance de production, aucun client vendorisé : le build hébergé (GitHub Pages) parle directement, via `fetch`, aux API REST de Supabase (Auth + PostgREST) pour les comptes multi-utilisateurs — voir « Comptes et synchronisation » plus bas. La source éditable est dans `src/` : `shell.html` (interface), `store.js` (persistance), `auth.js` (comptes Supabase, hébergé uniquement), `backup.js` (sauvegarde), `domain.js` (règles métier) et `app.js` (interface et orchestration). `python3 build.py` génère `selene.html` pour claude.ai et `index.html` pour GitHub Pages. Ne modifie pas directement les HTML générés.
 
 Vérification locale : `python3 build.py --check` puis `node --test tests/*.test.js` (Node 22). [Plan de refactorisation](docs/refactoring.md).
 
@@ -45,8 +45,7 @@ Pour l'activer :
 1. Créer un projet sur [supabase.com](https://supabase.com).
 2. Dans l'éditeur SQL du projet, exécuter `supabase/schema.sql` (crée la table `app_state` avec les règles de sécurité RLS : chacun·e ne voit que sa propre ligne).
 3. Dans Authentication → Providers → Email, décider si l'inscription reste ouverte à qui connaît l'URL du site (par défaut) ou si tu préfères la désactiver et inviter chaque personne toi-même (recommandé pour un cercle restreint) — le fichier `supabase/schema.sql` rappelle où ce réglage se trouve.
-4. Récupérer l'URL du projet et la clé publique (« anon key », Settings → API) et les renseigner dans `src/auth.js` (`SUPABASE_URL`, `SUPABASE_ANON_KEY` — cette clé est prévue pour être exposée côté client, la sécurité vient des règles RLS, pas du secret de la clé).
-5. Télécharger le bundle UMD `@supabase/supabase-js` (ex. `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js`) et l'enregistrer tel quel dans `vendor/supabase.js`.
-6. `python3 build.py`, puis republier `index.html`.
+4. Récupérer l'URL du projet et la clé publique (« anon » / « publishable », Settings → API) et les renseigner dans `src/auth.js` (`SUPABASE_URL`, `SUPABASE_ANON_KEY` — cette clé est prévue pour être exposée côté client, la sécurité vient des règles RLS, pas du secret de la clé).
+5. `python3 build.py`, puis republier `index.html`.
 
-Une fois configuré, ouvrir `index.html` affiche un écran de connexion/inscription avant le tableau de bord. Les données restent isolées par compte (RLS) ; l'artefact claude.ai (`selene.html`) n'est pas concerné et continue de fonctionner sans connexion.
+Une fois configuré, ouvrir `index.html` affiche un écran de connexion/inscription avant le tableau de bord. Les données restent isolées par compte (RLS) ; l'artefact claude.ai (`selene.html`) n'est pas concerné et continue de fonctionner sans connexion (même code partagé, mais `auth.js` ne s'active que hors claude.ai).

@@ -712,7 +712,7 @@ const CLICK = {
   "pal": el => { S().config.palette = el.dataset.p; site.save(); render(); },
   "mod-up": el => moveMod(el, -1), "mod-down": el => moveMod(el, 1),
   "auth-switch": () => { authMode = authMode === "signup" ? "signin" : "signup"; render(); },
-  "auth-out": () => sb.auth.signOut()
+  "auth-out": () => authSignOut()
 };
 function moveMod(el, d) { const ms = S().config.modules, i = +el.closest("[data-i]").dataset.i, j = i + d; if (j < 0 || j >= ms.length) return; [ms[i], ms[j]] = [ms[j], ms[i]]; site.save(); render(); }
 document.addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (a && CLICK[a.dataset.act] && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) CLICK[a.dataset.act](a); });
@@ -789,7 +789,7 @@ render();
 (async () => {
   try {
     if (!window.claude || !window.claude.use) {
-      if (authReady()) { await authBoot(); if (authSession) await authConnectStores(); render(); }
+      if (authReady()) { await authBoot(); render(); }
       return;
     }
     const db = await window.claude.use("db");
