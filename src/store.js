@@ -13,6 +13,9 @@ function makeStore(key, path, seed, normalize = d => d) {
   const read = k => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } };
   const s = { db: null, timer: null, unsub: null, syncing: null, again: false, key };
   s.data = normalize(read(key) || seed());
+  // Une migration faite au chargement est écrite aussitôt : sinon, sans synchro (artefact, hors ligne),
+  // chaque chargement la referait depuis l'ancienne forme (et, pour le board, reverserait des tâches supprimées).
+  try { const raw = localStorage.getItem(key); if (raw && raw !== JSON.stringify(s.data)) localStorage.setItem(key, JSON.stringify(s.data)); } catch {}
   s.base = read(BASE);
   const saveLS = () => { try { localStorage.setItem(key, JSON.stringify(s.data)); } catch {} };
   const saveBase = () => { try { if (s.base) localStorage.setItem(BASE, JSON.stringify(s.base)); else localStorage.removeItem(BASE); } catch {} };

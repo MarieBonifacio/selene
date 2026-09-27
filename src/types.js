@@ -269,6 +269,137 @@ TYPE_UI.collection = {
     }
   }
 };
+/* ---- tâches : échéances, lieux, étapes, coûts ; « Aujourd'hui » plafonné à trois, tous modules confondus ---- */
+const taskModules = () => Object.keys(S().modules).filter(k => S().modules[k].type === "taches" && enabled(k));
+const allTasks = () => taskModules().flatMap(id => S().modules[id].entries.map(t => [id, t]));
+const todayTasks = () => allTasks().filter(([, t]) => !t.done && t.today);
+const todayElsewhere = id => todayTasks().filter(([m]) => m !== id).length;
+const byDue = (a, b) => (a.due || "9999").localeCompare(b.due || "9999");
+const taskFilters = {}; // filtres par module : { room, cat } (propres à l'appareil, non enregistrés)
+const tf = id => taskFilters[id] || (taskFilters[id] = { room: "", cat: "" });
+const roomsOf = id => [...new Set(S().modules[id].entries.map(t => t.room).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
+const doneLines = ["Fait. Le monde s'effondre un peu moins vite.", "Un de moins. L'entropie note ta résistance.", "Coché. Personne n'applaudit, alors je le fais.", "Terminé. Ton futur toi te déteste un peu moins.", "Réglé. Le chaos recule d'un centimètre."];
+let openId = null;
+const taskOf = el => { const li = el.closest("[data-task]"), inst = li && S().modules[li.dataset.mod]; return (inst && inst.entries.find(t => t.id === li.dataset.task)) || null; };
+const taskMod = el => el.closest("[data-task]").dataset.mod;
+function dueLabel(t) {
+  if (!t.due) return { txt: "Sans date", cls: "" };
+  const n = diffDays(t.due, todayISO());
+  if (n < 0) return { txt: `En retard de ${-n} j`, cls: "late" };
+  if (n === 0) return { txt: "Aujourd'hui", cls: "late" };
+  if (n === 1) return { txt: "Demain", cls: "soon" };
+  if (n <= 7) return { txt: `Dans ${n} j`, cls: "soon" };
+  return { txt: fmt(t.due), cls: "" };
+}
+function taskHTML(id, t) {
+  const c = S().modules[id].config, d = dueLabel(t), sd = (t.steps || []).filter(x => x.d).length, ef = Math.min(3, Math.max(1, Math.round(+t.effort) || 1));
+  return `<li class="item ${t.done ? "done" : ""} ${openId === t.id ? "open" : ""}" data-task="${esc(t.id)}" data-mod="${esc(id)}">
+    <input type="checkbox" class="check" data-act="task-done" ${t.done ? "checked" : ""} aria-label="Marquer comme fait">
+    <div><button class="t-title" data-act="task-open">${esc(t.title)}</button>
+      <div class="meta">${t.room ? `<span class="tag">${esc(t.room)}</span>` : ""}<span class="${t.done ? "" : d.cls}">${esc(d.txt)}</span><span>${esc(t.cat)}</span><span>${"●".repeat(ef)}${"○".repeat(3 - ef)}</span>${(t.steps || []).length ? `<span>${sd}/${t.steps.length} étapes</span>` : ""}${c.costs && t.cost ? `<span>${esc(t.cost)} €</span>` : ""}</div></div>
+    <button class="star ${t.today ? "on" : ""}" data-act="task-today" title="Faire aujourd'hui" aria-label="Faire aujourd'hui">★</button>
+    <div class="details">
+      ${(t.steps || []).length ? `<ul class="steps">${t.steps.map((x, i) => `<li><input type="checkbox" data-act="task-step" data-i="${i}" ${x.d ? "checked" : ""} id="s${esc(t.id)}-${i}"><label for="s${esc(t.id)}-${i}" style="font-weight:400;display:inline">${esc(x.t)}</label></li>`).join("")}</ul>` : ""}
+      ${t.note ? `<p class="note">${esc(t.note)}</p>` : ""}
+      <div class="row"><button class="btn ghost sm" data-act="task-edit">Modifier</button><button class="btn ghost sm" data-act="task-del">Supprimer</button></div>
+    </div></li>`;
+}
+function taskForm(id, t) {
+  const c = S().modules[id].config;
+  $("#roomList").innerHTML = roomsOf(id).map(r => `<option value="${esc(r)}">`).join("");
+  openForm(t ? "Modifier la tâche" : "Nouvelle tâche", [
+    { n: "title", l: "Tâche", req: true },
+    { row: [{ n: "room", l: c.groupLabel, list: "roomList" }, { n: "cat", l: c.catLabel, t: "select", o: !t || !t.cat || c.cats.includes(t.cat) ? c.cats : [...c.cats, t.cat] }] },
+    { row: [{ n: "due", l: "Date butoir", t: "date" }, { n: "effort", l: "Effort", t: "select", o: [["1", "Petit, moins de 30 min"], ["2", "Moyen, une demi-journée"], ["3", "Gros, un week-end"]] }] },
+    ...(c.costs ? [{ n: "cost", l: "Coût estimé (€)", t: "number" }] : []),
+    { n: "steps", l: "Étapes (une par ligne)", t: "textarea", rows: 4 },
+    { n: "note", l: "Note", t: "textarea", rows: 2 }
+  ], t ? { ...t, effort: String(t.effort), steps: (t.steps || []).map(x => x.t).join("\n") } : { room: tf(id).room || (gcfg(id).by === "room" ? gFilter[id] || "" : ""), cat: c.cats[0], effort: "1" }, v => {
+    const inst = S().modules[id]; // relu : une synchro a pu remplacer les données pendant la saisie
+    if (!inst) return toast("Ce module a été supprimé entre-temps.");
+    const lines = v.steps.split("\n").map(x => x.trim()).filter(Boolean);
+    const data = { title: v.title, room: v.room, cat: v.cat, due: v.due || null, effort: +v.effort, cost: "cost" in v ? (v.cost ? +v.cost : null) : (t ? t.cost : null), note: v.note }; // champ absent (coûts désactivés) ≠ champ vidé
+    const cur = t && inst.entries.find(x => x.id === t.id);
+    if (!cur) addTask(inst.entries, { ...data, steps: lines.map(l => ({ t: l, d: false })) }, uid(), todayISO());
+    else { const old = new Map((cur.steps || []).map(x => [x.t, x.d])); Object.assign(cur, data, { steps: lines.map(l => ({ t: l, d: old.get(l) || false })) }); }
+    site.save(); render();
+  });
+}
+/* Tirage au sort : dans un module (sa page) ou parmi tous (accueil), plafond de trois respecté. */
+function pickTask(only) {
+  if (todayTasks().length >= 3) return toast("Aujourd'hui est plein. Le hasard respecte les plafonds.");
+  const o = allTasks().filter(([m, t]) => !t.done && !t.today && (!only || m === only));
+  if (!o.length) return toast("Rien à tirer.");
+  const small = o.filter(([, t]) => t.effort === 1), pool = (small.length ? small : o).sort(([, a], [, b]) => byDue(a, b)).slice(0, 5);
+  const [id, t] = pool[Math.floor(Math.random() * pool.length)];
+  setTaskToday(S().modules[id].entries, t.id, true, todayElsewhere(id)); site.save(); render();
+  toast(`Le sort a désigné : « ${t.title} ». Pas de recours possible.`);
+}
+TYPE_UI.taches = {
+  view(id) {
+    const inst = S().modules[id], c = inst.config, now = todayISO(), o = inst.entries.filter(t => !t.done), f = tf(id);
+    const tod = o.filter(t => t.today);
+    const cats = [...new Set(inst.entries.map(t => t.cat))];
+    const filtered = o.filter(t => (!f.room || t.room === f.room) && (!f.cat || t.cat === f.cat) && gMatch(id, t)).sort(byDue);
+    const groups = [
+      ["En retard", "Le passé ne se repeint pas. Ça, si.", t => t.due && t.due < now, true],
+      ["Cette semaine", "Assez proche pour paniquer utilement.", t => t.due && t.due >= now && diffDays(t.due, now) <= 7],
+      ["Ce mois-ci", "Le problème de toi dans trois semaines.", t => t.due && diffDays(t.due, now) > 7 && diffDays(t.due, now) <= 31],
+      ["Plus tard", "Hors de vue. Pas hors de ta vie.", t => t.due && diffDays(t.due, now) > 31],
+      ["Sans date", "Les tâches sans date ne meurent jamais. Elles hantent.", t => !t.due]
+    ].map(([n, h, fn, late]) => { const it = filtered.filter(fn); return it.length ? `<div style="margin-bottom:22px"><h3 class="${late ? "late" : ""}">${n} <span class="hint" style="font-size:1rem">${it.length}</span></h3><p class="hint">${h}</p><ul class="plain">${it.map(t => taskHTML(id, t)).join("")}</ul></div>` : ""; }).join("");
+    const spent = inst.entries.filter(t => t.done && t.cost).reduce((a, t) => a + +t.cost, 0), left = o.filter(t => t.cost).reduce((a, t) => a + +t.cost, 0);
+    const done = inst.entries.filter(t => t.done).sort((a, b) => (b.doneAt || "").localeCompare(a.doneAt || "")).slice(0, 8);
+    return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:24px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn solid" data-act="task-new">Ajouter une tâche</button><button class="btn" data-act="task-pick">Tirer au sort</button></div>
+  <div class="two"><div>
+    <section><h3>Aujourd'hui</h3><p class="hint">Trois tâches maximum, tous modules confondus. Au-delà, c'est une liste de reproches.</p><ul class="plain">${tod.map(t => taskHTML(id, t)).join("") || `<li class="empty">Coche l'étoile d'une tâche.</li>`}</ul></section>
+    <section><div class="row" style="margin-bottom:12px"><h3 style="margin:0">Échéances</h3><span class="spacer"></span>
+      <select data-act="f-room" aria-label="${esc(c.groupLabel)}"><option value="">${esc(c.groupLabel)} : tout</option>${roomsOf(id).map(r => `<option ${r === f.room ? "selected" : ""}>${esc(r)}</option>`).join("")}</select>
+      <select data-act="f-cat" aria-label="${esc(c.catLabel)}"><option value="">${esc(c.catLabel)} : tout</option>${cats.map(x => `<option ${x === f.cat ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div>
+      ${groups || `<p class="empty">Plus rien ici. Soit c'est fini, soit tu as filtré trop fort.</p>`}</section>
+  </div><aside>
+    ${groupPanel(id, "La mousse gagne à mesure que tu finis. Clique pour filtrer.")}
+    ${c.costs && (spent || left) ? `<p class="hint">Budget estimé : ${spent} € engagés, ${left} € encore à prévoir.</p>` : ""}
+    <section><h3>Fait récemment</h3><ul class="plain">${done.map(t => `<li class="item" data-task="${esc(t.id)}" data-mod="${esc(id)}"><span></span><div>${esc(t.title)}<div class="meta">${fmt(t.doneAt)}</div></div><button class="btn ghost sm" data-act="task-undo">annuler</button></li>`).join("") || `<li class="empty">Rien pour l'instant. L'histoire ne retiendra rien.</li>`}</ul></section>
+  </aside></div></div>`;
+  },
+  settings: (id, { config: c }) => `<div class="field-row"><label>Nom du regroupement<input data-set-mod="${esc(id)}.groupLabel" value="${esc(c.groupLabel)}" placeholder="Pièce, lieu, client…" required></label><label>Nom des types<input data-set-mod="${esc(id)}.catLabel" value="${esc(c.catLabel)}" required></label></div>
+    <div class="field-row" style="margin-top:8px"><label>Types de tâche (un par ligne)<textarea data-act="task-cats" data-mod="${esc(id)}" rows="4">${esc(c.cats.join("\n"))}</textarea></label>
+    <label style="display:flex;gap:8px;align-items:center;align-self:start;margin-top:26px"><input type="checkbox" data-act="task-costs" data-mod="${esc(id)}" ${c.costs ? "checked" : ""}>Suivre les coûts estimés</label></div>`,
+  summary(id, inst) {
+    const now = todayISO(), o = inst.entries.filter(t => !t.done), late = o.filter(t => t.due && t.due < now).length, all = inst.entries.length;
+    return `${late ? `<span class="late">${late} en retard</span>, ` : ""}${o.length} à faire, ${all ? Math.round(100 * (all - o.length) / all) : 0} % fait`;
+  },
+  context(inst, nm) {
+    const o = inst.entries.filter(t => !t.done).sort(byDue), c = inst.config;
+    return `\n${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 40).map(t => `\n- [${t.id}] ${t.title} | ${t.room || "?"} | ${t.due ? "échéance " + t.due : "sans date"}${t.today ? " | choisie pour aujourd'hui" : ""}${c.costs && t.cost ? " | " + t.cost + " €" : ""}`).join("");
+  },
+  grouper: (inst, id) => {
+    const c = inst.config, fields = { room: c.groupLabel, cat: c.catLabel, effort: "Effort" };
+    const key = (t, f) => f === "effort" ? ["", "Petit", "Moyen", "Gros"][t.effort || 1] : t[f];
+    return { fields, renamable: ["room", "cat"], filterable: true, items: () => inst.entries, key, store: () => site,
+      groups: f => itemGroups(inst.entries, t => key(t, f), t => t.done) };
+  },
+  accept(id, inst, note) { const t = addTask(inst.entries, { title: note.text, cat: inst.config.cats[0] }, uid(), todayISO()); return () => taskForm(id, t); },
+  click: {
+    "task-open": el => { const t = taskOf(el); openId = openId === t.id ? null : t.id; render(); },
+    "task-today": el => { const id = taskMod(el), t = taskOf(el); try { setTaskToday(S().modules[id].entries, t.id, !t.today, todayElsewhere(id)); } catch { return toast("Trois, c'est le plafond. Termine ou retire-en une."); } site.save(); render(); },
+    "task-edit": el => taskForm(taskMod(el), taskOf(el)),
+    "task-del": async el => { const id = taskMod(el), t = taskOf(el); if (await ask(`Supprimer « ${t.title} » ?`)) { const inst = S().modules[id]; inst.entries = inst.entries.filter(x => x.id !== t.id); site.save(); render(); } },
+    "task-undo": el => { setTaskDone(S().modules[taskMod(el)].entries, taskOf(el).id, false, todayISO()); site.save(); render(); },
+    "task-new": el => taskForm(modOf(el), null),
+    "task-pick": el => pickTask(el.closest("[data-mod]") ? modOf(el) : null)
+  },
+  change: {
+    "task-done": el => { setTaskDone(S().modules[taskMod(el)].entries, taskOf(el).id, el.checked, todayISO()); site.save(); render(); if (el.checked) toast(doneLines[Math.floor(Math.random() * doneLines.length)]); },
+    "task-step": el => { const t = taskOf(el); t.steps[+el.dataset.i].d = el.checked; site.save(); render(); },
+    "f-room": el => { tf(modOf(el)).room = el.value; render(); },
+    "f-cat": el => { tf(modOf(el)).cat = el.value; render(); },
+    "task-cats": el => { const cats = [...new Set(el.value.split("\n").map(x => x.trim()).filter(Boolean))]; if (cats.length) instOf(el).config.cats = cats; site.save(); el.blur(); render(); },
+    "task-costs": el => { instOf(el).config.costs = el.checked; site.save(); render(); }
+  }
+};
+
 /* ---- budget : opérations, enveloppes à plafond mensuel ---- */
 const budMonths = {}; // mois affiché, par module (propre à l'appareil, non enregistré)
 const monthOf = id => budMonths[id] || (budMonths[id] = todayISO().slice(0, 7));
@@ -279,7 +410,7 @@ TYPE_UI.budget = {
     const inst = S().modules[id], m = monthOf(id), es = inMonth(inst, m), out = sumOf(es, "dépense"), inn = sumOf(es, "revenu");
     const shown = es.filter(e => gMatch(id, e)).sort((a, x) => x.date.localeCompare(a.date));
     const mLabel = new Date(m + "-15").toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-    const chantierLeft = Object.hasOwn(MODULE_DEFS, "chantier") && enabled("chantier") ? openTasks().filter(t => t.cost).reduce((a, t) => a + +t.cost, 0) : 0;
+    const tasksLeft = allTasks().filter(([m, t]) => !t.done && t.cost && S().modules[m].config.costs).reduce((a, [, t]) => a + +t.cost, 0);
     const defDate = m === todayISO().slice(0, 7) ? todayISO() : m + "-01";
     return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span>
     <button class="btn ghost" data-act="bud-month" data-d="-1" aria-label="Mois précédent">‹</button><b style="min-width:9ch;text-align:center;text-transform:capitalize">${mLabel}</b><button class="btn ghost" data-act="bud-month" data-d="1" aria-label="Mois suivant">›</button></div>
@@ -295,7 +426,7 @@ TYPE_UI.budget = {
   <div class="two"><section><h3>Opérations</h3><p class="hint">L'argent ne disparaît pas, il change simplement de propriétaire.</p>
     <ul class="plain">${shown.map(e => `<li class="item" data-id="${esc(e.id)}"><span></span><div>${esc(e.note || e.cat || e.type)}<div class="meta">${fmt(e.date)}${e.cat ? `<span class="tag">${esc(e.cat)}</span>` : ""}</div></div><div class="row"><b class="${e.type === "revenu" ? "pos" : ""}">${e.type === "revenu" ? "+" : "−"}${money(e.amount)}</b><button class="btn ghost sm" data-act="bud-del">suppr.</button></div></li>`).join("") || `<li class="empty">Aucune opération ce mois-ci. Suspect.</li>`}</ul></section>
   <div>${groupPanel(id, "Part de chaque enveloppe mensuelle déjà consommée. Le rouge signale le dépassement.")}
-    ${chantierLeft ? `<p class="hint">Le chantier estime encore ${money(chantierLeft)} de dépenses à venir.</p>` : ""}</div></div></div>`;
+    ${tasksLeft ? `<p class="hint">Les tâches en cours estiment encore ${money(tasksLeft)} de dépenses à venir.</p>` : ""}</div></div></div>`;
   },
   settings: (id, { config: c }) => `<div><span class="hint" style="margin:0">Enveloppes mensuelles</span>${c.envelopes.map((v, i) => `<div class="set" data-vi="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="env-name" data-mod="${esc(id)}" value="${esc(v.name)}" aria-label="Nom de l'enveloppe"><input type="number" min="0" data-act="env-limit" data-mod="${esc(id)}" value="${esc(v.limit || "")}" placeholder="€ / mois" aria-label="Plafond mensuel"><button class="btn ghost sm" data-act="env-del" data-mod="${esc(id)}">suppr.</button></div>`).join("")}<button class="btn sm" data-act="env-add" data-mod="${esc(id)}" style="margin-top:8px">Ajouter une enveloppe</button></div>`,
   summary(id, inst) {
@@ -339,11 +470,10 @@ TYPE_UI.budget = {
 
 /* ---- notes : textes datés ; l'une des boîtes reçoit la capture rapide de l'accueil ---- */
 /* Où une note peut être rangée : les modules actifs qui savent la recevoir, dans l'ordre de la navigation.
-   Le Chantier (module encore fixe) reçoit une tâche. */
+   Un type peut renvoyer une suite à donner (le formulaire d'une tâche, pour la compléter). */
 function noteTargets(fromId) {
   const s = S();
   return s.config.modules.filter(m => m.on && m.id !== fromId).map(m => m.id).filter(id => {
-    if (id === "chantier" && Object.hasOwn(MODULE_DEFS, "chantier")) return true;
     const inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null, ui = inst && TYPE_UI[inst.type];
     return ui && ui.accept && (!ui.canAccept || ui.canAccept(inst));
   });
@@ -372,9 +502,9 @@ TYPE_UI.notes = {
     "note-to": el => {
       const s = S(), src = s.modules[modOf(el)], note = src.entries.find(x => x.id === idOf(el)), to = el.dataset.to;
       const drop = () => { src.entries = src.entries.filter(x => x !== note); site.save(); };
-      if (to === "chantier" && Object.hasOwn(MODULE_DEFS, "chantier")) { const t = addTask(board.data.tasks, { title: note.text }, uid(), todayISO()); board.save(); drop(); taskForm(t); return; }
-      const target = s.modules[to];
-      TYPE_UI[target.type].accept(to, target, note); drop(); render(); toast(`Rangé dans ${label(to)}.`);
+      const target = s.modules[to], then = TYPE_UI[target.type].accept(to, target, note);
+      drop(); render();
+      if (typeof then === "function") then(); else toast(`Rangé dans ${label(to)}.`);
     }
   },
   change: {

@@ -263,6 +263,9 @@ function makeStore(key, path, seed, normalize = d => d) {
   const read = k => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } };
   const s = { db: null, timer: null, unsub: null, syncing: null, again: false, key };
   s.data = normalize(read(key) || seed());
+  // Une migration faite au chargement est écrite aussitôt : sinon, sans synchro (artefact, hors ligne),
+  // chaque chargement la referait depuis l'ancienne forme (et, pour le board, reverserait des tâches supprimées).
+  try { const raw = localStorage.getItem(key); if (raw && raw !== JSON.stringify(s.data)) localStorage.setItem(key, JSON.stringify(s.data)); } catch {}
   s.base = read(BASE);
   const saveLS = () => { try { localStorage.setItem(key, JSON.stringify(s.data)); } catch {} };
   const saveBase = () => { try { if (s.base) localStorage.setItem(BASE, JSON.stringify(s.base)); else localStorage.removeItem(BASE); } catch {} };
@@ -487,7 +490,8 @@ async function authConnectStores() {
   if (last && last !== uid) authResetLocal();
   try { localStorage.setItem(LAST_UID_KEY, uid); } catch {}
   // Ne (re)connecte que les stores déconnectés : un store déjà branché a son propre poller, pas de doublon.
-  await Promise.all([board, site].filter(st => !st.db).map(st => st.connect(supabaseDb)));
+  // L'un après l'autre, le site d'abord : le board verse ses tâches dans un site déjà synchronisé (voir absorbBoard).
+  for (const st of [site, board]) if (!st.db) await st.connect(supabaseDb);
   if (board.db && site.db) setSaving("");
 }
 
@@ -667,10 +671,11 @@ function setTaskDone(tasks, id, done, date) {
   if (done) t.today = false;
   return t;
 }
-function setTaskToday(tasks, id, value) {
+/* `elsewhere` : tâches du jour déjà choisies dans les autres modules de tâches (le plafond de trois est global). */
+function setTaskToday(tasks, id, value, elsewhere = 0) {
   const t = tasks.find(x => x.id === id);
   if (!t) throw new Error("Tâche introuvable");
-  if (value && !t.today && tasks.filter(x => !x.done && x.today).length >= 3) throw new Error("Trois tâches du jour maximum");
+  if (value && !t.today && tasks.filter(x => !x.done && x.today).length + elsewhere >= 3) throw new Error("Trois tâches du jour maximum");
   t.today = !!value;
   return t;
 }
@@ -695,10 +700,11 @@ function addBudgetEntry(entries, input, id, defaultDate) {
 /* ---- modules génériques ---- */
 /* Version du format des données du site. 1 = sections en dur (kundalini, ecriture, phidippus à la racine),
    2 = modules génériques sous `modules`, 3 = october.moth et Musique deviennent des collections,
-   4 = la Capture devient un module Notes, 5 = le Budget devient un module générique.
+   4 = la Capture devient un module Notes, 5 = le Budget devient un module générique,
+   6 = le Chantier devient un module Tâches (ses tâches quittent le document « board »).
    Une version de l'app qui lit un numéro plus grand que le sien ne doit ni fusionner ni écrire :
    elle ne connaît pas la forme de ces données. */
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 /* Anciennes sections à la racine du document → instances de module. Chaque conversion reçoit l'ancienne
    section, le nom personnalisé et le réglage de regroupement éventuels. Sert aussi aux données de départ. */
 const SECTION_TO_MODULE = {
@@ -744,12 +750,27 @@ const SECTION_TO_MODULE = {
     entries: old.entries || []
   })
 };
+/* Le Chantier était un module fixe dont les tâches vivaient dans un document à part (« board »).
+   Il devient une instance du type Tâches ; ses tâches y sont versées par absorbBoard (app.js). */
+const TASK_CATS = ["Bricolage", "Administratif", "Achat", "Artisan", "Rangement", "Ménage"];
+const boardToModule = (tasks, name, groups) => ({
+  type: "taches", label: name || "Chantier",
+  config: { groupLabel: "Pièce", catLabel: "Type", cats: TASK_CATS.slice(), costs: true,
+    groups: { on: true, by: "room", sort: "name", hideDone: false, title: "", ...(groups || {}) } },
+  entries: tasks || []
+});
 /* Ne recrée jamais un module manquant : un module absent chez un site existant a été supprimé exprès.
    Si le module existe déjà alors que l'ancienne section réapparaît (une ancienne version de l'app, restée
    ouverte sur un autre appareil, a pu y écrire entre-temps), ses entrées absentes sont absorbées, pas perdues. */
 function migrateModules(d) {
   d.modules = d.modules || {};
   const cfg = d.config || {}, labels = cfg.labels || {}, groups = cfg.groups || {};
+  // Format 6 : une seule fois (drapeau boardMerged), sinon un Chantier supprimé exprès reviendrait.
+  if (!d.boardMerged) {
+    if (!d.modules.chantier) d.modules.chantier = boardToModule([], labels.chantier, groups.chantier);
+    delete groups.chantier;
+    d.boardMerged = true;
+  }
   for (const [key, convert] of Object.entries(SECTION_TO_MODULE)) {
     if (!d[key]) continue;
     const inst = convert(d[key], labels[key], groups[key]), cur = d.modules[key];
@@ -806,6 +827,28 @@ const MODULE_TYPES = {
     validate(inst, v) {
       v.list(inst.config.envelopes || [], "enveloppes").forEach(x => { if (typeof x.name !== "string") v.fail("enveloppe"); v.num(x.limit, "plafond", 0); });
       for (const e of inst.entries) { v.num(e.amount, "montant", 0); if (e.type !== "dépense" && e.type !== "revenu") v.fail("type d'opération"); }
+    }
+  },
+  taches: {
+    label: "Tâches (échéances, lieux, étapes, coûts)",
+    datedEntries: false, // une tâche a une échéance facultative, pas une date de journal
+    defaults: () => ({ config: { groupLabel: "Lieu", catLabel: "Type", cats: ["Général"], costs: true,
+      groups: { on: true, by: "room", sort: "name", hideDone: false, title: "" } }, entries: [] }),
+    normalize(inst) {
+      const c = inst.config, def = MODULE_TYPES.taches.defaults().config;
+      for (const k of Object.keys(def)) if (c[k] == null) c[k] = def[k];
+      if (!Array.isArray(c.cats) || !c.cats.length) c.cats = def.cats.slice();
+      c.groups = { ...def.groups, ...c.groups };
+    },
+    validate(inst, v) {
+      const c = inst.config;
+      if (c.cats != null && (!Array.isArray(c.cats) || c.cats.some(x => typeof x !== "string"))) v.fail("types de tâche");
+      for (const t of inst.entries) {
+        if (typeof t.title !== "string") v.fail("titre");
+        if (t.steps != null && (!Array.isArray(t.steps) || t.steps.some(x => !x || typeof x.t !== "string"))) v.fail("étapes");
+        if (t.due && !(typeof t.due === "string" && validDate(t.due))) v.fail("échéance");
+        v.num(t.effort, "effort", 1, 3); v.num(t.cost, "coût", 0);
+      }
     }
   },
   notes: {
@@ -927,7 +970,7 @@ function setSaving(t) { $("#saving").textContent = t; }
 /* ================= stores ================= */
 
 const MODULE_DEFS = {
-  chantier: "Chantier", assistant: "Assistant"
+  assistant: "Assistant"
 };
 const MODULE_ORDER = ["chantier", "kundalini", "ecriture", "moth", "phidippus", "musique", "budget", "assistant", "inbox"];
 const OFF_BY_DEFAULT = ["assistant"];
@@ -937,6 +980,7 @@ function siteSeed() {
     kundalini: { type: "programme", label: "Kundalini", config: { unitLabel: "min", start: null, weeks: 12, perWeek: 5 }, entries: [] },
     ecriture: { type: "cumul", label: "Écriture", config: { unitLabel: "mots", goal: 40000, title: "La spiritualité du spectre dissociatif", categories: [], categoryLabel: "Chapitre", scraps: true, scrapsLabel: "Fragments" }, entries: [], scraps: [] },
     phidippus: { type: "rappels", label: "Phidippus", config: { subtitle: "", types: [{ id: "repas", label: "Repas", every: 6 }, { id: "brumisation", label: "Brumisation", every: 3 }, { id: "mue", label: "Mue", every: 0 }] }, entries: [] },
+    chantier: boardToModule([]),
     moth: SECTION_TO_MODULE.moth({ posts: [] }),
     musique: SECTION_TO_MODULE.musique({ albums: ["Ulver", "Dead Can Dance", "Kate Bush", "Jonathan Hultén", "Chelsea Wolfe", "Zola Jesus", "iamamiwhoami"]
       .map(a => ({ id: uid(), artist: a, album: "", status: "À écouter", note: "" })) }),
@@ -944,7 +988,7 @@ function siteSeed() {
     budget: SECTION_TO_MODULE.budget({ entries: [], envelopes: [["Travaux", 500], ["Courses", 300], ["Loisirs", 100], ["Abonnements", 50]].map(([name, limit]) => ({ id: uid(), name, limit })) })
   };
   return {
-    updatedAt: 0, schemaVersion: SCHEMA_VERSION,
+    updatedAt: 0, schemaVersion: SCHEMA_VERSION, boardMerged: true,
     config: { name: "Selene", palette: "nigredo", mode: "auto", labels: {}, groups: {},
       modules: MODULE_ORDER.map(id => ({ id, on: !OFF_BY_DEFAULT.includes(id) })),
       assistant: { model: "claude-sonnet-5", actions: true, share: { chantier: true, kundalini: true, ecriture: true, moth: true, phidippus: true, musique: true, budget: false, inbox: true } } },
@@ -1019,14 +1063,6 @@ const itemGroups = (items, keyFn, doneFn) => {
   for (const it of items) { const k = keyFn(it) || "Sans groupe"; const g = m.get(k) || { name: k, num: 0, den: 0 }; g.den++; if (doneFn(it)) g.num++; m.set(k, g); }
   return [...m.values()].map(g => ({ ...g, pct: Math.round(100 * g.num / g.den), sub: `${g.num} sur ${g.den}` }));
 };
-const GROUPERS = {
-  chantier: {
-    fields: { room: "Pièce", cat: "Type", effort: "Effort" }, renamable: ["room", "cat"], filterable: true,
-    items: () => board.data.tasks, key: (t, f) => f === "effort" ? ["", "Petit", "Moyen", "Gros"][t.effort || 1] : t[f], store: () => board,
-    groups(f) { return itemGroups(this.items(), t => this.key(t, f), t => t.done); }
-  },
-
-};
 /* Remet un document du site dans la forme attendue (migration des anciens formats, champs ajoutés
    depuis, entrées de navigation manquantes). Appelée par le store à chaque fois que des données y entrent
    (lecture locale, synchro, import) : S() n'a donc plus rien à corriger et se contente de lire. */
@@ -1038,26 +1074,39 @@ function normalizeSite(d) {
   for (const k of Object.keys(seed.config)) if (d.config[k] == null) d.config[k] = seed.config[k];
   for (const id of Object.keys(MODULE_DEFS)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: !OFF_BY_DEFAULT.includes(id) });
   for (const id of Object.keys(d.modules)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: true });
-  for (const [mod, g] of Object.entries(GROUPERS)) d.config.groups[mod] = { on: true, by: Object.keys(g.fields)[0], sort: "name", hideDone: false, title: "", ...(d.config.groups[mod] || {}) };
   for (const k of Object.keys(seed)) if (k !== "modules" && typeof seed[k] === "object" && !Array.isArray(seed[k])) for (const f of Object.keys(seed[k])) if (d[k][f] == null) d[k][f] = seed[k][f];
   for (const inst of Object.values(d.modules)) if (Object.hasOwn(MODULE_TYPES, inst.type) && MODULE_TYPES[inst.type].normalize) MODULE_TYPES[inst.type].normalize(inst);
   const inbox = inboxId(d.modules); // une seule boîte de réception, même après une fusion entre appareils
   for (const [id, inst] of Object.entries(d.modules)) if (inst.type === "notes" && inst.config.inbox && id !== inbox) inst.config.inbox = false;
   return d;
 }
-const board = makeStore("selene-board-v1", "board/state", () => ({ updatedAt: 0, tasks: [] }));
 const site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite);
+/* L'ancien document « board » (tâches du Chantier jusqu'au format 5) n'est plus qu'un point d'entrée :
+   ce qu'il contient est versé dans le module Chantier du site, puis il est vidé, et le vidage part au
+   serveur à la synchro suivante (sinon chaque nouvel appareil ressusciterait les tâches supprimées).
+   Une ancienne version de l'app restée ouverte ailleurs peut encore y écrire : rien n'est perdu.
+   Doit être connecté APRÈS le site : versé dans un site pas encore synchronisé (données de départ),
+   le contenu rendrait ces données « non vierges » et la synchro les fusionnerait au lieu de les remplacer. */
+function absorbBoard(d) {
+  if (!Array.isArray(d.tasks)) d.tasks = [];
+  if (!d.tasks.length) return d;
+  const inst = site.data.modules.chantier;
+  if (inst && inst.type === "taches") for (const t of d.tasks) if (!inst.entries.some(x => x.id === t.id)) inst.entries.push(t);
+  d.tasks = []; d.schemaVersion = SCHEMA_VERSION;
+  site.save();
+  return d;
+}
+const board = makeStore("selene-board-v1", "board/state", () => ({ updatedAt: 0, tasks: [] }), absorbBoard);
 const S = () => site.data; // lecture seule : la normalisation a lieu à l'entrée des données, pas ici
 const label = id => { const s = S(); return s.config.labels[id] || (s.modules[id] && s.modules[id].label) || MODULE_DEFS[id]; };
 const enabled = id => { const m = S().config.modules.find(m => m.id === id); return m ? m.on : false; };
 
-/* Regroupement d'un module : défini en dur pour les modules fixes (GROUPERS), fourni par le type pour une instance. */
+/* Regroupement en pourcentage d'un module : fourni par son type (TYPE_UI[type].grouper), réglé dans inst.config.groups. */
 function grouperFor(mod) {
-  if (Object.hasOwn(GROUPERS, mod)) return GROUPERS[mod];
   const inst = Object.hasOwn(S().modules, mod) ? S().modules[mod] : null;
   return inst && TYPE_UI[inst.type].grouper ? TYPE_UI[inst.type].grouper(inst, mod) : null;
 }
-const gcfg = mod => Object.hasOwn(GROUPERS, mod) ? S().config.groups[mod] : S().modules[mod].config.groups;
+const gcfg = mod => S().modules[mod].config.groups;
 const groupBy = mod => { const G = grouperFor(mod), by = gcfg(mod).by; return G.fields[by] ? by : Object.keys(G.fields)[0]; }; // un champ désactivé depuis ne casse rien
 function groupPanel(mod, hint) {
   const G = grouperFor(mod), c = gcfg(mod);
@@ -1075,52 +1124,6 @@ function groupPanel(mod, hint) {
 }
 const gMatch = (mod, it) => { const v = gFilter[mod]; if (!v) return true; return (grouperFor(mod).key(it, groupBy(mod)) || "Sans groupe") === v; };
 
-/* ================= chantier logic ================= */
-function dueLabel(t) {
-  if (!t.due) return { txt: "Sans date", cls: "" };
-  const n = diffDays(t.due, todayISO());
-  if (n < 0) return { txt: `En retard de ${-n} j`, cls: "late" };
-  if (n === 0) return { txt: "Aujourd'hui", cls: "late" };
-  if (n === 1) return { txt: "Demain", cls: "soon" };
-  if (n <= 7) return { txt: `Dans ${n} j`, cls: "soon" };
-  return { txt: fmt(t.due), cls: "" };
-}
-const rooms = () => [...new Set(board.data.tasks.map(t => t.room).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
-const openTasks = () => board.data.tasks.filter(t => !t.done);
-const doneLines = ["Fait. L'appartement s'effondre un peu moins vite.", "Un de moins. L'entropie note ta résistance.", "Coché. Personne n'applaudit, alors je le fais.", "Terminé. Ton futur toi te déteste un peu moins.", "Réglé. Le chaos recule d'un centimètre."];
-let roomFilter = "", catFilter = "", openId = null;
-
-function taskHTML(t) {
-  const d = dueLabel(t), sd = (t.steps || []).filter(s => s.d).length, ef = Math.min(3, Math.max(1, Math.round(+t.effort) || 1));
-  return `<li class="item ${t.done ? "done" : ""} ${openId === t.id ? "open" : ""}" data-task="${esc(t.id)}">
-    <input type="checkbox" class="check" data-act="task-done" ${t.done ? "checked" : ""} aria-label="Marquer comme fait">
-    <div><button class="t-title" data-act="task-open">${esc(t.title)}</button>
-      <div class="meta">${t.room ? `<span class="tag">${esc(t.room)}</span>` : ""}<span class="${t.done ? "" : d.cls}">${esc(d.txt)}</span><span>${esc(t.cat)}</span><span>${"●".repeat(ef)}${"○".repeat(3 - ef)}</span>${(t.steps || []).length ? `<span>${sd}/${t.steps.length} étapes</span>` : ""}${t.cost ? `<span>${esc(t.cost)} €</span>` : ""}</div></div>
-    <button class="star ${t.today ? "on" : ""}" data-act="task-today" title="Faire aujourd'hui" aria-label="Faire aujourd'hui">★</button>
-    <div class="details">
-      ${(t.steps || []).length ? `<ul class="steps">${t.steps.map((s, i) => `<li><input type="checkbox" data-act="task-step" data-i="${i}" ${s.d ? "checked" : ""} id="s${esc(t.id)}-${i}"><label for="s${esc(t.id)}-${i}" style="font-weight:400;display:inline">${esc(s.t)}</label></li>`).join("")}</ul>` : ""}
-      ${t.note ? `<p class="note">${esc(t.note)}</p>` : ""}
-      <div class="row"><button class="btn ghost sm" data-act="task-edit">Modifier</button><button class="btn ghost sm" data-act="task-del">Supprimer</button></div>
-    </div></li>`;
-}
-function taskForm(t) {
-  $("#roomList").innerHTML = rooms().map(r => `<option value="${esc(r)}">`).join("");
-  openForm(t ? "Modifier la tâche" : "Nouvelle tâche", [
-    { n: "title", l: "Tâche", req: true },
-    { row: [{ n: "room", l: "Pièce", list: "roomList" }, { n: "cat", l: "Type", t: "select", o: ["Bricolage", "Administratif", "Achat", "Artisan", "Rangement", "Ménage"] }] },
-    { row: [{ n: "due", l: "Date butoir", t: "date" }, { n: "effort", l: "Effort", t: "select", o: [["1", "Petit, moins de 30 min"], ["2", "Moyen, une demi-journée"], ["3", "Gros, un week-end"]] }] },
-    { n: "cost", l: "Coût estimé (€)", t: "number" },
-    { n: "steps", l: "Étapes (une par ligne)", t: "textarea", rows: 4 },
-    { n: "note", l: "Note", t: "textarea", rows: 2 }
-  ], t ? { ...t, effort: String(t.effort), steps: (t.steps || []).map(s => s.t).join("\n") } : { room: roomFilter || (gcfg("chantier").by === "room" ? gFilter.chantier || "" : ""), cat: "Bricolage", effort: "1" }, v => {
-    const lines = v.steps.split("\n").map(s => s.trim()).filter(Boolean);
-    const data = { title: v.title, room: v.room, cat: v.cat, due: v.due || null, effort: +v.effort, cost: v.cost ? +v.cost : null, note: v.note };
-    if (t) t = board.data.tasks.find(x => x.id === t.id);
-    if (!t) { addTask(board.data.tasks, { ...data, steps: lines.map(l => ({ t: l, d: false })) }, uid(), todayISO()); board.save(); render(); return; }
-    { const old = new Map((t.steps || []).map(s => [s.t, s.d])); Object.assign(t, data, { steps: lines.map(l => ({ t: l, d: old.get(l) || false })) }); }
-    board.save(); render();
-  });
-}
 function streakOf(dates) {
   const set = new Set(dates); let n = 0; const d = new Date();
   if (!set.has(iso(d))) d.setDate(d.getDate() - 1);
@@ -1160,7 +1163,7 @@ const VIEWS = {};
 
 VIEWS.accueil = () => {
   const m = moon(), s = S(), now = todayISO();
-  const tod = openTasks().filter(t => t.today).slice(0, 3);
+  const tod = todayTasks().slice(0, 3);
   const alerts = [];
   for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) alerts.push(...TYPE_UI[inst.type].alerts(id, inst, now));
   const inbox = inboxId(s.modules), pending = inbox ? s.modules[inbox].entries.length : 0;
@@ -1173,7 +1176,7 @@ VIEWS.accueil = () => {
   <div class="two">
     <section><h2>Aujourd'hui</h2><p class="hint">Trois choses. La forêt pousse très bien sans que tu la surveilles.</p>
       <ul class="plain">
-        ${tod.map(taskHTML).join("")}
+        ${tod.map(([id, t]) => taskHTML(id, t)).join("")}
         ${alerts.map(a => `<li class="item"><span></span><div>${a.text}</div>${a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">voir</a>` : a.quick ? `<button class="btn ghost sm" data-act="entry-add" data-mod="${esc(a.quick)}">noter</button>` : ""}</li>`).join("")}
       </ul>
       ${!tod.length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : ""}
@@ -1188,41 +1191,12 @@ VIEWS.accueil = () => {
 };
 
 const SUMMARY = {
-  chantier: () => { const o = openTasks(), now = todayISO(), late = o.filter(t => t.due && t.due < now).length; const all = board.data.tasks.length; return `${late ? `<span class="late">${late} en retard</span>, ` : ""}${o.length} à faire, ${all ? Math.round(100 * (all - o.length) / all) : 0} % du chantier`; },
   assistant: () => { const b = backend(); return b === "sample" ? "Branché via claude.ai" : b === "api" ? "Branché via ta clé API" : "Pas encore branché"; }
 };
 function summaryFor(id) {
   const inst = Object.hasOwn(S().modules, id) ? S().modules[id] : null;
   return inst ? TYPE_UI[inst.type].summary(id, inst) : SUMMARY[id] ? SUMMARY[id]() : "";
 }
-
-VIEWS.chantier = () => {
-  const now = todayISO(), o = openTasks();
-  const tod = o.filter(t => t.today).slice(0, 3);
-  const cats = [...new Set(board.data.tasks.map(t => t.cat))];
-  const filtered = o.filter(t => (!roomFilter || t.room === roomFilter) && (!catFilter || t.cat === catFilter) && gMatch("chantier", t)).sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999"));
-  const groups = [
-    ["En retard", "Le passé ne se repeint pas. Ça, si.", t => t.due && t.due < now, true],
-    ["Cette semaine", "Assez proche pour paniquer utilement.", t => t.due && t.due >= now && diffDays(t.due, now) <= 7],
-    ["Ce mois-ci", "Le problème de toi dans trois semaines.", t => t.due && diffDays(t.due, now) > 7 && diffDays(t.due, now) <= 31],
-    ["Plus tard", "Hors de vue. Pas hors de l'appartement.", t => t.due && diffDays(t.due, now) > 31],
-    ["Sans date", "Les tâches sans date ne meurent jamais. Elles hantent.", t => !t.due]
-  ].map(([n, h, f, late]) => { const it = filtered.filter(f); return it.length ? `<div style="margin-bottom:22px"><h3 class="${late ? "late" : ""}">${n} <span class="hint" style="font-size:1rem">${it.length}</span></h3><p class="hint">${h}</p><ul class="plain">${it.map(taskHTML).join("")}</ul></div>` : ""; }).join("");
-  const spent = board.data.tasks.filter(t => t.done && t.cost).reduce((a, t) => a + +t.cost, 0), left = o.filter(t => t.cost).reduce((a, t) => a + +t.cost, 0);
-  const done = board.data.tasks.filter(t => t.done).sort((a, b) => (b.doneAt || "").localeCompare(a.doneAt || "")).slice(0, 8);
-  return `<div class="row" style="margin-bottom:24px"><h2 style="margin:0">${esc(label("chantier"))}</h2><span class="spacer"></span><button class="btn solid" data-act="task-new">Ajouter une tâche</button><button class="btn" data-act="task-pick">Tirer au sort</button></div>
-  <div class="two"><div>
-    <section><h3>Aujourd'hui</h3><p class="hint">Trois tâches maximum. Au-delà, c'est une liste de reproches.</p><ul class="plain">${tod.map(taskHTML).join("") || `<li class="empty">Coche l'étoile d'une tâche.</li>`}</ul></section>
-    <section><div class="row" style="margin-bottom:12px"><h3 style="margin:0">Échéances</h3><span class="spacer"></span>
-      <select data-act="f-room" aria-label="Pièce"><option value="">Toutes les pièces</option>${rooms().map(r => `<option ${r === roomFilter ? "selected" : ""}>${esc(r)}</option>`).join("")}</select>
-      <select data-act="f-cat" aria-label="Type"><option value="">Tous les types</option>${cats.map(c => `<option ${c === catFilter ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></div>
-      ${groups || `<p class="empty">Plus rien ici. Soit c'est fini, soit tu as filtré trop fort.</p>`}</section>
-  </div><aside>
-    ${groupPanel("chantier", "La mousse gagne à mesure que tu finis. Clique pour filtrer.")}
-    ${spent || left ? `<p class="hint">Budget estimé : ${spent} € engagés, ${left} € encore à prévoir.</p>` : ""}
-    <section><h3>Fait récemment</h3><ul class="plain">${done.map(t => `<li class="item" data-task="${esc(t.id)}"><span></span><div>${esc(t.title)}<div class="meta">${fmt(t.doneAt)}</div></div><button class="btn ghost sm" data-act="task-undo">annuler</button></li>`).join("") || `<li class="empty">Rien pour l'instant. L'histoire ne retiendra rien.</li>`}</ul></section>
-  </aside></div>`;
-};
 
 
 
@@ -1311,33 +1285,17 @@ function render() {
 window.addEventListener("hashchange", () => { openId = null; render(); const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t); if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); } else window.scrollTo(0, 0); });
 
 /* ================= actions ================= */
-const taskOf = el => { const li = el.closest("[data-task]"); return (li && board.data.tasks.find(t => t.id === li.dataset.task)) || null; };
 const idOf = el => el.closest("[data-id]")?.dataset.id;
 function capture() {
   const inp = $("#capIn"); if (!inp || !inp.value.trim()) return;
   const id = inboxId(S().modules); if (!id) return toast("Aucune boîte de réception : voir Réglages.");
   addCapture(S().modules[id].entries, inp.value, uid(), todayISO()); site.save(); inp.value = ""; render(); toast("Gardé. Tu peux oublier, c'est écrit.");
 }
-function pickTask() {
-  const o = openTasks().filter(t => !t.today);
-  if (openTasks().filter(t => t.today).length >= 3) return toast("Aujourd'hui est plein. Le hasard respecte les plafonds.");
-  if (!o.length) return toast("Rien à tirer.");
-  const small = o.filter(t => t.effort === 1), pool = (small.length ? small : o).sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")).slice(0, 5);
-  const t = pool[Math.floor(Math.random() * pool.length)]; setTaskToday(board.data.tasks, t.id, true); board.save(); render();
-  toast(`Le sort a désigné : « ${t.title} ». Pas de recours possible.`);
-}
 function entryAdd(id) {
   const inst = S().modules[id], ui = TYPE_UI[inst.type];
   if (ui.add) ui.add(id, inst);
 }
 const CLICK = {
-  "task-open": el => { const t = taskOf(el); openId = openId === t.id ? null : t.id; render(); },
-  "task-today": el => { const t = taskOf(el); try { setTaskToday(board.data.tasks, t.id, !t.today); } catch { return toast("Trois, c'est le plafond. Termine ou retire-en une."); } board.save(); render(); },
-  "task-edit": el => taskForm(taskOf(el)),
-  "task-del": async el => { const t = taskOf(el); if (await ask(`Supprimer « ${t.title} » ?`)) { board.data.tasks = board.data.tasks.filter(x => x !== t); board.save(); render(); } },
-  "task-undo": el => { setTaskDone(board.data.tasks, taskOf(el).id, false, todayISO()); board.save(); render(); },
-  "task-new": () => taskForm(null),
-  "task-pick": pickTask,
   "grp-filter": el => { const m = el.dataset.mod, g = el.dataset.g; gFilter[m] = gFilter[m] === g ? "" : g; render(); },
   "goto-groups": el => { const id = "mreg-" + el.dataset.mod; if (location.hash === "#reglages") { const d = document.getElementById(id); if (d) { d.open = true; d.scrollIntoView(); } } else sessionStorage.setItem("selene-scroll", id); },
   "cap-add": capture,
@@ -1386,10 +1344,6 @@ const CHANGE = {}; // actions « change » des types de module (remplie par type
 document.addEventListener("change", e => {
   const el = e.target, act = el.dataset.act;
   if (act && Object.hasOwn(CHANGE, act)) CHANGE[act](el);
-  else if (act === "task-done") { setTaskDone(board.data.tasks, taskOf(el).id, el.checked, todayISO()); board.save(); render(); if (el.checked) toast(doneLines[Math.floor(Math.random() * doneLines.length)]); }
-  else if (act === "task-step") { const t = taskOf(el); t.steps[+el.dataset.i].d = el.checked; board.save(); render(); }
-  else if (act === "f-room") { roomFilter = el.value; render(); }
-  else if (act === "f-cat") { catFilter = el.value; render(); }
   else if (act && act.startsWith("grp-") && act !== "grp-filter") {
     const mod = el.closest("[data-mod]").dataset.mod, g = gcfg(mod), G = grouperFor(mod);
     if (act === "grp-on") g.on = el.checked;
@@ -1402,7 +1356,7 @@ document.addEventListener("change", e => {
       const by = groupBy(mod); G.items().forEach(it => { if (it[by] === from) it[by] = to; });
       if (G.rename) G.rename(from, to); // ex. une enveloppe du budget porte le nom du groupe
       if (gFilter[mod] === from) gFilter[mod] = to;
-      if (mod === "chantier" && roomFilter === from) roomFilter = to;
+      if (taskFilters[mod] && taskFilters[mod].room === from) taskFilters[mod].room = to;
       G.store().save(); toast(`« ${from} » s'appelle désormais « ${to} ».`);
     }
     site.save(); el.blur(); render();
@@ -1413,7 +1367,7 @@ document.addEventListener("change", e => {
   else if (act === "as-share") { S().config.assistant.share[el.dataset.k] = el.checked; site.save(); render(); }
   else if (act === "imp") {
     const f = el.files && el.files[0]; if (!f) return;
-    f.text().then(async t => { const d = parseBackup(t); if (!await ask("Remplacer tout l'état actuel par celui du fichier ?")) return; board.replaceAll(d.board); site.replaceAll(d.site); render(); toast("Sauvegarde importée."); }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene.")).finally(() => { el.value = ""; });
+    f.text().then(async t => { const d = parseBackup(t); if (!await ask("Remplacer tout l'état actuel par celui du fichier ?")) return; site.replaceAll(d.site); board.replaceAll(d.board); /* le site d'abord : les tâches d'une ancienne sauvegarde y sont versées */ render(); toast("Sauvegarde importée."); }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene.")).finally(() => { el.value = ""; });
   }
   else if (act === "mod-on") { S().config.modules[+el.closest("[data-i]").dataset.i].on = el.checked; site.save(); render(); }
   else if (act === "mod-label") {
@@ -1726,6 +1680,137 @@ TYPE_UI.collection = {
     }
   }
 };
+/* ---- tâches : échéances, lieux, étapes, coûts ; « Aujourd'hui » plafonné à trois, tous modules confondus ---- */
+const taskModules = () => Object.keys(S().modules).filter(k => S().modules[k].type === "taches" && enabled(k));
+const allTasks = () => taskModules().flatMap(id => S().modules[id].entries.map(t => [id, t]));
+const todayTasks = () => allTasks().filter(([, t]) => !t.done && t.today);
+const todayElsewhere = id => todayTasks().filter(([m]) => m !== id).length;
+const byDue = (a, b) => (a.due || "9999").localeCompare(b.due || "9999");
+const taskFilters = {}; // filtres par module : { room, cat } (propres à l'appareil, non enregistrés)
+const tf = id => taskFilters[id] || (taskFilters[id] = { room: "", cat: "" });
+const roomsOf = id => [...new Set(S().modules[id].entries.map(t => t.room).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
+const doneLines = ["Fait. Le monde s'effondre un peu moins vite.", "Un de moins. L'entropie note ta résistance.", "Coché. Personne n'applaudit, alors je le fais.", "Terminé. Ton futur toi te déteste un peu moins.", "Réglé. Le chaos recule d'un centimètre."];
+let openId = null;
+const taskOf = el => { const li = el.closest("[data-task]"), inst = li && S().modules[li.dataset.mod]; return (inst && inst.entries.find(t => t.id === li.dataset.task)) || null; };
+const taskMod = el => el.closest("[data-task]").dataset.mod;
+function dueLabel(t) {
+  if (!t.due) return { txt: "Sans date", cls: "" };
+  const n = diffDays(t.due, todayISO());
+  if (n < 0) return { txt: `En retard de ${-n} j`, cls: "late" };
+  if (n === 0) return { txt: "Aujourd'hui", cls: "late" };
+  if (n === 1) return { txt: "Demain", cls: "soon" };
+  if (n <= 7) return { txt: `Dans ${n} j`, cls: "soon" };
+  return { txt: fmt(t.due), cls: "" };
+}
+function taskHTML(id, t) {
+  const c = S().modules[id].config, d = dueLabel(t), sd = (t.steps || []).filter(x => x.d).length, ef = Math.min(3, Math.max(1, Math.round(+t.effort) || 1));
+  return `<li class="item ${t.done ? "done" : ""} ${openId === t.id ? "open" : ""}" data-task="${esc(t.id)}" data-mod="${esc(id)}">
+    <input type="checkbox" class="check" data-act="task-done" ${t.done ? "checked" : ""} aria-label="Marquer comme fait">
+    <div><button class="t-title" data-act="task-open">${esc(t.title)}</button>
+      <div class="meta">${t.room ? `<span class="tag">${esc(t.room)}</span>` : ""}<span class="${t.done ? "" : d.cls}">${esc(d.txt)}</span><span>${esc(t.cat)}</span><span>${"●".repeat(ef)}${"○".repeat(3 - ef)}</span>${(t.steps || []).length ? `<span>${sd}/${t.steps.length} étapes</span>` : ""}${c.costs && t.cost ? `<span>${esc(t.cost)} €</span>` : ""}</div></div>
+    <button class="star ${t.today ? "on" : ""}" data-act="task-today" title="Faire aujourd'hui" aria-label="Faire aujourd'hui">★</button>
+    <div class="details">
+      ${(t.steps || []).length ? `<ul class="steps">${t.steps.map((x, i) => `<li><input type="checkbox" data-act="task-step" data-i="${i}" ${x.d ? "checked" : ""} id="s${esc(t.id)}-${i}"><label for="s${esc(t.id)}-${i}" style="font-weight:400;display:inline">${esc(x.t)}</label></li>`).join("")}</ul>` : ""}
+      ${t.note ? `<p class="note">${esc(t.note)}</p>` : ""}
+      <div class="row"><button class="btn ghost sm" data-act="task-edit">Modifier</button><button class="btn ghost sm" data-act="task-del">Supprimer</button></div>
+    </div></li>`;
+}
+function taskForm(id, t) {
+  const c = S().modules[id].config;
+  $("#roomList").innerHTML = roomsOf(id).map(r => `<option value="${esc(r)}">`).join("");
+  openForm(t ? "Modifier la tâche" : "Nouvelle tâche", [
+    { n: "title", l: "Tâche", req: true },
+    { row: [{ n: "room", l: c.groupLabel, list: "roomList" }, { n: "cat", l: c.catLabel, t: "select", o: !t || !t.cat || c.cats.includes(t.cat) ? c.cats : [...c.cats, t.cat] }] },
+    { row: [{ n: "due", l: "Date butoir", t: "date" }, { n: "effort", l: "Effort", t: "select", o: [["1", "Petit, moins de 30 min"], ["2", "Moyen, une demi-journée"], ["3", "Gros, un week-end"]] }] },
+    ...(c.costs ? [{ n: "cost", l: "Coût estimé (€)", t: "number" }] : []),
+    { n: "steps", l: "Étapes (une par ligne)", t: "textarea", rows: 4 },
+    { n: "note", l: "Note", t: "textarea", rows: 2 }
+  ], t ? { ...t, effort: String(t.effort), steps: (t.steps || []).map(x => x.t).join("\n") } : { room: tf(id).room || (gcfg(id).by === "room" ? gFilter[id] || "" : ""), cat: c.cats[0], effort: "1" }, v => {
+    const inst = S().modules[id]; // relu : une synchro a pu remplacer les données pendant la saisie
+    if (!inst) return toast("Ce module a été supprimé entre-temps.");
+    const lines = v.steps.split("\n").map(x => x.trim()).filter(Boolean);
+    const data = { title: v.title, room: v.room, cat: v.cat, due: v.due || null, effort: +v.effort, cost: "cost" in v ? (v.cost ? +v.cost : null) : (t ? t.cost : null), note: v.note }; // champ absent (coûts désactivés) ≠ champ vidé
+    const cur = t && inst.entries.find(x => x.id === t.id);
+    if (!cur) addTask(inst.entries, { ...data, steps: lines.map(l => ({ t: l, d: false })) }, uid(), todayISO());
+    else { const old = new Map((cur.steps || []).map(x => [x.t, x.d])); Object.assign(cur, data, { steps: lines.map(l => ({ t: l, d: old.get(l) || false })) }); }
+    site.save(); render();
+  });
+}
+/* Tirage au sort : dans un module (sa page) ou parmi tous (accueil), plafond de trois respecté. */
+function pickTask(only) {
+  if (todayTasks().length >= 3) return toast("Aujourd'hui est plein. Le hasard respecte les plafonds.");
+  const o = allTasks().filter(([m, t]) => !t.done && !t.today && (!only || m === only));
+  if (!o.length) return toast("Rien à tirer.");
+  const small = o.filter(([, t]) => t.effort === 1), pool = (small.length ? small : o).sort(([, a], [, b]) => byDue(a, b)).slice(0, 5);
+  const [id, t] = pool[Math.floor(Math.random() * pool.length)];
+  setTaskToday(S().modules[id].entries, t.id, true, todayElsewhere(id)); site.save(); render();
+  toast(`Le sort a désigné : « ${t.title} ». Pas de recours possible.`);
+}
+TYPE_UI.taches = {
+  view(id) {
+    const inst = S().modules[id], c = inst.config, now = todayISO(), o = inst.entries.filter(t => !t.done), f = tf(id);
+    const tod = o.filter(t => t.today);
+    const cats = [...new Set(inst.entries.map(t => t.cat))];
+    const filtered = o.filter(t => (!f.room || t.room === f.room) && (!f.cat || t.cat === f.cat) && gMatch(id, t)).sort(byDue);
+    const groups = [
+      ["En retard", "Le passé ne se repeint pas. Ça, si.", t => t.due && t.due < now, true],
+      ["Cette semaine", "Assez proche pour paniquer utilement.", t => t.due && t.due >= now && diffDays(t.due, now) <= 7],
+      ["Ce mois-ci", "Le problème de toi dans trois semaines.", t => t.due && diffDays(t.due, now) > 7 && diffDays(t.due, now) <= 31],
+      ["Plus tard", "Hors de vue. Pas hors de ta vie.", t => t.due && diffDays(t.due, now) > 31],
+      ["Sans date", "Les tâches sans date ne meurent jamais. Elles hantent.", t => !t.due]
+    ].map(([n, h, fn, late]) => { const it = filtered.filter(fn); return it.length ? `<div style="margin-bottom:22px"><h3 class="${late ? "late" : ""}">${n} <span class="hint" style="font-size:1rem">${it.length}</span></h3><p class="hint">${h}</p><ul class="plain">${it.map(t => taskHTML(id, t)).join("")}</ul></div>` : ""; }).join("");
+    const spent = inst.entries.filter(t => t.done && t.cost).reduce((a, t) => a + +t.cost, 0), left = o.filter(t => t.cost).reduce((a, t) => a + +t.cost, 0);
+    const done = inst.entries.filter(t => t.done).sort((a, b) => (b.doneAt || "").localeCompare(a.doneAt || "")).slice(0, 8);
+    return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:24px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn solid" data-act="task-new">Ajouter une tâche</button><button class="btn" data-act="task-pick">Tirer au sort</button></div>
+  <div class="two"><div>
+    <section><h3>Aujourd'hui</h3><p class="hint">Trois tâches maximum, tous modules confondus. Au-delà, c'est une liste de reproches.</p><ul class="plain">${tod.map(t => taskHTML(id, t)).join("") || `<li class="empty">Coche l'étoile d'une tâche.</li>`}</ul></section>
+    <section><div class="row" style="margin-bottom:12px"><h3 style="margin:0">Échéances</h3><span class="spacer"></span>
+      <select data-act="f-room" aria-label="${esc(c.groupLabel)}"><option value="">${esc(c.groupLabel)} : tout</option>${roomsOf(id).map(r => `<option ${r === f.room ? "selected" : ""}>${esc(r)}</option>`).join("")}</select>
+      <select data-act="f-cat" aria-label="${esc(c.catLabel)}"><option value="">${esc(c.catLabel)} : tout</option>${cats.map(x => `<option ${x === f.cat ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div>
+      ${groups || `<p class="empty">Plus rien ici. Soit c'est fini, soit tu as filtré trop fort.</p>`}</section>
+  </div><aside>
+    ${groupPanel(id, "La mousse gagne à mesure que tu finis. Clique pour filtrer.")}
+    ${c.costs && (spent || left) ? `<p class="hint">Budget estimé : ${spent} € engagés, ${left} € encore à prévoir.</p>` : ""}
+    <section><h3>Fait récemment</h3><ul class="plain">${done.map(t => `<li class="item" data-task="${esc(t.id)}" data-mod="${esc(id)}"><span></span><div>${esc(t.title)}<div class="meta">${fmt(t.doneAt)}</div></div><button class="btn ghost sm" data-act="task-undo">annuler</button></li>`).join("") || `<li class="empty">Rien pour l'instant. L'histoire ne retiendra rien.</li>`}</ul></section>
+  </aside></div></div>`;
+  },
+  settings: (id, { config: c }) => `<div class="field-row"><label>Nom du regroupement<input data-set-mod="${esc(id)}.groupLabel" value="${esc(c.groupLabel)}" placeholder="Pièce, lieu, client…" required></label><label>Nom des types<input data-set-mod="${esc(id)}.catLabel" value="${esc(c.catLabel)}" required></label></div>
+    <div class="field-row" style="margin-top:8px"><label>Types de tâche (un par ligne)<textarea data-act="task-cats" data-mod="${esc(id)}" rows="4">${esc(c.cats.join("\n"))}</textarea></label>
+    <label style="display:flex;gap:8px;align-items:center;align-self:start;margin-top:26px"><input type="checkbox" data-act="task-costs" data-mod="${esc(id)}" ${c.costs ? "checked" : ""}>Suivre les coûts estimés</label></div>`,
+  summary(id, inst) {
+    const now = todayISO(), o = inst.entries.filter(t => !t.done), late = o.filter(t => t.due && t.due < now).length, all = inst.entries.length;
+    return `${late ? `<span class="late">${late} en retard</span>, ` : ""}${o.length} à faire, ${all ? Math.round(100 * (all - o.length) / all) : 0} % fait`;
+  },
+  context(inst, nm) {
+    const o = inst.entries.filter(t => !t.done).sort(byDue), c = inst.config;
+    return `\n${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 40).map(t => `\n- [${t.id}] ${t.title} | ${t.room || "?"} | ${t.due ? "échéance " + t.due : "sans date"}${t.today ? " | choisie pour aujourd'hui" : ""}${c.costs && t.cost ? " | " + t.cost + " €" : ""}`).join("");
+  },
+  grouper: (inst, id) => {
+    const c = inst.config, fields = { room: c.groupLabel, cat: c.catLabel, effort: "Effort" };
+    const key = (t, f) => f === "effort" ? ["", "Petit", "Moyen", "Gros"][t.effort || 1] : t[f];
+    return { fields, renamable: ["room", "cat"], filterable: true, items: () => inst.entries, key, store: () => site,
+      groups: f => itemGroups(inst.entries, t => key(t, f), t => t.done) };
+  },
+  accept(id, inst, note) { const t = addTask(inst.entries, { title: note.text, cat: inst.config.cats[0] }, uid(), todayISO()); return () => taskForm(id, t); },
+  click: {
+    "task-open": el => { const t = taskOf(el); openId = openId === t.id ? null : t.id; render(); },
+    "task-today": el => { const id = taskMod(el), t = taskOf(el); try { setTaskToday(S().modules[id].entries, t.id, !t.today, todayElsewhere(id)); } catch { return toast("Trois, c'est le plafond. Termine ou retire-en une."); } site.save(); render(); },
+    "task-edit": el => taskForm(taskMod(el), taskOf(el)),
+    "task-del": async el => { const id = taskMod(el), t = taskOf(el); if (await ask(`Supprimer « ${t.title} » ?`)) { const inst = S().modules[id]; inst.entries = inst.entries.filter(x => x.id !== t.id); site.save(); render(); } },
+    "task-undo": el => { setTaskDone(S().modules[taskMod(el)].entries, taskOf(el).id, false, todayISO()); site.save(); render(); },
+    "task-new": el => taskForm(modOf(el), null),
+    "task-pick": el => pickTask(el.closest("[data-mod]") ? modOf(el) : null)
+  },
+  change: {
+    "task-done": el => { setTaskDone(S().modules[taskMod(el)].entries, taskOf(el).id, el.checked, todayISO()); site.save(); render(); if (el.checked) toast(doneLines[Math.floor(Math.random() * doneLines.length)]); },
+    "task-step": el => { const t = taskOf(el); t.steps[+el.dataset.i].d = el.checked; site.save(); render(); },
+    "f-room": el => { tf(modOf(el)).room = el.value; render(); },
+    "f-cat": el => { tf(modOf(el)).cat = el.value; render(); },
+    "task-cats": el => { const cats = [...new Set(el.value.split("\n").map(x => x.trim()).filter(Boolean))]; if (cats.length) instOf(el).config.cats = cats; site.save(); el.blur(); render(); },
+    "task-costs": el => { instOf(el).config.costs = el.checked; site.save(); render(); }
+  }
+};
+
 /* ---- budget : opérations, enveloppes à plafond mensuel ---- */
 const budMonths = {}; // mois affiché, par module (propre à l'appareil, non enregistré)
 const monthOf = id => budMonths[id] || (budMonths[id] = todayISO().slice(0, 7));
@@ -1736,7 +1821,7 @@ TYPE_UI.budget = {
     const inst = S().modules[id], m = monthOf(id), es = inMonth(inst, m), out = sumOf(es, "dépense"), inn = sumOf(es, "revenu");
     const shown = es.filter(e => gMatch(id, e)).sort((a, x) => x.date.localeCompare(a.date));
     const mLabel = new Date(m + "-15").toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-    const chantierLeft = Object.hasOwn(MODULE_DEFS, "chantier") && enabled("chantier") ? openTasks().filter(t => t.cost).reduce((a, t) => a + +t.cost, 0) : 0;
+    const tasksLeft = allTasks().filter(([m, t]) => !t.done && t.cost && S().modules[m].config.costs).reduce((a, [, t]) => a + +t.cost, 0);
     const defDate = m === todayISO().slice(0, 7) ? todayISO() : m + "-01";
     return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span>
     <button class="btn ghost" data-act="bud-month" data-d="-1" aria-label="Mois précédent">‹</button><b style="min-width:9ch;text-align:center;text-transform:capitalize">${mLabel}</b><button class="btn ghost" data-act="bud-month" data-d="1" aria-label="Mois suivant">›</button></div>
@@ -1752,7 +1837,7 @@ TYPE_UI.budget = {
   <div class="two"><section><h3>Opérations</h3><p class="hint">L'argent ne disparaît pas, il change simplement de propriétaire.</p>
     <ul class="plain">${shown.map(e => `<li class="item" data-id="${esc(e.id)}"><span></span><div>${esc(e.note || e.cat || e.type)}<div class="meta">${fmt(e.date)}${e.cat ? `<span class="tag">${esc(e.cat)}</span>` : ""}</div></div><div class="row"><b class="${e.type === "revenu" ? "pos" : ""}">${e.type === "revenu" ? "+" : "−"}${money(e.amount)}</b><button class="btn ghost sm" data-act="bud-del">suppr.</button></div></li>`).join("") || `<li class="empty">Aucune opération ce mois-ci. Suspect.</li>`}</ul></section>
   <div>${groupPanel(id, "Part de chaque enveloppe mensuelle déjà consommée. Le rouge signale le dépassement.")}
-    ${chantierLeft ? `<p class="hint">Le chantier estime encore ${money(chantierLeft)} de dépenses à venir.</p>` : ""}</div></div></div>`;
+    ${tasksLeft ? `<p class="hint">Les tâches en cours estiment encore ${money(tasksLeft)} de dépenses à venir.</p>` : ""}</div></div></div>`;
   },
   settings: (id, { config: c }) => `<div><span class="hint" style="margin:0">Enveloppes mensuelles</span>${c.envelopes.map((v, i) => `<div class="set" data-vi="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="env-name" data-mod="${esc(id)}" value="${esc(v.name)}" aria-label="Nom de l'enveloppe"><input type="number" min="0" data-act="env-limit" data-mod="${esc(id)}" value="${esc(v.limit || "")}" placeholder="€ / mois" aria-label="Plafond mensuel"><button class="btn ghost sm" data-act="env-del" data-mod="${esc(id)}">suppr.</button></div>`).join("")}<button class="btn sm" data-act="env-add" data-mod="${esc(id)}" style="margin-top:8px">Ajouter une enveloppe</button></div>`,
   summary(id, inst) {
@@ -1796,11 +1881,10 @@ TYPE_UI.budget = {
 
 /* ---- notes : textes datés ; l'une des boîtes reçoit la capture rapide de l'accueil ---- */
 /* Où une note peut être rangée : les modules actifs qui savent la recevoir, dans l'ordre de la navigation.
-   Le Chantier (module encore fixe) reçoit une tâche. */
+   Un type peut renvoyer une suite à donner (le formulaire d'une tâche, pour la compléter). */
 function noteTargets(fromId) {
   const s = S();
   return s.config.modules.filter(m => m.on && m.id !== fromId).map(m => m.id).filter(id => {
-    if (id === "chantier" && Object.hasOwn(MODULE_DEFS, "chantier")) return true;
     const inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null, ui = inst && TYPE_UI[inst.type];
     return ui && ui.accept && (!ui.canAccept || ui.canAccept(inst));
   });
@@ -1829,9 +1913,9 @@ TYPE_UI.notes = {
     "note-to": el => {
       const s = S(), src = s.modules[modOf(el)], note = src.entries.find(x => x.id === idOf(el)), to = el.dataset.to;
       const drop = () => { src.entries = src.entries.filter(x => x !== note); site.save(); };
-      if (to === "chantier" && Object.hasOwn(MODULE_DEFS, "chantier")) { const t = addTask(board.data.tasks, { title: note.text }, uid(), todayISO()); board.save(); drop(); taskForm(t); return; }
-      const target = s.modules[to];
-      TYPE_UI[target.type].accept(to, target, note); drop(); render(); toast(`Rangé dans ${label(to)}.`);
+      const target = s.modules[to], then = TYPE_UI[target.type].accept(to, target, note);
+      drop(); render();
+      if (typeof then === "function") then(); else toast(`Rangé dans ${label(to)}.`);
     }
   },
   change: {
@@ -1859,7 +1943,6 @@ const chatLog = { get() { try { return JSON.parse(localStorage.getItem("selene-c
 function contextText() {
   const s = S(), sh = s.config.assistant.share, now = todayISO(), m = moon(), L = [];
   L.push(`Date : ${fmt(now, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}. Lune : ${m.name.toLowerCase()}, éclairée à ${Math.round(m.illum * 100)} %.`);
-  if (sh.chantier && enabled("chantier")) { const o = openTasks().sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")); L.push(`\nCHANTIER (appartement) : ${o.length} tâches ouvertes sur ${board.data.tasks.length}.`); o.slice(0, 40).forEach(t => L.push(`- [${t.id}] ${t.title} | ${t.room || "?"} | ${t.due ? "échéance " + t.due : "sans date"}${t.today ? " | choisie pour aujourd'hui" : ""}${t.cost ? " | " + t.cost + " €" : ""}`)); }
   for (const [id, inst] of Object.entries(s.modules)) {
     if (!sh[id] || !enabled(id)) continue;
     L.push(TYPE_UI[inst.type].context(inst, label(id).toUpperCase()));
@@ -1875,10 +1958,13 @@ DONNÉES DU TABLEAU DE BORD
 ${contextText()}`;
 }
 const TOOLS = [
-  { name: "ajouter_tache", module: "chantier", description: "Ajoute une tâche au module Chantier. Renvoie une confirmation.", inputSchema: { type: "object", properties: { titre: { type: "string" }, piece: { type: "string" }, echeance: { type: "string", description: "AAAA-MM-JJ" }, type: { type: "string", enum: ["Bricolage", "Administratif", "Achat", "Artisan", "Rangement", "Ménage"] } }, required: ["titre"] },
-    execute(i) { const t = addTask(board.data.tasks, { title: i.titre, room: i.piece, cat: i.type, due: i.echeance, note: "Ajoutée par l'assistant" }, uid(), todayISO()); board.save(); render(); return `Tâche ajoutée : ${t.title}`; } },
-  { name: "terminer_tache", module: "chantier", description: "Marque comme faite une tâche du Chantier, par son identifiant entre crochets.", inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
-    execute(i) { const t = setTaskDone(board.data.tasks, i.id, true, todayISO()); board.save(); render(); return `Terminée : ${t.title}`; } },
+  { name: "ajouter_tache", module: () => firstOfType("taches"), description: "Ajoute une tâche au premier module de tâches (voir ses types dans les données). Renvoie une confirmation.", inputSchema: { type: "object", properties: { titre: { type: "string" }, piece: { type: "string", description: "pièce ou lieu" }, echeance: { type: "string", description: "AAAA-MM-JJ" }, type: { type: "string" } }, required: ["titre"] },
+    execute(i) { const inst = S().modules[firstOfType("taches")]; const t = addTask(inst.entries, { title: i.titre, room: i.piece, cat: i.type || inst.config.cats[0], due: i.echeance, note: "Ajoutée par l'assistant" }, uid(), todayISO()); site.save(); render(); return `Tâche ajoutée : ${t.title}`; } },
+  { name: "terminer_tache", module: () => firstOfType("taches"), description: "Marque comme faite une tâche, par son identifiant entre crochets.", inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
+    execute(i) {
+      const found = allTasks().find(([, t]) => t.id === i.id); if (!found) throw new Error("Tâche introuvable");
+      const t = setTaskDone(S().modules[found[0]].entries, i.id, true, todayISO()); site.save(); render(); return `Terminée : ${t.title}`;
+    } },
   { name: "capturer", module: () => inboxId(S().modules), description: "Dépose une note dans la boîte de réception, à trier plus tard.", inputSchema: { type: "object", properties: { texte: { type: "string" } }, required: ["texte"] },
     execute(i) { addCapture(S().modules[inboxId(S().modules)].entries, i.texte, uid(), todayISO()); site.save(); render(); return "Capturé."; } },
   { name: "ajouter_operation", module: () => firstOfType("budget"), description: "Enregistre une dépense ou un revenu dans le premier module Budget.", inputSchema: { type: "object", properties: { montant: { type: "number" }, type: { type: "string", enum: ["dépense", "revenu"] }, enveloppe: { type: "string" }, note: { type: "string" }, date: { type: "string", description: "AAAA-MM-JJ, aujourd'hui par défaut" } }, required: ["montant"] },
@@ -1945,7 +2031,7 @@ VIEWS.assistant = () => {
   return `<div class="row"><h2 style="margin:0">${esc(label("assistant"))}</h2><span class="spacer"></span>${log.length ? `<button class="btn ghost sm" data-act="chat-clear">Effacer la conversation</button>` : ""}</div>
   <p class="status">${status}<br>Données partagées : ${esc(shared)}. ${a.actions ? "Peut agir sur le tableau de bord." : "Lecture seule."}</p>
   <div class="chat">${log.map(m => `<div class="msg ${m.role === "user" ? "user" : "claude"}">${m.role === "user" ? esc(m.content) : mdLite(m.content)}</div>`).join("")}${chatBusy ? `<div class="msg claude" id="pending">…</div>` : ""}</div>
-  ${!log.length ? `<div class="chips">${["Qu'est-ce que je fais aujourd'hui ?", "Fais le point sur le chantier", "Où en est mon budget ce mois-ci ?", ...ideaChip()].map(q => `<button class="btn sm" data-act="chat-chip">${esc(q)}</button>`).join("")}</div>` : ""}
+  ${!log.length ? `<div class="chips">${["Qu'est-ce que je fais aujourd'hui ?", ...(firstOfType("taches") ? [`Fais le point sur ${label(firstOfType("taches"))}`] : []), "Où en est mon budget ce mois-ci ?", ...ideaChip()].map(q => `<button class="btn sm" data-act="chat-chip">${esc(q)}</button>`).join("")}</div>` : ""}
   <div class="capture"><textarea id="chatIn" rows="2" placeholder="Écris à Claude…" aria-label="Message" ${b === "sample" || b === "api" ? "" : "disabled"}></textarea><button class="btn acc" data-act="chat-send" ${chatBusy ? "disabled" : ""}>Envoyer</button></div>`;
 };
 
@@ -1966,7 +2052,7 @@ render();
       return;
     }
     const db = await window.claude.use("db");
-    if (db) await Promise.all([board.connect(db), site.connect(db)]);
+    if (db) { await site.connect(db); await board.connect(db); } // le site d'abord (voir absorbBoard)
   } catch {}
   try { if (window.claude && window.claude.use) { sampleNS = await window.claude.use("sample"); downloadsNS = await window.claude.use("downloads"); render(); } } catch {}
 })();

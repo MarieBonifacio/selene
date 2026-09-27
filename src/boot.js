@@ -15,7 +15,7 @@ render();
       return;
     }
     const db = await window.claude.use("db");
-    if (db) await Promise.all([board.connect(db), site.connect(db)]);
+    if (db) { await site.connect(db); await board.connect(db); } // le site d'abord (voir absorbBoard)
   } catch {}
   try { if (window.claude && window.claude.use) { sampleNS = await window.claude.use("sample"); downloadsNS = await window.claude.use("downloads"); render(); } } catch {}
 })();

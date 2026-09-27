@@ -22,7 +22,7 @@ async function edit(dev, store, fn) {
   assert.equal(await dev[store].sync(), true);
 }
 const task = (id, title) => ({ id, title, room: '', cat: 'Bricolage', due: null, effort: 1, cost: null, note: '', today: false, done: false, doneAt: null, created: '2026-09-27', steps: [] });
-const titles = dev => dev.board.data.tasks.map(t => t.title).sort();
+const titles = dev => dev.site.data.modules.chantier.entries.map(t => t.title).sort();
 
 test('a fresh device adopts the server as is, without duplicating seeded items', async () => {
   const { server, a, b } = await twoDevices();
@@ -35,34 +35,34 @@ test('a fresh device adopts the server as is, without duplicating seeded items',
 
 test('concurrent additions on two devices are both kept', async () => {
   const { a, b } = await twoDevices();
-  await edit(a, 'board', d => d.tasks.push(task('t1', 'Velux')));
-  await edit(b, 'board', d => d.tasks.push(task('t2', 'Plinthes'))); // B n'a jamais vu t1 : l'ancien code l'écrasait
-  await a.board.sync();
+  await edit(a, 'site', d => d.modules.chantier.entries.push(task('t1', 'Velux')));
+  await edit(b, 'site', d => d.modules.chantier.entries.push(task('t2', 'Plinthes'))); // B n'a jamais vu t1 : l'ancien code l'écrasait
+  await a.site.sync();
   same(titles(a), ['Plinthes', 'Velux']);
   same(titles(b), ['Plinthes', 'Velux']);
 });
 
 test('a deletion on one device and an edit on another both apply', async () => {
   const { a, b } = await twoDevices();
-  await edit(a, 'board', d => d.tasks.push(task('t1', 'Velux'), task('t2', 'Plinthes')));
-  await b.board.sync();
-  await edit(a, 'board', d => { d.tasks = d.tasks.filter(t => t.id !== 't1'); });
-  await edit(b, 'board', d => { d.tasks.find(t => t.id === 't2').note = 'acheter la colle'; });
-  await a.board.sync();
+  await edit(a, 'site', d => d.modules.chantier.entries.push(task('t1', 'Velux'), task('t2', 'Plinthes')));
+  await b.site.sync();
+  await edit(a, 'site', d => { d.modules.chantier.entries = d.modules.chantier.entries.filter(t => t.id !== 't1'); });
+  await edit(b, 'site', d => { d.modules.chantier.entries.find(t => t.id === 't2').note = 'acheter la colle'; });
+  await a.site.sync();
   for (const dev of [a, b]) {
-    same(dev.board.data.tasks.map(t => t.id), ['t2']);
-    assert.equal(dev.board.data.tasks[0].note, 'acheter la colle');
+    same(dev.site.data.modules.chantier.entries.map(t => t.id), ['t2']);
+    assert.equal(dev.site.data.modules.chantier.entries[0].note, 'acheter la colle');
   }
 });
 
 test('delete versus edit of the same entry keeps the edited entry (no silent loss)', async () => {
   const { a, b } = await twoDevices();
-  await edit(a, 'board', d => d.tasks.push(task('t1', 'Velux')));
-  await b.board.sync();
-  await edit(a, 'board', d => { d.tasks = []; });
-  await edit(b, 'board', d => { d.tasks[0].note = 'urgent'; });
-  await a.board.sync();
-  assert.equal(a.board.data.tasks[0].note, 'urgent');
+  await edit(a, 'site', d => d.modules.chantier.entries.push(task('t1', 'Velux')));
+  await b.site.sync();
+  await edit(a, 'site', d => { d.modules.chantier.entries = []; });
+  await edit(b, 'site', d => { d.modules.chantier.entries[0].note = 'urgent'; });
+  await a.site.sync();
+  assert.equal(a.site.data.modules.chantier.entries[0].note, 'urgent');
 });
 
 test('a deleted module stays deleted on the other device', async () => {
@@ -76,33 +76,33 @@ test('a deleted module stays deleted on the other device', async () => {
 
 test('a write that races another device is refused, re-read and merged (compare-and-swap)', async () => {
   const { server, a, b } = await twoDevices();
-  a.board.data.tasks.push(task('t1', 'Velux')); a.board.save(); clearTimeout(a.board.timer); a.board.timer = null;
+  a.site.data.modules.chantier.entries.push(task('t1', 'Velux')); a.site.save(); clearTimeout(a.site.timer); a.site.timer = null;
   // Juste entre la lecture et l'écriture de A, B écrit.
-  server.beforePatch = () => edit(b, 'board', d => d.tasks.push(task('t2', 'Plinthes')));
+  server.beforePatch = () => edit(b, 'site', d => d.modules.chantier.entries.push(task('t2', 'Plinthes')));
   const before = server.calls.filter(c => c.startsWith('PATCH')).length;
-  assert.equal(await a.board.sync(), true);
+  assert.equal(await a.site.sync(), true);
   assert.ok(server.calls.filter(c => c.startsWith('PATCH')).length - before >= 3, 'A: refused PATCH, then retried after re-reading');
-  same(server.rows.get('u1').board.tasks.map(t => t.title).sort(), ['Plinthes', 'Velux']);
+  same(server.rows.get('u1').site.modules.chantier.entries.map(t => t.title).sort(), ['Plinthes', 'Velux']);
 });
 
 test('edits made offline are kept locally and pushed once back online', async () => {
   const { server, a, b } = await twoDevices();
   server.offline = true;
-  a.board.data.tasks.push(task('t1', 'Velux')); a.board.save(); clearTimeout(a.board.timer); a.board.timer = null;
-  assert.equal(await a.board.sync(), false);
+  a.site.data.modules.chantier.entries.push(task('t1', 'Velux')); a.site.save(); clearTimeout(a.site.timer); a.site.timer = null;
+  assert.equal(await a.site.sync(), false);
   assert.match(a.nodes.get('#saving').textContent, /Non synchronisé/);
-  assert.equal(JSON.parse(a.storage.get('selene-board-v1')).tasks[0].title, 'Velux', 'safe in localStorage');
-  assert.equal(a.board.unsynced(), true, 'sign-out would warn before discarding it');
+  assert.equal(JSON.parse(a.storage.get('selene-site-v1')).modules.chantier.entries[0].title, 'Velux', 'safe in localStorage');
+  assert.equal(a.site.unsynced(), true, 'sign-out would warn before discarding it');
   server.offline = false;
   await a.poll(); // tour de polling de 30 s
   await b.poll();
   same(titles(b), ['Velux']);
-  assert.equal(a.board.unsynced(), false);
+  assert.equal(a.site.unsynced(), false);
 });
 
 test('polling brings remote changes without writing anything back', async () => {
   const { server, a, b } = await twoDevices();
-  await edit(a, 'board', d => d.tasks.push(task('t1', 'Velux')));
+  await edit(a, 'site', d => d.modules.chantier.entries.push(task('t1', 'Velux')));
   const patches = server.calls.filter(c => c.startsWith('PATCH')).length;
   await b.poll();
   same(titles(b), ['Velux']);
@@ -111,11 +111,11 @@ test('polling brings remote changes without writing anything back', async () => 
 
 test('signing out pushes pending edits first, then stops every poller', async () => {
   const { server, a } = await twoDevices();
-  a.board.data.tasks.push(task('t1', 'Velux')); a.board.save(); // reste dans le délai de 900 ms
+  a.site.data.modules.chantier.entries.push(task('t1', 'Velux')); a.site.save(); // reste dans le délai de 900 ms
   await a.authSignOut();
-  same(server.rows.get('u1').board.tasks.map(t => t.title), ['Velux']);
+  same(server.rows.get('u1').site.modules.chantier.entries.map(t => t.title), ['Velux']);
   assert.equal(a.intervals.size, 0, 'no poller or refresh timer left running');
-  assert.equal(a.storage.get('selene-board-v1-base'), undefined, 'the base belongs to the old account');
+  assert.equal(a.storage.get('selene-site-v1-base'), undefined, 'the base belongs to the old account');
 });
 
 test('without a base, a device with real local data merges instead of being overwritten', async () => {
@@ -128,14 +128,15 @@ test('without a base, a device with real local data merges instead of being over
 
 test('importing a backup replaces the account state instead of merging into it', async () => {
   const { server, a, b } = await twoDevices();
-  await edit(a, 'board', d => d.tasks.push(task('t1', 'Velux')));
-  await edit(b, 'board', d => d.tasks.push(task('t2', 'Plinthes'))); // A ne l'a pas encore vu
-  a.board.replaceAll({ updatedAt: 1, tasks: [task('t3', 'Restauré')] });
-  clearTimeout(a.board.timer); a.board.timer = null;
-  assert.equal(await a.board.sync(), true);
-  same(server.rows.get('u1').board.tasks.map(t => t.title), ['Restauré']);
-  await edit(a, 'board', d => d.tasks.push(task('t4', 'Après')));
-  same(server.rows.get('u1').board.tasks.map(t => t.title), ['Restauré', 'Après'], 'back to normal merging afterwards');
+  await edit(a, 'site', d => d.modules.chantier.entries.push(task('t1', 'Velux')));
+  await edit(b, 'site', d => d.modules.chantier.entries.push(task('t2', 'Plinthes'))); // A ne l'a pas encore vu
+  const saved = clone(a.site.data); saved.modules.chantier.entries = [task('t3', 'Restauré')];
+  a.site.replaceAll(saved);
+  clearTimeout(a.site.timer); a.site.timer = null;
+  assert.equal(await a.site.sync(), true);
+  same(server.rows.get('u1').site.modules.chantier.entries.map(t => t.title), ['Restauré']);
+  await edit(a, 'site', d => d.modules.chantier.entries.push(task('t4', 'Après')));
+  same(server.rows.get('u1').site.modules.chantier.entries.map(t => t.title), ['Restauré', 'Après'], 'back to normal merging afterwards');
 });
 
 test('an outdated app never merges into data written by a newer schema', async () => {
@@ -156,4 +157,55 @@ test('signing out removes the chat history and the API key from the device', asy
   await a.authSignOut();
   assert.equal(a.storage.get('selene-chat'), undefined);
   assert.equal(a.storage.get('selene-api-key'), undefined);
+});
+
+// Format 6 : l'ancien document « board » n'est plus qu'un point d'entrée vers le module Chantier.
+test('tasks still written to the old board document (outdated app) land in the Chantier module', async () => {
+  const { server, a, b } = await twoDevices();
+  await edit(a, 'site', d => d.modules.chantier.entries.push(task('t1', 'Velux')));
+  // Une ancienne version, restée ouverte ailleurs, écrit une tâche dans « board ».
+  server.rows.get('u1').board = { updatedAt: Date.now() + 5, tasks: [task('t9', 'Écrite par une vieille version')] };
+  await b.poll(); // B relit « board » et le verse dans son site
+  same(titles(b), ['Velux', 'Écrite par une vieille version']);
+  await b.poll(); await a.poll();
+  same(titles(a), ['Velux', 'Écrite par une vieille version'], 'and it reaches the other device through the site');
+  same(server.rows.get('u1').board.tasks, [], 'the board copy is emptied on the server, so it cannot resurrect anything later');
+});
+
+test('a task deleted after the migration is not resurrected by a new device', async () => {
+  const { server, a } = await twoDevices();
+  server.rows.get('u1').board = { updatedAt: Date.now() + 5, tasks: [task('t1', 'Velux')] };
+  await a.poll(); await a.poll();
+  same(titles(a), ['Velux']);
+  await edit(a, 'site', d => { d.modules.chantier.entries = []; });
+  const c = launchHosted({ fetch: server.fetch }); // un appareil neuf
+  await settle();
+  same(titles(c), [], 'the emptied board has nothing left to pour in');
+});
+
+test('pre-format-6 device: its local board tasks move into the Chantier module at load', () => {
+  const storage = new Map([['selene-board-v1', JSON.stringify({ updatedAt: 5, tasks: [task('t1', 'Velux')] })]]);
+  const d = launchHosted({ storage, session: null, fetch: async () => { throw new Error('offline'); } });
+  same(d.site.data.modules.chantier.entries.map(t => t.id), ['t1']);
+  same(d.board.data.tasks, []);
+  // Écrit aussitôt : sans synchro, le chargement suivant ne doit pas reverser (ni ressusciter) la tâche.
+  same(JSON.parse(storage.get('selene-board-v1')).tasks, []);
+  same(JSON.parse(storage.get('selene-site-v1')).modules.chantier.entries.map(t => t.id), ['t1']);
+});
+
+test('a new device meeting pre-format-6 data on the server: tasks absorbed, nothing duplicated', async () => {
+  const { server, a } = await twoDevices();
+  // Le serveur tel qu'il est avant la mise à jour : site au format 5 sans module Chantier, tâches dans « board ».
+  const row = server.rows.get('u1');
+  delete row.site.modules.chantier; delete row.site.boardMerged; row.site.schemaVersion = 5;
+  row.site.config.modules = row.site.config.modules.filter(m => m.id !== 'chantier').concat({ id: 'chantier', on: true });
+  row.board = { updatedAt: Date.now(), tasks: [task('t1', 'Velux'), task('t2', 'Plinthes')] };
+  const albums = row.site.modules.musique.entries.map(x => x.id);
+  const c = launchHosted({ fetch: server.fetch }); // appareil neuf, données de départ vierges
+  await settle(60);
+  same(titles(c), ['Plinthes', 'Velux']);
+  same(c.site.data.modules.musique.entries.map(x => x.id), albums, 'seed albums not duplicated');
+  await c.poll(); await a.poll();
+  same(titles(a), ['Plinthes', 'Velux'], 'the first device gets them through the site');
+  same(server.rows.get('u1').board.tasks, []);
 });

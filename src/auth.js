@@ -121,7 +121,8 @@ async function authConnectStores() {
   if (last && last !== uid) authResetLocal();
   try { localStorage.setItem(LAST_UID_KEY, uid); } catch {}
   // Ne (re)connecte que les stores déconnectés : un store déjà branché a son propre poller, pas de doublon.
-  await Promise.all([board, site].filter(st => !st.db).map(st => st.connect(supabaseDb)));
+  // L'un après l'autre, le site d'abord : le board verse ses tâches dans un site déjà synchronisé (voir absorbBoard).
+  for (const st of [site, board]) if (!st.db) await st.connect(supabaseDb);
   if (board.db && site.db) setSaving("");
 }
 

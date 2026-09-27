@@ -40,14 +40,14 @@ test('built artifact boots, persists an assistant-created task, and survives rel
   const first = launch(storage);
   assert.match(first.nodes.get('#main').innerHTML, /Selene|lune|Chantier/i);
   first.TOOLS.find(x => x.name === 'ajouter_tache').execute({ titre: 'Tester le Velux' });
-  assert.equal(JSON.parse(storage.get('selene-board-v1')).tasks[0].title, 'Tester le Velux');
+  assert.equal(JSON.parse(storage.get('selene-site-v1')).modules.chantier.entries[0].title, 'Tester le Velux');
 
   const second = launch(storage);
-  assert.equal(second.board.data.tasks.length, 1);
+  assert.equal(second.site.data.modules.chantier.entries.length, 1);
   const backup = second.createBackup(second.board.data, second.site.data);
-  assert.equal(second.parseBackup(backup).board.tasks[0].title, 'Tester le Velux');
+  assert.equal(second.parseBackup(backup).site.modules.chantier.entries[0].title, 'Tester le Velux');
   assert.throws(() => second.parseBackup('{"format":"selene-v1","board":{"tasks":null},"site":{"config":{}}}'));
-  assert.equal(second.board.data.tasks.length, 1);
+  assert.equal(second.site.data.modules.chantier.entries.length, 1);
 });
 
 test('assistant actions respect module and global permissions at execution time', () => {

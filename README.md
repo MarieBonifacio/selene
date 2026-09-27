@@ -23,18 +23,17 @@ Les données de l'app installée sont séparées de celles de Safari : exporter 
 
 ## Modules
 
-Réglages → Modules : activer, renommer, réordonner. Deux familles :
+Réglages → Modules : activer, renommer, réordonner, supprimer, et « + Créer un module ». Chaque module est une instance de l'un de ces types (l'exemple entre parenthèses est le module d'origine) ; seul l'Assistant est une fonction, activable, sans données propres.
 
-- **Encore fixes** : le Chantier (en cours de généralisation), et l'Assistant, qui restera une fonction. Activables et renommables, pas supprimables.
-- **Génériques**, créés depuis « + Créer un module », d'un de ces types :
   - *Programme* : un protocole de N semaines, un calendrier et un objectif de séances par semaine (ex. Kundalini) ;
   - *Objectif cumulatif* : un compteur vers un objectif, avec des catégories et, en option, un carnet de notes libres (ex. Écriture et ses fragments) ;
-  - *Rappels* : des types d'événements récurrents avec une fréquence, et un journal (ex. Phidippus).
+  - *Rappels* : des types d'événements récurrents avec une fréquence, et un journal (ex. Phidippus) ;
   - *Notes* : des textes datés. L'une des boîtes est la **boîte de réception** (Réglages → Réglages par module) : elle reçoit la capture rapide de l'accueil, et chaque note peut ensuite être rangée d'un geste dans tout module qui sait la recevoir (ex. la Capture) ;
+  - *Tâches* : échéances, étapes, effort, coûts facultatifs, regroupées par pièce ou par lieu (le nom se règle) ; l'étoile « Aujourd'hui » est plafonnée à trois tâches **tous modules confondus**, et l'accueil les réunit (ex. le Chantier) ;
   - *Budget* : des opérations (dépenses, revenus), des enveloppes à plafond mensuel et leurs jauges, mois par mois (ex. le Budget) ;
   - *Collection* : des éléments à statuts (titre, sous-titre, étiquette, date, texte : chaque champ se renomme ou se masque), affichés en colonnes ou en liste filtrable (ex. october.moth en colonnes, Musique en liste).
 
-Un module générique se supprime définitivement (✕, puis retaper son nom) : ses données partent avec lui, sur tous les appareils. Ses réglages propres sont dans Réglages → Réglages par module. Un nouveau module est partagé par défaut avec l'assistant ; décocher dans Réglages → Assistant pour le garder privé.
+Un module se supprime définitivement (✕, puis retaper son nom) : ses données partent avec lui, sur tous les appareils. Ses réglages propres sont dans Réglages → Réglages par module. Un nouveau module est partagé par défaut avec l'assistant ; décocher dans Réglages → Assistant pour le garder privé.
 
 Pour ajouter un *type* de module au code, voir [docs/architecture.md](docs/architecture.md#ajouter-un-type-de-module).
 

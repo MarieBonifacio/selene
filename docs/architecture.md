@@ -39,13 +39,16 @@ les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne)
 
 Deux documents JSON par personne, chacun géré par un store (`makeStore`) :
 
-- `board` (clé `selene-board-v1`) : les tâches du chantier ;
-- `site` (clé `selene-site-v1`) : tout le reste — configuration, budget, moth, musique, capture et
-  les **modules génériques** sous `modules`.
+- `site` (clé `selene-site-v1`) : tout — configuration et **modules** sous `modules` ;
+- `board` (clé `selene-board-v1`) : jusqu'au format 5, les tâches du Chantier. Ce n'est plus qu'un
+  **point d'entrée** : `absorbBoard` verse ce qui y arrive (une ancienne version de l'app restée ouverte
+  peut encore y écrire) dans le module Chantier, puis le vide, et le vidage part au serveur. Le site est
+  toujours connecté **avant** le board : versées dans un site pas encore synchronisé, les tâches rendraient
+  ses données de départ « non vierges » et la synchro les fusionnerait au lieu de les remplacer.
 
-`site.schemaVersion` vaut 5 (1 = anciennes sections `kundalini`, `ecriture`, `phidippus` à la racine ;
+`site.schemaVersion` vaut 6 (1 = anciennes sections `kundalini`, `ecriture`, `phidippus` à la racine ;
 2 = modules génériques ; 3 = october.moth et Musique deviennent des collections ; 4 = la Capture devient
-un module Notes ; 5 = le Budget devient générique). Chaque ancienne section
+un module Notes ; 5 = le Budget devient générique ; 6 = le Chantier devient un module Tâches). Chaque ancienne section
 est convertie par `SECTION_TO_MODULE` (`domain.js`) ; si une ancienne version de l'app la réécrit après
 coup, ses entrées absentes sont absorbées dans le module au lieu d'être perdues. Une version de l'app qui lit un numéro plus grand que le sien
 refuse de fusionner et d'écrire (« recharge la page ») ; un import plus récent est refusé.
@@ -60,10 +63,12 @@ Un module absent n'est jamais recréé : il a été supprimé exprès.
 ### Modules
 
 - **Génériques** (`site.modules[id] = { type, label, config, entries, scraps? }`) : instances d'un
-  type du registre (programme, cumul, rappels, collection, notes, budget). Kundalini, Écriture,
-  Phidippus, october.moth, Musique, la Capture et le Budget en sont ; on peut en créer et en supprimer.
-- **Encore fixe** (`MODULE_DEFS`) : le chantier, en cours de généralisation (type Tâches) ;
-  l'assistant restera une fonction système, comme les Réglages.
+  type du registre (programme, cumul, rappels, collection, notes, budget, taches). Tous les modules de
+  contenu en sont ; on peut en créer et en supprimer.
+- **Fonction système** (`MODULE_DEFS`) : l'assistant seul, activable comme un module mais sans données
+  propres, comme les Réglages.
+
+« Aujourd'hui » (trois tâches au plus) réunit tous les modules de tâches actifs : le plafond est commun.
 
 L'état propre à un appareil (mois affiché d'un budget, filtre d'une collection) est rangé par identifiant
 de module, jamais enregistré ni synchronisé. Un regroupement peut déclarer `rename(de, vers)` pour
@@ -76,8 +81,11 @@ l'outil `capturer` de l'assistant. Sans boîte, l'accueil l'explique et l'outil 
 **Ranger une note** : chaque type qui peut recevoir une note déclare `accept` (et `canAccept` s'il
 faut une condition, comme le carnet d'un cumul) ; `noteTargets()` en déduit les boutons « → module ».
 
-Le regroupement en pourcentage d'un module passe par `grouperFor(id)` : `GROUPERS` pour un module
-fixe, `TYPE_UI[type].grouper(inst)` pour une instance (réglage stocké dans `inst.config.groups`).
+Le regroupement en pourcentage d'un module passe par `grouperFor(id)`, qui le demande à son type
+(`TYPE_UI[type].grouper(inst, id)`) ; le réglage est stocké dans `inst.config.groups`.
+
+Une migration faite au chargement (normalisation) est écrite aussitôt dans le stockage local : sans
+synchro, le chargement suivant la referait depuis l'ancienne forme.
 
 Un identifiant de module sert aussi de route (`#id`) et d'attribut HTML : il doit respecter
 `MODULE_ID` (`[a-z0-9-]`, 64 caractères), ne pas être réservé (`accueil`, `reglages`, noms

@@ -15,7 +15,7 @@ function setSaving(t) { $("#saving").textContent = t; }
 /* ================= stores ================= */
 
 const MODULE_DEFS = {
-  chantier: "Chantier", assistant: "Assistant"
+  assistant: "Assistant"
 };
 const MODULE_ORDER = ["chantier", "kundalini", "ecriture", "moth", "phidippus", "musique", "budget", "assistant", "inbox"];
 const OFF_BY_DEFAULT = ["assistant"];
@@ -25,6 +25,7 @@ function siteSeed() {
     kundalini: { type: "programme", label: "Kundalini", config: { unitLabel: "min", start: null, weeks: 12, perWeek: 5 }, entries: [] },
     ecriture: { type: "cumul", label: "Écriture", config: { unitLabel: "mots", goal: 40000, title: "La spiritualité du spectre dissociatif", categories: [], categoryLabel: "Chapitre", scraps: true, scrapsLabel: "Fragments" }, entries: [], scraps: [] },
     phidippus: { type: "rappels", label: "Phidippus", config: { subtitle: "", types: [{ id: "repas", label: "Repas", every: 6 }, { id: "brumisation", label: "Brumisation", every: 3 }, { id: "mue", label: "Mue", every: 0 }] }, entries: [] },
+    chantier: boardToModule([]),
     moth: SECTION_TO_MODULE.moth({ posts: [] }),
     musique: SECTION_TO_MODULE.musique({ albums: ["Ulver", "Dead Can Dance", "Kate Bush", "Jonathan Hultén", "Chelsea Wolfe", "Zola Jesus", "iamamiwhoami"]
       .map(a => ({ id: uid(), artist: a, album: "", status: "À écouter", note: "" })) }),
@@ -32,7 +33,7 @@ function siteSeed() {
     budget: SECTION_TO_MODULE.budget({ entries: [], envelopes: [["Travaux", 500], ["Courses", 300], ["Loisirs", 100], ["Abonnements", 50]].map(([name, limit]) => ({ id: uid(), name, limit })) })
   };
   return {
-    updatedAt: 0, schemaVersion: SCHEMA_VERSION,
+    updatedAt: 0, schemaVersion: SCHEMA_VERSION, boardMerged: true,
     config: { name: "Selene", palette: "nigredo", mode: "auto", labels: {}, groups: {},
       modules: MODULE_ORDER.map(id => ({ id, on: !OFF_BY_DEFAULT.includes(id) })),
       assistant: { model: "claude-sonnet-5", actions: true, share: { chantier: true, kundalini: true, ecriture: true, moth: true, phidippus: true, musique: true, budget: false, inbox: true } } },
@@ -107,14 +108,6 @@ const itemGroups = (items, keyFn, doneFn) => {
   for (const it of items) { const k = keyFn(it) || "Sans groupe"; const g = m.get(k) || { name: k, num: 0, den: 0 }; g.den++; if (doneFn(it)) g.num++; m.set(k, g); }
   return [...m.values()].map(g => ({ ...g, pct: Math.round(100 * g.num / g.den), sub: `${g.num} sur ${g.den}` }));
 };
-const GROUPERS = {
-  chantier: {
-    fields: { room: "Pièce", cat: "Type", effort: "Effort" }, renamable: ["room", "cat"], filterable: true,
-    items: () => board.data.tasks, key: (t, f) => f === "effort" ? ["", "Petit", "Moyen", "Gros"][t.effort || 1] : t[f], store: () => board,
-    groups(f) { return itemGroups(this.items(), t => this.key(t, f), t => t.done); }
-  },
-
-};
 /* Remet un document du site dans la forme attendue (migration des anciens formats, champs ajoutés
    depuis, entrées de navigation manquantes). Appelée par le store à chaque fois que des données y entrent
    (lecture locale, synchro, import) : S() n'a donc plus rien à corriger et se contente de lire. */
@@ -126,26 +119,39 @@ function normalizeSite(d) {
   for (const k of Object.keys(seed.config)) if (d.config[k] == null) d.config[k] = seed.config[k];
   for (const id of Object.keys(MODULE_DEFS)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: !OFF_BY_DEFAULT.includes(id) });
   for (const id of Object.keys(d.modules)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: true });
-  for (const [mod, g] of Object.entries(GROUPERS)) d.config.groups[mod] = { on: true, by: Object.keys(g.fields)[0], sort: "name", hideDone: false, title: "", ...(d.config.groups[mod] || {}) };
   for (const k of Object.keys(seed)) if (k !== "modules" && typeof seed[k] === "object" && !Array.isArray(seed[k])) for (const f of Object.keys(seed[k])) if (d[k][f] == null) d[k][f] = seed[k][f];
   for (const inst of Object.values(d.modules)) if (Object.hasOwn(MODULE_TYPES, inst.type) && MODULE_TYPES[inst.type].normalize) MODULE_TYPES[inst.type].normalize(inst);
   const inbox = inboxId(d.modules); // une seule boîte de réception, même après une fusion entre appareils
   for (const [id, inst] of Object.entries(d.modules)) if (inst.type === "notes" && inst.config.inbox && id !== inbox) inst.config.inbox = false;
   return d;
 }
-const board = makeStore("selene-board-v1", "board/state", () => ({ updatedAt: 0, tasks: [] }));
 const site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite);
+/* L'ancien document « board » (tâches du Chantier jusqu'au format 5) n'est plus qu'un point d'entrée :
+   ce qu'il contient est versé dans le module Chantier du site, puis il est vidé, et le vidage part au
+   serveur à la synchro suivante (sinon chaque nouvel appareil ressusciterait les tâches supprimées).
+   Une ancienne version de l'app restée ouverte ailleurs peut encore y écrire : rien n'est perdu.
+   Doit être connecté APRÈS le site : versé dans un site pas encore synchronisé (données de départ),
+   le contenu rendrait ces données « non vierges » et la synchro les fusionnerait au lieu de les remplacer. */
+function absorbBoard(d) {
+  if (!Array.isArray(d.tasks)) d.tasks = [];
+  if (!d.tasks.length) return d;
+  const inst = site.data.modules.chantier;
+  if (inst && inst.type === "taches") for (const t of d.tasks) if (!inst.entries.some(x => x.id === t.id)) inst.entries.push(t);
+  d.tasks = []; d.schemaVersion = SCHEMA_VERSION;
+  site.save();
+  return d;
+}
+const board = makeStore("selene-board-v1", "board/state", () => ({ updatedAt: 0, tasks: [] }), absorbBoard);
 const S = () => site.data; // lecture seule : la normalisation a lieu à l'entrée des données, pas ici
 const label = id => { const s = S(); return s.config.labels[id] || (s.modules[id] && s.modules[id].label) || MODULE_DEFS[id]; };
 const enabled = id => { const m = S().config.modules.find(m => m.id === id); return m ? m.on : false; };
 
-/* Regroupement d'un module : défini en dur pour les modules fixes (GROUPERS), fourni par le type pour une instance. */
+/* Regroupement en pourcentage d'un module : fourni par son type (TYPE_UI[type].grouper), réglé dans inst.config.groups. */
 function grouperFor(mod) {
-  if (Object.hasOwn(GROUPERS, mod)) return GROUPERS[mod];
   const inst = Object.hasOwn(S().modules, mod) ? S().modules[mod] : null;
   return inst && TYPE_UI[inst.type].grouper ? TYPE_UI[inst.type].grouper(inst, mod) : null;
 }
-const gcfg = mod => Object.hasOwn(GROUPERS, mod) ? S().config.groups[mod] : S().modules[mod].config.groups;
+const gcfg = mod => S().modules[mod].config.groups;
 const groupBy = mod => { const G = grouperFor(mod), by = gcfg(mod).by; return G.fields[by] ? by : Object.keys(G.fields)[0]; }; // un champ désactivé depuis ne casse rien
 function groupPanel(mod, hint) {
   const G = grouperFor(mod), c = gcfg(mod);
@@ -163,52 +169,6 @@ function groupPanel(mod, hint) {
 }
 const gMatch = (mod, it) => { const v = gFilter[mod]; if (!v) return true; return (grouperFor(mod).key(it, groupBy(mod)) || "Sans groupe") === v; };
 
-/* ================= chantier logic ================= */
-function dueLabel(t) {
-  if (!t.due) return { txt: "Sans date", cls: "" };
-  const n = diffDays(t.due, todayISO());
-  if (n < 0) return { txt: `En retard de ${-n} j`, cls: "late" };
-  if (n === 0) return { txt: "Aujourd'hui", cls: "late" };
-  if (n === 1) return { txt: "Demain", cls: "soon" };
-  if (n <= 7) return { txt: `Dans ${n} j`, cls: "soon" };
-  return { txt: fmt(t.due), cls: "" };
-}
-const rooms = () => [...new Set(board.data.tasks.map(t => t.room).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
-const openTasks = () => board.data.tasks.filter(t => !t.done);
-const doneLines = ["Fait. L'appartement s'effondre un peu moins vite.", "Un de moins. L'entropie note ta résistance.", "Coché. Personne n'applaudit, alors je le fais.", "Terminé. Ton futur toi te déteste un peu moins.", "Réglé. Le chaos recule d'un centimètre."];
-let roomFilter = "", catFilter = "", openId = null;
-
-function taskHTML(t) {
-  const d = dueLabel(t), sd = (t.steps || []).filter(s => s.d).length, ef = Math.min(3, Math.max(1, Math.round(+t.effort) || 1));
-  return `<li class="item ${t.done ? "done" : ""} ${openId === t.id ? "open" : ""}" data-task="${esc(t.id)}">
-    <input type="checkbox" class="check" data-act="task-done" ${t.done ? "checked" : ""} aria-label="Marquer comme fait">
-    <div><button class="t-title" data-act="task-open">${esc(t.title)}</button>
-      <div class="meta">${t.room ? `<span class="tag">${esc(t.room)}</span>` : ""}<span class="${t.done ? "" : d.cls}">${esc(d.txt)}</span><span>${esc(t.cat)}</span><span>${"●".repeat(ef)}${"○".repeat(3 - ef)}</span>${(t.steps || []).length ? `<span>${sd}/${t.steps.length} étapes</span>` : ""}${t.cost ? `<span>${esc(t.cost)} €</span>` : ""}</div></div>
-    <button class="star ${t.today ? "on" : ""}" data-act="task-today" title="Faire aujourd'hui" aria-label="Faire aujourd'hui">★</button>
-    <div class="details">
-      ${(t.steps || []).length ? `<ul class="steps">${t.steps.map((s, i) => `<li><input type="checkbox" data-act="task-step" data-i="${i}" ${s.d ? "checked" : ""} id="s${esc(t.id)}-${i}"><label for="s${esc(t.id)}-${i}" style="font-weight:400;display:inline">${esc(s.t)}</label></li>`).join("")}</ul>` : ""}
-      ${t.note ? `<p class="note">${esc(t.note)}</p>` : ""}
-      <div class="row"><button class="btn ghost sm" data-act="task-edit">Modifier</button><button class="btn ghost sm" data-act="task-del">Supprimer</button></div>
-    </div></li>`;
-}
-function taskForm(t) {
-  $("#roomList").innerHTML = rooms().map(r => `<option value="${esc(r)}">`).join("");
-  openForm(t ? "Modifier la tâche" : "Nouvelle tâche", [
-    { n: "title", l: "Tâche", req: true },
-    { row: [{ n: "room", l: "Pièce", list: "roomList" }, { n: "cat", l: "Type", t: "select", o: ["Bricolage", "Administratif", "Achat", "Artisan", "Rangement", "Ménage"] }] },
-    { row: [{ n: "due", l: "Date butoir", t: "date" }, { n: "effort", l: "Effort", t: "select", o: [["1", "Petit, moins de 30 min"], ["2", "Moyen, une demi-journée"], ["3", "Gros, un week-end"]] }] },
-    { n: "cost", l: "Coût estimé (€)", t: "number" },
-    { n: "steps", l: "Étapes (une par ligne)", t: "textarea", rows: 4 },
-    { n: "note", l: "Note", t: "textarea", rows: 2 }
-  ], t ? { ...t, effort: String(t.effort), steps: (t.steps || []).map(s => s.t).join("\n") } : { room: roomFilter || (gcfg("chantier").by === "room" ? gFilter.chantier || "" : ""), cat: "Bricolage", effort: "1" }, v => {
-    const lines = v.steps.split("\n").map(s => s.trim()).filter(Boolean);
-    const data = { title: v.title, room: v.room, cat: v.cat, due: v.due || null, effort: +v.effort, cost: v.cost ? +v.cost : null, note: v.note };
-    if (t) t = board.data.tasks.find(x => x.id === t.id);
-    if (!t) { addTask(board.data.tasks, { ...data, steps: lines.map(l => ({ t: l, d: false })) }, uid(), todayISO()); board.save(); render(); return; }
-    { const old = new Map((t.steps || []).map(s => [s.t, s.d])); Object.assign(t, data, { steps: lines.map(l => ({ t: l, d: old.get(l) || false })) }); }
-    board.save(); render();
-  });
-}
 function streakOf(dates) {
   const set = new Set(dates); let n = 0; const d = new Date();
   if (!set.has(iso(d))) d.setDate(d.getDate() - 1);
@@ -248,7 +208,7 @@ const VIEWS = {};
 
 VIEWS.accueil = () => {
   const m = moon(), s = S(), now = todayISO();
-  const tod = openTasks().filter(t => t.today).slice(0, 3);
+  const tod = todayTasks().slice(0, 3);
   const alerts = [];
   for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) alerts.push(...TYPE_UI[inst.type].alerts(id, inst, now));
   const inbox = inboxId(s.modules), pending = inbox ? s.modules[inbox].entries.length : 0;
@@ -261,7 +221,7 @@ VIEWS.accueil = () => {
   <div class="two">
     <section><h2>Aujourd'hui</h2><p class="hint">Trois choses. La forêt pousse très bien sans que tu la surveilles.</p>
       <ul class="plain">
-        ${tod.map(taskHTML).join("")}
+        ${tod.map(([id, t]) => taskHTML(id, t)).join("")}
         ${alerts.map(a => `<li class="item"><span></span><div>${a.text}</div>${a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">voir</a>` : a.quick ? `<button class="btn ghost sm" data-act="entry-add" data-mod="${esc(a.quick)}">noter</button>` : ""}</li>`).join("")}
       </ul>
       ${!tod.length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : ""}
@@ -276,41 +236,12 @@ VIEWS.accueil = () => {
 };
 
 const SUMMARY = {
-  chantier: () => { const o = openTasks(), now = todayISO(), late = o.filter(t => t.due && t.due < now).length; const all = board.data.tasks.length; return `${late ? `<span class="late">${late} en retard</span>, ` : ""}${o.length} à faire, ${all ? Math.round(100 * (all - o.length) / all) : 0} % du chantier`; },
   assistant: () => { const b = backend(); return b === "sample" ? "Branché via claude.ai" : b === "api" ? "Branché via ta clé API" : "Pas encore branché"; }
 };
 function summaryFor(id) {
   const inst = Object.hasOwn(S().modules, id) ? S().modules[id] : null;
   return inst ? TYPE_UI[inst.type].summary(id, inst) : SUMMARY[id] ? SUMMARY[id]() : "";
 }
-
-VIEWS.chantier = () => {
-  const now = todayISO(), o = openTasks();
-  const tod = o.filter(t => t.today).slice(0, 3);
-  const cats = [...new Set(board.data.tasks.map(t => t.cat))];
-  const filtered = o.filter(t => (!roomFilter || t.room === roomFilter) && (!catFilter || t.cat === catFilter) && gMatch("chantier", t)).sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999"));
-  const groups = [
-    ["En retard", "Le passé ne se repeint pas. Ça, si.", t => t.due && t.due < now, true],
-    ["Cette semaine", "Assez proche pour paniquer utilement.", t => t.due && t.due >= now && diffDays(t.due, now) <= 7],
-    ["Ce mois-ci", "Le problème de toi dans trois semaines.", t => t.due && diffDays(t.due, now) > 7 && diffDays(t.due, now) <= 31],
-    ["Plus tard", "Hors de vue. Pas hors de l'appartement.", t => t.due && diffDays(t.due, now) > 31],
-    ["Sans date", "Les tâches sans date ne meurent jamais. Elles hantent.", t => !t.due]
-  ].map(([n, h, f, late]) => { const it = filtered.filter(f); return it.length ? `<div style="margin-bottom:22px"><h3 class="${late ? "late" : ""}">${n} <span class="hint" style="font-size:1rem">${it.length}</span></h3><p class="hint">${h}</p><ul class="plain">${it.map(taskHTML).join("")}</ul></div>` : ""; }).join("");
-  const spent = board.data.tasks.filter(t => t.done && t.cost).reduce((a, t) => a + +t.cost, 0), left = o.filter(t => t.cost).reduce((a, t) => a + +t.cost, 0);
-  const done = board.data.tasks.filter(t => t.done).sort((a, b) => (b.doneAt || "").localeCompare(a.doneAt || "")).slice(0, 8);
-  return `<div class="row" style="margin-bottom:24px"><h2 style="margin:0">${esc(label("chantier"))}</h2><span class="spacer"></span><button class="btn solid" data-act="task-new">Ajouter une tâche</button><button class="btn" data-act="task-pick">Tirer au sort</button></div>
-  <div class="two"><div>
-    <section><h3>Aujourd'hui</h3><p class="hint">Trois tâches maximum. Au-delà, c'est une liste de reproches.</p><ul class="plain">${tod.map(taskHTML).join("") || `<li class="empty">Coche l'étoile d'une tâche.</li>`}</ul></section>
-    <section><div class="row" style="margin-bottom:12px"><h3 style="margin:0">Échéances</h3><span class="spacer"></span>
-      <select data-act="f-room" aria-label="Pièce"><option value="">Toutes les pièces</option>${rooms().map(r => `<option ${r === roomFilter ? "selected" : ""}>${esc(r)}</option>`).join("")}</select>
-      <select data-act="f-cat" aria-label="Type"><option value="">Tous les types</option>${cats.map(c => `<option ${c === catFilter ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></div>
-      ${groups || `<p class="empty">Plus rien ici. Soit c'est fini, soit tu as filtré trop fort.</p>`}</section>
-  </div><aside>
-    ${groupPanel("chantier", "La mousse gagne à mesure que tu finis. Clique pour filtrer.")}
-    ${spent || left ? `<p class="hint">Budget estimé : ${spent} € engagés, ${left} € encore à prévoir.</p>` : ""}
-    <section><h3>Fait récemment</h3><ul class="plain">${done.map(t => `<li class="item" data-task="${esc(t.id)}"><span></span><div>${esc(t.title)}<div class="meta">${fmt(t.doneAt)}</div></div><button class="btn ghost sm" data-act="task-undo">annuler</button></li>`).join("") || `<li class="empty">Rien pour l'instant. L'histoire ne retiendra rien.</li>`}</ul></section>
-  </aside></div>`;
-};
 
 
 
@@ -399,33 +330,17 @@ function render() {
 window.addEventListener("hashchange", () => { openId = null; render(); const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t); if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); } else window.scrollTo(0, 0); });
 
 /* ================= actions ================= */
-const taskOf = el => { const li = el.closest("[data-task]"); return (li && board.data.tasks.find(t => t.id === li.dataset.task)) || null; };
 const idOf = el => el.closest("[data-id]")?.dataset.id;
 function capture() {
   const inp = $("#capIn"); if (!inp || !inp.value.trim()) return;
   const id = inboxId(S().modules); if (!id) return toast("Aucune boîte de réception : voir Réglages.");
   addCapture(S().modules[id].entries, inp.value, uid(), todayISO()); site.save(); inp.value = ""; render(); toast("Gardé. Tu peux oublier, c'est écrit.");
 }
-function pickTask() {
-  const o = openTasks().filter(t => !t.today);
-  if (openTasks().filter(t => t.today).length >= 3) return toast("Aujourd'hui est plein. Le hasard respecte les plafonds.");
-  if (!o.length) return toast("Rien à tirer.");
-  const small = o.filter(t => t.effort === 1), pool = (small.length ? small : o).sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")).slice(0, 5);
-  const t = pool[Math.floor(Math.random() * pool.length)]; setTaskToday(board.data.tasks, t.id, true); board.save(); render();
-  toast(`Le sort a désigné : « ${t.title} ». Pas de recours possible.`);
-}
 function entryAdd(id) {
   const inst = S().modules[id], ui = TYPE_UI[inst.type];
   if (ui.add) ui.add(id, inst);
 }
 const CLICK = {
-  "task-open": el => { const t = taskOf(el); openId = openId === t.id ? null : t.id; render(); },
-  "task-today": el => { const t = taskOf(el); try { setTaskToday(board.data.tasks, t.id, !t.today); } catch { return toast("Trois, c'est le plafond. Termine ou retire-en une."); } board.save(); render(); },
-  "task-edit": el => taskForm(taskOf(el)),
-  "task-del": async el => { const t = taskOf(el); if (await ask(`Supprimer « ${t.title} » ?`)) { board.data.tasks = board.data.tasks.filter(x => x !== t); board.save(); render(); } },
-  "task-undo": el => { setTaskDone(board.data.tasks, taskOf(el).id, false, todayISO()); board.save(); render(); },
-  "task-new": () => taskForm(null),
-  "task-pick": pickTask,
   "grp-filter": el => { const m = el.dataset.mod, g = el.dataset.g; gFilter[m] = gFilter[m] === g ? "" : g; render(); },
   "goto-groups": el => { const id = "mreg-" + el.dataset.mod; if (location.hash === "#reglages") { const d = document.getElementById(id); if (d) { d.open = true; d.scrollIntoView(); } } else sessionStorage.setItem("selene-scroll", id); },
   "cap-add": capture,
@@ -474,10 +389,6 @@ const CHANGE = {}; // actions « change » des types de module (remplie par type
 document.addEventListener("change", e => {
   const el = e.target, act = el.dataset.act;
   if (act && Object.hasOwn(CHANGE, act)) CHANGE[act](el);
-  else if (act === "task-done") { setTaskDone(board.data.tasks, taskOf(el).id, el.checked, todayISO()); board.save(); render(); if (el.checked) toast(doneLines[Math.floor(Math.random() * doneLines.length)]); }
-  else if (act === "task-step") { const t = taskOf(el); t.steps[+el.dataset.i].d = el.checked; board.save(); render(); }
-  else if (act === "f-room") { roomFilter = el.value; render(); }
-  else if (act === "f-cat") { catFilter = el.value; render(); }
   else if (act && act.startsWith("grp-") && act !== "grp-filter") {
     const mod = el.closest("[data-mod]").dataset.mod, g = gcfg(mod), G = grouperFor(mod);
     if (act === "grp-on") g.on = el.checked;
@@ -490,7 +401,7 @@ document.addEventListener("change", e => {
       const by = groupBy(mod); G.items().forEach(it => { if (it[by] === from) it[by] = to; });
       if (G.rename) G.rename(from, to); // ex. une enveloppe du budget porte le nom du groupe
       if (gFilter[mod] === from) gFilter[mod] = to;
-      if (mod === "chantier" && roomFilter === from) roomFilter = to;
+      if (taskFilters[mod] && taskFilters[mod].room === from) taskFilters[mod].room = to;
       G.store().save(); toast(`« ${from} » s'appelle désormais « ${to} ».`);
     }
     site.save(); el.blur(); render();
@@ -501,7 +412,7 @@ document.addEventListener("change", e => {
   else if (act === "as-share") { S().config.assistant.share[el.dataset.k] = el.checked; site.save(); render(); }
   else if (act === "imp") {
     const f = el.files && el.files[0]; if (!f) return;
-    f.text().then(async t => { const d = parseBackup(t); if (!await ask("Remplacer tout l'état actuel par celui du fichier ?")) return; board.replaceAll(d.board); site.replaceAll(d.site); render(); toast("Sauvegarde importée."); }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene.")).finally(() => { el.value = ""; });
+    f.text().then(async t => { const d = parseBackup(t); if (!await ask("Remplacer tout l'état actuel par celui du fichier ?")) return; site.replaceAll(d.site); board.replaceAll(d.board); /* le site d'abord : les tâches d'une ancienne sauvegarde y sont versées */ render(); toast("Sauvegarde importée."); }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene.")).finally(() => { el.value = ""; });
   }
   else if (act === "mod-on") { S().config.modules[+el.closest("[data-i]").dataset.i].on = el.checked; site.save(); render(); }
   else if (act === "mod-label") {

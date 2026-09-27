@@ -27,10 +27,11 @@ function setTaskDone(tasks, id, done, date) {
   if (done) t.today = false;
   return t;
 }
-function setTaskToday(tasks, id, value) {
+/* `elsewhere` : tâches du jour déjà choisies dans les autres modules de tâches (le plafond de trois est global). */
+function setTaskToday(tasks, id, value, elsewhere = 0) {
   const t = tasks.find(x => x.id === id);
   if (!t) throw new Error("Tâche introuvable");
-  if (value && !t.today && tasks.filter(x => !x.done && x.today).length >= 3) throw new Error("Trois tâches du jour maximum");
+  if (value && !t.today && tasks.filter(x => !x.done && x.today).length + elsewhere >= 3) throw new Error("Trois tâches du jour maximum");
   t.today = !!value;
   return t;
 }
@@ -55,10 +56,11 @@ function addBudgetEntry(entries, input, id, defaultDate) {
 /* ---- modules génériques ---- */
 /* Version du format des données du site. 1 = sections en dur (kundalini, ecriture, phidippus à la racine),
    2 = modules génériques sous `modules`, 3 = october.moth et Musique deviennent des collections,
-   4 = la Capture devient un module Notes, 5 = le Budget devient un module générique.
+   4 = la Capture devient un module Notes, 5 = le Budget devient un module générique,
+   6 = le Chantier devient un module Tâches (ses tâches quittent le document « board »).
    Une version de l'app qui lit un numéro plus grand que le sien ne doit ni fusionner ni écrire :
    elle ne connaît pas la forme de ces données. */
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 /* Anciennes sections à la racine du document → instances de module. Chaque conversion reçoit l'ancienne
    section, le nom personnalisé et le réglage de regroupement éventuels. Sert aussi aux données de départ. */
 const SECTION_TO_MODULE = {
@@ -104,12 +106,27 @@ const SECTION_TO_MODULE = {
     entries: old.entries || []
   })
 };
+/* Le Chantier était un module fixe dont les tâches vivaient dans un document à part (« board »).
+   Il devient une instance du type Tâches ; ses tâches y sont versées par absorbBoard (app.js). */
+const TASK_CATS = ["Bricolage", "Administratif", "Achat", "Artisan", "Rangement", "Ménage"];
+const boardToModule = (tasks, name, groups) => ({
+  type: "taches", label: name || "Chantier",
+  config: { groupLabel: "Pièce", catLabel: "Type", cats: TASK_CATS.slice(), costs: true,
+    groups: { on: true, by: "room", sort: "name", hideDone: false, title: "", ...(groups || {}) } },
+  entries: tasks || []
+});
 /* Ne recrée jamais un module manquant : un module absent chez un site existant a été supprimé exprès.
    Si le module existe déjà alors que l'ancienne section réapparaît (une ancienne version de l'app, restée
    ouverte sur un autre appareil, a pu y écrire entre-temps), ses entrées absentes sont absorbées, pas perdues. */
 function migrateModules(d) {
   d.modules = d.modules || {};
   const cfg = d.config || {}, labels = cfg.labels || {}, groups = cfg.groups || {};
+  // Format 6 : une seule fois (drapeau boardMerged), sinon un Chantier supprimé exprès reviendrait.
+  if (!d.boardMerged) {
+    if (!d.modules.chantier) d.modules.chantier = boardToModule([], labels.chantier, groups.chantier);
+    delete groups.chantier;
+    d.boardMerged = true;
+  }
   for (const [key, convert] of Object.entries(SECTION_TO_MODULE)) {
     if (!d[key]) continue;
     const inst = convert(d[key], labels[key], groups[key]), cur = d.modules[key];
@@ -166,6 +183,28 @@ const MODULE_TYPES = {
     validate(inst, v) {
       v.list(inst.config.envelopes || [], "enveloppes").forEach(x => { if (typeof x.name !== "string") v.fail("enveloppe"); v.num(x.limit, "plafond", 0); });
       for (const e of inst.entries) { v.num(e.amount, "montant", 0); if (e.type !== "dépense" && e.type !== "revenu") v.fail("type d'opération"); }
+    }
+  },
+  taches: {
+    label: "Tâches (échéances, lieux, étapes, coûts)",
+    datedEntries: false, // une tâche a une échéance facultative, pas une date de journal
+    defaults: () => ({ config: { groupLabel: "Lieu", catLabel: "Type", cats: ["Général"], costs: true,
+      groups: { on: true, by: "room", sort: "name", hideDone: false, title: "" } }, entries: [] }),
+    normalize(inst) {
+      const c = inst.config, def = MODULE_TYPES.taches.defaults().config;
+      for (const k of Object.keys(def)) if (c[k] == null) c[k] = def[k];
+      if (!Array.isArray(c.cats) || !c.cats.length) c.cats = def.cats.slice();
+      c.groups = { ...def.groups, ...c.groups };
+    },
+    validate(inst, v) {
+      const c = inst.config;
+      if (c.cats != null && (!Array.isArray(c.cats) || c.cats.some(x => typeof x !== "string"))) v.fail("types de tâche");
+      for (const t of inst.entries) {
+        if (typeof t.title !== "string") v.fail("titre");
+        if (t.steps != null && (!Array.isArray(t.steps) || t.steps.some(x => !x || typeof x.t !== "string"))) v.fail("étapes");
+        if (t.due && !(typeof t.due === "string" && validDate(t.due))) v.fail("échéance");
+        v.num(t.effort, "effort", 1, 3); v.num(t.cost, "coût", 0);
+      }
     }
   },
   notes: {

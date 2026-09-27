@@ -9,7 +9,6 @@ const chatLog = { get() { try { return JSON.parse(localStorage.getItem("selene-c
 function contextText() {
   const s = S(), sh = s.config.assistant.share, now = todayISO(), m = moon(), L = [];
   L.push(`Date : ${fmt(now, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}. Lune : ${m.name.toLowerCase()}, éclairée à ${Math.round(m.illum * 100)} %.`);
-  if (sh.chantier && enabled("chantier")) { const o = openTasks().sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")); L.push(`\nCHANTIER (appartement) : ${o.length} tâches ouvertes sur ${board.data.tasks.length}.`); o.slice(0, 40).forEach(t => L.push(`- [${t.id}] ${t.title} | ${t.room || "?"} | ${t.due ? "échéance " + t.due : "sans date"}${t.today ? " | choisie pour aujourd'hui" : ""}${t.cost ? " | " + t.cost + " €" : ""}`)); }
   for (const [id, inst] of Object.entries(s.modules)) {
     if (!sh[id] || !enabled(id)) continue;
     L.push(TYPE_UI[inst.type].context(inst, label(id).toUpperCase()));
@@ -25,10 +24,13 @@ DONNÉES DU TABLEAU DE BORD
 ${contextText()}`;
 }
 const TOOLS = [
-  { name: "ajouter_tache", module: "chantier", description: "Ajoute une tâche au module Chantier. Renvoie une confirmation.", inputSchema: { type: "object", properties: { titre: { type: "string" }, piece: { type: "string" }, echeance: { type: "string", description: "AAAA-MM-JJ" }, type: { type: "string", enum: ["Bricolage", "Administratif", "Achat", "Artisan", "Rangement", "Ménage"] } }, required: ["titre"] },
-    execute(i) { const t = addTask(board.data.tasks, { title: i.titre, room: i.piece, cat: i.type, due: i.echeance, note: "Ajoutée par l'assistant" }, uid(), todayISO()); board.save(); render(); return `Tâche ajoutée : ${t.title}`; } },
-  { name: "terminer_tache", module: "chantier", description: "Marque comme faite une tâche du Chantier, par son identifiant entre crochets.", inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
-    execute(i) { const t = setTaskDone(board.data.tasks, i.id, true, todayISO()); board.save(); render(); return `Terminée : ${t.title}`; } },
+  { name: "ajouter_tache", module: () => firstOfType("taches"), description: "Ajoute une tâche au premier module de tâches (voir ses types dans les données). Renvoie une confirmation.", inputSchema: { type: "object", properties: { titre: { type: "string" }, piece: { type: "string", description: "pièce ou lieu" }, echeance: { type: "string", description: "AAAA-MM-JJ" }, type: { type: "string" } }, required: ["titre"] },
+    execute(i) { const inst = S().modules[firstOfType("taches")]; const t = addTask(inst.entries, { title: i.titre, room: i.piece, cat: i.type || inst.config.cats[0], due: i.echeance, note: "Ajoutée par l'assistant" }, uid(), todayISO()); site.save(); render(); return `Tâche ajoutée : ${t.title}`; } },
+  { name: "terminer_tache", module: () => firstOfType("taches"), description: "Marque comme faite une tâche, par son identifiant entre crochets.", inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
+    execute(i) {
+      const found = allTasks().find(([, t]) => t.id === i.id); if (!found) throw new Error("Tâche introuvable");
+      const t = setTaskDone(S().modules[found[0]].entries, i.id, true, todayISO()); site.save(); render(); return `Terminée : ${t.title}`;
+    } },
   { name: "capturer", module: () => inboxId(S().modules), description: "Dépose une note dans la boîte de réception, à trier plus tard.", inputSchema: { type: "object", properties: { texte: { type: "string" } }, required: ["texte"] },
     execute(i) { addCapture(S().modules[inboxId(S().modules)].entries, i.texte, uid(), todayISO()); site.save(); render(); return "Capturé."; } },
   { name: "ajouter_operation", module: () => firstOfType("budget"), description: "Enregistre une dépense ou un revenu dans le premier module Budget.", inputSchema: { type: "object", properties: { montant: { type: "number" }, type: { type: "string", enum: ["dépense", "revenu"] }, enveloppe: { type: "string" }, note: { type: "string" }, date: { type: "string", description: "AAAA-MM-JJ, aujourd'hui par défaut" } }, required: ["montant"] },
@@ -95,6 +97,6 @@ VIEWS.assistant = () => {
   return `<div class="row"><h2 style="margin:0">${esc(label("assistant"))}</h2><span class="spacer"></span>${log.length ? `<button class="btn ghost sm" data-act="chat-clear">Effacer la conversation</button>` : ""}</div>
   <p class="status">${status}<br>Données partagées : ${esc(shared)}. ${a.actions ? "Peut agir sur le tableau de bord." : "Lecture seule."}</p>
   <div class="chat">${log.map(m => `<div class="msg ${m.role === "user" ? "user" : "claude"}">${m.role === "user" ? esc(m.content) : mdLite(m.content)}</div>`).join("")}${chatBusy ? `<div class="msg claude" id="pending">…</div>` : ""}</div>
-  ${!log.length ? `<div class="chips">${["Qu'est-ce que je fais aujourd'hui ?", "Fais le point sur le chantier", "Où en est mon budget ce mois-ci ?", ...ideaChip()].map(q => `<button class="btn sm" data-act="chat-chip">${esc(q)}</button>`).join("")}</div>` : ""}
+  ${!log.length ? `<div class="chips">${["Qu'est-ce que je fais aujourd'hui ?", ...(firstOfType("taches") ? [`Fais le point sur ${label(firstOfType("taches"))}`] : []), "Où en est mon budget ce mois-ci ?", ...ideaChip()].map(q => `<button class="btn sm" data-act="chat-chip">${esc(q)}</button>`).join("")}</div>` : ""}
   <div class="capture"><textarea id="chatIn" rows="2" placeholder="Écris à Claude…" aria-label="Message" ${b === "sample" || b === "api" ? "" : "disabled"}></textarea><button class="btn acc" data-act="chat-send" ${chatBusy ? "disabled" : ""}>Envoyer</button></div>`;
 };
