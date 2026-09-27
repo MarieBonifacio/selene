@@ -55,6 +55,10 @@ function addBudgetEntry(entries, input, id, defaultDate) {
 /* ---- modules génériques : programme (calendrier + objectif/semaine), cumul (compteur + catégories), rappels (types récurrents) ----
    Ne recrée jamais un module par défaut manquant : un module neuf en a déjà un exemplaire via siteSeed(),
    et un module absent chez un site existant a été supprimé exprès (ne pas ressusciter). */
+/* Version du format des données du site. 1 = sections en dur (kundalini, ecriture, phidippus à la racine),
+   2 = modules génériques sous `modules`. Une version de l'app qui lit un numéro plus grand que le sien
+   ne doit ni fusionner ni écrire : elle ne connaît pas la forme de ces données. */
+const SCHEMA_VERSION = 2;
 function migrateModules(d) {
   d.modules = d.modules || {};
   if (d.kundalini) {
@@ -86,7 +90,10 @@ function migrateModules(d) {
 function addJournalEntry(instance, input, id, defaultDate) {
   const date = input.date && validDate(input.date) ? input.date : defaultDate;
   const entry = { id, date, note: input.note || "" };
-  if (instance.type !== "rappels") entry.value = input.value != null && input.value !== "" ? Number(input.value) : null;
+  if (instance.type !== "rappels") {
+    entry.value = input.value != null && input.value !== "" ? Number(input.value) : null;
+    if (entry.value !== null && !Number.isFinite(entry.value)) throw new Error("Valeur invalide"); // un NaN contaminerait tous les totaux
+  }
   if (instance.type === "cumul" && input.category != null) entry.category = input.category;
   if (instance.type === "rappels") entry.type = input.type || "note";
   instance.entries.push(entry);
@@ -97,6 +104,8 @@ function deleteJournalEntry(instance, id) { instance.entries = instance.entries.
    ni un nom hérité d'Object.prototype (« constructor », « toString »…), que `obj[id]` trouverait. */
 const RESERVED_IDS = ["accueil", "reglages", "programme", "cumul", "rappels"];
 const reservedId = id => RESERVED_IDS.includes(id) || id in Object.prototype;
+/* Forme qu'un identifiant de module peut avoir, quelle que soit sa provenance (slugId, sauvegarde, serveur). */
+const MODULE_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
 function slugId(name, existing) {
   const base = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "module";
   let id = base, n = 2;

@@ -29,7 +29,7 @@ function siteSeed() {
     phidippus: { type: "rappels", label: "Phidippus", config: { subtitle: "", types: [{ id: "repas", label: "Repas", every: 6 }, { id: "brumisation", label: "Brumisation", every: 3 }, { id: "mue", label: "Mue", every: 0 }] }, entries: [] }
   };
   return {
-    updatedAt: 0,
+    updatedAt: 0, schemaVersion: SCHEMA_VERSION,
     config: { name: "Selene", palette: "nigredo", mode: "auto", labels: {}, groups: {},
       modules: MODULE_ORDER.map(id => ({ id, on: !OFF_BY_DEFAULT.includes(id) })),
       assistant: { model: "claude-sonnet-5", actions: true, share: { chantier: true, kundalini: true, ecriture: true, moth: true, phidippus: true, musique: true, budget: false, inbox: true } } },
@@ -48,6 +48,7 @@ const site = makeStore("selene-site-v1", "site/state", siteSeed);
 function S() { // site data with defaults filled in
   const d = site.data, seed = siteSeed();
   migrateModules(d);
+  if ((d.schemaVersion || 1) < SCHEMA_VERSION) d.schemaVersion = SCHEMA_VERSION;
   for (const k of Object.keys(seed)) if (d[k] == null) d[k] = seed[k];
   for (const k of Object.keys(seed.config)) if (d.config[k] == null) d.config[k] = seed.config[k];
   for (const id of Object.keys(MODULE_DEFS)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: !OFF_BY_DEFAULT.includes(id) });
@@ -160,13 +161,13 @@ GROUPERS.budget = {
 const gcfg = mod => S().config.groups[mod];
 function instanceFields(id) {
   const inst = S().modules[id], c = inst.config;
-  if (inst.type === "programme") return `<div class="field-row"><label>Début du protocole<input type="date" data-set-mod="${id}.start" value="${esc(c.start || "")}"></label><label>Durée (semaines)<input type="number" min="1" data-set-mod="${id}.weeks" value="${c.weeks}"></label></div>
-    <div class="field-row" style="margin-top:8px"><label>Unité<input data-set-mod="${id}.unitLabel" value="${esc(c.unitLabel)}" placeholder="min"></label><label>Séances visées par semaine<input type="number" min="1" max="7" data-set-mod="${id}.perWeek" value="${c.perWeek}"></label></div>`;
-  if (inst.type === "cumul") return `<div class="field-row"><label>Titre / sous-titre<input data-set-mod="${id}.title" value="${esc(c.title || "")}"></label><label>Objectif<input type="number" min="1" data-set-mod="${id}.goal" value="${c.goal}"></label></div>
-    <div class="field-row" style="margin-top:8px"><label>Unité<input data-set-mod="${id}.unitLabel" value="${esc(c.unitLabel)}" placeholder="mots"></label><label>Nom des catégories<input data-set-mod="${id}.categoryLabel" value="${esc(c.categoryLabel)}" placeholder="Chapitre"></label></div>
-    <div style="margin-top:10px"><span class="hint" style="margin:0">${esc(c.categoryLabel)}s</span>${c.categories.map((cat, i) => `<div class="set" data-ci="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="cat-name" data-mod="${id}" value="${esc(cat.name)}" aria-label="Nom"><input type="number" min="0" data-act="cat-goal" data-mod="${id}" value="${cat.goal || ""}" placeholder="Objectif" aria-label="Objectif"><div class="row"><button class="btn ghost sm" data-act="cat-up" data-mod="${id}" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="cat-del" data-mod="${id}">suppr.</button></div></div>`).join("")}<button class="btn sm" data-act="cat-add" data-mod="${id}" style="margin-top:8px">Ajouter</button></div>`;
-  if (inst.type === "rappels") return `<div class="field-row"><label>Sous-titre (ex. nom propre)<input data-set-mod="${id}.subtitle" value="${esc(c.subtitle || "")}"></label><span></span></div>
-    <div style="margin-top:10px"><span class="hint" style="margin:0">Types et rappels</span>${c.types.map((t, i) => `<div class="set" data-ti="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="typ-name" data-mod="${id}" value="${esc(t.label)}" aria-label="Nom"><input type="number" min="0" data-act="typ-every" data-mod="${id}" value="${t.every || ""}" placeholder="tous les X j" aria-label="Fréquence"><button class="btn ghost sm" data-act="typ-del" data-mod="${id}">suppr.</button></div>`).join("")}<button class="btn sm" data-act="typ-add" data-mod="${id}" style="margin-top:8px">Ajouter un type</button></div>`;
+  if (inst.type === "programme") return `<div class="field-row"><label>Début du protocole<input type="date" data-set-mod="${esc(id)}.start" value="${esc(c.start || "")}"></label><label>Durée (semaines)<input type="number" min="1" data-set-mod="${esc(id)}.weeks" value="${esc(c.weeks)}"></label></div>
+    <div class="field-row" style="margin-top:8px"><label>Unité<input data-set-mod="${esc(id)}.unitLabel" value="${esc(c.unitLabel)}" placeholder="min"></label><label>Séances visées par semaine<input type="number" min="1" max="7" data-set-mod="${esc(id)}.perWeek" value="${esc(c.perWeek)}"></label></div>`;
+  if (inst.type === "cumul") return `<div class="field-row"><label>Titre / sous-titre<input data-set-mod="${esc(id)}.title" value="${esc(c.title || "")}"></label><label>Objectif<input type="number" min="1" data-set-mod="${esc(id)}.goal" value="${esc(c.goal)}"></label></div>
+    <div class="field-row" style="margin-top:8px"><label>Unité<input data-set-mod="${esc(id)}.unitLabel" value="${esc(c.unitLabel)}" placeholder="mots"></label><label>Nom des catégories<input data-set-mod="${esc(id)}.categoryLabel" value="${esc(c.categoryLabel)}" placeholder="Chapitre"></label></div>
+    <div style="margin-top:10px"><span class="hint" style="margin:0">${esc(c.categoryLabel)}s</span>${c.categories.map((cat, i) => `<div class="set" data-ci="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="cat-name" data-mod="${esc(id)}" value="${esc(cat.name)}" aria-label="Nom"><input type="number" min="0" data-act="cat-goal" data-mod="${esc(id)}" value="${esc(cat.goal || "")}" placeholder="Objectif" aria-label="Objectif"><div class="row"><button class="btn ghost sm" data-act="cat-up" data-mod="${esc(id)}" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="cat-del" data-mod="${esc(id)}">suppr.</button></div></div>`).join("")}<button class="btn sm" data-act="cat-add" data-mod="${esc(id)}" style="margin-top:8px">Ajouter</button></div>`;
+  if (inst.type === "rappels") return `<div class="field-row"><label>Sous-titre (ex. nom propre)<input data-set-mod="${esc(id)}.subtitle" value="${esc(c.subtitle || "")}"></label><span></span></div>
+    <div style="margin-top:10px"><span class="hint" style="margin:0">Types et rappels</span>${c.types.map((t, i) => `<div class="set" data-ti="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="typ-name" data-mod="${esc(id)}" value="${esc(t.label)}" aria-label="Nom"><input type="number" min="0" data-act="typ-every" data-mod="${esc(id)}" value="${esc(t.every || "")}" placeholder="tous les X j" aria-label="Fréquence"><button class="btn ghost sm" data-act="typ-del" data-mod="${esc(id)}">suppr.</button></div>`).join("")}<button class="btn sm" data-act="typ-add" data-mod="${esc(id)}" style="margin-top:8px">Ajouter un type</button></div>`;
   return "";
 }
 function groupPanel(mod, hint) {
@@ -178,9 +179,9 @@ function groupPanel(mod, hint) {
   gs.sort(sorters[c.sort] || sorters.name);
   const active = gFilter[mod];
   const title = c.title || `Par ${G.fields[c.by].toLowerCase()}`;
-  return `<section><div class="row" style="margin-bottom:4px"><h3 style="margin:0">${esc(title)}</h3><span class="spacer"></span><a class="btn ghost sm" href="#reglages" data-act="goto-groups" data-mod="${mod}">régler</a></div>
+  return `<section><div class="row" style="margin-bottom:4px"><h3 style="margin:0">${esc(title)}</h3><span class="spacer"></span><a class="btn ghost sm" href="#reglages" data-act="goto-groups" data-mod="${esc(mod)}">régler</a></div>
     <p class="hint">${hint}</p>
-    <div class="rooms">${gs.map(g => `<button class="room ${active === g.name ? "active" : ""} ${g.pct > 100 ? "over" : ""}" ${G.filterable ? `data-act="grp-filter" data-mod="${mod}" data-g="${esc(g.name)}"` : "disabled"}><div class="fill" style="height:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></button>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
+    <div class="rooms">${gs.map(g => `<button class="room ${active === g.name ? "active" : ""} ${g.pct > 100 ? "over" : ""}" ${G.filterable ? `data-act="grp-filter" data-mod="${esc(mod)}" data-g="${esc(g.name)}"` : "disabled"}><div class="fill" style="height:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></button>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
 }
 const gMatch = (mod, it) => { const v = gFilter[mod]; if (!v) return true; const G = GROUPERS[mod]; return (G.key(it, gcfg(mod).by) || "Sans groupe") === v; };
 
@@ -260,7 +261,8 @@ function openForm(title, fields, values, cb) {
 $("#dlg").addEventListener("close", () => {
   if ($("#dlg").returnValue !== "save" || !formCb) return;
   const v = {}; new FormData($("#form")).forEach((x, k) => v[k] = typeof x === "string" ? x.trim() : x);
-  const cb = formCb; formCb = null; cb(v);
+  const cb = formCb; formCb = null;
+  try { cb(v); } catch (e) { toast(e.message || "Saisie invalide."); } // sinon l'erreur disparaît en silence
 });
 
 /* ================= views ================= */
@@ -283,7 +285,7 @@ VIEWS.accueil = () => {
       alerts.push({ text: done ? `Séance de ${esc(label(id)).toLowerCase()} faite.` : `Pas encore de séance de ${esc(label(id)).toLowerCase()} aujourd'hui.`, quick: done ? null : id });
     }
   }
-  const rows = s.config.modules.filter(x => x.on && x.id !== "inbox").map(x => `<a class="over" href="#${x.id}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}</span><em class="hint" style="margin:0">ouvrir</em></a>`).join("");
+  const rows = s.config.modules.filter(x => x.on && x.id !== "inbox").map(x => `<a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}</span><em class="hint" style="margin:0">ouvrir</em></a>`).join("");
   return `
   <section class="hero">${forestSVG(m.p)}<div class="txt">
     <div class="phase">${m.name}</div>
@@ -293,7 +295,7 @@ VIEWS.accueil = () => {
     <section><h2>Aujourd'hui</h2><p class="hint">Trois choses. La forêt pousse très bien sans que tu la surveilles.</p>
       <ul class="plain">
         ${tod.map(taskHTML).join("")}
-        ${alerts.map(a => `<li class="item"><span></span><div>${a.text}</div>${a.href ? `<a class="btn ghost sm" href="${a.href}">voir</a>` : a.quick ? `<button class="btn ghost sm" data-act="entry-add" data-mod="${a.quick}">noter</button>` : ""}</li>`).join("")}
+        ${alerts.map(a => `<li class="item"><span></span><div>${a.text}</div>${a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">voir</a>` : a.quick ? `<button class="btn ghost sm" data-act="entry-add" data-mod="${esc(a.quick)}">noter</button>` : ""}</li>`).join("")}
       </ul>
       ${!tod.length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : ""}
     </section>
@@ -316,7 +318,7 @@ const SUMMARY = {
 function summaryFor(id) {
   const inst = S().modules[id];
   if (!inst) return SUMMARY[id] ? SUMMARY[id]() : "";
-  if (inst.type === "programme") { const c = inst.config; if (!c.start) return "Pas encore commencé"; const w = Math.min(c.weeks, Math.floor(diffDays(todayISO(), c.start) / 7) + 1); return `Semaine ${w} sur ${c.weeks}, ${inst.entries.length} séance${inst.entries.length > 1 ? "s" : ""}, série de ${streakOf(inst.entries.map(x => x.date))} j`; }
+  if (inst.type === "programme") { const c = inst.config; if (!c.start) return "Pas encore commencé"; const w = Math.min(c.weeks, Math.floor(diffDays(todayISO(), c.start) / 7) + 1); return `Semaine ${w} sur ${esc(c.weeks)}, ${inst.entries.length} séance${inst.entries.length > 1 ? "s" : ""}, série de ${streakOf(inst.entries.map(x => x.date))} j`; }
   if (inst.type === "cumul") { const c = inst.config, tot = inst.entries.reduce((a, x) => a + (+x.value || 0), 0); return `${tot.toLocaleString("fr-FR")} ${esc(c.unitLabel)} sur ${(+c.goal).toLocaleString("fr-FR")}${c.scraps ? `, ${inst.scraps.length} ${esc(c.scrapsLabel).toLowerCase()}` : ""}`; }
   if (inst.type === "rappels") { const t = inst.config.types[0]; if (!t) return `${inst.entries.length} entrée${inst.entries.length > 1 ? "s" : ""}`; const f = inst.entries.filter(l => l.type === t.id).map(l => l.date).sort().pop(); return `${esc(t.label)} : ${ago(f)}`; }
   return "";
@@ -354,12 +356,12 @@ function programmeGroupPanel(id) {
   const inst = S().modules[id], c = inst.config, now = todayISO();
   const days = new Set(inst.entries.map(x => x.date)), cur = Math.min(52, +c.weeks || 12, Math.floor(diffDays(now, c.start) / 7) + 1), out = [];
   for (let w = 0; w < cur; w++) { let n = 0; for (let d = 0; d < 7; d++) if (days.has(addDaysTo(c.start, w * 7 + d))) n++; const den = +c.perWeek || 1; out.push({ name: `Semaine ${w + 1}`, pct: Math.min(100, Math.round(100 * n / den)), sub: `${n} sur ${den} séances` }); }
-  return `<section><h3 style="margin:0 0 4px">Par semaine</h3><p class="hint">Objectif : ${c.perWeek} séances par semaine, réglable dans Réglages.</p>
+  return `<section><h3 style="margin:0 0 4px">Par semaine</h3><p class="hint">Objectif : ${esc(c.perWeek)} séances par semaine, réglable dans Réglages.</p>
     <div class="rooms">${out.map(g => `<div class="room ${g.pct > 100 ? "over" : ""}"><div class="fill" style="height:${Math.min(100, g.pct)}%"></div><small>${esc(g.name)}</small><b>${g.pct} %</b><small>${esc(g.sub)}</small></div>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
 }
 VIEWS.programme = id => {
   const inst = S().modules[id], c = inst.config, now = todayISO();
-  if (!c.start) return `<h2>${esc(label(id))}</h2><p class="hint">Un protocole de ${c.weeks} semaines, une séance à la fois.</p><button class="btn acc" data-act="prog-start" data-mod="${id}">Commencer aujourd'hui</button> <a class="btn ghost" href="#reglages" data-act="goto-groups" data-mod="${id}">ou choisir une autre date</a>`;
+  if (!c.start) return `<h2>${esc(label(id))}</h2><p class="hint">Un protocole de ${esc(c.weeks)} semaines, une séance à la fois.</p><button class="btn acc" data-act="prog-start" data-mod="${esc(id)}">Commencer aujourd'hui</button> <a class="btn ghost" href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">ou choisir une autre date</a>`;
   const days = new Set(inst.entries.map(x => x.date)), W = Math.min(52, Math.max(1, Math.round(+c.weeks) || 12));
   const week = Math.min(W, Math.floor(diffDays(now, c.start) / 7) + 1);
   const pct = Math.min(100, Math.round(100 * (diffDays(now, c.start) + 1) / (W * 7)));
@@ -367,14 +369,14 @@ VIEWS.programme = id => {
   let cal = "";
   for (let w = 0; w < W; w++) { cal += `<span>S${w + 1}</span>`; for (let d = 0; d < 7; d++) { const day = addDaysTo(c.start, w * 7 + d); cal += `<i class="${days.has(day) ? "on" : ""} ${day === now ? "today" : ""} ${day > now ? "future" : ""}" title="${fmt(day)}"></i>`; } }
   const recent = [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12);
-  return `<div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="entry-add" data-mod="${id}">Noter une séance</button></div>
+  return `<div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">Noter une séance</button></div>
   <div class="two"><section>
     <div class="big">Semaine ${week} <span class="hint" style="font-size:1.1rem">sur ${W}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
     <p class="hint">${inst.entries.length} séances, ${total} ${esc(c.unitLabel)} au total, série actuelle de ${streakOf([...days])} jour(s).</p>
     <div class="cal">${cal}</div>
     <div style="margin-top:28px">${programmeGroupPanel(id)}</div>
   </section><section><h3>Journal</h3><p class="hint">Ce que le corps a fait, ce que la tête en a pensé.</p>
-    <ul class="plain">${recent.map(x => `<li class="item" data-id="${esc(x.id)}"><span></span><div>${fmt(x.date, { weekday: "short", day: "numeric", month: "short" })}, ${esc(x.value ?? "?")} ${esc(c.unitLabel)}${x.note ? `<div class="note" style="margin:2px 0 0">${esc(x.note)}</div>` : ""}</div><button class="btn ghost sm" data-act="entry-del" data-mod="${id}">suppr.</button></li>`).join("") || `<li class="empty">Aucune séance notée.</li>`}</ul>
+    <ul class="plain">${recent.map(x => `<li class="item" data-id="${esc(x.id)}"><span></span><div>${fmt(x.date, { weekday: "short", day: "numeric", month: "short" })}, ${esc(x.value ?? "?")} ${esc(c.unitLabel)}${x.note ? `<div class="note" style="margin:2px 0 0">${esc(x.note)}</div>` : ""}</div><button class="btn ghost sm" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune séance notée.</li>`}</ul>
   </section></div>`;
 };
 
@@ -394,25 +396,25 @@ VIEWS.cumul = id => {
   <div class="two"><section>
     <div class="big">${tot.toLocaleString("fr-FR")} <span class="hint" style="font-size:1.1rem">${esc(c.unitLabel)} sur ${(+c.goal).toLocaleString("fr-FR")}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
     <p class="hint">Dernière session ${ago(last)}. Série de ${streakOf(inst.entries.map(x => x.date))} jour(s).</p>
-    <div class="row"><input type="number" id="cumIn" min="1" placeholder="${esc(c.unitLabel)} aujourd'hui" style="max-width:200px" inputmode="numeric">${c.categories.length ? `<select id="cumCat" aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">Hors ${esc(c.categoryLabel).toLowerCase()}</option>${c.categories.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</select>` : ""}<button class="btn acc" data-act="entry-add" data-mod="${id}">Ajouter</button></div>
-    <div style="margin-top:28px">${c.categories.length ? cumulGroupPanel(id) : `<p class="hint">Ajoute des ${esc(c.categoryLabel).toLowerCase()}s dans <a href="#reglages" data-act="goto-groups" data-mod="${id}">Réglages</a> pour suivre chacune en pourcentage.</p>`}</div>
+    <div class="row"><input type="number" id="cumIn" min="1" placeholder="${esc(c.unitLabel)} aujourd'hui" style="max-width:200px" inputmode="numeric">${c.categories.length ? `<select id="cumCat" aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">Hors ${esc(c.categoryLabel).toLowerCase()}</option>${c.categories.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</select>` : ""}<button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">Ajouter</button></div>
+    <div style="margin-top:28px">${c.categories.length ? cumulGroupPanel(id) : `<p class="hint">Ajoute des ${esc(c.categoryLabel).toLowerCase()}s dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a> pour suivre chacune en pourcentage.</p>`}</div>
   </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">Une phrase qui passe, avant qu'elle ne reparte.</p>
-    <textarea id="scrapIn" rows="3" placeholder="…" aria-label="Nouveau"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-act="scrap-add" data-mod="${id}">Garder</button></div>
-    <ul class="plain" style="margin-top:14px">${[...inst.scraps].reverse().map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}</div></div><button class="btn ghost sm" data-act="scrap-del" data-mod="${id}">suppr.</button></li>`).join("") || `<li class="empty">Rien pour l'instant.</li>`}</ul>
+    <textarea id="scrapIn" rows="3" placeholder="…" aria-label="Nouveau"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-act="scrap-add" data-mod="${esc(id)}">Garder</button></div>
+    <ul class="plain" style="margin-top:14px">${[...inst.scraps].reverse().map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}</div></div><button class="btn ghost sm" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Rien pour l'instant.</li>`}</ul>
   </section>` : ""}</div>`;
 };
 
 VIEWS.rappels = id => {
   const inst = S().modules[id], c = inst.config, now = todayISO();
   const last = t => inst.entries.filter(l => l.type === t).map(l => l.date).sort().pop();
-  const line = t => { const l = last(t.id), due = t.every && (!l || diffDays(now, l) >= t.every); return `<div class="set"><span class="${due ? "late" : ""}">${esc(t.label)}</span><span class="hint" style="margin:0">${ago(l)}${t.every ? `, tous les ${t.every} j` : ""}</span><button class="btn sm" data-act="entry-log" data-mod="${id}" data-t="${esc(t.id)}">Fait aujourd'hui</button></div>`; };
+  const line = t => { const l = last(t.id), due = t.every && (!l || diffDays(now, l) >= t.every); return `<div class="set"><span class="${due ? "late" : ""}">${esc(t.label)}</span><span class="hint" style="margin:0">${ago(l)}${t.every ? `, tous les ${esc(t.every)} j` : ""}</span><button class="btn sm" data-act="entry-log" data-mod="${esc(id)}" data-t="${esc(t.id)}">Fait aujourd'hui</button></div>`; };
   const recent = [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
   return `<h2>${esc(label(id))}${c.subtitle ? ` <span class="hint" style="font-size:1.2rem">${esc(c.subtitle)}</span>` : ""}</h2>
   <div class="two"><section>
     ${c.types.map(line).join("")}
-    <div class="row" style="margin-top:14px"><input id="rapNote" placeholder="Observation…" aria-label="Observation"><button class="btn" data-act="entry-note" data-mod="${id}">Noter</button></div>
-    <p class="hint" style="margin-top:10px">Réglable dans <a href="#reglages" data-act="goto-groups" data-mod="${id}">Réglages</a>.</p>
-  </section><section><h3>Journal</h3><ul class="plain">${recent.map(l => `<li class="item" data-id="${esc(l.id)}"><span></span><div><span class="tag">${esc(l.type)}</span> ${fmt(l.date)}${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}</div><button class="btn ghost sm" data-act="entry-del" data-mod="${id}">suppr.</button></li>`).join("") || `<li class="empty">Aucune entrée.</li>`}</ul></section></div>`;
+    <div class="row" style="margin-top:14px"><input id="rapNote" placeholder="Observation…" aria-label="Observation"><button class="btn" data-act="entry-note" data-mod="${esc(id)}">Noter</button></div>
+    <p class="hint" style="margin-top:10px">Réglable dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a>.</p>
+  </section><section><h3>Journal</h3><ul class="plain">${recent.map(l => `<li class="item" data-id="${esc(l.id)}"><span></span><div><span class="tag">${esc(l.type)}</span> ${fmt(l.date)}${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}</div><button class="btn ghost sm" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune entrée.</li>`}</ul></section></div>`;
 };
 
 const MOTH_COLS = ["Idée", "Brouillon", "Prêt", "Publié"];
@@ -596,7 +598,7 @@ VIEWS.reglages = () => {
     <div class="field-row" style="margin-top:14px"><label>Mode<select data-set="config.mode"><option value="auto" ${c.mode === "auto" ? "selected" : ""}>Suivre l'appareil</option><option value="dark" ${c.mode === "dark" ? "selected" : ""}>Toujours sombre</option><option value="light" ${c.mode === "light" ? "selected" : ""}>Toujours clair</option></select></label>
     <label>Nom affiché<input data-set="config.name" value="${esc(c.name)}"></label></div></section>
   <section><h3>Modules</h3><p class="hint">Active, renomme, réordonne. Les modules personnalisés (marqués ✕) peuvent être supprimés définitivement.</p>
-    ${c.modules.map((m, i) => `<div class="set" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="Activer ${esc(label(m.id))}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="Nom du module"><div class="row">${s.modules[m.id] ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${m.id}" aria-label="Supprimer définitivement" title="Supprimer définitivement">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="Descendre">↓</button></div></div>`).join("")}
+    ${c.modules.map((m, i) => `<div class="set" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="Activer ${esc(label(m.id))}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="Nom du module"><div class="row">${s.modules[m.id] ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="Supprimer définitivement" title="Supprimer définitivement">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="Descendre">↓</button></div></div>`).join("")}
     <details style="margin-top:14px"><summary class="hint" style="cursor:pointer;margin:0">+ Créer un module</summary>
       <div class="field-row" style="margin-top:10px"><label>Type<select id="newModType">${Object.entries(MODULE_TYPES).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</select></label>
       <label>Nom<input id="newModName" placeholder="ex. Lecture, Sport, Méditation…"></label></div>
@@ -605,7 +607,7 @@ VIEWS.reglages = () => {
   <section id="modreg"><h3>Réglages par module</h3><p class="hint">Un bloc par module actif, dans l'ordre de la navigation : ses réglages propres, et le regroupement en pourcentage quand il existe.</p>
     ${c.modules.filter(m => enabled(m.id) && (s.modules[m.id] || GROUPERS[m.id])).map(m => { const mod = m.id, inst = s.modules[mod], G = !inst && GROUPERS[mod], g = G ? gcfg(mod) : null;
       const names = G && G.renamable.includes(g.by) ? [...new Set(G.items().map(it => it[g.by]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr")) : [];
-      return `<details id="mreg-${mod}" data-mod="${mod}" style="border-top:1px solid var(--rule);padding:12px 0">
+      return `<details id="mreg-${esc(mod)}" data-mod="${esc(mod)}" style="border-top:1px solid var(--rule);padding:12px 0">
         <summary style="cursor:pointer;font-size:1.05rem;font-weight:600">${esc(label(mod))}</summary>
         <div style="margin-top:10px">
         ${inst ? instanceFields(mod) : ""}
@@ -624,9 +626,9 @@ VIEWS.reglages = () => {
     <div class="field-row"><label>Clé API Anthropic (hébergé uniquement)<input type="password" data-act="as-key" value="${getKey() ? "••••••••" : ""}" placeholder="sk-ant-…" autocomplete="off"></label>
     <label>Modèle<select data-act="as-model">${[["claude-haiku-4-5-20251001", "Haiku 4.5, rapide et peu cher"], ["claude-sonnet-5", "Sonnet 5, équilibré"], ["claude-opus-5-5", "Opus 5.5, le plus capable"]].map(([k, l]) => `<option value="${k}" ${s.config.assistant.model === k ? "selected" : ""}>${l}</option>`).join("")}</select></label></div>
     <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" data-act="as-actions" ${s.config.assistant.actions ? "checked" : ""}>Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)</label>
-    <p class="hint" style="margin:12px 0 4px">Ce que Claude peut lire :</p><div class="row">${Object.keys(s.config.assistant.share).filter(enabled).map(k => `<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" data-act="as-share" data-k="${k}" ${s.config.assistant.share[k] ? "checked" : ""}>${esc(label(k))}</label>`).join("")}</div>
+    <p class="hint" style="margin:12px 0 4px">Ce que Claude peut lire :</p><div class="row">${Object.keys(s.config.assistant.share).filter(enabled).map(k => `<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" data-act="as-share" data-k="${esc(k)}" ${s.config.assistant.share[k] ? "checked" : ""}>${esc(label(k))}</label>`).join("")}</div>
     ${getKey() ? `<button class="btn ghost sm" data-act="as-forget" style="margin-top:10px">Oublier la clé sur cet appareil</button>` : ""}</section>` : ""}
-  ${hosted() && authReady() && authSession ? `<section><h3>Compte</h3><p class="hint">Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils.</p>
+  ${hosted() && authReady() && authSession ? `<section><h3>Compte</h3><p class="hint">Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données, la conversation avec l'assistant et la clé API.</p>
     <button class="btn ghost" data-act="auth-out">Se déconnecter</button></section>` : ""}
   <section><h3>Sauvegarde</h3><p class="hint">Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.</p>
     <div class="row"><button class="btn" data-act="exp">Exporter</button><label class="btn" style="display:inline-block;font-weight:500">Importer<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label></div></section>`;
@@ -653,7 +655,7 @@ function render() {
   $("#miniMoon").innerHTML = moonSVG(m.p, 40);
   $("#dateline").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
   const links = [["accueil", "Accueil"], ...s.config.modules.filter(x => x.on).map(x => [x.id, label(x.id)]), ["reglages", "Réglages"]];
-  $("#nav").innerHTML = links.map(([id, l]) => `<a href="#${id}" class="${id === view ? "on" : ""}">${esc(l)}${id === "inbox" && s.inbox.items.length ? ` (${s.inbox.items.length})` : ""}</a>`).join("");
+  $("#nav").innerHTML = links.map(([id, l]) => `<a href="#${esc(id)}" class="${id === view ? "on" : ""}">${esc(l)}${id === "inbox" && s.inbox.items.length ? ` (${s.inbox.items.length})` : ""}</a>`).join("");
   const ae = document.activeElement, focused = ae && ae.dataset && (ae.dataset.set || (ae.tagName === "INPUT" && ae.type !== "checkbox" && ae.closest && (ae.closest("#groupes") || ae.closest("#assistant-cfg"))));
   if (focused && view === "reglages") return; // ne pas casser la saisie en cours
   const keep = {}; let focusId = null, caret = null;

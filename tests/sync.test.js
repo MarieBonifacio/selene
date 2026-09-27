@@ -136,3 +136,23 @@ test('importing a backup replaces the account state instead of merging into it',
   await edit(a, 'board', d => d.tasks.push(task('t4', 'Après')));
   same(server.rows.get('u1').board.tasks.map(t => t.title), ['Restauré', 'Après'], 'back to normal merging afterwards');
 });
+
+test('an outdated app never merges into data written by a newer schema', async () => {
+  const { server, a } = await twoDevices();
+  server.rows.get('u1').site.schemaVersion = 99; // un appareil déjà mis à jour vers un futur format
+  const patches = server.calls.filter(c => c.startsWith('PATCH')).length;
+  a.site.data.inbox.items.push({ id: 'i1', text: 'x', date: '2026-09-27' }); a.site.save(); clearTimeout(a.site.timer); a.site.timer = null;
+  assert.equal(await a.site.sync(), false);
+  assert.equal(server.calls.filter(c => c.startsWith('PATCH')).length, patches, 'nothing written');
+  assert.match(a.nodes.get('#saving').textContent, /recharge la page/);
+  assert.equal(JSON.parse(a.storage.get('selene-site-v1')).inbox.items.length, 1, 'local edit kept for later');
+});
+
+test('signing out removes the chat history and the API key from the device', async () => {
+  const { a } = await twoDevices();
+  a.storage.set('selene-chat', '[{"role":"user","content":"secret"}]');
+  a.storage.set('selene-api-key', 'sk-ant-xxx');
+  await a.authSignOut();
+  assert.equal(a.storage.get('selene-chat'), undefined);
+  assert.equal(a.storage.get('selene-api-key'), undefined);
+});

@@ -23,6 +23,7 @@ function makeStore(key, path, seed) {
       prefetched = null;
       if (s.db !== db) return; // déconnecté pendant l'attente (déconnexion, changement de compte)
       const remote = snap.exists ? snap.data() : null, local = clone(s.data), force = s.force;
+      if (remote && (remote.schemaVersion || 0) > SCHEMA_VERSION) throw Object.assign(new Error("Données au format plus récent"), { stale: true });
       let merged = force ? local : mergeDocs(s.base, local, remote); // import de sauvegarde : on remplace, on ne fusionne pas
       if (remote && deepEqual({ ...merged, updatedAt: 0 }, { ...remote, updatedAt: 0 })) merged = remote; // rien de neuf à envoyer
       else {
@@ -54,8 +55,9 @@ function makeStore(key, path, seed) {
         do { s.again = false; await syncOnce(db, prefetched); prefetched = null; } while (s.again && s.db === db);
         setSaving("");
         return true;
-      } catch {
-        setSaving("Non synchronisé — enregistré sur cet appareil seulement");
+      } catch (e) {
+        setSaving(e.stale ? "Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser"
+          : "Non synchronisé — enregistré sur cet appareil seulement");
         return false;
       } finally { s.syncing = null; }
     })();

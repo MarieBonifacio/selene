@@ -18,9 +18,13 @@ function authPersist(s) {
   try { if (s) localStorage.setItem(AUTH_KEY, JSON.stringify(s)); else localStorage.removeItem(AUTH_KEY); } catch {}
 }
 const LAST_UID_KEY = "selene-auth-last-uid";
+/* Déconnexion ou changement de compte : rien de la personne précédente ne doit rester sur l'appareil —
+   ni ses données, ni sa conversation avec l'assistant, ni sa clé API (facturée à elle). */
+const PERSONAL_KEYS = ["selene-chat", "selene-api-key"];
 function authResetLocal() {
   board.reset({ updatedAt: 0, tasks: [] });
   site.reset(siteSeed());
+  try { for (const k of PERSONAL_KEYS) localStorage.removeItem(k); } catch {}
 }
 function authTimeout(ms = 10000) { const c = new AbortController(); setTimeout(() => c.abort(), ms); return c.signal; }
 async function authApi(path, opts = {}) {

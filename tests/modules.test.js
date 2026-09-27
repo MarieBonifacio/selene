@@ -164,3 +164,13 @@ test('fixed views win over a colliding module id already present in stored data'
   app.render(); // ne doit pas planter sur Object.prototype.constructor
   assert.match(app.nodes.get('#main').innerHTML, /Accueil|lune/i);
 });
+
+test('journal entries reject non-numeric values instead of storing NaN', () => {
+  const app = launch(new Map());
+  const d = app.S();
+  assert.throws(() => app.addJournalEntry(d.modules.kundalini, { date: '2026-09-27', value: 'beaucoup' }, 'e1', '2026-09-27'), /invalide/);
+  assert.equal(d.modules.kundalini.entries.length, 0);
+  app.addJournalEntry(d.modules.ecriture, { date: '2026-09-27', value: -300 }, 'e2', '2026-09-27'); // retirer des mots coupés
+  assert.equal(d.modules.ecriture.entries[0].value, -300);
+  assert.equal(d.schemaVersion, 2);
+});
