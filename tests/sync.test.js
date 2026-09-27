@@ -6,11 +6,11 @@ const { fakeSupabase, launchHosted, settle, clone } = require('./hosted-harness'
 const same = (actual, expected, msg) => assert.deepEqual(clone(actual), clone(expected), msg);
 
 // Deux appareils du même compte, branchés sur le même serveur. A démarre d'abord (serveur vide).
-async function twoDevices() {
+async function twoDevices(opts = {}) {
   const server = fakeSupabase();
   const a = launchHosted({ fetch: server.fetch });
   await settle();
-  const b = launchHosted({ fetch: server.fetch });
+  const b = launchHosted({ fetch: server.fetch, bare: opts.bareB });
   await settle();
   return { server, a, b };
 }
@@ -25,7 +25,7 @@ const task = (id, title) => ({ id, title, room: '', cat: 'Bricolage', due: null,
 const titles = dev => dev.site.data.modules.chantier.entries.map(t => t.title).sort();
 
 test('a fresh device adopts the server as is, without duplicating seeded items', async () => {
-  const { server, a, b } = await twoDevices();
+  const { server, a, b } = await twoDevices({ bareB: true }); // B : un vrai appareil neuf, données de départ réelles
   const remote = server.rows.get('u1').site;
   const ids = dev => dev.modules.musique.entries.map(x => x.id);
   assert.ok(ids(remote).length > 0, 'first device seeded the server');

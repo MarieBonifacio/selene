@@ -302,6 +302,32 @@ function createModuleInstance(modules, type, name, id) {
   if (!Object.hasOwn(MODULE_TYPES, type)) throw new Error("Type de module inconnu");
   return (modules[id] = { type, label, ...MODULE_TYPES[type].defaults() });
 }
+/* Modèles proposés au premier lancement et à la création : un type et quelques réglages de départ.
+   Génériques par principe (aucun contenu personnel) ; `hint` dit à quoi il sert. */
+const MODULE_TEMPLATES = [
+  { id: "taches", name: "Tâches", type: "taches", hint: "Échéances, étapes, et trois tâches du jour au plus" },
+  { id: "protocole", name: "Protocole", type: "programme", hint: "Une pratique sur N semaines, un calendrier, un objectif hebdomadaire" },
+  { id: "ecriture", name: "Écriture", type: "cumul", hint: "Un compteur de mots, des chapitres, un carnet de fragments",
+    config: { unitLabel: "mots", goal: 50000, categoryLabel: "Chapitre", scraps: true, scrapsLabel: "Fragments" } },
+  { id: "budget", name: "Budget", type: "budget", hint: "Dépenses et revenus du mois, des enveloppes à plafond",
+    config: { envelopes: [{ id: "courses", name: "Courses", limit: 300 }, { id: "loisirs", name: "Loisirs", limit: 100 }] } },
+  { id: "tableau", name: "Tableau de production", type: "collection", hint: "Des idées qui avancent de colonne en colonne jusqu'à publication",
+    config: { display: "colonnes", statuses: ["Idée", "En cours", "Prêt", "Publié"], doneFrom: 3, statusLabel: "Étape", addLabel: "Nouvelle idée",
+      fields: { title: "Titre", subtitle: "", tag: "Thème", due: "Date prévue", text: "Texte" } } },
+  { id: "decouvertes", name: "À découvrir", type: "collection", hint: "Livres, albums, films : une liste à statuts",
+    config: { display: "liste", statuses: ["À découvrir", "Découvert", "Retenu"], doneFrom: 1, addLabel: "Ajouter",
+      fields: { title: "Titre", subtitle: "Auteur", tag: "Genre", due: "", text: "Note" } } },
+  { id: "rappels", name: "Soins", type: "rappels", hint: "Des gestes récurrents et depuis quand ils attendent",
+    config: { types: [{ id: "arrosage", label: "Arrosage", every: 3 }] } },
+  { id: "carnet", name: "Carnet", type: "notes", hint: "Des notes datées, gardées ou rangées ailleurs ensuite" }
+];
+/* Crée un module depuis un modèle : les réglages du modèle complètent ceux du type (un niveau de profondeur). */
+function createFromTemplate(modules, tpl, name, id) {
+  const inst = createModuleInstance(modules, tpl.type, name, id);
+  for (const [k, v] of Object.entries(JSON.parse(JSON.stringify(tpl.config || {}))))
+    inst.config[k] = v && typeof v === "object" && !Array.isArray(v) && inst.config[k] && typeof inst.config[k] === "object" ? { ...inst.config[k], ...v } : v;
+  return inst;
+}
 function deleteModuleInstance(modules, moduleList, id) {
   if (!Object.hasOwn(modules, id)) throw new Error("Module introuvable");
   delete modules[id];

@@ -6,7 +6,8 @@ const vm = require('node:vm');
 const html = fs.readFileSync('selene.html', 'utf8');
 const script = html.match(/<script>\s*([\s\S]*?)<\/script>/)[1];
 
-function launch(storage, { claude = null } = {}) {
+function launch(storage, { claude = null, bare = false } = {}) {
+  if (!bare && !storage.has('selene-site-v1')) storage.set('selene-site-v1', fs.readFileSync('tests/fixtures/site-demo.json', 'utf8')); // jeu d'essai riche
   const nodes = new Map();
   const element = id => {
     if (!nodes.has(id)) nodes.set(id, {
@@ -29,7 +30,7 @@ function launch(storage, { claude = null } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed };\n})();');
   vm.runInNewContext(instrumented, context);
   return { ...context.__test, nodes, location, document };
 }
@@ -397,4 +398,53 @@ test('budget: renaming a group renames its envelope, the assistant writes into t
   assert.ok(app.availableTools().some(t => t.name === 'ajouter_operation'));
   app.TOOLS.find(t => t.name === 'ajouter_operation').execute({ montant: 7 });
   assert.equal(b.entries.length, 2);
+});
+
+test('a new account starts nearly empty, with nothing personal, and is offered templates', () => {
+  const app = launch(new Map(), { bare: true, claude: { use: async () => null } });
+  const d = app.S(), text = JSON.stringify(d);
+  assert.deepEqual(Object.keys(d.modules), ['inbox']);
+  for (const personal of ['spectre dissociatif', 'Ulver', 'Phidippus', 'Kundalini', 'october.moth']) assert.ok(!text.includes(personal), personal);
+  assert.equal(d.config.welcome, true);
+  app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /Composer ton espace/);
+  app.CLICK['tpl-add']({ dataset: { tpl: 'ecriture' } });
+  app.CLICK['tpl-add']({ dataset: { tpl: 'ecriture' } });
+  assert.ok(d.modules.ecriture && d.modules['ecriture-2'], 'a template can be added twice');
+  assert.equal(d.modules.ecriture.config.scraps, true); assert.equal(d.modules.ecriture.config.unitLabel, 'mots');
+  assert.equal(d.config.assistant.share.ecriture, true);
+  app.CLICK['welcome-done']();
+  app.render();
+  assert.doesNotMatch(app.nodes.get('#main').innerHTML, /Composer ton espace/);
+});
+
+test('existing accounts never see the welcome block (it is not a missing default)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } }); // compte existant (jeu d'essai)
+  assert.equal(app.S().config.welcome, undefined);
+  app.render();
+  assert.doesNotMatch(app.nodes.get('#main').innerHTML, /Composer ton espace/);
+});
+
+test('every template builds a module that passes its own backup validation', () => {
+  const app = launch(new Map(), { bare: true });
+  const d = app.S();
+  for (const tpl of app.MODULE_TEMPLATES) {
+    assert.ok(app.MODULE_TYPES[tpl.type], tpl.id);
+    const id = app.slugId(tpl.name, Object.keys(d.modules));
+    app.createFromTemplate(d.modules, tpl, tpl.name, id);
+    d.config.modules.push({ id, on: true });
+  }
+  app.site.replaceAll(JSON.parse(JSON.stringify(d))); // passe par la normalisation
+  const parsed = app.parseBackup(app.createBackup(app.board.data, app.site.data));
+  assert.equal(Object.keys(parsed.site.modules).length, app.MODULE_TEMPLATES.length + 1);
+  // Le modèle complète les réglages du type sans les écraser.
+  const tab = Object.values(parsed.site.modules).find(m => m.label === 'Tableau de production');
+  assert.equal(tab.config.fields.title, 'Titre'); assert.equal(tab.config.display, 'colonnes'); assert.equal(tab.config.groups.by, 'tag');
+});
+
+test('the seed stays pristine: a fresh device adopts the server instead of merging', () => {
+  const app = launch(new Map(), { bare: true });
+  const a = app.siteSeed(), b = app.siteSeed();
+  assert.equal(a.updatedAt, 0);
+  assert.deepEqual(JSON.parse(JSON.stringify(a)), JSON.parse(JSON.stringify(b)), 'no random ids in the seed');
 });

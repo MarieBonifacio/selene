@@ -23,6 +23,8 @@ Les données de l'app installée sont séparées de celles de Safari : exporter 
 
 ## Modules
 
+Un compte neuf part presque vide (une boîte de réception) : l'accueil propose des **modèles** (tâches, protocole, écriture, budget, tableau de production, liste « à découvrir », soins, carnet), à ajouter autant de fois qu'on veut. Ces modèles restent disponibles dans « + Créer un module », à côté des types vides.
+
 Réglages → Modules : activer, renommer, réordonner, supprimer, et « + Créer un module ». Chaque module est une instance de l'un de ces types (l'exemple entre parenthèses est le module d'origine) ; seul l'Assistant est une fonction, activable, sans données propres.
 
   - *Programme* : un protocole de N semaines, un calendrier et un objectif de séances par semaine (ex. Kundalini) ;

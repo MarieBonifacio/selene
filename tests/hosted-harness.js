@@ -5,6 +5,8 @@ const vm = require('node:vm');
 
 const html = fs.readFileSync('index.html', 'utf8');
 const script = html.match(/<script>\s*([\s\S]*?)<\/script>/)[1];
+// Jeu d'essai riche (les modules d'origine) : les vrais comptes neufs partent presque vides.
+const DEMO = fs.readFileSync('tests/fixtures/site-demo.json', 'utf8');
 const clone = o => JSON.parse(JSON.stringify(o));
 const reply = (status, body) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
 const settle = (ms = 30) => new Promise(r => setTimeout(r, ms));
@@ -44,7 +46,8 @@ function fakeSupabase() {
   return server;
 }
 
-function launchHosted({ storage = new Map(), fetch, session = 'valid' } = {}) {
+function launchHosted({ storage = new Map(), fetch, session = 'valid', bare = false } = {}) {
+  if (!bare && !storage.has('selene-site-v1')) storage.set('selene-site-v1', DEMO);
   if (session) {
     const expires_at = Math.floor(Date.now() / 1000) + (session === 'valid' ? 3600 : -60);
     storage.set('selene-auth-session', JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at, user: USER }));

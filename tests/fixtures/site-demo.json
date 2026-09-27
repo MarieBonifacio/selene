@@ -1,0 +1,315 @@
+{
+  "updatedAt": 0,
+  "schemaVersion": 6,
+  "boardMerged": true,
+  "config": {
+    "name": "Selene",
+    "palette": "nigredo",
+    "mode": "auto",
+    "labels": {},
+    "groups": {},
+    "modules": [
+      {
+        "id": "chantier",
+        "on": true
+      },
+      {
+        "id": "kundalini",
+        "on": true
+      },
+      {
+        "id": "ecriture",
+        "on": true
+      },
+      {
+        "id": "moth",
+        "on": true
+      },
+      {
+        "id": "phidippus",
+        "on": true
+      },
+      {
+        "id": "musique",
+        "on": true
+      },
+      {
+        "id": "budget",
+        "on": true
+      },
+      {
+        "id": "assistant",
+        "on": false
+      },
+      {
+        "id": "inbox",
+        "on": true
+      }
+    ],
+    "assistant": {
+      "model": "claude-sonnet-5",
+      "actions": true,
+      "share": {
+        "chantier": true,
+        "kundalini": true,
+        "ecriture": true,
+        "moth": true,
+        "phidippus": true,
+        "musique": true,
+        "budget": false,
+        "inbox": true
+      }
+    }
+  },
+  "modules": {
+    "kundalini": {
+      "type": "programme",
+      "label": "Kundalini",
+      "config": {
+        "unitLabel": "min",
+        "start": null,
+        "weeks": 12,
+        "perWeek": 5
+      },
+      "entries": []
+    },
+    "ecriture": {
+      "type": "cumul",
+      "label": "Écriture",
+      "config": {
+        "unitLabel": "mots",
+        "goal": 40000,
+        "title": "La spiritualité du spectre dissociatif",
+        "categories": [],
+        "categoryLabel": "Chapitre",
+        "scraps": true,
+        "scrapsLabel": "Fragments"
+      },
+      "entries": [],
+      "scraps": []
+    },
+    "phidippus": {
+      "type": "rappels",
+      "label": "Phidippus",
+      "config": {
+        "subtitle": "",
+        "types": [
+          {
+            "id": "repas",
+            "label": "Repas",
+            "every": 6
+          },
+          {
+            "id": "brumisation",
+            "label": "Brumisation",
+            "every": 3
+          },
+          {
+            "id": "mue",
+            "label": "Mue",
+            "every": 0
+          }
+        ]
+      },
+      "entries": []
+    },
+    "chantier": {
+      "type": "taches",
+      "label": "Chantier",
+      "config": {
+        "groupLabel": "Pièce",
+        "catLabel": "Type",
+        "cats": [
+          "Bricolage",
+          "Administratif",
+          "Achat",
+          "Artisan",
+          "Rangement",
+          "Ménage"
+        ],
+        "costs": true,
+        "groups": {
+          "on": true,
+          "by": "room",
+          "sort": "name",
+          "hideDone": false,
+          "title": ""
+        }
+      },
+      "entries": []
+    },
+    "moth": {
+      "type": "collection",
+      "label": "october.moth",
+      "config": {
+        "display": "colonnes",
+        "description": "",
+        "statuses": [
+          "Idée",
+          "Brouillon",
+          "Prêt",
+          "Publié"
+        ],
+        "doneFrom": 3,
+        "statusLabel": "Étape",
+        "addLabel": "Nouvelle idée de post",
+        "fields": {
+          "title": "Titre ou accroche",
+          "subtitle": "",
+          "tag": "Thème, archétype",
+          "due": "Publication prévue",
+          "text": "Légende"
+        },
+        "groups": {
+          "on": true,
+          "sort": "name",
+          "hideDone": false,
+          "title": "",
+          "by": "tag"
+        }
+      },
+      "entries": []
+    },
+    "musique": {
+      "type": "collection",
+      "label": "Musique",
+      "config": {
+        "display": "liste",
+        "description": "Albums de l'éveil, et artistes dont la mue stylistique fait elle-même le récit d'une transformation.",
+        "statuses": [
+          "À écouter",
+          "Écouté",
+          "Retenu"
+        ],
+        "doneFrom": 1,
+        "statusLabel": "Statut",
+        "addLabel": "Ajouter un album",
+        "fields": {
+          "title": "Artiste",
+          "subtitle": "Album",
+          "tag": "",
+          "due": "",
+          "text": "Note"
+        },
+        "groups": {
+          "on": true,
+          "sort": "name",
+          "hideDone": false,
+          "title": "",
+          "by": "title"
+        }
+      },
+      "entries": [
+        {
+          "id": "wp9p111x",
+          "title": "Ulver",
+          "subtitle": "",
+          "tag": "",
+          "due": "",
+          "text": "",
+          "status": "À écouter"
+        },
+        {
+          "id": "120h7yih",
+          "title": "Dead Can Dance",
+          "subtitle": "",
+          "tag": "",
+          "due": "",
+          "text": "",
+          "status": "À écouter"
+        },
+        {
+          "id": "ikos4h9y",
+          "title": "Kate Bush",
+          "subtitle": "",
+          "tag": "",
+          "due": "",
+          "text": "",
+          "status": "À écouter"
+        },
+        {
+          "id": "3bcj64kd",
+          "title": "Jonathan Hultén",
+          "subtitle": "",
+          "tag": "",
+          "due": "",
+          "text": "",
+          "status": "À écouter"
+        },
+        {
+          "id": "3dcgh83l",
+          "title": "Chelsea Wolfe",
+          "subtitle": "",
+          "tag": "",
+          "due": "",
+          "text": "",
+          "status": "À écouter"
+        },
+        {
+          "id": "qnj8q6fs",
+          "title": "Zola Jesus",
+          "subtitle": "",
+          "tag": "",
+          "due": "",
+          "text": "",
+          "status": "À écouter"
+        },
+        {
+          "id": "yhh0rql8",
+          "title": "iamamiwhoami",
+          "subtitle": "",
+          "tag": "",
+          "due": "",
+          "text": "",
+          "status": "À écouter"
+        }
+      ]
+    },
+    "inbox": {
+      "type": "notes",
+      "label": "Capture",
+      "config": {
+        "inbox": true,
+        "description": "Tout ce qui traîne dans ta tête, en attendant d'avoir une place.",
+        "placeholder": "Une idée, une course, un rêve…"
+      },
+      "entries": []
+    },
+    "budget": {
+      "type": "budget",
+      "label": "Budget",
+      "config": {
+        "envelopes": [
+          {
+            "id": "8780838d",
+            "name": "Travaux",
+            "limit": 500
+          },
+          {
+            "id": "0uyt0t5y",
+            "name": "Courses",
+            "limit": 300
+          },
+          {
+            "id": "tdrzrnz9",
+            "name": "Loisirs",
+            "limit": 100
+          },
+          {
+            "id": "ee3019nl",
+            "name": "Abonnements",
+            "limit": 50
+          }
+        ],
+        "groups": {
+          "on": true,
+          "sort": "name",
+          "hideDone": false,
+          "title": "",
+          "by": "cat"
+        }
+      },
+      "entries": []
+    }
+  }
+}

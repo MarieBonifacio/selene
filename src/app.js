@@ -17,27 +17,18 @@ function setSaving(t) { $("#saving").textContent = t; }
 const MODULE_DEFS = {
   assistant: "Assistant"
 };
-const MODULE_ORDER = ["chantier", "kundalini", "ecriture", "moth", "phidippus", "musique", "budget", "assistant", "inbox"];
 const OFF_BY_DEFAULT = ["assistant"];
 const money = n => (+n || 0).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+/* Données de départ d'un compte neuf : presque rien, et rien de personnel. L'accueil propose ensuite des
+   modèles (MODULE_TEMPLATES). Doivent rester « vierges » (updatedAt 0, pas d'identifiant aléatoire) :
+   un appareil vierge adopte le serveur tel quel au lieu de fusionner. */
 function siteSeed() {
-  const modules = {
-    kundalini: { type: "programme", label: "Kundalini", config: { unitLabel: "min", start: null, weeks: 12, perWeek: 5 }, entries: [] },
-    ecriture: { type: "cumul", label: "Écriture", config: { unitLabel: "mots", goal: 40000, title: "La spiritualité du spectre dissociatif", categories: [], categoryLabel: "Chapitre", scraps: true, scrapsLabel: "Fragments" }, entries: [], scraps: [] },
-    phidippus: { type: "rappels", label: "Phidippus", config: { subtitle: "", types: [{ id: "repas", label: "Repas", every: 6 }, { id: "brumisation", label: "Brumisation", every: 3 }, { id: "mue", label: "Mue", every: 0 }] }, entries: [] },
-    chantier: boardToModule([]),
-    moth: SECTION_TO_MODULE.moth({ posts: [] }),
-    musique: SECTION_TO_MODULE.musique({ albums: ["Ulver", "Dead Can Dance", "Kate Bush", "Jonathan Hultén", "Chelsea Wolfe", "Zola Jesus", "iamamiwhoami"]
-      .map(a => ({ id: uid(), artist: a, album: "", status: "À écouter", note: "" })) }),
-    inbox: SECTION_TO_MODULE.inbox({ items: [] }),
-    budget: SECTION_TO_MODULE.budget({ entries: [], envelopes: [["Travaux", 500], ["Courses", 300], ["Loisirs", 100], ["Abonnements", 50]].map(([name, limit]) => ({ id: uid(), name, limit })) })
-  };
   return {
     updatedAt: 0, schemaVersion: SCHEMA_VERSION, boardMerged: true,
-    config: { name: "Selene", palette: "nigredo", mode: "auto", labels: {}, groups: {},
-      modules: MODULE_ORDER.map(id => ({ id, on: !OFF_BY_DEFAULT.includes(id) })),
-      assistant: { model: "claude-sonnet-5", actions: true, share: { chantier: true, kundalini: true, ecriture: true, moth: true, phidippus: true, musique: true, budget: false, inbox: true } } },
-    modules
+    config: { name: "Selene", palette: "nigredo", mode: "auto", labels: {}, groups: {}, welcome: true,
+      modules: [{ id: "inbox", on: true }, { id: "assistant", on: !OFF_BY_DEFAULT.includes("assistant") }],
+      assistant: { model: "claude-sonnet-5", actions: true, share: { inbox: true } } },
+    modules: { inbox: SECTION_TO_MODULE.inbox({ items: [] }) }
   };
 }
 /* ================= moon ================= */
@@ -116,10 +107,11 @@ function normalizeSite(d) {
   migrateModules(d);
   if ((d.schemaVersion || 1) < SCHEMA_VERSION) d.schemaVersion = SCHEMA_VERSION;
   for (const k of Object.keys(seed)) if (d[k] == null) d[k] = seed[k];
-  for (const k of Object.keys(seed.config)) if (d.config[k] == null) d.config[k] = seed.config[k];
+  // « welcome » n'est pas un réglage manquant : il n'existe que pour les comptes créés avec ce bloc d'accueil.
+  for (const k of Object.keys(seed.config)) if (k !== "welcome" && d.config[k] == null) d.config[k] = seed.config[k];
   for (const id of Object.keys(MODULE_DEFS)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: !OFF_BY_DEFAULT.includes(id) });
   for (const id of Object.keys(d.modules)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: true });
-  for (const k of Object.keys(seed)) if (k !== "modules" && typeof seed[k] === "object" && !Array.isArray(seed[k])) for (const f of Object.keys(seed[k])) if (d[k][f] == null) d[k][f] = seed[k][f];
+  for (const k of Object.keys(seed)) if (k !== "modules" && k !== "config" && typeof seed[k] === "object" && !Array.isArray(seed[k])) for (const f of Object.keys(seed[k])) if (d[k][f] == null) d[k][f] = seed[k][f];
   for (const inst of Object.values(d.modules)) if (Object.hasOwn(MODULE_TYPES, inst.type) && MODULE_TYPES[inst.type].normalize) MODULE_TYPES[inst.type].normalize(inst);
   const inbox = inboxId(d.modules); // une seule boîte de réception, même après une fusion entre appareils
   for (const [id, inst] of Object.entries(d.modules)) if (inst.type === "notes" && inst.config.inbox && id !== inbox) inst.config.inbox = false;
@@ -214,6 +206,9 @@ VIEWS.accueil = () => {
   const inbox = inboxId(s.modules), pending = inbox ? s.modules[inbox].entries.length : 0;
   const rows = s.config.modules.filter(x => x.on && x.id !== inbox).map(x => `<a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}</span><em class="hint" style="margin:0">ouvrir</em></a>`).join("");
   return `
+  ${s.config.welcome ? `<section><h2>Composer ton espace</h2><p class="hint">Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.</p>
+    ${MODULE_TEMPLATES.map(t => `<div class="set" style="grid-template-columns:1fr auto"><div><b>${esc(t.name)}</b><div class="hint" style="margin:2px 0 0">${esc(t.hint)}</div></div><button class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}">Ajouter</button></div>`).join("")}
+    <div class="row" style="margin-top:12px"><button class="btn acc" data-act="welcome-done">C'est bon</button></div></section>` : ""}
   <section class="hero">${forestSVG(m.p)}<div class="txt">
     <div class="phase">${m.name}</div>
     <p>Éclairée à ${Math.round(m.illum * 100)} %, jour ${Math.floor(m.age) + 1} du cycle. ${m.p < .5 ? `Pleine lune dans ${m.nextFull} j.` : `Nouvelle lune dans ${m.nextNew} j.`}</p>
@@ -224,7 +219,7 @@ VIEWS.accueil = () => {
         ${tod.map(([id, t]) => taskHTML(id, t)).join("")}
         ${alerts.map(a => `<li class="item"><span></span><div>${a.text}</div>${a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">voir</a>` : a.quick ? `<button class="btn ghost sm" data-act="entry-add" data-mod="${esc(a.quick)}">noter</button>` : ""}</li>`).join("")}
       </ul>
-      ${!tod.length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : ""}
+      ${!tod.length ? (taskModules().length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : `<p class="empty">Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.</p>`) : ""}
     </section>
     <section><h2>Capturer</h2><p class="hint">Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.</p>
       ${inbox ? `<div class="capture"><input id="capIn" placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="Capture rapide"><button class="btn acc" data-act="cap-add">Garder</button></div>
@@ -257,8 +252,8 @@ VIEWS.reglages = () => {
   <section><h3>Modules</h3><p class="hint">Active, renomme, réordonne. Les modules personnalisés (marqués ✕) peuvent être supprimés définitivement.</p>
     ${c.modules.map((m, i) => `<div class="set" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="Activer ${esc(label(m.id))}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="Nom du module"><div class="row">${s.modules[m.id] ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="Supprimer définitivement" title="Supprimer définitivement">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="Descendre">↓</button></div></div>`).join("")}
     <details style="margin-top:14px"><summary class="hint" style="cursor:pointer;margin:0">+ Créer un module</summary>
-      <div class="field-row" style="margin-top:10px"><label>Type<select id="newModType">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${k}">${esc(t.label)}</option>`).join("")}</select></label>
-      <label>Nom<input id="newModName" placeholder="ex. Lecture, Sport, Méditation…"></label></div>
+      <div class="field-row" style="margin-top:10px"><label>Modèle ou type<select id="newModType"><optgroup label="Modèles">${MODULE_TEMPLATES.map(t => `<option value="tpl:${esc(t.id)}">${esc(t.name)} — ${esc(t.hint)}</option>`).join("")}</optgroup><optgroup label="Types vides">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}">${esc(t.label)}</option>`).join("")}</optgroup></select></label>
+      <label>Nom<input id="newModName" placeholder="Nom du modèle si vide"></label></div>
       <button class="btn sm" data-act="mod-add" style="margin-top:8px">Créer</button></details>
   </section>
   <section id="modreg"><h3>Réglages par module</h3><p class="hint">Un bloc par module actif, dans l'ordre de la navigation : ses réglages propres, et le regroupement en pourcentage quand il existe.</p>
@@ -347,16 +342,13 @@ const CLICK = {
   "entry-add": el => entryAdd(el.dataset.mod),
   "entry-del": el => { deleteJournalEntry(S().modules[el.dataset.mod], idOf(el)); site.save(); render(); },
   "mod-add": () => {
-    const type = $("#newModType").value, name = $("#newModName").value.trim();
+    const choice = $("#newModType").value, tpl = MODULE_TEMPLATES.find(t => "tpl:" + t.id === choice);
+    const name = $("#newModName").value.trim() || (tpl ? tpl.name : "");
     if (!name) return toast("Donne un nom au module.");
-    try {
-      const s = S(), id = slugId(name, [...s.config.modules.map(x => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
-      createModuleInstance(s.modules, type, name, id);
-      s.config.modules.push({ id, on: true });
-      s.config.assistant.share[id] = true;
-      site.save(); render(); toast(`Module « ${name} » créé.`);
-    } catch (e) { toast(e.message); }
+    addModule(tpl || { type: choice }, name);
   },
+  "tpl-add": el => { const tpl = MODULE_TEMPLATES.find(t => t.id === el.dataset.tpl); if (tpl) addModule(tpl, tpl.name); },
+  "welcome-done": () => { S().config.welcome = false; site.save(); render(); },
   "mod-del": el => {
     const id = el.dataset.mod, name = label(id);
     openForm(`Supprimer « ${name} »`, [{ n: "confirm", l: `Retape « ${name} » pour confirmer la suppression définitive de ses données.`, req: true }], {}, v => {
@@ -382,6 +374,16 @@ const CLICK = {
   "auth-switch": () => { authMode = authMode === "signup" ? "signin" : "signup"; render(); },
   "auth-out": () => authSignOut()
 };
+/* Ajoute un module (depuis un modèle ou un type vide), actif et partagé avec l'assistant. */
+function addModule(tpl, name) {
+  try {
+    const s = S(), id = slugId(name, [...s.config.modules.map(x => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
+    createFromTemplate(s.modules, tpl, name, id);
+    s.config.modules.push({ id, on: true });
+    s.config.assistant.share[id] = true;
+    site.save(); render(); toast(`Module « ${name} » créé.`);
+  } catch (e) { toast(e.message); }
+}
 function moveMod(el, d) { const ms = S().config.modules, i = +el.closest("[data-i]").dataset.i, j = i + d; if (j < 0 || j >= ms.length) return; [ms[i], ms[j]] = [ms[j], ms[i]]; site.save(); render(); }
 document.addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (a && CLICK[a.dataset.act] && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) CLICK[a.dataset.act](a); });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });

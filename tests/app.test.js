@@ -6,7 +6,8 @@ const vm = require('node:vm');
 const html = fs.readFileSync('selene.html', 'utf8');
 const script = html.match(/<script>\s*([\s\S]*?)<\/script>/)[1];
 
-function launch(storage) {
+function launch(storage, { bare = false } = {}) {
+  if (!bare && !storage.has('selene-site-v1')) storage.set('selene-site-v1', fs.readFileSync('tests/fixtures/site-demo.json', 'utf8')); // jeu d'essai riche
   const nodes = new Map();
   const element = id => {
     if (!nodes.has(id)) nodes.set(id, {

@@ -53,6 +53,17 @@ est convertie par `SECTION_TO_MODULE` (`domain.js`) ; si une ancienne version de
 coup, ses entrées absentes sont absorbées dans le module au lieu d'être perdues. Une version de l'app qui lit un numéro plus grand que le sien
 refuse de fusionner et d'écrire (« recharge la page ») ; un import plus récent est refusé.
 
+### Données de départ
+
+Un compte neuf part de `siteSeed()` : une boîte de réception, rien de personnel, et le drapeau
+`config.welcome` qui affiche sur l'accueil le bloc « Composer ton espace » (modèles `MODULE_TEMPLATES`,
+dans `domain.js`) jusqu'à « C'est bon ». Ce drapeau est exclu de la complétion des réglages manquants :
+un compte existant ne le reçoit jamais. Les données de départ doivent rester « vierges » (`updatedAt` à 0,
+aucun identifiant aléatoire) pour qu'un appareil neuf adopte le serveur au lieu de fusionner.
+
+Les tests partent d'un jeu d'essai riche, `tests/fixtures/site-demo.json` (les modules d'origine), sauf
+ceux qui simulent un vrai compte neuf (`bare: true`).
+
 ### Normalisation à l'entrée, lecture pure
 
 `normalizeSite()` (migration des anciens formats, champs ajoutés depuis, entrées de navigation
