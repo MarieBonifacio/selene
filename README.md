@@ -39,6 +39,16 @@ Un module se supprime définitivement (✕, puis retaper son nom) : ses données
 
 Pour ajouter un *type* de module au code, voir [docs/architecture.md](docs/architecture.md#ajouter-un-type-de-module).
 
+## Au quotidien
+
+- **Brouillons** : le texte en cours d'un champ libre (capture, note, fragment, observation, message à l'assistant) survit à la fermeture de l'app, sur cet appareil.
+- **Annuler** : supprimer un élément affiche « Annuler » pendant quelques secondes, au lieu d'une confirmation.
+- **Accueil** : « fait » sur un rappel en retard, « Noter N min » pour la séance du jour (dernière durée), éléments prévus ou en retard ; chaque ligne se déplie sur ses derniers éléments. Sur téléphone, le paysage se réduit à partir de la deuxième ouverture du jour.
+- **Chercher** (touche « / » sur ordinateur) : dans tous les modules, sans tenir compte des accents.
+- **Minuteur** : à la fin des 15 minutes, le module ouvert propose la suite (noter la séance, donner le nouveau total).
+- **Écriture** : saisie du total atteint (l'app calcule la différence), dernier chapitre présélectionné, fin estimée au rythme des 30 derniers jours.
+- **Tâches → Budget** : terminer une tâche qui a un coût propose de l'ajouter en dépense (enveloppe réglable).
+
 ## Assistant (Claude)
 
 Le module Assistant est désactivé par défaut (Réglages → Modules).

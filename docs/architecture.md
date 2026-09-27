@@ -110,8 +110,10 @@ d'`Object.prototype`). Les noms de types ne le sont pas : un type n'est pas une 
 2. Une entrée dans `TYPE_UI` (`types.js`) : `view`, `settings`, `summary`, `context`, et selon le
    besoin `alerts`, `add`, `click`, `change`.
 
-Rien d'autre : création, rendu, accueil, réglages, assistant et validation des sauvegardes passent par
-ces deux registres. Les tests vérifient qu'ils ont les mêmes clés et font passer chaque type de bout
+Rien d'autre : création, rendu, accueil, réglages, assistant, recherche et validation des sauvegardes
+passent par ces deux registres. Crochets facultatifs de `TYPE_UI` (liste complète en tête de `types.js`) :
+`alerts` (accueil), `recent` (lignes dépliables), `texts` (recherche), `accept` (ranger une note),
+`timerDone` (fin du minuteur), `grouper` (regroupement en pourcentage), `badge` (navigation). Les tests vérifient qu'ils ont les mêmes clés et font passer chaque type de bout
 en bout (création, entrée, vue, réglages, résumé, contexte, export puis import validé).
 
 ## Synchronisation

@@ -33,7 +33,7 @@ function launch(storage, { claude = null, bare = false } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold };\n})();');
   vm.runInNewContext(instrumented, context);
   return { ...context.__test, nodes, location, document };
 }
@@ -522,4 +522,45 @@ test('drafts are kept per view and field, and emptied when the field is sent', (
   el.value = '';
   app.saveDraft('ecriture', el);
   assert.equal(storage.get('selene-draft:ecriture:scrapIn'), undefined);
+});
+
+test('search: every module, accents and case ignored, all words required, highlight stays aligned', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  d.modules.ecriture.scraps.push({ id: 'f1', text: 'Une phrase sur l’été dissocié', date: '2026-09-01' });
+  app.addCapture(d.modules.inbox.entries, 'Acheter du ÉTÉ-lait 🥛 bio', 'n1', '2026-09-02');
+  app.saveCollectionItem(d.modules.musique, { title: 'Dead Can Dance', subtitle: 'Within the Realm', text: 'été 1987' }, 'm1');
+  const hits = app.searchAll('ete');
+  assert.deepEqual([...hits.map(h => h.id)].sort(), ['ecriture', 'inbox', 'musique']);
+  assert.deepEqual([...app.searchAll('ete dissocie').map(h => h.id)], ['ecriture'], 'all words must match');
+  assert.equal(app.searchAll('   ').length, 0);
+  assert.equal(app.fold('🥛É').length, '🥛É'.length, 'same length, even with an emoji');
+  assert.equal(app.highlight('Acheter du ÉTÉ-lait 🥛 bio', 'ete'), 'Ach<mark>ete</mark>r du <mark>ÉTÉ</mark>-lait 🥛 bio', 'substrings too');
+  assert.equal(app.highlight('🥛 🥛 Été', 'ete'), '🥛 🥛 <mark>Été</mark>', 'aligned after emoji');
+  assert.equal(app.highlight('<b>été</b>', 'ete'), '&lt;b&gt;<mark>été</mark>&lt;/b&gt;', 'escaped around the marks');
+  app.location.hash = '#recherche'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /id="searchIn"/);
+  assert.ok(app.slugId('Recherche', []) !== 'recherche', 'reserved route');
+});
+
+test('timer end: the open module proposes the obvious next step', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const k = app.S().modules.kundalini;
+  assert.equal(app.TYPE_UI.programme.timerDone('kundalini', k, 15), true);
+  app.CLICK.undo(); // le bouton du bandeau : « Noter 15 min »
+  assert.equal(k.entries.at(-1).value, 15);
+  k.config.unitLabel = 'pages';
+  assert.equal(app.TYPE_UI.programme.timerDone('kundalini', k, 15), false, 'not minutes: nothing to infer');
+});
+
+test('a finished task with a cost offers to move it into the budget envelope', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  app.addTask(d.modules.chantier.entries, { title: 'Velux', cost: 250 }, 't1', '2026-09-27');
+  const el = { checked: true, closest: sel => sel === '[data-task]' ? { dataset: { task: 't1', mod: 'chantier' } } : null };
+  app.CHANGE['task-done'](el);
+  assert.match(app.nodes.get('#toast').innerHTML, /250,00.*Travaux/);
+  app.CLICK.undo(); // « Ajouter »
+  const op = d.modules.budget.entries.at(-1);
+  assert.equal(op.amount, 250); assert.equal(op.cat, 'Travaux'); assert.equal(op.note, 'Velux'); assert.equal(op.type, 'dépense');
 });

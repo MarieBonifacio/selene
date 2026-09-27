@@ -10,14 +10,16 @@ const fmt = (s, o = { day: "numeric", month: "short" }) => s ? new Date(s + "T12
 const clone = o => JSON.parse(JSON.stringify(o));
 const ago = s => { if (!s) return "jamais"; const n = diffDays(todayISO(), s); return n === 0 ? "aujourd'hui" : n === 1 ? "hier" : `il y a ${n} j`; };
 function toast(msg) { undoFn = null; const el = $("#toast"); el.textContent = msg; el.classList.remove("act"); el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 3400); }
-/* « Annuler » pendant quelques secondes, au lieu d'une confirmation avant d'agir. */
+/* Un message avec une action proposée (« Annuler », « Ajouter »…), qui disparaît d'elle-même : jamais imposée. */
 let undoFn = null;
-function toastUndo(msg, undo) {
+function toastAction(msg, button, fn, ms = 6000) {
   const el = $("#toast");
-  el.innerHTML = `${esc(msg)} <button class="btn sm" data-act="undo">Annuler</button>`;
-  el.classList.add("show", "act"); undoFn = undo;
-  clearTimeout(toast.t); toast.t = setTimeout(() => { el.classList.remove("show", "act"); undoFn = null; }, 6000);
+  el.innerHTML = `${esc(msg)} <button class="btn sm" data-act="undo">${esc(button)}</button>`;
+  el.classList.add("show", "act"); undoFn = fn;
+  clearTimeout(toast.t); toast.t = setTimeout(() => { el.classList.remove("show", "act"); undoFn = null; }, ms);
 }
+/* « Annuler » pendant quelques secondes, au lieu d'une confirmation avant d'agir. */
+const toastUndo = (msg, undo) => toastAction(msg, "Annuler", undo);
 /* Retire un élément d'une liste d'un module (entries, scraps…) ; « Annuler » le remet à sa place. */
 function removeWithUndo(id, list, itemId) {
   const inst = S().modules[id], i = inst[list].findIndex(x => x.id === itemId);
@@ -268,6 +270,38 @@ function summaryFor(id) {
 
 
 
+/* ================= recherche =================
+   Dans tous les textes de tous les modules (chaque type dit lesquels : TYPE_UI[type].texts), sans tenir
+   compte des accents ni de la casse ; tous les mots doivent apparaître. */
+let searchQuery = "";
+// Chaque caractère devient sa forme sans accent et en minuscule, de même longueur exactement (sinon il reste tel
+// quel : emoji sur deux unités, « İ » qui devient deux lettres) : les positions restent alignées pour surligner.
+const fold = s => [...String(s)].map(ch => { const b = ch.normalize("NFD")[0].toLowerCase(); return b.length === ch.length ? b : ch; }).join("");
+function searchAll(q) {
+  const terms = fold(q).split(/\s+/).filter(Boolean), out = [];
+  if (!terms.length) return out;
+  for (const m of S().config.modules) {
+    const inst = Object.hasOwn(S().modules, m.id) ? S().modules[m.id] : null, ui = inst && TYPE_UI[inst.type];
+    if (!ui || !ui.texts) continue;
+    for (const t of ui.texts(inst)) { const f = fold(t.text); if (terms.every(w => f.includes(w))) out.push({ id: m.id, ...t }); }
+  }
+  return out;
+}
+function highlight(text, q) {
+  const f = fold(text), marks = [];
+  for (const w of fold(q).split(/\s+/).filter(Boolean)) { let i = f.indexOf(w); while (i >= 0) { marks.push([i, i + w.length]); i = f.indexOf(w, i + w.length); } }
+  marks.sort((a, b) => a[0] - b[0]);
+  let html = "", pos = 0;
+  for (const [a, b] of marks) { if (a < pos) continue; html += esc(text.slice(pos, a)) + `<mark>${esc(text.slice(a, b))}</mark>`; pos = b; }
+  return html + esc(text.slice(pos));
+}
+VIEWS.recherche = () => {
+  const hits = searchAll(searchQuery);
+  return `<h2>Chercher</h2><p class="hint">Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. Touche « / » pour venir ici.</p>
+  <input id="searchIn" type="search" value="${esc(searchQuery)}" placeholder="Un mot, un bout de phrase…" aria-label="Chercher" autocomplete="off" style="max-width:520px">
+  ${searchQuery.trim() ? `<p class="hint" style="margin-top:12px">${hits.length ? plural(hits.length, "résultat") : "Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire."}</p>
+  <ul class="plain">${hits.slice(0, 80).map(h => `<li class="item"><span></span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}<div class="meta"><span class="tag">${esc(label(h.id))}</span>${h.date ? `<span>${fmt(h.date)}</span>` : ""}</div></div><a class="btn ghost sm" href="#${esc(h.id)}">ouvrir</a></li>`).join("")}</ul>` : ""}`;
+};
 const PALETTES = [["nigredo", "Nigredo, mousse", "#6f9a68"], ["albedo", "Albedo, lichen", "#aab7a6"], ["citrinitas", "Citrinitas, résine", "#c99a3c"], ["rubedo", "Rubedo, amanite", "#c0554a"]];
 VIEWS.reglages = () => {
   const s = S(), c = s.config;
@@ -333,7 +367,7 @@ function render() {
   const s = S(), m = moon();
   let view = location.hash.slice(1) || "accueil";
   // Les vues fixes priment toujours ; hasOwn évite qu'un « #constructor » trouve Object.prototype.
-  const fixed = v => v === "accueil" || v === "reglages";
+  const fixed = v => v === "accueil" || v === "reglages" || v === "recherche";
   if (!fixed(view) && (!(Object.hasOwn(s.modules, view) || Object.hasOwn(VIEWS, view)) || !enabled(view))) view = "accueil";
   const inst = !fixed(view) && Object.hasOwn(s.modules, view) ? s.modules[view] : null;
   $("#brandName").textContent = s.config.name || "Selene";
@@ -341,7 +375,7 @@ function render() {
   $("#miniMoon").innerHTML = moonSVG(m.p, 40);
   $("#dateline").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
   const badge = id => { const m = Object.hasOwn(s.modules, id) && s.modules[id], n = m && TYPE_UI[m.type].badge ? TYPE_UI[m.type].badge(m) : 0; return n ? ` (${n})` : ""; };
-  const links = [["accueil", "Accueil"], ...s.config.modules.filter(x => x.on).map(x => [x.id, label(x.id)]), ["reglages", "Réglages"]];
+  const links = [["accueil", "Accueil"], ...s.config.modules.filter(x => x.on).map(x => [x.id, label(x.id)]), ["recherche", "Chercher"], ["reglages", "Réglages"]];
   $("#nav").innerHTML = links.map(([id, l]) => `<a href="#${esc(id)}" class="${id === view ? "on" : ""}">${esc(l)}${badge(id)}</a>`).join("");
   // Les champs des Réglages n'ont pas d'id (donc pas de restauration ci-dessous) : tant que l'un d'eux
   // a le focus, ne pas redessiner, sinon une synchro arrivant pendant la frappe effacerait la saisie.
@@ -423,6 +457,12 @@ function addModule(tpl, name) {
 }
 function moveMod(el, d) { const ms = S().config.modules, i = +el.closest("[data-i]").dataset.i, j = i + d; if (j < 0 || j >= ms.length) return; [ms[i], ms[j]] = [ms[j], ms[i]]; site.save(); render(); }
 document.addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (a && CLICK[a.dataset.act] && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) CLICK[a.dataset.act](a); });
+document.addEventListener("input", e => { if (e.target.id === "searchIn") { searchQuery = e.target.value; render(); } });
+// « / » ouvre la recherche (sur ordinateur), sauf pendant une saisie.
+document.addEventListener("keydown", e => {
+  if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || "")) return;
+  e.preventDefault(); location.hash = "recherche"; setTimeout(() => { const el = document.getElementById("searchIn"); if (el) el.focus(); }, 0);
+});
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
 const CHANGE = {}; // actions « change » des types de module (remplie par types.js)
 document.addEventListener("change", e => {
@@ -477,11 +517,16 @@ document.addEventListener("change", e => {
 });
 
 /* ================= timer ================= */
+/* Au bout des quinze minutes, le module ouvert peut proposer une suite (noter la séance, le nouveau total). */
+function timerDone() {
+  const view = location.hash.slice(1), inst = Object.hasOwn(S().modules, view) ? S().modules[view] : null, hook = inst && TYPE_UI[inst.type].timerDone;
+  if (!(hook && hook(view, inst, 15))) toast("Quinze minutes. Tu as le droit d'arrêter. Et celui de continuer.");
+}
 let left = 900, tick = null, endAt = 0;
 const mmss = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 function tickTimer() {
   left = Math.max(0, Math.round((endAt - Date.now()) / 1000)); $("#clock").textContent = mmss(left);
-  if (left <= 0) { clearInterval(tick); tick = null; $("#clock").classList.add("done"); $("#timerBtn").textContent = "Relancer"; toast("Quinze minutes. Tu as le droit d'arrêter. Et celui de continuer."); try { navigator.vibrate && navigator.vibrate(200); } catch {} }
+  if (left <= 0) { clearInterval(tick); tick = null; $("#clock").classList.add("done"); $("#timerBtn").textContent = "Relancer"; timerDone(); try { navigator.vibrate && navigator.vibrate(200); } catch {} }
 }
 $("#timerBtn").addEventListener("click", () => {
   const b = $("#timerBtn");

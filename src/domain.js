@@ -285,7 +285,7 @@ function addJournalEntry(instance, input, id, defaultDate) {
    ni un nom hérité d'Object.prototype (« constructor », « toString »…), que `obj[id]` trouverait.
    Les noms de types ne sont pas réservés : un type n'est pas une route (le module « budget » est
    une instance du type « budget »). */
-const RESERVED_IDS = ["accueil", "reglages"];
+const RESERVED_IDS = ["accueil", "reglages", "recherche"];
 const reservedId = id => RESERVED_IDS.includes(id) || id in Object.prototype;
 /* Forme qu'un identifiant de module peut avoir, quelle que soit sa provenance (slugId, sauvegarde, serveur). */
 const MODULE_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
