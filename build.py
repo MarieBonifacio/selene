@@ -28,7 +28,13 @@ assert "<title>" in standalone and "</body>" in standalone
 hosted = standalone.replace("<title>", head + "<title>", 1).replace("</body>", sw + "</body>", 1)
 
 outputs = {"selene.html": standalone, "index.html": hosted}
-if sys.argv[1:] == ["--check"]:
+if sys.argv[1:2] == ["--bundle"]:
+    # Le script assemblé seul, pour l'analyse statique (eslint) : c'est lui, et non chaque fichier
+    # isolé, qui a une portée cohérente, puisque les fichiers de src/ partagent la même.
+    out = ROOT / sys.argv[2]
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text("(() => {\n" + js + "})();\n", encoding="utf-8")
+elif sys.argv[1:] == ["--check"]:
     stale = [name for name, content in outputs.items() if not (ROOT / name).exists() or (ROOT / name).read_text(encoding="utf-8") != content]
     if stale:
         sys.exit("Generated files are stale: " + ", ".join(stale))

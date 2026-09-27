@@ -4,13 +4,14 @@ Tableau de bord personnel : chantier de l'appartement, pratique de kundalini, é
 
 Aucune dépendance de production, aucun client vendorisé : le build hébergé (GitHub Pages) parle directement, via `fetch`, aux API REST de Supabase (Auth + PostgREST) pour les comptes multi-utilisateurs — voir « Comptes et synchronisation » plus bas. La source éditable est dans `src/` : `shell.html` (gabarit), `sync.js` (fusion à trois voies), `store.js` (persistance et synchronisation), `auth.js` (comptes Supabase, hébergé uniquement), `backup.js` (sauvegarde), `domain.js` (règles métier et registre pur des types de module), `app.js` (interface et orchestration), `types.js` (affichage de chaque type de module), `assistant.js` (Claude) et `boot.js` (démarrage). Ajouter un type de module = une entrée dans `MODULE_TYPES` (`domain.js`) et une dans `TYPE_UI` (`types.js`), rien d'autre. `python3 build.py` génère `selene.html` pour claude.ai et `index.html` pour GitHub Pages. Ne modifie pas directement les HTML générés.
 
-Vérification locale : `python3 build.py --check` puis `node --test tests/*.test.js` (Node 22). [Plan de refactorisation](docs/refactoring.md).
+Vérification locale (Node 22) : `python3 build.py --check`, `node --test tests/*.test.js`, puis l'analyse statique `python3 build.py --bundle .lint/selene.js && npx eslint@10.11.0 .lint/selene.js sw.js`. Fonctionnement interne, synchronisation et décisions d'architecture : [docs/architecture.md](docs/architecture.md).
 
 ## Publier avec GitHub Pages
 
 1. Pousser ce dépôt sur GitHub.
-2. Settings → Pages → Source : « Deploy from a branch », branche `main`, dossier `/ (root)`.
+2. Settings → Pages → Build and deployment → Source : « GitHub Actions ». Le workflow `pages.yml` publie alors `main` seulement si les vérifications (`check.yml`) passent, et seulement les fichiers du site.
 3. Le site est servi à `https://<utilisateur>.github.io/<dépôt>/`.
+4. Après une mise à jour, recharger l'app sur chaque appareil : une ancienne version restée ouverte ne connaît pas les règles de synchronisation récentes.
 
 ## Installer sur iPhone
 
@@ -19,6 +20,20 @@ Vérification locale : `python3 build.py --check` puis `node --test tests/*.test
 3. L'app s'ouvre en plein écran, fonctionne hors ligne (sauf l'assistant) et garde ses données sur l'appareil.
 
 Les données de l'app installée sont séparées de celles de Safari : exporter depuis l'ancienne version, importer dans l'app.
+
+## Modules
+
+Réglages → Modules : activer, renommer, réordonner. Deux familles :
+
+- **Fixes** : Chantier, october.moth, Musique, Budget, Assistant, Capture. Activables et renommables, pas supprimables.
+- **Génériques**, créés depuis « + Créer un module », d'un de ces types :
+  - *Programme* : un protocole de N semaines, un calendrier et un objectif de séances par semaine (ex. Kundalini) ;
+  - *Objectif cumulatif* : un compteur vers un objectif, avec des catégories et, en option, un carnet de notes libres (ex. Écriture et ses fragments) ;
+  - *Rappels* : des types d'événements récurrents avec une fréquence, et un journal (ex. Phidippus).
+
+Un module générique se supprime définitivement (✕, puis retaper son nom) : ses données partent avec lui, sur tous les appareils. Ses réglages propres sont dans Réglages → Réglages par module. Un nouveau module est partagé par défaut avec l'assistant ; décocher dans Réglages → Assistant pour le garder privé.
+
+Pour ajouter un *type* de module au code, voir [docs/architecture.md](docs/architecture.md#ajouter-un-type-de-module).
 
 ## Assistant (Claude)
 
@@ -48,4 +63,12 @@ Pour l'activer :
 4. Récupérer l'URL du projet et la clé publique (« anon » / « publishable », Settings → API) et les renseigner dans `src/auth.js` (`SUPABASE_URL`, `SUPABASE_ANON_KEY` — cette clé est prévue pour être exposée côté client, la sécurité vient des règles RLS, pas du secret de la clé).
 5. `python3 build.py`, puis republier `index.html`.
 
-Une fois configuré, ouvrir `index.html` affiche un écran de connexion/inscription avant le tableau de bord. Les données restent isolées par compte (RLS) ; l'artefact claude.ai (`selene.html`) n'est pas concerné et continue de fonctionner sans connexion (même code partagé, mais `auth.js` ne s'active que hors claude.ai).
+Une fois configuré, ouvrir `index.html` affiche un écran de connexion/inscription avant le tableau de bord.
+
+Comment la synchronisation se comporte :
+
+- Chaque modification part au bout d'une seconde ; les autres appareils la voient dans les 30 s (ou au retour sur l'onglet).
+- Deux appareils modifiés en même temps, ou l'un hors ligne : les modifications sont **fusionnées**, pas écrasées. Une entrée supprimée d'un côté mais modifiée de l'autre est conservée.
+- Hors ligne, l'app continue de fonctionner et affiche « Non synchronisé » ; tout part au retour du réseau. Une coupure ne déconnecte pas.
+- Importer une sauvegarde remplace l'état du compte (sur tous les appareils), sans fusion.
+- Se déconnecter envoie d'abord ce qui attend, puis efface de l'appareil les données, la conversation avec l'assistant et la clé API. Les données restent isolées par compte (RLS) ; l'artefact claude.ai (`selene.html`) n'est pas concerné et continue de fonctionner sans connexion (même code partagé, mais `auth.js` ne s'active que hors claude.ai).

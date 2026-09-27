@@ -14,3 +14,7 @@ jobs:
       - run: python3 build.py --check
       - run: node --test tests/*.test.js
       - run: for f in src/*.js; do node --check "$f"; done
+      - name: Analyse statique (script assemblé + service worker)
+        run: |
+          python3 build.py --bundle .lint/selene.js
+          npx --yes eslint@10.11.0 .lint/selene.js sw.js

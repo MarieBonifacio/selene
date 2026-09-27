@@ -31,7 +31,7 @@ function launch(storage, { claude = null } = {}) {
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
   const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText };\n})();');
   vm.runInNewContext(instrumented, context);
-  return { ...context.__test, nodes, location };
+  return { ...context.__test, nodes, location, document };
 }
 
 test('legacy site data (pre-generic-modules) migrates in place without data loss', () => {
@@ -216,4 +216,19 @@ test('S() is a pure read: calling it never changes the stored document', () => {
   assert.equal(JSON.stringify(app.site.data), before);
   assert.equal(app.site.data.modules.kundalini.config.weeks, 8, 'migration happened once, at load');
   assert.equal(app.site.data.kundalini, undefined);
+});
+
+test('a re-render in Settings never wipes a field being typed in (any settings block)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  app.location.hash = '#reglages';
+  app.render();
+  const main = app.nodes.get('#main');
+  main.innerHTML = 'saisie en cours';
+  // Un champ de réglage de module (data-set-mod), dans le bloc #modreg qui a remplacé #groupes.
+  app.document.activeElement = { tagName: 'INPUT', type: 'number', dataset: { setMod: 'kundalini.weeks' }, closest: sel => sel === '#main' ? main : null };
+  app.render(); // p. ex. une synchro qui arrive pendant la frappe
+  assert.equal(main.innerHTML, 'saisie en cours');
+  app.document.activeElement = { tagName: 'INPUT', type: 'checkbox', dataset: {}, closest: sel => sel === '#main' ? main : null };
+  app.render(); // une case à cocher n'est pas une saisie : on redessine
+  assert.notEqual(main.innerHTML, 'saisie en cours');
 });

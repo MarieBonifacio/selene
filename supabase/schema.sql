@@ -20,8 +20,9 @@ create policy "own row insert" on public.app_state
 create policy "own row update" on public.app_state
   for update using (auth.uid() = user_id);
 
--- Pour que le direct (Realtime) fonctionne sur les mises à jour de cette table :
-alter publication supabase_realtime add table public.app_state;
+-- Pas de Realtime : l'app relit la ligne toutes les 30 s et écrit par PATCH conditionnel
+-- (filtre `board->>updatedAt=eq.<valeur lue>`), ce qui ne demande aucune colonne ni fonction
+-- supplémentaire. Voir docs/architecture.md, « Synchronisation ».
 
 -- Recommandé pour un cercle restreint (pas un produit public) :
 -- Authentication -> Providers -> Email -> désactiver "Allow new users to sign up",

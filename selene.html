@@ -1263,8 +1263,11 @@ function render() {
   $("#dateline").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
   const links = [["accueil", "Accueil"], ...s.config.modules.filter(x => x.on).map(x => [x.id, label(x.id)]), ["reglages", "Réglages"]];
   $("#nav").innerHTML = links.map(([id, l]) => `<a href="#${esc(id)}" class="${id === view ? "on" : ""}">${esc(l)}${id === "inbox" && s.inbox.items.length ? ` (${s.inbox.items.length})` : ""}</a>`).join("");
-  const ae = document.activeElement, focused = ae && ae.dataset && (ae.dataset.set || (ae.tagName === "INPUT" && ae.type !== "checkbox" && ae.closest && (ae.closest("#groupes") || ae.closest("#assistant-cfg"))));
-  if (focused && view === "reglages") return; // ne pas casser la saisie en cours
+  // Les champs des Réglages n'ont pas d'id (donc pas de restauration ci-dessous) : tant que l'un d'eux
+  // a le focus, ne pas redessiner, sinon une synchro arrivant pendant la frappe effacerait la saisie.
+  const ae = document.activeElement, typing = ae && ae.closest && ae.closest("#main") &&
+    (ae.tagName === "TEXTAREA" || (ae.tagName === "INPUT" && !["checkbox", "radio", "file", "button"].includes(ae.type)));
+  if (typing && view === "reglages" && lastView === "reglages") return;
   const keep = {}; let focusId = null, caret = null;
   if (view === lastView) $("#main").querySelectorAll("input[id],textarea[id],select[id]").forEach(el => { if (el.type !== "file" && el.type !== "checkbox") keep[el.id] = el.value; });
   if (document.activeElement && document.activeElement.id && keep[document.activeElement.id] != null) { focusId = document.activeElement.id; try { caret = document.activeElement.selectionStart; } catch {} }
