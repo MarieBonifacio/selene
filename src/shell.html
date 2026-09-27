@@ -100,6 +100,19 @@ ul.plain>.item:last-child{border-bottom:1px solid var(--rule)}
 .steps li{display:flex;gap:8px;align-items:center;padding:2px 0}
 .steps input{accent-color:var(--accent);width:16px;height:16px}
 .note{color:var(--muted);white-space:pre-wrap;margin:6px 0}
+.origin{font-style:italic;white-space:normal}
+select.ep{width:auto;padding:0 4px;font-size:.82rem;border-color:transparent;background:transparent;color:var(--muted)}
+select.ep.on{color:var(--accent);border-color:var(--rule)}
+
+/* pont de reprise */
+.bridge{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin:0 0 16px}
+.bridge.on{padding:8px 12px;border-left:2px solid var(--accent);background:var(--surface)}
+.bridge.on>span:first-child{flex:1 1 240px}
+.bridge .acts{display:flex;gap:6px;margin-left:auto}
+.bridge.off{justify-content:flex-end;margin-bottom:4px}
+.bridge input{flex:1 1 240px}
+.bridge.stale,.resume.stale{opacity:.6}
+.over .resume{display:block;color:var(--ink);font-size:.88rem;margin-top:2px}
 
 /* overview rows */
 .over{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:6px 18px;align-items:baseline;padding:12px 0;border-top:1px solid var(--rule);text-decoration:none}

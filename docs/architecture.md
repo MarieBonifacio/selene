@@ -114,7 +114,12 @@ Rien d'autre : création, rendu, accueil, réglages, assistant, recherche et val
 passent par ces deux registres. Crochets facultatifs de `TYPE_UI` (liste complète en tête de `types.js`) :
 `alerts` (accueil), `recent` (lignes dépliables), `texts` (recherche), `accept` (ranger une note),
 `timerDone` (fin du minuteur), `review` (bilan d'une période), `grouper` (regroupement en pourcentage),
-`badge` (navigation). Routes fixes réservées : `accueil`, `reglages`, `recherche`, `bilan`. Les tests vérifient qu'ils ont les mêmes clés et font passer chaque type de bout
+`badge` (navigation). Un élément de `texts` peut porter `ep` (statut épistémique) : la recherche et le
+bilan le lisent. Champs communs à tous les types, hors registre (validés par `parseBackup`) : `resume` et
+`resumeLog` sur l'instance (pont de reprise), `origin` sur une entrée (provenance, posée par `stampOrigin`
+quand une note est rangée), `ep`/`epLog` sur les fragments et les notes. Tous facultatifs et additifs : une
+version antérieure de l'app les ignore et la fusion les conserve, d'où l'absence de nouveau `SCHEMA_VERSION`.
+Routes fixes réservées : `accueil`, `reglages`, `recherche`, `bilan`. Les tests vérifient qu'ils ont les mêmes clés et font passer chaque type de bout
 en bout (création, entrée, vue, réglages, résumé, contexte, export puis import validé).
 
 ## Synchronisation

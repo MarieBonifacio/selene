@@ -33,7 +33,7 @@ function launch(storage, { claude = null, bare = false } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts };\n})();');
   vm.runInNewContext(instrumented, context);
   return { ...context.__test, nodes, location, document };
 }
@@ -632,4 +632,132 @@ test('review: each module sums what happened in the period, next to the previous
   app.location.hash = '#bilan'; app.render();
   assert.match(app.nodes.get('#main').innerHTML, /avant :/);
   assert.ok(app.slugId('Bilan', []) !== 'bilan', 'reserved route');
+});
+
+/* ---- pensée : statut épistémique, provenance, pont de reprise, décisions ---- */
+const on = (dataset, extra = {}) => ({ dataset, ...extra, closest(sel) { return sel === '[data-mod]' || sel === '[data-id]' ? this : null; } });
+
+test('epistemic status: « ? » marks a hypothesis, changes are dated, search filters by status', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  assert.deepEqual({ ...app.epPrefix('? le seuil précède le récit') }, { text: 'le seuil précède le récit', ep: 'hyp' });
+  assert.deepEqual({ ...app.epPrefix('pourquoi ? parce que') }, { text: 'pourquoi ? parce que', ep: null }, 'only in front');
+  assert.equal(app.epPrefix('?').ep, null, 'a lone « ? » is not a note');
+  // Capture rapide de l'accueil : la note arrive marquée, le « ? » retiré.
+  app.document.querySelector('#capIn').value = '? la dépersonnalisation précède le récit de soi';
+  app.CLICK['cap-add']();
+  const n = d.modules.inbox.entries.at(-1);
+  assert.equal(n.text, 'la dépersonnalisation précède le récit de soi'); assert.equal(n.ep, 'hyp');
+  assert.match(app.nodes.get('#toast').textContent, /hypothèse/);
+  // Changer de statut sur place : daté, et « vide » retire le statut.
+  app.CHANGE['ep-set'](on({ mod: 'inbox', id: n.id }, { value: 'inx' }));
+  assert.equal(n.ep, 'inx');
+  assert.deepEqual([...n.epLog.map(x => [x.from, x.to])], [['hyp', 'inx']]);
+  app.setEpStatus(n, '', '2026-09-27');
+  assert.equal(n.ep, undefined); assert.equal(n.epLog.length, 2);
+  app.setEpStatus(n, 'pas-un-statut', '2026-09-27');
+  assert.equal(n.ep, undefined, 'unknown values are ignored');
+  // Recherche : « statut:… » seul liste, combiné filtre ; accents et abréviation tolérés.
+  d.modules.ecriture.scraps.push({ id: 'f1', text: 'Le DMN fabrique le sentiment de soi', date: '2026-09-01', ep: 'hyp' }, { id: 'f2', text: 'Le soi est symbolique', date: '2026-09-02', ep: 'int' });
+  assert.deepEqual([...app.searchAll('statut:hypothèse').map(h => h.text)], ['Le DMN fabrique le sentiment de soi']);
+  assert.deepEqual([...app.searchAll('soi statut:interp').map(h => h.text)], ['Le soi est symbolique']);
+  assert.equal(app.searchAll('statut:nimportequoi').length, 0);
+  assert.equal(app.searchAll('statut:').length, 0);
+  // Bilan : le décompte par statut de la période.
+  assert.deepEqual({ ...app.epCounts('2026-09-01', '2026-10-01') }, { hyp: 1, int: 1 });
+  // Sauvegarde : un statut inconnu est refusé.
+  const bad = JSON.parse(app.createBackup(app.board.data, d)); bad.site.modules.ecriture.scraps[0].ep = '<script>';
+  assert.throws(() => app.parseBackup(JSON.stringify(bad)), /statut/);
+  assert.doesNotThrow(() => app.parseBackup(app.createBackup(app.board.data, d)));
+});
+
+test('provenance: what is filed from a box keeps a frozen copy of the note it came from', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  // Rangement reconnu (« module : texte ») : le fragment garde le texte complet d'origine, sa date, sa boîte et son statut.
+  app.addCapture(d.modules.inbox.entries, 'Écriture : le seuil n’est pas un lieu', 'n1', '2026-09-03');
+  d.modules.inbox.entries[0].ep = 'hyp';
+  app.fileIntent(app.captureIntent('Écriture : le seuil n’est pas un lieu'), 'inbox', 'n1');
+  const f = d.modules.ecriture.scraps.at(-1);
+  assert.equal(f.text, 'le seuil n’est pas un lieu');
+  assert.deepEqual({ ...f.origin }, { from: 'Capture', text: 'Écriture : le seuil n’est pas un lieu', date: '2026-09-03' });
+  assert.equal(f.ep, 'hyp', 'the status follows where it can be read');
+  // Rangement à la main vers une collection : provenance, mais pas de statut (il ne s'y lit pas).
+  app.addCapture(d.modules.inbox.entries, 'la phalène et la lampe', 'n2', '2026-09-04');
+  d.modules.inbox.entries[0].ep = 'obs';
+  app.CLICK['note-to'](on({ mod: 'inbox', id: 'n2', to: 'moth' }));
+  const t = d.modules.moth.entries.at(-1);
+  assert.equal(t.origin.text, 'la phalène et la lampe'); assert.equal(t.ep, undefined);
+  // Deux rangements successifs : la naissance la plus ancienne l'emporte.
+  app.createFromTemplate(d.modules, app.MODULE_TEMPLATES.find(x => x.id === 'carnet'), 'Carnet', 'carnet');
+  d.config.modules.push({ id: 'carnet', on: true });
+  app.addCapture(d.modules.inbox.entries, 'une phrase', 'n3', '2026-08-01');
+  app.CLICK['note-to'](on({ mod: 'inbox', id: 'n3', to: 'carnet' }));
+  const mid = d.modules.carnet.entries.at(-1);
+  app.CLICK['note-to'](on({ mod: 'carnet', id: mid.id, to: 'ecriture' }));
+  assert.deepEqual({ ...d.modules.ecriture.scraps.at(-1).origin }, { from: 'Capture', text: 'une phrase', date: '2026-08-01' });
+  app.location.hash = '#ecriture'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /class="origin"[^>]*>↳ de Capture, 3 sept\. : « Écriture : le seuil/);
+  // Sauvegarde : provenance valide acceptée, provenance malformée refusée.
+  assert.doesNotThrow(() => app.parseBackup(app.createBackup(app.board.data, d)));
+  const bad = JSON.parse(app.createBackup(app.board.data, d)); bad.site.modules.moth.entries.at(-1).origin = { text: 3 };
+  assert.throws(() => app.parseBackup(JSON.stringify(bad)), /provenance/);
+});
+
+test('resumption bridge: the next step noted on leaving shows on the module and at home, and its fate is kept', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const e = app.S().modules.ecriture;
+  // Fin du minuteur dans un module : le champ s'ouvre de lui-même, sans rien imposer.
+  app.location.hash = '#ecriture'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /data-act="bridge-edit"[^>]*>Je m'arrête ici/);
+  app.timerDone();
+  assert.match(app.nodes.get('#main').innerHTML, /id="bridgeIn"/);
+  app.document.querySelector('#bridgeIn').value = 'réécrire l’ouverture du ch. 3';
+  app.CLICK['bridge-save'](on({ mod: 'ecriture' }));
+  assert.equal(e.resume.text, 'réécrire l’ouverture du ch. 3'); assert.equal(e.resume.at, today());
+  assert.match(app.nodes.get('#main').innerHTML, /Reprendre :<\/b> réécrire l’ouverture du ch\. 3/);
+  app.location.hash = '#accueil'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /class="resume ">↳ réécrire l’ouverture du ch\. 3 · aujourd'hui/);
+  // Remplacé puis repris : l'historique garde ce qui était prévu et ce qu'il en est advenu.
+  app.setResume(e, 'couper la citation', '2026-09-28');
+  app.CLICK['bridge-done'](on({ mod: 'ecriture' }));
+  assert.equal(e.resume, undefined);
+  assert.deepEqual([...e.resumeLog.map(x => x.how)], ['remplacé', 'repris']);
+  app.CLICK.undo(); // « Annuler »
+  assert.equal(e.resume.text, 'couper la citation'); assert.equal(e.resumeLog.length, 1);
+  app.setResume(e, 'couper la citation', '2026-09-29');
+  assert.equal(e.resumeLog.length, 1, 'same text: nothing to log');
+  // Sauvegarde : un pont malformé est refusé.
+  const bad = JSON.parse(app.createBackup(app.board.data, app.S())); bad.site.modules.ecriture.resume = { text: 'x', at: 'hier' };
+  assert.throws(() => app.parseBackup(JSON.stringify(bad)), /pont/);
+});
+
+test('decisions: a revision date comes back whatever the state, the reason is reread, « maintenue » is logged', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  const inst = app.createFromTemplate(d.modules, app.MODULE_TEMPLATES.find(x => x.id === 'decisions'), 'Décisions', 'decisions');
+  d.config.modules.push({ id: 'decisions', on: true });
+  assert.equal(inst.config.review, true);
+  app.saveCollectionItem(inst, { title: 'Enduit à la chaux', text: 'Humidité du mur nord. Réviser si devis > 1 200 €.', status: 'Prise', due: '2020-01-01' }, 'x1');
+  app.saveCollectionItem(inst, { title: 'Placo', status: 'Abandonnée', due: '2020-01-01' }, 'x2');
+  app.saveCollectionItem(inst, { title: 'Plus tard', status: 'Prise', due: '2999-01-01' }, 'x3');
+  const alerts = app.TYPE_UI.collection.alerts('decisions', inst, today());
+  assert.equal(alerts.length, 1, 'taken counts, abandoned and future do not');
+  assert.match(alerts[0].text, /« Enduit à la chaux » : à réexaminer/);
+  assert.match(alerts[0].actions, /data-act="col-reread"/);
+  // « maintenue » : réexamen daté, rendez-vous levé ; « Annuler » remet tout.
+  app.CLICK['col-keep'](on({ mod: 'decisions', id: 'x1' }));
+  const x1 = inst.entries.find(x => x.id === 'x1');
+  assert.equal(x1.due, ''); assert.deepEqual([...x1.reviews.map(r => r.verdict)], ['maintenue']);
+  assert.equal(app.TYPE_UI.collection.review(inst, today(), '2998-01-01'), '0 à réexaminer, 1 réexamen fait');
+  app.CLICK.undo();
+  assert.equal(x1.due, '2020-01-01'); assert.equal(x1.reviews.length, 0);
+  // Une collection ordinaire garde son comportement : ce qui est « fait » ne revient pas.
+  app.saveCollectionItem(d.modules.moth, { title: 'Publié', due: '2020-01-01', status: 'Publié' }, 'p1');
+  assert.equal(app.TYPE_UI.collection.alerts('moth', d.modules.moth, today()).length, 0);
+  app.location.hash = '#decisions'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /à réexaminer le/);
+  assert.doesNotThrow(() => app.parseBackup(app.createBackup(app.board.data, d)));
+  const bad = JSON.parse(app.createBackup(app.board.data, d)); bad.site.modules.decisions.entries[0].reviews = [{ date: 'jamais' }];
+  assert.throws(() => app.parseBackup(JSON.stringify(bad)), /réexamens/);
 });

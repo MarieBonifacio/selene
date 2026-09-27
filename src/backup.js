@@ -56,11 +56,18 @@ function parseBackup(text) {
       ids(inst.entries, where);
       if (MODULE_TYPES[inst.type].datedEntries !== false) dated(inst.entries, where);
       if (inst.scraps != null) { collection(inst.scraps, `${where} scraps`); ids(inst.scraps, where); }
+      const fail = name => { throw new Error(`${where} : ${name} invalide`); };
+      // Champs communs à tous les types : provenance d'une entrée rangée, pont de reprise du module.
+      for (const x of [...inst.entries, ...(inst.scraps || [])]) if (x.origin != null &&
+          (!record(x.origin) || typeof x.origin.text !== "string" || typeof x.origin.from !== "string" || (x.origin.date != null && !(typeof x.origin.date === "string" && validDate(x.origin.date))))) fail("provenance");
+      if (inst.resume != null && (!record(inst.resume) || typeof inst.resume.text !== "string" || typeof inst.resume.at !== "string" || !validDate(inst.resume.at))) fail("pont de reprise");
+      if (inst.resumeLog != null) collection(inst.resumeLog, `${where} ponts`);
       // Règles propres au type : déclarées dans le registre (domain.js), appliquées ici.
       MODULE_TYPES[inst.type].validate(inst, {
         num: (v, name, min, max) => num(v, `${where} : ${name}`, min, max),
         list: (l, name) => { collection(l, `${where} ${name}`); ids(l, where); return l; },
-        fail: name => { throw new Error(`${where} : ${name} invalide`); }
+        ep: x => { if ((x.ep != null && !Object.hasOwn(EP_STATUS, x.ep)) || (x.epLog != null && !Array.isArray(x.epLog))) fail("statut"); },
+        fail
       });
     }
   }

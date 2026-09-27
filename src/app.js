@@ -234,7 +234,8 @@ VIEWS.accueil = () => {
   // Chaque ligne se déplie sur les derniers éléments du module, sans avoir à l'ouvrir.
   const rows = s.config.modules.filter(x => x.on && x.id !== inbox).map(x => {
     const inst = Object.hasOwn(s.modules, x.id) ? s.modules[x.id] : null, more = inst && TYPE_UI[inst.type].recent ? TYPE_UI[inst.type].recent(inst) : [];
-    return `<div class="over-wrap"><a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}</span><em class="hint" style="margin:0">ouvrir</em></a>${more.length ? `<details class="more"><summary>derniers éléments</summary><ul>${more.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
+    const r = inst && inst.resume, bridge = r ? `<small class="resume ${bridgeStale(r) ? "stale" : ""}">↳ ${esc(r.text)} · ${ago(r.at)}</small>` : "";
+    return `<div class="over-wrap"><a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}${bridge}</span><em class="hint" style="margin:0">ouvrir</em></a>${more.length ? `<details class="more"><summary>derniers éléments</summary><ul>${more.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
   }).join("");
   return `
   ${s.config.welcome ? `<section><h2>Composer ton espace</h2><p class="hint">Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.</p>
@@ -260,6 +261,23 @@ VIEWS.accueil = () => {
   </div>
   <section><div class="row" style="align-items:baseline"><h2>Où en sont les choses</h2><span class="spacer"></span><a class="btn ghost sm" href="#bilan">Bilan du ${bilanMode() === "mois" ? "mois" : "cycle"}</a></div>${rows}</section>`;
 };
+
+/* ================= pont de reprise =================
+   En haut de chaque module : le prochain geste noté la dernière fois, ou de quoi le noter en partant.
+   Le champ s'ouvre de lui-même à la fin du minuteur ; l'ignorer suffit à le refuser. */
+let bridgeOpen = null; // module dont le champ « prochain geste » est ouvert
+const bridgeStale = r => diffDays(todayISO(), r.at) > 14; // un pont vieux de deux semaines ment peut-être
+function bridgeBar(id, inst) {
+  const r = inst.resume, m = esc(id);
+  if (bridgeOpen === id) return `<div class="bridge"><input id="bridgeIn" data-mod="${m}" maxlength="200" value="${esc(r ? r.text : "")}" placeholder="Le prochain geste, pour la prochaine fois…" aria-label="Prochain geste"><button class="btn sm acc" data-act="bridge-save" data-mod="${m}">Garder</button><button class="btn ghost sm" data-act="bridge-close">plus tard</button></div>`;
+  if (r) return `<div class="bridge on ${bridgeStale(r) ? "stale" : ""}"><span>↳ <b>Reprendre :</b> ${esc(r.text)} <span class="hint">· noté ${ago(r.at)}</span></span><span class="acts"><button class="btn ghost sm" data-act="bridge-done" data-mod="${m}">fait</button><button class="btn ghost sm" data-act="bridge-edit" data-mod="${m}">modifier</button></span></div>`;
+  return `<div class="bridge off"><button class="btn ghost sm" data-act="bridge-edit" data-mod="${m}">Je m'arrête ici…</button></div>`;
+}
+function bridgeSave(id) {
+  const inst = S().modules[id], inp = $("#bridgeIn"); if (!inst || !inp) return;
+  setResume(inst, inp.value, todayISO()); bridgeOpen = null; site.save(); render();
+  toast(inst.resume ? "Noté. La prochaine fois commencera ici." : "Pont levé.");
+}
 
 const SUMMARY = {
   assistant: () => { const b = backend(); return b === "sample" ? "Branché via claude.ai" : b === "api" ? "Branché via ta clé API" : "Pas encore branché"; }
@@ -294,11 +312,19 @@ VIEWS.bilan = () => {
     return `<div class="over-wrap"><div class="over"><b>${esc(label(m.id))}</b><span>${esc(r || "—")}</span><em class="hint" style="margin:0">avant : ${esc(p || "—")}</em></div></div>`;
   }).join("");
   const tab = (m, l) => `<button class="btn sm ${mode === m ? "acc" : "ghost"}" data-act="bilan-mode" data-m="${m}">${l}</button>`;
+  // Ce que les idées notées pendant la période revendiquent de savoir ; chaque statut mène à la recherche.
+  const eps = epCounts(cur.from, cur.to), epLine = Object.keys(EP_STATUS).filter(k => eps[k]).map(k => `<button class="btn ghost sm" data-act="search-for" data-q="statut:${esc(EP_STATUS[k])}">${plural(eps[k], EP_STATUS[k])}</button>`).join("");
   return `<div class="row" style="margin-bottom:6px"><h2 style="margin:0">Bilan</h2><span class="spacer"></span>${tab("lune", "Cycle lunaire")}${tab("mois", "Mois")}</div>
   <div class="row" style="margin-bottom:18px"><button class="btn ghost" data-act="bilan-nav" data-d="1" aria-label="Période précédente">‹</button><b style="text-transform:none">${esc(cur.name)}</b>${bilanOffset ? `<button class="btn ghost" data-act="bilan-nav" data-d="-1" aria-label="Période suivante">›</button>` : ""}</div>
   <p class="hint">Ce qui s'est passé dans chaque module pendant la période, et, en face, la période d'avant. Aucune note, aucun trophée : les chiffres suffisent à culpabiliser.</p>
-  <section>${rows || `<p class="empty">Aucun module à résumer.</p>`}</section>`;
+  <section>${rows || `<p class="empty">Aucun module à résumer.</p>`}</section>
+  ${epLine ? `<section><h3>Statut des idées notées</h3><p class="hint">Ce qu'elles revendiquent de savoir. Une hypothèse n'est pas une faiblesse, c'est une dette à rembourser.</p><div class="row">${epLine}</div></section>` : ""}`;
 };
+function epCounts(from, to) {
+  const out = {};
+  for (const inst of Object.values(S().modules)) { const ui = TYPE_UI[inst.type]; if (ui && ui.texts) for (const t of ui.texts(inst)) if (t.ep && t.date && t.date >= from && t.date < to) out[t.ep] = (out[t.ep] || 0) + 1; }
+  return out;
+}
 
 /* ================= recherche =================
    Dans tous les textes de tous les modules (chaque type dit lesquels : TYPE_UI[type].texts), sans tenir
@@ -307,19 +333,22 @@ let searchQuery = "";
 // Chaque caractère devient sa forme sans accent et en minuscule, de même longueur exactement (sinon il reste tel
 // quel : emoji sur deux unités, « İ » qui devient deux lettres) : les positions restent alignées pour surligner.
 const fold = s => [...String(s)].map(ch => { const b = ch.normalize("NFD")[0].toLowerCase(); return b.length === ch.length ? b : ch; }).join("");
+/* « statut:hypothèse » (ou « statut:hyp ») ne garde que ce qui porte ce statut ; seul, il les liste tous. */
+const epQuery = w => { const q = w.slice(7); return q ? Object.keys(EP_STATUS).find(k => fold(EP_STATUS[k]).startsWith(q)) || "?" : "?"; };
 function searchAll(q) {
-  const terms = fold(q).split(/\s+/).filter(Boolean), out = [];
-  if (!terms.length) return out;
+  const words = fold(q).split(/\s+/).filter(Boolean), st = words.find(w => w.startsWith("statut:")), want = st ? epQuery(st) : null;
+  const terms = words.filter(w => !w.startsWith("statut:")), out = [];
+  if (!terms.length && !want) return out;
   for (const m of S().config.modules) {
     const inst = Object.hasOwn(S().modules, m.id) ? S().modules[m.id] : null, ui = inst && TYPE_UI[inst.type];
     if (!ui || !ui.texts) continue;
-    for (const t of ui.texts(inst)) { const f = fold(t.text); if (terms.every(w => f.includes(w))) out.push({ id: m.id, ...t }); }
+    for (const t of ui.texts(inst)) { const f = fold(t.text); if ((!want || t.ep === want) && terms.every(w => f.includes(w))) out.push({ id: m.id, ...t }); }
   }
   return out;
 }
 function highlight(text, q) {
   const f = fold(text), marks = [];
-  for (const w of fold(q).split(/\s+/).filter(Boolean)) { let i = f.indexOf(w); while (i >= 0) { marks.push([i, i + w.length]); i = f.indexOf(w, i + w.length); } }
+  for (const w of fold(q).split(/\s+/).filter(w => w && !w.startsWith("statut:"))) { let i = f.indexOf(w); while (i >= 0) { marks.push([i, i + w.length]); i = f.indexOf(w, i + w.length); } }
   marks.sort((a, b) => a[0] - b[0]);
   let html = "", pos = 0;
   for (const [a, b] of marks) { if (a < pos) continue; html += esc(text.slice(pos, a)) + `<mark>${esc(text.slice(a, b))}</mark>`; pos = b; }
@@ -327,10 +356,10 @@ function highlight(text, q) {
 }
 VIEWS.recherche = () => {
   const hits = searchAll(searchQuery);
-  return `<h2>Chercher</h2><p class="hint">Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. Touche « / » pour venir ici.</p>
+  return `<h2>Chercher</h2><p class="hint">Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « statut:hypothèse » ne garde que les hypothèses (de même pour observé, interprétation, inexpliqué). Touche « / » pour venir ici.</p>
   <input id="searchIn" type="search" value="${esc(searchQuery)}" placeholder="Un mot, un bout de phrase…" aria-label="Chercher" autocomplete="off" style="max-width:520px">
   ${searchQuery.trim() ? `<p class="hint" style="margin-top:12px">${hits.length ? plural(hits.length, "résultat") : "Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire."}</p>
-  <ul class="plain">${hits.slice(0, 80).map(h => `<li class="item"><span></span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}<div class="meta"><span class="tag">${esc(label(h.id))}</span>${h.date ? `<span>${fmt(h.date)}</span>` : ""}</div></div><a class="btn ghost sm" href="#${esc(h.id)}">ouvrir</a></li>`).join("")}</ul>` : ""}`;
+  <ul class="plain">${hits.slice(0, 80).map(h => `<li class="item"><span></span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}<div class="meta"><span class="tag">${esc(label(h.id))}</span>${h.date ? `<span>${fmt(h.date)}</span>` : ""}${h.ep ? `<span>${esc(EP_STATUS[h.ep])}</span>` : ""}</div></div><a class="btn ghost sm" href="#${esc(h.id)}">ouvrir</a></li>`).join("")}</ul>` : ""}`;
 };
 const PALETTES = [["nigredo", "Nigredo, mousse", "#6f9a68"], ["albedo", "Albedo, lichen", "#aab7a6"], ["citrinitas", "Citrinitas, résine", "#c99a3c"], ["rubedo", "Rubedo, amanite", "#c0554a"]];
 VIEWS.reglages = () => {
@@ -416,20 +445,20 @@ function render() {
   $("#main").querySelectorAll("[data-draft]").forEach(el => saveDraft(lastView, el)); // un champ vidé par l'envoi efface son brouillon
   if (view === lastView) $("#main").querySelectorAll("input[id],textarea[id],select[id]").forEach(el => { if (el.type !== "file" && el.type !== "checkbox") keep[el.id] = el.value; });
   if (document.activeElement && document.activeElement.id && keep[document.activeElement.id] != null) { focusId = document.activeElement.id; try { caret = document.activeElement.selectionStart; } catch {} }
-  $("#main").innerHTML = inst ? TYPE_UI[inst.type].view(view) : VIEWS[view]();
+  $("#main").innerHTML = inst ? bridgeBar(view, inst) + TYPE_UI[inst.type].view(view) : VIEWS[view]();
   for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && v !== "" && el.value !== v) el.value = v; }
   if (view !== lastView) $("#main").querySelectorAll("[data-draft]").forEach(el => { const v = loadDraft(view, el); if (v) el.value = v; });
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
   lastView = view;
 }
-window.addEventListener("hashchange", () => { openId = null; render(); const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t); if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); } else window.scrollTo(0, 0); });
+window.addEventListener("hashchange", () => { openId = null; bridgeOpen = null; render(); const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t); if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); } else window.scrollTo(0, 0); });
 
 /* ================= actions ================= */
 const idOf = el => el.closest("[data-id]")?.dataset.id;
 function capture() {
   const inp = $("#capIn"); if (!inp || !inp.value.trim()) return;
   const id = inboxId(S().modules); if (!id) return toast("Aucune boîte de réception : voir Réglages.");
-  const item = addCapture(S().modules[id].entries, inp.value, uid(), todayISO()); site.save(); inp.value = ""; render();
+  const item = addNote(S().modules[id], inp.value); site.save(); inp.value = ""; render();
   afterCapture(id, item, "Gardé. Tu peux oublier, c'est écrit.");
 }
 function entryAdd(id) {
@@ -440,6 +469,18 @@ const CLICK = {
   "grp-filter": el => { const m = el.dataset.mod, g = el.dataset.g; gFilter[m] = gFilter[m] === g ? "" : g; render(); },
   "goto-groups": el => { const id = "mreg-" + el.dataset.mod; if (location.hash === "#reglages") { const d = document.getElementById(id); if (d) { d.open = true; d.scrollIntoView(); } } else sessionStorage.setItem("selene-scroll", id); },
   "cap-add": capture,
+  "bridge-edit": el => { bridgeOpen = el.dataset.mod; render(); const i = $("#bridgeIn"); if (i) i.focus(); },
+  "bridge-save": el => bridgeSave(el.dataset.mod),
+  "bridge-close": () => { bridgeOpen = null; render(); },
+  "bridge-done": el => {
+    const id = el.dataset.mod, inst = S().modules[id], old = inst.resume; if (!old) return;
+    setResume(inst, "", todayISO()); site.save(); render();
+    toastUndo("Repris. Le pont est levé.", () => {
+      const cur = S().modules[id]; if (!cur || cur.resume) return;
+      cur.resume = old; cur.resumeLog = (cur.resumeLog || []).slice(0, -1); site.save(); render();
+    });
+  },
+  "search-for": el => { searchQuery = el.dataset.q; if (location.hash === "#recherche") render(); else location.hash = "recherche"; },
   "entry-add": el => entryAdd(el.dataset.mod),
   "entry-del": el => removeWithUndo(el.dataset.mod, "entries", idOf(el)),
   "bilan-mode": el => { try { localStorage.setItem("selene-bilan", el.dataset.m); } catch {} bilanOffset = 0; render(); },
@@ -497,7 +538,7 @@ document.addEventListener("keydown", e => {
   if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || "")) return;
   e.preventDefault(); location.hash = "recherche"; setTimeout(() => { const el = document.getElementById("searchIn"); if (el) el.focus(); }, 0);
 });
-document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && e.target.id === "bridgeIn") bridgeSave(e.target.dataset.mod); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
 const CHANGE = {}; // actions « change » des types de module (remplie par types.js)
 document.addEventListener("change", e => {
   const el = e.target, act = el.dataset.act;
@@ -554,6 +595,7 @@ document.addEventListener("change", e => {
 /* Au bout des quinze minutes, le module ouvert peut proposer une suite (noter la séance, le nouveau total). */
 function timerDone() {
   const view = location.hash.slice(1), inst = Object.hasOwn(S().modules, view) ? S().modules[view] : null, hook = inst && TYPE_UI[inst.type].timerDone;
+  if (inst) { bridgeOpen = view; render(); } // et le prochain geste, pendant qu'on s'en souvient
   if (!(hook && hook(view, inst, 15))) toast("Quinze minutes. Tu as le droit d'arrêter. Et celui de continuer.");
 }
 let left = 900, tick = null, endAt = 0;

@@ -52,6 +52,13 @@ Pour ajouter un *type* de module au code, voir [docs/architecture.md](docs/archi
 - **Bilan** (lien sur l'accueil) : pour chaque module, ce qui s'est passé pendant le cycle lunaire en cours (d'une nouvelle lune à la suivante) ou le mois, à côté de la période précédente ; ‹ › pour remonter le temps. Une information, pas un score.
 - **Capture qui comprend** trois motifs, et seulement trois : « 12 € courses » (une dépense), « 25 min kundalini » (une séance), « Phidippus : une note » (rangée dans le module nommé). La note part toujours d'abord dans la boîte de réception ; l'app propose seulement de la ranger (bandeau, puis bouton « Ranger » dans la boîte).
 
+## Penser avec
+
+- **Pont de reprise** : en haut de chaque module, « Je m'arrête ici… » note le prochain geste ; il s'affiche au retour dans le module et sur l'accueil, sous sa ligne. Le champ s'ouvre de lui-même à la fin du minuteur (l'ignorer suffit). « fait » le lève ; ce qui était prévu et ce qu'il en est advenu restent dans un court historique.
+- **Statut épistémique** : un fragment ou une note peut se dire *observé*, *hypothèse*, *interprétation* ou *inexpliqué* (vide par défaut). Un « ? » en tête d'une saisie en fait une hypothèse. Chaque changement est daté ; « statut:hypothèse » dans la recherche filtre ; le bilan compte les idées de la période par statut.
+- **Provenance** : une note rangée depuis une boîte disparaît, mais ce qui en naît (fragment, tâche, élément…) garde une copie de son texte, de sa date et de sa boîte d'origine (« ↳ de Capture, 3 sept. »). Rangée deux fois, elle garde sa première naissance.
+- **Décisions** (modèle de module) : une collection dont la date est un rendez-vous de révision. Arrivée à échéance, une décision revient sur l'accueil quel que soit son état (sauf « Abandonnée ») : « relire » montre la raison écrite alors, « maintenue » note le réexamen et lève le rendez-vous. Réglable sur toute collection (« La date est un rendez-vous de révision »).
+
 ## Assistant (Claude)
 
 Le module Assistant est désactivé par défaut (Réglages → Modules).

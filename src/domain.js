@@ -165,7 +165,7 @@ const MODULE_TYPES = {
       if (inst.config.entryMode != null && inst.config.entryMode !== "delta" && inst.config.entryMode !== "total") v.fail("mode de saisie");
       if (inst.config.categories != null) v.list(inst.config.categories, "catégories").forEach(x => v.num(x.goal, "objectif de catégorie", 0));
       for (const e of inst.entries) v.num(e.value, "valeur");
-      for (const f of inst.scraps || []) if (f.category != null && typeof f.category !== "string") v.fail("fragment");
+      for (const f of inst.scraps || []) { if (f.category != null && typeof f.category !== "string") v.fail("fragment"); v.ep(f); }
     }
   },
   rappels: {
@@ -219,13 +219,15 @@ const MODULE_TYPES = {
     },
     validate(inst, v) {
       if (inst.config.inbox != null && typeof inst.config.inbox !== "boolean") v.fail("boîte de réception");
-      for (const e of inst.entries) if (typeof e.text !== "string") v.fail("texte");
+      for (const e of inst.entries) { if (typeof e.text !== "string") v.fail("texte"); v.ep(e); }
     }
   },
   collection: {
     label: "Collection (éléments à statuts, en colonnes ou en liste)",
     datedEntries: false, // un élément n'a pas de date de journal ; `due` est facultative
-    defaults: () => ({ config: { display: "liste", description: "", statuses: ["À faire", "En cours", "Fait"], doneFrom: 2, statusLabel: "Statut", addLabel: "Ajouter",
+    // review : la date d'un élément est un rendez-vous de révision (une décision à réexaminer), qui revient
+    // quel que soit son statut, sauf le dernier (abandonné, clos).
+    defaults: () => ({ config: { display: "liste", description: "", review: false, statuses: ["À faire", "En cours", "Fait"], doneFrom: 2, statusLabel: "Statut", addLabel: "Ajouter",
       fields: { title: "Titre", subtitle: "", tag: "Étiquette", due: "", text: "Note" },
       groups: { on: true, by: "tag", sort: "name", hideDone: false, title: "" } }, entries: [] }),
     normalize(inst) {
@@ -244,10 +246,12 @@ const MODULE_TYPES = {
           c.statuses.some(x => typeof x !== "string" || !x.trim() || x.length > 40))) v.fail("statuts");
       v.num(c.doneFrom, "statut « fait »", 0, 12);
       if (c.display != null && !["liste", "colonnes"].includes(c.display)) v.fail("affichage");
+      if (c.review != null && typeof c.review !== "boolean") v.fail("révision");
       if (c.fields != null && (typeof c.fields !== "object" || Object.values(c.fields).some(x => typeof x !== "string"))) v.fail("champs");
       for (const e of inst.entries) {
         if (typeof e.title !== "string") v.fail("titre");
         if (e.due && !(typeof e.due === "string" && validDate(e.due))) v.fail("date");
+        if (e.reviews != null && (!Array.isArray(e.reviews) || e.reviews.some(r => !r || typeof r.date !== "string" || !validDate(r.date) || typeof r.verdict !== "string"))) v.fail("réexamens");
       }
     }
   }
@@ -267,6 +271,41 @@ function saveCollectionItem(inst, input, id) {
   const e = { id, ...v };
   inst.entries.push(e);
   return e;
+}
+/* ---- statut épistémique : ce qu'une note ou un fragment revendique de savoir ----
+   Facultatif et vide par défaut. « Inexpliqué » est un statut à part entière, pas une corbeille. */
+const EP_STATUS = { obs: "observé", hyp: "hypothèse", int: "interprétation", inx: "inexpliqué" };
+/* « ? » en tête d'une saisie la marque comme hypothèse. Un seul préfixe, pour rester prévisible. */
+function epPrefix(raw) {
+  const m = String(raw).match(/^\s*\?\s*(\S[\s\S]*)$/);
+  return m ? { text: m[1], ep: "hyp" } : { text: String(raw), ep: null };
+}
+/* Chaque changement de statut est daté : on saura quand une hypothèse est devenue autre chose. */
+function setEpStatus(item, ep, date) {
+  const to = Object.hasOwn(EP_STATUS, ep) ? ep : null, from = item.ep || null;
+  if (to === from) return item;
+  if (to) item.ep = to; else delete item.ep;
+  item.epLog = [...(item.epLog || []), { from, to, date }].slice(-20);
+  return item;
+}
+/* ---- provenance : une note rangée ailleurs disparaît de la boîte ; ce qui en naît garde une copie figée
+   de son texte, de sa date et de son lieu d'origine. La plus ancienne origine l'emporte (une note déjà
+   rangée une fois garde sa naissance). */
+const entryIds = inst => new Set(["entries", "scraps"].flatMap(l => (inst[l] || []).map(e => e.id)));
+function stampOrigin(inst, before, note, from) {
+  const origin = note.origin || { from, text: note.text, date: note.date };
+  for (const list of ["entries", "scraps"]) for (const e of inst[list] || []) if (!before.has(e.id)) {
+    e.origin = origin;
+    if (note.ep && !e.ep && (list === "scraps" || inst.type === "notes")) e.ep = note.ep; // là où un statut se lit
+  }
+}
+/* ---- pont de reprise : le prochain geste, noté en quittant un module ----
+   Un pont remplacé ou levé part dans un historique court : ce qu'on comptait faire, et ce qu'il en est advenu. */
+function setResume(inst, text, date) {
+  const t = String(text || "").trim().slice(0, 200), old = inst.resume;
+  if (old && old.text === t) return;
+  if (old) inst.resumeLog = [...(inst.resumeLog || []), { text: old.text, at: old.at, end: date, how: t ? "remplacé" : "repris" }].slice(-30);
+  if (t) inst.resume = { text: t, at: date }; else delete inst.resume;
 }
 function numericValue(raw) {
   const value = raw != null && raw !== "" ? Number(raw) : null;
@@ -318,6 +357,10 @@ const MODULE_TEMPLATES = [
   { id: "decouvertes", name: "À découvrir", type: "collection", hint: "Livres, albums, films : une liste à statuts",
     config: { display: "liste", statuses: ["À découvrir", "Découvert", "Retenu"], doneFrom: 1, addLabel: "Ajouter",
       fields: { title: "Titre", subtitle: "Auteur", tag: "Genre", due: "", text: "Note" } } },
+  { id: "decisions", name: "Décisions", type: "collection", hint: "Ce que tu as décidé, pourquoi, et quand le réexaminer",
+    config: { display: "liste", review: true, description: "La raison écrite au moment de décider, relue au moment de réexaminer.",
+      statuses: ["À décider", "Prise", "Abandonnée"], doneFrom: 1, statusLabel: "État", addLabel: "Noter une décision",
+      fields: { title: "Décision", subtitle: "", tag: "Domaine", due: "À réexaminer le", text: "Contexte, options écartées, raison, et ce qui te ferait changer d'avis" } } },
   { id: "rappels", name: "Soins", type: "rappels", hint: "Des gestes récurrents et depuis quand ils attendent",
     config: { types: [{ id: "arrosage", label: "Arrosage", every: 3 }] } },
   { id: "carnet", name: "Carnet", type: "notes", hint: "Des notes datées, gardées ou rangées ailleurs ensuite" }

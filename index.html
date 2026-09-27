@@ -110,6 +110,19 @@ ul.plain>.item:last-child{border-bottom:1px solid var(--rule)}
 .steps li{display:flex;gap:8px;align-items:center;padding:2px 0}
 .steps input{accent-color:var(--accent);width:16px;height:16px}
 .note{color:var(--muted);white-space:pre-wrap;margin:6px 0}
+.origin{font-style:italic;white-space:normal}
+select.ep{width:auto;padding:0 4px;font-size:.82rem;border-color:transparent;background:transparent;color:var(--muted)}
+select.ep.on{color:var(--accent);border-color:var(--rule)}
+
+/* pont de reprise */
+.bridge{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin:0 0 16px}
+.bridge.on{padding:8px 12px;border-left:2px solid var(--accent);background:var(--surface)}
+.bridge.on>span:first-child{flex:1 1 240px}
+.bridge .acts{display:flex;gap:6px;margin-left:auto}
+.bridge.off{justify-content:flex-end;margin-bottom:4px}
+.bridge input{flex:1 1 240px}
+.bridge.stale,.resume.stale{opacity:.6}
+.over .resume{display:block;color:var(--ink);font-size:.88rem;margin-top:2px}
 
 /* overview rows */
 .over{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:6px 18px;align-items:baseline;padding:12px 0;border-top:1px solid var(--rule);text-decoration:none}
@@ -641,11 +654,18 @@ function parseBackup(text) {
       ids(inst.entries, where);
       if (MODULE_TYPES[inst.type].datedEntries !== false) dated(inst.entries, where);
       if (inst.scraps != null) { collection(inst.scraps, `${where} scraps`); ids(inst.scraps, where); }
+      const fail = name => { throw new Error(`${where} : ${name} invalide`); };
+      // Champs communs à tous les types : provenance d'une entrée rangée, pont de reprise du module.
+      for (const x of [...inst.entries, ...(inst.scraps || [])]) if (x.origin != null &&
+          (!record(x.origin) || typeof x.origin.text !== "string" || typeof x.origin.from !== "string" || (x.origin.date != null && !(typeof x.origin.date === "string" && validDate(x.origin.date))))) fail("provenance");
+      if (inst.resume != null && (!record(inst.resume) || typeof inst.resume.text !== "string" || typeof inst.resume.at !== "string" || !validDate(inst.resume.at))) fail("pont de reprise");
+      if (inst.resumeLog != null) collection(inst.resumeLog, `${where} ponts`);
       // Règles propres au type : déclarées dans le registre (domain.js), appliquées ici.
       MODULE_TYPES[inst.type].validate(inst, {
         num: (v, name, min, max) => num(v, `${where} : ${name}`, min, max),
         list: (l, name) => { collection(l, `${where} ${name}`); ids(l, where); return l; },
-        fail: name => { throw new Error(`${where} : ${name} invalide`); }
+        ep: x => { if ((x.ep != null && !Object.hasOwn(EP_STATUS, x.ep)) || (x.epLog != null && !Array.isArray(x.epLog))) fail("statut"); },
+        fail
       });
     }
   }
@@ -824,7 +844,7 @@ const MODULE_TYPES = {
       if (inst.config.entryMode != null && inst.config.entryMode !== "delta" && inst.config.entryMode !== "total") v.fail("mode de saisie");
       if (inst.config.categories != null) v.list(inst.config.categories, "catégories").forEach(x => v.num(x.goal, "objectif de catégorie", 0));
       for (const e of inst.entries) v.num(e.value, "valeur");
-      for (const f of inst.scraps || []) if (f.category != null && typeof f.category !== "string") v.fail("fragment");
+      for (const f of inst.scraps || []) { if (f.category != null && typeof f.category !== "string") v.fail("fragment"); v.ep(f); }
     }
   },
   rappels: {
@@ -878,13 +898,15 @@ const MODULE_TYPES = {
     },
     validate(inst, v) {
       if (inst.config.inbox != null && typeof inst.config.inbox !== "boolean") v.fail("boîte de réception");
-      for (const e of inst.entries) if (typeof e.text !== "string") v.fail("texte");
+      for (const e of inst.entries) { if (typeof e.text !== "string") v.fail("texte"); v.ep(e); }
     }
   },
   collection: {
     label: "Collection (éléments à statuts, en colonnes ou en liste)",
     datedEntries: false, // un élément n'a pas de date de journal ; `due` est facultative
-    defaults: () => ({ config: { display: "liste", description: "", statuses: ["À faire", "En cours", "Fait"], doneFrom: 2, statusLabel: "Statut", addLabel: "Ajouter",
+    // review : la date d'un élément est un rendez-vous de révision (une décision à réexaminer), qui revient
+    // quel que soit son statut, sauf le dernier (abandonné, clos).
+    defaults: () => ({ config: { display: "liste", description: "", review: false, statuses: ["À faire", "En cours", "Fait"], doneFrom: 2, statusLabel: "Statut", addLabel: "Ajouter",
       fields: { title: "Titre", subtitle: "", tag: "Étiquette", due: "", text: "Note" },
       groups: { on: true, by: "tag", sort: "name", hideDone: false, title: "" } }, entries: [] }),
     normalize(inst) {
@@ -903,10 +925,12 @@ const MODULE_TYPES = {
           c.statuses.some(x => typeof x !== "string" || !x.trim() || x.length > 40))) v.fail("statuts");
       v.num(c.doneFrom, "statut « fait »", 0, 12);
       if (c.display != null && !["liste", "colonnes"].includes(c.display)) v.fail("affichage");
+      if (c.review != null && typeof c.review !== "boolean") v.fail("révision");
       if (c.fields != null && (typeof c.fields !== "object" || Object.values(c.fields).some(x => typeof x !== "string"))) v.fail("champs");
       for (const e of inst.entries) {
         if (typeof e.title !== "string") v.fail("titre");
         if (e.due && !(typeof e.due === "string" && validDate(e.due))) v.fail("date");
+        if (e.reviews != null && (!Array.isArray(e.reviews) || e.reviews.some(r => !r || typeof r.date !== "string" || !validDate(r.date) || typeof r.verdict !== "string"))) v.fail("réexamens");
       }
     }
   }
@@ -926,6 +950,41 @@ function saveCollectionItem(inst, input, id) {
   const e = { id, ...v };
   inst.entries.push(e);
   return e;
+}
+/* ---- statut épistémique : ce qu'une note ou un fragment revendique de savoir ----
+   Facultatif et vide par défaut. « Inexpliqué » est un statut à part entière, pas une corbeille. */
+const EP_STATUS = { obs: "observé", hyp: "hypothèse", int: "interprétation", inx: "inexpliqué" };
+/* « ? » en tête d'une saisie la marque comme hypothèse. Un seul préfixe, pour rester prévisible. */
+function epPrefix(raw) {
+  const m = String(raw).match(/^\s*\?\s*(\S[\s\S]*)$/);
+  return m ? { text: m[1], ep: "hyp" } : { text: String(raw), ep: null };
+}
+/* Chaque changement de statut est daté : on saura quand une hypothèse est devenue autre chose. */
+function setEpStatus(item, ep, date) {
+  const to = Object.hasOwn(EP_STATUS, ep) ? ep : null, from = item.ep || null;
+  if (to === from) return item;
+  if (to) item.ep = to; else delete item.ep;
+  item.epLog = [...(item.epLog || []), { from, to, date }].slice(-20);
+  return item;
+}
+/* ---- provenance : une note rangée ailleurs disparaît de la boîte ; ce qui en naît garde une copie figée
+   de son texte, de sa date et de son lieu d'origine. La plus ancienne origine l'emporte (une note déjà
+   rangée une fois garde sa naissance). */
+const entryIds = inst => new Set(["entries", "scraps"].flatMap(l => (inst[l] || []).map(e => e.id)));
+function stampOrigin(inst, before, note, from) {
+  const origin = note.origin || { from, text: note.text, date: note.date };
+  for (const list of ["entries", "scraps"]) for (const e of inst[list] || []) if (!before.has(e.id)) {
+    e.origin = origin;
+    if (note.ep && !e.ep && (list === "scraps" || inst.type === "notes")) e.ep = note.ep; // là où un statut se lit
+  }
+}
+/* ---- pont de reprise : le prochain geste, noté en quittant un module ----
+   Un pont remplacé ou levé part dans un historique court : ce qu'on comptait faire, et ce qu'il en est advenu. */
+function setResume(inst, text, date) {
+  const t = String(text || "").trim().slice(0, 200), old = inst.resume;
+  if (old && old.text === t) return;
+  if (old) inst.resumeLog = [...(inst.resumeLog || []), { text: old.text, at: old.at, end: date, how: t ? "remplacé" : "repris" }].slice(-30);
+  if (t) inst.resume = { text: t, at: date }; else delete inst.resume;
 }
 function numericValue(raw) {
   const value = raw != null && raw !== "" ? Number(raw) : null;
@@ -977,6 +1036,10 @@ const MODULE_TEMPLATES = [
   { id: "decouvertes", name: "À découvrir", type: "collection", hint: "Livres, albums, films : une liste à statuts",
     config: { display: "liste", statuses: ["À découvrir", "Découvert", "Retenu"], doneFrom: 1, addLabel: "Ajouter",
       fields: { title: "Titre", subtitle: "Auteur", tag: "Genre", due: "", text: "Note" } } },
+  { id: "decisions", name: "Décisions", type: "collection", hint: "Ce que tu as décidé, pourquoi, et quand le réexaminer",
+    config: { display: "liste", review: true, description: "La raison écrite au moment de décider, relue au moment de réexaminer.",
+      statuses: ["À décider", "Prise", "Abandonnée"], doneFrom: 1, statusLabel: "État", addLabel: "Noter une décision",
+      fields: { title: "Décision", subtitle: "", tag: "Domaine", due: "À réexaminer le", text: "Contexte, options écartées, raison, et ce qui te ferait changer d'avis" } } },
   { id: "rappels", name: "Soins", type: "rappels", hint: "Des gestes récurrents et depuis quand ils attendent",
     config: { types: [{ id: "arrosage", label: "Arrosage", every: 3 }] } },
   { id: "carnet", name: "Carnet", type: "notes", hint: "Des notes datées, gardées ou rangées ailleurs ensuite" }
@@ -1231,7 +1294,8 @@ VIEWS.accueil = () => {
   // Chaque ligne se déplie sur les derniers éléments du module, sans avoir à l'ouvrir.
   const rows = s.config.modules.filter(x => x.on && x.id !== inbox).map(x => {
     const inst = Object.hasOwn(s.modules, x.id) ? s.modules[x.id] : null, more = inst && TYPE_UI[inst.type].recent ? TYPE_UI[inst.type].recent(inst) : [];
-    return `<div class="over-wrap"><a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}</span><em class="hint" style="margin:0">ouvrir</em></a>${more.length ? `<details class="more"><summary>derniers éléments</summary><ul>${more.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
+    const r = inst && inst.resume, bridge = r ? `<small class="resume ${bridgeStale(r) ? "stale" : ""}">↳ ${esc(r.text)} · ${ago(r.at)}</small>` : "";
+    return `<div class="over-wrap"><a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}${bridge}</span><em class="hint" style="margin:0">ouvrir</em></a>${more.length ? `<details class="more"><summary>derniers éléments</summary><ul>${more.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
   }).join("");
   return `
   ${s.config.welcome ? `<section><h2>Composer ton espace</h2><p class="hint">Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.</p>
@@ -1257,6 +1321,23 @@ VIEWS.accueil = () => {
   </div>
   <section><div class="row" style="align-items:baseline"><h2>Où en sont les choses</h2><span class="spacer"></span><a class="btn ghost sm" href="#bilan">Bilan du ${bilanMode() === "mois" ? "mois" : "cycle"}</a></div>${rows}</section>`;
 };
+
+/* ================= pont de reprise =================
+   En haut de chaque module : le prochain geste noté la dernière fois, ou de quoi le noter en partant.
+   Le champ s'ouvre de lui-même à la fin du minuteur ; l'ignorer suffit à le refuser. */
+let bridgeOpen = null; // module dont le champ « prochain geste » est ouvert
+const bridgeStale = r => diffDays(todayISO(), r.at) > 14; // un pont vieux de deux semaines ment peut-être
+function bridgeBar(id, inst) {
+  const r = inst.resume, m = esc(id);
+  if (bridgeOpen === id) return `<div class="bridge"><input id="bridgeIn" data-mod="${m}" maxlength="200" value="${esc(r ? r.text : "")}" placeholder="Le prochain geste, pour la prochaine fois…" aria-label="Prochain geste"><button class="btn sm acc" data-act="bridge-save" data-mod="${m}">Garder</button><button class="btn ghost sm" data-act="bridge-close">plus tard</button></div>`;
+  if (r) return `<div class="bridge on ${bridgeStale(r) ? "stale" : ""}"><span>↳ <b>Reprendre :</b> ${esc(r.text)} <span class="hint">· noté ${ago(r.at)}</span></span><span class="acts"><button class="btn ghost sm" data-act="bridge-done" data-mod="${m}">fait</button><button class="btn ghost sm" data-act="bridge-edit" data-mod="${m}">modifier</button></span></div>`;
+  return `<div class="bridge off"><button class="btn ghost sm" data-act="bridge-edit" data-mod="${m}">Je m'arrête ici…</button></div>`;
+}
+function bridgeSave(id) {
+  const inst = S().modules[id], inp = $("#bridgeIn"); if (!inst || !inp) return;
+  setResume(inst, inp.value, todayISO()); bridgeOpen = null; site.save(); render();
+  toast(inst.resume ? "Noté. La prochaine fois commencera ici." : "Pont levé.");
+}
 
 const SUMMARY = {
   assistant: () => { const b = backend(); return b === "sample" ? "Branché via claude.ai" : b === "api" ? "Branché via ta clé API" : "Pas encore branché"; }
@@ -1291,11 +1372,19 @@ VIEWS.bilan = () => {
     return `<div class="over-wrap"><div class="over"><b>${esc(label(m.id))}</b><span>${esc(r || "—")}</span><em class="hint" style="margin:0">avant : ${esc(p || "—")}</em></div></div>`;
   }).join("");
   const tab = (m, l) => `<button class="btn sm ${mode === m ? "acc" : "ghost"}" data-act="bilan-mode" data-m="${m}">${l}</button>`;
+  // Ce que les idées notées pendant la période revendiquent de savoir ; chaque statut mène à la recherche.
+  const eps = epCounts(cur.from, cur.to), epLine = Object.keys(EP_STATUS).filter(k => eps[k]).map(k => `<button class="btn ghost sm" data-act="search-for" data-q="statut:${esc(EP_STATUS[k])}">${plural(eps[k], EP_STATUS[k])}</button>`).join("");
   return `<div class="row" style="margin-bottom:6px"><h2 style="margin:0">Bilan</h2><span class="spacer"></span>${tab("lune", "Cycle lunaire")}${tab("mois", "Mois")}</div>
   <div class="row" style="margin-bottom:18px"><button class="btn ghost" data-act="bilan-nav" data-d="1" aria-label="Période précédente">‹</button><b style="text-transform:none">${esc(cur.name)}</b>${bilanOffset ? `<button class="btn ghost" data-act="bilan-nav" data-d="-1" aria-label="Période suivante">›</button>` : ""}</div>
   <p class="hint">Ce qui s'est passé dans chaque module pendant la période, et, en face, la période d'avant. Aucune note, aucun trophée : les chiffres suffisent à culpabiliser.</p>
-  <section>${rows || `<p class="empty">Aucun module à résumer.</p>`}</section>`;
+  <section>${rows || `<p class="empty">Aucun module à résumer.</p>`}</section>
+  ${epLine ? `<section><h3>Statut des idées notées</h3><p class="hint">Ce qu'elles revendiquent de savoir. Une hypothèse n'est pas une faiblesse, c'est une dette à rembourser.</p><div class="row">${epLine}</div></section>` : ""}`;
 };
+function epCounts(from, to) {
+  const out = {};
+  for (const inst of Object.values(S().modules)) { const ui = TYPE_UI[inst.type]; if (ui && ui.texts) for (const t of ui.texts(inst)) if (t.ep && t.date && t.date >= from && t.date < to) out[t.ep] = (out[t.ep] || 0) + 1; }
+  return out;
+}
 
 /* ================= recherche =================
    Dans tous les textes de tous les modules (chaque type dit lesquels : TYPE_UI[type].texts), sans tenir
@@ -1304,19 +1393,22 @@ let searchQuery = "";
 // Chaque caractère devient sa forme sans accent et en minuscule, de même longueur exactement (sinon il reste tel
 // quel : emoji sur deux unités, « İ » qui devient deux lettres) : les positions restent alignées pour surligner.
 const fold = s => [...String(s)].map(ch => { const b = ch.normalize("NFD")[0].toLowerCase(); return b.length === ch.length ? b : ch; }).join("");
+/* « statut:hypothèse » (ou « statut:hyp ») ne garde que ce qui porte ce statut ; seul, il les liste tous. */
+const epQuery = w => { const q = w.slice(7); return q ? Object.keys(EP_STATUS).find(k => fold(EP_STATUS[k]).startsWith(q)) || "?" : "?"; };
 function searchAll(q) {
-  const terms = fold(q).split(/\s+/).filter(Boolean), out = [];
-  if (!terms.length) return out;
+  const words = fold(q).split(/\s+/).filter(Boolean), st = words.find(w => w.startsWith("statut:")), want = st ? epQuery(st) : null;
+  const terms = words.filter(w => !w.startsWith("statut:")), out = [];
+  if (!terms.length && !want) return out;
   for (const m of S().config.modules) {
     const inst = Object.hasOwn(S().modules, m.id) ? S().modules[m.id] : null, ui = inst && TYPE_UI[inst.type];
     if (!ui || !ui.texts) continue;
-    for (const t of ui.texts(inst)) { const f = fold(t.text); if (terms.every(w => f.includes(w))) out.push({ id: m.id, ...t }); }
+    for (const t of ui.texts(inst)) { const f = fold(t.text); if ((!want || t.ep === want) && terms.every(w => f.includes(w))) out.push({ id: m.id, ...t }); }
   }
   return out;
 }
 function highlight(text, q) {
   const f = fold(text), marks = [];
-  for (const w of fold(q).split(/\s+/).filter(Boolean)) { let i = f.indexOf(w); while (i >= 0) { marks.push([i, i + w.length]); i = f.indexOf(w, i + w.length); } }
+  for (const w of fold(q).split(/\s+/).filter(w => w && !w.startsWith("statut:"))) { let i = f.indexOf(w); while (i >= 0) { marks.push([i, i + w.length]); i = f.indexOf(w, i + w.length); } }
   marks.sort((a, b) => a[0] - b[0]);
   let html = "", pos = 0;
   for (const [a, b] of marks) { if (a < pos) continue; html += esc(text.slice(pos, a)) + `<mark>${esc(text.slice(a, b))}</mark>`; pos = b; }
@@ -1324,10 +1416,10 @@ function highlight(text, q) {
 }
 VIEWS.recherche = () => {
   const hits = searchAll(searchQuery);
-  return `<h2>Chercher</h2><p class="hint">Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. Touche « / » pour venir ici.</p>
+  return `<h2>Chercher</h2><p class="hint">Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « statut:hypothèse » ne garde que les hypothèses (de même pour observé, interprétation, inexpliqué). Touche « / » pour venir ici.</p>
   <input id="searchIn" type="search" value="${esc(searchQuery)}" placeholder="Un mot, un bout de phrase…" aria-label="Chercher" autocomplete="off" style="max-width:520px">
   ${searchQuery.trim() ? `<p class="hint" style="margin-top:12px">${hits.length ? plural(hits.length, "résultat") : "Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire."}</p>
-  <ul class="plain">${hits.slice(0, 80).map(h => `<li class="item"><span></span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}<div class="meta"><span class="tag">${esc(label(h.id))}</span>${h.date ? `<span>${fmt(h.date)}</span>` : ""}</div></div><a class="btn ghost sm" href="#${esc(h.id)}">ouvrir</a></li>`).join("")}</ul>` : ""}`;
+  <ul class="plain">${hits.slice(0, 80).map(h => `<li class="item"><span></span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}<div class="meta"><span class="tag">${esc(label(h.id))}</span>${h.date ? `<span>${fmt(h.date)}</span>` : ""}${h.ep ? `<span>${esc(EP_STATUS[h.ep])}</span>` : ""}</div></div><a class="btn ghost sm" href="#${esc(h.id)}">ouvrir</a></li>`).join("")}</ul>` : ""}`;
 };
 const PALETTES = [["nigredo", "Nigredo, mousse", "#6f9a68"], ["albedo", "Albedo, lichen", "#aab7a6"], ["citrinitas", "Citrinitas, résine", "#c99a3c"], ["rubedo", "Rubedo, amanite", "#c0554a"]];
 VIEWS.reglages = () => {
@@ -1413,20 +1505,20 @@ function render() {
   $("#main").querySelectorAll("[data-draft]").forEach(el => saveDraft(lastView, el)); // un champ vidé par l'envoi efface son brouillon
   if (view === lastView) $("#main").querySelectorAll("input[id],textarea[id],select[id]").forEach(el => { if (el.type !== "file" && el.type !== "checkbox") keep[el.id] = el.value; });
   if (document.activeElement && document.activeElement.id && keep[document.activeElement.id] != null) { focusId = document.activeElement.id; try { caret = document.activeElement.selectionStart; } catch {} }
-  $("#main").innerHTML = inst ? TYPE_UI[inst.type].view(view) : VIEWS[view]();
+  $("#main").innerHTML = inst ? bridgeBar(view, inst) + TYPE_UI[inst.type].view(view) : VIEWS[view]();
   for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && v !== "" && el.value !== v) el.value = v; }
   if (view !== lastView) $("#main").querySelectorAll("[data-draft]").forEach(el => { const v = loadDraft(view, el); if (v) el.value = v; });
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
   lastView = view;
 }
-window.addEventListener("hashchange", () => { openId = null; render(); const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t); if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); } else window.scrollTo(0, 0); });
+window.addEventListener("hashchange", () => { openId = null; bridgeOpen = null; render(); const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t); if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); } else window.scrollTo(0, 0); });
 
 /* ================= actions ================= */
 const idOf = el => el.closest("[data-id]")?.dataset.id;
 function capture() {
   const inp = $("#capIn"); if (!inp || !inp.value.trim()) return;
   const id = inboxId(S().modules); if (!id) return toast("Aucune boîte de réception : voir Réglages.");
-  const item = addCapture(S().modules[id].entries, inp.value, uid(), todayISO()); site.save(); inp.value = ""; render();
+  const item = addNote(S().modules[id], inp.value); site.save(); inp.value = ""; render();
   afterCapture(id, item, "Gardé. Tu peux oublier, c'est écrit.");
 }
 function entryAdd(id) {
@@ -1437,6 +1529,18 @@ const CLICK = {
   "grp-filter": el => { const m = el.dataset.mod, g = el.dataset.g; gFilter[m] = gFilter[m] === g ? "" : g; render(); },
   "goto-groups": el => { const id = "mreg-" + el.dataset.mod; if (location.hash === "#reglages") { const d = document.getElementById(id); if (d) { d.open = true; d.scrollIntoView(); } } else sessionStorage.setItem("selene-scroll", id); },
   "cap-add": capture,
+  "bridge-edit": el => { bridgeOpen = el.dataset.mod; render(); const i = $("#bridgeIn"); if (i) i.focus(); },
+  "bridge-save": el => bridgeSave(el.dataset.mod),
+  "bridge-close": () => { bridgeOpen = null; render(); },
+  "bridge-done": el => {
+    const id = el.dataset.mod, inst = S().modules[id], old = inst.resume; if (!old) return;
+    setResume(inst, "", todayISO()); site.save(); render();
+    toastUndo("Repris. Le pont est levé.", () => {
+      const cur = S().modules[id]; if (!cur || cur.resume) return;
+      cur.resume = old; cur.resumeLog = (cur.resumeLog || []).slice(0, -1); site.save(); render();
+    });
+  },
+  "search-for": el => { searchQuery = el.dataset.q; if (location.hash === "#recherche") render(); else location.hash = "recherche"; },
   "entry-add": el => entryAdd(el.dataset.mod),
   "entry-del": el => removeWithUndo(el.dataset.mod, "entries", idOf(el)),
   "bilan-mode": el => { try { localStorage.setItem("selene-bilan", el.dataset.m); } catch {} bilanOffset = 0; render(); },
@@ -1494,7 +1598,7 @@ document.addEventListener("keydown", e => {
   if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || "")) return;
   e.preventDefault(); location.hash = "recherche"; setTimeout(() => { const el = document.getElementById("searchIn"); if (el) el.focus(); }, 0);
 });
-document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && e.target.id === "bridgeIn") bridgeSave(e.target.dataset.mod); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
 const CHANGE = {}; // actions « change » des types de module (remplie par types.js)
 document.addEventListener("change", e => {
   const el = e.target, act = el.dataset.act;
@@ -1551,6 +1655,7 @@ document.addEventListener("change", e => {
 /* Au bout des quinze minutes, le module ouvert peut proposer une suite (noter la séance, le nouveau total). */
 function timerDone() {
   const view = location.hash.slice(1), inst = Object.hasOwn(S().modules, view) ? S().modules[view] : null, hook = inst && TYPE_UI[inst.type].timerDone;
+  if (inst) { bridgeOpen = view; render(); } // et le prochain geste, pendant qu'on s'en souvient
   if (!(hook && hook(view, inst, 15))) toast("Quinze minutes. Tu as le droit d'arrêter. Et celui de continuer.");
 }
 let left = 900, tick = null, endAt = 0;
@@ -1594,6 +1699,14 @@ const lastValue = inst => { const e = [...inst.entries].sort((a, b) => a.date.lo
 const recentBy = (list, n = 3) => [...list].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, n);
 const within = (list, from, to, key = "date") => list.filter(x => x[key] && x[key] >= from && x[key] < to);
 const plural = (n, word) => `${n} ${word}${n > 1 ? "s" : ""}`;
+/* D'où vient une entrée rangée depuis une boîte : le lieu et la date, et le texte d'origine s'il a changé. */
+function originHTML(e, current) {
+  const o = e.origin; if (!o) return "";
+  const same = String(current ?? "").trim() === o.text.trim(), short = o.text.length > 90 ? o.text.slice(0, 90) + "…" : o.text;
+  return `<span class="origin" title="${esc(o.text)}">↳ de ${esc(o.from)}${o.date ? `, ${fmt(o.date)}` : ""}${same ? "" : ` : « ${esc(short)} »`}</span>`;
+}
+/* Le statut épistémique d'un fragment ou d'une note, modifiable sur place ; vide par défaut. */
+const epSelect = (id, e) => `<select class="ep ${e.ep ? "on" : ""}" data-act="ep-set" data-mod="${esc(id)}" aria-label="Statut">${[["", "statut…"], ...Object.entries(EP_STATUS)].map(([k, l]) => `<option value="${k}" ${(e.ep || "") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
 /* Fin estimée d'un cumul au rythme des 30 derniers jours : une phrase, ou rien sans objectif. */
 function projection(inst) {
   const c = inst.config, goal = +c.goal || 0, tot = totalOf(inst);
@@ -1710,10 +1823,10 @@ const TYPE_UI = {
     <p class="hint">Dernière session ${ago(last)}. Série de ${streakOf(inst.entries.map(x => x.date))} jour(s). ${esc(projection(inst))}</p>
     <div class="row"><input type="number" id="cumIn" min="${total ? 0 : 1}" placeholder="${total ? `Total atteint (${esc(c.unitLabel)})` : `${esc(c.unitLabel)} aujourd'hui`}" style="max-width:200px" inputmode="numeric" aria-label="${total ? "Total atteint" : "Ajout du jour"}">${c.categories.length ? `<select id="cumCat" aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">Hors ${esc(c.categoryLabel).toLowerCase()}</option>${c.categories.map(x => `<option value="${esc(x.id)}" ${x.id === lastCat ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>` : ""}<button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">Ajouter</button></div>
     <div style="margin-top:28px">${c.categories.length ? cumulGroupPanel(id) : `<p class="hint">Ajoute des ${esc(c.categoryLabel).toLowerCase()}s dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a> pour suivre chacune en pourcentage.</p>`}</div>
-  </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">Une phrase qui passe, avant qu'elle ne reparte.</p>
+  </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">Une phrase qui passe, avant qu'elle ne reparte. Un « ? » devant en fait une hypothèse.</p>
     <textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="Nouveau"></textarea><div class="row" style="margin-top:8px">${catSelect("scrapCat", "", lastScrapCat)}<button class="btn" data-act="scrap-add" data-mod="${esc(id)}">Garder</button></div>
     ${c.categories.length || inst.scraps.length ? `<div class="row" style="margin-top:14px">${c.categories.length ? `<select data-act="scrap-f" data-mod="${esc(id)}" aria-label="Filtrer"><option value="*">Tous</option>${[["", `Hors ${c.categoryLabel.toLowerCase()}`], ...c.categories.map(x => [x.id, x.name])].map(([k, n]) => `<option value="${esc(k)}" ${ff === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : ""}<span class="spacer"></span>${inst.scraps.length ? `<button class="btn ghost sm" data-act="scrap-md" data-mod="${esc(id)}">Exporter en Markdown</button>` : ""}</div>` : ""}
-    <ul class="plain" style="margin-top:10px">${[...inst.scraps].reverse().filter(f => ff === "*" || (f.category || "") === ff).map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}</div></div><button class="btn ghost sm" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Rien pour l'instant.</li>`}</ul>
+    <ul class="plain" style="margin-top:10px">${[...inst.scraps].reverse().filter(f => ff === "*" || (f.category || "") === ff).map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${originHTML(f, f.text)}</div></div><button class="btn ghost sm" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Rien pour l'instant.</li>`}</ul>
   </section>` : ""}</div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>Titre / sous-titre<input data-set-mod="${esc(id)}.title" value="${esc(c.title || "")}"></label><label>Objectif<input type="number" min="1" data-set-mod="${esc(id)}.goal" value="${esc(c.goal)}"></label></div>
@@ -1730,7 +1843,7 @@ const TYPE_UI = {
     },
     recent: inst => recentBy(inst.entries).map(x => `${fmt(x.date)} · ${x.value > 0 ? "+" : ""}${x.value ?? "?"} ${inst.config.unitLabel}`),
     review: (inst, from, to) => { const n = within(inst.entries, from, to).reduce((a, x) => a + (+x.value || 0), 0), f = within(inst.scraps || [], from, to).length; return `${n > 0 ? "+" : ""}${n.toLocaleString("fr-FR")} ${inst.config.unitLabel}${inst.config.scraps ? `, ${plural(f, inst.config.scrapsLabel.toLowerCase().replace(/s$/, ""))}` : ""}`; },
-    texts: inst => [...(inst.scraps || []).map(f => ({ text: f.text, date: f.date })), ...inst.config.categories.map(c => ({ text: c.name }))],
+    texts: inst => [...(inst.scraps || []).map(f => ({ text: f.text, date: f.date, ep: f.ep })), ...inst.config.categories.map(c => ({ text: c.name }))],
     timerDone(id, inst) {
       const inp = $("#cumIn"); if (!inp) return false;
       inp.focus();
@@ -1750,7 +1863,12 @@ const TYPE_UI = {
       toast(v > 0 ? `+${v.toLocaleString("fr-FR")} ${unit}. Ça avance, que tu y croies ou non.` : `${v.toLocaleString("fr-FR")} ${unit}. Couper, c'est aussi écrire.`);
     },
     click: {
-      "scrap-add": el => { const v = $("#scrapIn").value.trim(); if (!v) return; const cat = $("#scrapCat") ? $("#scrapCat").value : ""; instOf(el).scraps.push({ id: uid(), text: v, date: todayISO(), ...(cat ? { category: cat } : {}) }); $("#scrapIn").value = ""; site.save(); render(); },
+      "scrap-add": el => {
+        const v = $("#scrapIn").value.trim(); if (!v) return;
+        const cat = $("#scrapCat") ? $("#scrapCat").value : "", p = epPrefix(v);
+        instOf(el).scraps.push({ id: uid(), text: p.text, date: todayISO(), ...(cat ? { category: cat } : {}), ...(p.ep ? { ep: p.ep } : {}) }); $("#scrapIn").value = ""; site.save(); render();
+        if (p.ep) toast("Gardé comme hypothèse. Elle attendra ses preuves.");
+      },
       "scrap-md": el => { const id = el.dataset.mod; downloadFile(`${id}-${todayISO()}.md`, scrapsMarkdown(id, S().modules[id]), "text/markdown", label(id)); },
       "scrap-del": el => removeWithUndo(el.dataset.mod, "scraps", idOf(el)),
       "cat-add": el => { const inst = instOf(el); inst.config.categories.push({ id: uid(), name: `${inst.config.categoryLabel} ${inst.config.categories.length + 1}`, goal: 0 }); site.save(); render(); },
@@ -1775,7 +1893,7 @@ const TYPE_UI = {
     ${c.types.map(line).join("")}
     <div class="row" style="margin-top:14px"><input id="rapNote" data-draft placeholder="Observation…" aria-label="Observation"><button class="btn" data-act="entry-note" data-mod="${esc(id)}">Noter</button></div>
     <p class="hint" style="margin-top:10px">Réglable dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a>.</p>
-  </section><section><h3>Journal</h3><ul class="plain">${recent.map(l => `<li class="item" data-id="${esc(l.id)}"><span></span><div><span class="tag">${esc(l.type)}</span> ${fmt(l.date)}${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}</div><button class="btn ghost sm" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune entrée.</li>`}</ul></section></div>`;
+  </section><section><h3>Journal</h3><ul class="plain">${recent.map(l => `<li class="item" data-id="${esc(l.id)}"><span></span><div><span class="tag">${esc(l.type)}</span> ${fmt(l.date)}${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}${l.origin ? `<div class="meta">${originHTML(l, l.note)}</div>` : ""}</div><button class="btn ghost sm" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune entrée.</li>`}</ul></section></div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>Sous-titre (ex. nom propre)<input data-set-mod="${esc(id)}.subtitle" value="${esc(c.subtitle || "")}"></label><span></span></div>
     <div style="margin-top:10px"><span class="hint" style="margin:0">Types et rappels</span>${c.types.map((t, i) => `<div class="set" data-ti="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="typ-name" data-mod="${esc(id)}" value="${esc(t.label)}" aria-label="Nom"><input type="number" min="0" data-act="typ-every" data-mod="${esc(id)}" value="${esc(t.every || "")}" placeholder="tous les X j" aria-label="Fréquence"><button class="btn ghost sm" data-act="typ-del" data-mod="${esc(id)}">suppr.</button></div>`).join("")}<button class="btn sm" data-act="typ-add" data-mod="${esc(id)}" style="margin-top:8px">Ajouter un type</button></div>`,
@@ -1813,6 +1931,8 @@ const colFilter = {}; // filtre de statut du mode liste, par module (propre à l
 const modOf = el => el.closest("[data-mod]").dataset.mod;
 const itemOf = el => S().modules[modOf(el)].entries.find(x => x.id === idOf(el));
 const collectionDoneLines = ["« %t » est passé à « %s ». Le monde n'a rien remarqué, comme prévu.", "« %t » : %s. Une chose de moins qui attend ton attention.", "%s : « %t ». L'Œuvre avance, à pas de lichen."];
+/* Dernier réexamen d'un élément (collection en mode révision) : quand, et ce qu'il en est sorti. */
+const reviewedHTML = e => { const r = (e.reviews || []).at(-1); return r ? `<span>${esc(r.verdict)} le ${fmt(r.date)}</span>` : ""; };
 function collectionForm(id, item) {
   const c = S().modules[id].config, f = c.fields;
   const extra = [f.subtitle && { n: "subtitle", l: f.subtitle }, f.tag && { n: "tag", l: f.tag }, f.due && { n: "due", l: f.due, t: "date" }].filter(Boolean);
@@ -1823,11 +1943,15 @@ function collectionForm(id, item) {
   openForm(item ? `Modifier « ${item.title} »` : c.addLabel, fields, item || { status: c.statuses[0] }, v => {
     const inst = S().modules[id]; // relu : une synchro a pu remplacer les données pendant la saisie
     if (!inst) return toast("Ce module a été supprimé entre-temps.");
-    saveCollectionItem(inst, v, item ? item.id : uid()); site.save(); render();
+    const cur = item && inst.entries.find(x => x.id === item.id), wasDue = cur && inst.config.review && cur.due && cur.due <= todayISO();
+    const e = saveCollectionItem(inst, v, item ? item.id : uid());
+    // Un rendez-vous de révision échu, déplacé ou retiré en modifiant l'élément : c'est un réexamen.
+    if (wasDue && e.due !== cur.due) e.reviews = [...(e.reviews || []), { date: todayISO(), verdict: "revue" }];
+    site.save(); render();
   });
 }
 function collectionCard(id, e, ci, last) {
-  const f = S().modules[id].config.fields, meta = [f.tag && e.tag ? `<span class="tag">${esc(e.tag)}</span>` : "", f.due && e.due ? `<span>${fmt(e.due)}</span>` : ""].join("");
+  const f = S().modules[id].config.fields, meta = [f.tag && e.tag ? `<span class="tag">${esc(e.tag)}</span>` : "", f.due && e.due ? `<span>${fmt(e.due)}</span>` : "", originHTML(e, e.title)].join("");
   return `<div class="card" data-id="${esc(e.id)}"><b>${esc(e.title)}</b>${f.subtitle && e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ""}${meta ? `<div class="meta">${meta}</div>` : ""}${f.text && e.text ? `<p>${esc(e.text.slice(0, 160))}${e.text.length > 160 ? "…" : ""}</p>` : ""}
       <div class="row">${ci > 0 ? `<button class="btn ghost sm" data-act="col-move" data-d="-1" aria-label="Reculer">←</button>` : ""}${ci < last ? `<button class="btn ghost sm" data-act="col-move" data-d="1" aria-label="Avancer">→</button>` : ""}<span class="spacer"></span><button class="btn ghost sm" data-act="col-edit">modifier</button><button class="btn ghost sm" data-act="col-del">suppr.</button></div></div>`;
 }
@@ -1844,7 +1968,7 @@ TYPE_UI.collection = {
     const filter = colFilter[id] || "", shown = items.filter(e => !filter || e.status === filter);
     return `<div data-mod="${esc(id)}">${head}
   <div class="row" style="margin-bottom:10px"><select data-act="col-f" aria-label="Filtrer"><option value="">Tous</option>${c.statuses.map(st => `<option ${st === filter ? "selected" : ""}>${esc(st)}</option>`).join("")}</select></div>
-  <div class="two"><div><ul class="plain">${shown.map(e => `<li class="item" data-id="${esc(e.id)}"><span></span><div><b>${esc(e.title)}</b>${f.subtitle ? (e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ` <span class="hint">${esc(f.subtitle.toLowerCase())} à préciser</span>`) : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}</div>
+  <div class="two"><div><ul class="plain">${shown.map(e => `<li class="item" data-id="${esc(e.id)}"><span></span><div><b>${esc(e.title)}</b>${f.subtitle ? (e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ` <span class="hint">${esc(f.subtitle.toLowerCase())} à préciser</span>`) : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${c.review ? "à réexaminer le " : ""}${fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}${reviewedHTML(e) || e.origin ? `<div class="meta">${reviewedHTML(e)}${originHTML(e, e.title)}</div>` : ""}</div>
     <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm" data-act="col-edit">modifier</button><button class="btn ghost sm" data-act="col-del">suppr.</button></div></li>`).join("") || `<li class="empty">Rien dans ce filtre.</li>`}</ul></div><div>${panel}</div></div></div>`;
   },
   settings: (id, { config: c }) => {
@@ -1857,16 +1981,29 @@ TYPE_UI.collection = {
     <div class="field-row" style="margin-top:8px">${field("tag", "Étiquette (sert au regroupement)", "(masquée)")}${field("due", "Date", "(masquée)")}</div>
     <div class="field-row" style="margin-top:8px">${field("text", "Texte long", "(masqué)")}<span></span></div>
     <div style="margin-top:10px"><span class="hint" style="margin:0">${esc(c.statusLabel)}s, dans l'ordre</span>${c.statuses.map((st, i) => `<div class="set" data-si="${i}" style="grid-template-columns:1fr auto"><input data-act="st-name" data-mod="${fid}" value="${esc(st)}" aria-label="Nom du statut"><div class="row"><button class="btn ghost sm" data-act="st-up" data-mod="${fid}" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="st-del" data-mod="${fid}">suppr.</button></div></div>`).join("")}<button class="btn sm" data-act="st-add" data-mod="${fid}" style="margin-top:8px">Ajouter un statut</button></div>
-    <div class="field-row" style="margin-top:10px"><label>Compte comme fait à partir de<select data-act="col-done" data-mod="${fid}">${c.statuses.map((st, i) => i ? `<option value="${i}" ${c.doneFrom === i ? "selected" : ""}>${esc(st)}</option>` : "").join("")}</select></label><span></span></div>`;
+    <div class="field-row" style="margin-top:10px"><label>Compte comme fait à partir de<select data-act="col-done" data-mod="${fid}">${c.statuses.map((st, i) => i ? `<option value="${i}" ${c.doneFrom === i ? "selected" : ""}>${esc(st)}</option>` : "").join("")}</select></label><span></span></div>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-review" data-mod="${fid}" ${c.review ? "checked" : ""}>La date est un rendez-vous de révision : elle revient sur l'accueil quel que soit le ${esc(c.statusLabel.toLowerCase())}, sauf le dernier</label>`;
   },
   accept: (id, inst, note) => { saveCollectionItem(inst, { title: note.text }, uid()); },
   recent: inst => inst.entries.slice(-3).reverse().map(e => `${e.title}${e.subtitle ? " – " + e.subtitle : ""} · ${e.status}`),
   // Sans date de changement de statut, le bilan ne peut compter que ce qui était prévu dans la période.
-  review: (inst, from, to) => { const c = inst.config; if (!c.fields.due) return null; const es = within(inst.entries, from, to, "due"); return es.length ? `${plural(es.length, "prévu")}, dont ${es.filter(e => c.statuses.indexOf(e.status) >= c.doneFrom).length} « ${c.statuses[c.doneFrom]} »` : "Rien de prévu"; },
+  review: (inst, from, to) => {
+    const c = inst.config; if (!c.fields.due) return null;
+    if (c.review) {
+      const due = within(inst.entries, from, to, "due").filter(e => e.status !== c.statuses.at(-1)).length, done = inst.entries.flatMap(e => within(e.reviews || [], from, to)).length;
+      return due || done ? `${due} à réexaminer, ${plural(done, "réexamen")} fait${done > 1 ? "s" : ""}` : "Rien à réexaminer";
+    } const es = within(inst.entries, from, to, "due"); return es.length ? `${plural(es.length, "prévu")}, dont ${es.filter(e => c.statuses.indexOf(e.status) >= c.doneFrom).length} « ${c.statuses[c.doneFrom]} »` : "Rien de prévu"; },
   texts: inst => inst.entries.map(e => ({ text: [e.title, e.subtitle, e.tag, e.text].filter(Boolean).join(" · "), date: e.due || null })),
   // Ce qui est prévu aujourd'hui ou en retard, et pas encore « fait ».
-  alerts: (id, inst, now) => inst.config.fields.due ? inst.entries.filter(e => e.due && e.due <= now && inst.config.statuses.indexOf(e.status) < inst.config.doneFrom).map(e => ({
-    text: `« ${esc(e.title)} » : ${e.due < now ? "en retard" : "prévu aujourd'hui"} (${esc(label(id))})`, href: `#${id}` })) : [],
+  alerts: (id, inst, now) => {
+    const c = inst.config; if (!c.fields.due) return [];
+    // Mode révision : le rendez-vous revient quel que soit le statut, sauf le dernier ; relire la raison d'abord.
+    if (c.review) return inst.entries.filter(e => e.due && e.due <= now && e.status !== c.statuses.at(-1)).map(e => ({
+      text: `« ${esc(e.title)} » : à réexaminer (${esc(label(id))})`,
+      actions: `<button class="btn sm" data-act="col-reread" data-mod="${esc(id)}" data-id="${esc(e.id)}">relire</button><button class="btn ghost sm" data-act="col-keep" data-mod="${esc(id)}" data-id="${esc(e.id)}">maintenue</button>` }));
+    return inst.entries.filter(e => e.due && e.due <= now && c.statuses.indexOf(e.status) < c.doneFrom).map(e => ({
+      text: `« ${esc(e.title)} » : ${e.due < now ? "en retard" : "prévu aujourd'hui"} (${esc(label(id))})`, href: `#${id}` }));
+  },
   summary: (id, inst) => inst.config.statuses.map(st => [st, inst.entries.filter(e => e.status === st).length]).filter(([, n]) => n).map(([st, n]) => `${esc(st)} : ${n}`).join(", ") || "Vide",
   context(inst, nm) {
     const c = inst.config;
@@ -1880,6 +2017,17 @@ TYPE_UI.collection = {
   click: {
     "col-new": el => collectionForm(modOf(el), null),
     "col-edit": el => collectionForm(modOf(el), itemOf(el)),
+    "col-reread": el => { const e = itemOf(el); if (e) collectionForm(modOf(el), e); },
+    // Réexaminée, rien ne change : noté, et le rendez-vous est levé (« Annuler » le remet).
+    "col-keep": el => {
+      const id = modOf(el), e = itemOf(el); if (!e) return;
+      const due = e.due, itemId = e.id;
+      e.reviews = [...(e.reviews || []), { date: todayISO(), verdict: "maintenue" }]; e.due = ""; site.save(); render();
+      toastUndo("Maintenue. La raison d'alors tient encore.", () => {
+        const cur = S().modules[id] && S().modules[id].entries.find(x => x.id === itemId); if (!cur) return;
+        cur.due = due; cur.reviews = (cur.reviews || []).slice(0, -1); site.save(); render();
+      });
+    },
     "col-del": el => removeWithUndo(modOf(el), "entries", idOf(el)),
     "col-move": el => {
       const c = S().modules[modOf(el)].config, e = itemOf(el), i = Math.max(0, Math.min(c.statuses.length - 1, c.statuses.indexOf(e.status) + +el.dataset.d));
@@ -1909,6 +2057,7 @@ TYPE_UI.collection = {
     "col-f": el => { colFilter[modOf(el)] = el.value; render(); },
     "col-st": el => { itemOf(el).status = el.value; site.save(); render(); },
     "col-done": el => { instOf(el).config.doneFrom = +el.value; site.save(); render(); },
+    "col-review": el => { instOf(el).config.review = el.checked; site.save(); render(); },
     "st-name": el => {
       const inst = instOf(el), c = inst.config, i = +el.closest("[data-si]").dataset.si, from = c.statuses[i], to = el.value.trim();
       if (!to || to === from) return render();
@@ -1949,7 +2098,7 @@ function taskHTML(id, t) {
     <button class="star ${t.today ? "on" : ""}" data-act="task-today" title="Faire aujourd'hui" aria-label="Faire aujourd'hui">★</button>
     <div class="details">
       ${(t.steps || []).length ? `<ul class="steps">${t.steps.map((x, i) => `<li><input type="checkbox" data-act="task-step" data-i="${i}" ${x.d ? "checked" : ""} id="s${esc(t.id)}-${i}"><label for="s${esc(t.id)}-${i}" style="font-weight:400;display:inline">${esc(x.t)}</label></li>`).join("")}</ul>` : ""}
-      ${t.note ? `<p class="note">${esc(t.note)}</p>` : ""}
+      ${t.note ? `<p class="note">${esc(t.note)}</p>` : ""}${t.origin ? `<p class="meta">${originHTML(t, t.title)}</p>` : ""}
       <div class="row"><button class="btn ghost sm" data-act="task-edit">Modifier</button><button class="btn ghost sm" data-act="task-del">Supprimer</button></div>
     </div></li>`;
 }
@@ -2176,14 +2325,28 @@ function fileIntent(intent, fromId, noteId) {
   let then;
   if (intent.kind === "budget") addBudgetEntry(target.entries, { amount: intent.amount, type: "dépense", cat: intent.cat, note: intent.note, date: note.date }, uid(), todayISO());
   else if (intent.kind === "minutes") addJournalEntry(target, { date: note.date, value: intent.value }, uid(), todayISO());
-  else then = TYPE_UI[target.type].accept(intent.to, target, { ...note, text: intent.text });
+  else then = acceptNote(intent.to, fromId, note, intent.text);
   src.entries = src.entries.filter(x => x.id !== noteId); site.save(); render();
   if (typeof then === "function") then(); else toast(`Rangé : ${intent.say}.`);
+}
+/* Confie une note à un autre module ; ce qui en naît garde sa provenance (et son statut, là où il se lit). */
+function acceptNote(toId, fromId, note, text = note.text) {
+  const target = S().modules[toId], before = entryIds(target);
+  const then = TYPE_UI[target.type].accept(toId, target, { ...note, text });
+  stampOrigin(target, before, note, label(fromId));
+  return then;
+}
+/* Saisie d'une note : un « ? » en tête la range parmi les hypothèses. */
+function addNote(inst, raw) {
+  const p = epPrefix(raw), item = addCapture(inst.entries, p.text, uid(), todayISO());
+  if (p.ep) item.ep = p.ep;
+  return item;
 }
 /* Après une capture : proposer le rangement reconnu, sinon le message habituel. */
 function afterCapture(boxId, item, fallback) {
   const intent = captureIntent(item.text);
   if (intent && intent.to !== boxId) toastAction(`${intent.say} ?`, "Ranger", () => fileIntent(intent, boxId, item.id), 10000);
+  else if (item.ep) toast("Gardé comme hypothèse. Elle attendra ses preuves.");
   else if (fallback) toast(fallback);
 }
 /* Où une note peut être rangée : les modules actifs qui savent la recevoir, dans l'ordre de la navigation.
@@ -2200,7 +2363,7 @@ TYPE_UI.notes = {
     const inst = S().modules[id], c = inst.config, targets = noteTargets(id);
     return `<div data-mod="${esc(id)}"><h2>${esc(label(id))}</h2>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}
   <div class="capture" style="margin-bottom:18px"><input id="noteIn" data-draft placeholder="${esc(c.placeholder)}" aria-label="Nouvelle note"><button class="btn acc" data-act="note-add">Garder</button></div>
-  <ul class="plain">${[...inst.entries].reverse().map(x => { const intent = captureIntent(x.text); return `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}</div>
+  <ul class="plain">${[...inst.entries].reverse().map(x => { const intent = captureIntent(x.text); return `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}${epSelect(id, x)}${originHTML(x, x.text)}</div>
     ${intent && intent.to !== id ? `<div class="row" style="margin-top:6px"><button class="btn sm acc" data-act="note-file">Ranger : ${esc(intent.say)}</button></div>` : ""}
     ${targets.length ? `<div class="row" style="margin-top:6px">${targets.map(k => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
     <button class="btn ghost sm" data-act="note-del">suppr.</button></li>`; }).join("") || `<li class="empty">${c.inbox ? "Vide. Le silence d'une clairière, ou celui d'un cerveau." : "Rien pour l'instant."}</li>`}</ul></div>`;
@@ -2212,12 +2375,12 @@ TYPE_UI.notes = {
   badge: inst => inst.config.inbox ? inst.entries.length : 0,
   recent: inst => inst.entries.slice(-3).reverse().map(x => x.text.length > 80 ? x.text.slice(0, 80) + "…" : x.text),
   review: (inst, from, to) => plural(within(inst.entries, from, to).length, "note"),
-  texts: inst => inst.entries.map(x => ({ text: x.text, date: x.date })),
+  texts: inst => inst.entries.map(x => ({ text: x.text, date: x.date, ep: x.ep })),
   accept: (id, inst, note) => { addCapture(inst.entries, note.text, uid(), note.date); },
   click: {
     "note-add": el => {
       const inp = $("#noteIn"); if (!inp || !inp.value.trim()) return;
-      const id = modOf(el), item = addCapture(S().modules[id].entries, inp.value, uid(), todayISO()); inp.value = ""; site.save(); render();
+      const id = modOf(el), item = addNote(S().modules[id], inp.value); inp.value = ""; site.save(); render();
       afterCapture(id, item);
     },
     "note-file": el => { const id = modOf(el), note = S().modules[id].entries.find(x => x.id === idOf(el)), intent = note && captureIntent(note.text); if (intent) fileIntent(intent, id, note.id); },
@@ -2225,7 +2388,7 @@ TYPE_UI.notes = {
     "note-to": el => {
       const s = S(), src = s.modules[modOf(el)], note = src.entries.find(x => x.id === idOf(el)), to = el.dataset.to;
       const drop = () => { src.entries = src.entries.filter(x => x !== note); site.save(); };
-      const target = s.modules[to], then = TYPE_UI[target.type].accept(to, target, note);
+      const then = acceptNote(to, modOf(el), note);
       drop(); render();
       if (typeof then === "function") then(); else toast(`Rangé dans ${label(to)}.`);
     }
@@ -2237,6 +2400,12 @@ TYPE_UI.notes = {
       site.save(); render();
     }
   }
+};
+/* Statut épistémique, commun aux fragments et aux notes : l'élément est cherché dans les deux listes du module. */
+CHANGE["ep-set"] = el => {
+  const inst = S().modules[modOf(el)], id = idOf(el), item = inst && [...inst.entries, ...(inst.scraps || [])].find(x => x.id === id);
+  if (!item) return;
+  setEpStatus(item, el.value, todayISO()); site.save(); render();
 };
 // Les actions propres à chaque type rejoignent les tables d'actions globales (un nom en double serait un bug).
 for (const [type, ui] of Object.entries(TYPE_UI)) for (const [table, acts] of [[CLICK, ui.click], [CHANGE, ui.change]]) for (const [act, fn] of Object.entries(acts || {})) {
