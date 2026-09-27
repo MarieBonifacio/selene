@@ -15,12 +15,11 @@ function setSaving(t) { $("#saving").textContent = t; }
 /* ================= stores ================= */
 
 const MODULE_DEFS = {
-  chantier: "Chantier", budget: "Budget", assistant: "Assistant"
+  chantier: "Chantier", assistant: "Assistant"
 };
 const MODULE_ORDER = ["chantier", "kundalini", "ecriture", "moth", "phidippus", "musique", "budget", "assistant", "inbox"];
 const OFF_BY_DEFAULT = ["assistant"];
 const money = n => (+n || 0).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
-let budMonth = iso(new Date()).slice(0, 7);
 function siteSeed() {
   const modules = {
     kundalini: { type: "programme", label: "Kundalini", config: { unitLabel: "min", start: null, weeks: 12, perWeek: 5 }, entries: [] },
@@ -29,14 +28,14 @@ function siteSeed() {
     moth: SECTION_TO_MODULE.moth({ posts: [] }),
     musique: SECTION_TO_MODULE.musique({ albums: ["Ulver", "Dead Can Dance", "Kate Bush", "Jonathan Hultén", "Chelsea Wolfe", "Zola Jesus", "iamamiwhoami"]
       .map(a => ({ id: uid(), artist: a, album: "", status: "À écouter", note: "" })) }),
-    inbox: SECTION_TO_MODULE.inbox({ items: [] })
+    inbox: SECTION_TO_MODULE.inbox({ items: [] }),
+    budget: SECTION_TO_MODULE.budget({ entries: [], envelopes: [["Travaux", 500], ["Courses", 300], ["Loisirs", 100], ["Abonnements", 50]].map(([name, limit]) => ({ id: uid(), name, limit })) })
   };
   return {
     updatedAt: 0, schemaVersion: SCHEMA_VERSION,
     config: { name: "Selene", palette: "nigredo", mode: "auto", labels: {}, groups: {},
       modules: MODULE_ORDER.map(id => ({ id, on: !OFF_BY_DEFAULT.includes(id) })),
       assistant: { model: "claude-sonnet-5", actions: true, share: { chantier: true, kundalini: true, ecriture: true, moth: true, phidippus: true, musique: true, budget: false, inbox: true } } },
-    budget: { entries: [], envelopes: [["Travaux", 500], ["Courses", 300], ["Loisirs", 100], ["Abonnements", 50]].map(([name, limit]) => ({ id: uid(), name, limit })) },
     modules
   };
 }
@@ -116,17 +115,6 @@ const GROUPERS = {
   },
 
 };
-GROUPERS.budget = {
-  fields: { cat: "Enveloppe" }, renamable: ["cat"], filterable: true,
-  items: () => S().budget.entries, key: e => e.cat || "Sans enveloppe", store: () => site,
-  groups() {
-    const b = S().budget, sums = new Map();
-    b.entries.filter(e => e.type === "dépense" && (e.date || "").slice(0, 7) === budMonth).forEach(e => { const k = e.cat || "Sans enveloppe"; sums.set(k, (sums.get(k) || 0) + (+e.amount || 0)); });
-    const out = b.envelopes.map((v, i) => { const s = sums.get(v.name) || 0; sums.delete(v.name); return { name: v.name, num: s, den: +v.limit || 0, pct: +v.limit ? Math.round(100 * s / v.limit) : null, sub: `${money(s)} sur ${money(v.limit)}`, order: i }; });
-    for (const [n, s] of sums) out.push({ name: n, num: s, den: 0, pct: null, sub: money(s), order: 900 });
-    return out;
-  }
-};
 /* Remet un document du site dans la forme attendue (migration des anciens formats, champs ajoutés
    depuis, entrées de navigation manquantes). Appelée par le store à chaque fois que des données y entrent
    (lecture locale, synchro, import) : S() n'a donc plus rien à corriger et se contente de lire. */
@@ -155,7 +143,7 @@ const enabled = id => { const m = S().config.modules.find(m => m.id === id); ret
 function grouperFor(mod) {
   if (Object.hasOwn(GROUPERS, mod)) return GROUPERS[mod];
   const inst = Object.hasOwn(S().modules, mod) ? S().modules[mod] : null;
-  return inst && TYPE_UI[inst.type].grouper ? TYPE_UI[inst.type].grouper(inst) : null;
+  return inst && TYPE_UI[inst.type].grouper ? TYPE_UI[inst.type].grouper(inst, mod) : null;
 }
 const gcfg = mod => Object.hasOwn(GROUPERS, mod) ? S().config.groups[mod] : S().modules[mod].config.groups;
 const groupBy = mod => { const G = grouperFor(mod), by = gcfg(mod).by; return G.fields[by] ? by : Object.keys(G.fields)[0]; }; // un champ désactivé depuis ne casse rien
@@ -289,7 +277,6 @@ VIEWS.accueil = () => {
 
 const SUMMARY = {
   chantier: () => { const o = openTasks(), now = todayISO(), late = o.filter(t => t.due && t.due < now).length; const all = board.data.tasks.length; return `${late ? `<span class="late">${late} en retard</span>, ` : ""}${o.length} à faire, ${all ? Math.round(100 * (all - o.length) / all) : 0} % du chantier`; },
-  budget: () => { const m = todayISO().slice(0, 7), es = S().budget.entries.filter(e => (e.date || "").slice(0, 7) === m); const out = es.filter(e => e.type === "dépense").reduce((a, e) => a + +e.amount, 0), inn = es.filter(e => e.type === "revenu").reduce((a, e) => a + +e.amount, 0); return `Ce mois-ci : ${money(out)} dépensés, solde <span class="${inn - out < 0 ? "neg" : "pos"}">${money(inn - out)}</span>`; },
   assistant: () => { const b = backend(); return b === "sample" ? "Branché via claude.ai" : b === "api" ? "Branché via ta clé API" : "Pas encore branché"; }
 };
 function summaryFor(id) {
@@ -327,29 +314,6 @@ VIEWS.chantier = () => {
 
 
 
-VIEWS.budget = () => {
-  const b = S().budget, es = b.entries.filter(e => (e.date || "").slice(0, 7) === budMonth);
-  const out = es.filter(e => e.type === "dépense").reduce((a, e) => a + +e.amount, 0), inn = es.filter(e => e.type === "revenu").reduce((a, e) => a + +e.amount, 0);
-  const shown = es.filter(e => gMatch("budget", e)).sort((a, x) => x.date.localeCompare(a.date));
-  const mLabel = new Date(budMonth + "-15").toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-  const chantierLeft = enabled("chantier") ? openTasks().filter(t => t.cost).reduce((a, t) => a + +t.cost, 0) : 0;
-  const defDate = budMonth === todayISO().slice(0, 7) ? todayISO() : budMonth + "-01";
-  return `<div class="row" style="margin-bottom:6px"><h2 style="margin:0">${esc(label("budget"))}</h2><span class="spacer"></span>
-    <button class="btn ghost" data-act="bud-month" data-d="-1" aria-label="Mois précédent">‹</button><b style="min-width:9ch;text-align:center;text-transform:capitalize">${mLabel}</b><button class="btn ghost" data-act="bud-month" data-d="1" aria-label="Mois suivant">›</button></div>
-  <div class="stats"><div><span>Revenus</span><b class="big pos">${money(inn)}</b></div><div><span>Dépenses</span><b class="big">${money(out)}</b></div><div><span>Solde</span><b class="big ${inn - out < 0 ? "neg" : "pos"}">${money(inn - out)}</b></div></div>
-  <datalist id="envList">${b.envelopes.map(v => `<option value="${esc(v.name)}">`).join("")}</datalist>
-  <div class="row" style="margin-bottom:26px">
-    <select id="bType" style="max-width:130px" aria-label="Type"><option>dépense</option><option>revenu</option></select>
-    <input id="bAmt" type="number" step="0.01" min="0" placeholder="Montant" style="max-width:130px" inputmode="decimal" aria-label="Montant">
-    <input id="bCat" list="envList" placeholder="Enveloppe" style="max-width:170px" aria-label="Enveloppe">
-    <input id="bNote" placeholder="Note" style="max-width:220px" aria-label="Note">
-    <input id="bDate" type="date" value="${defDate}" style="max-width:160px" aria-label="Date">
-    <button class="btn acc" data-act="bud-add">Ajouter</button></div>
-  <div class="two"><section><h3>Opérations</h3><p class="hint">L'argent ne disparaît pas, il change simplement de propriétaire.</p>
-    <ul class="plain">${shown.map(e => `<li class="item" data-id="${esc(e.id)}"><span></span><div>${esc(e.note || e.cat || e.type)}<div class="meta">${fmt(e.date)}${e.cat ? `<span class="tag">${esc(e.cat)}</span>` : ""}</div></div><div class="row"><b class="${e.type === "revenu" ? "pos" : ""}">${e.type === "revenu" ? "+" : "−"}${money(e.amount)}</b><button class="btn ghost sm" data-act="bud-del">suppr.</button></div></li>`).join("") || `<li class="empty">Aucune opération ce mois-ci. Suspect.</li>`}</ul></section>
-  <div>${groupPanel("budget", "Part de chaque enveloppe mensuelle déjà consommée. Le rouge signale le dépassement.")}
-    ${chantierLeft ? `<p class="hint">Le chantier estime encore ${money(chantierLeft)} de dépenses à venir.</p>` : ""}</div></div>`;
-};
 
 const PALETTES = [["nigredo", "Nigredo, mousse", "#6f9a68"], ["albedo", "Albedo, lichen", "#aab7a6"], ["citrinitas", "Citrinitas, résine", "#c99a3c"], ["rubedo", "Rubedo, amanite", "#c0554a"]];
 VIEWS.reglages = () => {
@@ -380,7 +344,7 @@ VIEWS.reglages = () => {
             <div class="field-row" style="margin-top:8px"><label>Titre du bloc<input data-act="grp-title" value="${esc(g.title)}" placeholder="Par ${esc(G.fields[by].toLowerCase())}"></label>
             <label style="display:flex;gap:8px;align-items:center;align-self:end;padding-bottom:10px"><input type="checkbox" data-act="grp-hide" ${g.hideDone ? "checked" : ""}>Masquer les groupes à 100 %</label></div>
             ${names.length ? `<details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">Renommer ou fusionner des ${esc(G.fields[by].toLowerCase())}s</summary><p class="hint" style="margin:6px 0">Donne le même nom à deux groupes pour les fusionner.</p>${names.map(n => `<div class="set" style="grid-template-columns:1fr"><input data-act="grp-rename" data-old="${esc(n)}" value="${esc(n)}" aria-label="Renommer ${esc(n)}"></div>`).join("")}</details>` : ""}
-            ${mod === "budget" ? `<div style="margin-top:10px"><span class="hint" style="margin:0">Enveloppes mensuelles</span>${S().budget.envelopes.map((v, i) => `<div class="set" data-vi="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="env-name" value="${esc(v.name)}" aria-label="Nom de l'enveloppe"><input type="number" min="0" data-act="env-limit" value="${v.limit || ""}" placeholder="€ / mois" aria-label="Plafond mensuel"><button class="btn ghost sm" data-act="env-del">suppr.</button></div>`).join("")}<button class="btn sm" data-act="env-add" style="margin-top:8px">Ajouter une enveloppe</button></div>` : ""}` : ""}` : ""}
+           ` : ""}` : ""}
         </div>
       </details>`; }).join("")}
   </section>
@@ -488,11 +452,6 @@ const CLICK = {
       site.save(); render(); toast(`« ${name} » supprimé.`);
     });
   },
-  "bud-month": el => { const [y, mo] = budMonth.split("-").map(Number), d = new Date(y, mo - 1 + +el.dataset.d, 15); budMonth = iso(d).slice(0, 7); gFilter.budget = ""; render(); },
-  "bud-add": () => { const amt = Math.abs(+$("#bAmt").value); if (!Number.isFinite(amt) || !amt) return toast("Un montant, même symbolique."); try { addBudgetEntry(S().budget.entries, { amount: amt, type: $("#bType").value, cat: $("#bCat").value.trim(), note: $("#bNote").value.trim(), date: $("#bDate").value }, uid(), todayISO()); } catch (e) { return toast(e.message); } ["#bAmt", "#bNote"].forEach(s => $(s).value = ""); site.save(); render(); },
-  "bud-del": el => { const b = S().budget; b.entries = b.entries.filter(e => e.id !== idOf(el)); site.save(); render(); },
-  "env-add": () => { S().budget.envelopes.push({ id: uid(), name: "Nouvelle enveloppe", limit: 100 }); site.save(); render(); },
-  "env-del": async el => { const b = S().budget, i = +el.closest("[data-vi]").dataset.vi; if (await ask(`Supprimer l'enveloppe « ${b.envelopes[i].name} » ? Les opérations restent.`)) { b.envelopes.splice(i, 1); site.save(); render(); } },
   "chat-send": () => { const t = $("#chatIn").value; sendChat(t); },
   "chat-chip": el => sendChat(el.textContent),
   "chat-clear": async () => { if (await ask("Effacer la conversation ?")) { chatLog.set([]); render(); } },
@@ -529,14 +488,13 @@ document.addEventListener("change", e => {
     else if (act === "grp-rename") {
       const from = el.dataset.old, to = el.value.trim(); if (!to || to === from) return;
       const by = groupBy(mod); G.items().forEach(it => { if (it[by] === from) it[by] = to; });
-      if (mod === "budget") S().budget.envelopes.forEach(v => { if (v.name === from) v.name = to; });
+      if (G.rename) G.rename(from, to); // ex. une enveloppe du budget porte le nom du groupe
       if (gFilter[mod] === from) gFilter[mod] = to;
       if (mod === "chantier" && roomFilter === from) roomFilter = to;
       G.store().save(); toast(`« ${from} » s'appelle désormais « ${to} ».`);
     }
     site.save(); el.blur(); render();
   }
-  else if (act === "env-name" || act === "env-limit") { const b = S().budget, v = b.envelopes[+el.closest("[data-vi]").dataset.vi]; if (act === "env-name") { const to = el.value.trim(); if (to && to !== v.name) { b.entries.forEach(e => { if (e.cat === v.name) e.cat = to; }); v.name = to; } } else v.limit = Math.max(0, +el.value || 0); site.save(); el.blur(); render(); }
   else if (act === "as-key") { const v = el.value.trim(); if (v && !v.startsWith("•")) { try { localStorage.setItem("selene-api-key", v); } catch {} toast(hosted() ? "Clé enregistrée dans ce navigateur." : "Clé enregistrée. Elle servira une fois le site hébergé."); } el.blur(); render(); }
   else if (act === "as-model") { S().config.assistant.model = el.value; site.save(); render(); }
   else if (act === "as-actions") { S().config.assistant.actions = el.checked; site.save(); render(); }

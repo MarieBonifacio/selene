@@ -52,7 +52,7 @@ test('built artifact boots, persists an assistant-created task, and survives rel
 
 test('assistant actions respect module and global permissions at execution time', () => {
   const app = launch(new Map());
-  const budget = app.site.data.budget.entries;
+  const budget = app.site.data.modules.budget.entries;
   const module = app.site.data.config.modules.find(x => x.id === 'budget');
   module.on = false;
   assert.equal(app.availableTools().some(x => x.name === 'ajouter_operation'), false);

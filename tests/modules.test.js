@@ -29,7 +29,7 @@ function launch(storage, { claude = null } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS };\n})();');
   vm.runInNewContext(instrumented, context);
   return { ...context.__test, nodes, location, document };
 }
@@ -188,12 +188,17 @@ test('type registries: the pure and the UI halves declare exactly the same types
 test('every registered type works end to end through the registry alone', () => {
   const app = launch(new Map(), { claude: { use: async () => null } });
   const d = app.S();
+  // Comment ajouter un élément à chaque type. Un nouveau type doit être ajouté ici, sinon le test échoue.
+  const journal = (inst, id) => app.addJournalEntry(inst, { date: '2026-09-27', value: 3, type: 'fait', note: 'ok' }, id, '2026-09-27');
+  const addOne = { programme: journal, cumul: journal, rappels: journal, notes: journal,
+    collection: (inst, id) => app.saveCollectionItem(inst, { title: 'Premier élément', tag: 'essai' }, id),
+    budget: (inst, id) => app.addBudgetEntry(inst.entries, { amount: 12, type: 'dépense', cat: 'essai', date: '2026-09-27' }, id, '2026-09-27') };
+  assert.deepEqual(Object.keys(addOne).sort(), Object.keys(app.MODULE_TYPES).sort(), 'every type must be exercised here');
   for (const type of Object.keys(app.MODULE_TYPES)) {
     const id = app.slugId(`Essai ${type}`, Object.keys(d.modules));
     const inst = app.createModuleInstance(d.modules, type, `Essai ${type}`, id);
     d.config.modules.push({ id, on: true });
-    if (app.MODULE_TYPES[type].entry) app.addJournalEntry(inst, { date: '2026-09-27', value: 3, type: 'fait', note: 'ok' }, `e-${type}`, '2026-09-27');
-    else app.saveCollectionItem(inst, { title: 'Premier élément', tag: 'essai' }, `e-${type}`);
+    addOne[type](inst, `e-${type}`);
     const ui = app.TYPE_UI[type];
     assert.match(ui.view(id), /<h2/, `${type} view`);
     assert.equal(typeof ui.settings(id, inst), 'string');
@@ -360,4 +365,35 @@ test('without an inbox, the assistant loses its capture tool instead of failing'
   assert.ok(app.availableTools().some(t => t.name === 'capturer'));
   app.S().modules.inbox.config.inbox = false;
   assert.ok(!app.availableTools().some(t => t.name === 'capturer'));
+});
+
+test('format 4 → 5: the Budget becomes a generic module, operations, envelopes and settings kept', () => {
+  const doc = schema2();
+  doc.budget = { entries: [{ id: 'b1', type: 'dépense', amount: 42.5, cat: 'Courses', note: 'marché', date: '2026-09-12' }],
+    envelopes: [{ id: 'v1', name: 'Courses', limit: 300 }] };
+  doc.config.groups.budget = { on: true, by: 'cat', sort: 'left', hideDone: false, title: 'Où part l’argent' };
+  doc.config.labels.budget = 'Argent';
+  const app = launch(new Map([['selene-site-v1', JSON.stringify(doc)]]));
+  const d = app.S(), b = d.modules.budget;
+  assert.equal(d.budget, undefined);
+  assert.equal(b.type, 'budget'); assert.equal(b.label, 'Argent');
+  assert.equal(b.entries[0].amount, 42.5); assert.equal(b.config.envelopes[0].limit, 300);
+  assert.equal(b.config.groups.sort, 'left'); assert.equal(b.config.groups.title, 'Où part l’argent');
+  assert.equal(d.config.groups.budget, undefined);
+  const g = app.grouperFor('budget').groups().find(x => x.name === 'Courses');
+  assert.equal(g.den, 300);
+  // Import d'une sauvegarde de ce document : le module « budget » n'est pas un identifiant réservé.
+  assert.equal(app.parseBackup(app.createBackup(app.board.data, app.site.data)).site.modules.budget.entries.length, 1);
+});
+
+test('budget: renaming a group renames its envelope, the assistant writes into the first budget module', () => {
+  const app = launch(new Map());
+  const b = app.S().modules.budget;
+  app.addBudgetEntry(b.entries, { amount: 10, cat: 'Courses', date: '2026-09-27' }, 'o1', '2026-09-27');
+  const G = app.grouperFor('budget');
+  b.entries.forEach(e => { if (e.cat === 'Courses') e.cat = 'Marché'; }); G.rename('Courses', 'Marché');
+  assert.ok(b.config.envelopes.some(v => v.name === 'Marché'));
+  assert.ok(app.availableTools().some(t => t.name === 'ajouter_operation'));
+  app.TOOLS.find(t => t.name === 'ajouter_operation').execute({ montant: 7 });
+  assert.equal(b.entries.length, 2);
 });

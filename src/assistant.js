@@ -14,7 +14,6 @@ function contextText() {
     if (!sh[id] || !enabled(id)) continue;
     L.push(TYPE_UI[inst.type].context(inst, label(id).toUpperCase()));
   }
-  if (sh.budget && enabled("budget")) { const mo = now.slice(0, 7), es = s.budget.entries.filter(e => (e.date || "").slice(0, 7) === mo); L.push(`\nBUDGET (${mo}) : dépenses ${es.filter(e => e.type === "dépense").reduce((a, e) => a + +e.amount, 0)} €, revenus ${es.filter(e => e.type === "revenu").reduce((a, e) => a + +e.amount, 0)} €. Enveloppes : ${GROUPERS.budget.groups().map(g => `${g.name} ${g.sub}`).join(" ; ")}`); }
   return L.join("\n").slice(0, 14000);
 }
 function instructions() {
@@ -32,9 +31,11 @@ const TOOLS = [
     execute(i) { const t = setTaskDone(board.data.tasks, i.id, true, todayISO()); board.save(); render(); return `Terminée : ${t.title}`; } },
   { name: "capturer", module: () => inboxId(S().modules), description: "Dépose une note dans la boîte de réception, à trier plus tard.", inputSchema: { type: "object", properties: { texte: { type: "string" } }, required: ["texte"] },
     execute(i) { addCapture(S().modules[inboxId(S().modules)].entries, i.texte, uid(), todayISO()); site.save(); render(); return "Capturé."; } },
-  { name: "ajouter_operation", module: "budget", description: "Enregistre une dépense ou un revenu dans le Budget.", inputSchema: { type: "object", properties: { montant: { type: "number" }, type: { type: "string", enum: ["dépense", "revenu"] }, enveloppe: { type: "string" }, note: { type: "string" }, date: { type: "string", description: "AAAA-MM-JJ, aujourd'hui par défaut" } }, required: ["montant"] },
-    execute(i) { const entry = addBudgetEntry(S().budget.entries, { amount: i.montant, type: i.type, cat: i.enveloppe, note: i.note, date: i.date }, uid(), todayISO()); site.save(); render(); return `Enregistré : ${money(entry.amount)}`; } }
+  { name: "ajouter_operation", module: () => firstOfType("budget"), description: "Enregistre une dépense ou un revenu dans le premier module Budget.", inputSchema: { type: "object", properties: { montant: { type: "number" }, type: { type: "string", enum: ["dépense", "revenu"] }, enveloppe: { type: "string" }, note: { type: "string" }, date: { type: "string", description: "AAAA-MM-JJ, aujourd'hui par défaut" } }, required: ["montant"] },
+    execute(i) { const entry = addBudgetEntry(S().modules[firstOfType("budget")].entries, { amount: i.montant, type: i.type, cat: i.enveloppe, note: i.note, date: i.date }, uid(), todayISO()); site.save(); render(); return `Enregistré : ${money(entry.amount)}`; } }
 ];
+// Premier module actif d'un type, dans l'ordre de la navigation.
+const firstOfType = type => (S().config.modules.find(m => m.on && Object.hasOwn(S().modules, m.id) && S().modules[m.id].type === type) || {}).id || null;
 // Le module d'un outil peut dépendre des données (la boîte de réception est celle qu'on a désignée).
 const toolModule = t => typeof t.module === "function" ? t.module() : t.module;
 const availableTools = () => S().config.assistant.actions ? TOOLS.filter(t => { const m = toolModule(t); return m && enabled(m); }) : [];

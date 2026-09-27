@@ -43,9 +43,9 @@ Deux documents JSON par personne, chacun géré par un store (`makeStore`) :
 - `site` (clé `selene-site-v1`) : tout le reste — configuration, budget, moth, musique, capture et
   les **modules génériques** sous `modules`.
 
-`site.schemaVersion` vaut 4 (1 = anciennes sections `kundalini`, `ecriture`, `phidippus` à la racine ;
+`site.schemaVersion` vaut 5 (1 = anciennes sections `kundalini`, `ecriture`, `phidippus` à la racine ;
 2 = modules génériques ; 3 = october.moth et Musique deviennent des collections ; 4 = la Capture devient
-un module Notes). Chaque ancienne section
+un module Notes ; 5 = le Budget devient générique). Chaque ancienne section
 est convertie par `SECTION_TO_MODULE` (`domain.js`) ; si une ancienne version de l'app la réécrit après
 coup, ses entrées absentes sont absorbées dans le module au lieu d'être perdues. Une version de l'app qui lit un numéro plus grand que le sien
 refuse de fusionner et d'écrire (« recharge la page ») ; un import plus récent est refusé.
@@ -60,10 +60,14 @@ Un module absent n'est jamais recréé : il a été supprimé exprès.
 ### Modules
 
 - **Génériques** (`site.modules[id] = { type, label, config, entries, scraps? }`) : instances d'un
-  type du registre (programme, cumul, rappels, collection, notes). Kundalini, Écriture, Phidippus,
-  october.moth, Musique et la Capture en sont ; on peut en créer et en supprimer.
-- **Encore fixes** (`MODULE_DEFS`) : chantier et budget, en cours de généralisation (types Tâches et
-  Budget) ; l'assistant restera une fonction système, comme les Réglages.
+  type du registre (programme, cumul, rappels, collection, notes, budget). Kundalini, Écriture,
+  Phidippus, october.moth, Musique, la Capture et le Budget en sont ; on peut en créer et en supprimer.
+- **Encore fixe** (`MODULE_DEFS`) : le chantier, en cours de généralisation (type Tâches) ;
+  l'assistant restera une fonction système, comme les Réglages.
+
+L'état propre à un appareil (mois affiché d'un budget, filtre d'une collection) est rangé par identifiant
+de module, jamais enregistré ni synchronisé. Un regroupement peut déclarer `rename(de, vers)` pour
+répercuter un renommage de groupe ailleurs (les enveloppes d'un budget).
 
 **Boîte de réception** : le module Notes marqué `config.inbox` (un seul à la fois, garanti par
 `normalizeSite`, y compris après une fusion entre appareils) reçoit la capture rapide de l'accueil et
@@ -76,8 +80,9 @@ Le regroupement en pourcentage d'un module passe par `grouperFor(id)` : `GROUPER
 fixe, `TYPE_UI[type].grouper(inst)` pour une instance (réglage stocké dans `inst.config.groups`).
 
 Un identifiant de module sert aussi de route (`#id`) et d'attribut HTML : il doit respecter
-`MODULE_ID` (`[a-z0-9-]`, 64 caractères), ne pas être réservé (`accueil`, `reglages`, noms de types,
-noms d'`Object.prototype`), et le routage fait toujours primer les vues fixes.
+`MODULE_ID` (`[a-z0-9-]`, 64 caractères), ne pas être réservé (`accueil`, `reglages`, noms
+d'`Object.prototype`). Les noms de types ne le sont pas : un type n'est pas une route, et le module
+`budget` est une instance du type `budget`, et le routage fait toujours primer les vues fixes.
 
 ### Ajouter un type de module
 

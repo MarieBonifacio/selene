@@ -55,10 +55,10 @@ function addBudgetEntry(entries, input, id, defaultDate) {
 /* ---- modules génériques ---- */
 /* Version du format des données du site. 1 = sections en dur (kundalini, ecriture, phidippus à la racine),
    2 = modules génériques sous `modules`, 3 = october.moth et Musique deviennent des collections,
-   4 = la Capture devient un module Notes.
+   4 = la Capture devient un module Notes, 5 = le Budget devient un module générique.
    Une version de l'app qui lit un numéro plus grand que le sien ne doit ni fusionner ni écrire :
    elle ne connaît pas la forme de ces données. */
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 /* Anciennes sections à la racine du document → instances de module. Chaque conversion reçoit l'ancienne
    section, le nom personnalisé et le réglage de regroupement éventuels. Sert aussi aux données de départ. */
 const SECTION_TO_MODULE = {
@@ -97,6 +97,11 @@ const SECTION_TO_MODULE = {
     type: "notes", label: name || "Capture",
     config: { inbox: true, description: "Tout ce qui traîne dans ta tête, en attendant d'avoir une place.", placeholder: "Une idée, une course, un rêve…" },
     entries: (old.items || []).map(x => ({ id: x.id, text: x.text, date: x.date }))
+  }),
+  budget: (old, name, groups) => ({
+    type: "budget", label: name || "Budget",
+    config: { envelopes: old.envelopes || [], groups: { on: true, sort: "name", hideDone: false, title: "", ...(groups || {}), by: "cat" } },
+    entries: old.entries || []
   })
 };
 /* Ne recrée jamais un module manquant : un module absent chez un site existant a été supprimé exprès.
@@ -114,7 +119,7 @@ function migrateModules(d) {
       for (const x of inst[list]) if (!cur[list].some(y => y.id === x.id)) cur[list].push(x);
     }
     delete d[key];
-    if (inst.type === "collection") delete groups[key]; // le regroupement vit désormais dans l'instance
+    if (inst.config.groups) delete groups[key]; // le regroupement vit désormais dans l'instance
   }
   // Le nom d'une instance vit dans l'instance : un ancien nom personnalisé resté dans config.labels
   // masquerait tout renommage ultérieur.
@@ -149,6 +154,19 @@ const MODULE_TYPES = {
     defaults: () => ({ config: { subtitle: "", types: [{ id: "fait", label: "Fait", every: 0 }] }, entries: [] }),
     entry: (e, input) => { e.type = input.type || "note"; },
     validate(inst, v) { if (inst.config.types != null) v.list(inst.config.types, "types").forEach(x => v.num(x.every, "fréquence", 0, 3650)); }
+  },
+  budget: {
+    label: "Budget (opérations, enveloppes à plafond mensuel)",
+    defaults: () => ({ config: { envelopes: [], groups: { on: true, by: "cat", sort: "name", hideDone: false, title: "" } }, entries: [] }),
+    normalize(inst) {
+      const def = MODULE_TYPES.budget.defaults().config;
+      if (!Array.isArray(inst.config.envelopes)) inst.config.envelopes = [];
+      inst.config.groups = { ...def.groups, ...inst.config.groups, by: "cat" };
+    },
+    validate(inst, v) {
+      v.list(inst.config.envelopes || [], "enveloppes").forEach(x => { if (typeof x.name !== "string") v.fail("enveloppe"); v.num(x.limit, "plafond", 0); });
+      for (const e of inst.entries) { v.num(e.amount, "montant", 0); if (e.type !== "dépense" && e.type !== "revenu") v.fail("type d'opération"); }
+    }
   },
   notes: {
     label: "Notes (textes datés, à garder ou à trier)",
@@ -225,8 +243,10 @@ function addJournalEntry(instance, input, id, defaultDate) {
 }
 function deleteJournalEntry(instance, id) { instance.entries = instance.entries.filter(x => x.id !== id); }
 /* L'identifiant d'un module sert aussi de route (#id) : il ne doit jamais masquer une vue fixe
-   ni un nom hérité d'Object.prototype (« constructor », « toString »…), que `obj[id]` trouverait. */
-const RESERVED_IDS = ["accueil", "reglages", ...Object.keys(MODULE_TYPES)];
+   ni un nom hérité d'Object.prototype (« constructor », « toString »…), que `obj[id]` trouverait.
+   Les noms de types ne sont pas réservés : un type n'est pas une route (le module « budget » est
+   une instance du type « budget »). */
+const RESERVED_IDS = ["accueil", "reglages"];
 const reservedId = id => RESERVED_IDS.includes(id) || id in Object.prototype;
 /* Forme qu'un identifiant de module peut avoir, quelle que soit sa provenance (slugId, sauvegarde, serveur). */
 const MODULE_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
