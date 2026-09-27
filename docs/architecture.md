@@ -179,8 +179,13 @@ sur le script assemblé (`python3 build.py --bundle .lint/selene.js`, puis
 - `modules.test.js`, `app.test.js`, `backup.test.js`, `domain.test.js` : règles métier, registres,
   routage, sauvegardes hostiles.
 
-Hors CI, à vérifier à la main après un changement d'interface : parcours dans un vrai navigateur, PWA
-installée sur iPhone, artefact claude.ai.
+- `tests/browser/` : parcours dans un vrai Chromium (Playwright), un fichier par sujet, lancés par
+  `run.js` contre un petit serveur de fichiers statique ; chaque vérification affiche ✓ / ✗ et un seul ✗
+  fait échouer la CI (job `browser`). On y voit ce que le faux DOM des tests unitaires ne voit pas :
+  focus, rechargements, téléchargements, boîtes de confirmation, synchro à deux appareils (faux Supabase
+  par interception réseau), horloge simulée pour le minuteur.
+
+Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact claude.ai.
 
 ## Décisions (ADR)
 
