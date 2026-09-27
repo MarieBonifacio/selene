@@ -113,7 +113,8 @@ d'`Object.prototype`). Les noms de types ne le sont pas : un type n'est pas une 
 Rien d'autre : création, rendu, accueil, réglages, assistant, recherche et validation des sauvegardes
 passent par ces deux registres. Crochets facultatifs de `TYPE_UI` (liste complète en tête de `types.js`) :
 `alerts` (accueil), `recent` (lignes dépliables), `texts` (recherche), `accept` (ranger une note),
-`timerDone` (fin du minuteur), `grouper` (regroupement en pourcentage), `badge` (navigation). Les tests vérifient qu'ils ont les mêmes clés et font passer chaque type de bout
+`timerDone` (fin du minuteur), `review` (bilan d'une période), `grouper` (regroupement en pourcentage),
+`badge` (navigation). Routes fixes réservées : `accueil`, `reglages`, `recherche`, `bilan`. Les tests vérifient qu'ils ont les mêmes clés et font passer chaque type de bout
 en bout (création, entrée, vue, réglages, résumé, contexte, export puis import validé).
 
 ## Synchronisation

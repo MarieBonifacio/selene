@@ -54,8 +54,10 @@ function siteSeed() {
   };
 }
 /* ================= moon ================= */
+/* Mois synodique moyen (d'une nouvelle lune à la suivante) et une nouvelle lune de référence. */
+const SYNODIC = 29.530588853, NEW_MOON_REF = Date.UTC(2000, 0, 6, 18, 14);
 function moon() {
-  const syn = 29.530588853, ref = Date.UTC(2000, 0, 6, 18, 14);
+  const syn = SYNODIC, ref = NEW_MOON_REF;
   const age = (((Date.now() - ref) / 86400000) % syn + syn) % syn;
   const p = age / syn;
   const illum = (1 - Math.cos(2 * Math.PI * p)) / 2;
@@ -256,7 +258,7 @@ VIEWS.accueil = () => {
       : `<p class="hint">Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans <a href="#reglages">Réglages</a>.</p>`}
     </section>
   </div>
-  <section><h2>Où en sont les choses</h2>${rows}</section>`;
+  <section><div class="row" style="align-items:baseline"><h2>Où en sont les choses</h2><span class="spacer"></span><a class="btn ghost sm" href="#bilan">Bilan du ${bilanMode() === "mois" ? "mois" : "cycle"}</a></div>${rows}</section>`;
 };
 
 const SUMMARY = {
@@ -269,6 +271,34 @@ function summaryFor(id) {
 
 
 
+
+/* ================= bilan =================
+   Une période (cycle lunaire, d'une nouvelle lune à la suivante, ou mois civil), et pour chaque module la
+   ligne de bilan que fournit son type (TYPE_UI[type].review), à côté de celle de la période précédente.
+   Une information pour prendre du recul, pas un score. */
+let bilanOffset = 0;
+const bilanMode = () => { try { return localStorage.getItem("selene-bilan") === "mois" ? "mois" : "lune"; } catch { return "lune"; } };
+/* [from, to[ en dates ISO ; offset 0 = la période en cours, 1 = la précédente… */
+function periodOf(mode, offset, now = Date.now()) {
+  if (mode === "mois") {
+    const d = new Date(now), start = new Date(d.getFullYear(), d.getMonth() - offset, 1), end = new Date(d.getFullYear(), d.getMonth() - offset + 1, 1);
+    return { from: iso(start), to: iso(end), name: start.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) };
+  }
+  const len = SYNODIC * 86400000, k = Math.floor((now - NEW_MOON_REF) / len) - offset, start = NEW_MOON_REF + k * len, end = start + len;
+  return { from: iso(new Date(start)), to: iso(new Date(end)), name: `Cycle du ${fmt(iso(new Date(start)), { day: "numeric", month: "long" })} au ${fmt(iso(new Date(end - 86400000)), { day: "numeric", month: "long" })}` };
+}
+VIEWS.bilan = () => {
+  const mode = bilanMode(), cur = periodOf(mode, bilanOffset), prev = periodOf(mode, bilanOffset + 1), s = S();
+  const rows = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id) && TYPE_UI[s.modules[m.id].type].review).map(m => {
+    const inst = s.modules[m.id], review = TYPE_UI[inst.type].review, r = review(inst, cur.from, cur.to), p = review(inst, prev.from, prev.to);
+    return `<div class="over-wrap"><div class="over"><b>${esc(label(m.id))}</b><span>${esc(r || "—")}</span><em class="hint" style="margin:0">avant : ${esc(p || "—")}</em></div></div>`;
+  }).join("");
+  const tab = (m, l) => `<button class="btn sm ${mode === m ? "acc" : "ghost"}" data-act="bilan-mode" data-m="${m}">${l}</button>`;
+  return `<div class="row" style="margin-bottom:6px"><h2 style="margin:0">Bilan</h2><span class="spacer"></span>${tab("lune", "Cycle lunaire")}${tab("mois", "Mois")}</div>
+  <div class="row" style="margin-bottom:18px"><button class="btn ghost" data-act="bilan-nav" data-d="1" aria-label="Période précédente">‹</button><b style="text-transform:none">${esc(cur.name)}</b>${bilanOffset ? `<button class="btn ghost" data-act="bilan-nav" data-d="-1" aria-label="Période suivante">›</button>` : ""}</div>
+  <p class="hint">Ce qui s'est passé dans chaque module pendant la période, et, en face, la période d'avant. Aucune note, aucun trophée : les chiffres suffisent à culpabiliser.</p>
+  <section>${rows || `<p class="empty">Aucun module à résumer.</p>`}</section>`;
+};
 
 /* ================= recherche =================
    Dans tous les textes de tous les modules (chaque type dit lesquels : TYPE_UI[type].texts), sans tenir
@@ -367,7 +397,7 @@ function render() {
   const s = S(), m = moon();
   let view = location.hash.slice(1) || "accueil";
   // Les vues fixes priment toujours ; hasOwn évite qu'un « #constructor » trouve Object.prototype.
-  const fixed = v => v === "accueil" || v === "reglages" || v === "recherche";
+  const fixed = v => v === "accueil" || v === "reglages" || v === "recherche" || v === "bilan";
   if (!fixed(view) && (!(Object.hasOwn(s.modules, view) || Object.hasOwn(VIEWS, view)) || !enabled(view))) view = "accueil";
   const inst = !fixed(view) && Object.hasOwn(s.modules, view) ? s.modules[view] : null;
   $("#brandName").textContent = s.config.name || "Selene";
@@ -412,6 +442,8 @@ const CLICK = {
   "cap-add": capture,
   "entry-add": el => entryAdd(el.dataset.mod),
   "entry-del": el => removeWithUndo(el.dataset.mod, "entries", idOf(el)),
+  "bilan-mode": el => { try { localStorage.setItem("selene-bilan", el.dataset.m); } catch {} bilanOffset = 0; render(); },
+  "bilan-nav": el => { bilanOffset = Math.max(0, bilanOffset + +el.dataset.d); render(); },
   "undo": () => { const f = undoFn; undoFn = null; $("#toast").classList.remove("show", "act"); if (f) f(); },
   "mod-add": () => {
     const choice = $("#newModType").value, tpl = MODULE_TEMPLATES.find(t => "tpl:" + t.id === choice);

@@ -33,7 +33,7 @@ function launch(storage, { claude = null, bare = false } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf };\n})();');
   vm.runInNewContext(instrumented, context);
   return { ...context.__test, nodes, location, document };
 }
@@ -210,6 +210,8 @@ test('every registered type works end to end through the registry alone', () => 
     assert.equal(typeof app.summaryFor(id), 'string');
     assert.match(ui.context(inst, 'NOM'), /NOM/);
     assert.equal(typeof ui.recent, 'function', `${type}.recent`);
+    assert.equal(typeof ui.review, 'function', `${type}.review`);
+    const rv = ui.review(inst, '2000-01-01', '2100-01-01'); assert.ok(rv === null || typeof rv === 'string', `${type}.review returns text or null`);
     assert.ok(ui.recent(inst).every(x => typeof x === 'string'), `${type}.recent returns text`);
   }
   assert.doesNotMatch(app.contextText(), /ESSAI/, 'modules not shared with the assistant stay private');
@@ -597,4 +599,37 @@ test('writing workshop: fragments follow chapters and export as Markdown', () =>
   assert.match(md, /## Hors chapitre\n\nSans place\./);
   app.location.hash = '#ecriture'; app.render();
   assert.match(app.nodes.get('#main').innerHTML, /1 fragment/, 'chapter panel counts fragments');
+});
+
+test('review periods: lunar cycles tile time exactly, months too, and the current one contains today', () => {
+  const app = launch(new Map());
+  const now = Date.UTC(2026, 8, 27, 12);
+  const cur = app.periodOf('lune', 0, now), prev = app.periodOf('lune', 1, now);
+  assert.equal(prev.to, cur.from, 'consecutive cycles share their boundary');
+  const days = (Date.parse(cur.to) - Date.parse(cur.from)) / 864e5;
+  assert.ok(days >= 29 && days <= 30, `a cycle lasts ~29.5 days (${days})`);
+  assert.ok(cur.from <= '2026-09-27' && '2026-09-27' < cur.to);
+  const m = app.periodOf('mois', 0, now), m1 = app.periodOf('mois', 1, now);
+  assert.equal(m.from, '2026-09-01'); assert.equal(m.to, '2026-10-01'); assert.equal(m1.from, '2026-08-01');
+  assert.equal(app.periodOf('mois', 9, now).from, '2025-12-01', 'across a year boundary');
+});
+
+test('review: each module sums what happened in the period, next to the previous one', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  app.addJournalEntry(d.modules.kundalini, { date: '2026-09-10', value: 20 }, 'k1', '2026-09-10');
+  app.addJournalEntry(d.modules.kundalini, { date: '2026-09-12', value: 25 }, 'k2', '2026-09-12');
+  app.addJournalEntry(d.modules.kundalini, { date: '2026-08-12', value: 30 }, 'k0', '2026-08-12');
+  app.addBudgetEntry(d.modules.budget.entries, { amount: 40, date: '2026-09-05' }, 'b1', '2026-09-05');
+  app.addTask(d.modules.chantier.entries, { title: 'Velux', cost: 250 }, 't1', '2026-09-01');
+  Object.assign(d.modules.chantier.entries[0], { done: true, doneAt: '2026-09-20' });
+  const T = app.TYPE_UI;
+  assert.equal(T.programme.review(d.modules.kundalini, '2026-09-01', '2026-10-01'), '2 séances, 45 min');
+  assert.equal(T.programme.review(d.modules.kundalini, '2026-08-01', '2026-09-01'), '1 séance, 30 min');
+  assert.match(T.budget.review(d.modules.budget, '2026-09-01', '2026-10-01'), /^40,00\s€ dépensés/);
+  assert.match(T.taches.review(d.modules.chantier, '2026-09-01', '2026-10-01'), /^1 tâche terminée, 250,00/);
+  assert.equal(T.rappels.review(d.modules.phidippus, '2026-09-01', '2026-10-01'), 'Rien de noté');
+  app.location.hash = '#bilan'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /avant :/);
+  assert.ok(app.slugId('Bilan', []) !== 'bilan', 'reserved route');
 });

@@ -49,6 +49,7 @@ Pour ajouter un *type* de module au code, voir [docs/architecture.md](docs/archi
 - **Écriture** : saisie du total atteint (l'app calcule la différence), dernier chapitre présélectionné, fin estimée au rythme des 30 derniers jours.
 - **Tâches → Budget** : terminer une tâche qui a un coût propose de l'ajouter en dépense (enveloppe réglable).
 - **Atelier d'écriture** : un fragment se rattache à un chapitre (le dernier utilisé par défaut), la liste se filtre par chapitre, et « Exporter en Markdown » assemble les fragments sous leurs chapitres.
+- **Bilan** (lien sur l'accueil) : pour chaque module, ce qui s'est passé pendant le cycle lunaire en cours (d'une nouvelle lune à la suivante) ou le mois, à côté de la période précédente ; ‹ › pour remonter le temps. Une information, pas un score.
 - **Capture qui comprend** trois motifs, et seulement trois : « 12 € courses » (une dépense), « 25 min kundalini » (une séance), « Phidippus : une note » (rangée dans le module nommé). La note part toujours d'abord dans la boîte de réception ; l'app propose seulement de la ranger (bandeau, puis bouton « Ranger » dans la boîte).
 
 ## Assistant (Claude)
