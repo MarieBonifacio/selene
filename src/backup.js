@@ -50,23 +50,17 @@ function parseBackup(text) {
     for (const [id, inst] of Object.entries(site.modules)) {
       moduleId(id, "Module");
       if (reservedId(id)) throw new Error(`module ${id} : identifiant réservé`);
-      if (!record(inst) || !["programme", "cumul", "rappels"].includes(inst.type) || typeof inst.label !== "string" || !record(inst.config)) throw new Error(`module ${id} invalide`);
-      const c = inst.config, where = `module ${id}`;
+      if (!record(inst) || !Object.hasOwn(MODULE_TYPES, inst.type) || typeof inst.label !== "string" || !record(inst.config)) throw new Error(`module ${id} invalide`);
+      const where = `module ${id}`;
       collection(inst.entries, `${where} entries`);
       ids(inst.entries, where); dated(inst.entries, where);
-      for (const e of inst.entries) num(e.value, `${where} : valeur`);
       if (inst.scraps != null) { collection(inst.scraps, `${where} scraps`); ids(inst.scraps, where); }
-      if (inst.type === "programme") {
-        num(c.weeks, `${where} : durée`, 1, 520); num(c.perWeek, `${where} : séances par semaine`, 1, 7);
-        if (c.start != null && !(typeof c.start === "string" && validDate(c.start))) throw new Error(`${where} : date de début invalide`);
-      }
-      if (inst.type === "cumul") {
-        num(c.goal, `${where} : objectif`, 0);
-        if (c.categories != null) { collection(c.categories, `${where} catégories`); ids(c.categories, where); c.categories.forEach(x => num(x.goal, `${where} : objectif de catégorie`, 0)); }
-      }
-      if (inst.type === "rappels" && c.types != null) {
-        collection(c.types, `${where} types`); ids(c.types, where); c.types.forEach(x => num(x.every, `${where} : fréquence`, 0, 3650));
-      }
+      // Règles propres au type : déclarées dans le registre (domain.js), appliquées ici.
+      MODULE_TYPES[inst.type].validate(inst, {
+        num: (v, name, min, max) => num(v, `${where} : ${name}`, min, max),
+        list: (l, name) => { collection(l, `${where} ${name}`); ids(l, where); return l; },
+        fail: name => { throw new Error(`${where} : ${name} invalide`); }
+      });
     }
   }
   for (const state of [board, site]) if (state.updatedAt != null &&

@@ -6,7 +6,8 @@ ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "src"
 shell = (SOURCE / "shell.html").read_text(encoding="utf-8")
 assert shell.count("<!-- SELENE_SCRIPT -->") == 1
-scripts = ["sync.js", "store.js", "auth.js", "backup.js", "domain.js", "app.js"]
+# Un seul script, dans cet ordre : chaque fichier ne peut utiliser au chargement que ceux qui le précèdent.
+scripts = ["sync.js", "store.js", "auth.js", "backup.js", "domain.js", "app.js", "types.js", "assistant.js", "boot.js"]
 js = "\n".join((SOURCE / name).read_text(encoding="utf-8") for name in scripts)
 standalone = shell.replace("<!-- SELENE_SCRIPT -->", "<script>\n(() => {\n" + js + "})();\n</script>")
 

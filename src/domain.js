@@ -87,22 +87,53 @@ function migrateModules(d) {
     delete d.phidippus;
   }
 }
+/* ---- registre des types de module : la partie pure (sans DOM) ----
+   Chaque type déclare ses valeurs par défaut, la forme de ses entrées et ses règles de validation.
+   Sa partie affichage est dans TYPE_UI (types.js) : un test vérifie que les deux registres ont les mêmes clés. */
+const MODULE_TYPES = {
+  programme: {
+    label: "Programme (calendrier + objectif hebdomadaire)",
+    defaults: () => ({ config: { unitLabel: "min", start: null, weeks: 12, perWeek: 5 }, entries: [] }),
+    entry: (e, input) => { e.value = numericValue(input.value); },
+    validate(inst, v) {
+      v.num(inst.config.weeks, "durée", 1, 520); v.num(inst.config.perWeek, "séances par semaine", 1, 7);
+      if (inst.config.start != null && !(typeof inst.config.start === "string" && validDate(inst.config.start))) v.fail("date de début");
+      for (const e of inst.entries) v.num(e.value, "valeur");
+    }
+  },
+  cumul: {
+    label: "Objectif cumulatif (compteur + catégories)",
+    defaults: () => ({ config: { unitLabel: "unités", goal: 100, title: "", categories: [], categoryLabel: "Catégorie", scraps: false, scrapsLabel: "Notes" }, entries: [], scraps: [] }),
+    entry: (e, input) => { e.value = numericValue(input.value); if (input.category != null) e.category = input.category; },
+    validate(inst, v) {
+      v.num(inst.config.goal, "objectif", 0);
+      if (inst.config.categories != null) v.list(inst.config.categories, "catégories").forEach(x => v.num(x.goal, "objectif de catégorie", 0));
+      for (const e of inst.entries) v.num(e.value, "valeur");
+    }
+  },
+  rappels: {
+    label: "Rappels (types récurrents + journal)",
+    defaults: () => ({ config: { subtitle: "", types: [{ id: "fait", label: "Fait", every: 0 }] }, entries: [] }),
+    entry: (e, input) => { e.type = input.type || "note"; },
+    validate(inst, v) { if (inst.config.types != null) v.list(inst.config.types, "types").forEach(x => v.num(x.every, "fréquence", 0, 3650)); }
+  }
+};
+function numericValue(raw) {
+  const value = raw != null && raw !== "" ? Number(raw) : null;
+  if (value !== null && !Number.isFinite(value)) throw new Error("Valeur invalide"); // un NaN contaminerait tous les totaux
+  return value;
+}
 function addJournalEntry(instance, input, id, defaultDate) {
   const date = input.date && validDate(input.date) ? input.date : defaultDate;
   const entry = { id, date, note: input.note || "" };
-  if (instance.type !== "rappels") {
-    entry.value = input.value != null && input.value !== "" ? Number(input.value) : null;
-    if (entry.value !== null && !Number.isFinite(entry.value)) throw new Error("Valeur invalide"); // un NaN contaminerait tous les totaux
-  }
-  if (instance.type === "cumul" && input.category != null) entry.category = input.category;
-  if (instance.type === "rappels") entry.type = input.type || "note";
+  MODULE_TYPES[instance.type].entry(entry, input);
   instance.entries.push(entry);
   return entry;
 }
 function deleteJournalEntry(instance, id) { instance.entries = instance.entries.filter(x => x.id !== id); }
 /* L'identifiant d'un module sert aussi de route (#id) : il ne doit jamais masquer une vue fixe
    ni un nom hérité d'Object.prototype (« constructor », « toString »…), que `obj[id]` trouverait. */
-const RESERVED_IDS = ["accueil", "reglages", "programme", "cumul", "rappels"];
+const RESERVED_IDS = ["accueil", "reglages", ...Object.keys(MODULE_TYPES)];
 const reservedId = id => RESERVED_IDS.includes(id) || id in Object.prototype;
 /* Forme qu'un identifiant de module peut avoir, quelle que soit sa provenance (slugId, sauvegarde, serveur). */
 const MODULE_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -116,11 +147,8 @@ function createModuleInstance(modules, type, name, id) {
   const label = requireText(name, "Nom du module", 60);
   if (reservedId(id)) throw new Error("Identifiant réservé");
   if (Object.hasOwn(modules, id)) throw new Error("Identifiant déjà utilisé");
-  if (type === "programme") modules[id] = { type, label, config: { unitLabel: "min", start: null, weeks: 12, perWeek: 5 }, entries: [] };
-  else if (type === "cumul") modules[id] = { type, label, config: { unitLabel: "unités", goal: 100, title: "", categories: [], categoryLabel: "Catégorie", scraps: false, scrapsLabel: "Notes" }, entries: [], scraps: [] };
-  else if (type === "rappels") modules[id] = { type, label, config: { subtitle: "", types: [{ id: "fait", label: "Fait", every: 0 }] }, entries: [] };
-  else throw new Error("Type de module inconnu");
-  return modules[id];
+  if (!Object.hasOwn(MODULE_TYPES, type)) throw new Error("Type de module inconnu");
+  return (modules[id] = { type, label, ...MODULE_TYPES[type].defaults() });
 }
 function deleteModuleInstance(modules, moduleList, id) {
   if (!Object.hasOwn(modules, id)) throw new Error("Module introuvable");

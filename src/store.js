@@ -5,12 +5,14 @@
    a modifié quoi, donc de ne rien écraser.
    Contrat de `db.doc(path)` : get() → {exists, data()} ; onSnapshot(cb, err) → désabonnement ;
    et soit replace(value, attendu, {keepalive}) → booléen (écriture conditionnelle, false = le
-   serveur a changé entre-temps), soit à défaut set(value) (écriture inconditionnelle). */
-function makeStore(key, path, seed) {
+   serveur a changé entre-temps), soit à défaut set(value) (écriture inconditionnelle).
+   `normalize(doc)` remet un document dans la forme attendue ; il est appliqué à tout ce qui entre
+   dans le store (lecture locale, synchro, import, réinitialisation), jamais à la lecture. */
+function makeStore(key, path, seed, normalize = d => d) {
   const BASE = key + "-base";
   const read = k => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } };
   const s = { db: null, timer: null, unsub: null, syncing: null, again: false, key };
-  s.data = read(key) || seed();
+  s.data = normalize(read(key) || seed());
   s.base = read(BASE);
   const saveLS = () => { try { localStorage.setItem(key, JSON.stringify(s.data)); } catch {} };
   const saveBase = () => { try { if (s.base) localStorage.setItem(BASE, JSON.stringify(s.base)); else localStorage.removeItem(BASE); } catch {} };
@@ -35,7 +37,7 @@ function makeStore(key, path, seed) {
       if (force) s.force = false;
       s.base = clone(merged); saveBase();
       // Ce que l'utilisatrice a modifié pendant l'aller-retour réseau est refusionné par-dessus.
-      const next = deepEqual(s.data, local) ? clone(merged) : mergeDocs(local, s.data, merged);
+      const next = normalize(deepEqual(s.data, local) ? clone(merged) : mergeDocs(local, s.data, merged));
       if (!deepEqual(next, merged)) s.again = true;
       const changed = !deepEqual(next, s.data);
       s.data = next; saveLS();
@@ -83,12 +85,12 @@ function makeStore(key, path, seed) {
   };
   /* Remplacement total voulu (import d'une sauvegarde) : la prochaine synchro écrase le serveur
      au lieu de fusionner — toujours par écriture conditionnelle, donc sans course avec un autre appareil. */
-  s.replaceAll = data => { s.data = data; s.force = true; s.save(); };
+  s.replaceAll = data => { s.data = normalize(data); s.force = true; s.save(); };
   /* Y a-t-il ici des changements que le serveur n'a pas (encore) reçus ? */
   s.unsynced = () => !s.base || !deepEqual({ ...s.data, updatedAt: 0 }, { ...s.base, updatedAt: 0 });
   s.reload = () => {
     const r = read(key);
-    if (r && (r.updatedAt || 0) > (s.data.updatedAt || 0)) { s.data = r; s.base = read(BASE) || s.base; return true; }
+    if (r && (r.updatedAt || 0) > (s.data.updatedAt || 0)) { s.data = normalize(r); s.base = read(BASE) || s.base; return true; }
     return false;
   };
   s.connect = async db => {
@@ -106,7 +108,7 @@ function makeStore(key, path, seed) {
   /* Changement de compte ou déconnexion : on oublie tout, y compris la base (elle appartenait à l'autre compte). */
   s.reset = data => {
     s.disconnect();
-    s.data = data; s.base = null;
+    s.data = normalize(data); s.base = null;
     try { localStorage.removeItem(key); localStorage.removeItem(BASE); } catch {}
   };
   return s;

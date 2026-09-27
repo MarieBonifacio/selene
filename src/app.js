@@ -19,7 +19,6 @@ const MODULE_DEFS = {
 };
 const MODULE_ORDER = ["chantier", "kundalini", "ecriture", "moth", "phidippus", "musique", "budget", "assistant", "inbox"];
 const OFF_BY_DEFAULT = ["assistant"];
-const MODULE_TYPES = { programme: "Programme (calendrier + objectif hebdomadaire)", cumul: "Objectif cumulatif (compteur + catégories)", rappels: "Rappels (types récurrents + journal)" };
 const money = n => (+n || 0).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
 let budMonth = iso(new Date()).slice(0, 7);
 function siteSeed() {
@@ -41,27 +40,6 @@ function siteSeed() {
     inbox: { items: [] }
   };
 }
-const board = makeStore("selene-board-v1", "board/state", () => ({ updatedAt: 0, tasks: [] }));
-const site = makeStore("selene-site-v1", "site/state", siteSeed);
-// migration douce : récupère l'ancien cache local du chantier
-
-function S() { // site data with defaults filled in
-  const d = site.data, seed = siteSeed();
-  migrateModules(d);
-  if ((d.schemaVersion || 1) < SCHEMA_VERSION) d.schemaVersion = SCHEMA_VERSION;
-  for (const k of Object.keys(seed)) if (d[k] == null) d[k] = seed[k];
-  for (const k of Object.keys(seed.config)) if (d.config[k] == null) d.config[k] = seed.config[k];
-  for (const id of Object.keys(MODULE_DEFS)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: !OFF_BY_DEFAULT.includes(id) });
-  for (const id of Object.keys(d.modules)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: true });
-  for (const [mod, g] of Object.entries(GROUPERS)) d.config.groups[mod] = { on: true, by: Object.keys(g.fields)[0], sort: "name", hideDone: false, title: "", ...(d.config.groups[mod] || {}) };
-  for (const k of Object.keys(seed)) if (k !== "modules" && typeof seed[k] === "object" && !Array.isArray(seed[k])) for (const f of Object.keys(seed[k])) if (d[k][f] == null) d[k][f] = seed[k][f];
-  if (!Array.isArray(d.moth.posts)) d.moth.posts = [];
-  d.moth.posts.forEach(p => { if (!["Idée", "Brouillon", "Prêt", "Publié"].includes(p.status)) p.status = "Idée"; });
-  return d;
-}
-const label = id => { const s = S(); return s.config.labels[id] || (s.modules[id] && s.modules[id].label) || MODULE_DEFS[id]; };
-const enabled = id => { const m = S().config.modules.find(m => m.id === id); return m ? m.on : false; };
-
 /* ================= moon ================= */
 function moon() {
   const syn = 29.530588853, ref = Date.UTC(2000, 0, 6, 18, 14);
@@ -158,18 +136,30 @@ GROUPERS.budget = {
     return out;
   }
 };
-const gcfg = mod => S().config.groups[mod];
-function instanceFields(id) {
-  const inst = S().modules[id], c = inst.config;
-  if (inst.type === "programme") return `<div class="field-row"><label>Début du protocole<input type="date" data-set-mod="${esc(id)}.start" value="${esc(c.start || "")}"></label><label>Durée (semaines)<input type="number" min="1" data-set-mod="${esc(id)}.weeks" value="${esc(c.weeks)}"></label></div>
-    <div class="field-row" style="margin-top:8px"><label>Unité<input data-set-mod="${esc(id)}.unitLabel" value="${esc(c.unitLabel)}" placeholder="min"></label><label>Séances visées par semaine<input type="number" min="1" max="7" data-set-mod="${esc(id)}.perWeek" value="${esc(c.perWeek)}"></label></div>`;
-  if (inst.type === "cumul") return `<div class="field-row"><label>Titre / sous-titre<input data-set-mod="${esc(id)}.title" value="${esc(c.title || "")}"></label><label>Objectif<input type="number" min="1" data-set-mod="${esc(id)}.goal" value="${esc(c.goal)}"></label></div>
-    <div class="field-row" style="margin-top:8px"><label>Unité<input data-set-mod="${esc(id)}.unitLabel" value="${esc(c.unitLabel)}" placeholder="mots"></label><label>Nom des catégories<input data-set-mod="${esc(id)}.categoryLabel" value="${esc(c.categoryLabel)}" placeholder="Chapitre"></label></div>
-    <div style="margin-top:10px"><span class="hint" style="margin:0">${esc(c.categoryLabel)}s</span>${c.categories.map((cat, i) => `<div class="set" data-ci="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="cat-name" data-mod="${esc(id)}" value="${esc(cat.name)}" aria-label="Nom"><input type="number" min="0" data-act="cat-goal" data-mod="${esc(id)}" value="${esc(cat.goal || "")}" placeholder="Objectif" aria-label="Objectif"><div class="row"><button class="btn ghost sm" data-act="cat-up" data-mod="${esc(id)}" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="cat-del" data-mod="${esc(id)}">suppr.</button></div></div>`).join("")}<button class="btn sm" data-act="cat-add" data-mod="${esc(id)}" style="margin-top:8px">Ajouter</button></div>`;
-  if (inst.type === "rappels") return `<div class="field-row"><label>Sous-titre (ex. nom propre)<input data-set-mod="${esc(id)}.subtitle" value="${esc(c.subtitle || "")}"></label><span></span></div>
-    <div style="margin-top:10px"><span class="hint" style="margin:0">Types et rappels</span>${c.types.map((t, i) => `<div class="set" data-ti="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="typ-name" data-mod="${esc(id)}" value="${esc(t.label)}" aria-label="Nom"><input type="number" min="0" data-act="typ-every" data-mod="${esc(id)}" value="${esc(t.every || "")}" placeholder="tous les X j" aria-label="Fréquence"><button class="btn ghost sm" data-act="typ-del" data-mod="${esc(id)}">suppr.</button></div>`).join("")}<button class="btn sm" data-act="typ-add" data-mod="${esc(id)}" style="margin-top:8px">Ajouter un type</button></div>`;
-  return "";
+/* Remet un document du site dans la forme attendue (migration des anciens formats, champs ajoutés
+   depuis, entrées de navigation manquantes). Appelée par le store à chaque fois que des données y entrent
+   (lecture locale, synchro, import) : S() n'a donc plus rien à corriger et se contente de lire. */
+function normalizeSite(d) {
+  const seed = siteSeed();
+  migrateModules(d);
+  if ((d.schemaVersion || 1) < SCHEMA_VERSION) d.schemaVersion = SCHEMA_VERSION;
+  for (const k of Object.keys(seed)) if (d[k] == null) d[k] = seed[k];
+  for (const k of Object.keys(seed.config)) if (d.config[k] == null) d.config[k] = seed.config[k];
+  for (const id of Object.keys(MODULE_DEFS)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: !OFF_BY_DEFAULT.includes(id) });
+  for (const id of Object.keys(d.modules)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: true });
+  for (const [mod, g] of Object.entries(GROUPERS)) d.config.groups[mod] = { on: true, by: Object.keys(g.fields)[0], sort: "name", hideDone: false, title: "", ...(d.config.groups[mod] || {}) };
+  for (const k of Object.keys(seed)) if (k !== "modules" && typeof seed[k] === "object" && !Array.isArray(seed[k])) for (const f of Object.keys(seed[k])) if (d[k][f] == null) d[k][f] = seed[k][f];
+  if (!Array.isArray(d.moth.posts)) d.moth.posts = [];
+  d.moth.posts.forEach(p => { if (!["Idée", "Brouillon", "Prêt", "Publié"].includes(p.status)) p.status = "Idée"; });
+  return d;
 }
+const board = makeStore("selene-board-v1", "board/state", () => ({ updatedAt: 0, tasks: [] }));
+const site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite);
+const S = () => site.data; // lecture seule : la normalisation a lieu à l'entrée des données, pas ici
+const label = id => { const s = S(); return s.config.labels[id] || (s.modules[id] && s.modules[id].label) || MODULE_DEFS[id]; };
+const enabled = id => { const m = S().config.modules.find(m => m.id === id); return m ? m.on : false; };
+
+const gcfg = mod => S().config.groups[mod];
 function groupPanel(mod, hint) {
   const G = GROUPERS[mod], c = gcfg(mod);
   if (!c || !c.on) return "";
@@ -272,19 +262,7 @@ VIEWS.accueil = () => {
   const m = moon(), s = S(), now = todayISO();
   const tod = openTasks().filter(t => t.today).slice(0, 3);
   const alerts = [];
-  for (const [id, inst] of Object.entries(s.modules)) {
-    if (!enabled(id)) continue;
-    if (inst.type === "rappels") {
-      for (const t of inst.config.types) {
-        if (!t.every) continue;
-        const l = inst.entries.filter(x => x.type === t.id).map(x => x.date).sort().pop();
-        if (!l || diffDays(now, l) >= t.every) alerts.push({ text: `${esc(t.label)} : ${esc(label(id))} (${ago(l)})`, href: `#${id}` });
-      }
-    } else if (inst.type === "programme" && inst.config.start) {
-      const done = inst.entries.some(x => x.date === now);
-      alerts.push({ text: done ? `Séance de ${esc(label(id)).toLowerCase()} faite.` : `Pas encore de séance de ${esc(label(id)).toLowerCase()} aujourd'hui.`, quick: done ? null : id });
-    }
-  }
+  for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) alerts.push(...TYPE_UI[inst.type].alerts(id, inst, now));
   const rows = s.config.modules.filter(x => x.on && x.id !== "inbox").map(x => `<a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}</span><em class="hint" style="margin:0">ouvrir</em></a>`).join("");
   return `
   <section class="hero">${forestSVG(m.p)}<div class="txt">
@@ -316,12 +294,8 @@ const SUMMARY = {
   inbox: () => `${S().inbox.items.length} à trier`
 };
 function summaryFor(id) {
-  const inst = S().modules[id];
-  if (!inst) return SUMMARY[id] ? SUMMARY[id]() : "";
-  if (inst.type === "programme") { const c = inst.config; if (!c.start) return "Pas encore commencé"; const w = Math.min(c.weeks, Math.floor(diffDays(todayISO(), c.start) / 7) + 1); return `Semaine ${w} sur ${esc(c.weeks)}, ${inst.entries.length} séance${inst.entries.length > 1 ? "s" : ""}, série de ${streakOf(inst.entries.map(x => x.date))} j`; }
-  if (inst.type === "cumul") { const c = inst.config, tot = inst.entries.reduce((a, x) => a + (+x.value || 0), 0); return `${tot.toLocaleString("fr-FR")} ${esc(c.unitLabel)} sur ${(+c.goal).toLocaleString("fr-FR")}${c.scraps ? `, ${inst.scraps.length} ${esc(c.scrapsLabel).toLowerCase()}` : ""}`; }
-  if (inst.type === "rappels") { const t = inst.config.types[0]; if (!t) return `${inst.entries.length} entrée${inst.entries.length > 1 ? "s" : ""}`; const f = inst.entries.filter(l => l.type === t.id).map(l => l.date).sort().pop(); return `${esc(t.label)} : ${ago(f)}`; }
-  return "";
+  const inst = Object.hasOwn(S().modules, id) ? S().modules[id] : null;
+  return inst ? TYPE_UI[inst.type].summary(id, inst) : SUMMARY[id] ? SUMMARY[id]() : "";
 }
 
 VIEWS.chantier = () => {
@@ -350,71 +324,6 @@ VIEWS.chantier = () => {
     ${spent || left ? `<p class="hint">Budget estimé : ${spent} € engagés, ${left} € encore à prévoir.</p>` : ""}
     <section><h3>Fait récemment</h3><ul class="plain">${done.map(t => `<li class="item" data-task="${esc(t.id)}"><span></span><div>${esc(t.title)}<div class="meta">${fmt(t.doneAt)}</div></div><button class="btn ghost sm" data-act="task-undo">annuler</button></li>`).join("") || `<li class="empty">Rien pour l'instant. L'histoire ne retiendra rien.</li>`}</ul></section>
   </aside></div>`;
-};
-
-function programmeGroupPanel(id) {
-  const inst = S().modules[id], c = inst.config, now = todayISO();
-  const days = new Set(inst.entries.map(x => x.date)), cur = Math.min(52, +c.weeks || 12, Math.floor(diffDays(now, c.start) / 7) + 1), out = [];
-  for (let w = 0; w < cur; w++) { let n = 0; for (let d = 0; d < 7; d++) if (days.has(addDaysTo(c.start, w * 7 + d))) n++; const den = +c.perWeek || 1; out.push({ name: `Semaine ${w + 1}`, pct: Math.min(100, Math.round(100 * n / den)), sub: `${n} sur ${den} séances` }); }
-  return `<section><h3 style="margin:0 0 4px">Par semaine</h3><p class="hint">Objectif : ${esc(c.perWeek)} séances par semaine, réglable dans Réglages.</p>
-    <div class="rooms">${out.map(g => `<div class="room ${g.pct > 100 ? "over" : ""}"><div class="fill" style="height:${Math.min(100, g.pct)}%"></div><small>${esc(g.name)}</small><b>${g.pct} %</b><small>${esc(g.sub)}</small></div>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
-}
-VIEWS.programme = id => {
-  const inst = S().modules[id], c = inst.config, now = todayISO();
-  if (!c.start) return `<h2>${esc(label(id))}</h2><p class="hint">Un protocole de ${esc(c.weeks)} semaines, une séance à la fois.</p><button class="btn acc" data-act="prog-start" data-mod="${esc(id)}">Commencer aujourd'hui</button> <a class="btn ghost" href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">ou choisir une autre date</a>`;
-  const days = new Set(inst.entries.map(x => x.date)), W = Math.min(52, Math.max(1, Math.round(+c.weeks) || 12));
-  const week = Math.min(W, Math.floor(diffDays(now, c.start) / 7) + 1);
-  const pct = Math.min(100, Math.round(100 * (diffDays(now, c.start) + 1) / (W * 7)));
-  const total = inst.entries.reduce((a, x) => a + (+x.value || 0), 0);
-  let cal = "";
-  for (let w = 0; w < W; w++) { cal += `<span>S${w + 1}</span>`; for (let d = 0; d < 7; d++) { const day = addDaysTo(c.start, w * 7 + d); cal += `<i class="${days.has(day) ? "on" : ""} ${day === now ? "today" : ""} ${day > now ? "future" : ""}" title="${fmt(day)}"></i>`; } }
-  const recent = [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12);
-  return `<div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">Noter une séance</button></div>
-  <div class="two"><section>
-    <div class="big">Semaine ${week} <span class="hint" style="font-size:1.1rem">sur ${W}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
-    <p class="hint">${inst.entries.length} séances, ${total} ${esc(c.unitLabel)} au total, série actuelle de ${streakOf([...days])} jour(s).</p>
-    <div class="cal">${cal}</div>
-    <div style="margin-top:28px">${programmeGroupPanel(id)}</div>
-  </section><section><h3>Journal</h3><p class="hint">Ce que le corps a fait, ce que la tête en a pensé.</p>
-    <ul class="plain">${recent.map(x => `<li class="item" data-id="${esc(x.id)}"><span></span><div>${fmt(x.date, { weekday: "short", day: "numeric", month: "short" })}, ${esc(x.value ?? "?")} ${esc(c.unitLabel)}${x.note ? `<div class="note" style="margin:2px 0 0">${esc(x.note)}</div>` : ""}</div><button class="btn ghost sm" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune séance notée.</li>`}</ul>
-  </section></div>`;
-};
-
-function cumulGroupPanel(id) {
-  const inst = S().modules[id], c = inst.config;
-  const sum = catId => inst.entries.filter(x => (x.category || "") === catId).reduce((a, x) => a + (+x.value || 0), 0);
-  const out = c.categories.map(cat => { const v = sum(cat.id), g = +cat.goal || 0; return { name: cat.name || "Sans titre", pct: g ? Math.min(100, Math.round(100 * v / g)) : null, sub: g ? `${v.toLocaleString("fr-FR")} / ${g.toLocaleString("fr-FR")} ${c.unitLabel}` : `${v.toLocaleString("fr-FR")} ${c.unitLabel}` }; });
-  const loose = sum(""); if (loose && c.categories.length) out.push({ name: `Hors ${c.categoryLabel.toLowerCase()}`, pct: null, sub: `${loose.toLocaleString("fr-FR")} ${c.unitLabel}` });
-  return `<section><h3 style="margin:0 0 4px">Par ${esc(c.categoryLabel).toLowerCase()}</h3><p class="hint">Chaque ${esc(c.categoryLabel).toLowerCase()} a son propre objectif.</p>
-    <div class="rooms">${out.map(g => `<div class="room"><div class="fill" style="height:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></div>`).join("")}</div></section>`;
-}
-VIEWS.cumul = id => {
-  const inst = S().modules[id], c = inst.config;
-  const tot = inst.entries.reduce((a, x) => a + (+x.value || 0), 0), pct = Math.min(100, Math.round(100 * tot / (+c.goal || 1)));
-  const last = inst.entries.map(x => x.date).sort().pop();
-  return `<h2>${esc(label(id))}</h2>${c.title ? `<p class="hint">${esc(c.title)}</p>` : ""}
-  <div class="two"><section>
-    <div class="big">${tot.toLocaleString("fr-FR")} <span class="hint" style="font-size:1.1rem">${esc(c.unitLabel)} sur ${(+c.goal).toLocaleString("fr-FR")}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
-    <p class="hint">Dernière session ${ago(last)}. Série de ${streakOf(inst.entries.map(x => x.date))} jour(s).</p>
-    <div class="row"><input type="number" id="cumIn" min="1" placeholder="${esc(c.unitLabel)} aujourd'hui" style="max-width:200px" inputmode="numeric">${c.categories.length ? `<select id="cumCat" aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">Hors ${esc(c.categoryLabel).toLowerCase()}</option>${c.categories.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</select>` : ""}<button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">Ajouter</button></div>
-    <div style="margin-top:28px">${c.categories.length ? cumulGroupPanel(id) : `<p class="hint">Ajoute des ${esc(c.categoryLabel).toLowerCase()}s dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a> pour suivre chacune en pourcentage.</p>`}</div>
-  </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">Une phrase qui passe, avant qu'elle ne reparte.</p>
-    <textarea id="scrapIn" rows="3" placeholder="…" aria-label="Nouveau"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-act="scrap-add" data-mod="${esc(id)}">Garder</button></div>
-    <ul class="plain" style="margin-top:14px">${[...inst.scraps].reverse().map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}</div></div><button class="btn ghost sm" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Rien pour l'instant.</li>`}</ul>
-  </section>` : ""}</div>`;
-};
-
-VIEWS.rappels = id => {
-  const inst = S().modules[id], c = inst.config, now = todayISO();
-  const last = t => inst.entries.filter(l => l.type === t).map(l => l.date).sort().pop();
-  const line = t => { const l = last(t.id), due = t.every && (!l || diffDays(now, l) >= t.every); return `<div class="set"><span class="${due ? "late" : ""}">${esc(t.label)}</span><span class="hint" style="margin:0">${ago(l)}${t.every ? `, tous les ${esc(t.every)} j` : ""}</span><button class="btn sm" data-act="entry-log" data-mod="${esc(id)}" data-t="${esc(t.id)}">Fait aujourd'hui</button></div>`; };
-  const recent = [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
-  return `<h2>${esc(label(id))}${c.subtitle ? ` <span class="hint" style="font-size:1.2rem">${esc(c.subtitle)}</span>` : ""}</h2>
-  <div class="two"><section>
-    ${c.types.map(line).join("")}
-    <div class="row" style="margin-top:14px"><input id="rapNote" placeholder="Observation…" aria-label="Observation"><button class="btn" data-act="entry-note" data-mod="${esc(id)}">Noter</button></div>
-    <p class="hint" style="margin-top:10px">Réglable dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a>.</p>
-  </section><section><h3>Journal</h3><ul class="plain">${recent.map(l => `<li class="item" data-id="${esc(l.id)}"><span></span><div><span class="tag">${esc(l.type)}</span> ${fmt(l.date)}${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}</div><button class="btn ghost sm" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune entrée.</li>`}</ul></section></div>`;
 };
 
 const MOTH_COLS = ["Idée", "Brouillon", "Prêt", "Publié"];
@@ -489,106 +398,6 @@ VIEWS.budget = () => {
     ${chantierLeft ? `<p class="hint">Le chantier estime encore ${money(chantierLeft)} de dépenses à venir.</p>` : ""}</div></div>`;
 };
 
-/* ---------- assistant ---------- */
-let sampleNS = null, downloadsNS = null, chatBusy = false;
-const hosted = () => !window.claude;
-const getKey = () => { try { return localStorage.getItem("selene-api-key") || ""; } catch { return ""; } };
-function backend() { if (!enabled("assistant")) return "off"; if (sampleNS) return "sample"; if (hosted() && getKey()) return "api"; return "none"; }
-const chatLog = { get() { try { return JSON.parse(localStorage.getItem("selene-chat") || "[]"); } catch { return []; } }, set(v) { try { localStorage.setItem("selene-chat", JSON.stringify(v.slice(-40))); } catch {} } };
-function contextText() {
-  const s = S(), sh = s.config.assistant.share, now = todayISO(), m = moon(), L = [];
-  L.push(`Date : ${fmt(now, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}. Lune : ${m.name.toLowerCase()}, éclairée à ${Math.round(m.illum * 100)} %.`);
-  if (sh.chantier && enabled("chantier")) { const o = openTasks().sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")); L.push(`\nCHANTIER (appartement) : ${o.length} tâches ouvertes sur ${board.data.tasks.length}.`); o.slice(0, 40).forEach(t => L.push(`- [${t.id}] ${t.title} | ${t.room || "?"} | ${t.due ? "échéance " + t.due : "sans date"}${t.today ? " | choisie pour aujourd'hui" : ""}${t.cost ? " | " + t.cost + " €" : ""}`)); }
-  for (const [id, inst] of Object.entries(s.modules)) {
-    if (!sh[id] || !enabled(id)) continue;
-    const nm = label(id).toUpperCase(), c = inst.config;
-    if (inst.type === "programme") L.push(`\n${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, ${inst.entries.length} séances, objectif ${c.perWeek}/semaine. Dernières notes : ${inst.entries.slice(-3).map(x => `${x.date} ${x.value ?? "?"} ${c.unitLabel} ${x.note || ""}`).join(" ; ")}` : "pas commencé"}`);
-    else if (inst.type === "cumul") { const tot = inst.entries.reduce((a, x) => a + (+x.value || 0), 0); L.push(`\n${nm}${c.title ? ` « ${c.title} »` : ""} : ${tot} ${c.unitLabel} sur ${c.goal}.${c.categories.length ? ` ${c.categoryLabel}s : ${c.categories.map(x => x.name).join(", ")}.` : ""}${c.scraps ? ` Derniers ${c.scrapsLabel.toLowerCase()} : ${inst.scraps.slice(-3).map(f => f.text.slice(0, 200)).join(" / ") || "aucun"}` : ""}`); }
-    else if (inst.type === "rappels") { const last = t => inst.entries.filter(l => l.type === t).map(l => l.date).sort().pop() || "jamais"; L.push(`\n${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map(t => `${t.label.toLowerCase()} ${last(t.id)}`).join(", ")}.`); }
-  }
-  if (sh.moth && enabled("moth")) L.push(`\nOCTOBER.MOTH (Instagram) : ${s.moth.posts.map(p => `${p.title} [${p.status}${p.theme ? ", " + p.theme : ""}]`).join(" ; ") || "aucun post"}`);
-  if (sh.musique && enabled("musique")) L.push(`\nMUSIQUE (albums de l'éveil) : ${s.musique.albums.map(a => `${a.artist}${a.album ? " – " + a.album : ""} [${a.status}]`).join(" ; ")}`);
-  if (sh.budget && enabled("budget")) { const mo = now.slice(0, 7), es = s.budget.entries.filter(e => (e.date || "").slice(0, 7) === mo); L.push(`\nBUDGET (${mo}) : dépenses ${es.filter(e => e.type === "dépense").reduce((a, e) => a + +e.amount, 0)} €, revenus ${es.filter(e => e.type === "revenu").reduce((a, e) => a + +e.amount, 0)} €. Enveloppes : ${GROUPERS.budget.groups().map(g => `${g.name} ${g.sub}`).join(" ; ")}`); }
-  if (sh.inbox && enabled("inbox")) L.push(`\nCAPTURE (à trier) : ${s.inbox.items.map(i => i.text).join(" ; ") || "vide"}`);
-  return L.join("\n").slice(0, 14000);
-}
-function instructions() {
-  const name = S().config.name || "Selene", permitted = availableTools();
-  return `Tu es Claude, intégré au tableau de bord personnel de ${name}. Réponds en français, en prose, sans listes à puces sauf demande. Ton : lucide, cynique, humour noir glissé naturellement ; jamais de morale non demandée ni de justifications répétées. Chaque fois que tu emploies un terme technique ou savant, définis-le brièvement dans la phrase. Sois concis. Tu ne connais que les données ci-dessous, qu'elle a choisi de partager ; tu n'as aucun souvenir d'autres conversations.
-${permitted.length ? "Tu peux agir uniquement avec les outils fournis. Ne les utilise que si c'est demandé ou clairement voulu, et dis ce que tu as fait." : "Tu ne peux rien modifier : conseille seulement."}
-
-DONNÉES DU TABLEAU DE BORD
-${contextText()}`;
-}
-const TOOLS = [
-  { name: "ajouter_tache", module: "chantier", description: "Ajoute une tâche au module Chantier. Renvoie une confirmation.", inputSchema: { type: "object", properties: { titre: { type: "string" }, piece: { type: "string" }, echeance: { type: "string", description: "AAAA-MM-JJ" }, type: { type: "string", enum: ["Bricolage", "Administratif", "Achat", "Artisan", "Rangement", "Ménage"] } }, required: ["titre"] },
-    execute(i) { const t = addTask(board.data.tasks, { title: i.titre, room: i.piece, cat: i.type, due: i.echeance, note: "Ajoutée par l'assistant" }, uid(), todayISO()); board.save(); render(); return `Tâche ajoutée : ${t.title}`; } },
-  { name: "terminer_tache", module: "chantier", description: "Marque comme faite une tâche du Chantier, par son identifiant entre crochets.", inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
-    execute(i) { const t = setTaskDone(board.data.tasks, i.id, true, todayISO()); board.save(); render(); return `Terminée : ${t.title}`; } },
-  { name: "capturer", module: "inbox", description: "Dépose une note dans la boîte Capture, à trier plus tard.", inputSchema: { type: "object", properties: { texte: { type: "string" } }, required: ["texte"] },
-    execute(i) { addCapture(S().inbox.items, i.texte, uid(), todayISO()); site.save(); render(); return "Capturé."; } },
-  { name: "ajouter_operation", module: "budget", description: "Enregistre une dépense ou un revenu dans le Budget.", inputSchema: { type: "object", properties: { montant: { type: "number" }, type: { type: "string", enum: ["dépense", "revenu"] }, enveloppe: { type: "string" }, note: { type: "string" }, date: { type: "string", description: "AAAA-MM-JJ, aujourd'hui par défaut" } }, required: ["montant"] },
-    execute(i) { const entry = addBudgetEntry(S().budget.entries, { amount: i.montant, type: i.type, cat: i.enveloppe, note: i.note, date: i.date }, uid(), todayISO()); site.save(); render(); return `Enregistré : ${money(entry.amount)}`; } }
-];
-const availableTools = () => S().config.assistant.actions ? TOOLS.filter(t => enabled(t.module)) : [];
-const executeTool = (name, input) => {
-  const tool = availableTools().find(t => t.name === name);
-  if (!tool) throw new Error("Action non autorisée ou module désactivé");
-  return tool.execute(input);
-};
-async function askAPI(history) {
-  const a = S().config.assistant, tools = availableTools().map(t => ({ name: t.name, description: t.description, input_schema: t.inputSchema }));
-  const msgs = history.map(m => ({ role: m.role, content: m.content })); let out = "";
-  for (let round = 0; round < 5; round++) {
-    const res = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "content-type": "application/json", "x-api-key": getKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
-      body: JSON.stringify({ model: a.model, max_tokens: 1500, system: instructions(), messages: msgs, ...(tools.length ? { tools } : {}) }) });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
-    if (!Array.isArray(data.content)) throw new Error("réponse inattendue de l'API");
-    const txt = data.content.filter(b => b.type === "text").map(b => b.text).join("\n"); if (txt) out += (out ? "\n\n" : "") + txt;
-    if (data.stop_reason !== "tool_use") break;
-    msgs.push({ role: "assistant", content: data.content });
-    const results = [];
-    for (const b of data.content.filter(b => b.type === "tool_use")) { let r; try { r = await executeTool(b.name, b.input || {}); } catch (e) { r = "Erreur : " + e.message; } results.push({ type: "tool_result", tool_use_id: b.id, content: String(r) }); }
-    msgs.push({ role: "user", content: results });
-  }
-  return out || "(pas de réponse)";
-}
-async function askSample(history, onText) {
-  const input = [{ role: "user", content: instructions() }, ...history];
-  const opts = { onText: ({ text }) => onText(text) };
-  if (availableTools().length) opts.tools = availableTools().map(t => ({ name: t.name, description: t.description, inputSchema: t.inputSchema, execute: i => executeTool(t.name, i) }));
-  try { return (await sampleNS(input, opts)).text; }
-  catch (e) { if (e && e.code === "tools_unavailable") { delete opts.tools; return (await sampleNS(input, opts)).text; } throw e; }
-}
-const mdLite = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*(?!\s)(.+?)\*/g, "$1<i>$2</i>");
-async function sendChat(text) {
-  if (chatBusy || !text.trim()) return;
-  const b = backend(); if (b !== "sample" && b !== "api") return toast("L'assistant n'est pas branché. Voir Réglages.");
-  const log = chatLog.get(); log.push({ role: "user", content: text.trim().slice(0, 4000) }); chatLog.set(log); chatBusy = true; if ($("#chatIn")) $("#chatIn").value = ""; render();
-  const onText = t => { const p = document.getElementById("pending"); if (p) p.textContent = t; };
-  try {
-    const hist = log.slice(-20).map(m => ({ role: m.role, content: String(m.content).slice(0, 4000) })); while (hist.length && hist[0].role !== "user") hist.shift();
-    const reply = b === "sample" ? await askSample(hist, onText) : await askAPI(hist);
-    const l2 = chatLog.get(); l2.push({ role: "assistant", content: reply }); chatLog.set(l2);
-  } catch (e) {
-    const code = e && e.code, msg = code === "not_granted" ? "Accès refusé à Claude pour cette page." : code === "rate_limited" ? "Trop de demandes, réessaie dans un moment." : (e && e.message) || "Erreur inconnue.";
-    toast(msg);
-  }
-  chatBusy = false; render();
-  const log2 = document.querySelector(".chat"); if (log2) log2.lastElementChild?.scrollIntoView({ block: "nearest" });
-}
-VIEWS.assistant = () => {
-  const b = backend(), a = S().config.assistant, log = chatLog.get();
-  const status = b === "sample" ? "Branché via claude.ai : aucune clé requise, la première question te demandera ton accord." : b === "api" ? `Branché via ta clé API, modèle ${esc(a.model)}. Chaque échange est facturé sur ton compte.` : hosted() ? `Pas encore branché. Colle ta clé API dans <a href="#reglages">Réglages</a>.` : "Indisponible dans cette vue.";
-  const shared = Object.entries(a.share).filter(([k, v]) => v && enabled(k)).map(([k]) => label(k)).join(", ") || "rien";
-  return `<div class="row"><h2 style="margin:0">${esc(label("assistant"))}</h2><span class="spacer"></span>${log.length ? `<button class="btn ghost sm" data-act="chat-clear">Effacer la conversation</button>` : ""}</div>
-  <p class="status">${status}<br>Données partagées : ${esc(shared)}. ${a.actions ? "Peut agir sur le tableau de bord." : "Lecture seule."}</p>
-  <div class="chat">${log.map(m => `<div class="msg ${m.role === "user" ? "user" : "claude"}">${m.role === "user" ? esc(m.content) : mdLite(m.content)}</div>`).join("")}${chatBusy ? `<div class="msg claude" id="pending">…</div>` : ""}</div>
-  ${!log.length ? `<div class="chips">${["Qu'est-ce que je fais aujourd'hui ?", "Fais le point sur le chantier", "Où en est mon budget ce mois-ci ?", "Propose trois idées de posts pour october.moth"].map(q => `<button class="btn sm" data-act="chat-chip">${q}</button>`).join("")}</div>` : ""}
-  <div class="capture"><textarea id="chatIn" rows="2" placeholder="Écris à Claude…" aria-label="Message" ${b === "sample" || b === "api" ? "" : "disabled"}></textarea><button class="btn acc" data-act="chat-send" ${chatBusy ? "disabled" : ""}>Envoyer</button></div>`;
-};
-
 const PALETTES = [["nigredo", "Nigredo, mousse", "#6f9a68"], ["albedo", "Albedo, lichen", "#aab7a6"], ["citrinitas", "Citrinitas, résine", "#c99a3c"], ["rubedo", "Rubedo, amanite", "#c0554a"]];
 VIEWS.reglages = () => {
   const s = S(), c = s.config;
@@ -600,7 +409,7 @@ VIEWS.reglages = () => {
   <section><h3>Modules</h3><p class="hint">Active, renomme, réordonne. Les modules personnalisés (marqués ✕) peuvent être supprimés définitivement.</p>
     ${c.modules.map((m, i) => `<div class="set" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="Activer ${esc(label(m.id))}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="Nom du module"><div class="row">${s.modules[m.id] ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="Supprimer définitivement" title="Supprimer définitivement">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="Descendre">↓</button></div></div>`).join("")}
     <details style="margin-top:14px"><summary class="hint" style="cursor:pointer;margin:0">+ Créer un module</summary>
-      <div class="field-row" style="margin-top:10px"><label>Type<select id="newModType">${Object.entries(MODULE_TYPES).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</select></label>
+      <div class="field-row" style="margin-top:10px"><label>Type<select id="newModType">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${k}">${esc(t.label)}</option>`).join("")}</select></label>
       <label>Nom<input id="newModName" placeholder="ex. Lecture, Sport, Méditation…"></label></div>
       <button class="btn sm" data-act="mod-add" style="margin-top:8px">Créer</button></details>
   </section>
@@ -610,7 +419,7 @@ VIEWS.reglages = () => {
       return `<details id="mreg-${esc(mod)}" data-mod="${esc(mod)}" style="border-top:1px solid var(--rule);padding:12px 0">
         <summary style="cursor:pointer;font-size:1.05rem;font-weight:600">${esc(label(mod))}</summary>
         <div style="margin-top:10px">
-        ${inst ? instanceFields(mod) : ""}
+        ${inst ? TYPE_UI[inst.type].settings(mod, inst) : ""}
         ${G ? `<div class="row" style="margin-top:0"><label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="grp-on" ${g.on ? "checked" : ""}>Regrouper en pourcentage</label></div>
           ${g.on ? `<div class="field-row" style="margin-top:8px">
             <label>Regrouper par<select data-act="grp-by">${Object.entries(G.fields).map(([k, l]) => `<option value="${k}" ${g.by === k ? "selected" : ""}>${l}</option>`).join("")}</select></label>
@@ -661,7 +470,7 @@ function render() {
   const keep = {}; let focusId = null, caret = null;
   if (view === lastView) $("#main").querySelectorAll("input[id],textarea[id],select[id]").forEach(el => { if (el.type !== "file" && el.type !== "checkbox") keep[el.id] = el.value; });
   if (document.activeElement && document.activeElement.id && keep[document.activeElement.id] != null) { focusId = document.activeElement.id; try { caret = document.activeElement.selectionStart; } catch {} }
-  $("#main").innerHTML = inst ? VIEWS[inst.type](view) : VIEWS[view]();
+  $("#main").innerHTML = inst ? TYPE_UI[inst.type].view(view) : VIEWS[view]();
   for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && v !== "" && el.value !== v) el.value = v; }
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
   lastView = view;
@@ -684,15 +493,8 @@ function pickTask() {
   toast(`Le sort a désigné : « ${t.title} ». Pas de recours possible.`);
 }
 function entryAdd(id) {
-  const inst = S().modules[id];
-  if (inst.type === "programme") {
-    openForm("Noter une séance", [{ row: [{ n: "date", l: "Date", t: "date", req: true }, { n: "value", l: `Durée (${inst.config.unitLabel})`, t: "number" }] }, { n: "note", l: "Ce qui s'est passé", t: "textarea", rows: 4 }],
-      { date: todayISO(), value: "" }, v => { addJournalEntry(inst, { date: v.date, value: v.value, note: v.note }, uid(), todayISO()); site.save(); render(); });
-  } else if (inst.type === "cumul") {
-    const v = +$("#cumIn").value; if (!v) return;
-    addJournalEntry(inst, { date: todayISO(), value: v, category: $("#cumCat") ? $("#cumCat").value : "" }, uid(), todayISO());
-    $("#cumIn").value = ""; site.save(); render(); toast(`${v} ${inst.config.unitLabel}. Ça avance, que tu y croies ou non.`);
-  }
+  const inst = S().modules[id], ui = TYPE_UI[inst.type];
+  if (ui.add) ui.add(id, inst);
 }
 const CLICK = {
   "task-open": el => { const t = taskOf(el); openId = openId === t.id ? null : t.id; render(); },
@@ -714,13 +516,8 @@ const CLICK = {
     else if (to === "moth") { const p = { id: uid(), title: it.text, theme: "", due: "", status: "Idée", caption: "" }; s.moth.posts.push(p); drop(); render(); toast("Ajouté aux idées de posts."); }
     else if (to === "musique") { s.musique.albums.push({ id: uid(), artist: it.text, album: "", status: "À écouter", note: "" }); drop(); render(); toast("Ajouté à la musique."); }
   },
-  "prog-start": el => { S().modules[el.dataset.mod].config.start = todayISO(); site.save(); render(); },
   "entry-add": el => entryAdd(el.dataset.mod),
   "entry-del": el => { deleteJournalEntry(S().modules[el.dataset.mod], idOf(el)); site.save(); render(); },
-  "scrap-add": el => { const id = el.dataset.mod, v = $("#scrapIn").value.trim(); if (!v) return; S().modules[id].scraps.push({ id: uid(), text: v, date: todayISO() }); $("#scrapIn").value = ""; site.save(); render(); },
-  "scrap-del": async el => { const inst = S().modules[el.dataset.mod]; if (await ask("Supprimer ce fragment ?")) { inst.scraps = inst.scraps.filter(x => x.id !== idOf(el)); site.save(); render(); } },
-  "entry-log": el => { addJournalEntry(S().modules[el.dataset.mod], { date: todayISO(), type: el.dataset.t, note: "" }, uid(), todayISO()); site.save(); render(); },
-  "entry-note": el => { const id = el.dataset.mod, v = $("#rapNote").value.trim(); if (!v) return; addJournalEntry(S().modules[id], { date: todayISO(), type: "note", note: v }, uid(), todayISO()); $("#rapNote").value = ""; site.save(); render(); },
   "post-new": () => postForm(null),
   "post-edit": el => postForm(S().moth.posts.find(p => p.id === idOf(el))),
   "post-del": async el => { const m = S().moth; if (await ask("Supprimer ce post ?")) { m.posts = m.posts.filter(p => p.id !== idOf(el)); site.save(); render(); } },
@@ -728,11 +525,6 @@ const CLICK = {
   "alb-new": () => albForm(null),
   "alb-edit": el => albForm(S().musique.albums.find(a => a.id === idOf(el))),
   "alb-del": el => { const m = S().musique; m.albums = m.albums.filter(a => a.id !== idOf(el)); site.save(); render(); },
-  "cat-add": el => { const inst = S().modules[el.dataset.mod]; inst.config.categories.push({ id: uid(), name: `${inst.config.categoryLabel} ${inst.config.categories.length + 1}`, goal: 0 }); site.save(); render(); },
-  "cat-del": async el => { const inst = S().modules[el.dataset.mod], i = +el.closest("[data-ci]").dataset.ci, cat = inst.config.categories[i]; if (!await ask(`Supprimer « ${cat.name} » ? Les entrées déjà ajoutées passeront hors catégorie.`)) return; inst.entries.forEach(x => { if (x.category === cat.id) x.category = ""; }); inst.config.categories.splice(i, 1); site.save(); render(); },
-  "cat-up": el => { const a = S().modules[el.dataset.mod].config.categories, i = +el.closest("[data-ci]").dataset.ci; if (i > 0) { [a[i - 1], a[i]] = [a[i], a[i - 1]]; site.save(); render(); } },
-  "typ-add": el => { S().modules[el.dataset.mod].config.types.push({ id: uid(), label: "Nouveau type", every: 0 }); site.save(); render(); },
-  "typ-del": async el => { const inst = S().modules[el.dataset.mod], i = +el.closest("[data-ti]").dataset.ti; if (await ask(`Supprimer « ${inst.config.types[i].label} » ?`)) { inst.config.types.splice(i, 1); site.save(); render(); } },
   "mod-add": () => {
     const type = $("#newModType").value, name = $("#newModName").value.trim();
     if (!name) return toast("Donne un nom au module.");
@@ -777,9 +569,11 @@ const CLICK = {
 function moveMod(el, d) { const ms = S().config.modules, i = +el.closest("[data-i]").dataset.i, j = i + d; if (j < 0 || j >= ms.length) return; [ms[i], ms[j]] = [ms[j], ms[i]]; site.save(); render(); }
 document.addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (a && CLICK[a.dataset.act] && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) CLICK[a.dataset.act](a); });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
+const CHANGE = {}; // actions « change » des types de module (remplie par types.js)
 document.addEventListener("change", e => {
   const el = e.target, act = el.dataset.act;
-  if (act === "task-done") { setTaskDone(board.data.tasks, taskOf(el).id, el.checked, todayISO()); board.save(); render(); if (el.checked) toast(doneLines[Math.floor(Math.random() * doneLines.length)]); }
+  if (act && Object.hasOwn(CHANGE, act)) CHANGE[act](el);
+  else if (act === "task-done") { setTaskDone(board.data.tasks, taskOf(el).id, el.checked, todayISO()); board.save(); render(); if (el.checked) toast(doneLines[Math.floor(Math.random() * doneLines.length)]); }
   else if (act === "task-step") { const t = taskOf(el); t.steps[+el.dataset.i].d = el.checked; board.save(); render(); }
   else if (act === "f-room") { roomFilter = el.value; render(); }
   else if (act === "f-cat") { catFilter = el.value; render(); }
@@ -811,8 +605,6 @@ document.addEventListener("change", e => {
     const f = el.files && el.files[0]; if (!f) return;
     f.text().then(async t => { const d = parseBackup(t); if (!await ask("Remplacer tout l'état actuel par celui du fichier ?")) return; board.replaceAll(d.board); site.replaceAll(d.site); render(); toast("Sauvegarde importée."); }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene.")).finally(() => { el.value = ""; });
   }
-  else if (act === "cat-name" || act === "cat-goal") { const cat = S().modules[el.dataset.mod].config.categories[+el.closest("[data-ci]").dataset.ci]; if (act === "cat-name") cat.name = el.value.trim() || cat.name; else cat.goal = Math.max(0, +el.value || 0); site.save(); el.blur(); render(); }
-  else if (act === "typ-name" || act === "typ-every") { const t = S().modules[el.dataset.mod].config.types[+el.closest("[data-ti]").dataset.ti]; if (act === "typ-name") t.label = el.value.trim() || t.label; else t.every = Math.max(0, +el.value || 0); site.save(); el.blur(); render(); }
   else if (act === "mod-on") { S().config.modules[+el.closest("[data-i]").dataset.i].on = el.checked; site.save(); render(); }
   else if (act === "mod-label") {
     const s = S(), m = s.config.modules[+el.closest("[data-i]").dataset.i], v = el.value.trim();
@@ -848,23 +640,3 @@ $("#timerBtn").addEventListener("click", () => {
 document.addEventListener("visibilitychange", () => { if (!document.hidden && tick) tickTimer(); });
 $("#timerReset").addEventListener("click", () => { clearInterval(tick); tick = null; left = 900; $("#clock").textContent = mmss(left); $("#clock").classList.remove("done"); $("#timerBtn").textContent = "Lancer 15 min"; });
 
-/* ================= cycle de vie ================= */
-const flushAll = () => { board.flush(); site.flush(); };
-window.addEventListener("pagehide", flushAll);
-document.addEventListener("visibilitychange", () => { if (document.hidden) flushAll(); });
-window.addEventListener("storage", e => { if ((e.key === board.key && board.reload()) | (e.key === site.key && site.reload())) render(); });
-if (!window.claude) { try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {} }
-
-/* ================= boot ================= */
-render();
-(async () => {
-  try {
-    if (!window.claude || !window.claude.use) {
-      if (authReady()) { await authBoot(); render(); }
-      return;
-    }
-    const db = await window.claude.use("db");
-    if (db) await Promise.all([board.connect(db), site.connect(db)]);
-  } catch {}
-  try { if (window.claude && window.claude.use) { sampleNS = await window.claude.use("sample"); downloadsNS = await window.claude.use("downloads"); render(); } } catch {}
-})();

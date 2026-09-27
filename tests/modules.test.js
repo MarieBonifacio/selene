@@ -29,7 +29,7 @@ function launch(storage, { claude = null } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText };\n})();');
   vm.runInNewContext(instrumented, context);
   return { ...context.__test, nodes, location };
 }
@@ -91,7 +91,7 @@ test('a deleted built-in module is never resurrected by later S() calls', () => 
   const d = app.S();
   app.deleteModuleInstance(d.modules, d.config.modules, 'phidippus');
   app.site.save();
-  const reloaded = app.S();
+  const reloaded = launch(storage).S(); // la normalisation au chargement ne doit pas le recréer
   assert.equal(reloaded.modules.phidippus, undefined);
   assert.equal(reloaded.config.modules.some(m => m.id === 'phidippus'), false);
 });
@@ -173,4 +173,47 @@ test('journal entries reject non-numeric values instead of storing NaN', () => {
   app.addJournalEntry(d.modules.ecriture, { date: '2026-09-27', value: -300 }, 'e2', '2026-09-27'); // retirer des mots coupés
   assert.equal(d.modules.ecriture.entries[0].value, -300);
   assert.equal(d.schemaVersion, 2);
+});
+
+test('type registries: the pure and the UI halves declare exactly the same types', () => {
+  const app = launch(new Map());
+  assert.deepEqual(Object.keys(app.TYPE_UI).sort(), Object.keys(app.MODULE_TYPES).sort());
+  for (const [type, ui] of Object.entries(app.TYPE_UI)) {
+    for (const hook of ['view', 'settings', 'summary', 'context']) assert.equal(typeof ui[hook], 'function', `${type}.${hook}`);
+    for (const act of Object.keys(ui.click || {})) assert.equal(app.CLICK[act], ui.click[act], `${type} click ${act} wired`);
+    for (const act of Object.keys(ui.change || {})) assert.equal(app.CHANGE[act], ui.change[act], `${type} change ${act} wired`);
+  }
+});
+
+test('every registered type works end to end through the registry alone', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  for (const type of Object.keys(app.MODULE_TYPES)) {
+    const id = app.slugId(`Essai ${type}`, Object.keys(d.modules));
+    const inst = app.createModuleInstance(d.modules, type, `Essai ${type}`, id);
+    d.config.modules.push({ id, on: true });
+    app.addJournalEntry(inst, { date: '2026-09-27', value: 3, type: 'fait', note: 'ok' }, `e-${type}`, '2026-09-27');
+    const ui = app.TYPE_UI[type];
+    assert.match(ui.view(id), /<h2/, `${type} view`);
+    assert.equal(typeof ui.settings(id, inst), 'string');
+    assert.equal(typeof app.summaryFor(id), 'string');
+    assert.match(ui.context(inst, 'NOM'), /NOM/);
+  }
+  assert.doesNotMatch(app.contextText(), /ESSAI/, 'modules not shared with the assistant stay private');
+  for (const k of Object.keys(d.modules)) if (k.startsWith('essai-')) d.config.assistant.share[k] = true;
+  for (const t of ['PROGRAMME', 'CUMUL', 'RAPPELS']) assert.match(app.contextText(), new RegExp(`ESSAI ${t}`));
+  // Tout ce que le registre crée doit passer sa propre validation d'import.
+  const parsed = app.parseBackup(app.createBackup(app.board.data, app.site.data));
+  assert.equal(Object.keys(parsed.site.modules).filter(k => k.startsWith('essai-')).length, 3);
+});
+
+test('S() is a pure read: calling it never changes the stored document', () => {
+  const legacy = { updatedAt: 5, config: { modules: [], labels: {}, groups: {}, assistant: { share: {} } }, kundalini: { weeks: 8, perWeek: 3, sessions: [] } };
+  const storage = new Map([['selene-site-v1', JSON.stringify(legacy)]]);
+  const app = launch(storage);
+  const before = JSON.stringify(app.site.data);
+  app.S(); app.S(); app.label('kundalini'); app.summaryFor('kundalini');
+  assert.equal(JSON.stringify(app.site.data), before);
+  assert.equal(app.site.data.modules.kundalini.config.weeks, 8, 'migration happened once, at load');
+  assert.equal(app.site.data.kundalini, undefined);
 });
