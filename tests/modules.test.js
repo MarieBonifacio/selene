@@ -1,0 +1,138 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+
+const html = fs.readFileSync('selene.html', 'utf8');
+const script = html.match(/<script>\s*([\s\S]*?)<\/script>/)[1];
+
+function launch(storage) {
+  const nodes = new Map();
+  const element = id => {
+    if (!nodes.has(id)) nodes.set(id, {
+      id, dataset: {}, value: '', textContent: '', innerHTML: '',
+      classList: { add() {}, remove() {} }, addEventListener() {},
+      querySelectorAll() { return []; }, focus() {}
+    });
+    return nodes.get(id);
+  };
+  const document = {
+    title: '', activeElement: null, documentElement: { dataset: {} },
+    querySelector: element, getElementById: element,
+    addEventListener() {}
+  };
+  const localStorage = {
+    getItem(key) { return storage.get(key) ?? null; },
+    setItem(key, value) { storage.set(key, value); }
+  };
+  const window = { addEventListener() {}, claude: null };
+  const context = { document, window, localStorage, location: { hash: '' },
+    navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup };\n})();');
+  vm.runInNewContext(instrumented, context);
+  return { ...context.__test, nodes };
+}
+
+test('legacy site data (pre-generic-modules) migrates in place without data loss', () => {
+  const legacy = {
+    updatedAt: 1000,
+    config: { name: 'Selene', palette: 'nigredo', mode: 'auto', labels: { phidippus: 'Aragog' }, groups: {},
+      modules: ['chantier', 'kundalini', 'ecriture', 'moth', 'phidippus', 'musique', 'budget', 'assistant', 'inbox'].map(id => ({ id, on: id !== 'assistant' })),
+      assistant: { model: 'claude-sonnet-5', actions: true, share: { chantier: true, kundalini: true, ecriture: true, moth: true, phidippus: true, musique: true, budget: false, inbox: true } } },
+    budget: { entries: [], envelopes: [] },
+    kundalini: { start: '2025-01-06', weeks: 12, perWeek: 5, sessions: [{ id: 's1', date: '2025-01-06', min: 20, note: 'Premier jour' }] },
+    ecriture: { title: 'Mon livre', goal: 40000, chapters: [{ id: 'c1', name: 'Prologue', goal: 2000 }], sessions: [{ id: 'w1', date: '2025-01-06', words: 500, chapter: 'c1' }], fragments: [{ id: 'f1', date: '2025-01-06', text: 'Une phrase qui passe' }] },
+    moth: { posts: [] },
+    phidippus: { name: 'Aragog', feedEvery: 6, mistEvery: 3, log: [{ id: 'l1', date: '2025-01-06', type: 'repas', note: '' }] },
+    musique: { albums: [] },
+    inbox: { items: [] }
+  };
+  const storage = new Map([['selene-site-v1', JSON.stringify(legacy)]]);
+  const app = launch(storage);
+  const d = app.S();
+
+  assert.equal(d.kundalini, undefined, 'legacy top-level key should be removed after migration');
+  assert.equal(d.ecriture, undefined);
+  assert.equal(d.phidippus, undefined);
+
+  assert.equal(d.modules.kundalini.type, 'programme');
+  assert.equal(d.modules.kundalini.config.start, '2025-01-06');
+  assert.equal(d.modules.kundalini.config.perWeek, 5);
+  assert.equal(d.modules.kundalini.entries.length, 1);
+  assert.equal(d.modules.kundalini.entries[0].value, 20);
+  assert.equal(d.modules.kundalini.entries[0].note, 'Premier jour');
+
+  assert.equal(d.modules.ecriture.type, 'cumul');
+  assert.equal(d.modules.ecriture.config.goal, 40000);
+  assert.equal(d.modules.ecriture.config.title, 'Mon livre');
+  assert.equal(d.modules.ecriture.config.categories.length, 1);
+  assert.equal(d.modules.ecriture.config.categories[0].name, 'Prologue');
+  assert.equal(d.modules.ecriture.entries[0].value, 500);
+  assert.equal(d.modules.ecriture.entries[0].category, 'c1');
+  assert.equal(d.modules.ecriture.scraps.length, 1);
+  assert.equal(d.modules.ecriture.scraps[0].text, 'Une phrase qui passe');
+
+  assert.equal(d.modules.phidippus.type, 'rappels');
+  assert.equal(d.modules.phidippus.label, 'Aragog', 'custom label from config.labels should carry over');
+  assert.equal(d.modules.phidippus.config.subtitle, 'Aragog');
+  assert.equal(d.modules.phidippus.config.types.find(t => t.id === 'repas').every, 6);
+  assert.equal(d.modules.phidippus.entries.length, 1);
+  assert.equal(d.modules.phidippus.entries[0].type, 'repas');
+
+  // Migration must be idempotent and non-destructive across repeated calls.
+  const again = app.S();
+  assert.equal(again.modules.kundalini.entries.length, 1);
+});
+
+test('a deleted built-in module is never resurrected by later S() calls', () => {
+  const storage = new Map();
+  const app = launch(storage);
+  const d = app.S();
+  app.deleteModuleInstance(d.modules, d.config.modules, 'phidippus');
+  app.site.save();
+  const reloaded = app.S();
+  assert.equal(reloaded.modules.phidippus, undefined);
+  assert.equal(reloaded.config.modules.some(m => m.id === 'phidippus'), false);
+});
+
+test('creating and deleting a custom module of each type works end to end', () => {
+  const app = launch(new Map());
+  const d = app.S();
+
+  const progId = app.slugId('Lecture', d.config.modules.map(m => m.id));
+  app.createModuleInstance(d.modules, 'programme', 'Lecture', progId);
+  d.config.modules.push({ id: progId, on: true });
+  app.addJournalEntry(d.modules[progId], { date: '2025-02-01', value: 30, note: 'Chapitre 1' }, 'e1', '2025-02-01');
+  assert.equal(d.modules[progId].entries[0].value, 30);
+  assert.equal(app.label(progId), 'Lecture');
+
+  const cumId = app.slugId('Sport', d.config.modules.map(m => m.id));
+  app.createModuleInstance(d.modules, 'cumul', 'Sport', cumId);
+  app.addJournalEntry(d.modules[cumId], { date: '2025-02-01', value: 5 }, 'e2', '2025-02-01');
+  assert.equal(d.modules[cumId].entries[0].value, 5);
+
+  const rapId = app.slugId('Plantes', d.config.modules.map(m => m.id));
+  app.createModuleInstance(d.modules, 'rappels', 'Plantes', rapId);
+  app.addJournalEntry(d.modules[rapId], { date: '2025-02-01', type: 'fait', note: 'Arrosage' }, 'e3', '2025-02-01');
+  assert.equal(d.modules[rapId].entries[0].type, 'fait');
+
+  assert.throws(() => app.createModuleInstance(d.modules, 'programme', 'Lecture', progId), /déjà utilisé/);
+
+  app.deleteModuleInstance(d.modules, d.config.modules, cumId);
+  assert.equal(d.modules[cumId], undefined);
+  assert.equal(d.config.modules.some(m => m.id === cumId), false);
+  assert.throws(() => app.deleteModuleInstance(d.modules, d.config.modules, cumId), /introuvable/);
+});
+
+test('backup export/import round trips the new generic module shape', () => {
+  const app = launch(new Map());
+  const d = app.S();
+  const id = app.slugId('Lecture', d.config.modules.map(m => m.id));
+  app.createModuleInstance(d.modules, 'programme', 'Lecture', id);
+  app.addJournalEntry(d.modules[id], { date: '2025-02-01', value: 12, note: 'ok' }, 'e1', '2025-02-01');
+
+  const backup = app.createBackup(app.board.data, app.site.data);
+  const parsed = app.parseBackup(backup);
+  assert.equal(parsed.site.modules[id].entries[0].value, 12);
+  assert.equal(parsed.site.modules.kundalini.type, 'programme');
+});

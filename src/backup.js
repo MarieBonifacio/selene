@@ -23,9 +23,17 @@ function parseBackup(text) {
     phidippus: ["log"], musique: ["albums"], inbox: ["items"]
   };
   for (const [name, fields] of Object.entries(sections)) {
-    if (site[name] == null) continue; // Older v1 exports are filled by S().
+    if (site[name] == null) continue; // Older v1 exports, or fields already moved under site.modules, are filled by S().
     if (!record(site[name])) throw new Error(`${name} invalide`);
     for (const field of fields) if (site[name][field] != null) collection(site[name][field], `${name}.${field}`);
+  }
+  if (site.modules != null) {
+    if (!record(site.modules)) throw new Error("modules invalide");
+    for (const [id, inst] of Object.entries(site.modules)) {
+      if (!record(inst) || !["programme", "cumul", "rappels"].includes(inst.type) || typeof inst.label !== "string" || !record(inst.config)) throw new Error(`module ${id} invalide`);
+      collection(inst.entries, `module ${id} entries`);
+      if (inst.scraps != null) collection(inst.scraps, `module ${id} scraps`);
+    }
   }
   for (const state of [board, site]) if (state.updatedAt != null &&
       (typeof state.updatedAt !== "number" || !Number.isFinite(state.updatedAt) || state.updatedAt < 0)) throw new Error("Date de modification invalide");

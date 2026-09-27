@@ -51,3 +51,66 @@ function addBudgetEntry(entries, input, id, defaultDate) {
   entries.push(entry);
   return entry;
 }
+
+/* ---- modules génériques : programme (calendrier + objectif/semaine), cumul (compteur + catégories), rappels (types récurrents) ----
+   Ne recrée jamais un module par défaut manquant : un module neuf en a déjà un exemplaire via siteSeed(),
+   et un module absent chez un site existant a été supprimé exprès (ne pas ressusciter). */
+function migrateModules(d) {
+  d.modules = d.modules || {};
+  if (d.kundalini) {
+    if (!d.modules.kundalini) d.modules.kundalini = {
+      type: "programme", label: (d.config && d.config.labels && d.config.labels.kundalini) || "Kundalini",
+      config: { unitLabel: "min", start: d.kundalini.start ?? null, weeks: d.kundalini.weeks ?? 12, perWeek: d.kundalini.perWeek ?? 5 },
+      entries: (d.kundalini.sessions || []).map(x => ({ id: x.id, date: x.date, value: x.min ?? null, note: x.note || "" }))
+    };
+    delete d.kundalini;
+  }
+  if (d.ecriture) {
+    if (!d.modules.ecriture) d.modules.ecriture = {
+      type: "cumul", label: (d.config && d.config.labels && d.config.labels.ecriture) || "Écriture",
+      config: { unitLabel: "mots", goal: d.ecriture.goal ?? 40000, title: d.ecriture.title || "", categories: (d.ecriture.chapters || []).map(x => ({ id: x.id, name: x.name, goal: x.goal })), categoryLabel: "Chapitre", scraps: true, scrapsLabel: "Fragments" },
+      entries: (d.ecriture.sessions || []).map(x => ({ id: x.id, date: x.date, value: x.words ?? null, category: x.chapter || "" })),
+      scraps: (d.ecriture.fragments || []).map(f => ({ id: f.id, date: f.date, text: f.text }))
+    };
+    delete d.ecriture;
+  }
+  if (d.phidippus) {
+    if (!d.modules.phidippus) d.modules.phidippus = {
+      type: "rappels", label: (d.config && d.config.labels && d.config.labels.phidippus) || "Phidippus",
+      config: { subtitle: d.phidippus.name || "", types: [{ id: "repas", label: "Repas", every: d.phidippus.feedEvery ?? 6 }, { id: "brumisation", label: "Brumisation", every: d.phidippus.mistEvery ?? 3 }, { id: "mue", label: "Mue", every: 0 }] },
+      entries: (d.phidippus.log || []).map(x => ({ id: x.id, date: x.date, type: x.type, note: x.note || "" }))
+    };
+    delete d.phidippus;
+  }
+}
+function addJournalEntry(instance, input, id, defaultDate) {
+  const date = input.date && validDate(input.date) ? input.date : defaultDate;
+  const entry = { id, date, note: input.note || "" };
+  if (instance.type !== "rappels") entry.value = input.value != null && input.value !== "" ? Number(input.value) : null;
+  if (instance.type === "cumul" && input.category != null) entry.category = input.category;
+  if (instance.type === "rappels") entry.type = input.type || "note";
+  instance.entries.push(entry);
+  return entry;
+}
+function deleteJournalEntry(instance, id) { instance.entries = instance.entries.filter(x => x.id !== id); }
+function slugId(name, existing) {
+  const base = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "module";
+  let id = base, n = 2;
+  while (existing.includes(id)) { id = `${base}-${n}`; n++; }
+  return id;
+}
+function createModuleInstance(modules, type, name, id) {
+  const label = requireText(name, "Nom du module", 60);
+  if (modules[id]) throw new Error("Identifiant déjà utilisé");
+  if (type === "programme") modules[id] = { type, label, config: { unitLabel: "min", start: null, weeks: 12, perWeek: 5 }, entries: [] };
+  else if (type === "cumul") modules[id] = { type, label, config: { unitLabel: "unités", goal: 100, title: "", categories: [], categoryLabel: "Catégorie", scraps: false, scrapsLabel: "Notes" }, entries: [], scraps: [] };
+  else if (type === "rappels") modules[id] = { type, label, config: { subtitle: "", types: [{ id: "fait", label: "Fait", every: 0 }] }, entries: [] };
+  else throw new Error("Type de module inconnu");
+  return modules[id];
+}
+function deleteModuleInstance(modules, moduleList, id) {
+  if (!modules[id]) throw new Error("Module introuvable");
+  delete modules[id];
+  const i = moduleList.findIndex(m => m.id === id);
+  if (i >= 0) moduleList.splice(i, 1);
+}
