@@ -19,9 +19,8 @@ function authPersist(s) {
 }
 const LAST_UID_KEY = "selene-auth-last-uid";
 function authResetLocal() {
-  board.data = { updatedAt: 0, tasks: [] };
-  site.data = siteSeed();
-  try { localStorage.removeItem(board.key); localStorage.removeItem(site.key); } catch {}
+  board.reset({ updatedAt: 0, tasks: [] });
+  site.reset(siteSeed());
 }
 function authTimeout(ms = 10000) { const c = new AbortController(); setTimeout(() => c.abort(), ms); return c.signal; }
 async function authApi(path, opts = {}) {
@@ -66,24 +65,40 @@ async function authRefreshNow() {
 
 const supabaseDb = {
   doc(path) {
-    const col = path === "board/state" ? "board" : "site";
+    const col = path === "board/state" ? "board" : "site", table = `${SUPABASE_URL}/rest/v1/app_state`;
+    const headers = extra => ({ apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${authSession.access_token}`, ...extra });
     return {
       async get() {
-        const uid = authSession && authSession.user.id;
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/app_state?user_id=eq.${uid}&select=${col}`, { signal: authTimeout(), headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${authSession.access_token}` } });
+        const res = await fetch(`${table}?user_id=eq.${authSession.user.id}&select=${col}`, { signal: authTimeout(), headers: headers() });
         if (!res.ok) throw new Error("Lecture Supabase impossible.");
         const rows = await res.json();
         const v = rows[0] && rows[0][col];
         return { exists: !!(v && Object.keys(v).length), data: () => v };
       },
-      async set(value) {
-        const uid = authSession && authSession.user.id;
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/app_state`, {
-          method: "POST", signal: authTimeout(),
-          headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${authSession.access_token}`, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" },
-          body: JSON.stringify([{ user_id: uid, [col]: value, updated_at: new Date().toISOString() }])
-        });
-        if (!res.ok) throw new Error("Écriture Supabase impossible.");
+      /* Écriture conditionnelle (compare-and-swap) : le PATCH ne touche la ligne que si le champ
+         updatedAt stocké dans la colonne JSON vaut encore `expected` (ce qu'on a lu). 0 ligne
+         modifiée = quelqu'un a écrit entre-temps → false, le store relit et refusionne. */
+      async replace(value, expected, { keepalive = false } = {}) {
+        const uid = authSession.user.id;
+        const guard = expected == null ? "is.null" : `eq.${expected}`;
+        const patch = async () => {
+          const res = await fetch(`${table}?user_id=eq.${uid}&${col}->>updatedAt=${guard}&select=user_id`, {
+            method: "PATCH", keepalive, signal: keepalive ? undefined : authTimeout(),
+            headers: headers({ "Content-Type": "application/json", Prefer: "return=representation" }),
+            body: JSON.stringify({ [col]: value, updated_at: new Date().toISOString() })
+          });
+          if (!res.ok) throw new Error("Écriture Supabase impossible.");
+          return (await res.json()).length > 0;
+        };
+        if (await patch()) return true;
+        if (keepalive) return false;
+        // Aucune ligne touchée : conflit… ou compte tout neuf dont la ligne n'existe pas encore.
+        // On la crée vide (sans rien écraser si elle existe : ignore-duplicates), puis on retente une fois.
+        const ins = await fetch(table, { method: "POST", signal: authTimeout(),
+          headers: headers({ "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" }),
+          body: JSON.stringify([{ user_id: uid }]) });
+        if (!ins.ok) throw new Error("Écriture Supabase impossible.");
+        return patch();
       },
       onSnapshot(cb, errCb) {
         const timer = setInterval(async () => {
@@ -110,7 +125,7 @@ async function authConnectStores() {
 async function authKeepAlive() {
   if (!authSession) return;
   const s = await authRefreshIfNeeded();
-  if (!s) { clearInterval(authRefreshTimer); board.db = null; site.db = null; render(); return; }
+  if (!s) { clearInterval(authRefreshTimer); board.disconnect(); site.disconnect(); render(); return; }
   if (!board.db || !site.db) { await authConnectStores(); render(); }
 }
 function authScheduleRefresh() {
@@ -142,9 +157,13 @@ async function authSignUp(email, password) {
   return !s;
 }
 async function authSignOut() {
+  // Pousser d'abord ce qui attend encore : la déconnexion efface le local. Hors ligne, prévenir avant de perdre.
+  for (const st of [board, site]) { clearTimeout(st.timer); st.timer = null; if (st.db) await st.sync(); }
+  if ([board, site].some(st => st.unsynced()) &&
+      !await ask("Des modifications n'ont pas pu être envoyées (hors ligne ?). Elles seront perdues si tu te déconnectes maintenant. Te déconnecter quand même ?")) return;
   try { if (authSession) await authApi("/logout", { method: "POST", headers: { Authorization: `Bearer ${authSession.access_token}` } }); } catch {}
   clearInterval(authRefreshTimer);
-  board.db = null; site.db = null;
+  board.disconnect(); site.disconnect(); // coupe aussi les pollers de 30 s
   authPersist(null);
   authResetLocal();
   render();

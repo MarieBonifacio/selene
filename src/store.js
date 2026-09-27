@@ -1,36 +1,111 @@
+/* Un store = un document JSON gardé dans localStorage (source de vérité locale) et,
+   une fois connecté, synchronisé avec une base distante par lecture → fusion à trois
+   voies → écriture conditionnelle. La « base » (dernier état commun connu avec le
+   serveur) est gardée à côté, sous `${key}-base` : c'est elle qui permet de savoir qui
+   a modifié quoi, donc de ne rien écraser.
+   Contrat de `db.doc(path)` : get() → {exists, data()} ; onSnapshot(cb, err) → désabonnement ;
+   et soit replace(value, attendu, {keepalive}) → booléen (écriture conditionnelle, false = le
+   serveur a changé entre-temps), soit à défaut set(value) (écriture inconditionnelle). */
 function makeStore(key, path, seed) {
-  const s = { db: null, timer: null };
-  try { const v = localStorage.getItem(key); s.data = v ? JSON.parse(v) : seed(); } catch { s.data = seed(); }
+  const BASE = key + "-base";
+  const read = k => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } };
+  const s = { db: null, timer: null, unsub: null, syncing: null, again: false, key };
+  s.data = read(key) || seed();
+  s.base = read(BASE);
   const saveLS = () => { try { localStorage.setItem(key, JSON.stringify(s.data)); } catch {} };
+  const saveBase = () => { try { if (s.base) localStorage.setItem(BASE, JSON.stringify(s.base)); else localStorage.removeItem(BASE); } catch {} };
+  const write = (doc, value, expected, opts) => doc.replace ? doc.replace(value, expected, opts) : doc.set(value).then(() => true);
+
+  async function syncOnce(db, prefetched) {
+    const doc = db.doc(path);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const snap = prefetched || await doc.get();
+      prefetched = null;
+      if (s.db !== db) return; // déconnecté pendant l'attente (déconnexion, changement de compte)
+      const remote = snap.exists ? snap.data() : null, local = clone(s.data), force = s.force;
+      let merged = force ? local : mergeDocs(s.base, local, remote); // import de sauvegarde : on remplace, on ne fusionne pas
+      if (remote && deepEqual({ ...merged, updatedAt: 0 }, { ...remote, updatedAt: 0 })) merged = remote; // rien de neuf à envoyer
+      else {
+        merged = { ...merged, updatedAt: Math.max(Date.now(), ((remote && remote.updatedAt) || 0) + 1) };
+        const ok = await write(doc, clone(merged), remote ? remote.updatedAt : null);
+        if (s.db !== db) return;
+        if (!ok) continue; // un autre appareil a écrit entre notre lecture et notre écriture : on relit
+      }
+      if (force) s.force = false;
+      s.base = clone(merged); saveBase();
+      // Ce que l'utilisatrice a modifié pendant l'aller-retour réseau est refusionné par-dessus.
+      const next = deepEqual(s.data, local) ? clone(merged) : mergeDocs(local, s.data, merged);
+      if (!deepEqual(next, merged)) s.again = true;
+      const changed = !deepEqual(next, s.data);
+      s.data = next; saveLS();
+      if (changed) render();
+      return;
+    }
+    throw new Error("Conflit d'écriture persistant");
+  }
+  /* Une seule synchro à la fois par store ; une demande pendant qu'une autre tourne la relance à la fin.
+     Résout à true si tout est à jour, false si on est resté en local. */
+  s.sync = prefetched => {
+    const db = s.db;
+    if (!db) return Promise.resolve(false);
+    if (s.syncing) { s.again = true; return s.syncing; }
+    s.syncing = (async () => {
+      try {
+        do { s.again = false; await syncOnce(db, prefetched); prefetched = null; } while (s.again && s.db === db);
+        setSaving("");
+        return true;
+      } catch {
+        setSaving("Non synchronisé — enregistré sur cet appareil seulement");
+        return false;
+      } finally { s.syncing = null; }
+    })();
+    return s.syncing;
+  };
   s.save = () => {
     s.data.updatedAt = Date.now(); saveLS();
     if (!s.db) return;
     setSaving("Enregistrement…"); clearTimeout(s.timer);
-    s.timer = setTimeout(async () => {
-      try { await s.db.doc(path).set(clone(s.data)); setSaving(""); }
-      catch { setSaving("Enregistré sur cet appareil seulement"); }
-    }, 900);
+    s.timer = setTimeout(() => { s.timer = null; s.sync(); }, 900);
   };
-  s.flush = () => { if (s.timer && s.db) { clearTimeout(s.timer); s.timer = null; s.db.doc(path).set(clone(s.data)).catch(() => {}); } };
-  s.key = key; s.reload = () => { try { const v = localStorage.getItem(key); if (v) { const r = JSON.parse(v); if ((r.updatedAt || 0) > (s.data.updatedAt || 0)) { s.data = r; return true; } } } catch {} return false; };
+  /* Fermeture ou mise en arrière-plan : pas le temps de relire, donc une seule écriture conditionnelle
+     sur la base connue (keepalive = survit à la fermeture de l'onglet). Si le serveur a bougé, elle est
+     refusée sans dégât : les données restent dans localStorage et seront fusionnées au prochain lancement. */
+  s.flush = () => {
+    if (!s.timer || !s.db) return;
+    clearTimeout(s.timer); s.timer = null;
+    const expected = s.base ? s.base.updatedAt : null;
+    const value = clone({ ...s.data, updatedAt: Math.max(s.data.updatedAt || 0, (expected || 0) + 1) });
+    const db = s.db;
+    write(db.doc(path), value, expected, { keepalive: true })
+      .then(ok => { if (ok && s.db === db) { s.base = value; saveBase(); } }, () => {});
+  };
+  /* Remplacement total voulu (import d'une sauvegarde) : la prochaine synchro écrase le serveur
+     au lieu de fusionner — toujours par écriture conditionnelle, donc sans course avec un autre appareil. */
+  s.replaceAll = data => { s.data = data; s.force = true; s.save(); };
+  /* Y a-t-il ici des changements que le serveur n'a pas (encore) reçus ? */
+  s.unsynced = () => !s.base || !deepEqual({ ...s.data, updatedAt: 0 }, { ...s.base, updatedAt: 0 });
+  s.reload = () => {
+    const r = read(key);
+    if (r && (r.updatedAt || 0) > (s.data.updatedAt || 0)) { s.data = r; s.base = read(BASE) || s.base; return true; }
+    return false;
+  };
   s.connect = async db => {
     s.db = db;
-    try {
-      const snap = await db.doc(path).get();
-      if (snap.exists) {
-        const r = snap.data();
-        if ((r.updatedAt || 0) >= (s.data.updatedAt || 0)) { s.data = clone(r); saveLS(); render(); } else s.save();
-      } else s.save();
-      db.doc(path).onSnapshot(sn => {
-        if (!sn.exists) return;
-        const r = sn.data();
-        if ((r.updatedAt || 0) > (s.data.updatedAt || 0)) { s.data = clone(r); saveLS(); render(); }
-      }, () => {});
-    } catch {
-      // Hors ligne, jeton expiré, serveur indisponible : on reste en local, mais on le dit.
-      s.db = null;
-      setSaving("Non synchronisé — enregistré sur cet appareil seulement");
-    }
+    if (!await s.sync()) { if (s.db === db) s.db = null; return; } // hors ligne, jeton expiré… : on reste en local
+    if (s.db !== db) return;
+    const unsub = db.doc(path).onSnapshot(snap => s.sync(snap), () => {});
+    s.unsub = typeof unsub === "function" ? unsub : null;
+  };
+  s.disconnect = () => {
+    clearTimeout(s.timer); s.timer = null;
+    if (s.unsub) s.unsub();
+    s.unsub = null; s.db = null;
+  };
+  /* Changement de compte ou déconnexion : on oublie tout, y compris la base (elle appartenait à l'autre compte). */
+  s.reset = data => {
+    s.disconnect();
+    s.data = data; s.base = null;
+    try { localStorage.removeItem(key); localStorage.removeItem(BASE); } catch {}
   };
   return s;
 }

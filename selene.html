@@ -190,39 +190,172 @@ input[type=checkbox],input[type=radio]{width:auto}
 
 <script>
 (() => {
+/* ================= fusion à trois voies (pure : ni DOM ni stockage) =================
+   base   = dernier état connu commun avec le serveur (ce qu'on a lu ou écrit en dernier)
+   local  = état de cet appareil ; remote = état actuel du serveur.
+   Un côté qui n'a pas bougé par rapport à la base cède la place à l'autre. Si les deux
+   ont bougé : les objets fusionnent clé par clé, les listes d'objets à `id` entrée par
+   entrée (ajouts des deux côtés conservés, suppression appliquée seulement si l'autre
+   côté n'a pas modifié l'entrée), et pour une simple valeur le plus récent gagne
+   (`preferLocal`, décidé une fois pour tout le document d'après updatedAt). */
+const isRecord = v => v !== null && typeof v === "object" && !Array.isArray(v);
+function deepEqual(a, b) {
+  if (a === b) return true;
+  if (typeof a !== typeof b || a === null || b === null || typeof a !== "object") return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Array.isArray(a)) return a.length === b.length && a.every((x, i) => deepEqual(x, b[i]));
+  const ka = Object.keys(a), kb = Object.keys(b);
+  return ka.length === kb.length && ka.every(k => Object.hasOwn(b, k) && deepEqual(a[k], b[k]));
+}
+const idList = v => Array.isArray(v) && v.every(x => isRecord(x) && typeof x.id === "string");
+
+// Fusionne deux collections indexées (clés d'objet ou ids de liste) ; renvoie les paires [clé, valeur] gardées.
+function mergeEntries(keys, get, base, local, remote, preferLocal) {
+  const out = [];
+  for (const k of keys) {
+    const inB = get.has(base, k), inL = get.has(local, k), inR = get.has(remote, k);
+    const b = inB ? get.at(base, k) : undefined;
+    if (inL && inR) out.push([k, merge3(b, get.at(local, k), get.at(remote, k), preferLocal)]);
+    else if (inL) { if (!(inB && deepEqual(b, get.at(local, k)))) out.push([k, get.at(local, k)]); } // supprimé à distance, sauf si modifié ici
+    else if (inR) { if (!(inB && deepEqual(b, get.at(remote, k)))) out.push([k, get.at(remote, k)]); }
+  }
+  return out;
+}
+const objAccess = { has: (o, k) => isRecord(o) && Object.hasOwn(o, k), at: (o, k) => o[k] };
+const listAccess = { has: (l, k) => Array.isArray(l) && l.some(x => x && x.id === k), at: (l, k) => l.find(x => x.id === k) };
+
+function merge3(base, local, remote, preferLocal) {
+  if (deepEqual(local, remote)) return local;
+  if (base !== undefined && deepEqual(base, local)) return remote;
+  if (base !== undefined && deepEqual(base, remote)) return local;
+  if (isRecord(local) && isRecord(remote)) {
+    const keys = [...new Set([...Object.keys(remote), ...Object.keys(local), ...(isRecord(base) ? Object.keys(base) : [])])];
+    return Object.fromEntries(mergeEntries(keys, objAccess, base, local, remote, preferLocal));
+  }
+  if (idList(local) && idList(remote)) {
+    // Ordre : celui du serveur, puis les ajouts locaux dans leur ordre d'origine.
+    const ids = [...new Set([...remote.map(x => x.id), ...local.map(x => x.id), ...(idList(base) ? base.map(x => x.id) : [])])];
+    return mergeEntries(ids, listAccess, idList(base) ? base : undefined, local, remote, preferLocal).map(([, v]) => v);
+  }
+  return preferLocal ? local : remote;
+}
+/* Point d'entrée pour un document entier. Sans base (premier contact de cet appareil) :
+   un appareil vierge (updatedAt nul, jamais modifié) adopte le serveur tel quel, sinon
+   on fusionne sans rien supprimer — mieux vaut une entrée ressuscitée qu'une entrée perdue. */
+function mergeDocs(base, local, remote) {
+  if (!remote) return local;
+  if (!base && !local.updatedAt) return remote;
+  return merge3(base || undefined, local, remote, (local.updatedAt || 0) >= (remote.updatedAt || 0));
+}
+
+/* Un store = un document JSON gardé dans localStorage (source de vérité locale) et,
+   une fois connecté, synchronisé avec une base distante par lecture → fusion à trois
+   voies → écriture conditionnelle. La « base » (dernier état commun connu avec le
+   serveur) est gardée à côté, sous `${key}-base` : c'est elle qui permet de savoir qui
+   a modifié quoi, donc de ne rien écraser.
+   Contrat de `db.doc(path)` : get() → {exists, data()} ; onSnapshot(cb, err) → désabonnement ;
+   et soit replace(value, attendu, {keepalive}) → booléen (écriture conditionnelle, false = le
+   serveur a changé entre-temps), soit à défaut set(value) (écriture inconditionnelle). */
 function makeStore(key, path, seed) {
-  const s = { db: null, timer: null };
-  try { const v = localStorage.getItem(key); s.data = v ? JSON.parse(v) : seed(); } catch { s.data = seed(); }
+  const BASE = key + "-base";
+  const read = k => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } };
+  const s = { db: null, timer: null, unsub: null, syncing: null, again: false, key };
+  s.data = read(key) || seed();
+  s.base = read(BASE);
   const saveLS = () => { try { localStorage.setItem(key, JSON.stringify(s.data)); } catch {} };
+  const saveBase = () => { try { if (s.base) localStorage.setItem(BASE, JSON.stringify(s.base)); else localStorage.removeItem(BASE); } catch {} };
+  const write = (doc, value, expected, opts) => doc.replace ? doc.replace(value, expected, opts) : doc.set(value).then(() => true);
+
+  async function syncOnce(db, prefetched) {
+    const doc = db.doc(path);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const snap = prefetched || await doc.get();
+      prefetched = null;
+      if (s.db !== db) return; // déconnecté pendant l'attente (déconnexion, changement de compte)
+      const remote = snap.exists ? snap.data() : null, local = clone(s.data), force = s.force;
+      let merged = force ? local : mergeDocs(s.base, local, remote); // import de sauvegarde : on remplace, on ne fusionne pas
+      if (remote && deepEqual({ ...merged, updatedAt: 0 }, { ...remote, updatedAt: 0 })) merged = remote; // rien de neuf à envoyer
+      else {
+        merged = { ...merged, updatedAt: Math.max(Date.now(), ((remote && remote.updatedAt) || 0) + 1) };
+        const ok = await write(doc, clone(merged), remote ? remote.updatedAt : null);
+        if (s.db !== db) return;
+        if (!ok) continue; // un autre appareil a écrit entre notre lecture et notre écriture : on relit
+      }
+      if (force) s.force = false;
+      s.base = clone(merged); saveBase();
+      // Ce que l'utilisatrice a modifié pendant l'aller-retour réseau est refusionné par-dessus.
+      const next = deepEqual(s.data, local) ? clone(merged) : mergeDocs(local, s.data, merged);
+      if (!deepEqual(next, merged)) s.again = true;
+      const changed = !deepEqual(next, s.data);
+      s.data = next; saveLS();
+      if (changed) render();
+      return;
+    }
+    throw new Error("Conflit d'écriture persistant");
+  }
+  /* Une seule synchro à la fois par store ; une demande pendant qu'une autre tourne la relance à la fin.
+     Résout à true si tout est à jour, false si on est resté en local. */
+  s.sync = prefetched => {
+    const db = s.db;
+    if (!db) return Promise.resolve(false);
+    if (s.syncing) { s.again = true; return s.syncing; }
+    s.syncing = (async () => {
+      try {
+        do { s.again = false; await syncOnce(db, prefetched); prefetched = null; } while (s.again && s.db === db);
+        setSaving("");
+        return true;
+      } catch {
+        setSaving("Non synchronisé — enregistré sur cet appareil seulement");
+        return false;
+      } finally { s.syncing = null; }
+    })();
+    return s.syncing;
+  };
   s.save = () => {
     s.data.updatedAt = Date.now(); saveLS();
     if (!s.db) return;
     setSaving("Enregistrement…"); clearTimeout(s.timer);
-    s.timer = setTimeout(async () => {
-      try { await s.db.doc(path).set(clone(s.data)); setSaving(""); }
-      catch { setSaving("Enregistré sur cet appareil seulement"); }
-    }, 900);
+    s.timer = setTimeout(() => { s.timer = null; s.sync(); }, 900);
   };
-  s.flush = () => { if (s.timer && s.db) { clearTimeout(s.timer); s.timer = null; s.db.doc(path).set(clone(s.data)).catch(() => {}); } };
-  s.key = key; s.reload = () => { try { const v = localStorage.getItem(key); if (v) { const r = JSON.parse(v); if ((r.updatedAt || 0) > (s.data.updatedAt || 0)) { s.data = r; return true; } } } catch {} return false; };
+  /* Fermeture ou mise en arrière-plan : pas le temps de relire, donc une seule écriture conditionnelle
+     sur la base connue (keepalive = survit à la fermeture de l'onglet). Si le serveur a bougé, elle est
+     refusée sans dégât : les données restent dans localStorage et seront fusionnées au prochain lancement. */
+  s.flush = () => {
+    if (!s.timer || !s.db) return;
+    clearTimeout(s.timer); s.timer = null;
+    const expected = s.base ? s.base.updatedAt : null;
+    const value = clone({ ...s.data, updatedAt: Math.max(s.data.updatedAt || 0, (expected || 0) + 1) });
+    const db = s.db;
+    write(db.doc(path), value, expected, { keepalive: true })
+      .then(ok => { if (ok && s.db === db) { s.base = value; saveBase(); } }, () => {});
+  };
+  /* Remplacement total voulu (import d'une sauvegarde) : la prochaine synchro écrase le serveur
+     au lieu de fusionner — toujours par écriture conditionnelle, donc sans course avec un autre appareil. */
+  s.replaceAll = data => { s.data = data; s.force = true; s.save(); };
+  /* Y a-t-il ici des changements que le serveur n'a pas (encore) reçus ? */
+  s.unsynced = () => !s.base || !deepEqual({ ...s.data, updatedAt: 0 }, { ...s.base, updatedAt: 0 });
+  s.reload = () => {
+    const r = read(key);
+    if (r && (r.updatedAt || 0) > (s.data.updatedAt || 0)) { s.data = r; s.base = read(BASE) || s.base; return true; }
+    return false;
+  };
   s.connect = async db => {
     s.db = db;
-    try {
-      const snap = await db.doc(path).get();
-      if (snap.exists) {
-        const r = snap.data();
-        if ((r.updatedAt || 0) >= (s.data.updatedAt || 0)) { s.data = clone(r); saveLS(); render(); } else s.save();
-      } else s.save();
-      db.doc(path).onSnapshot(sn => {
-        if (!sn.exists) return;
-        const r = sn.data();
-        if ((r.updatedAt || 0) > (s.data.updatedAt || 0)) { s.data = clone(r); saveLS(); render(); }
-      }, () => {});
-    } catch {
-      // Hors ligne, jeton expiré, serveur indisponible : on reste en local, mais on le dit.
-      s.db = null;
-      setSaving("Non synchronisé — enregistré sur cet appareil seulement");
-    }
+    if (!await s.sync()) { if (s.db === db) s.db = null; return; } // hors ligne, jeton expiré… : on reste en local
+    if (s.db !== db) return;
+    const unsub = db.doc(path).onSnapshot(snap => s.sync(snap), () => {});
+    s.unsub = typeof unsub === "function" ? unsub : null;
+  };
+  s.disconnect = () => {
+    clearTimeout(s.timer); s.timer = null;
+    if (s.unsub) s.unsub();
+    s.unsub = null; s.db = null;
+  };
+  /* Changement de compte ou déconnexion : on oublie tout, y compris la base (elle appartenait à l'autre compte). */
+  s.reset = data => {
+    s.disconnect();
+    s.data = data; s.base = null;
+    try { localStorage.removeItem(key); localStorage.removeItem(BASE); } catch {}
   };
   return s;
 }
@@ -248,9 +381,8 @@ function authPersist(s) {
 }
 const LAST_UID_KEY = "selene-auth-last-uid";
 function authResetLocal() {
-  board.data = { updatedAt: 0, tasks: [] };
-  site.data = siteSeed();
-  try { localStorage.removeItem(board.key); localStorage.removeItem(site.key); } catch {}
+  board.reset({ updatedAt: 0, tasks: [] });
+  site.reset(siteSeed());
 }
 function authTimeout(ms = 10000) { const c = new AbortController(); setTimeout(() => c.abort(), ms); return c.signal; }
 async function authApi(path, opts = {}) {
@@ -295,24 +427,40 @@ async function authRefreshNow() {
 
 const supabaseDb = {
   doc(path) {
-    const col = path === "board/state" ? "board" : "site";
+    const col = path === "board/state" ? "board" : "site", table = `${SUPABASE_URL}/rest/v1/app_state`;
+    const headers = extra => ({ apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${authSession.access_token}`, ...extra });
     return {
       async get() {
-        const uid = authSession && authSession.user.id;
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/app_state?user_id=eq.${uid}&select=${col}`, { signal: authTimeout(), headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${authSession.access_token}` } });
+        const res = await fetch(`${table}?user_id=eq.${authSession.user.id}&select=${col}`, { signal: authTimeout(), headers: headers() });
         if (!res.ok) throw new Error("Lecture Supabase impossible.");
         const rows = await res.json();
         const v = rows[0] && rows[0][col];
         return { exists: !!(v && Object.keys(v).length), data: () => v };
       },
-      async set(value) {
-        const uid = authSession && authSession.user.id;
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/app_state`, {
-          method: "POST", signal: authTimeout(),
-          headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${authSession.access_token}`, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" },
-          body: JSON.stringify([{ user_id: uid, [col]: value, updated_at: new Date().toISOString() }])
-        });
-        if (!res.ok) throw new Error("Écriture Supabase impossible.");
+      /* Écriture conditionnelle (compare-and-swap) : le PATCH ne touche la ligne que si le champ
+         updatedAt stocké dans la colonne JSON vaut encore `expected` (ce qu'on a lu). 0 ligne
+         modifiée = quelqu'un a écrit entre-temps → false, le store relit et refusionne. */
+      async replace(value, expected, { keepalive = false } = {}) {
+        const uid = authSession.user.id;
+        const guard = expected == null ? "is.null" : `eq.${expected}`;
+        const patch = async () => {
+          const res = await fetch(`${table}?user_id=eq.${uid}&${col}->>updatedAt=${guard}&select=user_id`, {
+            method: "PATCH", keepalive, signal: keepalive ? undefined : authTimeout(),
+            headers: headers({ "Content-Type": "application/json", Prefer: "return=representation" }),
+            body: JSON.stringify({ [col]: value, updated_at: new Date().toISOString() })
+          });
+          if (!res.ok) throw new Error("Écriture Supabase impossible.");
+          return (await res.json()).length > 0;
+        };
+        if (await patch()) return true;
+        if (keepalive) return false;
+        // Aucune ligne touchée : conflit… ou compte tout neuf dont la ligne n'existe pas encore.
+        // On la crée vide (sans rien écraser si elle existe : ignore-duplicates), puis on retente une fois.
+        const ins = await fetch(table, { method: "POST", signal: authTimeout(),
+          headers: headers({ "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" }),
+          body: JSON.stringify([{ user_id: uid }]) });
+        if (!ins.ok) throw new Error("Écriture Supabase impossible.");
+        return patch();
       },
       onSnapshot(cb, errCb) {
         const timer = setInterval(async () => {
@@ -339,7 +487,7 @@ async function authConnectStores() {
 async function authKeepAlive() {
   if (!authSession) return;
   const s = await authRefreshIfNeeded();
-  if (!s) { clearInterval(authRefreshTimer); board.db = null; site.db = null; render(); return; }
+  if (!s) { clearInterval(authRefreshTimer); board.disconnect(); site.disconnect(); render(); return; }
   if (!board.db || !site.db) { await authConnectStores(); render(); }
 }
 function authScheduleRefresh() {
@@ -371,9 +519,13 @@ async function authSignUp(email, password) {
   return !s;
 }
 async function authSignOut() {
+  // Pousser d'abord ce qui attend encore : la déconnexion efface le local. Hors ligne, prévenir avant de perdre.
+  for (const st of [board, site]) { clearTimeout(st.timer); st.timer = null; if (st.db) await st.sync(); }
+  if ([board, site].some(st => st.unsynced()) &&
+      !await ask("Des modifications n'ont pas pu être envoyées (hors ligne ?). Elles seront perdues si tu te déconnectes maintenant. Te déconnecter quand même ?")) return;
   try { if (authSession) await authApi("/logout", { method: "POST", headers: { Authorization: `Bearer ${authSession.access_token}` } }); } catch {}
   clearInterval(authRefreshTimer);
-  board.db = null; site.db = null;
+  board.disconnect(); site.disconnect(); // coupe aussi les pollers de 30 s
   authPersist(null);
   authResetLocal();
   render();
@@ -1380,7 +1532,7 @@ document.addEventListener("change", e => {
   else if (act === "as-share") { S().config.assistant.share[el.dataset.k] = el.checked; site.save(); render(); }
   else if (act === "imp") {
     const f = el.files && el.files[0]; if (!f) return;
-    f.text().then(async t => { const d = parseBackup(t); if (!await ask("Remplacer tout l'état actuel par celui du fichier ?")) return; board.data = d.board; site.data = d.site; board.save(); site.save(); render(); toast("Sauvegarde importée."); }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene.")).finally(() => { el.value = ""; });
+    f.text().then(async t => { const d = parseBackup(t); if (!await ask("Remplacer tout l'état actuel par celui du fichier ?")) return; board.replaceAll(d.board); site.replaceAll(d.site); render(); toast("Sauvegarde importée."); }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene.")).finally(() => { el.value = ""; });
   }
   else if (act === "cat-name" || act === "cat-goal") { const cat = S().modules[el.dataset.mod].config.categories[+el.closest("[data-ci]").dataset.ci]; if (act === "cat-name") cat.name = el.value.trim() || cat.name; else cat.goal = Math.max(0, +el.value || 0); site.save(); el.blur(); render(); }
   else if (act === "typ-name" || act === "typ-every") { const t = S().modules[el.dataset.mod].config.types[+el.closest("[data-ti]").dataset.ti]; if (act === "typ-name") t.label = el.value.trim() || t.label; else t.every = Math.max(0, +el.value || 0); site.save(); el.blur(); render(); }

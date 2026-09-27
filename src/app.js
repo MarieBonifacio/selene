@@ -807,7 +807,7 @@ document.addEventListener("change", e => {
   else if (act === "as-share") { S().config.assistant.share[el.dataset.k] = el.checked; site.save(); render(); }
   else if (act === "imp") {
     const f = el.files && el.files[0]; if (!f) return;
-    f.text().then(async t => { const d = parseBackup(t); if (!await ask("Remplacer tout l'état actuel par celui du fichier ?")) return; board.data = d.board; site.data = d.site; board.save(); site.save(); render(); toast("Sauvegarde importée."); }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene.")).finally(() => { el.value = ""; });
+    f.text().then(async t => { const d = parseBackup(t); if (!await ask("Remplacer tout l'état actuel par celui du fichier ?")) return; board.replaceAll(d.board); site.replaceAll(d.site); render(); toast("Sauvegarde importée."); }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene.")).finally(() => { el.value = ""; });
   }
   else if (act === "cat-name" || act === "cat-goal") { const cat = S().modules[el.dataset.mod].config.categories[+el.closest("[data-ci]").dataset.ci]; if (act === "cat-name") cat.name = el.value.trim() || cat.name; else cat.goal = Math.max(0, +el.value || 0); site.save(); el.blur(); render(); }
   else if (act === "typ-name" || act === "typ-every") { const t = S().modules[el.dataset.mod].config.types[+el.closest("[data-ti]").dataset.ti]; if (act === "typ-name") t.label = el.value.trim() || t.label; else t.every = Math.max(0, +el.value || 0); site.save(); el.blur(); render(); }
