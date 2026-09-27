@@ -2,7 +2,7 @@
 
 Tableau de bord personnel : chantier de l'appartement, pratique de kundalini, écriture, october.moth, Phidippus, musique et capture rapide, sous la lune du jour et une lisière de sapins.
 
-Aucune dépendance de production à installer. La source éditable est dans `src/` : `shell.html` (interface), `store.js` (persistance), `backup.js` (sauvegarde), `domain.js` (règles métier) et `app.js` (interface et orchestration). `python3 build.py` génère `selene.html` pour claude.ai et `index.html` pour GitHub Pages. Ne modifie pas directement les HTML générés.
+Aucune dépendance de production côté claude.ai. Le build hébergé (GitHub Pages) charge en plus, en local (`vendor/supabase.js`, pas de CDN), le client Supabase utilisé pour les comptes multi-utilisateurs — voir « Comptes et synchronisation » plus bas. La source éditable est dans `src/` : `shell.html` (interface), `store.js` (persistance), `auth.js` (comptes Supabase, hébergé uniquement), `backup.js` (sauvegarde), `domain.js` (règles métier) et `app.js` (interface et orchestration). `python3 build.py` génère `selene.html` pour claude.ai et `index.html` pour GitHub Pages. Ne modifie pas directement les HTML générés.
 
 Vérification locale : `python3 build.py --check` puis `node --test tests/*.test.js` (Node 22). [Plan de refactorisation](docs/refactoring.md).
 
@@ -30,7 +30,23 @@ Le module Assistant est désactivé par défaut (Réglages → Modules).
 
 ## Données
 
-Sur claude.ai, les données sont synchronisées entre appareils par la base de l'artifact.
-Hors de claude.ai (GitHub Pages, fichier ouvert en local), cette base n'existe pas : tout est gardé dans le `localStorage` du navigateur, donc propre à chaque appareil et effacé si l'on vide les données du site.
+Sur claude.ai, les données sont synchronisées entre appareils par la base de l'artifact, propre à ton compte claude.ai.
 
-Pour passer d'une version à l'autre : Réglages → Sauvegarde → Exporter, puis Importer sur l'autre.
+Hors de claude.ai (GitHub Pages), tant qu'aucun compte n'est configuré (voir ci-dessous), tout est gardé dans le `localStorage` du navigateur : propre à chaque appareil, effacé si l'on vide les données du site.
+
+Pour passer d'une version à l'autre, ou avant de configurer les comptes : Réglages → Sauvegarde → Exporter, puis Importer sur l'autre.
+
+## Comptes et synchronisation (GitHub Pages)
+
+Le build hébergé peut proposer de vrais comptes (plusieurs personnes, données isolées les unes des autres) synchronisés sur tous les appareils, via [Supabase](https://supabase.com) (Postgres + Auth, offre gratuite suffisante pour cet usage). Tant que ce n'est pas configuré, `index.html` se comporte exactement comme avant (localStorage seul, pas d'écran de connexion).
+
+Pour l'activer :
+
+1. Créer un projet sur [supabase.com](https://supabase.com).
+2. Dans l'éditeur SQL du projet, exécuter `supabase/schema.sql` (crée la table `app_state` avec les règles de sécurité RLS : chacun·e ne voit que sa propre ligne).
+3. Dans Authentication → Providers → Email, décider si l'inscription reste ouverte à qui connaît l'URL du site (par défaut) ou si tu préfères la désactiver et inviter chaque personne toi-même (recommandé pour un cercle restreint) — le fichier `supabase/schema.sql` rappelle où ce réglage se trouve.
+4. Récupérer l'URL du projet et la clé publique (« anon key », Settings → API) et les renseigner dans `src/auth.js` (`SUPABASE_URL`, `SUPABASE_ANON_KEY` — cette clé est prévue pour être exposée côté client, la sécurité vient des règles RLS, pas du secret de la clé).
+5. Télécharger le bundle UMD `@supabase/supabase-js` (ex. `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js`) et l'enregistrer tel quel dans `vendor/supabase.js`.
+6. `python3 build.py`, puis republier `index.html`.
+
+Une fois configuré, ouvrir `index.html` affiche un écran de connexion/inscription avant le tableau de bord. Les données restent isolées par compte (RLS) ; l'artefact claude.ai (`selene.html`) n'est pas concerné et continue de fonctionner sans connexion.

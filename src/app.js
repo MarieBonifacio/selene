@@ -170,6 +170,12 @@ GROUPERS.budget = {
   }
 };
 const gcfg = mod => S().config.groups[mod];
+const MODULE_FIELDS = {
+  kundalini: s => `<div class="field-row"><label>Début du protocole<input type="date" data-set="kundalini.start" value="${esc(s.kundalini.start || "")}"></label><label>Durée (semaines)<input type="number" min="1" data-set="kundalini.weeks" value="${s.kundalini.weeks}"></label></div>`,
+  ecriture: s => `<div class="field-row"><label>Titre du projet<input data-set="ecriture.title" value="${esc(s.ecriture.title)}"></label><label>Objectif (mots)<input type="number" min="1" data-set="ecriture.goal" value="${s.ecriture.goal}"></label></div>`,
+  phidippus: s => `<div class="field-row"><label>Nom de l'araignée<input data-set="phidippus.name" value="${esc(s.phidippus.name)}"></label><label>Repas tous les (jours)<input type="number" min="1" data-set="phidippus.feedEvery" value="${s.phidippus.feedEvery}"></label></div>
+    <div class="field-row" style="margin-top:10px"><label>Brumisation tous les (jours)<input type="number" min="1" data-set="phidippus.mistEvery" value="${s.phidippus.mistEvery}"></label><span></span></div>`
+};
 function groupPanel(mod, hint) {
   const G = GROUPERS[mod], c = gcfg(mod);
   if (!c || !c.on) return "";
@@ -344,7 +350,7 @@ VIEWS.chantier = () => {
 
 VIEWS.kundalini = () => {
   const k = S().kundalini, now = todayISO();
-  if (!k.start) return `<h2>${esc(label("kundalini"))}</h2><p class="hint">Un protocole de ${k.weeks} semaines, une séance à la fois.</p><button class="btn acc" data-act="k-start">Commencer aujourd'hui</button> <a class="btn ghost" href="#reglages">ou choisir une autre date</a>`;
+  if (!k.start) return `<h2>${esc(label("kundalini"))}</h2><p class="hint">Un protocole de ${k.weeks} semaines, une séance à la fois.</p><button class="btn acc" data-act="k-start">Commencer aujourd'hui</button> <a class="btn ghost" href="#reglages" data-act="goto-groups" data-mod="kundalini">ou choisir une autre date</a>`;
   const days = new Set(k.sessions.map(x => x.date)), W = Math.min(52, Math.max(1, Math.round(+k.weeks) || 12));
   const week = Math.min(W, Math.floor(diffDays(now, k.start) / 7) + 1);
   const pct = Math.min(100, Math.round(100 * (diffDays(now, k.start) + 1) / (W * 7)));
@@ -371,7 +377,7 @@ VIEWS.ecriture = () => {
     <div class="big">${tot.toLocaleString("fr-FR")} <span class="hint" style="font-size:1.1rem">mots sur ${(+e.goal).toLocaleString("fr-FR")}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
     <p class="hint">Dernière session ${ago(last)}. Série de ${streakOf(e.sessions.map(x => x.date))} jour(s).</p>
     <div class="row"><input type="number" id="wIn" min="1" placeholder="Mots écrits aujourd'hui" style="max-width:200px" inputmode="numeric">${e.chapters.length ? `<select id="wCh" aria-label="Chapitre" style="max-width:220px"><option value="">Hors chapitre</option>${e.chapters.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("")}</select>` : ""}<button class="btn acc" data-act="w-add">Ajouter</button></div>
-    <div style="margin-top:28px">${e.chapters.length ? groupPanel("ecriture", "Chaque chapitre a son propre objectif.") : `<p class="hint">Découpe le livre en chapitres dans <a href="#reglages">Réglages</a> pour suivre chacun en pourcentage.</p>`}</div>
+    <div style="margin-top:28px">${e.chapters.length ? groupPanel("ecriture", "Chaque chapitre a son propre objectif.") : `<p class="hint">Découpe le livre en chapitres dans <a href="#reglages" data-act="goto-groups" data-mod="ecriture">Réglages</a> pour suivre chacun en pourcentage.</p>`}</div>
   </section><section><h3>Fragments</h3><p class="hint">Une phrase qui passe, avant qu'elle ne reparte.</p>
     <textarea id="fragIn" rows="3" placeholder="Fragment…" aria-label="Nouveau fragment"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-act="frag-add">Garder le fragment</button></div>
     <ul class="plain" style="margin-top:14px">${[...e.fragments].reverse().map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}</div></div><button class="btn ghost sm" data-act="frag-del">suppr.</button></li>`).join("") || `<li class="empty">Aucun fragment.</li>`}</ul>
@@ -406,7 +412,7 @@ VIEWS.phidippus = () => {
   <div class="two"><section>
     ${line("repas", ph.feedEvery, "Repas")}${line("brumisation", ph.mistEvery, "Brumisation")}${line("mue", 0, "Mue")}
     <div class="row" style="margin-top:14px"><input id="phNote" placeholder="Observation (comportement, refus de proie, toile…)" aria-label="Observation"><button class="btn" data-act="ph-note">Noter</button></div>
-    <p class="hint" style="margin-top:10px">Nom et fréquences se règlent dans <a href="#reglages">Réglages</a>.</p>
+    <p class="hint" style="margin-top:10px">Nom et fréquences se règlent dans <a href="#reglages" data-act="goto-groups" data-mod="phidippus">Réglages</a>.</p>
   </section><section><h3>Journal</h3><ul class="plain">${[...ph.log].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map(l => `<li class="item" data-id="${esc(l.id)}"><span></span><div><span class="tag">${esc(l.type)}</span> ${fmt(l.date)}${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}</div><button class="btn ghost sm" data-act="ph-del">suppr.</button></li>`).join("") || `<li class="empty">Aucune entrée.</li>`}</ul></section></div>`;
 };
 
@@ -567,20 +573,25 @@ VIEWS.reglages = () => {
     <label>Nom affiché<input data-set="config.name" value="${esc(c.name)}"></label></div></section>
   <section><h3>Modules</h3><p class="hint">Active, renomme, réordonne.</p>
     ${c.modules.map((m, i) => `<div class="set" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="Activer ${esc(MODULE_DEFS[m.id])}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="Nom du module"><div class="row"><button class="btn ghost sm" data-act="mod-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="Descendre">↓</button></div></div>`).join("")}</section>
-  <section id="groupes"><h3>Groupes à pourcentage</h3><p class="hint">Les tuiles qui se remplissent, module par module : on ou off, critère de regroupement, tri, titre, noms des groupes.</p>
-    ${Object.keys(GROUPERS).filter(enabled).map(mod => { const G = GROUPERS[mod], g = gcfg(mod); const names = G.renamable.includes(g.by) ? [...new Set(G.items().map(it => it[g.by]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr")) : [];
-      return `<div style="border-top:1px solid var(--rule);padding:12px 0" data-mod="${mod}">
-        <div class="row"><label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="grp-on" ${g.on ? "checked" : ""}>${esc(label(mod))}</label></div>
-        ${g.on ? `<div class="field-row" style="margin-top:8px">
-          <label>Regrouper par<select data-act="grp-by">${Object.entries(G.fields).map(([k, l]) => `<option value="${k}" ${g.by === k ? "selected" : ""}>${l}</option>`).join("")}</select></label>
-          <label>Trier par<select data-act="grp-sort"><option value="name" ${g.sort === "name" ? "selected" : ""}>Ordre naturel</option><option value="pct" ${g.sort === "pct" ? "selected" : ""}>Le plus avancé d'abord</option><option value="left" ${g.sort === "left" ? "selected" : ""}>Le plus en retard d'abord</option></select></label></div>
-          <div class="field-row" style="margin-top:8px"><label>Titre du bloc<input data-act="grp-title" value="${esc(g.title)}" placeholder="Par ${esc(G.fields[g.by].toLowerCase())}"></label>
-          <label style="display:flex;gap:8px;align-items:center;align-self:end;padding-bottom:10px"><input type="checkbox" data-act="grp-hide" ${g.hideDone ? "checked" : ""}>Masquer les groupes à 100 %</label></div>
-          ${names.length ? `<details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">Renommer ou fusionner des ${esc(G.fields[g.by].toLowerCase())}s</summary><p class="hint" style="margin:6px 0">Donne le même nom à deux groupes pour les fusionner.</p>${names.map(n => `<div class="set" style="grid-template-columns:1fr"><input data-act="grp-rename" data-old="${esc(n)}" value="${esc(n)}" aria-label="Renommer ${esc(n)}"></div>`).join("")}</details>` : ""}
-          ${mod === "budget" ? `<div style="margin-top:10px"><span class="hint" style="margin:0">Enveloppes mensuelles</span>${S().budget.envelopes.map((v, i) => `<div class="set" data-vi="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="env-name" value="${esc(v.name)}" aria-label="Nom de l'enveloppe"><input type="number" min="0" data-act="env-limit" value="${v.limit || ""}" placeholder="€ / mois" aria-label="Plafond mensuel"><button class="btn ghost sm" data-act="env-del">suppr.</button></div>`).join("")}<button class="btn sm" data-act="env-add" style="margin-top:8px">Ajouter une enveloppe</button></div>` : ""}
-          ${mod === "kundalini" ? `<label style="margin-top:8px;max-width:260px">Séances visées par semaine<input type="number" min="1" max="7" data-set="kundalini.perWeek" value="${s.kundalini.perWeek}"></label>` : ""}
-          ${mod === "ecriture" ? `<div style="margin-top:10px"><span class="hint" style="margin:0">Chapitres</span>${s.ecriture.chapters.map((c, i) => `<div class="set" data-ci="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="ch-name" value="${esc(c.name)}" aria-label="Nom du chapitre"><input type="number" min="0" data-act="ch-goal" value="${c.goal || ""}" placeholder="Objectif" aria-label="Objectif en mots"><div class="row"><button class="btn ghost sm" data-act="ch-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="ch-del">suppr.</button></div></div>`).join("")}<button class="btn sm" data-act="ch-add" style="margin-top:8px">Ajouter un chapitre</button></div>` : ""}` : ""}
-      </div>`; }).join("")}
+  <section id="modreg"><h3>Réglages par module</h3><p class="hint">Un bloc par module actif, dans l'ordre de la navigation : ses réglages propres, et le regroupement en pourcentage quand il existe.</p>
+    ${c.modules.filter(m => enabled(m.id) && (MODULE_FIELDS[m.id] || GROUPERS[m.id])).map(m => { const mod = m.id, G = GROUPERS[mod], g = G ? gcfg(mod) : null;
+      const names = G && G.renamable.includes(g.by) ? [...new Set(G.items().map(it => it[g.by]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr")) : [];
+      return `<details id="mreg-${mod}" data-mod="${mod}" style="border-top:1px solid var(--rule);padding:12px 0">
+        <summary style="cursor:pointer;font-size:1.05rem;font-weight:600">${esc(label(mod))}</summary>
+        <div style="margin-top:10px">
+        ${MODULE_FIELDS[mod] ? MODULE_FIELDS[mod](s) : ""}
+        ${G ? `<div class="row" style="margin-top:${MODULE_FIELDS[mod] ? "14px" : "0"}"><label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="grp-on" ${g.on ? "checked" : ""}>Regrouper en pourcentage</label></div>
+          ${g.on ? `<div class="field-row" style="margin-top:8px">
+            <label>Regrouper par<select data-act="grp-by">${Object.entries(G.fields).map(([k, l]) => `<option value="${k}" ${g.by === k ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+            <label>Trier par<select data-act="grp-sort"><option value="name" ${g.sort === "name" ? "selected" : ""}>Ordre naturel</option><option value="pct" ${g.sort === "pct" ? "selected" : ""}>Le plus avancé d'abord</option><option value="left" ${g.sort === "left" ? "selected" : ""}>Le plus en retard d'abord</option></select></label></div>
+            <div class="field-row" style="margin-top:8px"><label>Titre du bloc<input data-act="grp-title" value="${esc(g.title)}" placeholder="Par ${esc(G.fields[g.by].toLowerCase())}"></label>
+            <label style="display:flex;gap:8px;align-items:center;align-self:end;padding-bottom:10px"><input type="checkbox" data-act="grp-hide" ${g.hideDone ? "checked" : ""}>Masquer les groupes à 100 %</label></div>
+            ${names.length ? `<details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">Renommer ou fusionner des ${esc(G.fields[g.by].toLowerCase())}s</summary><p class="hint" style="margin:6px 0">Donne le même nom à deux groupes pour les fusionner.</p>${names.map(n => `<div class="set" style="grid-template-columns:1fr"><input data-act="grp-rename" data-old="${esc(n)}" value="${esc(n)}" aria-label="Renommer ${esc(n)}"></div>`).join("")}</details>` : ""}
+            ${mod === "budget" ? `<div style="margin-top:10px"><span class="hint" style="margin:0">Enveloppes mensuelles</span>${S().budget.envelopes.map((v, i) => `<div class="set" data-vi="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="env-name" value="${esc(v.name)}" aria-label="Nom de l'enveloppe"><input type="number" min="0" data-act="env-limit" value="${v.limit || ""}" placeholder="€ / mois" aria-label="Plafond mensuel"><button class="btn ghost sm" data-act="env-del">suppr.</button></div>`).join("")}<button class="btn sm" data-act="env-add" style="margin-top:8px">Ajouter une enveloppe</button></div>` : ""}
+            ${mod === "kundalini" ? `<label style="margin-top:8px;max-width:260px">Séances visées par semaine<input type="number" min="1" max="7" data-set="kundalini.perWeek" value="${s.kundalini.perWeek}"></label>` : ""}
+            ${mod === "ecriture" ? `<div style="margin-top:10px"><span class="hint" style="margin:0">Chapitres</span>${s.ecriture.chapters.map((c, i) => `<div class="set" data-ci="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="ch-name" value="${esc(c.name)}" aria-label="Nom du chapitre"><input type="number" min="0" data-act="ch-goal" value="${c.goal || ""}" placeholder="Objectif" aria-label="Objectif en mots"><div class="row"><button class="btn ghost sm" data-act="ch-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="ch-del">suppr.</button></div></div>`).join("")}<button class="btn sm" data-act="ch-add" style="margin-top:8px">Ajouter un chapitre</button></div>` : ""}` : ""}` : ""}
+        </div>
+      </details>`; }).join("")}
   </section>
   ${enabled("assistant") ? `<section id="assistant-cfg"><h3>Assistant</h3><p class="hint">Claude dans le tableau de bord. Sur claude.ai, il passe par ton compte. Hébergé ailleurs (GitHub Pages), il faut ta propre clé API, gardée uniquement dans ce navigateur.</p>
     <div class="field-row"><label>Clé API Anthropic (hébergé uniquement)<input type="password" data-act="as-key" value="${getKey() ? "••••••••" : ""}" placeholder="sk-ant-…" autocomplete="off"></label>
@@ -588,14 +599,10 @@ VIEWS.reglages = () => {
     <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" data-act="as-actions" ${s.config.assistant.actions ? "checked" : ""}>Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)</label>
     <p class="hint" style="margin:12px 0 4px">Ce que Claude peut lire :</p><div class="row">${Object.keys(s.config.assistant.share).filter(enabled).map(k => `<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" data-act="as-share" data-k="${k}" ${s.config.assistant.share[k] ? "checked" : ""}>${esc(label(k))}</label>`).join("")}</div>
     ${getKey() ? `<button class="btn ghost sm" data-act="as-forget" style="margin-top:10px">Oublier la clé sur cet appareil</button>` : ""}</section>` : ""}
+  ${hosted() && authReady() && authSession ? `<section><h3>Compte</h3><p class="hint">Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils.</p>
+    <button class="btn ghost" data-act="auth-out">Se déconnecter</button></section>` : ""}
   <section><h3>Sauvegarde</h3><p class="hint">Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.</p>
-    <div class="row"><button class="btn" data-act="exp">Exporter</button><label class="btn" style="display:inline-block;font-weight:500">Importer<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label></div></section>
-  <section><h3>Paramètres</h3>
-    <div class="field-row"><label>Début du protocole kundalini<input type="date" data-set="kundalini.start" value="${esc(s.kundalini.start || "")}"></label><label>Durée (semaines)<input type="number" min="1" data-set="kundalini.weeks" value="${s.kundalini.weeks}"></label></div>
-    <div class="field-row" style="margin-top:10px"><label>Titre du projet d'écriture<input data-set="ecriture.title" value="${esc(s.ecriture.title)}"></label><label>Objectif (mots)<input type="number" min="1" data-set="ecriture.goal" value="${s.ecriture.goal}"></label></div>
-    <div class="field-row" style="margin-top:10px"><label>Nom de l'araignée<input data-set="phidippus.name" value="${esc(s.phidippus.name)}"></label><label>Repas tous les (jours)<input type="number" min="1" data-set="phidippus.feedEvery" value="${s.phidippus.feedEvery}"></label></div>
-    <div class="field-row" style="margin-top:10px"><label>Brumisation tous les (jours)<input type="number" min="1" data-set="phidippus.mistEvery" value="${s.phidippus.mistEvery}"></label><span></span></div>
-  </section>`;
+    <div class="row"><button class="btn" data-act="exp">Exporter</button><label class="btn" style="display:inline-block;font-weight:500">Importer<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label></div></section>`;
 };
 
 /* ================= render ================= */
@@ -607,6 +614,7 @@ function applyTheme() {
 let lastView = null;
 function render() {
   applyTheme();
+  if (hosted() && authReady() && !authSession) { $("#nav").innerHTML = ""; $("#main").innerHTML = authView(); return; }
   const s = S(), m = moon();
   let view = location.hash.slice(1) || "accueil";
   if (!VIEWS[view] || (view !== "accueil" && view !== "reglages" && !enabled(view))) view = "accueil";
@@ -626,7 +634,7 @@ function render() {
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
   lastView = view;
 }
-window.addEventListener("hashchange", () => { openId = null; render(); const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t); if (el) el.scrollIntoView(); else window.scrollTo(0, 0); });
+window.addEventListener("hashchange", () => { openId = null; render(); const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t); if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); } else window.scrollTo(0, 0); });
 
 /* ================= actions ================= */
 const taskOf = el => { const li = el.closest("[data-task]"); return (li && board.data.tasks.find(t => t.id === li.dataset.task)) || null; };
@@ -656,7 +664,7 @@ const CLICK = {
   "task-new": () => taskForm(null),
   "task-pick": pickTask,
   "grp-filter": el => { const m = el.dataset.mod, g = el.dataset.g; gFilter[m] = gFilter[m] === g ? "" : g; render(); },
-  "goto-groups": el => { if (location.hash === "#reglages") $("#groupes")?.scrollIntoView(); else sessionStorage.setItem("selene-scroll", "groupes"); },
+  "goto-groups": el => { const id = "mreg-" + el.dataset.mod; if (location.hash === "#reglages") { const d = document.getElementById(id); if (d) { d.open = true; d.scrollIntoView(); } } else sessionStorage.setItem("selene-scroll", id); },
   "cap-add": capture,
   "cap-del": el => { const s = S(); s.inbox.items = s.inbox.items.filter(x => x.id !== idOf(el)); site.save(); render(); },
   "cap-to": el => {
@@ -702,7 +710,9 @@ const CLICK = {
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([data], { type: "application/json" })); a.download = filename; document.body.appendChild(a); a.click(); a.remove();
   },
   "pal": el => { S().config.palette = el.dataset.p; site.save(); render(); },
-  "mod-up": el => moveMod(el, -1), "mod-down": el => moveMod(el, 1)
+  "mod-up": el => moveMod(el, -1), "mod-down": el => moveMod(el, 1),
+  "auth-switch": () => { authMode = authMode === "signup" ? "signin" : "signup"; render(); },
+  "auth-out": () => sb.auth.signOut()
 };
 function moveMod(el, d) { const ms = S().config.modules, i = +el.closest("[data-i]").dataset.i, j = i + d; if (j < 0 || j >= ms.length) return; [ms[i], ms[j]] = [ms[j], ms[i]]; site.save(); render(); }
 document.addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (a && CLICK[a.dataset.act] && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) CLICK[a.dataset.act](a); });
@@ -778,7 +788,10 @@ if (!window.claude) { try { navigator.storage && navigator.storage.persist && na
 render();
 (async () => {
   try {
-    if (!window.claude || !window.claude.use) return;
+    if (!window.claude || !window.claude.use) {
+      if (authReady()) { await authBoot(); if (authSession) await authConnectStores(); render(); }
+      return;
+    }
     const db = await window.claude.use("db");
     if (db) await Promise.all([board.connect(db), site.connect(db)]);
   } catch {}

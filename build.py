@@ -6,11 +6,12 @@ ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "src"
 shell = (SOURCE / "shell.html").read_text(encoding="utf-8")
 assert shell.count("<!-- SELENE_SCRIPT -->") == 1
-scripts = ["store.js", "backup.js", "domain.js", "app.js"]
+scripts = ["store.js", "auth.js", "backup.js", "domain.js", "app.js"]
 js = "\n".join((SOURCE / name).read_text(encoding="utf-8") for name in scripts)
 standalone = shell.replace("<!-- SELENE_SCRIPT -->", "<script>\n(() => {\n" + js + "})();\n</script>")
 
-head = """<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.anthropic.com https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+head = """<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.anthropic.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co wss://*.supabase.co; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<script src="vendor/supabase.js"></script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
