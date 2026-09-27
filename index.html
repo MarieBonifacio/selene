@@ -237,8 +237,8 @@ function makeStore(key, path, seed) {
 /* ================= comptes (Supabase, build hébergé uniquement) =================
    Inactif tant que SUPABASE_URL/SUPABASE_ANON_KEY ne sont pas renseignées et que
    vendor/supabase.js n'est pas chargé (jamais le cas dans l'artefact claude.ai). */
-const SUPABASE_URL = "https://YOUR-PROJECT-REF.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
+const SUPABASE_URL = "https://pxnrzrmzritezftefdlj.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_vC_zBX0TN4jZqi1GRIvo2A_nD2WFW9T";
 
 const sb = (typeof window !== "undefined" && window.supabase && !SUPABASE_URL.includes("YOUR-PROJECT-REF"))
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
