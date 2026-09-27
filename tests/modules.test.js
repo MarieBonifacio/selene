@@ -6,7 +6,7 @@ const vm = require('node:vm');
 const html = fs.readFileSync('selene.html', 'utf8');
 const script = html.match(/<script>\s*([\s\S]*?)<\/script>/)[1];
 
-function launch(storage) {
+function launch(storage, { claude = null } = {}) {
   const nodes = new Map();
   const element = id => {
     if (!nodes.has(id)) nodes.set(id, {
@@ -25,12 +25,13 @@ function launch(storage) {
     getItem(key) { return storage.get(key) ?? null; },
     setItem(key, value) { storage.set(key, value); }
   };
-  const window = { addEventListener() {}, claude: null };
-  const context = { document, window, localStorage, location: { hash: '' },
+  const window = { addEventListener() {}, claude };
+  const location = { hash: '' };
+  const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render };\n})();');
   vm.runInNewContext(instrumented, context);
-  return { ...context.__test, nodes };
+  return { ...context.__test, nodes, location };
 }
 
 test('legacy site data (pre-generic-modules) migrates in place without data loss', () => {
@@ -135,4 +136,31 @@ test('backup export/import round trips the new generic module shape', () => {
   const parsed = app.parseBackup(backup);
   assert.equal(parsed.site.modules[id].entries[0].value, 12);
   assert.equal(parsed.site.modules.kundalini.type, 'programme');
+});
+
+test('module ids never shadow fixed routes or Object.prototype names', () => {
+  const app = launch(new Map());
+  assert.notEqual(app.slugId('Réglages', []), 'reglages');
+  assert.notEqual(app.slugId('Accueil', []), 'accueil');
+  assert.notEqual(app.slugId('Constructor', []), 'constructor');
+  const d = app.S();
+  assert.throws(() => app.createModuleInstance(d.modules, 'cumul', 'Réglages', 'reglages'), /réservé/);
+  assert.throws(() => app.createModuleInstance(d.modules, 'cumul', 'X', 'constructor'), /réservé/);
+  assert.throws(() => app.deleteModuleInstance(d.modules, d.config.modules, 'constructor'), /introuvable/);
+});
+
+test('fixed views win over a colliding module id already present in stored data', () => {
+  // Données importées d'avant le correctif : un module nommé « reglages ».
+  const storage = new Map();
+  const app = launch(storage, { claude: { use: async () => null } }); // artefact claude.ai : pas d'écran de connexion
+  const d = app.S();
+  d.modules.reglages = { type: 'cumul', label: 'Piège', config: { unitLabel: 'u', goal: 1, title: '', categories: [], categoryLabel: 'C', scraps: false, scrapsLabel: 'N' }, entries: [], scraps: [] };
+  d.config.modules.push({ id: 'reglages', on: true });
+  app.location.hash = '#reglages';
+  app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /Sauvegarde/, 'settings view must render, not the module');
+
+  app.location.hash = '#constructor';
+  app.render(); // ne doit pas planter sur Object.prototype.constructor
+  assert.match(app.nodes.get('#main').innerHTML, /Accueil|lune/i);
 });

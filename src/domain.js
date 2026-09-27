@@ -93,15 +93,20 @@ function addJournalEntry(instance, input, id, defaultDate) {
   return entry;
 }
 function deleteJournalEntry(instance, id) { instance.entries = instance.entries.filter(x => x.id !== id); }
+/* L'identifiant d'un module sert aussi de route (#id) : il ne doit jamais masquer une vue fixe
+   ni un nom hérité d'Object.prototype (« constructor », « toString »…), que `obj[id]` trouverait. */
+const RESERVED_IDS = ["accueil", "reglages", "programme", "cumul", "rappels"];
+const reservedId = id => RESERVED_IDS.includes(id) || id in Object.prototype;
 function slugId(name, existing) {
   const base = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "module";
   let id = base, n = 2;
-  while (existing.includes(id)) { id = `${base}-${n}`; n++; }
+  while (existing.includes(id) || reservedId(id)) { id = `${base}-${n}`; n++; }
   return id;
 }
 function createModuleInstance(modules, type, name, id) {
   const label = requireText(name, "Nom du module", 60);
-  if (modules[id]) throw new Error("Identifiant déjà utilisé");
+  if (reservedId(id)) throw new Error("Identifiant réservé");
+  if (Object.hasOwn(modules, id)) throw new Error("Identifiant déjà utilisé");
   if (type === "programme") modules[id] = { type, label, config: { unitLabel: "min", start: null, weeks: 12, perWeek: 5 }, entries: [] };
   else if (type === "cumul") modules[id] = { type, label, config: { unitLabel: "unités", goal: 100, title: "", categories: [], categoryLabel: "Catégorie", scraps: false, scrapsLabel: "Notes" }, entries: [], scraps: [] };
   else if (type === "rappels") modules[id] = { type, label, config: { subtitle: "", types: [{ id: "fait", label: "Fait", every: 0 }] }, entries: [] };
@@ -109,7 +114,7 @@ function createModuleInstance(modules, type, name, id) {
   return modules[id];
 }
 function deleteModuleInstance(modules, moduleList, id) {
-  if (!modules[id]) throw new Error("Module introuvable");
+  if (!Object.hasOwn(modules, id)) throw new Error("Module introuvable");
   delete modules[id];
   const i = moduleList.findIndex(m => m.id === id);
   if (i >= 0) moduleList.splice(i, 1);

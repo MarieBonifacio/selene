@@ -26,7 +26,11 @@ function makeStore(key, path, seed) {
         const r = sn.data();
         if ((r.updatedAt || 0) > (s.data.updatedAt || 0)) { s.data = clone(r); saveLS(); render(); }
       }, () => {});
-    } catch { s.db = null; }
+    } catch {
+      // Hors ligne, jeton expiré, serveur indisponible : on reste en local, mais on le dit.
+      s.db = null;
+      setSaving("Non synchronisé — enregistré sur cet appareil seulement");
+    }
   };
   return s;
 }

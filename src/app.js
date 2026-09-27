@@ -436,17 +436,6 @@ function postForm(p) {
   });
 }
 
-VIEWS.phidippus = () => {
-  const ph = S().phidippus, now = todayISO(), last = t => ph.log.filter(l => l.type === t).map(l => l.date).sort().pop();
-  const line = (t, every, lab) => { const l = last(t); const due = every && (!l || diffDays(now, l) >= every); return `<div class="set"><span class="${due ? "late" : ""}">${lab}</span><span class="hint" style="margin:0">${ago(l)}${every ? `, tous les ${every} j` : ""}</span><button class="btn sm" data-act="ph-log" data-t="${t}">Fait aujourd'hui</button></div>`; };
-  return `<h2>${esc(label("phidippus"))}${ph.name ? ` <span class="hint" style="font-size:1.2rem">${esc(ph.name)}</span>` : ""}</h2><p class="hint">Huit yeux qui t'observent. Le minimum est de noter quand elle mange.</p>
-  <div class="two"><section>
-    ${line("repas", ph.feedEvery, "Repas")}${line("brumisation", ph.mistEvery, "Brumisation")}${line("mue", 0, "Mue")}
-    <div class="row" style="margin-top:14px"><input id="phNote" placeholder="Observation (comportement, refus de proie, toile…)" aria-label="Observation"><button class="btn" data-act="ph-note">Noter</button></div>
-    <p class="hint" style="margin-top:10px">Nom et fréquences se règlent dans <a href="#reglages" data-act="goto-groups" data-mod="phidippus">Réglages</a>.</p>
-  </section><section><h3>Journal</h3><ul class="plain">${[...ph.log].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map(l => `<li class="item" data-id="${esc(l.id)}"><span></span><div><span class="tag">${esc(l.type)}</span> ${fmt(l.date)}${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}</div><button class="btn ghost sm" data-act="ph-del">suppr.</button></li>`).join("") || `<li class="empty">Aucune entrée.</li>`}</ul></section></div>`;
-};
-
 const MUS_ST = ["À écouter", "Écouté", "Retenu"];
 let musFilter = "";
 VIEWS.musique = () => {
@@ -655,7 +644,10 @@ function render() {
   if (hosted() && authReady() && !authSession) { $("#nav").innerHTML = ""; $("#main").innerHTML = authView(); return; }
   const s = S(), m = moon();
   let view = location.hash.slice(1) || "accueil";
-  if (!(VIEWS[view] || s.modules[view]) || (view !== "accueil" && view !== "reglages" && !enabled(view))) view = "accueil";
+  // Les vues fixes priment toujours ; hasOwn évite qu'un « #constructor » trouve Object.prototype.
+  const fixed = v => v === "accueil" || v === "reglages";
+  if (!fixed(view) && (!(Object.hasOwn(s.modules, view) || Object.hasOwn(VIEWS, view)) || !enabled(view))) view = "accueil";
+  const inst = !fixed(view) && Object.hasOwn(s.modules, view) ? s.modules[view] : null;
   $("#brandName").textContent = s.config.name || "Selene";
   document.title = s.config.name || "Selene";
   $("#miniMoon").innerHTML = moonSVG(m.p, 40);
@@ -667,7 +659,7 @@ function render() {
   const keep = {}; let focusId = null, caret = null;
   if (view === lastView) $("#main").querySelectorAll("input[id],textarea[id],select[id]").forEach(el => { if (el.type !== "file" && el.type !== "checkbox") keep[el.id] = el.value; });
   if (document.activeElement && document.activeElement.id && keep[document.activeElement.id] != null) { focusId = document.activeElement.id; try { caret = document.activeElement.selectionStart; } catch {} }
-  { const inst = s.modules[view]; $("#main").innerHTML = inst ? VIEWS[inst.type](view) : VIEWS[view](); }
+  $("#main").innerHTML = inst ? VIEWS[inst.type](view) : VIEWS[view]();
   for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && v !== "" && el.value !== v) el.value = v; }
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
   lastView = view;
@@ -731,9 +723,6 @@ const CLICK = {
   "post-edit": el => postForm(S().moth.posts.find(p => p.id === idOf(el))),
   "post-del": async el => { const m = S().moth; if (await ask("Supprimer ce post ?")) { m.posts = m.posts.filter(p => p.id !== idOf(el)); site.save(); render(); } },
   "post-move": el => { const p = S().moth.posts.find(x => x.id === idOf(el)); const i = MOTH_COLS.indexOf(p.status) + +el.dataset.d; p.status = MOTH_COLS[Math.max(0, Math.min(3, i))]; site.save(); render(); if (p.status === "Publié") toast("Publié. L'algorithme décidera de ta valeur."); },
-  "ph-log": el => { S().phidippus.log.push({ id: uid(), date: todayISO(), type: el.dataset.t, note: "" }); site.save(); render(); },
-  "ph-note": () => { const v = $("#phNote").value.trim(); if (!v) return; S().phidippus.log.push({ id: uid(), date: todayISO(), type: "note", note: v }); $("#phNote").value = ""; site.save(); render(); },
-  "ph-del": el => { const p = S().phidippus; p.log = p.log.filter(x => x.id !== idOf(el)); site.save(); render(); },
   "alb-new": () => albForm(null),
   "alb-edit": el => albForm(S().musique.albums.find(a => a.id === idOf(el))),
   "alb-del": el => { const m = S().musique; m.albums = m.albums.filter(a => a.id !== idOf(el)); site.save(); render(); },
@@ -746,7 +735,7 @@ const CLICK = {
     const type = $("#newModType").value, name = $("#newModName").value.trim();
     if (!name) return toast("Donne un nom au module.");
     try {
-      const s = S(), id = slugId(name, s.config.modules.map(x => x.id));
+      const s = S(), id = slugId(name, [...s.config.modules.map(x => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
       createModuleInstance(s.modules, type, name, id);
       s.config.modules.push({ id, on: true });
       s.config.assistant.share[id] = true;

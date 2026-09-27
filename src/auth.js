@@ -27,24 +27,41 @@ function authTimeout(ms = 10000) { const c = new AbortController(); setTimeout((
 async function authApi(path, opts = {}) {
   let res;
   try { res = await fetch(`${SUPABASE_URL}/auth/v1${path}`, { ...opts, signal: authTimeout(), headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, ...opts.headers } }); }
-  catch { throw new Error("Impossible de joindre le serveur. Vérifie ta connexion."); }
+  catch { throw new Error("Impossible de joindre le serveur. Vérifie ta connexion."); } // pas de .status : panne réseau
   const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.msg || body.error_description || body.error || "Erreur d'authentification.");
+  if (!res.ok) {
+    const err = new Error(body.msg || body.error_description || body.error || "Erreur d'authentification.");
+    err.status = res.status;
+    throw err;
+  }
   return body;
 }
 function toSession(body) {
   if (!body.access_token) return null;
   return { access_token: body.access_token, refresh_token: body.refresh_token, expires_at: Math.floor(Date.now() / 1000) + (body.expires_in || 3600), user: { id: body.user.id, email: body.user.email } };
 }
-async function authRefreshIfNeeded() {
-  if (!authSession) return null;
-  if (authSession.expires_at - Math.floor(Date.now() / 1000) > 120) return authSession;
+/* Marge > intervalle du minuteur (5 min) : sinon le jeton peut expirer entre deux vérifications. */
+const REFRESH_MARGIN_S = 600;
+let authRefreshing = null;
+function authRefreshIfNeeded() {
+  if (!authSession) return Promise.resolve(null);
+  if (authSession.expires_at - Math.floor(Date.now() / 1000) > REFRESH_MARGIN_S) return Promise.resolve(authSession);
+  // Le refresh token est à usage unique (rotation) : deux appels simultanés = le second est refusé.
+  if (!authRefreshing) authRefreshing = authRefreshNow().finally(() => { authRefreshing = null; });
+  return authRefreshing;
+}
+async function authRefreshNow() {
   try {
     const body = await authApi("/token?grant_type=refresh_token", { method: "POST", body: JSON.stringify({ refresh_token: authSession.refresh_token }) });
     const s = toSession(body);
     authPersist(s);
     return s;
-  } catch { authPersist(null); return null; }
+  } catch (e) {
+    // Seul un refus explicite du serveur (jeton de rafraîchissement révoqué/invalide) met fin à la session.
+    // Réseau coupé, délai dépassé, 5xx : on garde la session et l'app continue en local.
+    if (e.status === 400 || e.status === 401) { authPersist(null); return null; }
+    return authSession;
+  }
 }
 
 const supabaseDb = {
@@ -84,13 +101,25 @@ async function authConnectStores() {
   try { last = localStorage.getItem(LAST_UID_KEY); } catch {}
   if (last && last !== uid) authResetLocal();
   try { localStorage.setItem(LAST_UID_KEY, uid); } catch {}
-  await Promise.all([board.connect(supabaseDb), site.connect(supabaseDb)]);
+  // Ne (re)connecte que les stores déconnectés : un store déjà branché a son propre poller, pas de doublon.
+  await Promise.all([board, site].filter(st => !st.db).map(st => st.connect(supabaseDb)));
+  if (board.db && site.db) setSaving("");
 }
 
+/* Rafraîchit le jeton et, si la synchro était tombée (démarrage hors ligne), la rétablit. */
+async function authKeepAlive() {
+  if (!authSession) return;
+  const s = await authRefreshIfNeeded();
+  if (!s) { clearInterval(authRefreshTimer); board.db = null; site.db = null; render(); return; }
+  if (!board.db || !site.db) { await authConnectStores(); render(); }
+}
 function authScheduleRefresh() {
   clearInterval(authRefreshTimer);
-  authRefreshTimer = setInterval(() => { if (authSession) authRefreshIfNeeded(); }, 5 * 60 * 1000);
+  authRefreshTimer = setInterval(authKeepAlive, 5 * 60 * 1000);
 }
+// Les minuteurs sont gelés quand un téléphone met l'onglet en veille : on rattrape au retour.
+window.addEventListener("online", () => { if (authReady()) authKeepAlive(); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && authReady()) authKeepAlive(); });
 async function authBoot() {
   if (!authReady()) return null;
   authSession = authLoad();

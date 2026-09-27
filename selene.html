@@ -218,7 +218,11 @@ function makeStore(key, path, seed) {
         const r = sn.data();
         if ((r.updatedAt || 0) > (s.data.updatedAt || 0)) { s.data = clone(r); saveLS(); render(); }
       }, () => {});
-    } catch { s.db = null; }
+    } catch {
+      // Hors ligne, jeton expiré, serveur indisponible : on reste en local, mais on le dit.
+      s.db = null;
+      setSaving("Non synchronisé — enregistré sur cet appareil seulement");
+    }
   };
   return s;
 }
@@ -252,24 +256,41 @@ function authTimeout(ms = 10000) { const c = new AbortController(); setTimeout((
 async function authApi(path, opts = {}) {
   let res;
   try { res = await fetch(`${SUPABASE_URL}/auth/v1${path}`, { ...opts, signal: authTimeout(), headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, ...opts.headers } }); }
-  catch { throw new Error("Impossible de joindre le serveur. Vérifie ta connexion."); }
+  catch { throw new Error("Impossible de joindre le serveur. Vérifie ta connexion."); } // pas de .status : panne réseau
   const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.msg || body.error_description || body.error || "Erreur d'authentification.");
+  if (!res.ok) {
+    const err = new Error(body.msg || body.error_description || body.error || "Erreur d'authentification.");
+    err.status = res.status;
+    throw err;
+  }
   return body;
 }
 function toSession(body) {
   if (!body.access_token) return null;
   return { access_token: body.access_token, refresh_token: body.refresh_token, expires_at: Math.floor(Date.now() / 1000) + (body.expires_in || 3600), user: { id: body.user.id, email: body.user.email } };
 }
-async function authRefreshIfNeeded() {
-  if (!authSession) return null;
-  if (authSession.expires_at - Math.floor(Date.now() / 1000) > 120) return authSession;
+/* Marge > intervalle du minuteur (5 min) : sinon le jeton peut expirer entre deux vérifications. */
+const REFRESH_MARGIN_S = 600;
+let authRefreshing = null;
+function authRefreshIfNeeded() {
+  if (!authSession) return Promise.resolve(null);
+  if (authSession.expires_at - Math.floor(Date.now() / 1000) > REFRESH_MARGIN_S) return Promise.resolve(authSession);
+  // Le refresh token est à usage unique (rotation) : deux appels simultanés = le second est refusé.
+  if (!authRefreshing) authRefreshing = authRefreshNow().finally(() => { authRefreshing = null; });
+  return authRefreshing;
+}
+async function authRefreshNow() {
   try {
     const body = await authApi("/token?grant_type=refresh_token", { method: "POST", body: JSON.stringify({ refresh_token: authSession.refresh_token }) });
     const s = toSession(body);
     authPersist(s);
     return s;
-  } catch { authPersist(null); return null; }
+  } catch (e) {
+    // Seul un refus explicite du serveur (jeton de rafraîchissement révoqué/invalide) met fin à la session.
+    // Réseau coupé, délai dépassé, 5xx : on garde la session et l'app continue en local.
+    if (e.status === 400 || e.status === 401) { authPersist(null); return null; }
+    return authSession;
+  }
 }
 
 const supabaseDb = {
@@ -309,13 +330,25 @@ async function authConnectStores() {
   try { last = localStorage.getItem(LAST_UID_KEY); } catch {}
   if (last && last !== uid) authResetLocal();
   try { localStorage.setItem(LAST_UID_KEY, uid); } catch {}
-  await Promise.all([board.connect(supabaseDb), site.connect(supabaseDb)]);
+  // Ne (re)connecte que les stores déconnectés : un store déjà branché a son propre poller, pas de doublon.
+  await Promise.all([board, site].filter(st => !st.db).map(st => st.connect(supabaseDb)));
+  if (board.db && site.db) setSaving("");
 }
 
+/* Rafraîchit le jeton et, si la synchro était tombée (démarrage hors ligne), la rétablit. */
+async function authKeepAlive() {
+  if (!authSession) return;
+  const s = await authRefreshIfNeeded();
+  if (!s) { clearInterval(authRefreshTimer); board.db = null; site.db = null; render(); return; }
+  if (!board.db || !site.db) { await authConnectStores(); render(); }
+}
 function authScheduleRefresh() {
   clearInterval(authRefreshTimer);
-  authRefreshTimer = setInterval(() => { if (authSession) authRefreshIfNeeded(); }, 5 * 60 * 1000);
+  authRefreshTimer = setInterval(authKeepAlive, 5 * 60 * 1000);
 }
+// Les minuteurs sont gelés quand un téléphone met l'onglet en veille : on rattrape au retour.
+window.addEventListener("online", () => { if (authReady()) authKeepAlive(); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && authReady()) authKeepAlive(); });
 async function authBoot() {
   if (!authReady()) return null;
   authSession = authLoad();
@@ -511,15 +544,20 @@ function addJournalEntry(instance, input, id, defaultDate) {
   return entry;
 }
 function deleteJournalEntry(instance, id) { instance.entries = instance.entries.filter(x => x.id !== id); }
+/* L'identifiant d'un module sert aussi de route (#id) : il ne doit jamais masquer une vue fixe
+   ni un nom hérité d'Object.prototype (« constructor », « toString »…), que `obj[id]` trouverait. */
+const RESERVED_IDS = ["accueil", "reglages", "programme", "cumul", "rappels"];
+const reservedId = id => RESERVED_IDS.includes(id) || id in Object.prototype;
 function slugId(name, existing) {
   const base = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "module";
   let id = base, n = 2;
-  while (existing.includes(id)) { id = `${base}-${n}`; n++; }
+  while (existing.includes(id) || reservedId(id)) { id = `${base}-${n}`; n++; }
   return id;
 }
 function createModuleInstance(modules, type, name, id) {
   const label = requireText(name, "Nom du module", 60);
-  if (modules[id]) throw new Error("Identifiant déjà utilisé");
+  if (reservedId(id)) throw new Error("Identifiant réservé");
+  if (Object.hasOwn(modules, id)) throw new Error("Identifiant déjà utilisé");
   if (type === "programme") modules[id] = { type, label, config: { unitLabel: "min", start: null, weeks: 12, perWeek: 5 }, entries: [] };
   else if (type === "cumul") modules[id] = { type, label, config: { unitLabel: "unités", goal: 100, title: "", categories: [], categoryLabel: "Catégorie", scraps: false, scrapsLabel: "Notes" }, entries: [], scraps: [] };
   else if (type === "rappels") modules[id] = { type, label, config: { subtitle: "", types: [{ id: "fait", label: "Fait", every: 0 }] }, entries: [] };
@@ -527,7 +565,7 @@ function createModuleInstance(modules, type, name, id) {
   return modules[id];
 }
 function deleteModuleInstance(modules, moduleList, id) {
-  if (!modules[id]) throw new Error("Module introuvable");
+  if (!Object.hasOwn(modules, id)) throw new Error("Module introuvable");
   delete modules[id];
   const i = moduleList.findIndex(m => m.id === id);
   if (i >= 0) moduleList.splice(i, 1);
@@ -971,17 +1009,6 @@ function postForm(p) {
   });
 }
 
-VIEWS.phidippus = () => {
-  const ph = S().phidippus, now = todayISO(), last = t => ph.log.filter(l => l.type === t).map(l => l.date).sort().pop();
-  const line = (t, every, lab) => { const l = last(t); const due = every && (!l || diffDays(now, l) >= every); return `<div class="set"><span class="${due ? "late" : ""}">${lab}</span><span class="hint" style="margin:0">${ago(l)}${every ? `, tous les ${every} j` : ""}</span><button class="btn sm" data-act="ph-log" data-t="${t}">Fait aujourd'hui</button></div>`; };
-  return `<h2>${esc(label("phidippus"))}${ph.name ? ` <span class="hint" style="font-size:1.2rem">${esc(ph.name)}</span>` : ""}</h2><p class="hint">Huit yeux qui t'observent. Le minimum est de noter quand elle mange.</p>
-  <div class="two"><section>
-    ${line("repas", ph.feedEvery, "Repas")}${line("brumisation", ph.mistEvery, "Brumisation")}${line("mue", 0, "Mue")}
-    <div class="row" style="margin-top:14px"><input id="phNote" placeholder="Observation (comportement, refus de proie, toile…)" aria-label="Observation"><button class="btn" data-act="ph-note">Noter</button></div>
-    <p class="hint" style="margin-top:10px">Nom et fréquences se règlent dans <a href="#reglages" data-act="goto-groups" data-mod="phidippus">Réglages</a>.</p>
-  </section><section><h3>Journal</h3><ul class="plain">${[...ph.log].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map(l => `<li class="item" data-id="${esc(l.id)}"><span></span><div><span class="tag">${esc(l.type)}</span> ${fmt(l.date)}${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}</div><button class="btn ghost sm" data-act="ph-del">suppr.</button></li>`).join("") || `<li class="empty">Aucune entrée.</li>`}</ul></section></div>`;
-};
-
 const MUS_ST = ["À écouter", "Écouté", "Retenu"];
 let musFilter = "";
 VIEWS.musique = () => {
@@ -1190,7 +1217,10 @@ function render() {
   if (hosted() && authReady() && !authSession) { $("#nav").innerHTML = ""; $("#main").innerHTML = authView(); return; }
   const s = S(), m = moon();
   let view = location.hash.slice(1) || "accueil";
-  if (!(VIEWS[view] || s.modules[view]) || (view !== "accueil" && view !== "reglages" && !enabled(view))) view = "accueil";
+  // Les vues fixes priment toujours ; hasOwn évite qu'un « #constructor » trouve Object.prototype.
+  const fixed = v => v === "accueil" || v === "reglages";
+  if (!fixed(view) && (!(Object.hasOwn(s.modules, view) || Object.hasOwn(VIEWS, view)) || !enabled(view))) view = "accueil";
+  const inst = !fixed(view) && Object.hasOwn(s.modules, view) ? s.modules[view] : null;
   $("#brandName").textContent = s.config.name || "Selene";
   document.title = s.config.name || "Selene";
   $("#miniMoon").innerHTML = moonSVG(m.p, 40);
@@ -1202,7 +1232,7 @@ function render() {
   const keep = {}; let focusId = null, caret = null;
   if (view === lastView) $("#main").querySelectorAll("input[id],textarea[id],select[id]").forEach(el => { if (el.type !== "file" && el.type !== "checkbox") keep[el.id] = el.value; });
   if (document.activeElement && document.activeElement.id && keep[document.activeElement.id] != null) { focusId = document.activeElement.id; try { caret = document.activeElement.selectionStart; } catch {} }
-  { const inst = s.modules[view]; $("#main").innerHTML = inst ? VIEWS[inst.type](view) : VIEWS[view](); }
+  $("#main").innerHTML = inst ? VIEWS[inst.type](view) : VIEWS[view]();
   for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && v !== "" && el.value !== v) el.value = v; }
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
   lastView = view;
@@ -1266,9 +1296,6 @@ const CLICK = {
   "post-edit": el => postForm(S().moth.posts.find(p => p.id === idOf(el))),
   "post-del": async el => { const m = S().moth; if (await ask("Supprimer ce post ?")) { m.posts = m.posts.filter(p => p.id !== idOf(el)); site.save(); render(); } },
   "post-move": el => { const p = S().moth.posts.find(x => x.id === idOf(el)); const i = MOTH_COLS.indexOf(p.status) + +el.dataset.d; p.status = MOTH_COLS[Math.max(0, Math.min(3, i))]; site.save(); render(); if (p.status === "Publié") toast("Publié. L'algorithme décidera de ta valeur."); },
-  "ph-log": el => { S().phidippus.log.push({ id: uid(), date: todayISO(), type: el.dataset.t, note: "" }); site.save(); render(); },
-  "ph-note": () => { const v = $("#phNote").value.trim(); if (!v) return; S().phidippus.log.push({ id: uid(), date: todayISO(), type: "note", note: v }); $("#phNote").value = ""; site.save(); render(); },
-  "ph-del": el => { const p = S().phidippus; p.log = p.log.filter(x => x.id !== idOf(el)); site.save(); render(); },
   "alb-new": () => albForm(null),
   "alb-edit": el => albForm(S().musique.albums.find(a => a.id === idOf(el))),
   "alb-del": el => { const m = S().musique; m.albums = m.albums.filter(a => a.id !== idOf(el)); site.save(); render(); },
@@ -1281,7 +1308,7 @@ const CLICK = {
     const type = $("#newModType").value, name = $("#newModName").value.trim();
     if (!name) return toast("Donne un nom au module.");
     try {
-      const s = S(), id = slugId(name, s.config.modules.map(x => x.id));
+      const s = S(), id = slugId(name, [...s.config.modules.map(x => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
       createModuleInstance(s.modules, type, name, id);
       s.config.modules.push({ id, on: true });
       s.config.assistant.share[id] = true;
