@@ -186,3 +186,33 @@ function skyMotion({ wind = 8, dir = 270, precip = 0, lat = 45 } = {}) {
     rain: +(24 / fall).toFixed(3), snow: +(60 / Math.max(10, Math.min(30, 10 + w * 0.4))).toFixed(2)
   };
 }
+
+/* ---- le ciel des jours qui viennent : étoiles filantes, éclipses (tables fixes, aucun réseau) ----
+   Astronomie seulement : des dates et des chiffres, jamais d'interprétation. Pluies majeures visibles de nos latitudes,
+   selon le calendrier de l'IMO (Organisation internationale des météores) : jour du maximum et taux horaire zénithal
+   (ZHR), un maximum théorique sous un ciel parfaitement noir, radiant au zénith ; on en voit toujours moins. */
+const SHOWERS = [["Quadrantides", 1, 4, 110], ["Lyrides", 4, 22, 18], ["Perséides", 8, 12, 100], ["Orionides", 10, 21, 20], ["Léonides", 11, 17, 15], ["Géminides", 12, 14, 150]];
+/* Éclipses visibles depuis Lille jusqu'en 2030 (visibilité locale recoupée : icalendrier.fr, lunettes-eclipse.fr,
+   eclipse.previplus.fr ; à prolonger au-delà). Valables pour le Nord de la France et la Belgique seulement. */
+const ECLIPSES = [
+  ["2026-08-12", "soleil", "partielle", "90 % du Soleil masqué, maximum vers 20 h 14"], ["2026-08-28", "lune", "partielle", ""],
+  ["2027-02-20", "lune", "pénombre", ""], ["2027-08-02", "soleil", "partielle", ""], ["2028-01-12", "lune", "partielle", ""],
+  ["2028-01-26", "soleil", "partielle", ""], ["2028-07-06", "lune", "pénombre", ""], ["2028-12-31", "lune", "totale", ""],
+  ["2029-06-26", "lune", "totale", ""], ["2029-12-20", "lune", "totale", ""], ["2030-06-01", "soleil", "partielle", ""],
+  ["2030-06-15", "lune", "pénombre", ""], ["2030-12-09", "lune", "pénombre", ""]];
+const nearLille = (lat, lon) => lat >= 48.5 && lat <= 52.5 && lon >= 0.5 && lon <= 6.5;
+const dayDiff = (a, b) => Math.round((Date.parse(b + "T12:00:00Z") - Date.parse(a + "T12:00:00Z")) / 86400000);
+/* Ce qui mérite une ligne sous le ciel, d'aujourd'hui (AAAA-MM-JJ) : une pluie d'étoiles filantes la veille ou le
+   jour de son maximum ; une éclipse visible d'ici dans les sept jours (seulement près de Lille, là où la table vaut). */
+function skyEvents(today, place) {
+  const out = [], y = +today.slice(0, 4);
+  for (const [name, m, d, zhr] of SHOWERS) {
+    for (const yy of [y, y + 1]) { const peak = `${yy}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`, n = dayDiff(today, peak); if (n === 0 || n === 1) out.push({ kind: "shower", name, zhr, inDays: n, date: peak }); }
+  }
+  if (place && nearLille(place.lat, place.lon)) for (const [date, body, type, note] of ECLIPSES) {
+    const n = dayDiff(today, date); if (n >= 0 && n <= 7) out.push({ kind: "eclipse", body, type, note, inDays: n, date });
+  }
+  return out;
+}
+/* Les jours de pluie à venir d'une prévision quotidienne [{ d, mm, pp }] : 1 mm au moins, ou 60 % de probabilité. */
+const rainDays = (days, from, n = 5) => (days || []).filter(x => x && x.d >= from && dayDiff(from, x.d) < n && ((+x.mm || 0) >= 1 || (+x.pp || 0) >= 60)).map(x => x.d);

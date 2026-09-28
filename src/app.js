@@ -219,10 +219,12 @@ async function refreshWeather(force = false) {
   const w = freshWeather(c); if (!force && w && Date.now() - w.at < 30 * 60000) return;
   weatherBusy = true;
   try {
-    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${+c.lat}&longitude=${+c.lon}&current=temperature_2m,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,precipitation&timezone=auto`);
-    const cur = r.ok ? (await r.json()).current : null;
+    // Le temps présent, et les cinq jours qui viennent (pluie) pour les tâches à ciel ouvert : un seul appel.
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${+c.lat}&longitude=${+c.lon}&current=temperature_2m,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,precipitation&daily=precipitation_sum,precipitation_probability_max&forecast_days=7&timezone=auto`);
+    const j = r.ok ? await r.json() : null, cur = j && j.current, dl = j && j.daily;
     if (!cur || !Number.isFinite(+cur.weather_code)) return;
-    localStorage.setItem(WEATHER_KEY, JSON.stringify({ at: Date.now(), lat: +c.lat, lon: +c.lon, code: +cur.weather_code, temp: +cur.temperature_2m, cloud: +cur.cloud_cover, wind: +cur.wind_speed_10m, dir: +cur.wind_direction_10m, precip: +cur.precipitation }));
+    const days = dl && Array.isArray(dl.time) ? dl.time.slice(0, 7).map((d, i) => ({ d: String(d).slice(0, 10), mm: +((dl.precipitation_sum || [])[i]) || 0, pp: +((dl.precipitation_probability_max || [])[i]) || 0 })) : [];
+    localStorage.setItem(WEATHER_KEY, JSON.stringify({ at: Date.now(), lat: +c.lat, lon: +c.lon, code: +cur.weather_code, temp: +cur.temperature_2m, cloud: +cur.cloud_cover, wind: +cur.wind_speed_10m, dir: +cur.wind_direction_10m, precip: +cur.precipitation, days }));
     render();
   } catch {} finally { weatherBusy = false; } // hors ligne, ou l'artefact claude.ai qui ne sort pas : le ciel reste sans météo
 }
@@ -236,6 +238,13 @@ function skyWatch() {
     heroObs = heroObs || new window.IntersectionObserver(es => es.forEach(e => e.target.classList.toggle("still", !e.isIntersecting)));
     heroObs.disconnect(); heroObs.observe(h);
   } catch {}
+}
+/* Une pluie d'étoiles filantes ou une éclipse, en une phrase : ce qu'on verra vraiment, sans promettre le ciel. */
+function skyEventText(ev, illum) {
+  if (ev.kind === "shower") return `${ev.name} ${ev.inDays ? "demain soir" : "cette nuit"} : jusqu'à ${ev.zhr} météores par heure sous un ciel parfaitement noir, bien moins en ville${illum > .6 ? " ; la lune en effacera la plupart" : ""}.`;
+  const when = ev.inDays === 0 ? "aujourd'hui" : ev.inDays === 1 ? "demain" : `dans ${ev.inDays} jours (${fmt(ev.date, { day: "numeric", month: "long" })})`;
+  const what = ev.type === "pénombre" ? `Éclipse de Lune par la pénombre ${when} : un voile léger, à peine perceptible` : `Éclipse ${ev.type} de ${ev.body === "soleil" ? "Soleil" : "Lune"} ${when}${ev.note ? ` : ${ev.note}` : ""}`;
+  return `${what}${ev.body === "soleil" ? ". Jamais sans lunettes d'éclipse." : "."}`;
 }
 const hm = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
 /* La scène du moment : couleurs (skyScene), place de la lune, et ce qu'on peut en dire en une ligne. */
@@ -263,10 +272,12 @@ function sceneNow(m) {
   // Le texte se pose du côté opposé à la lune (qui se lève à gauche, à l'est) ; si elle le chevauche encore (écran étroit,
   // lune haute), le voile de lecture se renforce : un disque clair sous des lettres claires ne se lit pas.
   const right = !!(moonAt && moonAt.x < 50), clash = !!(moonAt && (right ? moonAt.x > 36 : moonAt.x < 64) && moonAt.y < 52);
-  if (clash) sc.scrim = Math.max(sc.scrim, .6);
+  // Une ligne d'événement allonge le texte jusqu'à la cime des arbres : même renfort.
+  const events = skyEvents(todayISO(), c ? place : null).map(ev => skyEventText(ev, m.illum));
+  if (clash || events.length) sc.scrim = Math.max(sc.scrim, .6);
   const cap = t => t && t[0].toUpperCase() + t.slice(1);
   const lineHTML = !line ? "" : wind ? `${esc(cap(facts[0]))}<span class="sky-wind"> · ${esc(wind)}</span>${esc(line.slice(facts[0].length))}` : esc(cap(line));
-  return { sc, sun, dark, moonAt, right, mo, line: cap(line), lineHTML };
+  return { sc, sun, dark, moonAt, right, mo, line: cap(line), lineHTML, events };
 }
 /* Réglages → Ciel : le lieu (une ville, ou la position de l'appareil, jamais demandée d'office), la météo, la lune. */
 let skyResults = []; // résultats de la dernière recherche de ville (propres à l'appareil, oubliés au rechargement)
@@ -440,7 +451,7 @@ VIEWS.accueil = () => {
   <section class="hero${HERO_COMPACT ? " compact" : ""}${win.right ? " txt-right" : ""}${skyLive() ? " live" : ""}" style="${heroStyle(win.sc, win.dark)}" data-weather="${win.sc.weather || ""}" data-leaves="${win.sc.leaves}" data-sun="${win.sun.alt.toFixed(1)}">${forestSVG(m.p, win.sc, win.moonAt, win.mo)}<div class="txt">
     <div class="phase">${m.name}</div>
     <p>Éclairée à ${Math.round(m.illum * 100)} %, jour ${Math.floor(m.age) + 1} du cycle. ${m.p < .5 ? `Pleine lune dans ${m.nextFull} j.` : `Nouvelle lune dans ${m.nextNew} j.`}</p>
-    ${win.lineHTML ? `<p class="sky-line">${win.lineHTML}</p>` : ""}
+    ${win.lineHTML ? `<p class="sky-line">${win.lineHTML}</p>` : ""}${win.events.map(t => `<p class="sky-line sky-event">${esc(t)}</p>`).join("")}
   </div></section>
   ${resumeSection()}
   <div class="two">
