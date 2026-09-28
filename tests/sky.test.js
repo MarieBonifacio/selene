@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const ctx = {};
-vm.runInNewContext(fs.readFileSync('src/sky.js', 'utf8') + '\n;globalThis.__sky = { sunPosition, moonPosition, nextCrossing, approxPlace, moonPlacement, weatherState, skyScene, skyMotion, windName, contrast, mixHex, WEATHER };', ctx);
+vm.runInNewContext(fs.readFileSync('src/sky.js', 'utf8') + '\n;globalThis.__sky = { sunPosition, moonPosition, nextCrossing, approxPlace, moonPlacement, weatherState, skyScene, skyMotion, windName, seasonAt, contrast, mixHex, WEATHER };', ctx);
 const S = ctx.__sky;
 const PARIS = [48.85, 2.35];
 const at = s => Date.parse(s);
@@ -96,4 +96,33 @@ test('ciel vivant : le vent réel donne le sens, la vitesse et la pente', () => 
   const junk = S.skyMotion({ wind: 'x', dir: null, precip: NaN });
   assert.ok(Number.isFinite(junk.clouds) && Number.isFinite(junk.rain));
   assert.equal(S.windName(270), 'd\'ouest'); assert.equal(S.windName(-10), 'du nord'); assert.equal(S.windName(225), 'du sud-ouest');
+});
+
+test('saisons : la phénologie des feuillus à Lille, et à l’envers au sud', () => {
+  const LILLE = 50.6, d = s => S.seasonAt(at(s + 'T12:00:00Z'), LILLE);
+  assert.equal(d('2026-01-15').phase, 'nu'); assert.equal(d('2026-01-15').leaf, 0);
+  assert.equal(d('2026-03-20').leaf, 0, 'pas de feuille avant le débourrement');
+  assert.equal(d('2026-04-28').phase, 'debourrement'); assert.ok(d('2026-04-28').leaf > 0.3 && d('2026-04-28').leaf < 0.8);
+  assert.equal(d('2026-07-14').phase, 'feuille'); assert.equal(d('2026-07-14').leaf, 1);
+  assert.equal(d('2026-10-15').phase, 'rouille'); assert.ok(d('2026-10-15').leaf > 0.8, 'l’or tient encore aux branches');
+  assert.equal(d('2026-11-08').phase, 'chute'); assert.ok(d('2026-11-08').leaf < d('2026-10-15').leaf);
+  assert.equal(d('2026-12-10').phase, 'nu');
+  assert.equal(S.seasonAt(at('2026-07-14T12:00:00Z'), -33.4).phase, 'nu', 'juillet, c’est l’hiver à Santiago');
+  assert.equal(S.seasonAt(at('2026-01-15T12:00:00Z'), -33.4).phase, 'feuille');
+  // Continue : pas de saut d'un jour à l'autre.
+  for (let t = at('2026-01-01T12:00:00Z'); t < at('2027-01-01T00:00:00Z'); t += 86400000) {
+    const a = S.seasonAt(t, LILLE), b = S.seasonAt(t + 86400000, LILLE);
+    assert.ok(Math.abs(a.leaf - b.leaf) < 0.06, `saut de feuillage le ${new Date(t).toISOString().slice(0, 10)}`);
+  }
+});
+
+test('saisons : couleurs éteintes la nuit, givre seulement s’il est mesuré', () => {
+  const autumn = S.seasonAt(at('2026-10-15T12:00:00Z'), 50.6);
+  const day = S.skyScene({ sunAlt: 30, season: autumn }), night = S.skyScene({ sunAlt: -30, season: autumn });
+  assert.equal(day.leafO, autumn.leaf); assert.equal(day.leaves, 'rouille');
+  const dist = (a, b) => { const x = [1, 3, 5].map(i => parseInt(a.slice(i, i + 2), 16)), y = [1, 3, 5].map(i => parseInt(b.slice(i, i + 2), 16)); return Math.hypot(...x.map((v, i) => v - y[i])); };
+  assert.ok(dist(day.leaf, day.far) > dist(night.leaf, night.far), 'la rouille se voit le jour, s’éteint la nuit');
+  assert.equal(S.skyScene({ sunAlt: -30 }).frost, null, 'pas de givre sans mesure');
+  assert.match(S.skyScene({ sunAlt: -30, frost: true }).frost, /^#[0-9a-f]{6}$/);
+  assert.equal(S.skyScene({ sunAlt: -30 }).leaves, 'feuille', 'sans saison, un été neutre');
 });

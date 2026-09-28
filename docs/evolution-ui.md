@@ -315,7 +315,30 @@ Livrée en quatre temps, pour que chaque pull request reste relisible.
       donnerait, les autres facettes appliquées ; résultats groupés par espace, « N résultats sur M ». Une recherche
       lancée d'ailleurs (un mot du bilan, un motif) repart sans filtre ; l'export en dossier suit les filtres.
 
-### Pistes expérimentales
+### Vague 4 : les pistes expérimentales
 
-Carte céleste des liaisons (lentille secondaire seulement, avec filtre par motif), planche de lunaison
-imprimable, marginalia sur desktop, saisons de la lisière.
+Du moins risqué au plus risqué ; chaque étape se suffit à elle-même (on peut s'arrêter après n'importe laquelle).
+
+**4a : saisons de la lisière**
+- [x] Des feuillus (hêtres, bouleaux) mêlés aux sapins du plan lointain : les sapins sont sempervirents, la saison se
+      lit dans les feuillus. Phénologie continue (`seasonAt`, sky.js, pure) : débourrement vers la mi-avril, feuillage
+      plein de mai à septembre, rouille en octobre, branches nues de novembre à mars ; décalée d'une demi-année au sud.
+- [x] Givre sur les cimes d'après la température **mesurée** (≤ 0 °C), jamais d'après le calendrier.
+- [x] Image fixe (coût nul) ; pas de feuilles qui tombent.
+
+**4b : marginalia (ordinateur)**
+- [ ] Dans les fragments et les notes, provenance, liens, motifs présents, statut et versions passent dans la marge
+      droite, face au texte (notes latérales à la Tufte). Un seul `<aside>` rendu ; le CSS seul le place (grille à
+      deux colonnes au-delà de 1180 px, sous le texte en deçà). Actions toujours sur la ligne.
+
+**4c : planche de lunaison**
+- [ ] `#bilan/planche` : une planche A4 par cycle, numérotée par la lunaison de Meeus (le `k` de `periodOf`) ; règle
+      de lunaison (activité par jour), une ligne et une sparkline par module, mots émergents, motifs apparus, statuts,
+      tensions ouvertes. Feuille de style d'impression ; « Télécharger » en .html autonome si l'impression est bloquée.
+
+**4d : carte céleste des liaisons (expérimentale)**
+- [ ] Jamais globale : « Carte du voisinage » (fiche Spécimen, deux degrés) et « Carte du motif » ; 80 étoiles au plus.
+- [ ] Disposition déterministe (le temps en abscisse, une bande par module), aucune simulation physique ; type de lien
+      codé par le trait (plein, pointillé, tireté, trait-point), tensions ouvertes en cinabre ; chaque étoile est un
+      lien au clavier, et une table des liaisons en texte l'accompagne (seule par défaut sur téléphone).
+- [ ] Critère d'abandon écrit d'avance : pas ouverte pendant un mois, retirée.

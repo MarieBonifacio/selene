@@ -110,12 +110,42 @@ function fir(x, base, hgt, w) {
   }
   return d + `M${(x - w * .05).toFixed(1)},${(base - hgt * .06).toFixed(1)}h${(w * .1).toFixed(1)}v${(hgt * .08).toFixed(1)}h${(-w * .1).toFixed(1)}Z`;
 }
+/* Le givre : une calotte claire au sommet des deux étages supérieurs d'un sapin (mêmes proportions que fir). */
+function firFrost(x, base, hgt, w) {
+  let d = "";
+  for (let i = 0; i < 2; i++) {
+    const top = base - hgt + i * hgt * .2, bot = Math.min(base - hgt * .05, top + hgt * .42), hw = w * (.28 + .2 * i), k = .34;
+    d += `M${x.toFixed(1)},${top.toFixed(1)}L${(x + hw * k).toFixed(1)},${(top + (bot - top) * k).toFixed(1)}L${(x - hw * k).toFixed(1)},${(top + (bot - top) * k).toFixed(1)}Z`;
+  }
+  return d;
+}
+/* Un feuillu : le tronc (clair pour un bouleau), des branches, et un houppier en lobes. Le bois se voit l'hiver ; le
+   houppier, dessiné par-dessus, n'a que l'opacité de la saison (--leaf-o). */
+function broadleaf(x, base, hgt, w, r, birch) {
+  const tt = base - hgt * .62, f = v => v.toFixed(1);
+  const trunk = `M${f(x - w * (birch ? .025 : .04))},${f(base)}L${f(x - w * .015)},${f(tt)}L${f(x + w * .015)},${f(tt)}L${f(x + w * (birch ? .025 : .04))},${f(base)}Z`;
+  let wood = `M${f(x)},${f(tt)}L${f(x + (r() - .5) * w * .1)},${f(base - hgt * .95)}`;
+  for (let k = 0; k < 5; k++) {
+    const side = k % 2 ? 1 : -1, y0 = base - hgt * (.3 + .08 * k), x1 = x + side * w * (.22 + .12 * r()), y1 = y0 - hgt * (.2 + .1 * r());
+    wood += `M${f(x)},${f(y0)}Q${f(x + side * w * .08)},${f(y0 - hgt * .1)} ${f(x1)},${f(y1)}L${f(x1 + side * w * .06)},${f(y1 - hgt * .08)}`;
+  }
+  const cy = base - hgt * .66, R = w * .42, sx = birch ? .72 : 1, lobes = [`<ellipse cx="${f(x)}" cy="${f(cy)}" rx="${f(R * .75 * sx)}" ry="${f(R * .8)}"/>`];
+  for (let k = 0; k < 6; k++) { const a = k / 6 * 2 * Math.PI + r() * .5, rr = R * (.45 + .2 * r()); lobes.push(`<ellipse cx="${f(x + Math.cos(a) * R * .55 * sx)}" cy="${f(cy + Math.sin(a) * R * .5)}" rx="${f(rr * sx)}" ry="${f(rr * .85)}"/>`); }
+  return { trunk, wood, crown: lobes.join("") };
+}
 function buildTrees() {
-  const r = rng(1729), far = [], near = [], stars = [];
-  for (let x = -20; x < 1030; x += 14 + r() * 18) far.push(fir(x, 262 + r() * 10, x < 540 ? 55 + r() * 50 : 70 + r() * 70, 26 + r() * 14));
-  for (let x = -30; x < 1040; x += 26 + r() * 40) { if (x > 380 && x < 470 && r() < .7) continue; const low = x < 540; near.push(fir(x, 300 + r() * 6, low ? 70 + r() * 80 : 100 + r() * 120, 40 + r() * 26)); }
+  const r = rng(1729), far = [], near = [], stars = [], farFrost = [], nearFrost = [];
+  for (let x = -20; x < 1030; x += 14 + r() * 18) { const b = 262 + r() * 10, h = x < 540 ? 55 + r() * 50 : 70 + r() * 70, w = 26 + r() * 14; far.push(fir(x, b, h, w)); farFrost.push(firFrost(x, b, h, w)); }
+  for (let x = -30; x < 1040; x += 26 + r() * 40) { if (x > 380 && x < 470 && r() < .7) continue; const low = x < 540, b = 300 + r() * 6, h = low ? 70 + r() * 80 : 100 + r() * 120, w = 40 + r() * 26; near.push(fir(x, b, h, w)); nearFrost.push(firFrost(x, b, h, w)); }
   for (let i = 0; i < 70; i++) stars.push(`<circle cx="${(r() * 1000).toFixed(0)}" cy="${(r() * 170).toFixed(0)}" r="${(r() * .9 + .3).toFixed(2)}"/>`);
-  TREES = { far: far.join(""), near: near.join(""), stars: stars.join("") };
+  // Les feuillus ont leur propre suite de hasard : les sapins restent exactement ceux d'avant.
+  const q = rng(4096), trunks = [], birches = [], wood = [], crowns = [];
+  for (let x = 30 + q() * 60; x < 990; x += 95 + q() * 70) {
+    const birch = q() < .35, h = 62 + q() * 42, t = broadleaf(x, 268 + q() * 8, h, h * (birch ? .55 : .75), q, birch);
+    (birch ? birches : trunks).push(t.trunk); wood.push(t.wood); crowns.push(t.crown);
+  }
+  TREES = { far: far.join(""), near: near.join(""), stars: stars.join(""), farFrost: farFrost.join(""), nearFrost: nearFrost.join(""),
+    trunks: trunks.join(""), birches: birches.join(""), wood: wood.join(""), crowns: crowns.join("") };
 }
 /* Des nuages en strates horizontales, comme dans les ciels gravés : trois bandes, plus ou moins présentes. */
 const cloudsSVG = o => `<g fill="var(--cloud)"><ellipse cx="260" cy="58" rx="330" ry="15" opacity="${(o * .8).toFixed(2)}"/><ellipse cx="720" cy="96" rx="360" ry="19" opacity="${o.toFixed(2)}"/><ellipse cx="470" cy="140" rx="420" ry="13" opacity="${(o * .6).toFixed(2)}"/></g>`;
@@ -156,11 +186,13 @@ function forestSVG(p, sc = skyScene({ sunAlt: -30, illum: .5 }), at, mo = skyMot
   ${sc.clouds ? driftLayer("clouds", mo.clouds, mo.toRight, now, periodic(cloudsSVG(sc.clouds))) : ""}
   <svg class="scene trees" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
     <defs><linearGradient id="mist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--mist)" stop-opacity="0"/><stop offset=".6" stop-color="var(--mist)"/><stop offset="1" stop-color="var(--mist)" stop-opacity="0"/></linearGradient></defs>
-    <path d="${TREES.far}" fill="var(--tree-far)"/>
+    <path d="${TREES.far}" fill="var(--tree-far)"/>${sc.frost ? `<path class="frost" d="${TREES.farFrost}" fill="var(--frost)"/>` : ""}
+    <g class="broadleaves"><path d="${TREES.wood}" fill="none" stroke="var(--wood)" stroke-width="1.3" stroke-linecap="round"/><path d="${TREES.trunks}" fill="var(--wood)"/><path d="${TREES.birches}" fill="var(--birch)"/>
+      <g fill="var(--leaf)" style="opacity:var(--leaf-o)">${TREES.crowns}</g></g>
     <rect y="${sc.fog ? 140 : 205}" width="1000" height="${sc.fog ? 150 : 75}" fill="url(#mist)"/>
   </svg>
   ${driftLayer(`wisps${sc.fog ? " fog" : ""}`, mo.mist, mo.toRight, now, `<defs><radialGradient id="wisp"><stop offset="0" stop-color="var(--mist)"/><stop offset="1" stop-color="var(--mist)" stop-opacity="0"/></radialGradient></defs>${periodic(WISPS)}`)}
-  <svg class="scene trees" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><path d="${TREES.near}" fill="var(--tree-near)"/></svg>
+  <svg class="scene trees" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><path d="${TREES.near}" fill="var(--tree-near)"/>${sc.frost ? `<path class="frost" d="${TREES.nearFrost}" fill="var(--frost)"/>` : ""}</svg>
   ${sc.rain ? fallLayer("rain", mo.rain, -mo.slant, now, sc.rain) : ""}
   ${sc.snow ? fallLayer("snow", mo.snow, -Math.round(mo.slant / 2), now, sc.snow) : ""}`;
 }
@@ -210,7 +242,9 @@ const hm = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minut
 function sceneNow(m) {
   const c = skyConf(), place = c ? { lat: +c.lat, lon: +c.lon } : approxPlace(), t = Date.now(), dark = uiDark();
   const sun = sunPosition(t, place.lat, place.lon), w = c && c.weather !== false ? freshWeather(c) : null, weather = w ? weatherState(w.code) : null;
-  const sc = skyScene({ sunAlt: sun.alt, illum: m.illum, weather, dark }), facts = [];
+  // La saison d'après la date et l'hémisphère ; le givre seulement si la température mesurée est sous zéro.
+  const season = seasonAt(t, place.lat), frost = !!(w && Number.isFinite(w.temp) && w.temp <= 0);
+  const sc = skyScene({ sunAlt: sun.alt, illum: m.illum, weather, dark, season, frost }), facts = [];
   let moonAt;
   // Le mouvement suit le vent mesuré ; sans météo, une brise d'ouest légère, celle qui domine sous nos latitudes.
   const mo = skyMotion(w ? { wind: w.wind, dir: w.dir, precip: w.precip, lat: place.lat } : { lat: place.lat });
@@ -270,7 +304,7 @@ function heroStyle(sc, dark) {
   const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)).join(",");
   return [["--sky-top", sc.top], ["--sky-bot", sc.bot], ["--tree-far", sc.far], ["--tree-near", sc.near], ["--mist", sc.mist], ["--star", sc.star.toFixed(3)],
     ["--glow", `rgba(${dark ? "236,232,214" : "255,252,235"},${sc.glow.toFixed(3)})`], ["--moon-o", sc.moonOpacity.toFixed(2)], ["--cloud", sc.cloud],
-    ["--rain-c", sc.ink === "#1a211b" ? "#4a5550" : "#c9d0cc"], ["--scene-ink", sc.ink], ["--scene-scrim", `rgba(${rgb(sc.scrimColor)},${sc.scrim})`]]
+    ["--rain-c", sc.ink === "#1a211b" ? "#4a5550" : "#c9d0cc"], ["--leaf", sc.leaf], ["--leaf-o", sc.leafO], ["--wood", sc.wood], ["--birch", sc.birch], ...(sc.frost ? [["--frost", sc.frost]] : []), ["--scene-ink", sc.ink], ["--scene-scrim", `rgba(${rgb(sc.scrimColor)},${sc.scrim})`]]
     .map(([k, v]) => `${k}:${v}`).join(";");
 }
 
@@ -403,7 +437,7 @@ VIEWS.accueil = () => {
   ${s.config.welcome ? `<section><h2>Composer ton espace</h2><p class="hint">Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.</p>
     ${MODULE_TEMPLATES.map(t => `<div class="set" style="grid-template-columns:1fr auto"><div><b>${esc(t.name)}</b><div class="hint" style="margin:2px 0 0">${esc(t.hint)}</div></div><button class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}">Ajouter</button></div>`).join("")}
     <div class="row" style="margin-top:12px"><button class="btn acc" data-act="welcome-done">C'est bon</button></div></section>` : ""}
-  <section class="hero${HERO_COMPACT ? " compact" : ""}${win.right ? " txt-right" : ""}${skyLive() ? " live" : ""}" style="${heroStyle(win.sc, win.dark)}" data-weather="${win.sc.weather || ""}" data-sun="${win.sun.alt.toFixed(1)}">${forestSVG(m.p, win.sc, win.moonAt, win.mo)}<div class="txt">
+  <section class="hero${HERO_COMPACT ? " compact" : ""}${win.right ? " txt-right" : ""}${skyLive() ? " live" : ""}" style="${heroStyle(win.sc, win.dark)}" data-weather="${win.sc.weather || ""}" data-leaves="${win.sc.leaves}" data-sun="${win.sun.alt.toFixed(1)}">${forestSVG(m.p, win.sc, win.moonAt, win.mo)}<div class="txt">
     <div class="phase">${m.name}</div>
     <p>Éclairée à ${Math.round(m.illum * 100)} %, jour ${Math.floor(m.age) + 1} du cycle. ${m.p < .5 ? `Pleine lune dans ${m.nextFull} j.` : `Nouvelle lune dans ${m.nextNew} j.`}</p>
     ${win.lineHTML ? `<p class="sky-line">${win.lineHTML}</p>` : ""}
