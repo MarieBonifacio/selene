@@ -258,12 +258,27 @@ au ⊕ de la barre basse. Les derniers espaces ouverts restent sur l'appareil et
 
 ### Vague 3 : système visuel et signatures
 
-- [ ] Typographie à trois voix.
-- [ ] Sigils, planches, teintes de domaine.
-- [ ] Bottom sheets et réglages contextuels.
-- [ ] Fiche Spécimen et panneau de détail.
-- [ ] La Fenêtre : heure du jour, puis lune à sa place, puis météo.
-- [ ] Le Halo, le Vasculum.
+Livrée en quatre temps, pour que chaque pull request reste relisible.
+
+**3a : système visuel**
+- [x] Typographie à trois voix : Cormorant (titres), Spectral (texte, champs d'écriture), Spectral SC (étiquettes,
+      domaines, planches), IBM Plex Sans (boutons, champs, navigation, données) ; chiffres elzéviriens dans la prose,
+      alignés ailleurs. Jetons `--f-display`, `--f-text`, `--f-label`, `--f-ui`.
+- [x] Sigils : dix-huit glyphes gravés (`SIGILS`), un défaut par type et par nom pour les espaces d'origine
+      (phalène, salticide, diapason…), choix dans les réglages du module (`config.modules[].sigil`, validé à l'import).
+- [x] Planches : `Pl. IV` en tête de chaque espace (ordre de la navigation), avec « Je m'arrête ici… » et « régler ».
+- [x] Teintes de domaine `t0`…`t7` (minérales, hors des teintes d'état) : sigil, point d'étiquette, filet actif.
+- [x] Réglages contextuels : « régler » ouvre les réglages du module sur place (tiroir à droite sur ordinateur,
+      feuille sur téléphone), redessinés à chaque changement. La page Réglages garde ses blocs.
+- [x] Formulaires en feuille sur téléphone.
+
+**3b : la Fenêtre**
+- [ ] Heure du jour (hauteur du soleil, calcul local), puis lune à sa place, puis météo (Open-Meteo).
+
+**3c : signatures**
+- [ ] Fiche Spécimen et panneau de détail ; le Halo ; le Vasculum.
+
+**3d : écrans chargés**
 - [ ] Journaux à dates suspendues, registre au lieu des tuiles, kanban adaptatif, recherche à facettes.
 
 ### Pistes expérimentales

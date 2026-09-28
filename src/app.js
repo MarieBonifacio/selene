@@ -256,7 +256,7 @@ VIEWS.accueil = () => {
   const row = id => {
     const inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null, more = inst && TYPE_UI[inst.type].recent ? TYPE_UI[inst.type].recent(inst) : [];
     const r = inst && inst.resume, bridge = r ? `<small class="resume ${bridgeStale(r) ? "stale" : ""}">↳ ${esc(r.text)} · ${ago(r.at)}</small>` : "";
-    return `<div class="over-wrap${more.length ? " has-more" : ""}"><a class="over" href="#${esc(id)}"><b>${esc(label(id))}</b><span>${summaryFor(id)}${bridge}</span></a>${more.length ? `<details class="more"><summary><span class="sr">Derniers éléments de ${esc(label(id))}</span></summary><ul>${more.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
+    return `<div class="over-wrap${more.length ? " has-more" : ""} ${tintOf(id)}"><a class="over" href="#${esc(id)}"><b>${sigil(id)}${esc(label(id))}</b><span>${summaryFor(id)}${bridge}</span></a>${more.length ? `<details class="more"><summary><span class="sr">Derniers éléments de ${esc(label(id))}</span></summary><ul>${more.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
   };
   // Regroupées par domaine quand il y en a (un titre en petites capitales par domaine), sinon une seule liste.
   const ds = domains().map(d => ({ ...d, ids: d.ids.filter(id => id !== inbox) })).filter(d => d.ids.length), named = ds.some(d => d.name);
@@ -575,22 +575,10 @@ VIEWS.reglages = () => {
       <button class="btn sm" data-act="mod-add" style="margin-top:8px">Créer</button></details>
   </section>
   <section id="modreg"><h3>Réglages par module</h3><p class="hint">Un bloc par module actif, dans l'ordre de la navigation : ses réglages propres, et le regroupement en pourcentage quand il existe.</p>
-    ${c.modules.filter(m => enabled(m.id) && (s.modules[m.id] || grouperFor(m.id))).map(m => { const mod = m.id, inst = s.modules[mod], G = grouperFor(mod), g = G ? gcfg(mod) : null, by = G ? groupBy(mod) : null;
-      const names = G && G.renamable.includes(by) ? [...new Set(G.items().map(it => it[by]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr")) : [];
-      return `<details id="mreg-${esc(mod)}" data-mod="${esc(mod)}" style="border-top:1px solid var(--rule);padding:12px 0">
-        <summary style="cursor:pointer;font-size:1.05rem;font-weight:600">${esc(label(mod))}</summary>
-        <div style="margin-top:10px">
-        ${inst ? TYPE_UI[inst.type].settings(mod, inst) : ""}
-        ${G ? `<div class="row" style="margin-top:0"><label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="grp-on" ${g.on ? "checked" : ""}>Regrouper en pourcentage</label></div>
-          ${g.on ? `<div class="field-row" style="margin-top:8px">
-            <label>Regrouper par<select data-act="grp-by">${Object.entries(G.fields).map(([k, l]) => `<option value="${esc(k)}" ${by === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
-            <label>Trier par<select data-act="grp-sort"><option value="name" ${g.sort === "name" ? "selected" : ""}>Ordre naturel</option><option value="pct" ${g.sort === "pct" ? "selected" : ""}>Le plus avancé d'abord</option><option value="left" ${g.sort === "left" ? "selected" : ""}>Le plus en retard d'abord</option></select></label></div>
-            <div class="field-row" style="margin-top:8px"><label>Titre du bloc<input data-act="grp-title" value="${esc(g.title)}" placeholder="Par ${esc(G.fields[by].toLowerCase())}"></label>
-            <label style="display:flex;gap:8px;align-items:center;align-self:end;padding-bottom:10px"><input type="checkbox" data-act="grp-hide" ${g.hideDone ? "checked" : ""}>Masquer les groupes à 100 %</label></div>
-            ${names.length ? `<details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">Renommer ou fusionner des ${esc(G.fields[by].toLowerCase())}s</summary><p class="hint" style="margin:6px 0">Donne le même nom à deux groupes pour les fusionner.</p>${names.map(n => `<div class="set" style="grid-template-columns:1fr"><input data-act="grp-rename" data-old="${esc(n)}" value="${esc(n)}" aria-label="Renommer ${esc(n)}"></div>`).join("")}</details>` : ""}
-           ` : ""}` : ""}
-        </div>
-      </details>`; }).join("")}
+    ${c.modules.filter(m => enabled(m.id) && (s.modules[m.id] || grouperFor(m.id))).map(m => `<details id="mreg-${esc(m.id)}" data-mod="${esc(m.id)}" style="border-top:1px solid var(--rule);padding:12px 0">
+        <summary style="cursor:pointer;font-size:1.05rem;font-weight:600">${esc(label(m.id))}</summary>
+        <div style="margin-top:10px">${moduleSettingsHTML(m.id)}</div>
+      </details>`).join("")}
   </section>
   ${enabled("assistant") ? `<section id="assistant-cfg"><h3>Assistant</h3><p class="hint">Claude dans le tableau de bord. Sur claude.ai, il passe par ton compte. Hébergé ailleurs (GitHub Pages), il faut ta propre clé API, gardée uniquement dans ce navigateur.</p>
     <div class="field-row"><label>Clé API Anthropic (hébergé uniquement)<input type="password" data-act="as-key" value="${getKey() ? "••••••••" : ""}" placeholder="sk-ant-…" autocomplete="off"></label>
@@ -624,11 +612,11 @@ function navMarks(id) {
   return n || r ? `<span class="nx">${r ? `<i class="dot" title="Pont de reprise en attente"><span class="sr">reprise en attente</span></i>` : ""}${n ? `<span class="badge">${n}<span class="sr"> en attente</span></span>` : ""}</span>` : "";
 }
 function navHTML(view) {
-  const link = (id, text, extra = "") => `<a href="#${esc(id)}" class="${id === view ? "on" : ""}"${id === view ? ' aria-current="page"' : ""}>${text}${extra}</a>`;
+  const link = (id, text, extra = "", cls = "") => `<a href="#${esc(id)}" class="${id === view ? "on" : ""} ${cls}"${id === view ? ' aria-current="page"' : ""}>${text}${extra}</a>`;
   return `<button type="button" class="pal-hint" data-act="palette-open">Aller à… <kbd>⌘K</kbd></button>
     ${link("accueil", "Aujourd'hui")}${link("bilan", "Bilan")}${link("recherche", "Chercher")}
-    ${domains().map(d => `<p class="grp">${esc(d.name || "Espaces")}</p>${d.ids.map(id => link(id, esc(label(id)), navMarks(id))).join("")}`).join("")}
-    <div class="sys">${enabled("assistant") ? link("assistant", esc(label("assistant"))) : ""}${link("reglages", "Réglages")}</div>`;
+    ${domains().map(d => `<p class="grp">${esc(d.name || "Espaces")}</p>${d.ids.map(id => link(id, `${sigil(id)}${esc(label(id))}`, navMarks(id), tintOf(id))).join("")}`).join("")}
+    <div class="sys">${enabled("assistant") ? link("assistant", `${sigil("assistant")}${esc(label("assistant"))}`) : ""}${link("reglages", "Réglages")}</div>`;
 }
 /* Icônes de la barre basse : un trait fin, sans remplissage (une seule exception : la lunaison du bilan). */
 const ICONS = {
@@ -638,6 +626,60 @@ const ICONS = {
   search: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M15.5 15.5 20 20"/></svg>`,
   lunation: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"/></svg>`
 };
+/* ---- sigils : un glyphe gravé par espace (trait fin, grille de 24), choisi dans cette famille ----
+   Botanique, instruments, bêtes discrètes : de quoi reconnaître un espace avant d'en lire le nom. */
+const SIGILS = {
+  phalene: ["Phalène", `<path d="M12 6.5v12.5M12 8.5C8.5 4.5 3.5 5 4 9s4.5 5 8 3M12 8.5c3.5-4 8.5-3.5 8 .5s-4.5 5-8 3M12 12.5c-3 1-5.5 3.2-4.4 5.5S11 17.6 12 15M12 12.5c3 1 5.5 3.2 4.4 5.5S13 17.6 12 15M11.4 6.6 9.4 3.4M12.6 6.6l2-3.2"/>`],
+  salticide: ["Araignée sauteuse", `<circle cx="12" cy="9.6" r="3"/><circle cx="12" cy="16.2" r="3.4"/><path d="M9.4 8.6 5 5.6M9.2 10.6l-5.2-.2M9.3 14.4 4.6 16M10 18.3l-3.6 3M14.6 8.6 19 5.6M14.8 10.6l5.2-.2M14.7 14.4l4.7 1.6M14 18.3l3.6 3"/><circle cx="10.9" cy="8.9" r=".45"/><circle cx="13.1" cy="8.9" r=".45"/>`],
+  plume: ["Plume", `<path d="M19.5 4C11.5 5 7 11 6 19.5M19.5 4c-1 6.5-5.5 10.5-12 12.5M10.2 12.2l3.2 1M12.4 9.2l3.2.8M6 19.5l-1.8 1.5"/>`],
+  diapason: ["Diapason", `<path d="M9 3v8a3 3 0 0 0 6 0V3M12 14v7M10.2 21h3.6"/>`],
+  equerre: ["Équerre", `<path d="M4 3.5v17h17zM7.5 11.5v5.5H13z"/>`],
+  trebuchet: ["Trébuchet", `<path d="M12 4v16M8.5 20h7M5 7.5h14M5 7.5l-2.6 5h5.2zM19 7.5l-2.6 5h5.2zM11 4h2"/>`],
+  vasculum: ["Boîte d'herborisation", `<rect x="3.5" y="9" width="17" height="9" rx="4.5"/><path d="M6.2 9.4c0-4.2 11.6-4.2 11.6 0M9 9.2v8.6"/>`],
+  spirale: ["Souffle", `<path d="M12 12.4c0-1.2 1.6-1.6 2.1-.4.6 1.4-.8 2.8-2.3 2.8-1.9 0-3.1-1.6-3-3.3.1-2.4 2.3-4.2 4.8-4 3 .2 5 2.8 4.8 5.7-.3 3.6-3.4 6.1-7 5.8-4.2-.4-7.2-4-6.8-8.2"/>`],
+  loupe: ["Loupe", `<circle cx="10" cy="10" r="5.5"/><path d="M14.1 14.1 20 20"/>`],
+  sceau: ["Sceau", `<circle cx="12" cy="10.5" r="5"/><circle cx="12" cy="10.5" r="2.2"/><path d="M9.2 14.6 7.6 21l4.4-2 4.4 2-1.6-6.4"/>`],
+  lanterne: ["Lanterne", `<path d="M9 5.5h6M10 5.5V3.6h4v1.9M8 7.5h8l-1.2 10.5H9.2zM7.4 18h9.2M12 10.5v4"/>`],
+  fougere: ["Fougère", `<path d="M12 21C12 13.5 10.4 7.5 6.5 3.5M11.8 16.8 7.6 15.6M11.4 13.6 7.2 11.4M10.3 10.4 7.4 7.4M11.8 16.2l3.1-2.8M11.4 12.9l3-3.3M10.3 9.6l2-3"/>`],
+  sablier: ["Sablier", `<path d="M6.5 3h11M6.5 21h11M8 3c0 5.2 8 6 8 9s-8 3.8-8 9M16 3c0 5.2-8 6-8 9s8 3.8 8 9"/>`],
+  compas: ["Compas", `<circle cx="12" cy="4.6" r="1.6"/><path d="M11.2 6.1 6 20.5M12.8 6.1l5.2 14.4M8 15h8"/>`],
+  clef: ["Clef", `<circle cx="7.5" cy="12" r="3.6"/><path d="M11.1 12H21M17.2 12v3.2M20 12v2.6"/>`],
+  feuille: ["Feuille", `<path d="M5 19C5 10 10 5 19 5c0 9-5 14-14 14zM5 19l8-8"/>`],
+  champignon: ["Champignon", `<path d="M4 12.2a8 7 0 0 1 16 0zM9.5 12.2v6.3a2.5 2 0 0 0 5 0v-6.3"/>`],
+  croissant: ["Croissant", `<path d="M15.2 4.2a8.2 8.2 0 1 0 4.6 12.7 6.6 6.6 0 0 1-4.6-12.7z"/>`]
+};
+/* Le sigil d'un espace : celui choisi, sinon un défaut selon son nom (les espaces d'origine), puis selon son type. */
+function sigilOf(id) {
+  const s = S(), m = s.config.modules.find(x => x.id === id), inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null;
+  if (m && Object.hasOwn(SIGILS, m.sigil || "")) return m.sigil;
+  if (id === "assistant") return "lanterne";
+  const name = fold(`${id} ${label(id) || ""}`);
+  for (const [re, k] of [[/moth|phalene|papillon/, "phalene"], [/phidippus|araignee|spider/, "salticide"], [/musique|album|disque/, "diapason"], [/champignon|mycel/, "champignon"]]) if (re.test(name)) return k;
+  if (!inst) return "feuille";
+  if (inst.type === "collection") return inst.config.concordance ? "loupe" : inst.config.review ? "sceau" : "fougere";
+  if (inst.type === "notes") return inst.config.inbox ? "vasculum" : "feuille";
+  return { taches: "equerre", programme: "spirale", cumul: "plume", rappels: "sablier", budget: "trebuchet", arc: "compas" }[inst.type] || "feuille";
+}
+const sigilSVG = k => `<svg class="sig" viewBox="0 0 24 24" aria-hidden="true">${SIGILS[k][1]}</svg>`;
+const sigil = id => sigilSVG(sigilOf(id));
+/* Teinte d'un domaine : l'ordre d'apparition des domaines nommés donne t1…t7 ; un espace sans domaine prend l'accent (t0). */
+function tintOf(id) {
+  const m = S().config.modules.find(x => x.id === id), g = m && String(m.group || "").trim();
+  if (!g) return "t0";
+  const named = domains().map(d => d.name).filter(Boolean);
+  return `t${(named.indexOf(g) % 7) + 1}`;
+}
+const ROMAN = [[10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
+const roman = n => { let out = ""; for (const [v, r] of [[50, "L"], [40, "XL"], ...ROMAN]) while (n >= v) { out += r; n -= v; } return out; };
+/* La planche d'un espace : son sigil et son numéro (l'ordre de la navigation), en tête de sa page. */
+function plateHTML(id, extra = "") {
+  const n = S().config.modules.filter(m => m.on && Object.hasOwn(S().modules, m.id)).findIndex(m => m.id === id) + 1;
+  return `<div class="plate ${tintOf(id)}">${sigil(id)}<span class="pl">Pl. ${roman(n)}</span><span class="spacer"></span>${extra}<button class="btn ghost sm" data-act="goto-groups" data-mod="${esc(id)}">régler</button></div>`;
+}
+function sigilPicker(mod) {
+  const cur = sigilOf(mod);
+  return `<div class="sigils" role="radiogroup" aria-label="Sigil de l'espace">${Object.entries(SIGILS).map(([k, [name]]) => `<button type="button" role="radio" aria-checked="${k === cur}" class="${k === cur ? "on" : ""}" data-act="sigil-set" data-mod="${esc(mod)}" data-s="${k}" title="${esc(name)}" aria-label="${esc(name)}">${sigilSVG(k)}</button>`).join("")}</div>`;
+}
 function barHTML(view) {
   const inbox = inboxId(S().modules), pending = inbox ? S().modules[inbox].entries.length : 0;
   const inSpace = Object.hasOwn(S().modules, view) || view === "reglages" || view === "assistant";
@@ -658,11 +700,16 @@ const agoTime = t => { const m = Math.round((Date.now() - Date.parse(t)) / 60000
 const SHEETS = {
   espaces() {
     const rec = liveRecents().filter(r => r.id !== lastView).slice(0, 3);
-    const row = id => `<a class="srow" href="#${esc(id)}"><b>${esc(label(id))}</b><span class="sub">${summaryFor(id)}</span>${navMarks(id)}</a>`;
+    const row = id => `<a class="srow ${tintOf(id)}" href="#${esc(id)}">${sigil(id)}<b>${esc(label(id))}</b><span class="sub">${summaryFor(id)}</span>${navMarks(id)}</a>`;
     return `<h2 id="sheetTitle">Espaces</h2>
       ${rec.length ? `<p class="grp">Récents</p><div class="recents">${rec.map(r => `<a class="btn" href="#${esc(r.id)}">${esc(label(r.id))}</a>`).join("")}</div>` : ""}
       ${domains().map(d => `<p class="grp">${esc(d.name || "Espaces")}</p>${d.ids.map(row).join("")}`).join("")}
       <p class="grp">Système</p>${enabled("assistant") ? `<a class="srow" href="#assistant"><b>${esc(label("assistant"))}</b></a>` : ""}<a class="srow" href="#reglages"><b>Réglages</b></a>`;
+  },
+  module(mod) {
+    if (!Object.hasOwn(S().modules, mod)) return `<p class="empty">Ce module n'existe plus.</p>`;
+    return `<div data-mod="${esc(mod)}" class="${tintOf(mod)}"><h2 id="sheetTitle" class="sheet-title">${sigil(mod)}${esc(label(mod))}</h2>
+      <p class="hint">Réglages de cet espace, appliqués tout de suite. Nom, domaine et ordre : <a href="#reglages">Réglages</a>.</p>${moduleSettingsHTML(mod)}</div>`;
   },
   capture() {
     const s = S(), inbox = inboxId(s.modules), n = inbox ? s.modules[inbox].entries.length : 0;
@@ -671,9 +718,12 @@ const SHEETS = {
       : `<p class="hint">Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans <a href="#reglages">Réglages</a>.</p>`}`;
   }
 };
-function openSheet(kind) {
+let sheetKind = null, sheetArg = null; // la feuille ouverte, pour la redessiner après un réglage
+function openSheet(kind, arg) {
   const d = $("#sheet"); closePalette();
-  $("#sheetBody").innerHTML = SHEETS[kind]();
+  sheetKind = kind; sheetArg = arg;
+  $("#sheetBody").innerHTML = SHEETS[kind](arg);
+  d.classList.toggle("drawer", kind === "module"); // les réglages d'un module : un tiroir à droite sur ordinateur
   if (!d.open) d.showModal();
   const i = $("#capSheetIn"); if (kind === "capture" && i) { i.value = loadDraft("sheet", i); i.focus(); }
 }
@@ -772,6 +822,23 @@ function resumeSection() {
 /* Ouvrir sur l'accueil ou là où l'on en était : propre à l'appareil. */
 const openOn = () => { try { return localStorage.getItem("selene-open") === "last" ? "last" : "accueil"; } catch { return "accueil"; } };
 
+/* Les réglages propres d'un module (son sigil, ceux de son type, son regroupement en pourcentage) : dans la page
+   Réglages, et dans la feuille qu'ouvre « régler » depuis le module lui-même. */
+function moduleSettingsHTML(mod) {
+  const s = S(), inst = s.modules[mod], G = grouperFor(mod), g = G ? gcfg(mod) : null, by = G ? groupBy(mod) : null;
+  const names = G && G.renamable.includes(by) ? [...new Set(G.items().map(it => it[by]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr")) : [];
+  return `${sigilPicker(mod)}
+        ${inst ? TYPE_UI[inst.type].settings(mod, inst) : ""}
+        ${G ? `<div class="row" style="margin-top:0"><label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="grp-on" ${g.on ? "checked" : ""}>Regrouper en pourcentage</label></div>
+          ${g.on ? `<div class="field-row" style="margin-top:8px">
+            <label>Regrouper par<select data-act="grp-by">${Object.entries(G.fields).map(([k, l]) => `<option value="${esc(k)}" ${by === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
+            <label>Trier par<select data-act="grp-sort"><option value="name" ${g.sort === "name" ? "selected" : ""}>Ordre naturel</option><option value="pct" ${g.sort === "pct" ? "selected" : ""}>Le plus avancé d'abord</option><option value="left" ${g.sort === "left" ? "selected" : ""}>Le plus en retard d'abord</option></select></label></div>
+            <div class="field-row" style="margin-top:8px"><label>Titre du bloc<input data-act="grp-title" value="${esc(g.title)}" placeholder="Par ${esc(G.fields[by].toLowerCase())}"></label>
+            <label style="display:flex;gap:8px;align-items:center;align-self:end;padding-bottom:10px"><input type="checkbox" data-act="grp-hide" ${g.hideDone ? "checked" : ""}>Masquer les groupes à 100 %</label></div>
+            ${names.length ? `<details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">Renommer ou fusionner des ${esc(G.fields[by].toLowerCase())}s</summary><p class="hint" style="margin:6px 0">Donne le même nom à deux groupes pour les fusionner.</p>${names.map(n => `<div class="set" style="grid-template-columns:1fr"><input data-act="grp-rename" data-old="${esc(n)}" value="${esc(n)}" aria-label="Renommer ${esc(n)}"></div>`).join("")}</details>` : ""}
+           ` : ""}` : ""}`;
+}
+
 /* ================= render ================= */
 function applyTheme() {
   const c = S().config, r = document.documentElement;
@@ -825,7 +892,13 @@ function renderNow() {
   if (view === lastView) $("#main").querySelectorAll("input[id],textarea[id],select[id]").forEach(el => { if (el.type !== "file" && el.type !== "checkbox") keep[el.id] = el.value; });
   if (document.activeElement && document.activeElement.id && keep[document.activeElement.id] != null) { focusId = document.activeElement.id; try { caret = document.activeElement.selectionStart; } catch {} }
   const back = backTo && backTo.to === view ? `<a class="back" href="#${esc(backTo.from)}">‹ ${esc(backTo.label)}</a>` : "";
-  $("#main").innerHTML = back + (inst ? bridgeBar(view, inst) + TYPE_UI[inst.type].view(view) : VIEWS[view]());
+  // Un espace : sa planche (sigil, numéro, « Je m'arrête ici… » tant qu'aucun pont n'est posé, « régler »), son pont, sa vue ;
+  // le tout dans la teinte de son domaine.
+  const bridging = inst && (inst.resume || bridgeOpen === view);
+  $("#main").innerHTML = back + (inst ? `<div class="view ${tintOf(view)}">${plateHTML(view, bridging ? "" : `<button class="btn ghost sm" data-act="bridge-edit" data-mod="${esc(view)}">Je m'arrête ici…</button>`)}${bridging ? bridgeBar(view, inst) : ""}${TYPE_UI[inst.type].view(view)}</div>` : VIEWS[view]());
+  // La feuille « régler » ouverte se redessine aussi, sauf pendant une frappe dans l'un de ses champs.
+  const fa = document.activeElement, typingSheet = fa && fa.closest && fa.closest("#sheet") && (fa.tagName === "TEXTAREA" || (fa.tagName === "INPUT" && !["checkbox", "radio"].includes(fa.type)));
+  if (sheetKind === "module" && $("#sheet").open && !typingSheet) $("#sheetBody").innerHTML = SHEETS.module(sheetArg);
   for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && v !== "" && el.value !== v) el.value = v; }
   if (view !== lastView) $("#main").querySelectorAll("[data-draft]").forEach(el => { const v = loadDraft(view, el); if (v) el.value = v; });
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
@@ -883,7 +956,15 @@ function entryAdd(id) {
 }
 const CLICK = {
   "grp-filter": el => { const m = el.dataset.mod, g = el.dataset.g; gFilter[m] = gFilter[m] === g ? "" : g; render(); },
-  "goto-groups": el => { const id = "mreg-" + el.dataset.mod; if (location.hash === "#reglages") { const d = document.getElementById(id); if (d) { d.open = true; d.scrollIntoView(); } } else sessionStorage.setItem("selene-scroll", id); },
+  // « régler » : les réglages du module s'ouvrent sur place (une feuille), sans quitter ce qu'on regardait ;
+  // depuis la page Réglages, le bloc du module se déplie.
+  "goto-groups": (el, e) => {
+    const mod = el.dataset.mod, id = "mreg-" + mod;
+    if (location.hash === "#reglages") { const d = document.getElementById(id); if (d) { d.open = true; d.scrollIntoView(); } return; }
+    if (e) e.preventDefault();
+    openSheet("module", mod);
+  },
+  "sigil-set": el => { const m = S().config.modules.find(x => x.id === el.dataset.mod); if (!m) return; m.sigil = el.dataset.s; site.save(); render(); },
   "cap-add": () => capture(),
   "cap-sheet-add": () => capture($("#capSheetIn")),
   "sheet-espaces": () => openSheet("espaces"),
@@ -967,7 +1048,7 @@ function addModule(tpl, name) {
   } catch (e) { toast(e.message); }
 }
 function moveMod(el, d) { const ms = S().config.modules, i = +el.closest("[data-i]").dataset.i, j = i + d; if (j < 0 || j >= ms.length) return; [ms[i], ms[j]] = [ms[j], ms[i]]; site.save(); render(); }
-document.addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (a && CLICK[a.dataset.act] && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) CLICK[a.dataset.act](a); });
+document.addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (a && CLICK[a.dataset.act] && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) CLICK[a.dataset.act](a, e); });
 document.addEventListener("input", e => { if (e.target.id === "searchIn") { searchQuery = e.target.value; render(); } });
 // « / » ouvre la recherche (sur ordinateur), sauf pendant une saisie.
 document.addEventListener("keydown", e => {
