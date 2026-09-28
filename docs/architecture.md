@@ -117,7 +117,11 @@ passent par ces deux registres. Crochets facultatifs de `TYPE_UI` (liste complè
 `badge` (navigation). Un élément de `texts` peut porter `ep` (statut épistémique) : la recherche et le
 bilan le lisent. Champs communs à tous les types, hors registre (validés par `parseBackup`) : `resume` et
 `resumeLog` sur l'instance (pont de reprise), `origin` sur une entrée (provenance, posée par `stampOrigin`
-quand une note est rangée), `ep`/`epLog` et `links` sur les fragments et les notes. Un lien
+quand une note est rangée), `ep`/`epLog` et `links` sur les fragments et les notes. Le type `arc` (étapes + placements référençant `module/id` via `LINK_REF`) réutilise `refFind` pour résoudre
+une cible de n'importe quel type, `excerpt` pour l'afficher, et le motif kanban (`.board`/`.col`/`.card`) déjà
+utilisé par les collections en colonnes.
+
+Un lien
 (`{ id, to: "module/id", type, date }`) vit dans l'entrée d'où il part ; son `id` fait fusionner les liens un par
 un entre appareils. Les liens entrants ne sont jamais stockés : ils se recalculent (`backlinks`). Tous facultatifs et additifs : une
 version antérieure de l'app les ignore et la fusion les conserve, d'où l'absence de nouveau `SCHEMA_VERSION`.
