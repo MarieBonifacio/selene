@@ -31,6 +31,7 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
         const q = req.postDataJSON(), h = req.headers(); p.passeur.push({ ...q, auth: h.authorization, apikey: h.apikey });
         if (mode === 'absent') return route.fulfill({ status: 404, body: 'Function not found' });
         if (mode === 'refus') return json(route, 403, { erreur: "ce compte n'est pas autorisé à utiliser ce passeur" });
+        if (q.url.endsWith('/feed.xml')) return json(route, 200, { status: 200, url: q.url, type: 'application/rss+xml', texte: '<rss><channel><title>Carnet des lisières</title><item><title>Un</title><link>https://www.lisieres.fr/un</link></item></channel></rss>' });
         const texte = q.url.includes('article') ? ARTICLE : q.url.includes('lisieres') ? BLOG : '<html><head><title>Selene</title></head></html>';
         return json(route, 200, { status: 200, url: q.url.replace('?utm_source=x', ''), type: 'text/html; charset=utf-8', etag: null, modifie: null, texte });
       }
@@ -50,12 +51,15 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   ok((await p.textContent('.src-bar + .hint')).includes('par ton passeur'), 'connectée : les pages passent par ton passeur');
   await search(p, 'https://www.lisieres.fr/phalenes?utm_source=x');
   const q = p.passeur[0];
-  ok(p.passeur.length === 1 && q.genre === 'page' && q.url.startsWith('https://www.lisieres.fr/phalenes') && q.auth === 'Bearer jeton-a' && q.apikey.startsWith('sb_'), 'un appel, avec ta session, pour une page');
+  ok(p.passeur.filter(x => x.genre === 'page').length === 1 && q.genre === 'page' && q.url.startsWith('https://www.lisieres.fr/phalenes') && q.auth === 'Bearer jeton-a' && q.apikey.startsWith('sb_'), 'un appel, avec ta session, pour une page');
   ok(p.microlink === 0, 'Microlink n’est pas sollicité');
   const prev = (await p.textContent('.src-prev')).replace(/\s+/g, ' ');
   ok(prev.includes('Les phalènes de septembre <img') && prev.includes('Iris Nuit') && prev.includes('Carnet des lisières') && prev.includes('Un relevé de nuit'), 'titre, autrice (JSON-LD), site, description');
   ok(prev.includes('Ce site publie un flux') && prev.includes('Carnet des lisières (RSS)'), 'le flux annoncé est repéré');
   ok(!(await p.evaluate(() => window.__pwn || window.__ran)), 'rien de la page ne s’exécute');
+  await p.click('.src-prev [data-act="dehors-follow"]'); await p.waitForTimeout(400);
+  const fl = await p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).config.dehors.feeds);
+  ok(fl.length === 1 && fl[0].url === 'https://www.lisieres.fr/feed.xml' && fl[0].title === 'Carnet des lisières' && (await p.textContent('#toast')).includes('Suivi dans Dehors'), '« le suivre dans Dehors » : le flux annoncé est suivi');
   await p.click('[data-act="src-keep"]'); await p.waitForTimeout(250);
   let e = (await p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.sources.entries))[0];
   ok(e && e.src.url === 'https://lisieres.fr/phalenes' && e.src.date === '2026-09-20' && e.subtitle === 'Iris Nuit', 'gardée : l’og:url d’un autre site est ignorée, l’adresse canonique du même site retenue ; date, autrice');

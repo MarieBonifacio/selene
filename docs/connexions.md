@@ -85,9 +85,20 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
 - [x] Réglages → Passeur : état, « Vérifier », ton identifiant à copier.
 - [ ] Déployer (toi : `docs/passeur.md`, dix minutes).
 
-**6b : Dehors** : flux RSS, Atom et JSON Feed par projet, GET conditionnel, « vu jusqu'à », 12 au plus.
+**6b : Dehors**
+- [x] Une vue fixe, « Dehors » (navigation, palette), dans la version hébergée connectée. Suivre l'adresse d'un flux ou
+      d'un site (sa page annonce son flux : découverte), rangé sous un projet ; aussi depuis l'aperçu d'une source.
+- [x] RSS 2.0, RSS 1.0, Atom, JSON Feed, lus par DOMParser en XML (rien ne s'exécute) ; liens http(s) seulement.
+- [x] Le nouveau depuis le « vu jusqu'à » de chaque flux (synchronisé ; au premier abonnement, la semaine écoulée),
+      **douze au plus**, groupés par projet, le reste compté ; « Tout marquer comme vu ». Sur l'accueil, une ligne de
+      texte, seulement s'il y a du nouveau.
+- [x] Pour chaque élément : **garder** (une Source, avec sa provenance « Dehors »), **vers une note**, **vu**.
+- [x] Par flux : « seulement ce qui touche mes motifs » (la concordance existante ; le motif est nommé).
+- [x] Relecture par le passeur, un flux à la fois, en GET conditionnel (ETag, Last-Modified), au plus toutes les trois
+      heures, à l'ouverture (onglet visible) ou sur demande. Le contenu reste sur l'appareil, un mois au plus.
+- [x] Newsletters : Kill the Newsletter donne un flux Atom par adresse (conseil affiché, pas pour du courrier privé).
 
-**6c : Artist Watch et newsletters** : sorties MusicBrainz et Kill the Newsletter dans Dehors.
+**6c : Artist Watch** : les sorties MusicBrainz de tes artistes, une fois par semaine, dans Dehors.
 
 **6d : Research Watch** : OpenAlex, ta clé sur l'appareil.
 
