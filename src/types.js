@@ -58,11 +58,22 @@ function refHTML(ref) {
   const hit = refFind(ref);
   return hit ? `<a href="#${esc(hit.mod)}/${esc(hit.e.id)}">« ${esc(excerpt(hit.e))} »</a>` : `<i>(supprimé)</i>`;
 }
-/* Sous une entrée : ses liens sortants et entrants, puis « dériver » et « lier… ». */
-function linksHTML(mod, e) {
+/* Sur la ligne du statut : « fiche », « dériver » et « lier… » (les liens eux-mêmes sont dans la marge, margHTML). */
+function linksHTML(mod) {
+  return `<span class="acts ra"><button class="btn ghost sm" data-act="specimen" data-mod="${esc(mod)}">fiche</button><button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></span>`;
+}
+/* Les marginalia : ce qui accompagne une pensée sans en être (retouche, provenance, liens sortants et entrants,
+   motifs présents), dans un <aside> rendu une seule fois. Le CSS seul le place : dans la marge droite, face au texte,
+   sur un grand écran (notes latérales à la Tufte) ; sous le texte ailleurs. Rendu même vide, pour que la colonne de
+   texte garde la même largeur d'une ligne à l'autre. */
+function margHTML(mod, e, text) {
   const out = (e.links || []).map(l => `<span>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</span>`);
   const inc = (backlinks().get(`${mod}/${e.id}`) || []).map(b => `<span>${esc(LINK_BACK[b.type])} ${refHTML(b.from)}</span>`);
-  return `<div class="meta links">${[...out, ...inc].join("")}<span class="acts ra"><button class="btn ghost sm" data-act="specimen" data-mod="${esc(mod)}">fiche</button><button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></span></div>`;
+  const motifs = motifsOf(text);
+  const parts = [e.editedAt ? `<span class="hint">modifié ${ago(e.editedAt)}</span>` : "", originHTML(e, text),
+    out.length || inc.length ? `<span class="links">${[...out, ...inc].join("")}</span>` : "",
+    motifs.length ? `<span class="m-motifs"><span class="m-lab">motifs</span>${motifs.map(m => `<button type="button" data-act="search-for" data-q="${esc(m.e.title)}">${esc(m.e.title)}</button>`).join("")}</span>` : ""];
+  return `<aside class="marg" aria-label="En marge">${parts.join("")}</aside>`;
 }
 /* Dérivation en cours, par module : la prochaine entrée écrite dérivera de ces références (une, ou deux pour
    résoudre une tension). Propre à l'appareil, oubliée si l'on quitte l'app. */
@@ -287,7 +298,7 @@ const TYPE_UI = {
   </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">Une phrase qui passe, avant qu'elle ne reparte. Un « ? » devant en fait une hypothèse.</p>
     ${deriveBanner(id)}<textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="Nouveau"></textarea><div class="row" style="margin-top:8px">${catSelect("scrapCat", "", lastScrapCat)}<button class="btn" data-act="scrap-add" data-mod="${esc(id)}">Garder</button></div>
     ${c.categories.length || inst.scraps.length ? `<div class="row" style="margin-top:14px">${c.categories.length ? `<select data-act="scrap-f" data-mod="${esc(id)}" aria-label="Filtrer"><option value="*">Tous</option>${[["", `Hors ${c.categoryLabel.toLowerCase()}`], ...c.categories.map(x => [x.id, x.name])].map(([k, n]) => `<option value="${esc(k)}" ${ff === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : ""}<span class="spacer"></span>${inst.scraps.length ? `<button class="btn ghost sm" data-act="scrap-md" data-mod="${esc(id)}">Exporter en Markdown</button><button class="btn ghost sm" data-act="scrap-dossier" data-mod="${esc(id)}" title="Avec dates, statuts, provenance et liens, pour une lecture assistée">Dossier</button>` : ""}</div>` : ""}
-    <ul class="plain" style="margin-top:10px">${(pg => pg.items.map(f => `<li class="item" data-id="${esc(f.id)}"><span class="jdate">${fmt(f.date)}</span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${f.editedAt ? `<span class="hint">modifié ${ago(f.editedAt)}</span>` : ""}${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${originHTML(f, f.text)}</div>${linksHTML(id, f)}${versionsHTML(f)}</div><div class="row"><button class="btn ghost sm ra" data-act="scrap-edit" data-mod="${esc(id)}">modifier</button><button class="btn ghost sm ra" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></div></li>`).join("") + pg.more)(paged(`scraps:${id}`, [...inst.scraps].reverse().filter(f => ff === "*" || (f.category || "") === ff))) || `<li class="empty">Rien pour l'instant.</li>`}</ul>
+    <ul class="plain margins" style="margin-top:10px">${(pg => pg.items.map(f => `<li class="item" data-id="${esc(f.id)}"><span class="jdate">${fmt(f.date)}</span><div><div style="white-space:pre-wrap">${esc(f.text)}</div><div class="meta">${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${linksHTML(id)}</div>${versionsHTML(f)}</div>${margHTML(id, f, f.text)}<div class="row"><button class="btn ghost sm ra" data-act="scrap-edit" data-mod="${esc(id)}">modifier</button><button class="btn ghost sm ra" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></div></li>`).join("") + pg.more)(paged(`scraps:${id}`, [...inst.scraps].reverse().filter(f => ff === "*" || (f.category || "") === ff))) || `<li class="empty">Rien pour l'instant.</li>`}</ul>
   </section>` : ""}</div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>Titre / sous-titre<input data-set-mod="${esc(id)}.title" value="${esc(c.title || "")}"></label><label>Objectif<input type="number" min="1" data-set-mod="${esc(id)}.goal" value="${esc(c.goal)}"></label></div>
@@ -938,10 +949,10 @@ TYPE_UI.notes = {
     const inst = S().modules[id], c = inst.config, targets = noteTargets(id);
     return `<div data-mod="${esc(id)}"><div class="row" style="align-items:baseline"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span>${c.inbox && inst.entries.length > 1 ? `<button class="btn sm" data-act="vasculum">Trier une à une</button>` : ""}</div>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}
   ${deriveBanner(id)}<div class="capture" style="margin-bottom:18px"><input id="noteIn" data-draft placeholder="${esc(c.placeholder)}" aria-label="Nouvelle note"><button class="btn acc" data-act="note-add">Garder</button></div>
-  <ul class="plain">${(pg => pg.items.map(x => { const intent = captureIntent(x.text); return `<li class="item" data-id="${esc(x.id)}"><span class="jdate">${fmt(x.date)}</span><div>${esc(x.text)}<div class="meta">${epSelect(id, x)}${originHTML(x, x.text)}</div>${linksHTML(id, x)}
+  <ul class="plain margins">${(pg => pg.items.map(x => { const intent = captureIntent(x.text); return `<li class="item" data-id="${esc(x.id)}"><span class="jdate">${fmt(x.date)}</span><div>${esc(x.text)}<div class="meta">${epSelect(id, x)}${linksHTML(id)}</div>
     ${intent && intent.to !== id ? `<div class="row" style="margin-top:6px"><button class="btn sm acc" data-act="note-file">Ranger : ${esc(intent.say)}</button></div>` : ""}
     ${targets.length ? `<div class="row${c.inbox ? "" : " ra"}" style="margin-top:6px">${targets.map(k => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
-    <button class="btn ghost sm ra" data-act="note-del">suppr.</button></li>`; }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? "Vide. Le silence d'une clairière, ou celui d'un cerveau." : "Rien pour l'instant."}</li>`}</ul></div>`;
+    ${margHTML(id, x, x.text)}<button class="btn ghost sm ra" data-act="note-del">suppr.</button></li>`; }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? "Vide. Le silence d'une clairière, ou celui d'un cerveau." : "Rien pour l'instant."}</li>`}</ul></div>`;
   },
   settings: (id, { config: c }) => `<label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="notes-inbox" data-mod="${esc(id)}" ${c.inbox ? "checked" : ""}>Boîte de réception : reçoit la capture rapide de l'accueil</label>
     <div class="field-row" style="margin-top:8px"><label>Description<input data-set-mod="${esc(id)}.description" value="${esc(c.description)}" placeholder="Une phrase sous le titre"></label><label>Texte d'invite<input data-set-mod="${esc(id)}.placeholder" value="${esc(c.placeholder)}" required></label></div>`,
@@ -1092,11 +1103,16 @@ for (const [type, ui] of Object.entries(TYPE_UI)) for (const [table, acts] of [[
    entrants, les motifs qui s'y trouvent, l'histoire de son statut et de ses réexamens. Un tiroir sur ordinateur, une
    feuille sur téléphone ; elle se redessine à chaque changement. */
 /* Les motifs (collections en concordance) présents dans un texte, selon la règle même de la concordance. */
-function motifsOf(text) {
-  const f = fold(text), w = wordsOf(f), out = [];
-  for (const [id, inst] of Object.entries(S().modules)) if (isConcordance(inst) && enabled(id))
-    for (const e of inst.entries) { const m = motifForms(e); if (m.single.some(v => w.has(v) || w.has(v + "s") || w.has(v + "x")) || (m.re && m.re.test(f))) out.push({ id, e }); }
+/* Les motifs et leurs formes, calculés une fois par rendu : les marges en demandent pour chaque ligne affichée, et
+   chaque forme à plusieurs mots est une expression régulière qu'on ne recompilerait pas cent fois. */
+const motifIndex = () => memoInRender("motifIndex", () => {
+  const out = [];
+  for (const [id, inst] of Object.entries(S().modules)) if (isConcordance(inst) && enabled(id)) for (const e of inst.entries) out.push({ id, e, m: motifForms(e) });
   return out;
+});
+function motifsOf(text) {
+  const f = fold(text), w = wordsOf(f);
+  return motifIndex().filter(({ m }) => m.single.some(v => w.has(v) || w.has(v + "s") || w.has(v + "x")) || (m.re && m.re.test(f))).map(({ id, e }) => ({ id, e }));
 }
 /* Le statut épistémique codé par la forme, pas par la couleur : observé plein, hypothèse pointillée,
    interprétation à moitié, inexpliqué pointé. */

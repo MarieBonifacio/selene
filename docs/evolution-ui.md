@@ -327,9 +327,13 @@ Du moins risqué au plus risqué ; chaque étape se suffit à elle-même (on peu
 - [x] Image fixe (coût nul) ; pas de feuilles qui tombent.
 
 **4b : marginalia (ordinateur)**
-- [ ] Dans les fragments et les notes, provenance, liens, motifs présents, statut et versions passent dans la marge
-      droite, face au texte (notes latérales à la Tufte). Un seul `<aside>` rendu ; le CSS seul le place (grille à
-      deux colonnes au-delà de 1180 px, sous le texte en deçà). Actions toujours sur la ligne.
+- [x] Dans les fragments et les notes, la retouche, la provenance, les liens (sortants et entrants) et les motifs
+      présents passent dans la marge droite, face au texte, derrière un filet (notes latérales à la Tufte). Le statut
+      (un menu) et les versions (dépliables) restent avec le texte ; les actions aussi, sur la ligne du statut.
+- [x] Un seul `<aside>` rendu ; le CSS seul le place, par une requête de conteneur (la liste elle-même ≥ 700 px, pas
+      la fenêtre) : en marge sur un grand écran, sous le texte ailleurs. Au-delà de 1180 px, Écriture empile
+      avancement et fragments pour donner la largeur aux fragments. Les formes des motifs sont calculées une fois
+      par rendu (`motifIndex`) : Écriture passe de 5,0 à 6,9 ms sur l'historique du banc d'essai.
 
 **4c : planche de lunaison**
 - [ ] `#bilan/planche` : une planche A4 par cycle, numérotée par la lunaison de Meeus (le `k` de `periodOf`) ; règle
