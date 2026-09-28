@@ -33,6 +33,7 @@ time('motifs (render)', () => { context.location.hash = '#motifs'; t.render(); }
 time('arc (render)', () => { context.location.hash = '#arc'; t.render(); });
 time('écriture (render)', () => { context.location.hash = '#ecriture'; t.render(); });
 time('bilan (render)', () => { context.location.hash = '#bilan'; t.render(); });
+time('planche (render)', () => { context.location.hash = '#bilan/planche'; t.render(); });
 time('recherche « lune porte »', () => t.searchAll('lune porte'));
 
 time('accueil, avec sortes (render)', () => { context.location.hash = '#accueil'; t.render(); });

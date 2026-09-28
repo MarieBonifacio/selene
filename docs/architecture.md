@@ -17,6 +17,11 @@ fonction immédiatement exécutée, et l'insère dans `src/shell.html` :
 `hosted()` (= `!window.claude`) distingue les deux au démarrage. Ne jamais modifier les HTML générés :
 la CI (`build.py --check`) refuse un HTML qui ne correspond pas aux sources.
 
+Les ajouts propres à `index.html` (CSP, manifeste, service worker) se font dans le **squelette**, avant d'y
+poser le script : le JavaScript peut contenir `<title>` ou `</body>` dans ses chaînes (la planche de lunaison
+téléchargée en a), et un remplacement textuel ne doit jamais l'atteindre. Seul `</script` y est interdit, et
+`build.py` le refuse : il fermerait la balise au milieu d'une chaîne.
+
 ### Ordre de chargement
 
 Tous les fichiers partagent la même portée. Au **chargement**, un fichier ne peut utiliser que ce que
