@@ -18,6 +18,16 @@ jobs:
         run: |
           python3 build.py --bundle .lint/selene.js
           npx --yes eslint@10.11.0 .lint/selene.js sw.js
+  passeur:
+    # La fonction Supabase Edge (supabase/functions/passeur, docs/passeur.md) : types et tests, avec Deno.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npx --yes deno@2.9.6 check supabase/functions/passeur/index.ts
+      - run: npx --yes deno@2.9.6 test supabase/functions/passeur/
   browser:
     # Parcours dans un vrai Chromium (tests/browser) : ce que le faux DOM des tests unitaires ne voit pas.
     runs-on: ubuntu-latest

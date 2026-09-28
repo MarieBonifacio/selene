@@ -1946,6 +1946,76 @@ function igEntry(p) {
   return { title, text: p.caption === title ? "" : p.caption, due: day, ig: { t: p.t, k: p.k } }; // une ligne qui tient dans le titre : pas de doublon
 }
 
+/* ================= passeur : ce que le navigateur ne peut pas lire seul (version hébergée, connectée) =================
+   Les flux RSS, la plupart des pages et les calendriers n'envoient pas d'en-tête CORS : la page ne peut pas lire leur
+   réponse. Le passeur (supabase/functions/passeur, docs/passeur.md) va les chercher pour toi seule, avec ta session.
+   Ici : l'appel, et la lecture d'une page (métadonnées, flux annoncés), faite par DOMParser, qui n'exécute rien. */
+let passeurEtat = ""; // "" inconnu, "ok", "absent" (non déployé ou non configuré : on n'insiste pas), ou un message
+const passeurPret = () => hosted() && authReady() && !!authSession && passeurEtat !== "absent";
+async function passeurFetch(url, genre, cond = {}) {
+  if (!hosted() || !authReady() || !authSession) throw new Error("Le passeur n'existe que dans la version hébergée, connectée à ton compte.");
+  const s = await authRefreshIfNeeded(); if (!s) throw new Error("Session expirée : reconnecte-toi.");
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), 15000);
+  let r;
+  try {
+    r = await fetch(`${SUPABASE_URL}/functions/v1/passeur`, { method: "POST", signal: ac.signal,
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${s.access_token}` },
+      body: JSON.stringify({ url, genre, ...(cond.etag ? { etag: cond.etag } : {}), ...(cond.modifie ? { modifie: cond.modifie } : {}) }) });
+  } catch { throw new Error("Passeur injoignable (hors ligne, ou pas encore déployé)."); } finally { clearTimeout(t); }
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 404 || r.status === 503) { passeurEtat = "absent"; throw new Error(r.status === 404 ? "Passeur non déployé (voir docs/passeur.md)." : j.erreur || "Passeur non configuré."); }
+  if (r.status === 401 || r.status === 403) { passeurEtat = j.erreur || "refusé"; throw new Error(`Passeur : ${j.erreur || "accès refusé"}.`); }
+  if (!r.ok) throw new Error(`Passeur : ${j.erreur || `erreur ${r.status}`}.`);
+  passeurEtat = "ok";
+  return j;
+}
+/* L'adresse canonique annoncée par une page, seulement si elle reste sur le même site (une page ne décide pas
+   qu'elle est un article d'ailleurs). */
+function sameSite(u, base) {
+  const h = x => { try { return new URL(x).hostname.replace(/^www\./, ""); } catch { return null; } };
+  return u && h(u) && h(u) === h(base) ? normalizeUrl(u) : "";
+}
+/* Une page HTML → les champs d'une source, et les flux qu'elle annonce. Ordre de confiance : les balises des revues
+   savantes (citation_*), OpenGraph, JSON-LD, puis le reste. Tout est du texte : rien n'est inséré tel quel. */
+function pageToSource(html, base) {
+  const d = new window.DOMParser().parseFromString(String(html || ""), "text/html");
+  const metas = n => [...d.querySelectorAll("meta")].filter(m => (m.getAttribute("property") || m.getAttribute("name") || "").toLowerCase() === n).map(m => (m.getAttribute("content") || "").trim()).filter(Boolean);
+  const meta = (...ns) => { for (const n of ns) { const v = metas(n)[0]; if (v) return v; } return ""; };
+  const abs = h => { try { const u = new URL(h, base); return /^https?:$/.test(u.protocol) ? u.toString() : ""; } catch { return ""; } };
+  let ld = {};
+  for (const s of d.querySelectorAll('script[type="application/ld+json"]')) {
+    try {
+      const j = JSON.parse(s.textContent), all = [].concat(j, ...(Array.isArray(j) ? j : [j]).map(x => (x && x["@graph"]) || []));
+      const hit = all.find(x => x && /Article|BlogPosting|Report|Thesis|Book|Chapter|VideoObject/.test([].concat(x["@type"] || []).join(" ")));
+      if (hit) { ld = hit; break; }
+    } catch {}
+  }
+  const ldName = v => [].concat(v || []).map(a => typeof a === "string" ? a : a && a.name).filter(x => typeof x === "string");
+  const day = v => { const m = String(v || "").replace(/\//g, "-").match(/^(\d{4})(-\d{2})?(-\d{2})?/); return m ? m[0] : ""; };
+  const authors = metas("citation_author").length ? metas("citation_author") : ldName(ld.author).length ? ldName(ld.author) : [meta("author")].filter(Boolean);
+  const doi = findDoi(meta("citation_doi", "dc.identifier", "prism.doi")) || findDoi(base) || null;
+  let host = ""; try { host = new URL(base).hostname.replace(/^www\./, ""); } catch {}
+  const feeds = [...d.querySelectorAll('link[rel~="alternate"]')].filter(l => /(rss|atom)\+xml|feed\+json/i.test(l.getAttribute("type") || ""))
+    .map(l => ({ url: abs(l.getAttribute("href") || ""), title: clip(l.getAttribute("title") || "", 120) })).filter(f => f.url).slice(0, 5);
+  const og = meta("og:type");
+  return {
+    title: clip(meta("citation_title", "og:title", "twitter:title") || ld.headline || ld.name || (d.querySelector("title") || {}).textContent || base, 300),
+    authors: clip(authors.length > 3 ? authors.slice(0, 3).join(", ") + " et al." : authors.join(", "), 200),
+    site: clip(meta("citation_journal_title", "og:site_name") || ldName(ld.publisher)[0] || host, 200),
+    date: day(meta("citation_publication_date", "citation_date", "article:published_time", "dc.date", "date") || ld.datePublished),
+    kind: doi ? "article" : /video/.test(og) || ld["@type"] === "VideoObject" ? "vidéo" : "page",
+    doi, url: sameSite(abs(meta("og:url")), base) || sameSite(abs((d.querySelector('link[rel="canonical"]') || { getAttribute: () => "" }).getAttribute("href") || ""), base) || normalizeUrl(base),
+    abstract: clip(meta("citation_abstract", "og:description", "description", "twitter:description") || ld.description || "", 1200), feeds
+  };
+}
+/* Réglages → Passeur : son état, ton identifiant (pour le secret PASSEUR_USERS), une vérification à la demande. */
+function passeurSettingsHTML() {
+  const st = passeurEtat === "ok" ? "Déployé et ouvert à ton compte." : passeurEtat === "absent" ? "Pas encore déployé, ou pas encore configuré." : passeurEtat ? `Refusé : ${passeurEtat}.` : "Pas encore vérifié sur cet appareil.";
+  return `<section id="passeur"><h3>Passeur</h3><p class="hint">Une petite fonction dans ton projet Supabase qui lit pour toi les pages, flux et calendriers que le navigateur ne peut pas lire seul. Elle ne sert que ton compte, refuse toute adresse privée et ne garde rien. Sans elle, les pages passent par Microlink.</p>
+    <p class="row" style="margin:0 0 8px"><span data-passeur-etat>${esc(st)}</span><button class="btn sm" data-act="passeur-check">Vérifier</button></p>
+    <p class="hint">Ton identifiant, à mettre dans le secret <code>PASSEUR_USERS</code> : <code style="word-break:break-all">${esc(authSession.user.id)}</code> <button class="btn ghost sm" data-act="passeur-copy">copier</button>. Mode d'emploi : <a href="https://github.com/MarieBonifacio/selene/blob/main/docs/passeur.md" target="_blank" rel="noopener noreferrer">docs/passeur.md</a>.</p></section>`;
+}
+
 /* ================= utils ================= */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -2859,6 +2929,7 @@ VIEWS.reglages = () => {
   ${hosted() && authReady() && authSession ? `<section><h3>Compte</h3><p class="hint">Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données, la conversation avec l'assistant et la clé API.</p>
     <button class="btn ghost" data-act="auth-out">Se déconnecter</button></section>` : ""}
   ${hosted() ? shareSettingsHTML() : ""}
+  ${hosted() && authReady() && authSession ? passeurSettingsHTML() : ""}
   <section><h3>Sauvegarde</h3><p class="hint">Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.</p>
     <div class="row"><button class="btn" data-act="exp">Exporter</button><label class="btn" style="display:inline-block;font-weight:500">Importer<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label></div></section>`;
 };
@@ -4816,7 +4887,20 @@ async function fetchSource(raw) {
   };
   try {
     if (doi) { const j = await get(`https://api.crossref.org/works/${encodeURIComponent(doi)}`); if (j && j.message) return crossrefToSource(j.message, doi); }
-    else { const j = await get(`https://api.microlink.io/?url=${encodeURIComponent(url)}`); if (j && j.status === "success" && j.data) return microlinkToSource(j.data, url); }
+    else {
+      // Le passeur d'abord (la page elle-même, et les flux qu'elle annonce) ; Microlink s'il manque ou échoue.
+      if (passeurPret()) {
+        try {
+          const r = await passeurFetch(url, "page");
+          if (r.texte) {
+            const pg = pageToSource(r.texte, r.url || url);
+            if (pg.doi) { const j = await get(`https://api.crossref.org/works/${encodeURIComponent(pg.doi)}`).catch(() => null); if (j && j.message) return { ...crossrefToSource(j.message, pg.doi), feeds: pg.feeds }; }
+            return pg;
+          }
+        } catch {}
+      }
+      const j = await get(`https://api.microlink.io/?url=${encodeURIComponent(url)}`); if (j && j.status === "success" && j.data) return microlinkToSource(j.data, url);
+    }
   } catch {} // hors ligne, délai dépassé, réponse illisible : voir plus bas
   return { ...bareSource(url, doi), partial: true };
 }
@@ -4842,11 +4926,12 @@ function sourceBar(id) {
     <b>${esc(d.title)}</b>${d.authors ? `<div>${esc(d.authors)}</div>` : ""}
     <div class="meta">${[d.site, pubDate(d.date), d.kind].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("")}${d.doi ? `<span>doi:${esc(d.doi)}</span>` : ""}</div>
     ${d.abstract ? `<p class="note">${esc(d.abstract)}</p>` : ""}
+    ${d.feeds && d.feeds.length ? `<p class="hint">Ce site publie un flux : ${d.feeds.map(f => `<span class="tag">${esc(f.title || f.url)}</span>`).join(" ")}</p>` : ""}
     ${d.partial ? `<p class="hint">Métadonnées indisponibles (hors ligne, service muet ou quota du jour atteint) : elle sera gardée avec son adresse seule.</p>` : ""}
     ${p.dup ? `<p class="hint">Déjà gardée${p.dup.mod !== id ? ` dans ${esc(label(p.dup.mod))}` : ""} : <a href="#${esc(p.dup.mod)}/${esc(p.dup.e.id)}">« ${esc(excerpt(p.dup.e, 60))} »</a>.</p>` : ""}
     <div class="row"><button class="btn acc sm" data-act="src-keep" ${p.dup ? "disabled" : ""}>Garder</button><button class="btn ghost sm" data-act="src-cancel">Annuler</button></div></div>`;
   return `<div class="capture src-bar"><input id="srcIn" inputmode="url" autocomplete="off" placeholder="Un lien ou un DOI…" aria-label="Lien ou DOI"><button class="btn" data-act="src-fetch">Chercher</button></div>
-  <p class="hint" style="margin:4px 0 12px">Un DOI est complété par Crossref ; une page, par Microlink, qui voit l'adresse demandée (25 par jour).</p>${prev}`;
+  <p class="hint" style="margin:4px 0 12px">Un DOI est complété par Crossref ; une page, ${passeurPret() ? "par ton passeur (sinon Microlink, qui voit l'adresse demandée, 25 par jour)" : "par Microlink, qui voit l'adresse demandée (25 par jour)"}.</p>${prev}`;
 }
 CLICK["src-fetch"] = async el => {
   const id = modOf(el), inp = $("#srcIn"), raw = inp ? inp.value.trim() : "";
@@ -5046,6 +5131,17 @@ function radarSettingsHTML() {
     <label>Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)<input data-act="radar-words" value="${esc(radarConf().words)}" placeholder="poésie, jazz, photographie, lecture…" maxlength="300" autocomplete="off"></label>
     ${near ? "" : `<p class="hint" style="margin-top:6px">${c ? `Le radar ne couvre que la Métropole de Lille : le lieu réglé (${esc(c.name)}) en est trop loin.` : "Il lui faut un lieu près de Lille : règle-le dans Ciel, ci-dessus."}</p>`}</section>`;
 }
+
+/* Réglages → Passeur (passeur.js) : vérifier en lisant la page de Selene elle-même, copier l'identifiant. */
+CLICK["passeur-check"] = async el => {
+  el.disabled = true; passeurEtat = "";
+  try { await passeurFetch(location.origin + location.pathname, "page"); toast("Passeur : il répond, et il te reconnaît."); }
+  catch (e) { toast(e.message); }
+  render();
+};
+CLICK["passeur-copy"] = async () => {
+  try { await navigator.clipboard.writeText(authSession.user.id); toast("Identifiant copié."); } catch { toast("Copie impossible ici : sélectionne-le à la main."); }
+};
 
 /* ================= assistant =================
    Deux branchements : claude.ai (window.claude.use("sample"), sans clé) ou l'API Anthropic avec la clé

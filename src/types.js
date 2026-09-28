@@ -1316,7 +1316,20 @@ async function fetchSource(raw) {
   };
   try {
     if (doi) { const j = await get(`https://api.crossref.org/works/${encodeURIComponent(doi)}`); if (j && j.message) return crossrefToSource(j.message, doi); }
-    else { const j = await get(`https://api.microlink.io/?url=${encodeURIComponent(url)}`); if (j && j.status === "success" && j.data) return microlinkToSource(j.data, url); }
+    else {
+      // Le passeur d'abord (la page elle-même, et les flux qu'elle annonce) ; Microlink s'il manque ou échoue.
+      if (passeurPret()) {
+        try {
+          const r = await passeurFetch(url, "page");
+          if (r.texte) {
+            const pg = pageToSource(r.texte, r.url || url);
+            if (pg.doi) { const j = await get(`https://api.crossref.org/works/${encodeURIComponent(pg.doi)}`).catch(() => null); if (j && j.message) return { ...crossrefToSource(j.message, pg.doi), feeds: pg.feeds }; }
+            return pg;
+          }
+        } catch {}
+      }
+      const j = await get(`https://api.microlink.io/?url=${encodeURIComponent(url)}`); if (j && j.status === "success" && j.data) return microlinkToSource(j.data, url);
+    }
   } catch {} // hors ligne, délai dépassé, réponse illisible : voir plus bas
   return { ...bareSource(url, doi), partial: true };
 }
@@ -1342,11 +1355,12 @@ function sourceBar(id) {
     <b>${esc(d.title)}</b>${d.authors ? `<div>${esc(d.authors)}</div>` : ""}
     <div class="meta">${[d.site, pubDate(d.date), d.kind].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("")}${d.doi ? `<span>doi:${esc(d.doi)}</span>` : ""}</div>
     ${d.abstract ? `<p class="note">${esc(d.abstract)}</p>` : ""}
+    ${d.feeds && d.feeds.length ? `<p class="hint">Ce site publie un flux : ${d.feeds.map(f => `<span class="tag">${esc(f.title || f.url)}</span>`).join(" ")}</p>` : ""}
     ${d.partial ? `<p class="hint">Métadonnées indisponibles (hors ligne, service muet ou quota du jour atteint) : elle sera gardée avec son adresse seule.</p>` : ""}
     ${p.dup ? `<p class="hint">Déjà gardée${p.dup.mod !== id ? ` dans ${esc(label(p.dup.mod))}` : ""} : <a href="#${esc(p.dup.mod)}/${esc(p.dup.e.id)}">« ${esc(excerpt(p.dup.e, 60))} »</a>.</p>` : ""}
     <div class="row"><button class="btn acc sm" data-act="src-keep" ${p.dup ? "disabled" : ""}>Garder</button><button class="btn ghost sm" data-act="src-cancel">Annuler</button></div></div>`;
   return `<div class="capture src-bar"><input id="srcIn" inputmode="url" autocomplete="off" placeholder="Un lien ou un DOI…" aria-label="Lien ou DOI"><button class="btn" data-act="src-fetch">Chercher</button></div>
-  <p class="hint" style="margin:4px 0 12px">Un DOI est complété par Crossref ; une page, par Microlink, qui voit l'adresse demandée (25 par jour).</p>${prev}`;
+  <p class="hint" style="margin:4px 0 12px">Un DOI est complété par Crossref ; une page, ${passeurPret() ? "par ton passeur (sinon Microlink, qui voit l'adresse demandée, 25 par jour)" : "par Microlink, qui voit l'adresse demandée (25 par jour)"}.</p>${prev}`;
 }
 CLICK["src-fetch"] = async el => {
   const id = modOf(el), inp = $("#srcIn"), raw = inp ? inp.value.trim() : "";
@@ -1546,3 +1560,14 @@ function radarSettingsHTML() {
     <label>Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)<input data-act="radar-words" value="${esc(radarConf().words)}" placeholder="poésie, jazz, photographie, lecture…" maxlength="300" autocomplete="off"></label>
     ${near ? "" : `<p class="hint" style="margin-top:6px">${c ? `Le radar ne couvre que la Métropole de Lille : le lieu réglé (${esc(c.name)}) en est trop loin.` : "Il lui faut un lieu près de Lille : règle-le dans Ciel, ci-dessus."}</p>`}</section>`;
 }
+
+/* Réglages → Passeur (passeur.js) : vérifier en lisant la page de Selene elle-même, copier l'identifiant. */
+CLICK["passeur-check"] = async el => {
+  el.disabled = true; passeurEtat = "";
+  try { await passeurFetch(location.origin + location.pathname, "page"); toast("Passeur : il répond, et il te reconnaît."); }
+  catch (e) { toast(e.message); }
+  render();
+};
+CLICK["passeur-copy"] = async () => {
+  try { await navigator.clipboard.writeText(authSession.user.id); toast("Identifiant copié."); } catch { toast("Copie impossible ici : sélectionne-le à la main."); }
+};
