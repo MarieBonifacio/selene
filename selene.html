@@ -296,13 +296,28 @@ select.ep.on{color:var(--accent);border-color:var(--rule)}
 .two{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:36px}
 /* Deux colonnes seulement quand la place le permet (la barre latérale en prend dès 900 px). */
 @media (max-width:819px),(min-width:900px) and (max-width:1079px){.two{grid-template-columns:1fr}}
-.rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
-.room{border:1px solid var(--rule);background:var(--surface);padding:10px;position:relative;overflow:hidden;text-align:left;min-height:84px}
-.room .fill{position:absolute;left:0;bottom:0;width:100%;background:var(--accent);opacity:.18}
-.room *{position:relative}
-.room b{display:block;font-family:"Cormorant Garamond",serif;font-size:1.8rem;line-height:1.1}
-.room small{color:var(--muted)}
-.room.active{outline:2px solid var(--accent);outline-offset:-2px}
+/* Registre (et non plus tuiles) : une ligne par groupe, le nom, le décompte, le pourcentage en chiffres alignés, et un
+   trait fin qui avance sous la ligne. Filtrer : le filet de marge. Dépasser (un budget) : le cinabre. */
+.rooms{display:grid;grid-template-columns:1fr;border-top:1px solid var(--rule)}
+.room{display:grid;grid-template-columns:minmax(0,1fr) auto 4.2em;gap:4px 14px;align-items:baseline;position:relative;padding:9px 8px 11px;
+  border:0;border-bottom:1px solid var(--rule);background:transparent;text-align:left;color:inherit;font:inherit;width:100%}
+button.room{cursor:pointer}button.room:hover{background:var(--surface)}
+.room .fill{position:absolute;left:0;bottom:-1px;height:2px;background:var(--tint,var(--accent));opacity:.9}
+.room small:first-of-type{order:1;color:var(--ink);font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.room small:last-of-type{order:2;color:var(--muted);font-family:var(--f-ui);font-size:.8rem;font-variant-numeric:tabular-nums lining-nums}
+.room b{order:3;text-align:right;font-family:var(--f-ui);font-weight:500;font-size:.95rem;font-variant-numeric:tabular-nums lining-nums}
+.room.active{box-shadow:inset 2px 0 0 var(--tint,var(--accent));background:var(--surface)}
+/* Recherche à facettes : des puces qui filtrent (espace, période, statut), avec leur décompte ; résultats par espace. */
+.facets{display:grid;gap:6px;margin:12px 0 4px}
+.chip-f{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:3px 10px;border:1px solid var(--rule);border-radius:3px;background:transparent;color:var(--muted);font-size:.84rem}
+.chip-f .sig{width:1em;height:1em;margin-right:.15em}
+.chip-f span{font-variant-numeric:tabular-nums lining-nums;color:var(--muted)}
+.chip-f.on{border-color:var(--tint,var(--accent));color:var(--ink);box-shadow:inset 0 0 0 1px var(--tint,var(--accent))}
+@media (pointer:coarse){.chip-f{min-height:44px}}
+.search-grp{display:flex;align-items:center;gap:2px;margin:22px 0 6px}.search-grp .sig{color:var(--tint)}.search-grp span{margin-left:6px;font-variant-numeric:tabular-nums lining-nums}
+/* Journaux à dates suspendues : la date dans la marge, en petites capitales, comme un carnet de terrain. */
+.jdate{font-family:var(--f-label);text-transform:lowercase;letter-spacing:.04em;color:var(--muted);font-size:.9rem;min-width:4.4em;padding-top:.12em;white-space:nowrap}
+@media (max-width:420px){.jdate{min-width:3.6em;font-size:.82rem;white-space:normal}}
 
 /* kundalini calendar */
 .cal{display:grid;grid-template-columns:auto repeat(7,1fr);gap:4px;max-width:420px;font-size:.78rem;color:var(--muted);align-items:center}
@@ -320,6 +335,19 @@ select.ep.on{color:var(--accent);border-color:var(--rule)}
 /* Le tableau est l'ancêtre positionné de tout ce qu'il contient d'absolu (texte pour lecteur d'écran, « ⋯ ») :
    sinon ces éléments échappent à son défilement horizontal et élargissent toute la page sur téléphone. */
 .board{position:relative}
+/* Kanban : une colonne à la fois sur téléphone (sélecteur) ; glisser-déposer et touches [ ] sur ordinateur. */
+.seg{display:none}
+.card[draggable]{cursor:grab}.card.dragging{opacity:.45}
+.col.drop{background:var(--surface);box-shadow:inset 0 0 0 1px var(--tint,var(--accent))}
+@media (max-width:640px){
+  .seg{display:flex;gap:2px;overflow-x:auto;margin:0 0 12px;border-bottom:1px solid var(--rule);scrollbar-width:none}
+  .seg button{flex:none;min-height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;color:var(--muted);font-size:.9rem}
+  .seg button.on{color:var(--ink);border-bottom-color:var(--tint,var(--accent))}
+  .seg button span{font-variant-numeric:tabular-nums;color:var(--muted);margin-left:2px}
+  .board:has(.col[data-ci]){display:block}
+  .board .col[data-ci]:not(.on){display:none}
+  .board .col[data-ci] > h3{display:none}
+}
 
 /* Actions de ligne (classe .ra) : au repos, le contenu seul. Au survol ou au focus sur ordinateur ; sur un écran
    tactile, un toucher sur la ligne les montre (« ⋯ » signale qu'il y en a). Jamais la seule voie d'une action primaire. */
@@ -1790,7 +1818,7 @@ function groupPanel(mod, hint) {
   const title = c.title || `Par ${G.fields[by].toLowerCase()}`;
   return `<section><div class="row" style="margin-bottom:4px"><h3 style="margin:0">${esc(title)}</h3><span class="spacer"></span><a class="btn ghost sm" href="#reglages" data-act="goto-groups" data-mod="${esc(mod)}">régler</a></div>
     <p class="hint">${hint}</p>
-    <div class="rooms">${gs.map(g => `<button class="room ${active === g.name ? "active" : ""} ${g.pct > 100 ? "over" : ""}" ${G.filterable ? `data-act="grp-filter" data-mod="${esc(mod)}" data-g="${esc(g.name)}"` : "disabled"}><div class="fill" style="height:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></button>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
+    <div class="rooms">${gs.map(g => `<button class="room ${active === g.name ? "active" : ""} ${g.pct > 100 ? "over" : ""}" ${G.filterable ? `data-act="grp-filter" data-mod="${esc(mod)}" data-g="${esc(g.name)}"` : "disabled"}><div class="fill" style="width:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></button>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
 }
 const gMatch = (mod, it) => { const v = gFilter[mod]; if (!v) return true; return (grouperFor(mod).key(it, groupBy(mod)) || "Sans groupe") === v; };
 
@@ -2139,12 +2167,35 @@ function highlight(text, q) {
   for (const [a, b] of marks) { if (a < pos) continue; html += esc(text.slice(pos, a)) + `<mark>${esc(text.slice(a, b))}</mark>`; pos = b; }
   return html + esc(text.slice(pos));
 }
+/* Facettes de la recherche : un espace, une période (la lunaison ou le mois en cours), un statut. Propres à
+   l'appareil ; une recherche lancée d'ailleurs (un mot du bilan, un motif) repart sans filtre. */
+const searchFacets = { mod: "", period: "", ep: "" };
+const facetPeriod = k => k ? periodOf(k, 0) : null;
+function facetFilter(hits, skip = "") {
+  const f = searchFacets, per = skip !== "period" && facetPeriod(f.period);
+  return hits.filter(h => (skip === "mod" || !f.mod || h.id === f.mod) && (!per || (h.date && h.date >= per.from && h.date < per.to)) && (skip === "ep" || !f.ep || h.ep === f.ep));
+}
 VIEWS.recherche = () => {
-  const hits = searchAll(searchQuery);
+  const all = searchAll(searchQuery), hits = facetFilter(all), f = searchFacets, s = S();
+  // Chaque facette compte ce que donneraient ses valeurs, les autres facettes restant appliquées.
+  const chip = (k, v, text, n) => `<button type="button" class="chip-f ${f[k] === v ? "on" : ""}" data-act="facet" data-k="${k}" data-v="${esc(v)}" aria-pressed="${f[k] === v}">${text}${n != null ? ` <span>${n}</span>` : ""}</button>`;
+  const byMod = facetFilter(all, "mod"), byPer = facetFilter(all, "period"), byEp = facetFilter(all, "ep");
+  const mods = s.config.modules.map(m => m.id).filter(id => byMod.some(h => h.id === id));
+  const facets = all.length ? `<div class="facets">
+    <div class="row">${chip("mod", "", "Tous les espaces", byMod.length)}${mods.map(id => chip("mod", id, `${sigil(id)}${esc(label(id))}`, byMod.filter(h => h.id === id).length)).join("")}</div>
+    <div class="row">${[["", "Toute date"], ["lune", "Cette lunaison"], ["mois", "Ce mois-ci"]].map(([v, t]) => chip("period", v, t, v ? byPer.filter(h => { const p = facetPeriod(v); return h.date && h.date >= p.from && h.date < p.to; }).length : byPer.length)).join("")}
+      ${Object.keys(EP_STATUS).some(k => byEp.some(h => h.ep === k)) ? `<span class="spacer"></span>${chip("ep", "", "Tout statut", null)}${Object.keys(EP_STATUS).filter(k => byEp.some(h => h.ep === k)).map(k => chip("ep", k, `${epGlyph(k)}${esc(EP_STATUS[k])}`, byEp.filter(h => h.ep === k).length)).join("")}` : ""}</div></div>` : "";
+  // Groupés par espace, dans l'ordre de la navigation ; 80 résultats au plus, les plus récents d'abord dans chaque espace.
+  let budget = 80;
+  const groups = s.config.modules.map(m => m.id).map(id => [id, hits.filter(h => h.id === id).sort((a, b) => (b.date || "").localeCompare(a.date || ""))]).filter(([, l]) => l.length).map(([id, l]) => {
+    const shown = l.slice(0, Math.max(0, budget)); budget -= shown.length;
+    return shown.length ? `<p class="grp search-grp ${tintOf(id)}">${sigil(id)}${esc(label(id))} <span>${l.length}</span></p><ul class="plain">${shown.map(h => `<li class="item"><span class="jdate">${h.date ? fmt(h.date) : ""}</span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}${h.ep ? `<div class="meta"><span>${epGlyph(h.ep)}${esc(EP_STATUS[h.ep])}</span></div>` : ""}</div><a class="btn ghost sm" href="#${esc(h.id)}${h.eid ? "/" + esc(h.eid) : ""}">ouvrir</a></li>`).join("")}</ul>` : "";
+  }).join("");
+  const filtered = hits.length !== all.length;
   return `<h2>Chercher</h2><p class="hint">Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « statut:hypothèse » ne garde que les hypothèses (de même pour observé, interprétation, inexpliqué). Touche « / » pour venir ici.</p>
   <input id="searchIn" type="search" value="${esc(searchQuery)}" placeholder="Un mot, un bout de phrase…" aria-label="Chercher" autocomplete="off" style="max-width:520px">
-  ${searchQuery.trim() ? `<div class="row" style="margin-top:12px"><p class="hint" style="margin:0">${hits.length ? plural(hits.length, "résultat") : "Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire."}</p>${hits.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="search-dossier" title="Tous les résultats, avec dates, statuts, provenance et liens, pour une lecture assistée">Exporter en dossier</button>` : ""}</div>
-  <ul class="plain">${hits.slice(0, 80).map(h => `<li class="item"><span></span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}<div class="meta"><span class="tag">${esc(label(h.id))}</span>${h.date ? `<span>${fmt(h.date)}</span>` : ""}${h.ep ? `<span>${esc(EP_STATUS[h.ep])}</span>` : ""}</div></div><a class="btn ghost sm" href="#${esc(h.id)}${h.eid ? "/" + esc(h.eid) : ""}">ouvrir</a></li>`).join("")}</ul>` : ""}`;
+  ${searchQuery.trim() ? `<div class="row" style="margin-top:12px"><p class="hint" style="margin:0">${hits.length ? `${plural(hits.length, "résultat")}${filtered ? ` sur ${all.length}` : ""}` : all.length ? "Rien avec ces filtres." : "Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire."}</p>${hits.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="search-dossier" title="Les résultats affichés, avec dates, statuts, provenance et liens, pour une lecture assistée">Exporter en dossier</button>` : ""}</div>
+  ${facets}${groups}` : ""}`;
 };
 const PALETTES = [["nigredo", "Nigredo, mousse", "#6f9a68"], ["albedo", "Albedo, lichen", "#aab7a6"], ["citrinitas", "Citrinitas, résine", "#c99a3c"], ["rubedo", "Rubedo, amanite", "#c0554a"]];
 VIEWS.reglages = () => {
@@ -2593,13 +2644,14 @@ const CLICK = {
   // statut, provenance et liens (retrouvés par module et texte : la recherche ne renvoie que des textes).
   "search-dossier": () => {
     const q = searchQuery.trim(), thoughts = thoughtItems();
-    const items = searchAll(q).map(h => ({ mod: h.id, text: h.text, date: h.date, e: (thoughts.find(x => x.mod === h.id && x.e.text === h.text) || {}).e }))
+    const items = facetFilter(searchAll(q)).map(h => ({ mod: h.id, text: h.text, date: h.date, e: (thoughts.find(x => x.mod === h.id && x.e.text === h.text) || {}).e }))
       .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
     if (items.length) dossierFile(`Recherche — ${q}`, `Résultats de la recherche « ${q} »`, items);
   },
   "page-more": el => { const k = el.dataset.k; pageSize[k] = (pageSize[k] || PAGE) + PAGE; render(); },
   "sortes-draw": () => { sortesLast = sortesDraw(); render(); if (!sortesLast) toast("Rien d'assez ancien à tirer. Reviens dans deux semaines."); },
-  "search-for": el => { searchQuery = el.dataset.q; if (location.hash === "#recherche") render(); else location.hash = "recherche"; },
+  "facet": el => { const k = el.dataset.k; if (Object.hasOwn(searchFacets, k)) { searchFacets[k] = searchFacets[k] === el.dataset.v ? "" : el.dataset.v; render(); } },
+  "search-for": el => { searchQuery = el.dataset.q; Object.assign(searchFacets, { mod: "", period: "", ep: "" }); if (location.hash === "#recherche") render(); else location.hash = "recherche"; },
   "entry-add": el => entryAdd(el.dataset.mod),
   "entry-del": el => removeWithUndo(el.dataset.mod, "entries", idOf(el)),
   "bilan-mode": el => { try { localStorage.setItem("selene-bilan", el.dataset.m); } catch {} bilanOffset = 0; render(); },
@@ -2896,7 +2948,7 @@ function programmeGroupPanel(id) {
   const days = new Set(inst.entries.map(x => x.date)), cur = Math.min(52, +c.weeks || 12, Math.floor(diffDays(now, c.start) / 7) + 1), out = [];
   for (let w = 0; w < cur; w++) { let n = 0; for (let d = 0; d < 7; d++) if (days.has(addDaysTo(c.start, w * 7 + d))) n++; const den = +c.perWeek || 1; out.push({ name: `Semaine ${w + 1}`, pct: Math.min(100, Math.round(100 * n / den)), sub: `${n} sur ${den} séances` }); }
   return `<section><h3 style="margin:0 0 4px">Par semaine</h3><p class="hint">Objectif : ${esc(c.perWeek)} séances par semaine, réglable dans Réglages.</p>
-    <div class="rooms">${out.map(g => `<div class="room ${g.pct > 100 ? "over" : ""}"><div class="fill" style="height:${Math.min(100, g.pct)}%"></div><small>${esc(g.name)}</small><b>${g.pct} %</b><small>${esc(g.sub)}</small></div>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
+    <div class="rooms">${out.map(g => `<div class="room ${g.pct > 100 ? "over" : ""}"><div class="fill" style="width:${Math.min(100, g.pct)}%"></div><small>${esc(g.name)}</small><b>${g.pct} %</b><small>${esc(g.sub)}</small></div>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
 }
 const fragFilter = {}; // filtre des fragments par chapitre, par module (propre à l'appareil)
 /* Palimpseste : les versions antérieures d'un fragment, repliables, la plus récente d'abord. */
@@ -2921,7 +2973,7 @@ function cumulGroupPanel(id) {
   out.forEach((g, i) => { const n = frags(c.categories[i].id); if (n) g.sub += ` · ${plural(n, c.scrapsLabel.toLowerCase().replace(/s$/, ""))}`; });
   const loose = sum(""); if (loose && c.categories.length) out.push({ name: `Hors ${c.categoryLabel.toLowerCase()}`, pct: null, sub: `${loose.toLocaleString("fr-FR")} ${c.unitLabel}` });
   return `<section><h3 style="margin:0 0 4px">Par ${esc(c.categoryLabel).toLowerCase()}</h3><p class="hint">Chaque ${esc(c.categoryLabel).toLowerCase()} a son propre objectif.</p>
-    <div class="rooms">${out.map(g => `<div class="room"><div class="fill" style="height:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></div>`).join("")}</div></section>`;
+    <div class="rooms">${out.map(g => `<div class="room"><div class="fill" style="width:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></div>`).join("")}</div></section>`;
 }
 
 /* ---- paliers d'un programme : des critères rédigés et cochés à la main, jamais un passage automatique ---- */
@@ -2962,7 +3014,7 @@ const TYPE_UI = {
     <div style="margin-top:28px">${programmeGroupPanel(id)}</div>
     ${tiersPanel(id)}
   </section><section><h3>Journal</h3><p class="hint">Ce que le corps a fait, ce que la tête en a pensé.</p>
-    <ul class="plain">${recent.map(x => `<li class="item" data-id="${esc(x.id)}"><span></span><div>${fmt(x.date, { weekday: "short", day: "numeric", month: "short" })}, ${esc(x.value ?? "?")} ${esc(c.unitLabel)}${x.note ? `<div class="note" style="margin:2px 0 0">${esc(x.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune séance notée.</li>`}</ul>
+    <ul class="plain">${recent.map(x => `<li class="item" data-id="${esc(x.id)}"><span class="jdate">${fmt(x.date, { weekday: "short", day: "numeric", month: "short" })}</span><div>${esc(x.value ?? "?")} ${esc(c.unitLabel)}${x.note ? `<div class="note" style="margin:2px 0 0">${esc(x.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune séance notée.</li>`}</ul>
   </section></div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>Début du protocole<input type="date" data-set-mod="${esc(id)}.start" value="${esc(c.start || "")}"></label><label>Durée (semaines)<input type="number" min="1" max="520" data-set-mod="${esc(id)}.weeks" value="${esc(c.weeks)}"></label></div>
@@ -3054,7 +3106,7 @@ const TYPE_UI = {
   </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">Une phrase qui passe, avant qu'elle ne reparte. Un « ? » devant en fait une hypothèse.</p>
     ${deriveBanner(id)}<textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="Nouveau"></textarea><div class="row" style="margin-top:8px">${catSelect("scrapCat", "", lastScrapCat)}<button class="btn" data-act="scrap-add" data-mod="${esc(id)}">Garder</button></div>
     ${c.categories.length || inst.scraps.length ? `<div class="row" style="margin-top:14px">${c.categories.length ? `<select data-act="scrap-f" data-mod="${esc(id)}" aria-label="Filtrer"><option value="*">Tous</option>${[["", `Hors ${c.categoryLabel.toLowerCase()}`], ...c.categories.map(x => [x.id, x.name])].map(([k, n]) => `<option value="${esc(k)}" ${ff === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : ""}<span class="spacer"></span>${inst.scraps.length ? `<button class="btn ghost sm" data-act="scrap-md" data-mod="${esc(id)}">Exporter en Markdown</button><button class="btn ghost sm" data-act="scrap-dossier" data-mod="${esc(id)}" title="Avec dates, statuts, provenance et liens, pour une lecture assistée">Dossier</button>` : ""}</div>` : ""}
-    <ul class="plain" style="margin-top:10px">${(pg => pg.items.map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}${f.editedAt ? `<span class="hint">modifié ${ago(f.editedAt)}</span>` : ""}${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${originHTML(f, f.text)}</div>${linksHTML(id, f)}${versionsHTML(f)}</div><div class="row"><button class="btn ghost sm ra" data-act="scrap-edit" data-mod="${esc(id)}">modifier</button><button class="btn ghost sm ra" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></div></li>`).join("") + pg.more)(paged(`scraps:${id}`, [...inst.scraps].reverse().filter(f => ff === "*" || (f.category || "") === ff))) || `<li class="empty">Rien pour l'instant.</li>`}</ul>
+    <ul class="plain" style="margin-top:10px">${(pg => pg.items.map(f => `<li class="item" data-id="${esc(f.id)}"><span class="jdate">${fmt(f.date)}</span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${f.editedAt ? `<span class="hint">modifié ${ago(f.editedAt)}</span>` : ""}${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${originHTML(f, f.text)}</div>${linksHTML(id, f)}${versionsHTML(f)}</div><div class="row"><button class="btn ghost sm ra" data-act="scrap-edit" data-mod="${esc(id)}">modifier</button><button class="btn ghost sm ra" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></div></li>`).join("") + pg.more)(paged(`scraps:${id}`, [...inst.scraps].reverse().filter(f => ff === "*" || (f.category || "") === ff))) || `<li class="empty">Rien pour l'instant.</li>`}</ul>
   </section>` : ""}</div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>Titre / sous-titre<input data-set-mod="${esc(id)}.title" value="${esc(c.title || "")}"></label><label>Objectif<input type="number" min="1" data-set-mod="${esc(id)}.goal" value="${esc(c.goal)}"></label></div>
@@ -3138,7 +3190,7 @@ const TYPE_UI = {
     ${c.types.map(line).join("")}
     <div class="row" style="margin-top:14px"><input id="rapNote" data-draft placeholder="Observation…" aria-label="Observation"><button class="btn" data-act="entry-note" data-mod="${esc(id)}">Noter</button></div>
     <p class="hint" style="margin-top:10px">Réglable dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a>.</p>
-  </section><section><h3>Journal</h3><ul class="plain">${recent.map(l => `<li class="item" data-id="${esc(l.id)}"><span></span><div><span class="tag">${esc(l.type)}</span> ${fmt(l.date)}${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}${l.origin ? `<div class="meta">${originHTML(l, l.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune entrée.</li>`}</ul></section></div>`;
+  </section><section><h3>Journal</h3><ul class="plain">${recent.map(l => `<li class="item" data-id="${esc(l.id)}"><span class="jdate">${fmt(l.date)}</span><div><span class="tag">${esc(l.type)}</span>${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}${l.origin ? `<div class="meta">${originHTML(l, l.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune entrée.</li>`}</ul></section></div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>Sous-titre (ex. nom propre)<input data-set-mod="${esc(id)}.subtitle" value="${esc(c.subtitle || "")}"></label><span></span></div>
     <div style="margin-top:10px"><span class="hint" style="margin:0">Types et rappels</span>${c.types.map((t, i) => `<div class="set" data-ti="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="typ-name" data-mod="${esc(id)}" value="${esc(t.label)}" aria-label="Nom"><input type="number" min="0" data-act="typ-every" data-mod="${esc(id)}" value="${esc(t.every || "")}" placeholder="tous les X j" aria-label="Fréquence"><button class="btn ghost sm" data-act="typ-del" data-mod="${esc(id)}">suppr.</button></div>`).join("")}<button class="btn sm" data-act="typ-add" data-mod="${esc(id)}" style="margin-top:8px">Ajouter un type</button></div>`,
@@ -3176,6 +3228,16 @@ const TYPE_UI = {
 };
 /* ---- collection : éléments à statuts, en colonnes (tableau de production) ou en liste filtrable ---- */
 const colFilter = {}; // filtre de statut du mode liste, par module (propre à l'appareil, non enregistré)
+const colTab = {}; // colonne montrée sur téléphone, par module (propre à l'appareil)
+/* Change le statut d'un élément (une colonne du tableau) : flèches, glisser-déposer, touches [ et ]. */
+function moveCardTo(mod, id, ci) {
+  const inst = S().modules[mod], e = inst && inst.type === "collection" && inst.entries.find(x => x.id === id);
+  if (!e) return;
+  const c = inst.config, i = Math.max(0, Math.min(c.statuses.length - 1, ci));
+  if (c.statuses[i] === e.status) return;
+  e.status = c.statuses[i]; site.save(); render();
+  if (i === c.statuses.length - 1) toast(collectionDoneLines[Math.floor(Math.random() * collectionDoneLines.length)].replace("%t", e.title).replace("%s", e.status));
+}
 const modOf = el => el.closest("[data-mod]").dataset.mod;
 const itemOf = el => S().modules[modOf(el)].entries.find(x => x.id === idOf(el));
 const collectionDoneLines = ["« %t » est passé à « %s ». Le monde n'a rien remarqué, comme prévu.", "« %t » : %s. Une chose de moins qui attend ton attention.", "%s : « %t ». L'Œuvre avance, à pas de lichen."];
@@ -3198,7 +3260,7 @@ function collectionForm(id, item, title) {
 }
 function collectionCard(id, e, ci, last) {
   const f = S().modules[id].config.fields, meta = [f.tag && e.tag ? `<span class="tag">${esc(e.tag)}</span>` : "", f.due && e.due ? `<span>${fmt(e.due)}</span>` : "", originHTML(e, e.title)].join("");
-  return `<div class="card" data-id="${esc(e.id)}"><b>${esc(e.title)}</b>${f.subtitle && e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ""}${meta ? `<div class="meta">${meta}</div>` : ""}${f.text && e.text ? `<p>${esc(e.text.slice(0, 160))}${e.text.length > 160 ? "…" : ""}</p>` : ""}
+  return `<div class="card" data-id="${esc(e.id)}" data-ci="${ci}" draggable="true" tabindex="0" aria-label="${esc(e.title)} : [ pour reculer, ] pour avancer"><b>${esc(e.title)}</b>${f.subtitle && e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ""}${meta ? `<div class="meta">${meta}</div>` : ""}${f.text && e.text ? `<p>${esc(e.text.slice(0, 160))}${e.text.length > 160 ? "…" : ""}</p>` : ""}
       <div class="row">${ci > 0 ? `<button class="btn ghost sm" data-act="col-move" data-d="-1" aria-label="Reculer">←</button>` : ""}${ci < last ? `<button class="btn ghost sm" data-act="col-move" data-d="1" aria-label="Avancer">→</button>` : ""}<span class="spacer"></span><button class="btn ghost sm ra" data-act="specimen">fiche</button><button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></div>`;
 }
 /* ---- concordance : une collection de motifs, comptés dans les textes de tous les autres modules ----
@@ -3287,8 +3349,11 @@ TYPE_UI.collection = {
     const panel = groupPanel(id, `Part arrivée à « ${esc(c.statuses[c.doneFrom])} » dans chaque groupe. Clique pour filtrer.`);
     if (c.display === "colonnes") {
       const byDue = (a, b) => (a.due || "9999").localeCompare(b.due || "9999");
-      return `<div data-mod="${esc(id)}">${head}<div class="board" style="margin-bottom:34px">${c.statuses.map((st, ci) => { const col = items.filter(e => e.status === st).sort(byDue);
-        return `<div class="col"><h3>${esc(st)} <span class="hint" style="font-size:.95rem">${col.length}</span></h3>${col.map(e => collectionCard(id, e, ci, c.statuses.length - 1)).join("") || `<p class="col-empty"><span class="sr">Aucun élément.</span></p>`}</div>`; }).join("")}</div>${panel}</div>`;
+      // Sur téléphone, une colonne à la fois, choisie par un sélecteur ; sur ordinateur, toutes, et l'on y glisse les cartes.
+      const tab = Math.min(c.statuses.length - 1, colTab[id] || 0);
+      const seg = `<div class="seg" role="tablist" aria-label="${esc(c.statusLabel)}">${c.statuses.map((st, ci) => `<button type="button" role="tab" aria-selected="${ci === tab}" class="${ci === tab ? "on" : ""}" data-act="col-tab" data-i="${ci}">${esc(st)} <span>${items.filter(e => e.status === st).length}</span></button>`).join("")}</div>`;
+      return `<div data-mod="${esc(id)}">${head}${seg}<div class="board" style="margin-bottom:34px">${c.statuses.map((st, ci) => { const col = items.filter(e => e.status === st).sort(byDue);
+        return `<div class="col ${ci === tab ? "on" : ""}" data-ci="${ci}"><h3>${esc(st)} <span class="hint" style="font-size:.95rem">${col.length}</span></h3>${col.map(e => collectionCard(id, e, ci, c.statuses.length - 1)).join("") || `<p class="col-empty"><span class="sr">Aucun élément.</span></p>`}</div>`; }).join("")}</div>${panel}</div>`;
     }
     const filter = colFilter[id] || "", shown = items.filter(e => !filter || e.status === filter);
     return `<div data-mod="${esc(id)}">${head}
@@ -3358,11 +3423,8 @@ TYPE_UI.collection = {
       });
     },
     "col-del": el => removeWithUndo(modOf(el), "entries", idOf(el)),
-    "col-move": el => {
-      const c = S().modules[modOf(el)].config, e = itemOf(el), i = Math.max(0, Math.min(c.statuses.length - 1, c.statuses.indexOf(e.status) + +el.dataset.d));
-      e.status = c.statuses[i]; site.save(); render();
-      if (i === c.statuses.length - 1) toast(collectionDoneLines[Math.floor(Math.random() * collectionDoneLines.length)].replace("%t", e.title).replace("%s", e.status));
-    },
+    "col-move": el => { const e = itemOf(el), c = S().modules[modOf(el)].config; if (e) moveCardTo(modOf(el), e.id, c.statuses.indexOf(e.status) + +el.dataset.d); },
+    "col-tab": el => { colTab[modOf(el)] = +el.dataset.i; render(); },
     "st-add": el => { const c = instOf(el).config; if (c.statuses.length >= 12) return toast("Douze statuts. Au-delà, ce n'est plus un suivi, c'est une bureaucratie."); c.statuses.push(`Statut ${c.statuses.length + 1}`); site.save(); render(); },
     "st-up": el => {
       const c = instOf(el).config, a = c.statuses, i = +el.closest("[data-si]").dataset.si;
@@ -3574,7 +3636,7 @@ TYPE_UI.budget = {
     <input id="bDate" type="date" value="${defDate}" style="max-width:160px" aria-label="Date">
     <button class="btn acc" data-act="bud-add">Ajouter</button></div>
   <div class="two"><section><h3>Opérations</h3><p class="hint">L'argent ne disparaît pas, il change simplement de propriétaire.</p>
-    <ul class="plain">${shown.map(e => `<li class="item" data-id="${esc(e.id)}"><span></span><div>${esc(e.note || e.cat || e.type)}<div class="meta">${fmt(e.date)}${e.cat ? `<span class="tag">${esc(e.cat)}</span>` : ""}</div></div><div class="row"><b class="${e.type === "revenu" ? "pos" : ""}">${e.type === "revenu" ? "+" : "−"}${money(e.amount)}</b><button class="btn ghost sm ra" data-act="bud-del">suppr.</button></div></li>`).join("") || `<li class="empty">Aucune opération ce mois-ci. Suspect.</li>`}</ul></section>
+    <ul class="plain">${shown.map(e => `<li class="item" data-id="${esc(e.id)}"><span class="jdate">${fmt(e.date)}</span><div>${esc(e.note || e.cat || e.type)}<div class="meta">${e.cat ? `<span class="tag">${esc(e.cat)}</span>` : ""}</div></div><div class="row"><b class="${e.type === "revenu" ? "pos" : ""}">${e.type === "revenu" ? "+" : "−"}${money(e.amount)}</b><button class="btn ghost sm ra" data-act="bud-del">suppr.</button></div></li>`).join("") || `<li class="empty">Aucune opération ce mois-ci. Suspect.</li>`}</ul></section>
   <div>${groupPanel(id, "Part de chaque enveloppe mensuelle déjà consommée. Le rouge signale le dépassement.")}
     ${tasksLeft ? `<p class="hint">Les tâches en cours estiment encore ${money(tasksLeft)} de dépenses à venir.</p>` : ""}</div></div></div>`;
   },
@@ -3695,7 +3757,7 @@ TYPE_UI.notes = {
     const inst = S().modules[id], c = inst.config, targets = noteTargets(id);
     return `<div data-mod="${esc(id)}"><div class="row" style="align-items:baseline"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span>${c.inbox && inst.entries.length > 1 ? `<button class="btn sm" data-act="vasculum">Trier une à une</button>` : ""}</div>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}
   ${deriveBanner(id)}<div class="capture" style="margin-bottom:18px"><input id="noteIn" data-draft placeholder="${esc(c.placeholder)}" aria-label="Nouvelle note"><button class="btn acc" data-act="note-add">Garder</button></div>
-  <ul class="plain">${(pg => pg.items.map(x => { const intent = captureIntent(x.text); return `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}${epSelect(id, x)}${originHTML(x, x.text)}</div>${linksHTML(id, x)}
+  <ul class="plain">${(pg => pg.items.map(x => { const intent = captureIntent(x.text); return `<li class="item" data-id="${esc(x.id)}"><span class="jdate">${fmt(x.date)}</span><div>${esc(x.text)}<div class="meta">${epSelect(id, x)}${originHTML(x, x.text)}</div>${linksHTML(id, x)}
     ${intent && intent.to !== id ? `<div class="row" style="margin-top:6px"><button class="btn sm acc" data-act="note-file">Ranger : ${esc(intent.say)}</button></div>` : ""}
     ${targets.length ? `<div class="row${c.inbox ? "" : " ra"}" style="margin-top:6px">${targets.map(k => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
     <button class="btn ghost sm ra" data-act="note-del">suppr.</button></li>`; }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? "Vide. Le silence d'une clairière, ou celui d'un cerveau." : "Rien pour l'instant."}</li>`}</ul></div>`;
@@ -3909,6 +3971,30 @@ SHEETS.vasculum = () => {
 CLICK["vasculum"] = () => { vascSkip = 0; openSheet("vasculum"); };
 CLICK["vasc-skip"] = () => { vascSkip++; $("#sheetBody").innerHTML = SHEETS.vasculum(); };
 CLICK["sheet-close"] = () => closeSheet();
+
+/* Glisser-déposer entre les colonnes d'un tableau (ordinateur), et touches [ ] sur une carte qui a le focus. */
+let dragCard = null;
+document.addEventListener("dragstart", e => {
+  const card = e.target.closest && e.target.closest(".board .card[draggable][data-id]"); if (!card) return;
+  dragCard = { mod: modOf(card), id: card.dataset.id }; card.classList.add("dragging");
+  try { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", card.dataset.id); } catch {}
+});
+const dropCols = () => document.querySelectorAll(".board .col.drop");
+document.addEventListener("dragend", () => { dragCard = null; dropCols().forEach(x => x.classList.remove("drop")); });
+document.addEventListener("dragover", e => {
+  const col = dragCard && e.target.closest && e.target.closest(".board .col[data-ci]"); if (!col) return;
+  e.preventDefault(); dropCols().forEach(x => { if (x !== col) x.classList.remove("drop"); }); col.classList.add("drop");
+});
+document.addEventListener("drop", e => {
+  const col = dragCard && e.target.closest && e.target.closest(".board .col[data-ci]"); if (!col) return;
+  e.preventDefault(); const d = dragCard; dragCard = null; moveCardTo(d.mod, d.id, +col.dataset.ci);
+});
+document.addEventListener("keydown", e => {
+  const card = (e.key === "[" || e.key === "]") && e.target.closest && e.target.closest(".board .card[data-ci][data-id]"); if (!card) return;
+  e.preventDefault(); const id = card.dataset.id;
+  moveCardTo(modOf(card), id, +card.dataset.ci + (e.key === "]" ? 1 : -1));
+  document.querySelectorAll(".board .card[data-id]").forEach(c => { if (c.dataset.id === id) c.focus(); });
+});
 
 /* ================= assistant =================
    Deux branchements : claude.ai (window.claude.use("sample"), sans clé) ou l'API Anthropic avec la clé

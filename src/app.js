@@ -309,7 +309,7 @@ function groupPanel(mod, hint) {
   const title = c.title || `Par ${G.fields[by].toLowerCase()}`;
   return `<section><div class="row" style="margin-bottom:4px"><h3 style="margin:0">${esc(title)}</h3><span class="spacer"></span><a class="btn ghost sm" href="#reglages" data-act="goto-groups" data-mod="${esc(mod)}">régler</a></div>
     <p class="hint">${hint}</p>
-    <div class="rooms">${gs.map(g => `<button class="room ${active === g.name ? "active" : ""} ${g.pct > 100 ? "over" : ""}" ${G.filterable ? `data-act="grp-filter" data-mod="${esc(mod)}" data-g="${esc(g.name)}"` : "disabled"}><div class="fill" style="height:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></button>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
+    <div class="rooms">${gs.map(g => `<button class="room ${active === g.name ? "active" : ""} ${g.pct > 100 ? "over" : ""}" ${G.filterable ? `data-act="grp-filter" data-mod="${esc(mod)}" data-g="${esc(g.name)}"` : "disabled"}><div class="fill" style="width:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></button>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
 }
 const gMatch = (mod, it) => { const v = gFilter[mod]; if (!v) return true; return (grouperFor(mod).key(it, groupBy(mod)) || "Sans groupe") === v; };
 
@@ -658,12 +658,35 @@ function highlight(text, q) {
   for (const [a, b] of marks) { if (a < pos) continue; html += esc(text.slice(pos, a)) + `<mark>${esc(text.slice(a, b))}</mark>`; pos = b; }
   return html + esc(text.slice(pos));
 }
+/* Facettes de la recherche : un espace, une période (la lunaison ou le mois en cours), un statut. Propres à
+   l'appareil ; une recherche lancée d'ailleurs (un mot du bilan, un motif) repart sans filtre. */
+const searchFacets = { mod: "", period: "", ep: "" };
+const facetPeriod = k => k ? periodOf(k, 0) : null;
+function facetFilter(hits, skip = "") {
+  const f = searchFacets, per = skip !== "period" && facetPeriod(f.period);
+  return hits.filter(h => (skip === "mod" || !f.mod || h.id === f.mod) && (!per || (h.date && h.date >= per.from && h.date < per.to)) && (skip === "ep" || !f.ep || h.ep === f.ep));
+}
 VIEWS.recherche = () => {
-  const hits = searchAll(searchQuery);
+  const all = searchAll(searchQuery), hits = facetFilter(all), f = searchFacets, s = S();
+  // Chaque facette compte ce que donneraient ses valeurs, les autres facettes restant appliquées.
+  const chip = (k, v, text, n) => `<button type="button" class="chip-f ${f[k] === v ? "on" : ""}" data-act="facet" data-k="${k}" data-v="${esc(v)}" aria-pressed="${f[k] === v}">${text}${n != null ? ` <span>${n}</span>` : ""}</button>`;
+  const byMod = facetFilter(all, "mod"), byPer = facetFilter(all, "period"), byEp = facetFilter(all, "ep");
+  const mods = s.config.modules.map(m => m.id).filter(id => byMod.some(h => h.id === id));
+  const facets = all.length ? `<div class="facets">
+    <div class="row">${chip("mod", "", "Tous les espaces", byMod.length)}${mods.map(id => chip("mod", id, `${sigil(id)}${esc(label(id))}`, byMod.filter(h => h.id === id).length)).join("")}</div>
+    <div class="row">${[["", "Toute date"], ["lune", "Cette lunaison"], ["mois", "Ce mois-ci"]].map(([v, t]) => chip("period", v, t, v ? byPer.filter(h => { const p = facetPeriod(v); return h.date && h.date >= p.from && h.date < p.to; }).length : byPer.length)).join("")}
+      ${Object.keys(EP_STATUS).some(k => byEp.some(h => h.ep === k)) ? `<span class="spacer"></span>${chip("ep", "", "Tout statut", null)}${Object.keys(EP_STATUS).filter(k => byEp.some(h => h.ep === k)).map(k => chip("ep", k, `${epGlyph(k)}${esc(EP_STATUS[k])}`, byEp.filter(h => h.ep === k).length)).join("")}` : ""}</div></div>` : "";
+  // Groupés par espace, dans l'ordre de la navigation ; 80 résultats au plus, les plus récents d'abord dans chaque espace.
+  let budget = 80;
+  const groups = s.config.modules.map(m => m.id).map(id => [id, hits.filter(h => h.id === id).sort((a, b) => (b.date || "").localeCompare(a.date || ""))]).filter(([, l]) => l.length).map(([id, l]) => {
+    const shown = l.slice(0, Math.max(0, budget)); budget -= shown.length;
+    return shown.length ? `<p class="grp search-grp ${tintOf(id)}">${sigil(id)}${esc(label(id))} <span>${l.length}</span></p><ul class="plain">${shown.map(h => `<li class="item"><span class="jdate">${h.date ? fmt(h.date) : ""}</span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}${h.ep ? `<div class="meta"><span>${epGlyph(h.ep)}${esc(EP_STATUS[h.ep])}</span></div>` : ""}</div><a class="btn ghost sm" href="#${esc(h.id)}${h.eid ? "/" + esc(h.eid) : ""}">ouvrir</a></li>`).join("")}</ul>` : "";
+  }).join("");
+  const filtered = hits.length !== all.length;
   return `<h2>Chercher</h2><p class="hint">Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « statut:hypothèse » ne garde que les hypothèses (de même pour observé, interprétation, inexpliqué). Touche « / » pour venir ici.</p>
   <input id="searchIn" type="search" value="${esc(searchQuery)}" placeholder="Un mot, un bout de phrase…" aria-label="Chercher" autocomplete="off" style="max-width:520px">
-  ${searchQuery.trim() ? `<div class="row" style="margin-top:12px"><p class="hint" style="margin:0">${hits.length ? plural(hits.length, "résultat") : "Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire."}</p>${hits.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="search-dossier" title="Tous les résultats, avec dates, statuts, provenance et liens, pour une lecture assistée">Exporter en dossier</button>` : ""}</div>
-  <ul class="plain">${hits.slice(0, 80).map(h => `<li class="item"><span></span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}<div class="meta"><span class="tag">${esc(label(h.id))}</span>${h.date ? `<span>${fmt(h.date)}</span>` : ""}${h.ep ? `<span>${esc(EP_STATUS[h.ep])}</span>` : ""}</div></div><a class="btn ghost sm" href="#${esc(h.id)}${h.eid ? "/" + esc(h.eid) : ""}">ouvrir</a></li>`).join("")}</ul>` : ""}`;
+  ${searchQuery.trim() ? `<div class="row" style="margin-top:12px"><p class="hint" style="margin:0">${hits.length ? `${plural(hits.length, "résultat")}${filtered ? ` sur ${all.length}` : ""}` : all.length ? "Rien avec ces filtres." : "Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire."}</p>${hits.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="search-dossier" title="Les résultats affichés, avec dates, statuts, provenance et liens, pour une lecture assistée">Exporter en dossier</button>` : ""}</div>
+  ${facets}${groups}` : ""}`;
 };
 const PALETTES = [["nigredo", "Nigredo, mousse", "#6f9a68"], ["albedo", "Albedo, lichen", "#aab7a6"], ["citrinitas", "Citrinitas, résine", "#c99a3c"], ["rubedo", "Rubedo, amanite", "#c0554a"]];
 VIEWS.reglages = () => {
@@ -1112,13 +1135,14 @@ const CLICK = {
   // statut, provenance et liens (retrouvés par module et texte : la recherche ne renvoie que des textes).
   "search-dossier": () => {
     const q = searchQuery.trim(), thoughts = thoughtItems();
-    const items = searchAll(q).map(h => ({ mod: h.id, text: h.text, date: h.date, e: (thoughts.find(x => x.mod === h.id && x.e.text === h.text) || {}).e }))
+    const items = facetFilter(searchAll(q)).map(h => ({ mod: h.id, text: h.text, date: h.date, e: (thoughts.find(x => x.mod === h.id && x.e.text === h.text) || {}).e }))
       .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
     if (items.length) dossierFile(`Recherche — ${q}`, `Résultats de la recherche « ${q} »`, items);
   },
   "page-more": el => { const k = el.dataset.k; pageSize[k] = (pageSize[k] || PAGE) + PAGE; render(); },
   "sortes-draw": () => { sortesLast = sortesDraw(); render(); if (!sortesLast) toast("Rien d'assez ancien à tirer. Reviens dans deux semaines."); },
-  "search-for": el => { searchQuery = el.dataset.q; if (location.hash === "#recherche") render(); else location.hash = "recherche"; },
+  "facet": el => { const k = el.dataset.k; if (Object.hasOwn(searchFacets, k)) { searchFacets[k] = searchFacets[k] === el.dataset.v ? "" : el.dataset.v; render(); } },
+  "search-for": el => { searchQuery = el.dataset.q; Object.assign(searchFacets, { mod: "", period: "", ep: "" }); if (location.hash === "#recherche") render(); else location.hash = "recherche"; },
   "entry-add": el => entryAdd(el.dataset.mod),
   "entry-del": el => removeWithUndo(el.dataset.mod, "entries", idOf(el)),
   "bilan-mode": el => { try { localStorage.setItem("selene-bilan", el.dataset.m); } catch {} bilanOffset = 0; render(); },
