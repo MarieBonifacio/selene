@@ -897,6 +897,7 @@ VIEWS.reglages = () => {
     ${getKey() ? `<button class="btn ghost sm" data-act="as-forget" style="margin-top:10px">Oublier la clé sur cet appareil</button>` : ""}</section>` : ""}
   ${hosted() && authReady() && authSession ? `<section><h3>Compte</h3><p class="hint">Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données, la conversation avec l'assistant et la clé API.</p>
     <button class="btn ghost" data-act="auth-out">Se déconnecter</button></section>` : ""}
+  ${hosted() ? shareSettingsHTML() : ""}
   <section><h3>Sauvegarde</h3><p class="hint">Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.</p>
     <div class="row"><button class="btn" data-act="exp">Exporter</button><label class="btn" style="display:inline-block;font-weight:500">Importer<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label></div></section>`;
 };
@@ -1180,6 +1181,43 @@ function render() {
   renderMemo = new Map();
   try { renderNow(); } finally { renderMemo = null; }
   skyWatch();
+  if (sharePending) applyShare();
+}
+/* ================= recevoir un lien depuis ailleurs =================
+   `?url=&title=&text=` à l'ouverture : c'est ce qu'envoient le partage Android (Web Share Target, déclaré dans le
+   manifeste), le favori « Envoyer à Selene » et un Raccourci iOS. Le lien attend que les données soient prêtes (la
+   connexion au compte, s'il y en a une), puis devient une note de la boîte ; l'adresse de la page est nettoyée pour
+   qu'un rechargement ne le dépose pas deux fois. */
+let sharePending = false;
+function takeShare() {
+  try {
+    if (sessionStorage.getItem("selene-share")) sharePending = true; // reçu avant une connexion ou un rechargement
+    const q = new window.URLSearchParams(location.search), p = { url: q.get("url") || "", title: q.get("title") || "", text: q.get("text") || "" };
+    if (!p.url && !p.text && !p.title) return;
+    sessionStorage.setItem("selene-share", JSON.stringify(p)); sharePending = true;
+    window.history.replaceState(null, "", location.pathname + (location.hash || "#accueil"));
+  } catch {}
+}
+function applyShare() {
+  if (hosted() && authReady() && !authSession) return; // pas encore connectée : on attend
+  let p = null; try { p = JSON.parse(sessionStorage.getItem("selene-share") || "null"); sessionStorage.removeItem("selene-share"); } catch {}
+  sharePending = false;
+  if (!p) return;
+  const box = inboxId(S().modules);
+  if (!box) return toast("Lien reçu, mais aucune boîte de réception où le garder. Crée un Carnet et fais-en ta boîte (Réglages).");
+  const url = String(p.url || "").trim(), text = String(p.text || "").trim(), title = String(p.title || "").trim();
+  const parts = [title, text && text !== title ? text : "", url && !text.includes(url) ? url : ""].filter(Boolean);
+  addNote(S().modules[box], parts.join(" — ").slice(0, 2000)); site.save(); render();
+  toast(`Reçu dans ${label(box)}${findUrl(parts.join(" ")) || findDoi(parts.join(" ")) ? " : « Garder comme source » le complétera" : ""}.`);
+}
+takeShare();
+/* Réglages → Envoyer à Selene : un favori à glisser dans la barre (ordinateur), et la recette d'un Raccourci (iPhone). */
+function shareSettingsHTML() {
+  const base = location.origin + location.pathname;
+  const bm = `javascript:(()=>{window.open('${base}?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title),'_blank')})()`;
+  return `<section><h3>Envoyer à Selene</h3><p class="hint">Un lien lu ailleurs arrive dans ta boîte de réception, prêt à devenir une source. Rien ne part ailleurs que chez toi.</p>
+    <p class="row" style="margin:0 0 8px"><a class="btn sm" href="${esc(bm)}" data-act="bookmarklet">Envoyer à Selene</a><span class="hint" style="margin:0">Sur ordinateur : glisse ce bouton dans ta barre de favoris.</span></p>
+    <p class="hint">Sur Android, une fois l'app installée : « Partager », puis Selene. Sur iPhone : app Raccourcis, un raccourci qui s'affiche dans la feuille de partage (URL), avec l'action « Ouvrir les URL » : <code>${esc(base)}?url=</code> suivi de l'entrée du raccourci.</p></section>`;
 }
 function renderNow() {
   applyTheme();
@@ -1318,6 +1356,7 @@ const CLICK = {
       .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
     if (items.length) dossierFile(`Recherche — ${q}`, `Résultats de la recherche « ${q} »`, items);
   },
+  "bookmarklet": (el, e) => { e.preventDefault(); toast("Glisse ce bouton dans la barre de favoris : c'est là qu'il sert, sur la page à garder."); },
   "page-more": el => { const k = el.dataset.k; pageSize[k] = (pageSize[k] || PAGE) + PAGE; render(); },
   "sortes-draw": () => { sortesLast = sortesDraw(); render(); if (!sortesLast) toast("Rien d'assez ancien à tirer. Reviens dans deux semaines."); },
   "facet": el => { const k = el.dataset.k; if (Object.hasOwn(searchFacets, k)) { searchFacets[k] = searchFacets[k] === el.dataset.v ? "" : el.dataset.v; render(); } },
@@ -1387,6 +1426,7 @@ document.addEventListener("keydown", e => {
 // ⌘K (Ctrl+K) ouvre ou ferme la palette, même pendant une saisie.
 document.addEventListener("keydown", e => { if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === "k" || e.key === "K")) { e.preventDefault(); openPalette(); } });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "skyCity") skySearch(); });
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "srcIn") { e.preventDefault(); CLICK["src-fetch"](e.target); } });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "capSheetIn") capture(e.target); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && e.target.id === "bridgeIn") bridgeSave(e.target.dataset.mod); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
 const CHANGE = {}; // actions « change » des types de module (remplie par types.js)
 document.addEventListener("change", e => {
