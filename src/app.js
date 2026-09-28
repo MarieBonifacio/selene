@@ -18,11 +18,18 @@ const fmt = (s, o = { day: "numeric", month: "short" }) => {
 };
 const clone = o => JSON.parse(JSON.stringify(o));
 const ago = s => { if (!s) return "jamais"; const n = diffDays(todayISO(), s); return n === 0 ? "aujourd'hui" : n === 1 ? "hier" : `il y a ${n} j`; };
-function toast(msg) { undoFn = null; const el = $("#toast"); el.textContent = msg; el.classList.remove("act"); el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 3400); }
+/* Le message loge dans la fenêtre modale ouverte (feuille, formulaire) s'il y en a une : sinon il passerait dessous,
+   invisible, avec son « Annuler ». */
+function toastHost() {
+  const el = $("#toast");
+  try { const open = [...document.querySelectorAll("dialog[open]")].pop(), host = open || document.body; if (el.parentNode !== host) host.appendChild(el); } catch {}
+  return el;
+}
+function toast(msg) { undoFn = null; const el = toastHost(); el.textContent = msg; el.classList.remove("act"); el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 3400); }
 /* Un message avec une action proposée (« Annuler », « Ajouter »…), qui disparaît d'elle-même : jamais imposée. */
 let undoFn = null;
 function toastAction(msg, button, fn, ms = 6000) {
-  const el = $("#toast");
+  const el = toastHost();
   el.innerHTML = `${esc(msg)} <button class="btn sm" data-act="undo">${esc(button)}</button>`;
   el.classList.add("show", "act"); undoFn = fn;
   clearTimeout(toast.t); toast.t = setTimeout(() => { el.classList.remove("show", "act"); undoFn = null; }, ms);
@@ -816,7 +823,7 @@ const SHEETS = {
   capture() {
     const s = S(), inbox = inboxId(s.modules), n = inbox ? s.modules[inbox].entries.length : 0;
     return `<h2 id="sheetTitle">Capturer</h2>${inbox ? `<div class="capture"><input id="capSheetIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="Capture rapide" enterkeyhint="done"><button class="btn acc" data-act="cap-sheet-add">Garder</button></div>
-      <p class="hint" style="margin:10px 0 0">« 12 € courses », « 25 min kundalini », « Module : une note » se rangent d'un geste.${n ? ` <a href="#${esc(inbox)}">${plural(n, "élément")} à trier</a>` : ""}</p>`
+      <p class="hint" style="margin:10px 0 0">« 12 € courses », « 25 min kundalini », « Module : une note » se rangent d'un geste.${n ? ` <a href="#${esc(inbox)}">${plural(n, "élément")} à trier</a>` : ""}</p>${n > 1 ? `<div class="row" style="margin-top:10px"><button class="btn sm" data-act="vasculum">Trier une à une</button></div>` : ""}`
       : `<p class="hint">Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans <a href="#reglages">Réglages</a>.</p>`}`;
   }
 };
@@ -825,7 +832,7 @@ function openSheet(kind, arg) {
   const d = $("#sheet"); closePalette();
   sheetKind = kind; sheetArg = arg;
   $("#sheetBody").innerHTML = SHEETS[kind](arg);
-  d.classList.toggle("drawer", kind === "module"); // les réglages d'un module : un tiroir à droite sur ordinateur
+  d.classList.toggle("drawer", kind === "module" || kind === "specimen"); // réglages d'un module, fiche : un tiroir à droite sur ordinateur
   if (!d.open) d.showModal();
   const i = $("#capSheetIn"); if (kind === "capture" && i) { i.value = loadDraft("sheet", i); i.focus(); }
 }
@@ -852,6 +859,7 @@ function paletteItems(q) {
   const other = bilanMode() === "mois" ? "lune" : "mois";
   for (const [t, run] of [[tick ? "Mettre le minuteur en pause" : "Lancer le minuteur (15 min)", () => { closeOverlays(); $("#timerBtn").click(); }],
     ["Capturer…", () => openSheet("capture")],
+    ["Trier la boîte, une note à la fois", () => { vascSkip = 0; openSheet("vasculum"); }],
     [`Bilan par ${other === "lune" ? "cycle lunaire" : "mois"}`, () => { try { localStorage.setItem("selene-bilan", other); } catch {} bilanOffset = 0; goTo("bilan")(); }]])
     if (match(t)) out.push({ k: "Action", t, run });
   if (f) {
@@ -1003,7 +1011,7 @@ function renderNow() {
   $("#main").innerHTML = back + (inst ? `<div class="view ${tintOf(view)}">${plateHTML(view, bridging ? "" : `<button class="btn ghost sm" data-act="bridge-edit" data-mod="${esc(view)}">Je m'arrête ici…</button>`)}${bridging ? bridgeBar(view, inst) : ""}${TYPE_UI[inst.type].view(view)}</div>` : VIEWS[view]());
   // La feuille « régler » ouverte se redessine aussi, sauf pendant une frappe dans l'un de ses champs.
   const fa = document.activeElement, typingSheet = fa && fa.closest && fa.closest("#sheet") && (fa.tagName === "TEXTAREA" || (fa.tagName === "INPUT" && !["checkbox", "radio"].includes(fa.type)));
-  if (sheetKind === "module" && $("#sheet").open && !typingSheet) $("#sheetBody").innerHTML = SHEETS.module(sheetArg);
+  if (["module", "specimen", "vasculum"].includes(sheetKind) && $("#sheet").open && !typingSheet) $("#sheetBody").innerHTML = SHEETS[sheetKind](sheetArg);
   for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && v !== "" && el.value !== v) el.value = v; }
   if (view !== lastView) $("#main").querySelectorAll("[data-draft]").forEach(el => { const v = loadDraft(view, el); if (v) el.value = v; });
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
@@ -1247,16 +1255,31 @@ function timerDone() {
 }
 let left = 900, tick = null, endAt = 0;
 const mmss = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+/* Le Halo : l'anneau de la mini-lune se referme à mesure que le temps passe (visible tant qu'un minuteur est entamé) ;
+   à la fin, un seul battement. La lune, elle, reste la vraie phase. */
+function haloUpdate(done = false) {
+  const h = $("#halo"); if (!h || !h.style || !h.classList) return;
+  h.style.setProperty("--p", done ? "1" : String(1 - left / 900));
+  h.classList.toggle("on", !done && left > 0 && left < 900);
+  h.classList.toggle("done", done);
+}
 function tickTimer() {
-  left = Math.max(0, Math.round((endAt - Date.now()) / 1000)); $("#clock").textContent = mmss(left);
-  if (left <= 0) { clearInterval(tick); tick = null; $("#clock").classList.add("done"); $("#timerBtn").textContent = "Relancer"; timerDone(); try { navigator.vibrate && navigator.vibrate(200); } catch {} }
+  left = Math.max(0, Math.round((endAt - Date.now()) / 1000)); $("#clock").textContent = mmss(left); haloUpdate();
+  if (left <= 0) { clearInterval(tick); tick = null; $("#clock").classList.add("done"); $("#timerBtn").textContent = "Relancer"; haloUpdate(true); timerDone(); try { navigator.vibrate && navigator.vibrate(200); } catch {} }
 }
 $("#timerBtn").addEventListener("click", () => {
   const b = $("#timerBtn");
   if (tick) { clearInterval(tick); tick = null; b.textContent = "Reprendre"; return; }
   if (left === 0) left = 900; endAt = Date.now() + left * 1000; $("#clock").classList.remove("done"); b.textContent = "Pause";
-  tick = setInterval(tickTimer, 500);
+  tick = setInterval(tickTimer, 500); haloUpdate();
 });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && tick) tickTimer(); });
-$("#timerReset").addEventListener("click", () => { clearInterval(tick); tick = null; left = 900; $("#clock").textContent = mmss(left); $("#clock").classList.remove("done"); $("#timerBtn").textContent = "Lancer 15 min"; });
+$("#timerReset").addEventListener("click", () => { clearInterval(tick); tick = null; left = 900; $("#clock").textContent = mmss(left); $("#clock").classList.remove("done"); $("#timerBtn").textContent = "Lancer 15 min"; haloUpdate(); });
+/* Un appui long sur la mini-lune lance (ou met en pause) le minuteur ; un clic simple reste un retour à l'accueil.
+   Le bouton du minuteur demeure : un geste caché ne doit jamais être le seul chemin. */
+let haloPress = null, haloFired = false;
+$(".brand").addEventListener("pointerdown", () => { haloFired = false; clearTimeout(haloPress); haloPress = setTimeout(() => { haloFired = true; $("#timerBtn").click(); toast(tick ? "Quinze minutes, dans le halo de la lune." : "Minuteur en pause."); }, 550); });
+for (const ev of ["pointerup", "pointerleave", "pointercancel"]) $(".brand").addEventListener(ev, () => clearTimeout(haloPress));
+$(".brand").addEventListener("click", e => { if (haloFired) { e.preventDefault(); haloFired = false; } });
+$(".brand").addEventListener("contextmenu", e => e.preventDefault());
 
