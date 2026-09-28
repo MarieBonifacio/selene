@@ -536,7 +536,8 @@ document.addEventListener("input", e => { if (e.target.id === "searchIn") { sear
 // « / » ouvre la recherche (sur ordinateur), sauf pendant une saisie.
 document.addEventListener("keydown", e => {
   if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || "")) return;
-  e.preventDefault(); location.hash = "recherche"; setTimeout(() => { const el = document.getElementById("searchIn"); if (el) el.focus(); }, 0);
+  // Dessiner tout de suite : attendre l'événement hashchange ferait courir le curseur contre le rendu.
+  e.preventDefault(); location.hash = "recherche"; render(); const el = document.getElementById("searchIn"); if (el) el.focus();
 });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && e.target.id === "bridgeIn") bridgeSave(e.target.dataset.mod); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
 const CHANGE = {}; // actions « change » des types de module (remplie par types.js)

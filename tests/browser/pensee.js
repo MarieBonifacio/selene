@@ -62,9 +62,29 @@ const SHOTS = process.env.SELENE_SHOTS;
   check(x.due === '' && x.reviews.length === 1 && x.reviews[0].verdict === 'maintenue', '« maintenue » : réexamen daté, rendez-vous levé');
   check(!(await main()).includes('à réexaminer'), 'et l’accueil s’en libère');
 
+  console.log('concordance des motifs');
+  await go('reglages'); await p.evaluate(() => document.querySelectorAll('details').forEach(d => d.open = true));
+  await p.selectOption('#newModType', 'tpl:motifs'); await p.click('[data-act="mod-add"]'); await p.waitForTimeout(200);
+  await go('motifs');
+  for (const [title, variants] of [['Seuil', 'porte'], ['Récit', ''], ['Sorcière', '']]) {
+    await p.click('[data-act="col-new"]'); await p.waitForTimeout(120);
+    await p.fill('#form [name=title]', title); await p.fill('#form [name=subtitle]', variants);
+    await p.click('#form button[value=save]'); await p.waitForTimeout(150);
+  }
+  let t = await main();
+  check(/Seuil.*1 occurrence · dernière aujourd'hui \(Capture\)/.test(t), 'un motif est compté dans les autres modules, avec sa dernière apparition');
+  check(/Sorcière.*jamais rencontré/.test(t), 'un motif absent le dit');
+  await go('accueil'); await p.fill('#capIn', 'Une porte, un seuil, un récit'); await p.press('#capIn', 'Enter'); await p.waitForTimeout(200);
+  await go('motifs'); t = await main();
+  check(/Seuil.*2 occurrences/.test(t) && t.includes('voisins : Récit (2)'), 'variantes comptées, voisins dès deux rencontres communes');
+  await shot('motifs');
+  await p.click('li:has(b:text-is("Seuil")) [data-act="search-for"]'); await p.waitForTimeout(250);
+  check((await p.inputValue('#searchIn')) === 'Seuil', '« voir » mène à la recherche du motif');
+
   console.log('recherche et bilan');
   await go('bilan');
   check((await main()).includes('Statut des idées notées'), 'le bilan compte les idées par statut');
+  check((await main()).includes('Seuil ×2'), 'le bilan dit quels motifs sont apparus dans la période');
   await p.click('[data-act="search-for"]:has-text("hypothèse")'); await p.waitForTimeout(250);
   check((await p.inputValue('#searchIn')) === 'statut:hypothèse' && (await main()).includes('le seuil précède le récit'), 'un statut du bilan mène à la recherche filtrée');
   check(!(await main()).includes('une phrase née ailleurs'), 'et ne garde que ce statut');

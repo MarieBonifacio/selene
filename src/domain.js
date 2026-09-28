@@ -227,7 +227,9 @@ const MODULE_TYPES = {
     datedEntries: false, // un élément n'a pas de date de journal ; `due` est facultative
     // review : la date d'un élément est un rendez-vous de révision (une décision à réexaminer), qui revient
     // quel que soit son statut, sauf le dernier (abandonné, clos).
-    defaults: () => ({ config: { display: "liste", description: "", review: false, statuses: ["À faire", "En cours", "Fait"], doneFrom: 2, statusLabel: "Statut", addLabel: "Ajouter",
+    // concordance : chaque élément est un motif (variantes en sous-titre), cherché dans tous les autres modules ;
+    // un motif vivant absent depuis fallowDays jours est « en jachère ».
+    defaults: () => ({ config: { display: "liste", description: "", review: false, concordance: false, fallowDays: 90, statuses: ["À faire", "En cours", "Fait"], doneFrom: 2, statusLabel: "Statut", addLabel: "Ajouter",
       fields: { title: "Titre", subtitle: "", tag: "Étiquette", due: "", text: "Note" },
       groups: { on: true, by: "tag", sort: "name", hideDone: false, title: "" } }, entries: [] }),
     normalize(inst) {
@@ -247,6 +249,8 @@ const MODULE_TYPES = {
       v.num(c.doneFrom, "statut « fait »", 0, 12);
       if (c.display != null && !["liste", "colonnes"].includes(c.display)) v.fail("affichage");
       if (c.review != null && typeof c.review !== "boolean") v.fail("révision");
+      if (c.concordance != null && typeof c.concordance !== "boolean") v.fail("concordance");
+      v.num(c.fallowDays, "jachère", 1, 3650);
       if (c.fields != null && (typeof c.fields !== "object" || Object.values(c.fields).some(x => typeof x !== "string"))) v.fail("champs");
       for (const e of inst.entries) {
         if (typeof e.title !== "string") v.fail("titre");
@@ -361,6 +365,10 @@ const MODULE_TEMPLATES = [
     config: { display: "liste", review: true, description: "La raison écrite au moment de décider, relue au moment de réexaminer.",
       statuses: ["À décider", "Prise", "Abandonnée"], doneFrom: 1, statusLabel: "État", addLabel: "Noter une décision",
       fields: { title: "Décision", subtitle: "", tag: "Domaine", due: "À réexaminer le", text: "Contexte, options écartées, raison, et ce qui te ferait changer d'avis" } } },
+  { id: "motifs", name: "Motifs", type: "collection", hint: "Tes motifs récurrents, comptés partout : dernière apparition, voisins, jachère",
+    config: { display: "liste", concordance: true, fallowDays: 90, description: "Chaque motif est cherché dans tous tes autres modules, en mot entier, pluriel et variantes compris.",
+      statuses: ["Vivant", "Épuisé"], doneFrom: 1, statusLabel: "État", addLabel: "Ajouter un motif",
+      fields: { title: "Motif", subtitle: "Variantes (séparées par des virgules)", tag: "Famille", due: "", text: "Note" } } },
   { id: "rappels", name: "Soins", type: "rappels", hint: "Des gestes récurrents et depuis quand ils attendent",
     config: { types: [{ id: "arrosage", label: "Arrosage", every: 3 }] } },
   { id: "carnet", name: "Carnet", type: "notes", hint: "Des notes datées, gardées ou rangées ailleurs ensuite" }

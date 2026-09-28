@@ -119,6 +119,9 @@ bilan le lisent. Champs communs à tous les types, hors registre (validés par `
 `resumeLog` sur l'instance (pont de reprise), `origin` sur une entrée (provenance, posée par `stampOrigin`
 quand une note est rangée), `ep`/`epLog` sur les fragments et les notes. Tous facultatifs et additifs : une
 version antérieure de l'app les ignore et la fusion les conserve, d'où l'absence de nouveau `SCHEMA_VERSION`.
+Une collection peut être en mode `review` (la date est un rendez-vous de révision) ou `concordance` (ses
+éléments sont des motifs comptés dans les `texts` des autres modules, voir `concordance()` dans `types.js`) :
+deux réglages de l'instance, pas deux types, pour que tout le reste (formulaire, statuts, sauvegarde) serve tel quel.
 Routes fixes réservées : `accueil`, `reglages`, `recherche`, `bilan`. Les tests vérifient qu'ils ont les mêmes clés et font passer chaque type de bout
 en bout (création, entrée, vue, réglages, résumé, contexte, export puis import validé).
 

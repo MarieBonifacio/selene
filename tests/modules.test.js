@@ -33,7 +33,7 @@ function launch(storage, { claude = null, bare = false } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn };\n})();');
   vm.runInNewContext(instrumented, context);
   return { ...context.__test, nodes, location, document };
 }
@@ -760,4 +760,42 @@ test('decisions: a revision date comes back whatever the state, the reason is re
   assert.doesNotThrow(() => app.parseBackup(app.createBackup(app.board.data, d)));
   const bad = JSON.parse(app.createBackup(app.board.data, d)); bad.site.modules.decisions.entries[0].reviews = [{ date: 'jamais' }];
   assert.throws(() => app.parseBackup(JSON.stringify(bad)), /réexamens/);
+});
+
+test('concordance: motifs counted as whole words across modules, with neighbours and fallow ones', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  const inst = app.createFromTemplate(d.modules, app.MODULE_TEMPLATES.find(x => x.id === 'motifs'), 'Motifs', 'motifs');
+  d.config.modules.push({ id: 'motifs', on: true });
+  app.saveCollectionItem(inst, { title: 'Lune', text: 'la lune, la lune, la lune' }, 'm1'); // ses propres textes ne comptent pas
+  app.saveCollectionItem(inst, { title: 'seuil', subtitle: 'porte, pas de la porte' }, 'm2');
+  app.saveCollectionItem(inst, { title: 'Sorcière' }, 'm3');
+  app.saveCollectionItem(inst, { title: 'Phalène', status: 'Épuisé' }, 'm4');
+  const t = today(), old = '2020-03-01';
+  d.modules.ecriture.scraps.push(
+    { id: 'a', text: 'La LUNE sur le seuil', date: t },
+    { id: 'b', text: 'Sous les lunes, une porte basse', date: t },
+    { id: 'c', text: 'Des lunettes de soleil, une lunaison', date: t },
+    { id: 'd', text: 'Les sorcières du XIXe siècle', date: old },
+    { id: 'e', text: 'phalène', date: old });
+  app.addCapture(d.modules.inbox.entries, 'seuil sans date ?', 'n1', t);
+  const rows = app.concordance(inst), by = Object.fromEntries(rows.map(r => [r.e.title, r]));
+  assert.equal(by.Lune.hits.length, 2, 'whole word, plural tolerated, « lunettes » and « lunaison » excluded, own module excluded');
+  assert.equal(by.seuil.hits.length, 3, 'variants count as the motif');
+  assert.deepEqual([...by.Lune.neighbours.map(x => `${x.name}:${x.n}`)], ['seuil:2']);
+  assert.equal(by.Sorcière.neighbours.length, 0);
+  assert.equal(by.Sorcière.last.date, old); assert.equal(by.Sorcière.last.mod, 'ecriture');
+  assert.deepEqual([...app.motifsIn(inst, t, '9999-01-01').map(x => `${x.name}:${x.n}`)], ['seuil:3', 'Lune:2']);
+  assert.equal(app.TYPE_UI.collection.review(inst, t, '9999-01-01'), 'seuil ×3, Lune ×2');
+  assert.equal(app.summaryFor('motifs'), '4 motifs, 1 en jachère', 'the retired one is not fallow, only the living absent one');
+  app.location.hash = '#motifs'; app.render();
+  const html = app.nodes.get('#main').innerHTML;
+  assert.match(html, /<h3>En jachère<\/h3>/);
+  assert.match(html, /Sorcière · \d+ lunaisons/);
+  assert.match(html, /voisins : seuil \(2\)/);
+  assert.match(html, /data-act="search-for" data-q="Lune"/);
+  // Une collection ordinaire n'est pas une concordance, et une sauvegarde reste valide.
+  assert.doesNotThrow(() => app.parseBackup(app.createBackup(app.board.data, d)));
+  const bad = JSON.parse(app.createBackup(app.board.data, d)); bad.site.modules.motifs.config.fallowDays = -3;
+  assert.throws(() => app.parseBackup(JSON.stringify(bad)), /jachère/);
 });

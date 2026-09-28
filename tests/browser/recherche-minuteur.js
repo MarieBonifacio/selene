@@ -16,6 +16,8 @@ demo.modules.chantier.entries = [{ id: 't1', title: 'Poser le velux', room: 'Cha
   const ok = check;
 
   console.log('recherche');
+  // Attendre le premier rendu : une touche pressée avant que l'app ait dessiné l'accueil peut se perdre.
+  await p.waitForSelector('#nav a[href="#recherche"]');
   await p.keyboard.press('/'); await p.clock.runFor(100);
   ok((await p.evaluate(() => location.hash)) === '#recherche' && (await p.evaluate(() => document.activeElement.id)) === 'searchIn', '« / » ouvre la recherche, curseur dans le champ');
   await p.keyboard.type('ete disso'); await p.clock.runFor(200);
