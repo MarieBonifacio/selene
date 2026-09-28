@@ -929,7 +929,9 @@ function parseBackup(text) {
         (site.config.assistant.share != null && !record(site.config.assistant.share)))) ||
       // sky : le lieu du ciel de l'accueil, facultatif ; ses coordonnées finissent dans une URL, son nom dans le HTML.
       (site.config.sky != null && (!record(site.config.sky) || typeof site.config.sky.name !== "string" || site.config.sky.name.length > 80 ||
-        typeof site.config.sky.lat !== "number" || !(Math.abs(site.config.sky.lat) <= 90) || typeof site.config.sky.lon !== "number" || !(Math.abs(site.config.sky.lon) <= 180)))) throw new Error("Configuration invalide");
+        typeof site.config.sky.lat !== "number" || !(Math.abs(site.config.sky.lat) <= 90) || typeof site.config.sky.lon !== "number" || !(Math.abs(site.config.sky.lon) <= 180))) ||
+      // radar : les mots du radar culturel, facultatifs.
+      (site.config.radar != null && (!record(site.config.radar) || typeof site.config.radar.words !== "string" || site.config.radar.words.length > 300))) throw new Error("Configuration invalide");
   for (const m of site.config.modules || []) moduleId(m.id, "Module");
   for (const map of [site.config.groups, site.config.labels, site.config.assistant && site.config.assistant.share])
     if (map) for (const k of Object.keys(map)) moduleId(k, "Configuration");
@@ -1846,6 +1848,54 @@ function mbAlbums(json) {
 const mbSince = (albums, since) => albums.filter(x => x.date && (x.date + "-01-01").slice(0, 10) > since);
 const coverUrl = rg => MBID.test(rg || "") ? `https://coverartarchive.org/release-group/${rg}/front-250` : "";
 
+/* ================= radar : événements culturels de la Métropole de Lille (pur, sans DOM ni réseau) =================
+   Source : le jeu « evenements-publics-openagenda » du portail open data de la MEL (Opendatasoft, API Explore v2.1,
+   sans clé, CORS ouvert). On demande une zone et une période, jamais les mots : le filtre par centres d'intérêt se
+   fait ici, sur l'appareil. Tirer, jamais pousser : cinq au plus, pas de « voir plus ». Se teste seul (tests/radar.test.js). */
+const RADAR_HOST = "https://opendata.lillemetropole.fr";
+const RADAR_FIELDS = "uid,title_fr,description_fr,keywords_fr,firstdate_begin,lastdate_end,location_name,location_city,canonicalurl";
+const radarFold = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const addDaysISO = (iso, n) => new Date(Date.parse(iso + "T12:00:00Z") + n * 86400000).toISOString().slice(0, 10);
+/* L'adresse de la requête : ce qui se tient entre `from` et `from + days`, à `km` du lieu (arrondi au dixième de degré
+   par Réglages → Ciel), du plus proche au plus lointain. `select` allège la réponse ; sans lui (lean = false), on
+   reçoit tout, au cas où le portail aurait renommé un champ. */
+function radarUrl(place, from, { days = 14, km = 20, lean = true } = {}) {
+  const lat = Math.round(+place.lat * 10) / 10, lon = Math.round(+place.lon * 10) / 10;
+  const where = `lastdate_end >= date'${from}' and firstdate_begin < date'${addDaysISO(from, days)}' and within_distance(location_coordinates, geom'POINT(${lon} ${lat})', ${km}km)`;
+  const q = Object.entries({ where, order_by: "firstdate_begin", limit: "100", ...(lean ? { select: RADAR_FIELDS } : {}) }).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+  return `${RADAR_HOST}/api/explore/v2.1/catalog/datasets/evenements-publics-openagenda/records?${q}`;
+}
+const radarText = (v, n) => { const t = String(Array.isArray(v) ? v.join(", ") : v ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t; };
+const radarDay = v => /^\d{4}-\d{2}-\d{2}/.test(String(v || "")) ? String(v).slice(0, 10) : "";
+/* La réponse (results) → des événements propres. Tolérant : un champ `_fr` ou sans suffixe, des mots-clés en liste ou
+   en texte ; une adresse qui n'est pas en https n'est pas gardée (elle finit dans un href). */
+function radarEvents(json) {
+  const seen = new Set(), out = [];
+  for (const r of (json && Array.isArray(json.results) ? json.results : [])) {
+    if (!r || typeof r !== "object") continue;
+    const title = radarText(r.title_fr ?? r.title, 200); if (!title) continue;
+    const from = radarDay(r.firstdate_begin), to = radarDay(r.lastdate_end) || from;
+    let url = ""; try { const u = new URL(String(r.canonicalurl || "")); if (u.protocol === "https:") url = u.toString(); } catch {}
+    const id = String(r.uid ?? url ?? title).slice(0, 80); if (seen.has(id)) continue; seen.add(id);
+    const kw = (Array.isArray(r.keywords_fr) ? r.keywords_fr : String(r.keywords_fr ?? r.keywords ?? "").split(/[,;]/)).map(k => radarText(k, 40)).filter(Boolean).slice(0, 8);
+    out.push({ id, title, from, to, place: radarText(r.location_name, 120), city: radarText(r.location_city, 80), url, kw, text: radarText(r.description_fr ?? r.description, 300) });
+  }
+  return out;
+}
+/* Les mots réglés (séparés par des virgules), sans accents ni casse ; deux lettres au moins. */
+const radarWords = s => [...new Set(String(s || "").split(",").map(w => radarFold(w.trim())).filter(w => w.length > 1))];
+/* Ce qui parle d'un des mots (titre, mots-clés, description, lieu), du plus tôt au plus tard ; `n` au plus.
+   total dit combien correspondaient : de quoi suggérer de préciser ses mots, sans rien dérouler de plus. */
+function radarMatch(events, words, n = 5) {
+  const hits = [];
+  for (const e of events || []) {
+    const f = radarFold(`${e.title} ${e.kw.join(" ")} ${e.text} ${e.place}`), on = words.filter(w => f.includes(w));
+    if (on.length) hits.push({ ...e, on });
+  }
+  hits.sort((a, b) => (a.from || "9999").localeCompare(b.from || "9999") || a.title.localeCompare(b.title));
+  return { items: hits.slice(0, n), total: hits.length };
+}
+
 /* ================= utils ================= */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -2309,6 +2359,7 @@ VIEWS.accueil = () => {
         ${alerts.map(a => `<li class="item alert"><span></span><div>${a.text}</div>${a.actions ? `<div class="row">${a.actions}</div>` : a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">voir</a>` : ""}</li>`).join("")}
       </ul>
       ${!tod.length ? (taskModules().length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : `<p class="empty">Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.</p>`) : ""}
+      ${radarPlace() && radarWords(radarConf().words).length ? `<p class="hint radar-go"><button class="btn ghost sm" data-act="radar-open">Radar culturel</button> ce qui, près d'ici, parle de tes mots</p>` : ""}
     </section>
     <section class="capsec"><h2>Capturer</h2><p class="hint">Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.</p>
       ${inbox ? `<div class="capture"><input id="capIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="Capture rapide"><button class="btn acc" data-act="cap-add">Garder</button></div>
@@ -2734,6 +2785,7 @@ VIEWS.reglages = () => {
     <label>Nom affiché<input data-set="config.name" value="${esc(c.name)}"></label></div>
     <div class="field-row" style="margin-top:12px"><label>Ouvrir sur (cet appareil)<select data-act="open-on"><option value="accueil" ${openOn() === "accueil" ? "selected" : ""}>L'accueil</option><option value="last" ${openOn() === "last" ? "selected" : ""}>Là où j'en étais</option></select></label><span></span></div></section>
   ${skySettingsHTML()}
+  ${radarSettingsHTML()}
   <section><h3>Modules</h3><p class="hint">Active, renomme, réordonne, range par domaine (Maison, Création… : la navigation les regroupe). Les modules personnalisés (marqués ✕) peuvent être supprimés définitivement.</p>
     <datalist id="domainList">${[...new Set(c.modules.map(m => String(m.group || "").trim()).filter(Boolean))].map(g => `<option value="${esc(g)}">`).join("")}</datalist>
     ${c.modules.map((m, i) => `<div class="set mod" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="Activer ${esc(label(m.id))}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="Nom du module">${SYSTEM.includes(m.id) ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="Domaine" aria-label="Domaine de ${esc(label(m.id))}">`}<div class="row">${s.modules[m.id] ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="Supprimer définitivement" title="Supprimer définitivement">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="Descendre">↓</button></div></div>`).join("")}
@@ -2892,7 +2944,7 @@ function openSheet(kind, arg) {
   const d = $("#sheet"); closePalette();
   sheetKind = kind; sheetArg = arg;
   $("#sheetBody").innerHTML = SHEETS[kind](arg);
-  d.classList.toggle("drawer", kind === "module" || kind === "specimen" || kind === "mb" || kind === "mb-new"); // réglages d'un module, fiche : un tiroir à droite sur ordinateur
+  d.classList.toggle("drawer", kind === "module" || kind === "specimen" || kind === "mb" || kind === "mb-new" || kind === "radar"); // réglages d'un module, fiche : un tiroir à droite sur ordinateur
   d.classList.toggle("wide", kind === "carte"); // la carte céleste veut de la largeur
   if (!d.open) d.showModal();
   const i = $("#capSheetIn"); if (kind === "capture" && i) { i.value = loadDraft("sheet", i); i.focus(); }
@@ -3325,6 +3377,11 @@ document.addEventListener("change", e => {
     const c = skyConf(); if (!c) return;
     c[act === "sky-weather" ? "weather" : "realMoon"] = el.checked; site.save(); render();
     if (act === "sky-weather" && el.checked) refreshWeather(true);
+  }
+  else if (act === "radar-words") {
+    const v = el.value.replace(/\s+/g, " ").trim().slice(0, 300);
+    if (v) S().config.radar = { words: v }; else delete S().config.radar;
+    try { localStorage.removeItem(RADAR_KEY); } catch {} site.save(); el.blur(); render();
   }
   else if (act === "sky-live") { try { localStorage.setItem("selene-sky-live", el.checked ? "on" : "off"); } catch {} render(); }
   else if (act === "open-on") { try { localStorage.setItem("selene-open", el.value); } catch {} toast(el.value === "last" ? "L'app rouvrira le dernier espace où tu étais." : "L'app s'ouvrira sur l'accueil."); }
@@ -4862,6 +4919,67 @@ CLICK["mb-new-add"] = el => {
   n.mb = { a: x.aid, rg: x.album.id, ...(x.album.date ? { y: x.album.date.slice(0, 4) } : {}) };
   site.save(); render(); $("#sheetBody").innerHTML = SHEETS["mb-new"](mbNews.mod); toast(`Ajouté : ${x.artist}, « ${x.album.title} ».`);
 };
+
+/* ---- Radar culturel (radar.js) : sur demande, ce qui se tient dans la Métropole de Lille et parle de tes mots ----
+   Le portail reçoit la zone (lieu du ciel, arrondi) et les dates ; les mots restent ici, le tri se fait sur l'appareil. */
+const RADAR_KEY = "selene-radar"; // cache de l'appareil : { at, key, events }, six heures
+const radarConf = () => { const r = S().config.radar; return { words: r && typeof r.words === "string" ? r.words : "" }; };
+const radarPlace = () => { const c = skyConf(); return c && nearLille(+c.lat, +c.lon) ? c : null; };
+let radarState = null; // { busy, err, items, total, words, kept } : la feuille en cours
+async function radarFetch(c, from) {
+  const key = `${+c.lat},${+c.lon},${from}`;
+  try { const x = JSON.parse(localStorage.getItem(RADAR_KEY) || "null"), age = x ? Date.now() - x.at : NaN; if (x && x.key === key && age > -300000 && age < 6 * 3600000 && Array.isArray(x.events)) return x.events; } catch {}
+  const get = async lean => { const ac = new AbortController(), t = setTimeout(() => ac.abort(), 10000); try { return await fetch(radarUrl(c, from, { lean }), { signal: ac.signal }); } finally { clearTimeout(t); } };
+  let r = await get(true);
+  if (r.status === 400) r = await get(false); // un champ renommé par le portail : tout recevoir plutôt que rien
+  if (!r.ok) return null;
+  const events = radarEvents(await r.json());
+  try { localStorage.setItem(RADAR_KEY, JSON.stringify({ at: Date.now(), key, events })); } catch {}
+  return events;
+}
+function radarWhen(x, today) {
+  const dm = d => fmt(d, { day: "numeric", month: "long" });
+  if (!x.from) return "";
+  if (x.from <= today) return x.to > today ? `en cours, jusqu'au ${dm(x.to)}` : "aujourd'hui";
+  if (x.to === x.from) return fmt(x.from, { weekday: "long", day: "numeric", month: "long" });
+  return `du ${dm(x.from)} au ${dm(x.to)}`;
+}
+SHEETS.radar = () => {
+  const st = radarState, c = radarPlace(); if (!st) return "";
+  const head = `<h2 id="sheetTitle">Radar culturel</h2><p class="hint">Autour de ${esc(c ? c.name.split(",")[0] : "Lille")}, les deux semaines à venir, ce qui parle de : ${esc(st.words.map(w => st.said[w] || w).join(", "))}. Cinq au plus ; le reste attendra que tu reviennes.</p>`;
+  const foot = `<p class="hint" style="margin-top:12px">Source : OpenAgenda, par l'open data de la Métropole européenne de Lille. Le portail voit la zone (arrondie) et les dates, jamais tes mots : le tri se fait ici.</p>`;
+  if (st.busy) return head + `<p class="hint" role="status">Recherche…</p>`;
+  if (st.err) return head + `<p class="hint" role="status">${esc(st.err)}</p><button class="btn sm" data-act="radar-open">Réessayer</button>` + foot;
+  if (!st.items.length) return head + `<p class="empty">Rien qui te ressemble, cette fois. La ville continuera sans toi, elle a l'habitude.</p>` + foot;
+  const today = todayISO();
+  return head + `<ul class="plain radar">${st.items.map(x => `<li class="item" data-rid="${esc(x.id)}"><span></span><div><b>${esc(x.title)}</b>
+      <div class="meta"><span>${esc(radarWhen(x, today))}</span>${x.place || x.city ? `<span>${esc([x.place, x.city].filter(Boolean).join(", "))}</span>` : ""}${x.on.map(w => `<span class="tag">${esc(st.said[w] || w)}</span>`).join("")}</div>
+      ${x.text ? `<p class="hint" style="margin:4px 0 0">${esc(x.text)}</p>` : ""}</div>
+      <div class="row">${/^https:\/\//.test(x.url) ? `<a class="btn ghost sm" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">voir</a>` : ""}${st.kept.has(x.id) ? `<span class="hint">gardé</span>` : `<button class="btn sm" data-act="radar-keep">garder</button>`}</div></li>`).join("")}</ul>`
+    + (st.total > st.items.length ? `<p class="hint">${st.total - st.items.length} autre${st.total - st.items.length > 1 ? "s" : ""} correspond${st.total - st.items.length > 1 ? "ent" : ""} aussi : des mots plus précis choisiraient mieux.</p>` : "") + foot;
+};
+CLICK["radar-open"] = async () => {
+  const c = radarPlace(), words = radarWords(radarConf().words); if (!c || !words.length) return;
+  const said = Object.create(null); for (const w of radarConf().words.split(",")) { const t = w.trim(); if (t.length > 1 && !said[radarFold(t)]) said[radarFold(t)] = t; } // pour l'affichage : tes mots tels que tu les écris
+  radarState = { busy: true, err: "", items: [], total: 0, words, said, kept: new Set() };
+  if ($("#sheet").open && sheetKind === "radar") $("#sheetBody").innerHTML = SHEETS.radar(); else openSheet("radar");
+  const events = await radarFetch(c, todayISO()).catch(() => null), st = radarState;
+  if (!st) return;
+  Object.assign(st, { busy: false, err: events ? "" : "L'agenda de la Métropole ne répond pas (hors ligne, ou le portail a changé). Réessaie plus tard." }, events ? radarMatch(events, words, 5) : {});
+  if ($("#sheet").open && sheetKind === "radar") $("#sheetBody").innerHTML = SHEETS.radar();
+};
+CLICK["radar-keep"] = el => {
+  const st = radarState, x = st && st.items.find(i => i.id === el.closest("[data-rid]").dataset.rid), box = inboxId(S().modules); if (!x) return;
+  if (!box) return toast("Aucune boîte de réception où le garder. Crée un Carnet et fais-en ta boîte (Réglages).");
+  addNote(S().modules[box], [x.title, radarWhen(x, todayISO()), [x.place, x.city].filter(Boolean).join(", "), x.url].filter(Boolean).join(" — ").slice(0, 2000));
+  st.kept.add(x.id); site.save(); render(); $("#sheetBody").innerHTML = SHEETS.radar(); toast(`Gardé dans ${label(box)}.`);
+};
+function radarSettingsHTML() {
+  const c = skyConf(), near = radarPlace();
+  return `<section id="radar"><h3>Radar culturel</h3><p class="hint">Sur demande, depuis l'accueil : les événements de la Métropole de Lille (OpenAgenda, open data de la MEL) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification.</p>
+    <label>Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)<input data-act="radar-words" value="${esc(radarConf().words)}" placeholder="poésie, jazz, photographie, lecture…" maxlength="300" autocomplete="off"></label>
+    ${near ? "" : `<p class="hint" style="margin-top:6px">${c ? `Le radar ne couvre que la Métropole de Lille : le lieu réglé (${esc(c.name)}) en est trop loin.` : "Il lui faut un lieu près de Lille : règle-le dans Ciel, ci-dessus."}</p>`}</section>`;
+}
 
 /* ================= assistant =================
    Deux branchements : claude.ai (window.claude.use("sample"), sans clé) ou l'API Anthropic avec la clé

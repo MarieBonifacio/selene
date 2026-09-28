@@ -42,6 +42,7 @@ les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne)
 | `carte.js` | carte céleste des liaisons, pure : placement déterministe (temps, bandes), voisinage borné | — |
 | `sources.js` | sources, pur : adresses normalisées, DOI, traduction des réponses Crossref et Microlink | — |
 | `musique.js` | musique, pur : traduction des réponses MusicBrainz, albums studio, parutions récentes, pochettes | — |
+| `radar.js` | radar culturel, pur : requête OpenAgenda (zone et dates), traduction tolérante, tri par tes mots | — |
 | `app.js` | utilitaires, modules fixes, normalisation, stores, vues, rendu, actions | `store.js`, `domain.js`, `sky.js` |
 | `types.js` | registre d'affichage `TYPE_UI`, branché dans `CLICK` / `CHANGE` ; fiche, Vasculum, carte (`SHEETS`) | `app.js` |
 | `assistant.js` | contexte, outils, appels à Claude | — |
@@ -231,8 +232,9 @@ la conversation avec l'assistant et la clé API.
 - **Injection** : toute donnée insérée dans le HTML passe par `esc()` ; les identifiants de module sont
   en plus contraints par `MODULE_ID`. Un fichier de sauvegarde est traité comme hostile : forme des
   identifiants, bornes des nombres, dates réelles, types connus.
-- **CSP** du build hébergé : scripts du site seulement, connexions limitées à Anthropic, Google Fonts et
-  `*.supabase.co`.
+- **CSP** du build hébergé : scripts du site seulement, connexions limitées à Anthropic, Google Fonts,
+  `*.supabase.co` et aux services publics de la phase 1, chacun nommé (Open-Meteo, Crossref, Microlink,
+  MusicBrainz, open data de la MEL ; images de Cover Art Archive) : voir [connexions.md](connexions.md).
 - **Assistant** : ne lit que les modules cochés dans Réglages → Assistant ; ses actions sont revérifiées
   à l'exécution (module actif, écriture autorisée) et passent par les mêmes règles métier que l'interface.
 

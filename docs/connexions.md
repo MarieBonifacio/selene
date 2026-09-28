@@ -50,7 +50,18 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
       le titre et le lieu) ; la pluie des cinq prochains jours (1 mm ou 60 % au moins), « le jour prévu » si l'échéance
       tombe dessus, sinon « sec jusqu'à ». Aucun appel de plus : la prévision quotidienne vient avec la météo du ciel.
 
-**5d : Radar culturel** : événements de la Métropole de Lille (OpenData MEL, OpenAgenda), filtrés par tes mots.
+**5d : Radar culturel**
+- [x] Réglages → Radar culturel : tes mots (`config.radar.words`, 300 caractères au plus, synchronisés).
+- [x] Sur l'accueil, un bouton « Radar culturel » (seulement avec des mots et un lieu près de Lille) : les
+      événements OpenAgenda du portail open data de la MEL (Opendatasoft, API Explore v2.1, sans clé) des deux
+      semaines à venir, à 20 km du lieu du ciel. **Le portail reçoit la zone et les dates, jamais les mots** : le tri
+      se fait sur l'appareil (titre, mots-clés, description, lieu ; sans accents ni casse).
+- [x] Cinq au plus, du plus tôt au plus tard ; le reste est compté (« des mots plus précis choisiraient mieux »),
+      jamais déroulé. « voir » ouvre l'événement à part ; « garder » le dépose dans la boîte (titre, date, lieu, lien).
+- [x] Cache de six heures sur l'appareil ; si le portail refuse la sélection de champs (400 : un champ renommé),
+      second essai sans elle ; muet : dit, et « Réessayer ». Adresse d'événement gardée seulement si elle est en https.
+- [ ] À vérifier en conditions réelles : les noms de champs viennent des facettes publiques du jeu, l'environnement
+      de développement n'atteignant pas le portail.
 
 **5e : Mémoire éditoriale** : l'export Instagram (JSON) importé dans une collection (légende, date, lien).
 
