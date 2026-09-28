@@ -63,7 +63,14 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
 - [ ] À vérifier en conditions réelles : les noms de champs viennent des facettes publiques du jeu, l'environnement
       de développement n'atteignant pas le portail.
 
-**5e : Mémoire éditoriale** : l'export Instagram (JSON) importé dans une collection (légende, date, lien).
+**5e : Mémoire éditoriale**
+- [x] Dans les réglages de toute collection : « Importer un export Instagram » (un ou plusieurs fichiers JSON :
+      `posts_1.json`, `reels.json`). Lu sur l'appareil, rien n'est envoyé ; les stories sont ignorées.
+- [x] Encodage de Meta réparé (UTF-8 relu comme du Latin-1 : « Ã© » redevient « é », les émojis reviennent).
+- [x] Chaque publication devient un élément au dernier statut (« Publié ») : première ligne de la légende en titre,
+      légende entière en texte, jour de publication en date ; `ig = { t, k }` (instant, post ou reel) validé.
+- [x] Confirmation avant tout (combien, de quand à quand, où) ; un second import n'ajoute que les nouvelles.
+- Pas de lien : l'export n'en contient pas (seulement le chemin local des médias). La légende et la date, oui.
 
 ## Phase 2 et 3
 

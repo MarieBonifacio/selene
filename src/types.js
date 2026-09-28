@@ -567,6 +567,8 @@ TYPE_UI.collection = {
     <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-concordance" data-mod="${fid}" ${c.concordance ? "checked" : ""}>Concordance : chaque élément est un motif, compté dans les textes de tous les autres modules (variantes dans le sous-titre)</label>
     ${c.concordance ? `<div class="field-row" style="margin-top:8px"><label>En jachère après (jours d'absence)<input type="number" min="1" max="3650" data-set-mod="${fid}.fallowDays" value="${esc(c.fallowDays)}"></label><span></span></div>` : ""}
     <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-music" data-mod="${fid}" ${c.music ? "checked" : ""}>Musique : le titre est un artiste, le sous-titre un album, précisés par MusicBrainz (discographie, pochettes, nouvelles sorties)</label>
+    <div style="margin-top:12px"><label class="btn sm" style="display:inline-block;font-weight:500">Importer un export Instagram<input type="file" accept="application/json,.json" multiple data-act="col-ig" data-mod="${fid}" style="display:none"></label>
+      <p class="hint" style="margin:4px 0 0">Tes publications passées, pour la mémoire éditoriale : légende, date (pas de lien, l'export n'en contient pas). Centre de comptes Meta → Tes informations et autorisations → Télécharger tes informations, format JSON ; puis <code>posts_1.json</code> et <code>reels.json</code> (dossier <code>your_instagram_activity/media</code>). Lu ici, rien n'est envoyé ; un second import n'ajoute que les nouvelles.</p></div>
     <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-review" data-mod="${fid}" ${c.review ? "checked" : ""}>La date est un rendez-vous de révision : elle revient sur l'accueil quel que soit le ${esc(c.statusLabel.toLowerCase())}, sauf le dernier</label>`;
   },
   accept: (id, inst, note) => { saveCollectionItem(inst, { title: note.text }, uid()); },
@@ -644,6 +646,20 @@ TYPE_UI.collection = {
     "col-review": el => { instOf(el).config.review = el.checked; site.save(); render(); },
     "col-concordance": el => { instOf(el).config.concordance = el.checked; site.save(); render(); },
     "col-music": el => { instOf(el).config.music = el.checked; site.save(); render(); },
+    /* L'export Instagram : lu sur l'appareil, confirmé (combien, de quand à quand), versé au dernier statut. */
+    "col-ig": async el => {
+      const mod = modOf(el), files = [...(el.files || [])]; el.value = ""; if (!files.length) return;
+      let posts = [], bad = 0;
+      for (const f of files) { try { posts = posts.concat(igPosts(JSON.parse(await f.text()))); } catch { bad++; } }
+      const inst = S().modules[mod], have = new Set(inst.entries.filter(e => e.ig).map(e => `${e.ig.k}:${e.ig.t}`)), seen = new Set();
+      const fresh = posts.filter(p => { const k = `${p.k}:${p.t}`; if (have.has(k) || seen.has(k)) return false; seen.add(k); return true; }).sort((a, b) => a.t - b.t);
+      if (!fresh.length) return toast(bad === files.length ? "Ce fichier n'est pas un export Instagram lisible (JSON)." : posts.length ? "Rien de nouveau : tout est déjà là." : "Aucune publication dans ce fichier. C'est posts_1.json ou reels.json qu'il faut.");
+      const c = inst.config, last = c.statuses[c.statuses.length - 1], day = t => fmt(igDay(t), { day: "numeric", month: "long", year: "numeric" });
+      const q = `Importer ${fresh.length} publication${fresh.length > 1 ? "s" : ""} (du ${day(fresh[0].t)} au ${day(fresh[fresh.length - 1].t)}) dans ${label(mod)}, au statut « ${last} » ?${posts.length > fresh.length ? ` ${posts.length - fresh.length} déjà là, ignorée${posts.length - fresh.length > 1 ? "s" : ""}.` : ""}`;
+      if (!await ask(q)) return;
+      for (const p of fresh) { const x = igEntry(p), n = saveCollectionItem(inst, { title: x.title, text: x.text, due: x.due, status: last }, uid()); n.ig = x.ig; }
+      site.save(); render(); toast(`${fresh.length} publication${fresh.length > 1 ? "s" : ""} importée${fresh.length > 1 ? "s" : ""} dans ${label(mod)}.`);
+    },
     "st-name": el => {
       const inst = instOf(el), c = inst.config, i = +el.closest("[data-si]").dataset.si, from = c.statuses[i], to = el.value.trim();
       if (!to || to === from) return render();

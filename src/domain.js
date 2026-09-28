@@ -274,6 +274,7 @@ const MODULE_TYPES = {
         if (e.reviews != null && (!Array.isArray(e.reviews) || e.reviews.some(r => !r || typeof r.date !== "string" || !validDate(r.date) || typeof r.verdict !== "string"))) v.fail("réexamens");
         if (e.src != null && !srcValid(e.src)) v.fail("source");
         if (e.mb != null && !mbValid(e.mb)) v.fail("MusicBrainz");
+        if (e.ig != null && !igValid(e.ig)) v.fail("Instagram");
       }
     }
   },
@@ -328,6 +329,8 @@ function mbValid(x) {
   const id = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
   return !!x && typeof x === "object" && !Array.isArray(x) && id.test(x.a || "") && (x.rg == null || id.test(x.rg)) && (x.y == null || /^\d{4}$/.test(x.y));
 }
+/* L'origine d'un élément importé de l'export Instagram : l'instant de publication (secondes) et la sorte. */
+const igValid = x => !!x && typeof x === "object" && !Array.isArray(x) && Number.isInteger(x.t) && x.t > 0 && x.t < 1e10 && (x.k === "post" || x.k === "reel");
 /* ---- statut épistémique : ce qu'une note ou un fragment revendique de savoir ----
    Facultatif et vide par défaut. « Inexpliqué » est un statut à part entière, pas une corbeille. */
 const EP_STATUS = { obs: "observé", hyp: "hypothèse", int: "interprétation", inx: "inexpliqué" };
