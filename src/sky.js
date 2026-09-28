@@ -112,9 +112,26 @@ const WEATHER_FX = {
   storm: { desat: 0.5, dark: 0.65, veil: 0.9, stars: 0, clouds: 0.85, rain: 0.45, warm: 0.25 }
 };
 const INK_LIGHT = "#eceee6", INK_DARK = "#1a211b";
+
+/* ---- saisons : la phénologie des feuillus de la lisière ----
+   Les sapins sont sempervirents : une forêt de sapins purs est la même en décembre et en octobre. La saison se lit donc
+   dans les feuillus mêlés à la lisière (hêtres, bouleaux), d'après le jour de l'année, pour une forêt tempérée : le
+   débourrement vers la mi-avril, le feuillage plein de mai à septembre, l'or puis la rouille en octobre, la chute en
+   novembre, les branches nues jusqu'au printemps. Au sud de l'équateur, une demi-année plus tard. Continue, comme le
+   ciel : entre deux repères on interpole, jamais de saut au 21 septembre. [jour de l'année, densité, couleur] */
+const LEAF_KEYS = [[0, 0, "#6f5a3e"], [100, 0, "#6f5a3e"], [118, 0.55, "#9db36c"], [140, 1, "#5d7a48"], [250, 1, "#56703f"],
+  [278, 1, "#b08a3e"], [298, 0.75, "#9c5b30"], [318, 0.2, "#7d4c2c"], [330, 0, "#6f5a3e"], [367, 0, "#6f5a3e"]];
+function seasonAt(t, lat = 45) {
+  const y = new Date(t).getUTCFullYear(), doy = (t - Date.UTC(y, 0, 1)) / 86400000;
+  const d = lat < 0 ? (doy + 182.5) % 365.25 : doy;
+  const i = LEAF_KEYS.findIndex(k => k[0] > d), a = LEAF_KEYS[i - 1], b = LEAF_KEYS[i], f = (d - a[0]) / (b[0] - a[0]);
+  const leaf = Math.round((a[1] + (b[1] - a[1]) * f) * 1000) / 1000;
+  const phase = leaf < 0.05 ? "nu" : d < 140 ? "debourrement" : d < 262 ? "feuille" : d < 300 ? "rouille" : "chute";
+  return { leaf, color: mixHex(a[2], b[2], f), phase };
+}
 /* La scène complète : couleurs, étoiles, halo, voile de la lune, couches météo, et l'encre du texte posé sur le ciel
    avec son voile de lecture (le moins opaque qui garantit 4,5:1, calculé ici plutôt qu'espéré). */
-function skyScene({ sunAlt, illum = 0.5, weather = null, dark = true }) {
+function skyScene({ sunAlt, illum = 0.5, weather = null, dark = true, season = null, frost = false }) {
   const fx = WEATHER_FX[weather] || WEATHER_FX.clear;
   let [top, bot, far, near] = skyAt(sunAlt, dark);
   const shade = c => { const d = desaturate(c, fx.desat); return fx.dark < 1 ? mixHex(d, "#000000", 1 - fx.dark) : d; };
@@ -127,6 +144,12 @@ function skyScene({ sunAlt, illum = 0.5, weather = null, dark = true }) {
   const glow = (dark ? 0.16 : 0.1) * clamp01((2 - sunAlt) / 10) * (1 - fx.veil * 0.5);
   const moonOpacity = (1 - 0.85 * fx.veil) * (sunAlt > 0 ? 0.55 : 1); // la lune de jour est pâle
   const earthshine = illum < 0.4 ? 0.1 * (1 - illum / 0.4) * (sunAlt < -4 ? 1 : 0.3) : 0; // lumière cendrée des croissants
+  // Les feuillus : la nuit, les couleurs s'éteignent (vision scotopique, celle des bâtonnets, qui ne voient pas les
+  // couleurs) ; le temps gris les désature comme le reste. Le bois reste, nu ou non ; le bouleau garde son écorce claire.
+  const se = season || { leaf: 1, color: "#56703f", phase: "feuille" }, vivid = 0.2 + 0.45 * (1 - night);
+  const leafColor = desaturate(mixHex(far, se.color, vivid), fx.desat * 0.5), wood = mixHex(far, near, 0.6);
+  const birch = mixHex(far, dark ? "#d8d8cf" : "#f1efe8", 0.2 + 0.35 * (1 - night));
+  const frostColor = frost ? mixHex(far, "#eef3f2", dark ? 0.55 : 0.75) : null; // givre mesuré, jamais supposé
   const mistA = fx.fog ? 0.9 : dark ? 0.55 : 0.75, mistRgb = hexRgb(mixHex(bot, dark ? "#28392f" : "#e2e6de", 0.5));
   const sample = mixHex(top, bot, 0.3);                 // là où le texte se pose, en haut à gauche
   const ink = contrast(INK_LIGHT, sample) >= contrast(INK_DARK, sample) ? INK_LIGHT : INK_DARK;
@@ -138,6 +161,7 @@ function skyScene({ sunAlt, illum = 0.5, weather = null, dark = true }) {
     mist: `rgba(${mistRgb.join(",")},${mistA})`, fog: !!fx.fog,
     clouds: fx.clouds, cloud: mixHex(bot, dark ? "#9aa3a3" : "#ffffff", 0.18),
     rain: fx.rain || 0, snow: fx.snow || 0,
+    leaf: leafColor, leafO: se.leaf, leaves: se.phase, wood, birch, frost: frostColor,
     ink, scrim: Math.round(scrim * 100) / 100, scrimColor, sample
   };
 }
