@@ -461,6 +461,7 @@ VIEWS.accueil = () => {
         ${alerts.map(a => `<li class="item alert"><span></span><div>${a.text}</div>${a.actions ? `<div class="row">${a.actions}</div>` : a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">voir</a>` : ""}</li>`).join("")}
       </ul>
       ${!tod.length ? (taskModules().length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : `<p class="empty">Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.</p>`) : ""}
+      ${radarPlace() && radarWords(radarConf().words).length ? `<p class="hint radar-go"><button class="btn ghost sm" data-act="radar-open">Radar culturel</button> ce qui, près d'ici, parle de tes mots</p>` : ""}
     </section>
     <section class="capsec"><h2>Capturer</h2><p class="hint">Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.</p>
       ${inbox ? `<div class="capture"><input id="capIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="Capture rapide"><button class="btn acc" data-act="cap-add">Garder</button></div>
@@ -886,6 +887,7 @@ VIEWS.reglages = () => {
     <label>Nom affiché<input data-set="config.name" value="${esc(c.name)}"></label></div>
     <div class="field-row" style="margin-top:12px"><label>Ouvrir sur (cet appareil)<select data-act="open-on"><option value="accueil" ${openOn() === "accueil" ? "selected" : ""}>L'accueil</option><option value="last" ${openOn() === "last" ? "selected" : ""}>Là où j'en étais</option></select></label><span></span></div></section>
   ${skySettingsHTML()}
+  ${radarSettingsHTML()}
   <section><h3>Modules</h3><p class="hint">Active, renomme, réordonne, range par domaine (Maison, Création… : la navigation les regroupe). Les modules personnalisés (marqués ✕) peuvent être supprimés définitivement.</p>
     <datalist id="domainList">${[...new Set(c.modules.map(m => String(m.group || "").trim()).filter(Boolean))].map(g => `<option value="${esc(g)}">`).join("")}</datalist>
     ${c.modules.map((m, i) => `<div class="set mod" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="Activer ${esc(label(m.id))}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="Nom du module">${SYSTEM.includes(m.id) ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="Domaine" aria-label="Domaine de ${esc(label(m.id))}">`}<div class="row">${s.modules[m.id] ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="Supprimer définitivement" title="Supprimer définitivement">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="Descendre">↓</button></div></div>`).join("")}
@@ -1044,7 +1046,7 @@ function openSheet(kind, arg) {
   const d = $("#sheet"); closePalette();
   sheetKind = kind; sheetArg = arg;
   $("#sheetBody").innerHTML = SHEETS[kind](arg);
-  d.classList.toggle("drawer", kind === "module" || kind === "specimen" || kind === "mb" || kind === "mb-new"); // réglages d'un module, fiche : un tiroir à droite sur ordinateur
+  d.classList.toggle("drawer", kind === "module" || kind === "specimen" || kind === "mb" || kind === "mb-new" || kind === "radar"); // réglages d'un module, fiche : un tiroir à droite sur ordinateur
   d.classList.toggle("wide", kind === "carte"); // la carte céleste veut de la largeur
   if (!d.open) d.showModal();
   const i = $("#capSheetIn"); if (kind === "capture" && i) { i.value = loadDraft("sheet", i); i.focus(); }
@@ -1477,6 +1479,11 @@ document.addEventListener("change", e => {
     const c = skyConf(); if (!c) return;
     c[act === "sky-weather" ? "weather" : "realMoon"] = el.checked; site.save(); render();
     if (act === "sky-weather" && el.checked) refreshWeather(true);
+  }
+  else if (act === "radar-words") {
+    const v = el.value.replace(/\s+/g, " ").trim().slice(0, 300);
+    if (v) S().config.radar = { words: v }; else delete S().config.radar;
+    try { localStorage.removeItem(RADAR_KEY); } catch {} site.save(); el.blur(); render();
   }
   else if (act === "sky-live") { try { localStorage.setItem("selene-sky-live", el.checked ? "on" : "off"); } catch {} render(); }
   else if (act === "open-on") { try { localStorage.setItem("selene-open", el.value); } catch {} toast(el.value === "last" ? "L'app rouvrira le dernier espace où tu étais." : "L'app s'ouvrira sur l'accueil."); }
