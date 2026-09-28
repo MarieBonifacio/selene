@@ -41,6 +41,7 @@ les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne)
 | `sky.js` | ciel de l'accueil, pur : soleil, lune, levers et couchers, météo → scène, saisons, mouvement du vent, contraste du texte | — |
 | `carte.js` | carte céleste des liaisons, pure : placement déterministe (temps, bandes), voisinage borné | — |
 | `sources.js` | sources, pur : adresses normalisées, DOI, traduction des réponses Crossref et Microlink | — |
+| `musique.js` | musique, pur : traduction des réponses MusicBrainz, albums studio, parutions récentes, pochettes | — |
 | `app.js` | utilitaires, modules fixes, normalisation, stores, vues, rendu, actions | `store.js`, `domain.js`, `sky.js` |
 | `types.js` | registre d'affichage `TYPE_UI`, branché dans `CLICK` / `CHANGE` ; fiche, Vasculum, carte (`SHEETS`) | `app.js` |
 | `assistant.js` | contexte, outils, appels à Claude | — |
