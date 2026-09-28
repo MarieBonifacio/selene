@@ -296,13 +296,28 @@ select.ep.on{color:var(--accent);border-color:var(--rule)}
 .two{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:36px}
 /* Deux colonnes seulement quand la place le permet (la barre latérale en prend dès 900 px). */
 @media (max-width:819px),(min-width:900px) and (max-width:1079px){.two{grid-template-columns:1fr}}
-.rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
-.room{border:1px solid var(--rule);background:var(--surface);padding:10px;position:relative;overflow:hidden;text-align:left;min-height:84px}
-.room .fill{position:absolute;left:0;bottom:0;width:100%;background:var(--accent);opacity:.18}
-.room *{position:relative}
-.room b{display:block;font-family:"Cormorant Garamond",serif;font-size:1.8rem;line-height:1.1}
-.room small{color:var(--muted)}
-.room.active{outline:2px solid var(--accent);outline-offset:-2px}
+/* Registre (et non plus tuiles) : une ligne par groupe, le nom, le décompte, le pourcentage en chiffres alignés, et un
+   trait fin qui avance sous la ligne. Filtrer : le filet de marge. Dépasser (un budget) : le cinabre. */
+.rooms{display:grid;grid-template-columns:1fr;border-top:1px solid var(--rule)}
+.room{display:grid;grid-template-columns:minmax(0,1fr) auto 4.2em;gap:4px 14px;align-items:baseline;position:relative;padding:9px 8px 11px;
+  border:0;border-bottom:1px solid var(--rule);background:transparent;text-align:left;color:inherit;font:inherit;width:100%}
+button.room{cursor:pointer}button.room:hover{background:var(--surface)}
+.room .fill{position:absolute;left:0;bottom:-1px;height:2px;background:var(--tint,var(--accent));opacity:.9}
+.room small:first-of-type{order:1;color:var(--ink);font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.room small:last-of-type{order:2;color:var(--muted);font-family:var(--f-ui);font-size:.8rem;font-variant-numeric:tabular-nums lining-nums}
+.room b{order:3;text-align:right;font-family:var(--f-ui);font-weight:500;font-size:.95rem;font-variant-numeric:tabular-nums lining-nums}
+.room.active{box-shadow:inset 2px 0 0 var(--tint,var(--accent));background:var(--surface)}
+/* Recherche à facettes : des puces qui filtrent (espace, période, statut), avec leur décompte ; résultats par espace. */
+.facets{display:grid;gap:6px;margin:12px 0 4px}
+.chip-f{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:3px 10px;border:1px solid var(--rule);border-radius:3px;background:transparent;color:var(--muted);font-size:.84rem}
+.chip-f .sig{width:1em;height:1em;margin-right:.15em}
+.chip-f span{font-variant-numeric:tabular-nums lining-nums;color:var(--muted)}
+.chip-f.on{border-color:var(--tint,var(--accent));color:var(--ink);box-shadow:inset 0 0 0 1px var(--tint,var(--accent))}
+@media (pointer:coarse){.chip-f{min-height:44px}}
+.search-grp{display:flex;align-items:center;gap:2px;margin:22px 0 6px}.search-grp .sig{color:var(--tint)}.search-grp span{margin-left:6px;font-variant-numeric:tabular-nums lining-nums}
+/* Journaux à dates suspendues : la date dans la marge, en petites capitales, comme un carnet de terrain. */
+.jdate{font-family:var(--f-label);text-transform:lowercase;letter-spacing:.04em;color:var(--muted);font-size:.9rem;min-width:4.4em;padding-top:.12em;white-space:nowrap}
+@media (max-width:420px){.jdate{min-width:3.6em;font-size:.82rem;white-space:normal}}
 
 /* kundalini calendar */
 .cal{display:grid;grid-template-columns:auto repeat(7,1fr);gap:4px;max-width:420px;font-size:.78rem;color:var(--muted);align-items:center}
@@ -320,6 +335,19 @@ select.ep.on{color:var(--accent);border-color:var(--rule)}
 /* Le tableau est l'ancêtre positionné de tout ce qu'il contient d'absolu (texte pour lecteur d'écran, « ⋯ ») :
    sinon ces éléments échappent à son défilement horizontal et élargissent toute la page sur téléphone. */
 .board{position:relative}
+/* Kanban : une colonne à la fois sur téléphone (sélecteur) ; glisser-déposer et touches [ ] sur ordinateur. */
+.seg{display:none}
+.card[draggable]{cursor:grab}.card.dragging{opacity:.45}
+.col.drop{background:var(--surface);box-shadow:inset 0 0 0 1px var(--tint,var(--accent))}
+@media (max-width:640px){
+  .seg{display:flex;gap:2px;overflow-x:auto;margin:0 0 12px;border-bottom:1px solid var(--rule);scrollbar-width:none}
+  .seg button{flex:none;min-height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;color:var(--muted);font-size:.9rem}
+  .seg button.on{color:var(--ink);border-bottom-color:var(--tint,var(--accent))}
+  .seg button span{font-variant-numeric:tabular-nums;color:var(--muted);margin-left:2px}
+  .board:has(.col[data-ci]){display:block}
+  .board .col[data-ci]:not(.on){display:none}
+  .board .col[data-ci] > h3{display:none}
+}
 
 /* Actions de ligne (classe .ra) : au repos, le contenu seul. Au survol ou au focus sur ordinateur ; sur un écran
    tactile, un toucher sur la ligne les montre (« ⋯ » signale qu'il y en a). Jamais la seule voie d'une action primaire. */

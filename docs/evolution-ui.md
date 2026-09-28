@@ -298,7 +298,15 @@ Livrée en quatre temps, pour que chaque pull request reste relisible.
 - [x] Les messages (« Annuler », « Rangé dans… ») se logent dans la fenêtre modale ouverte au lieu de passer dessous.
 
 **3d : écrans chargés**
-- [ ] Journaux à dates suspendues, registre au lieu des tuiles, kanban adaptatif, recherche à facettes.
+- [x] Journaux à dates suspendues : la date dans la marge, en petites capitales (notes, fragments, rappels,
+      séances, opérations, résultats de recherche), et plus répétée dans la ligne de méta.
+- [x] Registre au lieu des tuiles : une ligne par groupe (nom, décompte, pourcentage en chiffres alignés), un trait
+      de 2 px qui avance sous la ligne ; le groupe filtré porte un filet de marge.
+- [x] Kanban adaptatif : sur téléphone, un sélecteur segmenté et une colonne à la fois ; sur ordinateur, glisser une
+      carte dans une colonne, ou `[` et `]` sur une carte qui a le focus. Les flèches restent partout.
+- [x] Recherche à facettes : espace, période (cette lunaison, ce mois-ci), statut ; chaque puce compte ce qu'elle
+      donnerait, les autres facettes appliquées ; résultats groupés par espace, « N résultats sur M ». Une recherche
+      lancée d'ailleurs (un mot du bilan, un motif) repart sans filtre ; l'export en dossier suit les filtres.
 
 ### Pistes expérimentales
 
