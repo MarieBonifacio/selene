@@ -28,7 +28,10 @@ function parseBackup(text) {
       (site.config.groups != null && !record(site.config.groups)) ||
       (site.config.labels != null && !record(site.config.labels)) ||
       (site.config.assistant != null && (!record(site.config.assistant) ||
-        (site.config.assistant.share != null && !record(site.config.assistant.share))))) throw new Error("Configuration invalide");
+        (site.config.assistant.share != null && !record(site.config.assistant.share)))) ||
+      // sky : le lieu du ciel de l'accueil, facultatif ; ses coordonnées finissent dans une URL, son nom dans le HTML.
+      (site.config.sky != null && (!record(site.config.sky) || typeof site.config.sky.name !== "string" || site.config.sky.name.length > 80 ||
+        typeof site.config.sky.lat !== "number" || !(Math.abs(site.config.sky.lat) <= 90) || typeof site.config.sky.lon !== "number" || !(Math.abs(site.config.sky.lon) <= 180)))) throw new Error("Configuration invalide");
   for (const m of site.config.modules || []) moduleId(m.id, "Module");
   for (const map of [site.config.groups, site.config.labels, site.config.assistant && site.config.assistant.share])
     if (map) for (const k of Object.keys(map)) moduleId(k, "Configuration");

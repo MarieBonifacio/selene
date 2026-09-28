@@ -104,36 +104,136 @@ function fir(x, base, hgt, w) {
   return d + `M${(x - w * .05).toFixed(1)},${(base - hgt * .06).toFixed(1)}h${(w * .1).toFixed(1)}v${(hgt * .08).toFixed(1)}h${(-w * .1).toFixed(1)}Z`;
 }
 function buildTrees() {
-  const r = rng(1729), far = [], near = [], stars = [];
+  const r = rng(1729), far = [], near = [], stars = [], snow = [];
   for (let x = -20; x < 1030; x += 14 + r() * 18) far.push(fir(x, 262 + r() * 10, x < 540 ? 55 + r() * 50 : 70 + r() * 70, 26 + r() * 14));
   for (let x = -30; x < 1040; x += 26 + r() * 40) { if (x > 380 && x < 470 && r() < .7) continue; const low = x < 540; near.push(fir(x, 300 + r() * 6, low ? 70 + r() * 80 : 100 + r() * 120, 40 + r() * 26)); }
   for (let i = 0; i < 70; i++) stars.push(`<circle cx="${(r() * 1000).toFixed(0)}" cy="${(r() * 170).toFixed(0)}" r="${(r() * .9 + .3).toFixed(2)}"/>`);
-  TREES = { far: far.join(""), near: near.join(""), stars: stars.join("") };
+  for (let i = 0; i < 110; i++) snow.push(`<circle cx="${(r() * 1000).toFixed(0)}" cy="${(r() * 300).toFixed(0)}" r="${(r() * .9 + .7).toFixed(2)}"/>`);
+  TREES = { far: far.join(""), near: near.join(""), stars: stars.join(""), snow: snow.join("") };
 }
-/* Trois plans superposés : le ciel et ses étoiles, la lune et son halo, les sapins et la brume. Le ciel et les sapins
-   sont recadrés (« slice ») pour remplir toute largeur ; la lune ne l'est pas, sinon un écran étroit la coupe. Son
-   repère (-150…150) est à l'échelle du ciel (300 de haut) : même taille qu'avant, centrée à 82 % de la largeur. */
-function forestSVG(p) {
+/* Des nuages en strates horizontales, comme dans les ciels gravés : trois bandes, plus ou moins présentes. */
+const cloudsSVG = o => `<g fill="var(--cloud)"><ellipse cx="260" cy="58" rx="330" ry="15" opacity="${(o * .8).toFixed(2)}"/><ellipse cx="720" cy="96" rx="360" ry="19" opacity="${o.toFixed(2)}"/><ellipse cx="470" cy="140" rx="420" ry="13" opacity="${(o * .6).toFixed(2)}"/></g>`;
+/* Trois plans superposés : le ciel et ses étoiles, la lune et son halo, puis les nuages, les sapins, la brume et ce qui
+   tombe (pluie en fines hachures obliques, neige en points). Le ciel et les sapins sont recadrés (« slice ») pour remplir
+   toute largeur ; la lune ne l'est pas, sinon un écran étroit la coupe. Son repère (-150…150) est à l'échelle du ciel
+   (300 de haut). Sans lieu, elle garde sa place d'origine (82 %) ; avec un lieu, `at` la place où elle est
+   (moonPlacement), et `at === false` dit qu'elle est sous l'horizon. Les couleurs viennent de skyScene (sky.js). */
+function forestSVG(p, sc = skyScene({ sunAlt: -30, illum: .5 }), at) {
   if (!TREES) buildTrees();
   const r = 46, c = 50, rx = Math.abs(Math.cos(2 * Math.PI * p)) * r;
   const lit = p < .5 ? `M${c},${c - r} A${r},${r} 0 0 1 ${c},${c + r} A${rx},${r} 0 0 ${p < .25 ? 0 : 1} ${c},${c - r}Z`
                      : `M${c},${c - r} A${r},${r} 0 0 0 ${c},${c + r} A${rx},${r} 0 0 ${p < .75 ? 0 : 1} ${c},${c - r}Z`;
+  const place = at ? `left:${at.x.toFixed(1)}%;top:${at.y.toFixed(1)}%;` : "";
   return `<svg class="scene" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" role="img" aria-label="Lune au-dessus d'une lisière de sapins">
     <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--sky-top)"/><stop offset="1" stop-color="var(--sky-bot)"/></linearGradient></defs>
     <rect width="1000" height="300" fill="url(#sky)"/>
     <g fill="var(--moon)" opacity="var(--star)" style="opacity:var(--star)">${TREES.stars}</g>
   </svg>
-  <div class="moon" aria-hidden="true"><svg viewBox="-150 -150 300 300">
+  ${at === false ? "" : `<div class="moon" aria-hidden="true" style="${place}opacity:var(--moon-o,1)"><svg viewBox="-150 -150 300 300">
     <defs><radialGradient id="glow"><stop offset="0" stop-color="var(--glow)"/><stop offset="1" stop-color="var(--glow)" stop-opacity="0"/></radialGradient></defs>
     <circle r="${40 + 120 * (1 - Math.abs(1 - 2 * p)) * .9}" fill="url(#glow)"/>
-    <g transform="scale(.84) translate(-50 -50)"><circle cx="50" cy="50" r="${r}" fill="var(--moon-shadow)" opacity=".85"/><path d="${lit}" fill="var(--moon)"/></g>
-  </svg></div>
+    <g transform="scale(.84) translate(-50 -50)"><circle cx="50" cy="50" r="${r}" fill="var(--moon-shadow)" opacity=".85"/>${sc.earthshine ? `<circle class="earthshine" cx="50" cy="50" r="${r}" fill="var(--moon)" opacity="${sc.earthshine.toFixed(3)}"/>` : ""}<path d="${lit}" fill="var(--moon)"/></g>
+  </svg></div>`}
   <svg class="scene trees" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-    <defs><linearGradient id="mist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--mist)" stop-opacity="0"/><stop offset=".6" stop-color="var(--mist)"/><stop offset="1" stop-color="var(--mist)" stop-opacity="0"/></linearGradient></defs>
+    <defs><linearGradient id="mist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--mist)" stop-opacity="0"/><stop offset=".6" stop-color="var(--mist)"/><stop offset="1" stop-color="var(--mist)" stop-opacity="0"/></linearGradient>${sc.rain ? `<pattern id="rain" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(18)"><path d="M7 0v9" stroke="var(--rain-c)" stroke-width=".7"/></pattern>` : ""}</defs>
+    ${sc.clouds ? cloudsSVG(sc.clouds) : ""}
     <path d="${TREES.far}" fill="var(--tree-far)"/>
-    <rect y="205" width="1000" height="75" fill="url(#mist)"/>
+    <rect y="${sc.fog ? 140 : 205}" width="1000" height="${sc.fog ? 150 : 75}" fill="url(#mist)"/>
     <path d="${TREES.near}" fill="var(--tree-near)"/>
+    ${sc.rain ? `<rect class="rain" width="1000" height="300" fill="url(#rain)" opacity="${sc.rain}"/>` : ""}
+    ${sc.snow ? `<g class="snow" fill="#eef1ee" opacity="${sc.snow}">${TREES.snow}</g>` : ""}
   </svg>`;
+}
+/* ================= la Fenêtre : lieu, météo, scène du moment =================
+   Le lieu (config.sky, synchronisé) est arrondi au dixième de degré (~10 km) avant tout envoi. La météo vient
+   d'Open-Meteo, gardée sur l'appareil (selene-weather) ; plus vieille que trois heures, elle est ignorée : un ciel sans
+   météo vaut mieux qu'une pluie périmée. Sans lieu : l'heure estimée d'après le fuseau, la lune à sa place d'origine. */
+const skyConf = () => { const c = S().config.sky; return c && Number.isFinite(+c.lat) && Number.isFinite(+c.lon) ? c : null; };
+/* Le mode de l'interface, tel qu'il s'affiche : la scène se tonalise d'après lui. */
+function uiDark() {
+  const r = document.documentElement.dataset;
+  if (r.mode) return r.mode === "dark";
+  if (r.theme) return r.theme === "dark";
+  try { return window.matchMedia("(prefers-color-scheme: dark)").matches; } catch { return true; }
+}
+const WEATHER_KEY = "selene-weather";
+function freshWeather(c) {
+  // Fraîche : moins de trois heures, et pas « du futur » (une horloge d'appareil changée ne ressuscite pas une vieille pluie).
+  try { const w = JSON.parse(localStorage.getItem(WEATHER_KEY)), age = w ? Date.now() - w.at : NaN; return w && w.lat === +c.lat && w.lon === +c.lon && age > -300000 && age < 3 * 3600000 ? w : null; } catch { return null; }
+}
+let weatherBusy = false;
+async function refreshWeather(force = false) {
+  const c = skyConf(); if (!c || c.weather === false || weatherBusy) return;
+  const w = freshWeather(c); if (!force && w && Date.now() - w.at < 30 * 60000) return;
+  weatherBusy = true;
+  try {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${+c.lat}&longitude=${+c.lon}&current=temperature_2m,weather_code,cloud_cover,wind_speed_10m&timezone=auto`);
+    const cur = r.ok ? (await r.json()).current : null;
+    if (!cur || !Number.isFinite(+cur.weather_code)) return;
+    localStorage.setItem(WEATHER_KEY, JSON.stringify({ at: Date.now(), lat: +c.lat, lon: +c.lon, code: +cur.weather_code, temp: +cur.temperature_2m, cloud: +cur.cloud_cover, wind: +cur.wind_speed_10m }));
+    render();
+  } catch {} finally { weatherBusy = false; } // hors ligne, ou l'artefact claude.ai qui ne sort pas : le ciel reste sans météo
+}
+const hm = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
+/* La scène du moment : couleurs (skyScene), place de la lune, et ce qu'on peut en dire en une ligne. */
+function sceneNow(m) {
+  const c = skyConf(), place = c ? { lat: +c.lat, lon: +c.lon } : approxPlace(), t = Date.now(), dark = uiDark();
+  const sun = sunPosition(t, place.lat, place.lon), w = c && c.weather !== false ? freshWeather(c) : null, weather = w ? weatherState(w.code) : null;
+  const sc = skyScene({ sunAlt: sun.alt, illum: m.illum, weather, dark }), facts = [];
+  let moonAt;
+  if (weather) facts.push(`${Math.round(w.temp)} °C · ${WEATHER[weather]}`);
+  if (c) {
+    const ev = nextCrossing(sunPosition, t, place.lat, place.lon, -0.833);
+    if (ev) facts.push(`${ev.rising ? "lever" : "coucher"} ${hm(ev.at)}`);
+    if (c.realMoon !== false) {
+      moonAt = moonPlacement(moonPosition(t, place.lat, place.lon), place.lat) || false;
+      if (moonAt === false) { const r = nextCrossing(moonPosition, t, place.lat, place.lon, 0); facts.push(`la lune est sous l'horizon${r ? `, lever vers ${hm(r.at)}` : ""}`); }
+    }
+  }
+  const line = facts.join(" · ");
+  // Le texte se pose du côté opposé à la lune (qui se lève à gauche, à l'est) ; si elle le chevauche encore (écran étroit,
+  // lune haute), le voile de lecture se renforce : un disque clair sous des lettres claires ne se lit pas.
+  const right = !!(moonAt && moonAt.x < 50), clash = !!(moonAt && (right ? moonAt.x > 36 : moonAt.x < 64) && moonAt.y < 52);
+  if (clash) sc.scrim = Math.max(sc.scrim, .6);
+  return { sc, sun, dark, moonAt, right, line: line && line[0].toUpperCase() + line.slice(1) };
+}
+/* Réglages → Ciel : le lieu (une ville, ou la position de l'appareil, jamais demandée d'office), la météo, la lune. */
+let skyResults = []; // résultats de la dernière recherche de ville (propres à l'appareil, oubliés au rechargement)
+function skySettingsHTML() {
+  const c = skyConf(), f = v => (+v).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return `<section id="ciel"><h3>Ciel</h3><p class="hint">La scène de l'accueil montre le dehors réel : l'heure par le soleil, la lune à sa place, le temps qu'il fait. Sans lieu, l'heure est estimée d'après le fuseau horaire (à trois quarts d'heure près), et il n'y a pas de météo.</p>
+    ${c ? `<p class="row" style="margin:0 0 10px">Lieu : <b>${esc(c.name)}</b> <span class="hint" style="margin:0">(${f(c.lat)} ; ${f(c.lon)}, arrondis à une dizaine de kilomètres)</span><button class="btn ghost sm" data-act="sky-clear">retirer</button></p>` : ""}
+    <div class="row"><input id="skyCity" placeholder="${c ? "Changer de ville…" : "Une ville…"}" aria-label="Ville" autocomplete="off" style="max-width:260px"><button class="btn sm" data-act="sky-search">Chercher</button><button class="btn ghost sm" data-act="sky-locate">Utiliser ma position</button></div>
+    ${skyResults.length ? `<ul class="plain" style="margin-top:8px">${skyResults.map((r, i) => `<li class="item"><span></span><div>${esc(r.name)}</div><button class="btn sm" data-act="sky-pick" data-i="${i}">Choisir</button></li>`).join("")}</ul>` : ""}
+    ${c ? `<label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:400"><input type="checkbox" data-act="sky-weather" ${c.weather !== false ? "checked" : ""}>Météo en direct</label>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:6px;font-weight:400"><input type="checkbox" data-act="sky-moon" ${c.realMoon !== false ? "checked" : ""}>La lune à sa vraie place (sinon, toujours dans le ciel)</label>` : ""}
+    <p class="hint" style="margin-top:10px">La météo et la recherche de ville passent par Open-Meteo : le service voit ce lieu arrondi et l'adresse de l'appareil, rien d'autre.</p></section>`;
+}
+function setSky(name, lat, lon) {
+  const old = skyConf() || {}, r1 = v => Math.round(v * 10) / 10;
+  S().config.sky = { name: String(name).slice(0, 80), lat: r1(lat), lon: r1(lon), weather: old.weather !== false, realMoon: old.realMoon !== false };
+  skyResults = []; site.save(); render(); refreshWeather(true);
+  toast("Lieu gardé. Le ciel de l'accueil est désormais celui d'ici.");
+}
+async function skySearch() {
+  const q = ($("#skyCity") || {}).value;
+  if (!q || !q.trim()) return;
+  try {
+    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q.trim())}&count=5&language=fr&format=json`);
+    const j = r.ok ? await r.json() : {};
+    skyResults = (j.results || []).filter(x => Number.isFinite(+x.latitude) && Number.isFinite(+x.longitude)).slice(0, 5)
+      .map(x => ({ name: [x.name, x.admin1, x.country].filter(Boolean).join(", ").slice(0, 80), lat: +x.latitude, lon: +x.longitude }));
+    if (!skyResults.length) toast("Aucun lieu de ce nom. Une ville plus grande, à côté, fera l'affaire.");
+    render();
+  } catch { toast("Recherche impossible : hors ligne, ou le service ne répond pas."); }
+}
+/* Les jetons de scène, posés sur la scène seule : l'interface autour ne bouge pas avec l'heure. */
+function heroStyle(sc, dark) {
+  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)).join(",");
+  return [["--sky-top", sc.top], ["--sky-bot", sc.bot], ["--tree-far", sc.far], ["--tree-near", sc.near], ["--mist", sc.mist], ["--star", sc.star.toFixed(3)],
+    ["--glow", `rgba(${dark ? "236,232,214" : "255,252,235"},${sc.glow.toFixed(3)})`], ["--moon-o", sc.moonOpacity.toFixed(2)], ["--cloud", sc.cloud],
+    ["--rain-c", sc.ink === "#1a211b" ? "#4a5550" : "#c9d0cc"], ["--scene-ink", sc.ink], ["--scene-scrim", `rgba(${rgb(sc.scrimColor)},${sc.scrim})`]]
+    .map(([k, v]) => `${k}:${v}`).join(";");
 }
 
 
@@ -247,7 +347,7 @@ const VIEWS = {};
    par chargement, pour qu'il ne se replie pas sous les yeux en cours d'utilisation. */
 const HERO_COMPACT = (() => { try { const seen = localStorage.getItem("selene-hero-day") === todayISO(); localStorage.setItem("selene-hero-day", todayISO()); return seen; } catch { return false; } })();
 VIEWS.accueil = () => {
-  const m = moon(), s = S(), now = todayISO();
+  const m = moon(), s = S(), now = todayISO(), win = sceneNow(m);
   const tod = todayTasks().slice(0, 3);
   const alerts = [];
   for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) alerts.push(...TYPE_UI[inst.type].alerts(id, inst, now));
@@ -265,9 +365,10 @@ VIEWS.accueil = () => {
   ${s.config.welcome ? `<section><h2>Composer ton espace</h2><p class="hint">Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.</p>
     ${MODULE_TEMPLATES.map(t => `<div class="set" style="grid-template-columns:1fr auto"><div><b>${esc(t.name)}</b><div class="hint" style="margin:2px 0 0">${esc(t.hint)}</div></div><button class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}">Ajouter</button></div>`).join("")}
     <div class="row" style="margin-top:12px"><button class="btn acc" data-act="welcome-done">C'est bon</button></div></section>` : ""}
-  <section class="hero${HERO_COMPACT ? " compact" : ""}">${forestSVG(m.p)}<div class="txt">
+  <section class="hero${HERO_COMPACT ? " compact" : ""}${win.right ? " txt-right" : ""}" style="${heroStyle(win.sc, win.dark)}" data-weather="${win.sc.weather || ""}" data-sun="${win.sun.alt.toFixed(1)}">${forestSVG(m.p, win.sc, win.moonAt)}<div class="txt">
     <div class="phase">${m.name}</div>
     <p>Éclairée à ${Math.round(m.illum * 100)} %, jour ${Math.floor(m.age) + 1} du cycle. ${m.p < .5 ? `Pleine lune dans ${m.nextFull} j.` : `Nouvelle lune dans ${m.nextNew} j.`}</p>
+    ${win.line ? `<p class="sky-line">${esc(win.line)}</p>` : ""}
   </div></section>
   ${resumeSection()}
   <div class="two">
@@ -563,9 +664,10 @@ VIEWS.reglages = () => {
   return `<h2>Réglages</h2><p class="hint">Tout ici s'applique immédiatement.</p>
   <section><h3>Apparence</h3><p class="hint">Quatre étapes de l'Œuvre, prises dans le sous-bois.</p>
     <div class="swatches">${PALETTES.map(([id, n, col]) => `<button class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}"><i style="background:${col}"></i>${n}</button>`).join("")}</div>
-    <div class="field-row" style="margin-top:14px"><label>Mode<select data-set="config.mode"><option value="auto" ${c.mode === "auto" ? "selected" : ""}>Suivre l'appareil</option><option value="dark" ${c.mode === "dark" ? "selected" : ""}>Toujours sombre</option><option value="light" ${c.mode === "light" ? "selected" : ""}>Toujours clair</option></select></label>
+    <div class="field-row" style="margin-top:14px"><label>Mode<select data-set="config.mode"><option value="auto" ${c.mode === "auto" ? "selected" : ""}>Suivre l'appareil</option><option value="dark" ${c.mode === "dark" ? "selected" : ""}>Toujours sombre</option><option value="light" ${c.mode === "light" ? "selected" : ""}>Toujours clair</option><option value="sun" ${c.mode === "sun" ? "selected" : ""}>Suivre le soleil</option></select></label>
     <label>Nom affiché<input data-set="config.name" value="${esc(c.name)}"></label></div>
     <div class="field-row" style="margin-top:12px"><label>Ouvrir sur (cet appareil)<select data-act="open-on"><option value="accueil" ${openOn() === "accueil" ? "selected" : ""}>L'accueil</option><option value="last" ${openOn() === "last" ? "selected" : ""}>Là où j'en étais</option></select></label><span></span></div></section>
+  ${skySettingsHTML()}
   <section><h3>Modules</h3><p class="hint">Active, renomme, réordonne, range par domaine (Maison, Création… : la navigation les regroupe). Les modules personnalisés (marqués ✕) peuvent être supprimés définitivement.</p>
     <datalist id="domainList">${[...new Set(c.modules.map(m => String(m.group || "").trim()).filter(Boolean))].map(g => `<option value="${esc(g)}">`).join("")}</datalist>
     ${c.modules.map((m, i) => `<div class="set mod" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="Activer ${esc(label(m.id))}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="Nom du module">${SYSTEM.includes(m.id) ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="Domaine" aria-label="Domaine de ${esc(label(m.id))}">`}<div class="row">${s.modules[m.id] ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="Supprimer définitivement" title="Supprimer définitivement">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="Descendre">↓</button></div></div>`).join("")}
@@ -843,7 +945,10 @@ function moduleSettingsHTML(mod) {
 function applyTheme() {
   const c = S().config, r = document.documentElement;
   r.dataset.palette = c.palette;
-  if (c.mode === "auto") delete r.dataset.mode; else r.dataset.mode = c.mode;
+  // « Suivre le soleil » : sombre du crépuscule (le soleil à 3° sous l'horizon) à l'aube, au lieu réglé ou estimé.
+  // Deux bascules par jour, comme le mode automatique d'iOS : jamais un fondu continu de l'interface.
+  if (c.mode === "sun") { const pl = skyConf() || approxPlace(); r.dataset.mode = sunPosition(Date.now(), +pl.lat, +pl.lon).alt < -3 ? "dark" : "light"; }
+  else if (c.mode === "auto") delete r.dataset.mode; else r.dataset.mode = c.mode;
 }
 let lastView = null;
 /* Brouillons : le texte en cours d'un champ libre survit à la fermeture de l'app (iOS tue volontiers une PWA
@@ -970,6 +1075,14 @@ const CLICK = {
   "sheet-espaces": () => openSheet("espaces"),
   "sheet-capture": () => openSheet("capture"),
   "palette-open": () => openPalette(),
+  "sky-search": () => skySearch(),
+  "sky-pick": el => { const r = skyResults[+el.dataset.i]; if (r) setSky(r.name, r.lat, r.lon); },
+  "sky-locate": () => {
+    if (!navigator.geolocation) return toast("Ce navigateur ne donne pas sa position. Une ville fera l'affaire.");
+    navigator.geolocation.getCurrentPosition(p => setSky("Ma position", p.coords.latitude, p.coords.longitude),
+      () => toast("Position refusée ou indisponible. Une ville fera l'affaire."), { maximumAge: 3600000, timeout: 15000 });
+  },
+  "sky-clear": () => { delete S().config.sky; try { localStorage.removeItem(WEATHER_KEY); } catch {} site.save(); render(); toast("Lieu retiré : l'heure redevient estimée, sans météo."); },
   "bridge-edit": el => { bridgeOpen = el.dataset.mod; render(); const i = $("#bridgeIn"); if (i) i.focus(); },
   "bridge-save": el => bridgeSave(el.dataset.mod),
   "bridge-close": () => { bridgeOpen = null; render(); },
@@ -1058,6 +1171,7 @@ document.addEventListener("keydown", e => {
 });
 // ⌘K (Ctrl+K) ouvre ou ferme la palette, même pendant une saisie.
 document.addEventListener("keydown", e => { if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === "k" || e.key === "K")) { e.preventDefault(); openPalette(); } });
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "skyCity") skySearch(); });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "capSheetIn") capture(e.target); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && e.target.id === "bridgeIn") bridgeSave(e.target.dataset.mod); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
 const CHANGE = {}; // actions « change » des types de module (remplie par types.js)
 document.addEventListener("change", e => {
@@ -1092,6 +1206,11 @@ document.addEventListener("change", e => {
     const m = S().config.modules[+el.closest("[data-i]").dataset.i], v = el.value.trim().slice(0, 40);
     if (v) m.group = v; else delete m.group;
     site.save(); el.blur(); render();
+  }
+  else if (act === "sky-weather" || act === "sky-moon") {
+    const c = skyConf(); if (!c) return;
+    c[act === "sky-weather" ? "weather" : "realMoon"] = el.checked; site.save(); render();
+    if (act === "sky-weather" && el.checked) refreshWeather(true);
   }
   else if (act === "open-on") { try { localStorage.setItem("selene-open", el.value); } catch {} toast(el.value === "last" ? "L'app rouvrira le dernier espace où tu étais." : "L'app s'ouvrira sur l'accueil."); }
   else if (act === "mod-on") { S().config.modules[+el.closest("[data-i]").dataset.i].on = el.checked; site.save(); render(); }

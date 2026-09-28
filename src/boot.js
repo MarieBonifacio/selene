@@ -17,6 +17,14 @@ try {
 } catch {}
 render();
 { const e = routeOf().entry; if (e) focusEntry(e); } // un lien direct vers une entrée, ouvert tel quel
+// La Fenêtre : l'heure avance, le ciel aussi (toutes les cinq minutes, sur l'accueil, ou partout en mode « suivre le
+// soleil ») ; la météo se relit au plus toutes les demi-heures. Minuterie détachée : elle ne retient jamais Node en test.
+(function skyTick() {
+  const t = setTimeout(() => { if (!document.hidden) { if (routeOf().view === "accueil" || S().config.mode === "sun") render(); refreshWeather(); } skyTick(); }, 300000);
+  if (t && t.unref) t.unref();
+})();
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshWeather(); });
+refreshWeather();
 (async () => {
   try {
     if (!window.claude || !window.claude.use) {
