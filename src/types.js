@@ -62,7 +62,7 @@ function refHTML(ref) {
 function linksHTML(mod, e) {
   const out = (e.links || []).map(l => `<span>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</span>`);
   const inc = (backlinks().get(`${mod}/${e.id}`) || []).map(b => `<span>${esc(LINK_BACK[b.type])} ${refHTML(b.from)}</span>`);
-  return `<div class="meta links">${[...out, ...inc].join("")}<span class="acts ra"><button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></span></div>`;
+  return `<div class="meta links">${[...out, ...inc].join("")}<span class="acts ra"><button class="btn ghost sm" data-act="specimen" data-mod="${esc(mod)}">fiche</button><button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></span></div>`;
 }
 /* Dérivation en cours, par module : la prochaine entrée écrite dérivera de ces références (une, ou deux pour
    résoudre une tension). Propre à l'appareil, oubliée si l'on quitte l'app. */
@@ -432,7 +432,7 @@ function collectionForm(id, item, title) {
 function collectionCard(id, e, ci, last) {
   const f = S().modules[id].config.fields, meta = [f.tag && e.tag ? `<span class="tag">${esc(e.tag)}</span>` : "", f.due && e.due ? `<span>${fmt(e.due)}</span>` : "", originHTML(e, e.title)].join("");
   return `<div class="card" data-id="${esc(e.id)}"><b>${esc(e.title)}</b>${f.subtitle && e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ""}${meta ? `<div class="meta">${meta}</div>` : ""}${f.text && e.text ? `<p>${esc(e.text.slice(0, 160))}${e.text.length > 160 ? "…" : ""}</p>` : ""}
-      <div class="row">${ci > 0 ? `<button class="btn ghost sm" data-act="col-move" data-d="-1" aria-label="Reculer">←</button>` : ""}${ci < last ? `<button class="btn ghost sm" data-act="col-move" data-d="1" aria-label="Avancer">→</button>` : ""}<span class="spacer"></span><button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></div>`;
+      <div class="row">${ci > 0 ? `<button class="btn ghost sm" data-act="col-move" data-d="-1" aria-label="Reculer">←</button>` : ""}${ci < last ? `<button class="btn ghost sm" data-act="col-move" data-d="1" aria-label="Avancer">→</button>` : ""}<span class="spacer"></span><button class="btn ghost sm ra" data-act="specimen">fiche</button><button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></div>`;
 }
 /* ---- concordance : une collection de motifs, comptés dans les textes de tous les autres modules ----
    Mot entier (« lune » ne trouve pas « lunettes »), sans accents ni casse, pluriel en s/x toléré ; les variantes
@@ -498,7 +498,7 @@ function concordanceView(id, inst, head) {
       <div class="meta"><span>${n ? plural(n, "occurrence") : "jamais rencontré"}${where}</span>${fallow(inst, r) ? `<span class="late">en jachère</span>` : ""}</div>
       ${r.neighbours.length ? `<div class="meta"><span>voisins : ${r.neighbours.map(x => `${esc(x.name)} (${x.n})`).join(", ")}</span></div>` : ""}
       ${c.fields.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}</div>
-      <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${n ? `<button class="btn ghost sm" data-act="search-for" data-q="${esc(e.title)}">voir</button>` : ""}<button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></li>`;
+      <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${n ? `<button class="btn ghost sm" data-act="search-for" data-q="${esc(e.title)}">voir</button>` : ""}<button class="btn ghost sm ra" data-act="specimen">fiche</button><button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></li>`;
   };
   return `<div data-mod="${esc(id)}">${head}
   ${sleeping.length ? `<section><h3>En jachère</h3><p class="hint">Vivants, mais absents depuis plus de ${esc(c.fallowDays)} jours. Reposés, pas perdus.</p><div class="row">${sleeping.map(r => `<button class="btn ghost sm" data-act="search-for" data-q="${esc(r.e.title)}">${esc(r.e.title)} · ${plural(moons(diffDays(todayISO(), r.last.date)), "lunaison")}</button>`).join("")}</div></section>` : ""}
@@ -527,7 +527,7 @@ TYPE_UI.collection = {
     return `<div data-mod="${esc(id)}">${head}
   <div class="row" style="margin-bottom:10px"><select data-act="col-f" aria-label="Filtrer"><option value="">Tous</option>${c.statuses.map(st => `<option ${st === filter ? "selected" : ""}>${esc(st)}</option>`).join("")}</select></div>
   <div class="two"><div><ul class="plain">${(pg => pg.items.map(e => `<li class="item" data-id="${esc(e.id)}"><span></span><div><b>${esc(e.title)}</b>${f.subtitle ? (e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ` <span class="hint">${esc(f.subtitle.toLowerCase())} à préciser</span>`) : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${c.review ? "à réexaminer le " : ""}${fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}${reviewedHTML(e) || e.origin ? `<div class="meta">${reviewedHTML(e)}${originHTML(e, e.title)}</div>` : ""}</div>
-    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">Rien dans ce filtre.</li>`}</ul></div><div>${panel}</div></div></div>`;
+    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm ra" data-act="specimen">fiche</button><button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">Rien dans ce filtre.</li>`}</ul></div><div>${panel}</div></div></div>`;
   },
   settings: (id, { config: c }) => {
     const f = c.fields, fid = esc(id);
@@ -926,7 +926,7 @@ function noteTargets(fromId) {
 TYPE_UI.notes = {
   view(id) {
     const inst = S().modules[id], c = inst.config, targets = noteTargets(id);
-    return `<div data-mod="${esc(id)}"><h2>${esc(label(id))}</h2>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}
+    return `<div data-mod="${esc(id)}"><div class="row" style="align-items:baseline"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span>${c.inbox && inst.entries.length > 1 ? `<button class="btn sm" data-act="vasculum">Trier une à une</button>` : ""}</div>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}
   ${deriveBanner(id)}<div class="capture" style="margin-bottom:18px"><input id="noteIn" data-draft placeholder="${esc(c.placeholder)}" aria-label="Nouvelle note"><button class="btn acc" data-act="note-add">Garder</button></div>
   <ul class="plain">${(pg => pg.items.map(x => { const intent = captureIntent(x.text); return `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}${epSelect(id, x)}${originHTML(x, x.text)}</div>${linksHTML(id, x)}
     ${intent && intent.to !== id ? `<div class="row" style="margin-top:6px"><button class="btn sm acc" data-act="note-file">Ranger : ${esc(intent.say)}</button></div>` : ""}
@@ -969,7 +969,9 @@ TYPE_UI.notes = {
 /* Liaisons, communes aux fragments et aux notes (l'entrée est cherchée par sa référence « module/id »). */
 CLICK["derive-start"] = el => {
   const mod = el.dataset.mod, id = idOf(el); if (!refFind(`${mod}/${id}`)) return;
-  deriveFrom[mod] = [`${mod}/${id}`]; render();
+  deriveFrom[mod] = [`${mod}/${id}`]; closeSheet(); // depuis une fiche : on va écrire dans l'espace de l'entrée
+  if (routeOf().view !== mod) { location.hash = mod; return; }
+  render();
   const inp = $("#scrapIn") || $("#noteIn"); if (inp) inp.focus();
 };
 CLICK["derive-cancel"] = el => { delete deriveFrom[el.dataset.mod]; render(); };
@@ -1074,3 +1076,69 @@ for (const [type, ui] of Object.entries(TYPE_UI)) for (const [table, acts] of [[
   if (Object.hasOwn(table, act)) throw new Error(`Action « ${act} » du type ${type} déjà définie`);
   table[act] = fn;
 }
+
+/* ================= la fiche Spécimen : tout ce qu'on sait d'une entrée, au même endroit =================
+   Le texte, son étiquette (date, chapitre, étiquette, état, statut épistémique), sa provenance, ses liens sortants et
+   entrants, les motifs qui s'y trouvent, l'histoire de son statut et de ses réexamens. Un tiroir sur ordinateur, une
+   feuille sur téléphone ; elle se redessine à chaque changement. */
+/* Les motifs (collections en concordance) présents dans un texte, selon la règle même de la concordance. */
+function motifsOf(text) {
+  const f = fold(text), w = wordsOf(f), out = [];
+  for (const [id, inst] of Object.entries(S().modules)) if (isConcordance(inst) && enabled(id))
+    for (const e of inst.entries) { const m = motifForms(e); if (m.single.some(v => w.has(v) || w.has(v + "s") || w.has(v + "x")) || (m.re && m.re.test(f))) out.push({ id, e }); }
+  return out;
+}
+/* Le statut épistémique codé par la forme, pas par la couleur : observé plein, hypothèse pointillée,
+   interprétation à moitié, inexpliqué pointé. */
+const EP_GLYPH = { obs: `<circle cx="8" cy="8" r="5" fill="currentColor"/>`, hyp: `<circle cx="8" cy="8" r="5" stroke-dasharray="2 2"/>`,
+  int: `<circle cx="8" cy="8" r="5"/><path d="M8 3a5 5 0 0 1 0 10z" fill="currentColor" stroke="none"/>`, inx: `<circle cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none"/>` };
+const epGlyph = ep => Object.hasOwn(EP_GLYPH, ep || "") ? `<svg class="ep-glyph" viewBox="0 0 16 16" aria-hidden="true">${EP_GLYPH[ep]}</svg>` : "";
+SHEETS.specimen = ref => {
+  const hit = refFind(ref); if (!hit) return `<p class="empty">Cette entrée n'existe plus.</p>`;
+  const { mod, e } = hit, inst = S().modules[mod], c = inst.config, text = String(e.text || e.note || "");
+  const thought = inst.type === "notes" || (inst.type === "cumul" && (inst.scraps || []).includes(e));
+  const long = d => fmt(d, { day: "numeric", month: "long", year: "numeric" }), when = e.date || e.due || e.created;
+  const chapter = inst.type === "cumul" && e.category ? (c.categories.find(x => x.id === e.category) || {}).name : "";
+  const links = [...(e.links || []).map(l => `<li>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</li>`), ...(backlinks().get(`${mod}/${e.id}`) || []).map(b => `<li>${esc(LINK_BACK[b.type])} ${refHTML(b.from)}</li>`)];
+  const motifs = motifsOf([e.title, e.subtitle, text].filter(Boolean).join(" "));
+  const statusOf = k => k ? EP_STATUS[k] : "sans statut";
+  const log = [...(e.epLog || [])].reverse().map(x => `<li>${x.date ? long(x.date) + " : " : ""}${esc(statusOf(x.from))} → ${epGlyph(x.to)}${esc(statusOf(x.to))}</li>`);
+  const reviews = [...(e.reviews || [])].reverse().map(r => `<li>${esc(r.verdict)}, le ${long(r.date)}</li>`);
+  return `<div class="spec ${tintOf(mod)}" data-mod="${esc(mod)}" data-id="${esc(e.id)}">
+    <div class="plate">${sigil(mod)}<span class="pl">${esc(label(mod))}</span></div>
+    ${e.title ? `<h2 id="sheetTitle">${esc(e.title)}</h2>${e.subtitle ? `<p class="hint">${esc(e.subtitle)}</p>` : ""}` : `<h2 id="sheetTitle" class="sr">Fiche de l'entrée</h2>`}
+    ${text ? `<blockquote class="spec-text">${esc(text)}</blockquote>` : ""}
+    <p class="spec-label">${[when ? long(when) : "", chapter, e.tag, e.status].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("")}${e.ep ? `<span>${epGlyph(e.ep)}${esc(EP_STATUS[e.ep])}</span>` : ""}</p>
+    ${thought ? `<div class="row">${epSelect(mod, e)}<span class="spacer"></span><button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></div>` : ""}
+    ${e.origin ? `<h3>Provenance</h3><p class="meta">${originHTML(e, text || e.title)}</p>` : ""}
+    ${links.length ? `<h3>Liens</h3><ul>${links.join("")}</ul>` : ""}
+    ${motifs.length ? `<h3>Motifs</h3><div class="row">${motifs.map(m => `<button class="btn ghost sm" data-act="search-for" data-q="${esc(m.e.title)}">${esc(m.e.title)}</button>`).join("")}</div>` : ""}
+    ${log.length ? `<h3>Statut, au fil du temps</h3><ul class="meta" style="display:block">${log.join("")}</ul>` : ""}
+    ${reviews.length ? `<h3>Réexamens</h3><ul>${reviews.join("")}</ul>` : ""}
+    <div class="row" style="margin-top:18px"><a class="btn sm" href="#${esc(mod)}/${esc(e.id)}">Voir dans ${esc(label(mod))}</a>${inst.type === "collection" ? `<button class="btn ghost sm" data-act="col-edit">modifier</button>` : ""}</div>
+  </div>`;
+};
+CLICK["specimen"] = el => { const mod = modOf(el), id = idOf(el); if (mod && id) openSheet("specimen", `${mod}/${id}`); };
+
+/* ================= le Vasculum : trier la boîte de réception, une note à la fois =================
+   Comme la boîte d'herborisation où l'on met les spécimens avant de les presser : une décision à la fois, les espaces
+   cibles en grands sigils, le rangement reconnu proposé en premier. Réutilise les actions de la boîte (note-to,
+   note-file, note-del) ; « Plus tard » passe à la suivante sans rien toucher. */
+let vascSkip = 0;
+SHEETS.vasculum = () => {
+  const s = S(), inbox = inboxId(s.modules);
+  if (!inbox) return `<h2 id="sheetTitle">Vasculum</h2><p class="empty">Aucune boîte de réception.</p>`;
+  const list = s.modules[inbox].entries, n = list.length;
+  if (!n) return `<h2 id="sheetTitle">Vasculum</h2><p class="empty">La boîte est vide. Tout a trouvé sa place, ou presque.</p><div class="row"><button class="btn" data-act="sheet-close">Fermer</button></div>`;
+  const i = vascSkip % n, note = list[i], intent = captureIntent(note.text), targets = noteTargets(inbox);
+  return `<div class="vasc" data-mod="${esc(inbox)}" data-id="${esc(note.id)}"><h2 id="sheetTitle" class="sr">Vasculum : trier la boîte</h2>
+    <p class="vasc-count">Vasculum · ${i + 1} sur ${n}</p>
+    <blockquote class="spec-text">${esc(note.text)}</blockquote>
+    <p class="meta">${fmt(note.date)}${note.ep ? `<span>${epGlyph(note.ep)}${esc(EP_STATUS[note.ep])}</span>` : ""}</p>
+    ${intent && intent.to !== inbox ? `<button class="btn acc" data-act="note-file">Ranger : ${esc(intent.say)}</button>` : ""}
+    ${targets.length ? `<div class="vasc-targets">${targets.map(k => `<button type="button" class="${tintOf(k)}" data-act="note-to" data-to="${esc(k)}">${sigil(k)}<span>${esc(label(k))}</span></button>`).join("")}</div>` : `<p class="hint">Aucun espace ne sait encore recevoir une note.</p>`}
+    <div class="row"><button class="btn ghost" data-act="vasc-skip">Plus tard</button><span class="spacer"></span><button class="btn ghost" data-act="note-del">Supprimer</button></div></div>`;
+};
+CLICK["vasculum"] = () => { vascSkip = 0; openSheet("vasculum"); };
+CLICK["vasc-skip"] = () => { vascSkip++; $("#sheetBody").innerHTML = SHEETS.vasculum(); };
+CLICK["sheet-close"] = () => closeSheet();

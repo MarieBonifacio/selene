@@ -287,7 +287,15 @@ Livrée en quatre temps, pour que chaque pull request reste relisible.
 - [ ] « Ciel vivant » (brume qui dérive, pluie qui tombe lentement) : laissé pour plus tard ; tout est statique.
 
 **3c : signatures**
-- [ ] Fiche Spécimen et panneau de détail ; le Halo ; le Vasculum.
+- [x] Fiche Spécimen (« fiche » dans les actions d'un fragment, d'une note, d'un élément de collection) : texte,
+      étiquette, statut codé par la forme (● ◌ ◐ ⊙), provenance, liens sortants et entrants, motifs présents dans le
+      texte, histoire du statut et des réexamens ; statut, dériver, lier et modifier sur place. Tiroir sur ordinateur,
+      feuille sur téléphone, redessinée à chaque changement.
+- [x] Le Halo : l'anneau de la mini-lune se referme au rythme du minuteur et bat une fois à la fin ; un appui long
+      sur la mini-lune lance ou met en pause (le bouton du minuteur reste).
+- [x] Le Vasculum : « Trier une à une » (boîte, feuille Capturer, palette) ; une note à la fois, la plus ancienne
+      d'abord, le rangement reconnu en premier, les espaces en grands sigils, « Plus tard », « Supprimer ».
+- [x] Les messages (« Annuler », « Rangé dans… ») se logent dans la fenêtre modale ouverte au lieu de passer dessous.
 
 **3d : écrans chargés**
 - [ ] Journaux à dates suspendues, registre au lieu des tuiles, kanban adaptatif, recherche à facettes.
