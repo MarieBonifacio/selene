@@ -47,6 +47,7 @@ les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne)
 | `passeur.js` | appel du passeur (Supabase Edge, version hébergée connectée) et lecture d'une page : métadonnées, flux annoncés | — |
 | `dehors.js` | Dehors, lecture des flux (RSS, Atom, JSON Feed) par DOMParser, fusion du cache, « nouveau depuis » | — |
 | `veille.js` | Research Watch, pur : ce que l'on suit (recherche, ORCID, OpenAlex), requête, traduction des résultats | — |
+| `agenda.js` | calendrier dédié, pur : lecture iCalendar (fuseaux, journées entières), récurrences dépliées sur une fenêtre | — |
 | `app.js` | utilitaires, modules fixes, normalisation, stores, vues, rendu, actions | `store.js`, `domain.js`, `sky.js` |
 | `types.js` | registre d'affichage `TYPE_UI`, branché dans `CLICK` / `CHANGE` ; fiche, Vasculum, carte (`SHEETS`) | `app.js` |
 | `assistant.js` | contexte, outils, appels à Claude | — |

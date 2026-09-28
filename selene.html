@@ -329,6 +329,7 @@ ul.dehors>.item>div:nth-child(2){min-width:0}
 ul.dehors+ul.dehors,h3+ul.dehors{margin-top:0}
 .dehors-view h3{margin-top:22px}
 .capture select{flex:0 1 auto;width:auto;max-width:11em}
+.agenda-ev{padding:3px 0}.agenda-ev .when{display:inline-block;min-width:7.5em;font-variant-numeric:tabular-nums;color:var(--muted)}
 @media (max-width:640px){ul.dehors>.item,ul.dehors-cfg>.item{grid-template-columns:auto minmax(0,1fr)}ul.dehors>.item>.row,ul.dehors-cfg>.item>.row{grid-column:2;justify-content:flex-start}
   .capture.capture-wrap{flex-wrap:wrap}.capture.capture-wrap input{flex:1 1 100%}}
 .meta .acts{margin-left:auto;display:inline-flex;gap:2px}.meta .acts .btn{padding:0 6px;font-size:.8rem}
@@ -723,7 +724,7 @@ function authPersist(s) {
 const LAST_UID_KEY = "selene-auth-last-uid";
 /* Déconnexion ou changement de compte : rien de la personne précédente ne doit rester sur l'appareil —
    ni ses données, ni sa conversation avec l'assistant, ni sa clé API (facturée à elle). */
-const PERSONAL_KEYS = ["selene-chat", "selene-api-key", "selene-recent", "selene-openalex-key", "selene-dehors", "selene-mb-seen", "selene-radar"]; // selene-recent : les derniers espaces ouverts ; puis ce que le dehors a apporté
+const PERSONAL_KEYS = ["selene-chat", "selene-api-key", "selene-recent", "selene-openalex-key", "selene-dehors", "selene-mb-seen", "selene-radar", "selene-ics-url", "selene-ics"]; // selene-recent : les derniers espaces ouverts ; puis ce que le dehors a apporté
 function authResetLocal() {
   board.reset({ updatedAt: 0, tasks: [] });
   site.reset(siteSeed());
@@ -2138,6 +2139,105 @@ function oaWorks(json) {
   return out;
 }
 
+/* ================= agenda : un calendrier iCal dédié (pur, sans DOM ni réseau) =================
+   Selene lit un seul calendrier (« Selene »), par son adresse iCal secrète, et n'en montre qu'aujourd'hui et demain.
+   Ici : lire le format iCalendar (RFC 5545) juste assez — lignes repliées, journées entières, fuseaux (TZID), récurrences
+   simples (RRULE quotidienne, hebdomadaire, mensuelle, annuelle ; INTERVAL, COUNT, UNTIL, BYDAY ; EXDATE).
+   Le réseau (le passeur) et l'affichage sont dans types.js. Se teste seul (tests/agenda.test.js). */
+const ICS_DAYS = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
+/* L'instant (UTC) d'une heure murale dans un fuseau : on devine, on mesure l'écart du fuseau, on corrige. */
+function zoned(y, mo, d, h, mi, s, tz) {
+  let t = Date.UTC(y, mo - 1, d, h, mi, s);
+  if (!tz) return t;
+  try {
+    const f = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    for (let i = 0; i < 2; i++) {
+      const p = Object.fromEntries(f.formatToParts(new Date(t)).map(x => [x.type, +x.value]));
+      t -= Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Date.UTC(y, mo - 1, d, h, mi, s);
+    }
+  } catch {} // fuseau inconnu : l'heure murale, prise pour UTC
+  return t;
+}
+/* Une valeur DTSTART/DTEND/EXDATE → { t, allDay } ; `local` : la date d'une journée entière, en heure locale. */
+function icsTime(v, params) {
+  const m = String(v || "").trim().match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z?))?$/);
+  if (!m) return null;
+  const [, y, mo, d, h, mi, s, z] = m;
+  if (h == null) return { t: new Date(+y, +mo - 1, +d).getTime(), allDay: true };
+  if (z) return { t: Date.UTC(+y, +mo - 1, +d, +h, +mi, +s), allDay: false };
+  const tz = (params.match(/TZID=("?)([^;:"]+)\1/) || [])[2];
+  return { t: tz ? zoned(+y, +mo, +d, +h, +mi, +s, tz) : new Date(+y, +mo - 1, +d, +h, +mi, +s).getTime(), allDay: false };
+}
+const icsUnescape = s => String(s || "").replace(/\\n/gi, " ").replace(/\\([,;\\])/g, "$1").replace(/\s+/g, " ").trim();
+/* Le texte d'un calendrier → ses événements : { uid, summary, location, start, end, allDay, rrule, exdates }. */
+function icsParse(text) {
+  const lines = String(text || "").replace(/\r\n?/g, "\n").replace(/\n[ \t]/g, "").split("\n"), out = [];
+  let ev = null;
+  for (const line of lines) {
+    if (line === "BEGIN:VEVENT") { ev = { exdates: [] }; continue; }
+    if (line === "END:VEVENT") {
+      if (ev && ev.start && ev.status !== "CANCELLED") {
+        const end = ev.end ? ev.end.t : ev.start.t + (ev.start.allDay ? 86400000 : 3600000);
+        out.push({ uid: ev.uid || "", summary: ev.summary || "(sans titre)", location: ev.location || "", start: ev.start.t, end: Math.max(end, ev.start.t), allDay: ev.start.allDay, rrule: ev.rrule || "", exdates: ev.exdates, recurrenceId: ev.recurrenceId || null });
+      }
+      ev = null; continue;
+    }
+    if (!ev) continue;
+    const i = line.indexOf(":"); if (i < 0) continue;
+    const head = line.slice(0, i), val = line.slice(i + 1), name = head.split(";")[0].toUpperCase(), params = head.slice(name.length);
+    if (name === "SUMMARY") ev.summary = icsUnescape(val).slice(0, 200);
+    else if (name === "LOCATION") ev.location = icsUnescape(val).slice(0, 200);
+    else if (name === "UID") ev.uid = val.trim().slice(0, 300);
+    else if (name === "STATUS") ev.status = val.trim().toUpperCase();
+    else if (name === "DTSTART") ev.start = icsTime(val, params);
+    else if (name === "DTEND") ev.end = icsTime(val, params);
+    else if (name === "RRULE") ev.rrule = val.trim();
+    else if (name === "RECURRENCE-ID") { const r = icsTime(val, params); if (r) ev.recurrenceId = r.t; }
+    else if (name === "EXDATE") for (const x of val.split(",")) { const r = icsTime(x, params); if (r) ev.exdates.push(r.t); }
+  }
+  return out;
+}
+/* Les occurrences d'un événement dans [from, to[ (millisecondes). Une récurrence est dépliée jour après jour, en heure
+   murale (un rendez-vous de 14 h reste à 14 h après le changement d'heure). 800 pas au plus : un garde-fou. */
+function icsExpand(e, from, to) {
+  const len = e.end - e.start, out = [];
+  if (!e.rrule) return e.end > from && e.start < to ? [{ ...e }] : [];
+  const r = Object.fromEntries(e.rrule.split(";").map(x => x.split("=")).map(([k, v]) => [String(k).toUpperCase(), v || ""]));
+  const freq = r.FREQ, every = Math.max(1, +r.INTERVAL || 1), count = +r.COUNT || 0, until = r.UNTIL ? (icsTime(r.UNTIL, "") || {}).t : null;
+  const byday = (r.BYDAY || "").split(",").map(x => ICS_DAYS[x.replace(/^[+-]?\d+/, "")]).filter(x => x != null);
+  if (!["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].includes(freq)) return e.end > from && e.start < to ? [{ ...e }] : [];
+  const s0 = new Date(e.start), wall = (y, m, d) => new Date(y, m, d, s0.getHours(), s0.getMinutes(), s0.getSeconds()).getTime();
+  const ex = new Set(e.exdates);
+  let n = 0;
+  for (let i = 0; i < 800; i++) {
+    let cands;
+    if (freq === "DAILY") cands = [wall(s0.getFullYear(), s0.getMonth(), s0.getDate() + i * every)];
+    else if (freq === "WEEKLY") {
+      const monday = s0.getDate() - ((s0.getDay() + 6) % 7) + i * 7 * every, days = byday.length ? byday : [s0.getDay()];
+      cands = days.map(d => wall(s0.getFullYear(), s0.getMonth(), monday + ((d + 6) % 7))).sort((a, b) => a - b);
+    } else if (freq === "MONTHLY") { const t = new Date(s0.getFullYear(), s0.getMonth() + i * every, 1); cands = t.getMonth() === new Date(s0.getFullYear(), s0.getMonth() + i * every, s0.getDate()).getMonth() ? [wall(t.getFullYear(), t.getMonth(), s0.getDate())] : []; }
+    else { const y = s0.getFullYear() + i * every; cands = new Date(y, s0.getMonth(), s0.getDate()).getMonth() === s0.getMonth() ? [wall(y, s0.getMonth(), s0.getDate())] : []; }
+    for (const t of cands) {
+      if (t < e.start) continue;
+      if ((until != null && t > until) || (count && n >= count) || t >= to) return out;
+      n++;
+      if (!ex.has(t) && t + len > from) out.push({ ...e, start: t, end: t + len });
+    }
+  }
+  return out;
+}
+/* Ce qui se tient entre `from` et `to` : récurrences dépliées, exceptions (RECURRENCE-ID) à la place de l'occurrence
+   qu'elles remplacent, dans l'ordre (les journées entières d'abord). */
+function icsBetween(events, from, to) {
+  const moved = new Set(events.filter(e => e.recurrenceId != null).map(e => `${e.uid}|${e.recurrenceId}`));
+  const all = [];
+  for (const e of events) {
+    if (e.recurrenceId != null) { if (e.end > from && e.start < to) all.push({ ...e }); continue; }
+    for (const o of icsExpand(e, from, to)) if (!moved.has(`${e.uid}|${o.start}`)) all.push(o);
+  }
+  return all.sort((a, b) => (b.allDay - a.allDay) || a.start - b.start);
+}
+
 /* ================= utils ================= */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -2601,6 +2701,7 @@ VIEWS.accueil = () => {
         ${alerts.map(a => `<li class="item alert"><span></span><div>${a.text}</div>${a.actions ? `<div class="row">${a.actions}</div>` : a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">voir</a>` : ""}</li>`).join("")}
       </ul>
       ${!tod.length ? (taskModules().length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : `<p class="empty">Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.</p>`) : ""}
+      ${agendaHTML()}
       ${dehorsLine()}
       ${radarPlace() && radarWords(radarConf().words).length ? `<p class="hint radar-go"><button class="btn ghost sm" data-act="radar-open">Radar culturel</button> ce qui, près d'ici, parle de tes mots</p>` : ""}
     </section>
@@ -3053,6 +3154,7 @@ VIEWS.reglages = () => {
     <button class="btn ghost" data-act="auth-out">Se déconnecter</button></section>` : ""}
   ${hosted() ? shareSettingsHTML() : ""}
   ${hosted() && authReady() && authSession ? passeurSettingsHTML() : ""}
+  ${hosted() && authReady() && authSession ? agendaSettingsHTML() : ""}
   <section><h3>Sauvegarde</h3><p class="hint">Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.</p>
     <div class="row"><button class="btn" data-act="exp">Exporter</button><label class="btn" style="display:inline-block;font-weight:500">Importer<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label></div></section>`;
 };
@@ -5515,6 +5617,69 @@ CLICK["dehors-mb-add"] = el => {
   dehorsHideItem(f, x); site.save(); render(); toast(`Ajouté à ${label(x.mb.mod)} : ${x.mb.artist}, « ${x.mb.album} ».`);
 };
 
+/* ================= Agenda : un calendrier dédié, aujourd'hui et demain (agenda.js pour la lecture iCal) =================
+   L'adresse iCal secrète est une capacité au porteur : qui la possède lit l'agenda. Elle reste donc dans ce navigateur
+   (jamais synchronisée, effacée à la déconnexion) et ne voyage que vers ton passeur, qui ne garde rien. Lue au plus
+   une fois par heure, onglet visible. Un préfixe « Chantier : » range l'événement sous l'espace de ce nom. */
+const ICS_URL = "selene-ics-url", ICS_CACHE = "selene-ics";
+const icsUrl = () => { try { return localStorage.getItem(ICS_URL) || ""; } catch { return ""; } };
+function icsCache() { try { const c = JSON.parse(localStorage.getItem(ICS_CACHE) || "null"); if (c && Array.isArray(c.events)) return c; } catch {} return { at: 0, events: [], err: "" }; }
+let agendaBusy = false;
+async function agendaRefresh(force = false) {
+  const url = icsUrl();
+  if (agendaBusy || !url || !passeurPret() || document.visibilityState !== "visible") return;
+  if (!force && Date.now() - icsCache().at < 3600000) return;
+  agendaBusy = true;
+  const c = icsCache();
+  try {
+    const r = await passeurFetch(url, "ics");
+    if (r.status >= 200 && r.status < 300 && typeof r.texte === "string") {
+      const now = Date.now(), ev = icsParse(r.texte);
+      // On ne garde que ce qui peut encore servir : les récurrences, et ce qui n'est pas fini depuis plus d'un jour.
+      c.events = ev.filter(e => e.rrule || e.end > now - 86400000).slice(0, 800); c.err = ev.length || /BEGIN:VCALENDAR/.test(r.texte) ? "" : "ce n'est pas un calendrier iCal";
+    } else c.err = r.erreur || `le calendrier répond ${r.status}`;
+  } catch (e) { c.err = e.message; }
+  c.at = Date.now();
+  try { localStorage.setItem(ICS_CACHE, JSON.stringify(c)); } catch {}
+  agendaBusy = false; render();
+}
+/* « Chantier : plombier » → l'espace Chantier, et « plombier ». */
+function agendaRoute(summary) {
+  const m = String(summary).match(/^([^:]{2,40}?)\s*:\s*(.+)$/); if (!m) return { mod: "", text: summary };
+  const mod = S().config.modules.find(x => x.on && Object.hasOwn(S().modules, x.id) && fold(label(x.id)) === fold(m[1].trim()));
+  return mod ? { mod: mod.id, text: m[2].trim() } : { mod: "", text: summary };
+}
+function agendaHTML() {
+  if (!dehorsOn() || !icsUrl()) return "";
+  const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+  const day = n => { const a = new Date(t0); a.setDate(a.getDate() + n); return a.getTime(); };
+  const hhmm = t => hm(t).replace(" h 00", " h");
+  const block = (n, name) => {
+    const occ = icsBetween(icsCache().events, Math.max(day(n), n ? 0 : Date.now() - 3600000), day(n + 1));
+    if (!occ.length) return "";
+    return `<div class="agenda-day"><p class="hint" style="margin:10px 0 2px">${name}</p><ul class="plain">${occ.slice(0, 8).map(o => { const r = agendaRoute(o.summary);
+      return `<li class="agenda-ev"><span class="when">${o.allDay ? "journée" : `${esc(hhmm(o.start))}${o.end - o.start > 0 && o.end - o.start < 86400000 ? `–${esc(hhmm(o.end))}` : ""}`}</span> ${r.mod ? `<a class="tag" href="#${esc(r.mod)}">${esc(label(r.mod))}</a> ` : ""}${esc(r.text)}${o.location ? ` <span class="hint" style="margin:0">· ${esc(o.location)}</span>` : ""}</li>`; }).join("")}</ul></div>`;
+  };
+  return block(0, "Aujourd'hui, au calendrier") + block(1, "Demain");
+}
+function agendaSettingsHTML() {
+  const c = icsCache(), has = !!icsUrl();
+  return `<section id="agenda"><h3>Calendrier</h3><p class="hint">Un seul calendrier, dédié (crée-en un « Selene ») : aujourd'hui et demain s'affichent sous « Aujourd'hui ». Un titre « Chantier : plombier » se range sous Chantier. Google : paramètres de l'agenda → Intégrer l'agenda → Adresse secrète au format iCal. Apple : partager en public, lien webcal.</p>
+    <label>Adresse iCal secrète<input type="password" data-act="ics-url" value="${has ? "••••••••" : ""}" autocomplete="off" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"></label>
+    <p class="hint" style="margin-top:6px">Qui possède cette adresse lit tout le calendrier : elle reste dans ce navigateur, n'est jamais synchronisée, ne passe que par ton passeur (qui ne garde rien), et s'efface à la déconnexion. Si elle fuit, réinitialise-la dans l'agenda.</p>
+    ${has ? `<p class="row" style="margin:0"><span>${esc(agendaBusy ? "Lecture…" : c.err ? `Ne répond pas : ${c.err}` : c.at ? `Lu ${dehorsWhen(c.at)} : ${c.events.length} événement${c.events.length > 1 ? "s" : ""} à venir ou récurrent${c.events.length > 1 ? "s" : ""}.` : "Pas encore lu.")}</span><button class="btn sm" data-act="ics-check">Relire</button><button class="btn ghost sm" data-act="ics-forget">oublier</button></p>` : ""}</section>`;
+}
+CHANGE["ics-url"] = el => {
+  let v = el.value.trim(); if (v.startsWith("•")) return;
+  v = v.replace(/^webcal:\/\//i, "https://");
+  if (v && !/^https:\/\//i.test(v)) { el.value = ""; return toast("Une adresse https:// (ou webcal://) est attendue."); }
+  try { if (v) localStorage.setItem(ICS_URL, v); else localStorage.removeItem(ICS_URL); localStorage.removeItem(ICS_CACHE); } catch {}
+  el.blur(); render();
+  if (v) { toast("Adresse gardée dans ce navigateur. Lecture…"); agendaRefresh(true); }
+};
+CLICK["ics-check"] = () => agendaRefresh(true);
+CLICK["ics-forget"] = () => { try { localStorage.removeItem(ICS_URL); localStorage.removeItem(ICS_CACHE); } catch {} render(); toast("Calendrier oublié sur cet appareil."); };
+
 
 /* ================= assistant =================
    Deux branchements : claude.ai (window.claude.use("sample"), sans clé) ou l'API Anthropic avec la clé
@@ -5644,9 +5809,9 @@ render();
   const t = setTimeout(() => { if (!document.hidden) { if (routeOf().view === "accueil" || S().config.mode === "sun") render(); refreshWeather(); } skyTick(); }, 300000);
   if (t && t.unref) t.unref();
 })();
-document.addEventListener("visibilitychange", () => { if (!document.hidden) { refreshWeather(); dehorsRefresh(); } });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { refreshWeather(); dehorsRefresh(); agendaRefresh(); } });
 refreshWeather();
-setTimeout(() => dehorsRefresh(), 1500); // les flux de Dehors, au plus toutes les trois heures, après le premier affichage
+setTimeout(() => { agendaRefresh(); dehorsRefresh(); }, 1500); // les flux de Dehors, au plus toutes les trois heures, après le premier affichage
 (async () => {
   try {
     if (!window.claude || !window.claude.use) {

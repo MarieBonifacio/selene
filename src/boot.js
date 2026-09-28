@@ -23,9 +23,9 @@ render();
   const t = setTimeout(() => { if (!document.hidden) { if (routeOf().view === "accueil" || S().config.mode === "sun") render(); refreshWeather(); } skyTick(); }, 300000);
   if (t && t.unref) t.unref();
 })();
-document.addEventListener("visibilitychange", () => { if (!document.hidden) { refreshWeather(); dehorsRefresh(); } });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { refreshWeather(); dehorsRefresh(); agendaRefresh(); } });
 refreshWeather();
-setTimeout(() => dehorsRefresh(), 1500); // les flux de Dehors, au plus toutes les trois heures, après le premier affichage
+setTimeout(() => { agendaRefresh(); dehorsRefresh(); }, 1500); // les flux de Dehors, au plus toutes les trois heures, après le premier affichage
 (async () => {
   try {
     if (!window.claude || !window.claude.use) {

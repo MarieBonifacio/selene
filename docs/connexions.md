@@ -120,7 +120,15 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
 - [x] La veille ne classe rien selon ce qui te donnerait raison, et le dit à l'écran.
 - [x] Se déconnecter efface aussi la clé OpenAlex et tout ce que le dehors a apporté sur l'appareil.
 
-**6e : Calendrier dédié** : iCal, aujourd'hui et demain.
+**6e : Calendrier dédié**
+- [x] Réglages → Calendrier : l'adresse iCal secrète d'un calendrier dédié (Google : « Adresse secrète au format iCal » ;
+      Apple : lien webcal, converti en https). C'est une capacité au porteur : **dans ce navigateur seulement**, jamais
+      synchronisée, jamais réaffichée, effacée à la déconnexion ; elle ne voyage que vers ton passeur, qui ne garde rien.
+- [x] Lue par le passeur au plus une fois par heure (onglet visible) ; iCalendar lu juste assez : lignes repliées,
+      journées entières, fuseaux (TZID), récurrences simples (RRULE, EXDATE, exceptions déplacées) ; ce qui est fini
+      depuis plus d'un jour n'est pas gardé.
+- [x] Sous « Aujourd'hui » : aujourd'hui (ce qui n'est pas encore passé) et demain, huit au plus par jour. « Chantier :
+      plombier » se range sous Chantier (le préfixe de la Capture). Selene ne devient pas un agenda.
 
 ## Phase 3
 
