@@ -1033,6 +1033,7 @@ function openSheet(kind, arg) {
   sheetKind = kind; sheetArg = arg;
   $("#sheetBody").innerHTML = SHEETS[kind](arg);
   d.classList.toggle("drawer", kind === "module" || kind === "specimen"); // réglages d'un module, fiche : un tiroir à droite sur ordinateur
+  d.classList.toggle("wide", kind === "carte"); // la carte céleste veut de la largeur
   if (!d.open) d.showModal();
   const i = $("#capSheetIn"); if (kind === "capture" && i) { i.value = loadDraft("sheet", i); i.focus(); }
 }

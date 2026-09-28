@@ -146,6 +146,28 @@ dialog.sheet::before{content:"";display:block;width:36px;height:4px;border-radiu
 dialog.sheet[open]{animation:sheet-in var(--t-3) var(--ease)}
 @keyframes sheet-in{from{transform:translateY(28px);opacity:.4}}
 @media (min-width:900px){dialog.sheet{margin:auto;width:min(560px,94vw);border:1px solid var(--rule);border-radius:3px}}
+@media (min-width:900px){dialog.sheet.wide{width:min(980px,94vw)}}
+/* Carte céleste : bandes alternées, étoiles à la teinte de leur espace, liens codés par la forme du trait (plein :
+   dérive de ; pointillé : contredit ; tireté : écho ; trait-point : documente), la tension ouverte en cinabre en plus.
+   Au focus ou au survol, un anneau d'encre. Sur téléphone, la table d'abord ; la carte sur demande, défilable. */
+.carte-sky{overflow-x:auto;margin:10px 0 6px}
+.carte-svg{display:block;width:100%;min-width:640px;height:auto}
+.carte-svg .band rect{fill:transparent}.carte-svg .band rect.odd{fill:var(--surface)}
+.carte-svg .band text{font-family:var(--f-label);font-size:11px;letter-spacing:.04em;text-transform:lowercase;fill:var(--muted)}
+.carte-svg .axis{font-family:var(--f-ui);font-size:10px;fill:var(--muted)}
+.ln{fill:none;stroke:var(--muted);stroke-width:1.1}
+.ln-derive{stroke:var(--ink-2)}.ln-echo{stroke-width:.8}
+.ln.open{stroke:var(--alarm);stroke-width:1.6}
+.carte-svg .stars circle{fill:var(--tint,var(--accent));stroke:var(--bg);stroke-width:1}
+.carte-svg .stars circle.hit{fill:transparent;stroke:none}
+.carte-svg a.center circle:not(.hit){stroke:var(--ink);stroke-width:1.6}
+.carte-svg a:hover circle:not(.hit),.carte-svg a:focus-visible circle:not(.hit){stroke:var(--ink);stroke-width:2.4}
+.carte-svg a:focus{outline:none}
+.carte-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0 0 10px;font-size:.8rem;color:var(--muted)}
+.carte-legend svg{vertical-align:middle;margin-right:4px}
+.carte-table{list-style:none;margin:0;padding:0;font-size:.9rem}.carte-table li{padding:5px 0;border-top:1px solid var(--rule)}
+.carte-toggle{display:none}
+@media (max-width:640px){.carte-toggle{display:inline-flex;margin:6px 0}.carte:not(.show-sky) .carte-sky,.carte:not(.show-sky) .carte-legend{display:none}}
 .srow{display:flex;align-items:baseline;gap:12px;min-height:48px;padding:11px 2px;border-top:1px solid var(--rule);text-decoration:none}
 .srow b{font-family:"Cormorant Garamond",serif;font-size:1.3rem;font-weight:600}
 .srow .sub{color:var(--muted);font-size:.85rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

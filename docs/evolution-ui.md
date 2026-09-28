@@ -347,8 +347,14 @@ Du moins risqué au plus risqué ; chaque étape se suffit à elle-même (on peu
       planche téléchargée avait cassé la page), et `</script` est refusé dans le JavaScript.
 
 **4d : carte céleste des liaisons (expérimentale)**
-- [ ] Jamais globale : « Carte du voisinage » (fiche Spécimen, deux degrés) et « Carte du motif » ; 80 étoiles au plus.
-- [ ] Disposition déterministe (le temps en abscisse, une bande par module), aucune simulation physique ; type de lien
-      codé par le trait (plein, pointillé, tireté, trait-point), tensions ouvertes en cinabre ; chaque étoile est un
-      lien au clavier, et une table des liaisons en texte l'accompagne (seule par défaut sur téléphone).
-- [ ] Critère d'abandon écrit d'avance : pas ouverte pendant un mois, retirée.
+- [x] Jamais globale : « carte du voisinage » (fiche Spécimen d'une entrée liée : deux degrés, en largeur d'abord) et
+      « carte » d'un motif (Motifs : ses entrées, les plus récentes d'abord, et leurs voisines directes) ; 80 étoiles
+      au plus, les plus proches gardées, et l'app le dit (« une nébuleuse, pas une carte »).
+- [x] Disposition déterministe (`carte.js`, pur, testé seul) : le temps en abscisse, une bande par espace dans l'ordre
+      de la navigation, étagement stable des étoiles d'un même jour ; aucune simulation physique. La taille d'une
+      étoile dit son nombre de liens ; sa teinte, son domaine. Liens en arcs légers, codés par le trait (plein :
+      dérive de ; pointillé : contredit ; tireté : écho ; trait-point : documente), tensions ouvertes en cinabre.
+- [x] Chaque étoile est un lien (clavier compris, anneau d'encre au focus, cible invisible de 12 px) ; la table des
+      liaisons dit la même chose en texte, seule d'abord sur téléphone (« Voir la carte » la déplie). Feuille large
+      sur ordinateur. 70 ms pour la carte d'un motif sur l'historique du banc d'essai (5 500 textes).
+- [ ] Critère d'abandon écrit d'avance : pas ouverte pendant un mois, retirée. (À juger à l'usage, fin octobre 2026.)
