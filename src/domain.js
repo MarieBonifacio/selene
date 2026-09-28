@@ -239,7 +239,8 @@ const MODULE_TYPES = {
     // quel que soit son statut, sauf le dernier (abandonné, clos).
     // concordance : chaque élément est un motif (variantes en sous-titre), cherché dans tous les autres modules ;
     // un motif vivant absent depuis fallowDays jours est « en jachère ».
-    defaults: () => ({ config: { display: "liste", description: "", review: false, concordance: false, fallowDays: 90, statuses: ["À faire", "En cours", "Fait"], doneFrom: 2, statusLabel: "Statut", addLabel: "Ajouter",
+    // sources : chaque élément est une source (un article, une page), avec son adresse et son DOI dans `src`.
+    defaults: () => ({ config: { display: "liste", description: "", review: false, concordance: false, sources: false, fallowDays: 90, statuses: ["À faire", "En cours", "Fait"], doneFrom: 2, statusLabel: "Statut", addLabel: "Ajouter",
       fields: { title: "Titre", subtitle: "", tag: "Étiquette", due: "", text: "Note" },
       groups: { on: true, by: "tag", sort: "name", hideDone: false, title: "" } }, entries: [] }),
     normalize(inst) {
@@ -260,12 +261,14 @@ const MODULE_TYPES = {
       if (c.display != null && !["liste", "colonnes"].includes(c.display)) v.fail("affichage");
       if (c.review != null && typeof c.review !== "boolean") v.fail("révision");
       if (c.concordance != null && typeof c.concordance !== "boolean") v.fail("concordance");
+      if (c.sources != null && typeof c.sources !== "boolean") v.fail("sources");
       v.num(c.fallowDays, "jachère", 1, 3650);
       if (c.fields != null && (typeof c.fields !== "object" || Object.values(c.fields).some(x => typeof x !== "string"))) v.fail("champs");
       for (const e of inst.entries) {
         if (typeof e.title !== "string") v.fail("titre");
         if (e.due && !(typeof e.due === "string" && validDate(e.due))) v.fail("date");
         if (e.reviews != null && (!Array.isArray(e.reviews) || e.reviews.some(r => !r || typeof r.date !== "string" || !validDate(r.date) || typeof r.verdict !== "string"))) v.fail("réexamens");
+        if (e.src != null && !srcValid(e.src)) v.fail("source");
       }
     }
   },
@@ -305,6 +308,15 @@ function saveCollectionItem(inst, input, id, date = null) {
   const e = { id, ...v };
   inst.entries.push(e);
   return e;
+}
+/* Les références d'une source : une adresse http(s) seulement (jamais « javascript: », qui deviendrait un lien
+   exécutable), un DOI, un site, une date de publication (année, mois ou jour). Tout est facultatif. */
+function srcValid(x) {
+  const str = (v, n) => v == null || v === "" || (typeof v === "string" && v.length <= n);
+  return !!x && typeof x === "object" && !Array.isArray(x) &&
+    str(x.url, 2000) && (!x.url || /^https?:\/\//i.test(x.url)) &&
+    str(x.doi, 200) && (!x.doi || /^10\.\d{4,9}\//.test(x.doi)) &&
+    str(x.site, 200) && str(x.date, 10) && (!x.date || /^\d{4}(-\d{2}(-\d{2})?)?$/.test(x.date));
 }
 /* ---- statut épistémique : ce qu'une note ou un fragment revendique de savoir ----
    Facultatif et vide par défaut. « Inexpliqué » est un statut à part entière, pas une corbeille. */
@@ -431,6 +443,10 @@ const MODULE_TEMPLATES = [
     config: { display: "liste", concordance: true, fallowDays: 90, description: "Chaque motif est cherché dans tous tes autres modules, en mot entier, pluriel et variantes compris.",
       statuses: ["Vivant", "Épuisé"], doneFrom: 1, statusLabel: "État", addLabel: "Ajouter un motif",
       fields: { title: "Motif", subtitle: "Variantes (séparées par des virgules)", tag: "Famille", due: "", text: "Note" } } },
+  { id: "sources", name: "Sources", type: "collection", hint: "Articles, livres, pages : un lien ou un DOI suffit, le reste se complète",
+    config: { display: "liste", sources: true, description: "Colle un lien ou un DOI : titre, auteurs, revue et date se complètent. Relie ensuite une source au fragment qu'elle documente.",
+      statuses: ["À lire", "Lue", "Utilisée"], doneFrom: 1, statusLabel: "Lecture", addLabel: "Ajouter à la main",
+      fields: { title: "Titre", subtitle: "Auteurs", tag: "Type", due: "", text: "Résumé et notes" } } },
   { id: "arc", name: "Arc", type: "arc", hint: "Une séquence d'étapes où loger des fragments et des éléments d'autres modules",
     config: { stations: [{ id: "1", name: "Étape 1" }, { id: "2", name: "Étape 2" }, { id: "3", name: "Étape 3" }] } },
   { id: "rappels", name: "Soins", type: "rappels", hint: "Des gestes récurrents et depuis quand ils attendent",

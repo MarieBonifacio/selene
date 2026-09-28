@@ -451,7 +451,7 @@ function collectionForm(id, item, title) {
   });
 }
 function collectionCard(id, e, ci, last) {
-  const f = S().modules[id].config.fields, meta = [f.tag && e.tag ? `<span class="tag">${esc(e.tag)}</span>` : "", f.due && e.due ? `<span>${fmt(e.due)}</span>` : "", originHTML(e, e.title)].join("");
+  const f = S().modules[id].config.fields, meta = [f.tag && e.tag ? `<span class="tag">${esc(e.tag)}</span>` : "", f.due && e.due ? `<span>${fmt(e.due)}</span>` : "", srcMeta(e), originHTML(e, e.title)].join("");
   return `<div class="card" data-id="${esc(e.id)}" data-ci="${ci}" draggable="true" tabindex="0" aria-label="${esc(e.title)} : [ pour reculer, ] pour avancer"><b>${esc(e.title)}</b>${f.subtitle && e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ""}${meta ? `<div class="meta">${meta}</div>` : ""}${f.text && e.text ? `<p>${esc(e.text.slice(0, 160))}${e.text.length > 160 ? "…" : ""}</p>` : ""}
       <div class="row">${ci > 0 ? `<button class="btn ghost sm" data-act="col-move" data-d="-1" aria-label="Reculer">←</button>` : ""}${ci < last ? `<button class="btn ghost sm" data-act="col-move" data-d="1" aria-label="Avancer">→</button>` : ""}<span class="spacer"></span><button class="btn ghost sm ra" data-act="specimen">fiche</button><button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></div>`;
 }
@@ -536,7 +536,7 @@ function motifsIn(inst, from, to) {
 TYPE_UI.collection = {
   view(id) {
     const inst = S().modules[id], c = inst.config, f = c.fields, items = inst.entries.filter(e => gMatch(id, e));
-    const head = `<div class="row" style="margin-bottom:${c.display === "colonnes" ? 20 : 8}px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="col-new">${esc(c.addLabel)}</button></div>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}`;
+    const head = `<div class="row" style="margin-bottom:${c.display === "colonnes" ? 20 : 8}px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="col-new">${esc(c.addLabel)}</button></div>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}${c.sources ? sourceBar(id) : ""}`;
     if (c.concordance) return concordanceView(id, inst, head);
     const panel = groupPanel(id, `Part arrivée à « ${esc(c.statuses[c.doneFrom])} » dans chaque groupe. Clique pour filtrer.`);
     if (c.display === "colonnes") {
@@ -550,7 +550,7 @@ TYPE_UI.collection = {
     const filter = colFilter[id] || "", shown = items.filter(e => !filter || e.status === filter);
     return `<div data-mod="${esc(id)}">${head}
   <div class="row" style="margin-bottom:10px"><select data-act="col-f" aria-label="Filtrer"><option value="">Tous</option>${c.statuses.map(st => `<option ${st === filter ? "selected" : ""}>${esc(st)}</option>`).join("")}</select></div>
-  <div class="two"><div><ul class="plain">${(pg => pg.items.map(e => `<li class="item" data-id="${esc(e.id)}"><span></span><div><b>${esc(e.title)}</b>${f.subtitle ? (e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ` <span class="hint">${esc(f.subtitle.toLowerCase())} à préciser</span>`) : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${c.review ? "à réexaminer le " : ""}${fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}${reviewedHTML(e) || e.origin ? `<div class="meta">${reviewedHTML(e)}${originHTML(e, e.title)}</div>` : ""}</div>
+  <div class="two"><div><ul class="plain">${(pg => pg.items.map(e => `<li class="item" data-id="${esc(e.id)}"><span></span><div><b>${esc(e.title)}</b>${f.subtitle ? (e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ` <span class="hint">${esc(f.subtitle.toLowerCase())} à préciser</span>`) : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${c.review ? "à réexaminer le " : ""}${fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}${reviewedHTML(e) || e.origin || e.src ? `<div class="meta">${srcMeta(e)}${reviewedHTML(e)}${originHTML(e, e.title)}</div>` : ""}</div>
     <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm ra" data-act="specimen">fiche</button><button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">Rien dans ce filtre.</li>`}</ul></div><div>${panel}</div></div></div>`;
   },
   settings: (id, { config: c }) => {
@@ -579,7 +579,7 @@ TYPE_UI.collection = {
       const due = within(inst.entries, from, to, "due").filter(e => e.status !== c.statuses.at(-1)).length, done = inst.entries.flatMap(e => within(e.reviews || [], from, to)).length;
       return due || done ? `${due} à réexaminer, ${plural(done, "réexamen")} fait${done > 1 ? "s" : ""}` : "Rien à réexaminer";
     } const es = within(inst.entries, from, to, "due"); return es.length ? `${plural(es.length, "prévu")}, dont ${es.filter(e => c.statuses.indexOf(e.status) >= c.doneFrom).length} « ${c.statuses[c.doneFrom]} »` : "Rien de prévu"; },
-  texts: inst => inst.entries.map(e => ({ text: [e.title, e.subtitle, e.tag, e.text].filter(Boolean).join(" · "), date: e.due || null, eid: e.id })),
+  texts: inst => inst.entries.map(e => ({ text: [e.title, e.subtitle, e.tag, e.text, e.src && e.src.site, e.src && e.src.doi].filter(Boolean).join(" · "), date: e.due || null, eid: e.id })),
   // Ce qui est prévu aujourd'hui ou en retard, et pas encore « fait ».
   alerts: (id, inst, now) => {
     const c = inst.config; if (!c.fields.due) return [];
@@ -951,6 +951,7 @@ TYPE_UI.notes = {
   ${deriveBanner(id)}<div class="capture" style="margin-bottom:18px"><input id="noteIn" data-draft placeholder="${esc(c.placeholder)}" aria-label="Nouvelle note"><button class="btn acc" data-act="note-add">Garder</button></div>
   <ul class="plain margins">${(pg => pg.items.map(x => { const intent = captureIntent(x.text); return `<li class="item" data-id="${esc(x.id)}"><span class="jdate">${fmt(x.date)}</span><div>${esc(x.text)}<div class="meta">${epSelect(id, x)}${linksHTML(id)}</div>
     ${intent && intent.to !== id ? `<div class="row" style="margin-top:6px"><button class="btn sm acc" data-act="note-file">Ranger : ${esc(intent.say)}</button></div>` : ""}
+    ${sourcesModule() && (findDoi(x.text) || findUrl(x.text)) ? `<div class="row" style="margin-top:6px"><button class="btn sm" data-act="note-source">Garder comme source</button></div>` : ""}
     ${targets.length ? `<div class="row${c.inbox ? "" : " ra"}" style="margin-top:6px">${targets.map(k => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
     ${margHTML(id, x, x.text)}<button class="btn ghost sm ra" data-act="note-del">suppr.</button></li>`; }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? "Vide. Le silence d'une clairière, ou celui d'un cerveau." : "Rien pour l'instant."}</li>`}</ul></div>`;
   },
@@ -1140,6 +1141,7 @@ SHEETS.specimen = ref => {
     ${text ? `<blockquote class="spec-text">${esc(text)}</blockquote>` : ""}
     <p class="spec-label">${[when ? long(when) : "", chapter, e.tag, e.status].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("")}${e.ep ? `<span>${epGlyph(e.ep)}${esc(EP_STATUS[e.ep])}</span>` : ""}</p>
     ${thought ? `<div class="row">${epSelect(mod, e)}<span class="spacer"></span>${links.length ? `<button class="btn ghost sm" data-act="carte" data-k="ref" data-v="${esc(mod)}/${esc(e.id)}">carte du voisinage</button>` : ""}<button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></div>` : ""}
+    ${e.src ? `<p class="meta">${srcMeta(e)}</p>` : ""}
     ${e.origin ? `<h3>Provenance</h3><p class="meta">${originHTML(e, text || e.title)}</p>` : ""}
     ${links.length ? `<h3>Liens</h3><ul>${links.join("")}</ul>` : ""}
     ${motifs.length ? `<h3>Motifs</h3><div class="row">${motifs.map(m => `<button class="btn ghost sm" data-act="search-for" data-q="${esc(m.e.title)}">${esc(m.e.title)}</button>`).join("")}</div>` : ""}
@@ -1251,3 +1253,96 @@ SHEETS.carte = arg => {
 };
 CLICK["carte"] = el => openSheet("carte", `${el.dataset.k}:${el.dataset.v}`);
 CLICK["carte-toggle"] = el => { const on = el.closest(".carte").classList.toggle("show-sky"); el.setAttribute("aria-expanded", on); el.textContent = on ? "Masquer la carte" : "Voir la carte"; };
+
+/* ================= sources : un lien ou un DOI, complété puis gardé =================
+   Tirer, jamais pousser : rien ne part vers un service sans un geste (« Chercher », « Garder comme source »). Un DOI
+   va à Crossref (sans clé), une page à Microlink (sans clé, 25 par jour, qui voit l'adresse demandée). Hors ligne,
+   service muet ou quota épuisé : la source est gardée avec son adresse seule, et le dit. La traduction des réponses
+   est dans sources.js ; la validation de `src`, dans domain.js. */
+const srcPreview = {}; // aperçu en cours, par module (propre à l'appareil, oublié au rechargement)
+const sourcesModule = () => S().config.modules.map(m => m.id).find(k => enabled(k) && Object.hasOwn(S().modules, k) && S().modules[k].type === "collection" && S().modules[k].config.sources) || null;
+function pubDate(d) {
+  if (!d) return "";
+  if (d.length === 10) return fmt(d, { day: "numeric", month: "short", year: "numeric" });
+  if (d.length === 7) return new Date(d + "-15T12:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  return d;
+}
+/* Sous une source : son site, sa date, son DOI, et le lien vers elle (seul lien externe de l'app, jamais « javascript: »). */
+function srcMeta(e) {
+  const x = e.src; if (!x) return "";
+  const url = x.url && /^https?:\/\//i.test(x.url) ? x.url : "";
+  return [x.site && `<span>${esc(x.site)}</span>`, x.date && `<span>${esc(pubDate(x.date))}</span>`, x.doi && `<span>doi:${esc(x.doi)}</span>`,
+    url && `<a class="src-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">ouvrir ↗</a>`].filter(Boolean).join("");
+}
+async function fetchSource(raw) {
+  const doi = findDoi(raw), url = findUrl(raw);
+  if (!doi && !url) return null;
+  const get = async u => {
+    const ac = new AbortController(), t = setTimeout(() => ac.abort(), 8000);
+    try { const r = await fetch(u, { signal: ac.signal }); return r.ok ? await r.json() : null; } finally { clearTimeout(t); }
+  };
+  try {
+    if (doi) { const j = await get(`https://api.crossref.org/works/${encodeURIComponent(doi)}`); if (j && j.message) return crossrefToSource(j.message, doi); }
+    else { const j = await get(`https://api.microlink.io/?url=${encodeURIComponent(url)}`); if (j && j.status === "success" && j.data) return microlinkToSource(j.data, url); }
+  } catch {} // hors ligne, délai dépassé, réponse illisible : voir plus bas
+  return { ...bareSource(url, doi), partial: true };
+}
+/* Une source déjà gardée, dans n'importe quel module de sources : même DOI, ou même adresse. */
+function findSourceDup(src) {
+  const key = sourceKey(src); if (!key) return null;
+  for (const [mod, m] of Object.entries(S().modules)) {
+    if (m.type !== "collection" || !m.config.sources) continue;
+    const e = m.entries.find(x => x.src && sourceKey(x.src) === key);
+    if (e) return { mod, e };
+  }
+  return null;
+}
+function keepSource(mod, x, origin) {
+  const e = saveCollectionItem(S().modules[mod], { title: x.title || x.url || x.doi, subtitle: x.authors || "", tag: x.kind || "", text: x.abstract || "" }, uid());
+  e.src = Object.fromEntries(Object.entries({ url: x.url, doi: x.doi, site: x.site, date: x.date }).filter(([, v]) => v));
+  if (origin) e.origin = origin;
+  return e;
+}
+function sourceBar(id) {
+  const p = srcPreview[id], d = p && p.data;
+  const prev = !p ? "" : p.busy ? `<p class="hint" role="status">Recherche…</p>` : `<div class="src-prev" role="status">
+    <b>${esc(d.title)}</b>${d.authors ? `<div>${esc(d.authors)}</div>` : ""}
+    <div class="meta">${[d.site, pubDate(d.date), d.kind].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("")}${d.doi ? `<span>doi:${esc(d.doi)}</span>` : ""}</div>
+    ${d.abstract ? `<p class="note">${esc(d.abstract)}</p>` : ""}
+    ${d.partial ? `<p class="hint">Métadonnées indisponibles (hors ligne, service muet ou quota du jour atteint) : elle sera gardée avec son adresse seule.</p>` : ""}
+    ${p.dup ? `<p class="hint">Déjà gardée${p.dup.mod !== id ? ` dans ${esc(label(p.dup.mod))}` : ""} : <a href="#${esc(p.dup.mod)}/${esc(p.dup.e.id)}">« ${esc(excerpt(p.dup.e, 60))} »</a>.</p>` : ""}
+    <div class="row"><button class="btn acc sm" data-act="src-keep" ${p.dup ? "disabled" : ""}>Garder</button><button class="btn ghost sm" data-act="src-cancel">Annuler</button></div></div>`;
+  return `<div class="capture src-bar"><input id="srcIn" inputmode="url" autocomplete="off" placeholder="Un lien ou un DOI…" aria-label="Lien ou DOI"><button class="btn" data-act="src-fetch">Chercher</button></div>
+  <p class="hint" style="margin:4px 0 12px">Un DOI est complété par Crossref ; une page, par Microlink, qui voit l'adresse demandée (25 par jour).</p>${prev}`;
+}
+CLICK["src-fetch"] = async el => {
+  const id = modOf(el), inp = $("#srcIn"), raw = inp ? inp.value.trim() : "";
+  if (!raw) return;
+  if (!findDoi(raw) && !findUrl(raw)) return toast("Ni lien ni DOI reconnu. Un lien commence par https://, un DOI par 10.");
+  srcPreview[id] = { busy: true }; render();
+  const data = await fetchSource(raw);
+  if (!srcPreview[id] || !srcPreview[id].busy) return; // annulé entre-temps
+  srcPreview[id] = { data, dup: findSourceDup(data) }; render();
+};
+CLICK["src-keep"] = el => {
+  const id = modOf(el), p = srcPreview[id]; if (!p || !p.data || p.dup) return;
+  const e = keepSource(id, p.data); delete srcPreview[id];
+  const inp = $("#srcIn"); if (inp) inp.value = "";
+  site.save(); render(); toast(`Gardée : « ${excerpt(e, 50)} ».`);
+};
+CLICK["src-cancel"] = el => { delete srcPreview[modOf(el)]; render(); };
+/* Une note de la boîte qui contient un lien ou un DOI devient une source, avec sa provenance ; ses liens la suivent. */
+CLICK["note-source"] = async el => {
+  const from = modOf(el), to = sourcesModule(), nid = idOf(el), note = S().modules[from].entries.find(x => x.id === nid);
+  if (!note || !to) return;
+  el.disabled = true; el.textContent = "Recherche…";
+  const data = await fetchSource(note.text);
+  const box = S().modules[from], n = box && box.entries.find(x => x.id === nid); // relu : une synchro a pu passer
+  if (!n || !data) return render();
+  const dup = findSourceDup(data);
+  if (dup) { render(); return toast(`Déjà gardée dans ${label(dup.mod)}. La note reste où elle est.`); }
+  const e = keepSource(to, data, n.origin || { from: label(from), text: n.text, date: n.date });
+  retargetLinks(S().modules, `${from}/${n.id}`, `${to}/${e.id}`);
+  box.entries = box.entries.filter(x => x !== n); site.save(); render();
+  toast(data.partial ? `Rangée dans ${label(to)}, avec son adresse seule : métadonnées indisponibles pour l'instant.` : `Rangée dans ${label(to)} : « ${excerpt(e, 50)} ».`);
+};

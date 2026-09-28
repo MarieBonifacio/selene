@@ -22,6 +22,9 @@ poser le script : le JavaScript peut contenir `<title>` ou `</body>` dans ses ch
 téléchargée en a), et un remplacement textuel ne doit jamais l'atteindre. Seul `</script` y est interdit, et
 `build.py` le refuse : il fermerait la balise au milieu d'une chaîne.
 
+Connexions externes (Crossref, Microlink, Open-Meteo…) : chaque hôte est nommé dans la CSP de `build.py`
+(`connect-src`), et rien ne part sans un geste de l'utilisatrice. Principes et état : [connexions.md](connexions.md).
+
 ### Ordre de chargement
 
 Tous les fichiers partagent la même portée. Au **chargement**, un fichier ne peut utiliser que ce que
@@ -37,6 +40,7 @@ les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne)
 | `domain.js` | règles métier, registre pur `MODULE_TYPES`, `SCHEMA_VERSION` | — |
 | `sky.js` | ciel de l'accueil, pur : soleil, lune, levers et couchers, météo → scène, saisons, mouvement du vent, contraste du texte | — |
 | `carte.js` | carte céleste des liaisons, pure : placement déterministe (temps, bandes), voisinage borné | — |
+| `sources.js` | sources, pur : adresses normalisées, DOI, traduction des réponses Crossref et Microlink | — |
 | `app.js` | utilitaires, modules fixes, normalisation, stores, vues, rendu, actions | `store.js`, `domain.js`, `sky.js` |
 | `types.js` | registre d'affichage `TYPE_UI`, branché dans `CLICK` / `CHANGE` ; fiche, Vasculum, carte (`SHEETS`) | `app.js` |
 | `assistant.js` | contexte, outils, appels à Claude | — |
