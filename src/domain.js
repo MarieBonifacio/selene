@@ -89,7 +89,7 @@ const SECTION_TO_MODULE = {
   }),
   musique: (old, name, groups) => ({
     type: "collection", label: name || "Musique",
-    config: { display: "liste", description: "Albums de l'éveil, et artistes dont la mue stylistique fait elle-même le récit d'une transformation.",
+    config: { display: "liste", music: true, description: "Albums de l'éveil, et artistes dont la mue stylistique fait elle-même le récit d'une transformation.",
       statuses: ["À écouter", "Écouté", "Retenu"], doneFrom: 1, statusLabel: "Statut", addLabel: "Ajouter un album",
       fields: { title: "Artiste", subtitle: "Album", tag: "", due: "", text: "Note" },
       groups: { on: true, sort: "name", hideDone: false, title: "", ...(groups || {}), by: "title" } },
@@ -240,7 +240,8 @@ const MODULE_TYPES = {
     // concordance : chaque élément est un motif (variantes en sous-titre), cherché dans tous les autres modules ;
     // un motif vivant absent depuis fallowDays jours est « en jachère ».
     // sources : chaque élément est une source (un article, une page), avec son adresse et son DOI dans `src`.
-    defaults: () => ({ config: { display: "liste", description: "", review: false, concordance: false, sources: false, fallowDays: 90, statuses: ["À faire", "En cours", "Fait"], doneFrom: 2, statusLabel: "Statut", addLabel: "Ajouter",
+    // music : le titre est un artiste, le sous-titre un album, reliés à MusicBrainz dans `mb`.
+    defaults: () => ({ config: { display: "liste", description: "", review: false, concordance: false, sources: false, music: false, fallowDays: 90, statuses: ["À faire", "En cours", "Fait"], doneFrom: 2, statusLabel: "Statut", addLabel: "Ajouter",
       fields: { title: "Titre", subtitle: "", tag: "Étiquette", due: "", text: "Note" },
       groups: { on: true, by: "tag", sort: "name", hideDone: false, title: "" } }, entries: [] }),
     normalize(inst) {
@@ -262,6 +263,7 @@ const MODULE_TYPES = {
       if (c.review != null && typeof c.review !== "boolean") v.fail("révision");
       if (c.concordance != null && typeof c.concordance !== "boolean") v.fail("concordance");
       if (c.sources != null && typeof c.sources !== "boolean") v.fail("sources");
+      if (c.music != null && typeof c.music !== "boolean") v.fail("musique");
       v.num(c.fallowDays, "jachère", 1, 3650);
       if (c.fields != null && (typeof c.fields !== "object" || Object.values(c.fields).some(x => typeof x !== "string"))) v.fail("champs");
       for (const e of inst.entries) {
@@ -269,6 +271,7 @@ const MODULE_TYPES = {
         if (e.due && !(typeof e.due === "string" && validDate(e.due))) v.fail("date");
         if (e.reviews != null && (!Array.isArray(e.reviews) || e.reviews.some(r => !r || typeof r.date !== "string" || !validDate(r.date) || typeof r.verdict !== "string"))) v.fail("réexamens");
         if (e.src != null && !srcValid(e.src)) v.fail("source");
+        if (e.mb != null && !mbValid(e.mb)) v.fail("MusicBrainz");
       }
     }
   },
@@ -317,6 +320,11 @@ function srcValid(x) {
     str(x.url, 2000) && (!x.url || /^https?:\/\//i.test(x.url)) &&
     str(x.doi, 200) && (!x.doi || /^10\.\d{4,9}\//.test(x.doi)) &&
     str(x.site, 200) && str(x.date, 10) && (!x.date || /^\d{4}(-\d{2}(-\d{2})?)?$/.test(x.date));
+}
+/* Le lien d'un élément de musique à MusicBrainz : l'artiste (a), l'album (rg, un « release group »), son année. */
+function mbValid(x) {
+  const id = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return !!x && typeof x === "object" && !Array.isArray(x) && id.test(x.a || "") && (x.rg == null || id.test(x.rg)) && (x.y == null || /^\d{4}$/.test(x.y));
 }
 /* ---- statut épistémique : ce qu'une note ou un fragment revendique de savoir ----
    Facultatif et vide par défaut. « Inexpliqué » est un statut à part entière, pas une corbeille. */
@@ -443,6 +451,9 @@ const MODULE_TEMPLATES = [
     config: { display: "liste", concordance: true, fallowDays: 90, description: "Chaque motif est cherché dans tous tes autres modules, en mot entier, pluriel et variantes compris.",
       statuses: ["Vivant", "Épuisé"], doneFrom: 1, statusLabel: "État", addLabel: "Ajouter un motif",
       fields: { title: "Motif", subtitle: "Variantes (séparées par des virgules)", tag: "Famille", due: "", text: "Note" } } },
+  { id: "musique", name: "Musique", type: "collection", hint: "Des artistes et leurs albums, précisés par MusicBrainz, pochettes et nouvelles sorties comprises",
+    config: { display: "liste", music: true, statuses: ["À écouter", "Écouté", "Retenu"], doneFrom: 1, addLabel: "Ajouter un artiste",
+      fields: { title: "Artiste", subtitle: "Album", tag: "Genre", due: "", text: "Note" } } },
   { id: "sources", name: "Sources", type: "collection", hint: "Articles, livres, pages : un lien ou un DOI suffit, le reste se complète",
     config: { display: "liste", sources: true, description: "Colle un lien ou un DOI : titre, auteurs, revue et date se complètent. Relie ensuite une source au fragment qu'elle documente.",
       statuses: ["À lire", "Lue", "Utilisée"], doneFrom: 1, statusLabel: "Lecture", addLabel: "Ajouter à la main",

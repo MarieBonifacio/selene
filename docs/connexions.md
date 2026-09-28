@@ -29,7 +29,15 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
       partage Android (Web Share Target du manifeste), favori « Envoyer à Selene » et Raccourci iOS (Réglages). Sur la
       version hébergée, le lien attend la connexion au compte avant d'être déposé (jamais dans le vide).
 
-**5b : Musique** : discographies MusicBrainz (1 requête par seconde, sans clé) et pochettes Cover Art Archive (en image).
+**5b : Musique**
+- [x] Drapeau `music` d'une collection (artiste en titre, album en sous-titre ; réglable, posé sur Musique et le modèle
+      « Musique ») ; `mb = { a, rg, y }` validé (identifiants MusicBrainz, année).
+- [x] « préciser l'album » ou « discographie » : l'artiste cherché dans MusicBrainz (choix s'il y a homonymie), sa
+      discographie studio (albums et EP, sans live ni compilation) avec pochettes ; « choisir » ou « ajouter ».
+- [x] « Nouvelles sorties », à la demande : pour chaque artiste relié, les parutions depuis la dernière vérification
+      (sur l'appareil ; la première fois, l'année écoulée). Jamais en arrière-plan.
+- [x] Une requête par seconde au plus, en file (règle de MusicBrainz) ; pochettes de Cover Art Archive en `<img>`
+      (pas besoin de CORS, seulement de la CSP `img-src`) ; une pochette absente s'efface.
 
 **5c : Ciel et chantier** : pluie prévue sur une tâche extérieure (Open-Meteo) ; étoiles filantes et éclipses visibles
 depuis Lille, en table fixe (aucun réseau).

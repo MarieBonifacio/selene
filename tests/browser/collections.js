@@ -35,7 +35,7 @@ const legacy = { updatedAt: 10, schemaVersion: 2,
 
   console.log('Musique (liste)');
   await go('musique'); t = await main();
-  ok(t.includes('Ulver') && t.includes('album à préciser'), 'album migré, sous-titre vide signalé');
+  ok(t.includes('Ulver') && t.includes('préciser album'), 'album migré, sous-titre vide : « préciser album » (MusicBrainz)');
   await p.selectOption('[data-act="col-st"]', 'Retenu'); await p.waitForTimeout(150);
   ok((await data()).modules.musique.entries[0].status === 'Retenu', 'statut changé depuis la liste');
   await p.selectOption('[data-act="col-f"]', 'À écouter'); await p.waitForTimeout(150);
