@@ -258,6 +258,20 @@ const MODULE_TYPES = {
         if (e.reviews != null && (!Array.isArray(e.reviews) || e.reviews.some(r => !r || typeof r.date !== "string" || !validDate(r.date) || typeof r.verdict !== "string"))) v.fail("réexamens");
       }
     }
+  },
+  arc: {
+    label: "Arc (étapes, où l'on place des fragments et des éléments d'autres modules)",
+    datedEntries: false, // un placement n'a pas de date de journal ; `at` note juste quand il a été fait
+    defaults: () => ({ config: { stations: [] }, entries: [] }),
+    normalize(inst) { if (!Array.isArray(inst.config.stations)) inst.config.stations = []; },
+    validate(inst, v) {
+      v.list(inst.config.stations || [], "étapes").forEach(x => { if (typeof x.name !== "string" || !x.name.trim() || x.name.length > 60) v.fail("étape"); });
+      for (const p of inst.entries) {
+        if (typeof p.station !== "string") v.fail("placement");
+        if (typeof p.ref !== "string" || !LINK_REF.test(p.ref)) v.fail("placement");
+        if (p.at != null && !(typeof p.at === "string" && validDate(p.at))) v.fail("placement");
+      }
+    }
   }
 };
 /* Une seule boîte de réception à la fois : c'est elle que remplit la capture rapide de l'accueil. */
@@ -398,6 +412,8 @@ const MODULE_TEMPLATES = [
     config: { display: "liste", concordance: true, fallowDays: 90, description: "Chaque motif est cherché dans tous tes autres modules, en mot entier, pluriel et variantes compris.",
       statuses: ["Vivant", "Épuisé"], doneFrom: 1, statusLabel: "État", addLabel: "Ajouter un motif",
       fields: { title: "Motif", subtitle: "Variantes (séparées par des virgules)", tag: "Famille", due: "", text: "Note" } } },
+  { id: "arc", name: "Arc", type: "arc", hint: "Une séquence d'étapes où loger des fragments et des éléments d'autres modules",
+    config: { stations: [{ id: "1", name: "Étape 1" }, { id: "2", name: "Étape 2" }, { id: "3", name: "Étape 3" }] } },
   { id: "rappels", name: "Soins", type: "rappels", hint: "Des gestes récurrents et depuis quand ils attendent",
     config: { types: [{ id: "arrosage", label: "Arrosage", every: 3 }] } },
   { id: "carnet", name: "Carnet", type: "notes", hint: "Des notes datées, gardées ou rangées ailleurs ensuite" }

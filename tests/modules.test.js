@@ -34,7 +34,7 @@ function launch(storage, { claude = null, bare = false } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn, lexicalDrift, driftWords, addLink, openTensions, mergeDocs };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn, lexicalDrift, driftWords, addLink, openTensions, mergeDocs, dossierMarkdown, arcCandidates };\n})();');
   vm.runInNewContext(instrumented, context);
   const fire = (name, target) => (handlers[name] || []).forEach(fn => fn({ target, preventDefault() {} }));
   return { ...context.__test, nodes, location, document, fire };
@@ -199,7 +199,8 @@ test('every registered type works end to end through the registry alone', () => 
   const addOne = { programme: journal, cumul: journal, rappels: journal, notes: journal,
     collection: (inst, id) => app.saveCollectionItem(inst, { title: 'Premier élément', tag: 'essai' }, id),
     taches: (inst, id) => app.addTask(inst.entries, { title: 'Première tâche', cat: 'Général' }, id, '2026-09-27'),
-    budget: (inst, id) => app.addBudgetEntry(inst.entries, { amount: 12, type: 'dépense', cat: 'essai', date: '2026-09-27' }, id, '2026-09-27') };
+    budget: (inst, id) => app.addBudgetEntry(inst.entries, { amount: 12, type: 'dépense', cat: 'essai', date: '2026-09-27' }, id, '2026-09-27'),
+    arc: (inst, id) => { inst.config.stations.push({ id: 'st1', name: 'Étape 1' }); inst.entries.push({ id, station: 'st1', ref: 'inbox/ghost', at: '2026-09-27' }); } };
   assert.deepEqual(Object.keys(addOne).sort(), Object.keys(app.MODULE_TYPES).sort(), 'every type must be exercised here');
   for (const type of Object.keys(app.MODULE_TYPES)) {
     const id = app.slugId(`Essai ${type}`, Object.keys(d.modules));
@@ -938,4 +939,81 @@ test('links: added on two devices to the same entry, both survive the merge', ()
   const local = { ...doc([frag([l1])]), updatedAt: 2 }, remote = { ...doc([frag([l2])]), updatedAt: 3 };
   const merged = app.mergeDocs(base, local, remote);
   assert.deepEqual([...merged.modules.ecriture.scraps[0].links.map(l => l.id)].sort(), ['l1', 'l2']);
+});
+
+test('dossier: dated, labelled entries with status, provenance and links as internal cross-references', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const e = app.S().modules.ecriture;
+  e.scraps.push(
+    { id: 'a', text: 'Le DMN fabrique le soi', date: '2026-09-01', ep: 'hyp', origin: { from: 'Capture', text: 'Écriture : le DMN fabrique le soi', date: '2026-08-30' } },
+    { id: 'b', text: 'Le soi est symbolique', date: '2026-09-02', ep: 'int' },
+    { id: 'c', text: 'Hors dossier', date: '2026-09-03' });
+  app.addLink(e.scraps[1], 'ecriture/a', 'contredit', 'l1', '2026-09-04');
+  app.addLink(e.scraps[1], 'ecriture/c', 'echo', 'l2', '2026-09-04');
+  app.addLink(e.scraps[1], 'ecriture/zz', 'documente', 'l3', '2026-09-04');
+  const md = app.dossierMarkdown('Écriture "brouillon"', 'Fragments', [
+    { mod: 'ecriture', text: e.scraps[0].text, date: '2026-09-01', e: e.scraps[0] },
+    { mod: 'ecriture', text: e.scraps[1].text, date: '2026-09-02', e: e.scraps[1] },
+    { mod: 'budget', text: 'Pas une pensée, juste une ligne', date: null }]);
+  assert.match(md, /^---\ntitre: "Écriture \\"brouillon\\""\nsource: "Selene"/, 'YAML front matter, quotes escaped');
+  assert.match(md, /entrees: 3\n---/);
+  assert.match(md, /Ne pas traiter une hypothèse comme un fait, ni combler un inexpliqué/, 'reading legend for an assistant');
+  assert.match(md, /## 1\. 1 septembre 2026 · Écriture · hypothèse\n\nLe DMN fabrique le soi\n\n\*Provenance : Capture, 30 août 2026 : « Écriture : le DMN fabrique le soi »\*/);
+  assert.match(md, /\*Liens : contredit \[1\] ; fait écho à « Hors dossier » \(hors dossier\) ; documente \(supprimé\)\*/, 'links: cross-reference inside, excerpt outside, deletion said');
+  assert.match(md, /## 3\. Budget\n\nPas une pensée/, 'an entry without date or status still has its module');
+  assert.doesNotMatch(md, /\n\n\n/, 'no blank-line pile-ups');
+});
+
+test('long lists show a hundred items, then « voir les suivants »', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const inbox = app.S().modules.inbox.entries;
+  for (let i = 0; i < 250; i++) inbox.push({ id: 'n' + i, text: 'note ' + i, date: '2026-09-01' });
+  const count = () => (app.nodes.get('#main').innerHTML.match(/<li class="item" data-id=/g) || []).length;
+  app.location.hash = '#inbox'; app.render();
+  assert.equal(count(), 100);
+  assert.match(app.nodes.get('#main').innerHTML, /Voir les 100 suivants \(150 de plus\)/);
+  assert.match(app.nodes.get('#main').innerHTML, /note 249/, 'newest first');
+  app.CLICK['page-more']({ dataset: { k: 'notes:inbox' } });
+  app.CLICK['page-more']({ dataset: { k: 'notes:inbox' } });
+  assert.equal(count(), 250);
+  assert.doesNotMatch(app.nodes.get('#main').innerHTML, /Voir les/, 'nothing more to show');
+});
+
+test('arc: placing, empty stations stay visible, removal, station lifecycle', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  const inst = app.createFromTemplate(d.modules, app.MODULE_TEMPLATES.find(x => x.id === 'arc'), 'Album', 'album');
+  d.config.modules.push({ id: 'album', on: true });
+  assert.deepEqual([...inst.config.stations.map(s => s.name)], ['Étape 1', 'Étape 2', 'Étape 3']);
+  d.modules.ecriture.scraps.push({ id: 'f1', text: 'Le seuil comme allégorie', date: '2026-09-01' });
+  app.saveCollectionItem(d.modules.musique, { title: 'Dead Can Dance', subtitle: 'Within the Realm' }, 'm1');
+  const cands = app.arcCandidates();
+  assert.ok(cands.some(c => c.ref === 'ecriture/f1') && cands.some(c => c.ref === 'musique/m1'), 'fragments and collection items are candidates');
+  assert.ok(!cands.some(c => c.mod === 'motifs'), 'a concordance is structure, not content, and stays out');
+  inst.entries.push({ id: 'p1', station: inst.config.stations[0].id, ref: 'ecriture/f1', at: '2026-09-02' });
+  assert.equal(app.summaryFor('album'), '1 élément sur 3 étapes, 2 vides');
+  app.location.hash = '#album'; app.render();
+  let html = app.nodes.get('#main').innerHTML;
+  assert.match(html, /Étape 1 <span[^>]*>1<\/span>.*Le seuil comme allégorie/s);
+  assert.match(html, /Étape 2 <span[^>]*>0<\/span>.*Vide\./s, 'an empty station is shown empty, not hidden');
+  assert.match(app.TYPE_UI.arc.context(inst, 'ALBUM'), /vide à : Étape 2, Étape 3/);
+  // Retirer un placement (« annuler » le remet).
+  app.CLICK['arc-remove']({ dataset: { mod: 'album', id: 'p1' }, closest: sel => sel === '[data-id]' ? { dataset: { id: 'p1' } } : null });
+  assert.equal(inst.entries.length, 0);
+  app.CLICK.undo();
+  assert.equal(inst.entries.length, 1);
+  // Renommer une étape.
+  app.CHANGE['stat-name']({ dataset: { mod: 'album' }, closest: () => ({ dataset: { sti: '0' } }), value: 'Esquisse', blur() {} });
+  assert.equal(inst.config.stations[0].name, 'Esquisse');
+  // Une cible supprimée : la carte le dit, sans planter (la suppression d'une étape, confirmée par boîte de
+  // dialogue, est couverte par le scénario navigateur : le faux « #cdlg » de ce banc ne se ferme jamais).
+  inst.entries.push({ id: 'p3', station: inst.config.stations[0].id, ref: 'ecriture/zz', at: '2026-09-04' });
+  app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /\(supprimé\)/);
+  // Sauvegarde : formats valides acceptés, malformés refusés.
+  assert.doesNotThrow(() => app.parseBackup(app.createBackup(app.board.data, d)));
+  const bad = JSON.parse(app.createBackup(app.board.data, d)); bad.site.modules.album.entries[0].ref = 'pas une ref';
+  assert.throws(() => app.parseBackup(JSON.stringify(bad)), /placement/);
+  const bad2 = JSON.parse(app.createBackup(app.board.data, d)); bad2.site.modules.album.config.stations[0].name = '';
+  assert.throws(() => app.parseBackup(JSON.stringify(bad2)), /étape/);
 });

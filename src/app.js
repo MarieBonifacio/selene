@@ -41,6 +41,13 @@ function removeWithUndo(id, list, itemId) {
     cur[list].splice(Math.min(i, cur[list].length), 0, item); site.save(); render(); toast("Rétabli. Rien ne s'est passé.");
   });
 }
+/* Longues listes : les PAGE premiers éléments, puis « Voir les suivants ». Propre à l'appareil, remis à zéro
+   quand on change de vue : une liste de milliers de fragments se calcule vite mais se parcourt mal au pouce. */
+const PAGE = 100, pageSize = {};
+function paged(key, list) {
+  const n = pageSize[key] || PAGE, rest = list.length - n;
+  return { items: list.slice(0, n), more: rest > 0 ? `<li class="more-row"><button class="btn ghost sm" data-act="page-more" data-k="${esc(key)}">Voir les ${Math.min(PAGE, rest)} suivants (${rest} de plus)</button></li>` : "" };
+}
 function setSaving(t) { $("#saving").textContent = t; }
 
 /* ================= stores ================= */
@@ -351,7 +358,7 @@ function tensionSection() {
   const ts = openTensions();
   if (!ts.length) return "";
   return `<section><h3>Tensions ouvertes</h3><p class="hint">Deux entrées qui se contredisent, en attente d'une synthèse qui dérive des deux. Aucune urgence : certaines contradictions sont plus fécondes que leurs solutions.</p>
-    <ul class="plain">${ts.map(t => `<li class="item"><span></span><div>${refHTML(t.a)} <span class="hint">contredit</span> ${refHTML(t.b)}${t.date ? `<div class="meta"><span>ouverte ${ago(t.date)}</span></div>` : ""}</div><button class="btn ghost sm" data-act="tension-resolve" data-a="${esc(t.a)}" data-b="${esc(t.b)}">résoudre</button></li>`).join("")}</ul></section>`;
+    <ul class="plain">${ts.map(t => `<li class="item"><span></span><div>${refHTML(t.a)} <span class="hint">contredit</span> ${refHTML(t.b)}${t.date ? `<div class="meta"><span>ouverte ${ago(t.date)}</span></div>` : ""}</div><div class="row"><button class="btn ghost sm" data-act="tension-resolve" data-a="${esc(t.a)}" data-b="${esc(t.b)}">résoudre</button><button class="btn ghost sm" data-act="tension-dossier" data-a="${esc(t.a)}" data-b="${esc(t.b)}">dossier</button></div></li>`).join("")}</ul></section>`;
 }
 /* ================= dérive lexicale =================
    Les mots propres à la période, comparés aux six précédentes (même découpage : cycles ou mois), dans tous
@@ -469,7 +476,7 @@ VIEWS.recherche = () => {
   const hits = searchAll(searchQuery);
   return `<h2>Chercher</h2><p class="hint">Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « statut:hypothèse » ne garde que les hypothèses (de même pour observé, interprétation, inexpliqué). Touche « / » pour venir ici.</p>
   <input id="searchIn" type="search" value="${esc(searchQuery)}" placeholder="Un mot, un bout de phrase…" aria-label="Chercher" autocomplete="off" style="max-width:520px">
-  ${searchQuery.trim() ? `<p class="hint" style="margin-top:12px">${hits.length ? plural(hits.length, "résultat") : "Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire."}</p>
+  ${searchQuery.trim() ? `<div class="row" style="margin-top:12px"><p class="hint" style="margin:0">${hits.length ? plural(hits.length, "résultat") : "Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire."}</p>${hits.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="search-dossier" title="Tous les résultats, avec dates, statuts, provenance et liens, pour une lecture assistée">Exporter en dossier</button>` : ""}</div>
   <ul class="plain">${hits.slice(0, 80).map(h => `<li class="item"><span></span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}<div class="meta"><span class="tag">${esc(label(h.id))}</span>${h.date ? `<span>${fmt(h.date)}</span>` : ""}${h.ep ? `<span>${esc(EP_STATUS[h.ep])}</span>` : ""}</div></div><a class="btn ghost sm" href="#${esc(h.id)}">ouvrir</a></li>`).join("")}</ul>` : ""}`;
 };
 const PALETTES = [["nigredo", "Nigredo, mousse", "#6f9a68"], ["albedo", "Albedo, lichen", "#aab7a6"], ["citrinitas", "Citrinitas, résine", "#c99a3c"], ["rubedo", "Rubedo, amanite", "#c0554a"]];
@@ -585,7 +592,7 @@ function rememberScroll() {
 }
 window.addEventListener("hashchange", () => {
   if (lastView !== (location.hash.slice(1) || "accueil")) rememberScroll(); // « / » a déjà dessiné la recherche, et gardé la position d'avant
-  openId = null; bridgeOpen = null; render();
+  openId = null; bridgeOpen = null; for (const k of Object.keys(pageSize)) delete pageSize[k]; render();
   const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t);
   if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); } else window.scrollTo(0, scrollMemo[lastView] || 0);
 });
@@ -634,6 +641,15 @@ const CLICK = {
     saveCollectionItem(inst, { title: word }, uid()); site.save(); render();
     toast(`« ${word} » devient un motif de ${label(el.dataset.mod)}. On verra s'il revient.`);
   },
+  // Tous les résultats (pas seulement les 80 affichés), dans l'ordre du temps ; un fragment ou une note garde ses
+  // statut, provenance et liens (retrouvés par module et texte : la recherche ne renvoie que des textes).
+  "search-dossier": () => {
+    const q = searchQuery.trim(), thoughts = thoughtItems();
+    const items = searchAll(q).map(h => ({ mod: h.id, text: h.text, date: h.date, e: (thoughts.find(x => x.mod === h.id && x.e.text === h.text) || {}).e }))
+      .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    if (items.length) dossierFile(`Recherche — ${q}`, `Résultats de la recherche « ${q} »`, items);
+  },
+  "page-more": el => { const k = el.dataset.k; pageSize[k] = (pageSize[k] || PAGE) + PAGE; render(); },
   "search-for": el => { searchQuery = el.dataset.q; if (location.hash === "#recherche") render(); else location.hash = "recherche"; },
   "entry-add": el => entryAdd(el.dataset.mod),
   "entry-del": el => removeWithUndo(el.dataset.mod, "entries", idOf(el)),
