@@ -6,7 +6,7 @@
 <title>Selene</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Spectral+SC:wght@500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root{
   /* Planche (clair). L'accent décore et oriente ; ok, warn, alarm et info informent : ils ne se prêtent jamais leurs teintes. */
@@ -16,6 +16,11 @@
   --sky-top:#b9c7c0; --sky-bot:#dfe5dc; --tree-far:#8fa294; --tree-near:#3b4d40; --mist:rgba(226,230,222,.75); --star:0;
   --acc-l:#3d6a45; --acc-d:#8fbf86; --accent:var(--acc-l);
   --ease:cubic-bezier(.2,0,0,1); --t-1:120ms; --t-2:180ms; --t-3:260ms;
+  /* Trois voix : l'éditorial parle (titres, textes), le fonctionnel agit (boutons, champs, données), l'étiquette classe. */
+  --f-display:"Cormorant Garamond",Georgia,serif; --f-text:"Spectral",Georgia,"Times New Roman",serif;
+  --f-label:"Spectral SC","Spectral",Georgia,serif; --f-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  /* Teintes de domaine (sigil, point d'étiquette, filet actif seulement) : minérales, hors des teintes d'état. */
+  --tint-1:#5a6a5c; --tint-2:#7a6135; --tint-3:#466a61; --tint-4:#6e4f3a; --tint-5:#6b634b; --tint-6:#6c5566; --tint-7:#56702f;
   box-sizing:border-box; accent-color:var(--accent);
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
@@ -26,6 +31,7 @@
   :root:not([data-theme="light"]):not([data-mode="light"]){
     --bg:#0e1310; --surface:#151c17; --surface-2:#1a231d; --glass:rgba(14,19,16,.78); --ink:#dde2d6; --ink-2:#b4bdb0; --muted:#8c998a;
     --rule:#243029; --rule-strong:#56665a; --alarm:#e5785a; --ok:#6fb3a2; --warn:#d2a24c; --info:#8fa9c0;
+    --tint-1:#aab7a6; --tint-2:#b09366; --tint-3:#86a39b; --tint-4:#a3826a; --tint-5:#cbc2a8; --tint-6:#a38f9e; --tint-7:#9bb07a;
     --moon:#ece8d6; --moon-shadow:#1c2620; --glow:rgba(236,232,214,.16);
     --sky-top:#070b10; --sky-bot:#132019; --tree-far:#1d2b23; --tree-near:#0a0f0c; --mist:rgba(40,58,48,.55); --star:.8;
     --accent:var(--acc-d);
@@ -34,6 +40,7 @@
 :root[data-theme="dark"]:not([data-mode="light"]),:root[data-mode="dark"]{
   --bg:#0e1310; --surface:#151c17; --surface-2:#1a231d; --glass:rgba(14,19,16,.78); --ink:#dde2d6; --ink-2:#b4bdb0; --muted:#8c998a;
   --rule:#243029; --rule-strong:#56665a; --alarm:#e5785a; --ok:#6fb3a2; --warn:#d2a24c; --info:#8fa9c0;
+    --tint-1:#aab7a6; --tint-2:#b09366; --tint-3:#86a39b; --tint-4:#a3826a; --tint-5:#cbc2a8; --tint-6:#a38f9e; --tint-7:#9bb07a;
     --moon:#ece8d6; --moon-shadow:#1c2620; --glow:rgba(236,232,214,.16);
     --sky-top:#070b10; --sky-bot:#132019; --tree-far:#1d2b23; --tree-near:#0a0f0c; --mist:rgba(40,58,48,.55); --star:.8;
     --accent:var(--acc-d);
@@ -44,13 +51,16 @@ html,body{margin:0;min-height:100%}
 /* Sous la barre d'état translucide d'iOS : un fond, pour que le contenu ne défile pas sous l'heure. */
 body::before{content:"";position:fixed;z-index:6;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg)}
 .sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-body{background:var(--bg);color:var(--ink);font-family:"Spectral",Georgia,"Times New Roman",serif;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-text);font-variant-numeric:oldstyle-nums;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
 .wrap{--g:20px;max-width:1040px;margin:0 auto;padding:22px var(--g) 90px}
 button,input,select,textarea{font:inherit;color:inherit}
+/* La voix fonctionnelle : ce qui se touche et ce qui se compte. */
+button,input,select,textarea,label,.meta,.badge,.clock,.toast,kbd,#nav,.tabbar,#palList,.stats span,.pal-hint{font-family:var(--f-ui);font-variant-numeric:lining-nums}
+textarea{font-family:var(--f-text)} /* on y écrit des phrases, pas des données */
 button{cursor:pointer}
 a{color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-h1,h2,h3{font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;line-height:1.05;margin:0}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;line-height:1.05;margin:0}
 h2{font-size:1.9rem;margin-bottom:6px}
 h3{font-size:1.35rem;margin-bottom:4px}
 .hint{color:var(--muted);font-style:italic;font-size:.93rem;margin:0 0 14px}
@@ -60,7 +70,7 @@ section{margin-bottom:40px}
 header.top{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:12px;text-decoration:none}
 .brand h1{font-size:2.1rem;letter-spacing:.01em}
-.brand small{display:block;color:var(--muted);font-size:.85rem;font-family:"Spectral",serif}
+.brand small{display:block;color:var(--muted);font-size:.85rem;font-family:var(--f-text)}
 .timer{display:flex;align-items:center;gap:8px}
 .clock{font-weight:600;min-width:4.4ch;text-align:right}
 .clock.done{color:var(--ok)}
@@ -72,7 +82,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:14p
    s'ouvrent en feuille (sheet). Ordinateur (≥ 900 px) : une barre latérale collante, la barre basse disparaît. */
 .side{max-width:1040px;margin:0 auto;padding:22px 20px 0}
 #nav{display:none}
-.grp{margin:16px 0 4px;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-style:normal}
+.grp{margin:16px 0 4px;font-family:var(--f-label);font-size:.92rem;letter-spacing:.06em;text-transform:lowercase;color:var(--muted);font-style:normal}
 .badge{font-size:.78rem;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent)}
 .nx{margin-left:auto;display:inline-flex;align-items:center;gap:8px}
@@ -138,15 +148,45 @@ dialog.palette input:focus-visible{outline:none;border-bottom-color:var(--accent
 .flash{animation:flash 1.8s var(--ease)}
 @keyframes flash{from{background:color-mix(in srgb,var(--accent) 24%,transparent)}to{background:transparent}}
 .over-grp{margin:18px 0 0;padding-bottom:4px}
+/* ================= identité des espaces : sigils, planches, teintes ================= */
+.t0{--tint:var(--accent)}.t1{--tint:var(--tint-1)}.t2{--tint:var(--tint-2)}.t3{--tint:var(--tint-3)}.t4{--tint:var(--tint-4)}.t5{--tint:var(--tint-5)}.t6{--tint:var(--tint-6)}.t7{--tint:var(--tint-7)}
+.sig{width:1.05em;height:1.05em;flex:none;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.14em;margin-right:.5em}
+#nav a .sig{color:var(--muted)}
+#nav a:hover .sig,#nav a.on .sig{color:var(--tint,var(--accent))}
+@media (min-width:900px){#nav a.on{border-left-color:var(--tint,var(--accent))}}
+.view .tag::before{background:var(--tint)}
+.plate{display:flex;align-items:center;gap:8px;margin:0 0 8px;color:var(--muted)}
+.plate .sig{width:26px;height:26px;margin:0;color:var(--tint)}
+.plate .pl{font-family:var(--f-label);font-size:1rem;letter-spacing:.08em;text-transform:lowercase}
+.over b .sig{width:.78em;height:.78em;color:var(--tint)}
+.srow .sig{width:22px;height:22px;margin:0;align-self:center;color:var(--tint)}
+.sheet-title .sig{width:26px;height:26px;color:var(--tint)}
+.sigils{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 16px}
+.sigils button{width:40px;height:40px;display:grid;place-items:center;padding:0;border:1px solid var(--rule);border-radius:3px;background:transparent;color:var(--muted)}
+.sigils button .sig{width:22px;height:22px;margin:0}
+.sigils button.on{border-color:var(--tint,var(--accent));color:var(--tint,var(--accent));box-shadow:inset 0 0 0 1px var(--tint,var(--accent))}
+/* Réglages d'un module : un tiroir à droite sur ordinateur. Formulaires : une feuille sur téléphone. */
+@media (min-width:900px){
+  dialog.sheet.drawer{margin:0 0 0 auto;height:100vh;max-height:100vh;width:min(480px,92vw);border:0;border-left:1px solid var(--rule);border-radius:0;padding:22px 24px}
+  dialog.sheet.drawer::before{display:none}
+  dialog.sheet.drawer[open]{animation:drawer-in var(--t-3) var(--ease)}
+}
+@keyframes drawer-in{from{transform:translateX(32px);opacity:.4}}
+@media (max-width:899px){
+  #dlg{margin:auto 0 0;width:100%;max-width:100%;max-height:92vh;border:0;border-top:1px solid var(--rule);border-radius:12px 12px 0 0}
+  #dlg::before{content:"";display:block;width:36px;height:4px;border-radius:2px;background:var(--rule-strong);margin:10px auto 0}
+  #dlg form{padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+  #dlg[open]{animation:sheet-in var(--t-3) var(--ease)}
+}
 .set.mod{grid-template-columns:auto minmax(0,1fr) 9em auto}
 @media (max-width:560px){.set.mod{grid-template-columns:auto minmax(0,1fr) auto}.set.mod>:nth-child(3){grid-column:2;grid-row:2}}
 
 /* buttons */
-.btn{border:1px solid var(--ink);background:transparent;padding:7px 14px;border-radius:2px;font-weight:500}
+.btn{border:1px solid var(--ink);background:transparent;padding:7px 14px;border-radius:2px;font-weight:500;font-size:.92rem}
 .btn.solid{background:var(--ink);color:var(--bg)}
 .btn.acc{background:var(--accent);border-color:var(--accent);color:var(--bg)}
 .btn.ghost{border-color:transparent;color:var(--muted);padding:5px 8px}
-.btn.sm{padding:3px 9px;font-size:.88rem}
+.btn.sm{padding:3px 9px;font-size:.82rem}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .spacer{flex:1}
 
@@ -253,6 +293,9 @@ select.ep.on{color:var(--accent);border-color:var(--rule)}
 .card{background:var(--surface);border:1px solid var(--rule);padding:10px;margin-bottom:8px;position:relative}
 .card p{margin:4px 0;font-size:.9rem;color:var(--muted);white-space:pre-wrap}
 .col-empty{min-height:64px;border:1px dashed var(--rule);margin:0}
+/* Le tableau est l'ancêtre positionné de tout ce qu'il contient d'absolu (texte pour lecteur d'écran, « ⋯ ») :
+   sinon ces éléments échappent à son défilement horizontal et élargissent toute la page sur téléphone. */
+.board{position:relative}
 
 /* Actions de ligne (classe .ra) : au repos, le contenu seul. Au survol ou au focus sur ordinateur ; sur un écran
    tactile, un toucher sur la ligne les montre (« ⋯ » signale qu'il y en a). Jamais la seule voie d'une action primaire. */
