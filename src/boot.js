@@ -7,7 +7,16 @@ window.addEventListener("storage", e => { if ((e.key === board.key && board.relo
 if (!window.claude) { try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {} }
 
 /* ================= boot ================= */
+// « Ouvrir sur : là où j'en étais » : au premier chargement de la session seulement (la PWA démarre toujours sur #accueil).
+try {
+  if (!sessionStorage.getItem("selene-session")) {
+    sessionStorage.setItem("selene-session", "1");
+    const r = liveRecents()[0], here = routeOf();
+    if (openOn() === "last" && r && here.view === "accueil" && !here.entry) window.history.replaceState(null, "", "#" + r.id);
+  }
+} catch {}
 render();
+{ const e = routeOf().entry; if (e) focusEntry(e); } // un lien direct vers une entrée, ouvert tel quel
 (async () => {
   try {
     if (!window.claude || !window.claude.use) {

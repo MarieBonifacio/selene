@@ -22,7 +22,8 @@ function parseBackup(text) {
   if (board.tasks.some(t => typeof t.id !== "string" || typeof t.title !== "string" ||
       (t.steps != null && (!Array.isArray(t.steps) || t.steps.some(s => !record(s) || typeof s.t !== "string"))))) throw new Error("Tâche invalide");
   if (!record(site.config) || (site.config.modules != null &&
-      (!Array.isArray(site.config.modules) || site.config.modules.some(m => !record(m) || typeof m.id !== "string" || typeof m.on !== "boolean"))) ||
+      (!Array.isArray(site.config.modules) || site.config.modules.some(m => !record(m) || typeof m.id !== "string" || typeof m.on !== "boolean" ||
+        (m.group != null && (typeof m.group !== "string" || m.group.length > 40))))) || // group : domaine de navigation, facultatif
       (site.config.groups != null && !record(site.config.groups)) ||
       (site.config.labels != null && !record(site.config.labels)) ||
       (site.config.assistant != null && (!record(site.config.assistant) ||

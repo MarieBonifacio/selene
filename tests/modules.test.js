@@ -887,12 +887,12 @@ test('links: derive, contradict, backlinks, tensions resolved by a synthesis of 
   // Dériver : la prochaine entrée écrite dans le module dérive de la source.
   app.location.hash = '#ecriture'; app.render();
   app.CLICK['derive-start'](on({ mod: 'ecriture', id: 'a' }));
-  assert.match(app.nodes.get('#main').innerHTML, /class="derive">Dérivé de <a href="#ecriture">« Le DMN fabrique le soi »/);
+  assert.match(app.nodes.get('#main').innerHTML, /class="derive">Dérivé de <a href="#ecriture\/a">« Le DMN fabrique le soi »/);
   app.document.querySelector('#scrapIn').value = 'Le soi comme effet de réseau';
   app.CLICK['scrap-add'](on({ mod: 'ecriture' }));
   const c = e.scraps.at(-1);
   assert.deepEqual([...c.links.map(l => `${l.type}>${l.to}`)], ['derive>ecriture/a']);
-  assert.match(app.nodes.get('#main').innerHTML, /a donné <a href="#ecriture">« Le soi comme effet de réseau »/, 'backlink on the source');
+  assert.match(app.nodes.get('#main').innerHTML, /a donné <a href="#ecriture\/[a-z0-9]+">« Le soi comme effet de réseau »/, 'backlink on the source');
   assert.doesNotMatch(app.nodes.get('#main').innerHTML, /class="derive"/, 'the banner is gone once used');
   // Contredire : une tension ouverte, jusqu'à une synthèse qui dérive des deux.
   assert.ok(app.addLink(e.scraps[1], 'ecriture/a', 'contredit', 'l1', '2026-09-04'));

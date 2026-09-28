@@ -43,7 +43,7 @@ demo.modules.ecriture.scraps = Array.from({ length: 30 }, (_, i) => ({ id: 's' +
   const y = await d.evaluate(() => window.scrollY);
   await go(d, 'accueil'); ok(await d.evaluate(() => window.scrollY) === 0, 'l’accueil retrouve sa propre position, pas celle de la vue quittée');
   await go(d, 'ecriture'); ok(Math.abs(await d.evaluate(() => window.scrollY) - y) < 2, 'revenir dans une vue retrouve sa position');
-  ok(await d.$eval('#nav', n => getComputedStyle(n).position) === 'sticky', 'navigation collante');
+  ok(await d.$eval('.side', n => getComputedStyle(n).position) === 'sticky' && await d.isVisible('#nav a[href="#ecriture"]'), 'barre latérale collante sur ordinateur');
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

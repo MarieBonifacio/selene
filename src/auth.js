@@ -20,7 +20,7 @@ function authPersist(s) {
 const LAST_UID_KEY = "selene-auth-last-uid";
 /* Déconnexion ou changement de compte : rien de la personne précédente ne doit rester sur l'appareil —
    ni ses données, ni sa conversation avec l'assistant, ni sa clé API (facturée à elle). */
-const PERSONAL_KEYS = ["selene-chat", "selene-api-key"];
+const PERSONAL_KEYS = ["selene-chat", "selene-api-key", "selene-recent"]; // selene-recent : les derniers espaces ouverts
 function authResetLocal() {
   board.reset({ updatedAt: 0, tasks: [] });
   site.reset(siteSeed());
