@@ -117,7 +117,9 @@ passent par ces deux registres. Crochets facultatifs de `TYPE_UI` (liste complè
 `badge` (navigation). Un élément de `texts` peut porter `ep` (statut épistémique) : la recherche et le
 bilan le lisent. Champs communs à tous les types, hors registre (validés par `parseBackup`) : `resume` et
 `resumeLog` sur l'instance (pont de reprise), `origin` sur une entrée (provenance, posée par `stampOrigin`
-quand une note est rangée), `ep`/`epLog` sur les fragments et les notes. Tous facultatifs et additifs : une
+quand une note est rangée), `ep`/`epLog` et `links` sur les fragments et les notes. Un lien
+(`{ id, to: "module/id", type, date }`) vit dans l'entrée d'où il part ; son `id` fait fusionner les liens un par
+un entre appareils. Les liens entrants ne sont jamais stockés : ils se recalculent (`backlinks`). Tous facultatifs et additifs : une
 version antérieure de l'app les ignore et la fusion les conserve, d'où l'absence de nouveau `SCHEMA_VERSION`.
 Une collection peut être en mode `review` (la date est un rendez-vous de révision) ou `concordance` (ses
 éléments sont des motifs comptés dans les `texts` des autres modules, voir `concordance()` dans `types.js`) :
@@ -135,6 +137,9 @@ les gardent rapides sans jamais servir un résultat périmé :
   mots passent par une expression régulière.
 - La dérive lexicale du bilan (`lexicalDrift`, `app.js`) découpe chaque texte une fois (`driftWords`, même cache
   borné) et compte chaque mot une fois par texte, sur sept périodes seulement.
+- `fmt` (dates) est aussi mis en cache : chaque appel à `toLocaleDateString` reconstruit un formateur `Intl`,
+  et une liste de fragments en affiche des milliers. Les références `module/id` se résolvent par un index
+  construit une fois par rendu (`refFind`).
 - `memoInRender` garde un calcul partagé (la concordance sert la vue, le résumé d'accueil et deux périodes
   du bilan) le temps d'**un** rendu seulement : pendant un rendu les données ne bougent pas, donc aucune
   invalidation à gérer.

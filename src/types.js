@@ -29,6 +29,65 @@ function originHTML(e, current) {
   const same = String(current ?? "").trim() === o.text.trim(), short = o.text.length > 90 ? o.text.slice(0, 90) + "…" : o.text;
   return `<span class="origin" title="${esc(o.text)}">↳ de ${esc(o.from)}${o.date ? `, ${fmt(o.date)}` : ""}${same ? "" : ` : « ${esc(short)} »`}</span>`;
 }
+/* ---- liaisons entre fragments et notes (ce qui se pense : fragments d'un cumul, notes) ---- */
+function thoughtItems() {
+  const out = [];
+  for (const [mod, m] of Object.entries(S().modules)) {
+    const list = m.type === "notes" ? m.entries : m.type === "cumul" ? m.scraps || [] : null;
+    if (list) for (const e of list) out.push({ ref: `${mod}/${e.id}`, mod, e });
+  }
+  return out;
+}
+/* « module/id » → l'entrée, par un index des entrées du module construit une fois par rendu (une liste de
+   fragments liés ferait sinon autant de parcours complets que de liens). */
+function refFind(ref) {
+  const [mod, id] = String(ref).split("/"), m = Object.hasOwn(S().modules, mod) ? S().modules[mod] : null;
+  if (!m) return null;
+  const e = memoInRender("refs:" + mod, () => new Map([...m.entries, ...(m.scraps || [])].map(x => [x.id, x]))).get(id);
+  return e ? { mod, e } : null;
+}
+const excerpt = (e, n = 60) => { const t = String(e.text || e.title || e.note || "").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n) + "…" : t; };
+/* Liens entrants : pour chaque entrée, qui la vise et comment. Calculé une fois par rendu. */
+const backlinks = () => memoInRender("backlinks", () => {
+  const by = new Map();
+  for (const it of thoughtItems()) for (const l of it.e.links || []) { if (!by.has(l.to)) by.set(l.to, []); by.get(l.to).push({ from: it.ref, type: l.type }); }
+  return by;
+});
+const LINK_BACK = { derive: "a donné", contredit: "contredit par", echo: "écho de", documente: "documenté par" };
+function refHTML(ref) {
+  const hit = refFind(ref);
+  return hit ? `<a href="#${esc(hit.mod)}">« ${esc(excerpt(hit.e))} »</a>` : `<i>(supprimé)</i>`;
+}
+/* Sous une entrée : ses liens sortants et entrants, puis « dériver » et « lier… ». */
+function linksHTML(mod, e) {
+  const out = (e.links || []).map(l => `<span>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</span>`);
+  const inc = (backlinks().get(`${mod}/${e.id}`) || []).map(b => `<span>${esc(LINK_BACK[b.type])} ${refHTML(b.from)}</span>`);
+  return `<div class="meta links">${[...out, ...inc].join("")}<span class="acts"><button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></span></div>`;
+}
+/* Dérivation en cours, par module : la prochaine entrée écrite dérivera de ces références (une, ou deux pour
+   résoudre une tension). Propre à l'appareil, oubliée si l'on quitte l'app. */
+const deriveFrom = {};
+function deriveBanner(mod) {
+  const refs = deriveFrom[mod]; if (!refs || !refs.length) return "";
+  return `<div class="derive">${refs.length > 1 ? "Synthèse de" : "Dérivé de"} ${refs.map(refHTML).join(" et ")} <button class="btn ghost sm" data-act="derive-cancel" data-mod="${esc(mod)}">annuler</button></div>`;
+}
+function applyDerive(mod, item) {
+  for (const ref of deriveFrom[mod] || []) if (ref !== `${mod}/${item.id}`) addLink(item, ref, "derive", uid(), todayISO());
+  const n = (deriveFrom[mod] || []).length; delete deriveFrom[mod];
+  return n;
+}
+function linkForm(mod, id) {
+  const self = `${mod}/${id}`, choices = thoughtItems().filter(x => x.ref !== self).sort((a, b) => (b.e.date || "").localeCompare(a.e.date || "")).slice(0, 300);
+  if (!choices.length) return toast("Rien d'autre à quoi le lier. Une pensée seule ne se contredit pas encore.");
+  openForm("Lier à une autre entrée", [
+    { n: "type", l: "Cette entrée…", t: "select", o: Object.entries(LINK_TYPES) },
+    { n: "to", l: "…quelle autre", t: "select", o: choices.map(x => [x.ref, `${label(x.mod)} · ${x.e.date ? fmt(x.e.date) + " · " : ""}${excerpt(x.e, 70)}`]) }
+  ], { type: "echo" }, v => {
+    const hit = refFind(self); if (!hit) return toast("Cette entrée a disparu entre-temps.");
+    if (!addLink(hit.e, v.to, v.type, uid(), todayISO())) return toast("Déjà lié ainsi.");
+    site.save(); render(); toast(v.type === "contredit" ? "Tension ouverte. Elle attendra sa synthèse." : "Lié.");
+  });
+}
 /* Le statut épistémique d'un fragment ou d'une note, modifiable sur place ; vide par défaut. */
 const epSelect = (id, e) => `<select class="ep ${e.ep ? "on" : ""}" data-act="ep-set" data-mod="${esc(id)}" aria-label="Statut">${[["", "statut…"], ...Object.entries(EP_STATUS)].map(([k, l]) => `<option value="${k}" ${(e.ep || "") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
 /* Fin estimée d'un cumul au rythme des 30 derniers jours : une phrase, ou rien sans objectif. */
@@ -148,9 +207,9 @@ const TYPE_UI = {
     <div class="row"><input type="number" id="cumIn" min="${total ? 0 : 1}" placeholder="${total ? `Total atteint (${esc(c.unitLabel)})` : `${esc(c.unitLabel)} aujourd'hui`}" style="max-width:200px" inputmode="numeric" aria-label="${total ? "Total atteint" : "Ajout du jour"}">${c.categories.length ? `<select id="cumCat" aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">Hors ${esc(c.categoryLabel).toLowerCase()}</option>${c.categories.map(x => `<option value="${esc(x.id)}" ${x.id === lastCat ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>` : ""}<button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">Ajouter</button></div>
     <div style="margin-top:28px">${c.categories.length ? cumulGroupPanel(id) : `<p class="hint">Ajoute des ${esc(c.categoryLabel).toLowerCase()}s dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a> pour suivre chacune en pourcentage.</p>`}</div>
   </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">Une phrase qui passe, avant qu'elle ne reparte. Un « ? » devant en fait une hypothèse.</p>
-    <textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="Nouveau"></textarea><div class="row" style="margin-top:8px">${catSelect("scrapCat", "", lastScrapCat)}<button class="btn" data-act="scrap-add" data-mod="${esc(id)}">Garder</button></div>
+    ${deriveBanner(id)}<textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="Nouveau"></textarea><div class="row" style="margin-top:8px">${catSelect("scrapCat", "", lastScrapCat)}<button class="btn" data-act="scrap-add" data-mod="${esc(id)}">Garder</button></div>
     ${c.categories.length || inst.scraps.length ? `<div class="row" style="margin-top:14px">${c.categories.length ? `<select data-act="scrap-f" data-mod="${esc(id)}" aria-label="Filtrer"><option value="*">Tous</option>${[["", `Hors ${c.categoryLabel.toLowerCase()}`], ...c.categories.map(x => [x.id, x.name])].map(([k, n]) => `<option value="${esc(k)}" ${ff === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : ""}<span class="spacer"></span>${inst.scraps.length ? `<button class="btn ghost sm" data-act="scrap-md" data-mod="${esc(id)}">Exporter en Markdown</button>` : ""}</div>` : ""}
-    <ul class="plain" style="margin-top:10px">${[...inst.scraps].reverse().filter(f => ff === "*" || (f.category || "") === ff).map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${originHTML(f, f.text)}</div></div><button class="btn ghost sm" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Rien pour l'instant.</li>`}</ul>
+    <ul class="plain" style="margin-top:10px">${[...inst.scraps].reverse().filter(f => ff === "*" || (f.category || "") === ff).map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${originHTML(f, f.text)}</div>${linksHTML(id, f)}</div><button class="btn ghost sm" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Rien pour l'instant.</li>`}</ul>
   </section>` : ""}</div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>Titre / sous-titre<input data-set-mod="${esc(id)}.title" value="${esc(c.title || "")}"></label><label>Objectif<input type="number" min="1" data-set-mod="${esc(id)}.goal" value="${esc(c.goal)}"></label></div>
@@ -190,8 +249,10 @@ const TYPE_UI = {
       "scrap-add": el => {
         const v = $("#scrapIn").value.trim(); if (!v) return;
         const cat = $("#scrapCat") ? $("#scrapCat").value : "", p = epPrefix(v);
-        instOf(el).scraps.push({ id: uid(), text: p.text, date: todayISO(), ...(cat ? { category: cat } : {}), ...(p.ep ? { ep: p.ep } : {}) }); $("#scrapIn").value = ""; site.save(); render();
-        if (p.ep) toast("Gardé comme hypothèse. Elle attendra ses preuves.");
+        const f = { id: uid(), text: p.text, date: todayISO(), ...(cat ? { category: cat } : {}), ...(p.ep ? { ep: p.ep } : {}) };
+        instOf(el).scraps.push(f); const derived = applyDerive(el.dataset.mod, f); $("#scrapIn").value = ""; site.save(); render();
+        if (derived) toast(derived > 1 ? "Synthèse gardée. La tension est levée." : "Dérivé, et relié à sa source.");
+        else if (p.ep) toast("Gardé comme hypothèse. Elle attendra ses preuves.");
       },
       "scrap-md": el => { const id = el.dataset.mod; downloadFile(`${id}-${todayISO()}.md`, scrapsMarkdown(id, S().modules[id]), "text/markdown", label(id)); },
       "scrap-del": el => removeWithUndo(el.dataset.mod, "scraps", idOf(el)),
@@ -737,7 +798,8 @@ function fileIntent(intent, fromId, noteId) {
 function acceptNote(toId, fromId, note, text = note.text) {
   const target = S().modules[toId], before = entryIds(target);
   const then = TYPE_UI[target.type].accept(toId, target, { ...note, text });
-  stampOrigin(target, before, note, label(fromId));
+  const born = stampOrigin(target, before, note, label(fromId));
+  if (born.length) retargetLinks(S().modules, `${fromId}/${note.id}`, `${toId}/${born[0].id}`); // les liens la suivent
   return then;
 }
 /* Saisie d'une note : un « ? » en tête la range parmi les hypothèses. */
@@ -766,8 +828,8 @@ TYPE_UI.notes = {
   view(id) {
     const inst = S().modules[id], c = inst.config, targets = noteTargets(id);
     return `<div data-mod="${esc(id)}"><h2>${esc(label(id))}</h2>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}
-  <div class="capture" style="margin-bottom:18px"><input id="noteIn" data-draft placeholder="${esc(c.placeholder)}" aria-label="Nouvelle note"><button class="btn acc" data-act="note-add">Garder</button></div>
-  <ul class="plain">${[...inst.entries].reverse().map(x => { const intent = captureIntent(x.text); return `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}${epSelect(id, x)}${originHTML(x, x.text)}</div>
+  ${deriveBanner(id)}<div class="capture" style="margin-bottom:18px"><input id="noteIn" data-draft placeholder="${esc(c.placeholder)}" aria-label="Nouvelle note"><button class="btn acc" data-act="note-add">Garder</button></div>
+  <ul class="plain">${[...inst.entries].reverse().map(x => { const intent = captureIntent(x.text); return `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}${epSelect(id, x)}${originHTML(x, x.text)}</div>${linksHTML(id, x)}
     ${intent && intent.to !== id ? `<div class="row" style="margin-top:6px"><button class="btn sm acc" data-act="note-file">Ranger : ${esc(intent.say)}</button></div>` : ""}
     ${targets.length ? `<div class="row" style="margin-top:6px">${targets.map(k => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
     <button class="btn ghost sm" data-act="note-del">suppr.</button></li>`; }).join("") || `<li class="empty">${c.inbox ? "Vide. Le silence d'une clairière, ou celui d'un cerveau." : "Rien pour l'instant."}</li>`}</ul></div>`;
@@ -784,8 +846,8 @@ TYPE_UI.notes = {
   click: {
     "note-add": el => {
       const inp = $("#noteIn"); if (!inp || !inp.value.trim()) return;
-      const id = modOf(el), item = addNote(S().modules[id], inp.value); inp.value = ""; site.save(); render();
-      afterCapture(id, item);
+      const id = modOf(el), item = addNote(S().modules[id], inp.value), derived = applyDerive(id, item); inp.value = ""; site.save(); render();
+      if (derived) toast(derived > 1 ? "Synthèse gardée. La tension est levée." : "Dérivé, et relié à sa source."); else afterCapture(id, item);
     },
     "note-file": el => { const id = modOf(el), note = S().modules[id].entries.find(x => x.id === idOf(el)), intent = note && captureIntent(note.text); if (intent) fileIntent(intent, id, note.id); },
     "note-del": el => removeWithUndo(modOf(el), "entries", idOf(el)),
@@ -804,6 +866,20 @@ TYPE_UI.notes = {
       site.save(); render();
     }
   }
+};
+/* Liaisons, communes aux fragments et aux notes (l'entrée est cherchée par sa référence « module/id »). */
+CLICK["derive-start"] = el => {
+  const mod = el.dataset.mod, id = idOf(el); if (!refFind(`${mod}/${id}`)) return;
+  deriveFrom[mod] = [`${mod}/${id}`]; render();
+  const inp = $("#scrapIn") || $("#noteIn"); if (inp) inp.focus();
+};
+CLICK["derive-cancel"] = el => { delete deriveFrom[el.dataset.mod]; render(); };
+CLICK["link-form"] = el => linkForm(el.dataset.mod, idOf(el));
+/* Résoudre une tension : écrire, dans le module de la première entrée, une synthèse qui dérive des deux. */
+CLICK["tension-resolve"] = el => {
+  const a = el.dataset.a, b = el.dataset.b, hit = refFind(a); if (!hit) return;
+  deriveFrom[hit.mod] = [a, b];
+  if (location.hash === "#" + hit.mod) render(); else location.hash = hit.mod;
 };
 /* Statut épistémique, commun aux fragments et aux notes : l'élément est cherché dans les deux listes du module. */
 CHANGE["ep-set"] = el => {

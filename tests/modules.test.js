@@ -34,7 +34,7 @@ function launch(storage, { claude = null, bare = false } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn, lexicalDrift, driftWords };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn, lexicalDrift, driftWords, addLink, openTensions, mergeDocs };\n})();');
   vm.runInNewContext(instrumented, context);
   const fire = (name, target) => (handlers[name] || []).forEach(fn => fn({ target, preventDefault() {} }));
   return { ...context.__test, nodes, location, document, fire };
@@ -875,4 +875,67 @@ test('lexical drift: words proper to the period against the six before, stopword
   assert.equal(app.lexicalDrift('mois', 0).rising.find(x => x.k === 'brouillard').n, 2, 'the motifs module is not part of the corpus');
   app.location.hash = '#bilan'; app.render();
   assert.match(app.nodes.get('#main').innerHTML, /<h3>Vocabulaire<\/h3>/);
+});
+
+test('links: derive, contradict, backlinks, tensions resolved by a synthesis of both', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), e = d.modules.ecriture;
+  e.scraps.push({ id: 'a', text: 'Le DMN fabrique le soi', date: '2026-09-01' }, { id: 'b', text: 'Le soi est symbolique', date: '2026-09-02' });
+  assert.throws(() => app.addLink(e.scraps[0], 'ecriture/b', 'aime', 'l0', '2026-09-03'), /Lien invalide/);
+  assert.throws(() => app.addLink(e.scraps[0], 'pas une référence', 'echo', 'l0', '2026-09-03'), /Lien invalide/);
+  // Dériver : la prochaine entrée écrite dans le module dérive de la source.
+  app.location.hash = '#ecriture'; app.render();
+  app.CLICK['derive-start'](on({ mod: 'ecriture', id: 'a' }));
+  assert.match(app.nodes.get('#main').innerHTML, /class="derive">Dérivé de <a href="#ecriture">« Le DMN fabrique le soi »/);
+  app.document.querySelector('#scrapIn').value = 'Le soi comme effet de réseau';
+  app.CLICK['scrap-add'](on({ mod: 'ecriture' }));
+  const c = e.scraps.at(-1);
+  assert.deepEqual([...c.links.map(l => `${l.type}>${l.to}`)], ['derive>ecriture/a']);
+  assert.match(app.nodes.get('#main').innerHTML, /a donné <a href="#ecriture">« Le soi comme effet de réseau »/, 'backlink on the source');
+  assert.doesNotMatch(app.nodes.get('#main').innerHTML, /class="derive"/, 'the banner is gone once used');
+  // Contredire : une tension ouverte, jusqu'à une synthèse qui dérive des deux.
+  assert.ok(app.addLink(e.scraps[1], 'ecriture/a', 'contredit', 'l1', '2026-09-04'));
+  assert.equal(app.addLink(e.scraps[1], 'ecriture/a', 'contredit', 'l2', '2026-09-05'), null, 'no duplicate link');
+  assert.equal(app.openTensions().length, 1);
+  app.location.hash = '#bilan'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /<h3>Tensions ouvertes<\/h3>/);
+  app.CLICK['tension-resolve']({ dataset: { a: 'ecriture/b', b: 'ecriture/a' } });
+  assert.equal(app.location.hash, 'ecriture');
+  app.location.hash = '#ecriture'; app.render(); // un vrai navigateur ajoute le « # » ; ce faux location, non
+  assert.match(app.nodes.get('#main').innerHTML, /Synthèse de <a[^>]*>« Le soi est symbolique »<\/a> et <a[^>]*>« Le DMN fabrique le soi »/);
+  app.document.querySelector('#scrapIn').value = 'Le soi, symbole que le réseau se donne';
+  app.CLICK['scrap-add'](on({ mod: 'ecriture' }));
+  assert.equal(app.openTensions().length, 0, 'resolved by a fragment deriving from both');
+  // Une cible supprimée : le lien le dit, et une tension orpheline n'est plus une tension.
+  assert.ok(app.addLink(e.scraps[1], 'ecriture/zz', 'contredit', 'l3', '2026-09-06'));
+  assert.equal(app.openTensions().length, 0);
+  app.location.hash = '#ecriture'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /contredit <i>\(supprimé\)<\/i>/);
+  // Sauvegarde : liens valides acceptés, lien malformé refusé.
+  assert.doesNotThrow(() => app.parseBackup(app.createBackup(app.board.data, d)));
+  const bad = JSON.parse(app.createBackup(app.board.data, d)); bad.site.modules.ecriture.scraps[1].links[0].to = '../../x';
+  assert.throws(() => app.parseBackup(JSON.stringify(bad)), /liaison/);
+});
+
+test('links: a filed note carries its links and the links aimed at it follow it', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), e = d.modules.ecriture;
+  e.scraps.push({ id: 'a', text: 'Le seuil', date: '2026-09-01' });
+  app.addCapture(d.modules.inbox.entries, 'une idée sur le seuil', 'n1', '2026-09-02');
+  app.addLink(d.modules.inbox.entries[0], 'ecriture/a', 'echo', 'l1', '2026-09-02'); // la note vise un fragment
+  app.addLink(e.scraps[0], 'inbox/n1', 'documente', 'l2', '2026-09-02');           // un fragment vise la note
+  app.CLICK['note-to'](on({ mod: 'inbox', id: 'n1', to: 'ecriture' }));
+  const born = e.scraps.at(-1);
+  assert.deepEqual([...born.links.map(l => l.to)], ['ecriture/a'], 'outgoing links follow');
+  assert.equal(e.scraps[0].links[0].to, `ecriture/${born.id}`, 'incoming links are retargeted');
+});
+
+test('links: added on two devices to the same entry, both survive the merge', () => {
+  const app = launch(new Map());
+  const frag = links => ({ id: 'a', text: 'x', date: '2026-09-01', ...(links ? { links } : {}) });
+  const doc = scraps => ({ updatedAt: 1, modules: { ecriture: { type: 'cumul', scraps } } });
+  const base = doc([frag()]), l1 = { id: 'l1', to: 'ecriture/b', type: 'echo', date: '2026-09-02' }, l2 = { id: 'l2', to: 'ecriture/c', type: 'contredit', date: '2026-09-02' };
+  const local = { ...doc([frag([l1])]), updatedAt: 2 }, remote = { ...doc([frag([l2])]), updatedAt: 3 };
+  const merged = app.mergeDocs(base, local, remote);
+  assert.deepEqual([...merged.modules.ecriture.scraps[0].links.map(l => l.id)].sort(), ['l1', 'l2']);
 });

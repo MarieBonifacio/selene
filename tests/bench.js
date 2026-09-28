@@ -18,6 +18,8 @@ const vocab = Array.from({ length: 3000 }, (_, i) => 'mot' + i.toString(36) + '�
 const phrase = n => Array.from({ length: n }, () => rnd() < 0.02 ? words[Math.floor(rnd() * words.length)] : vocab[Math.floor(rnd() * vocab.length)]).join(' ');
 for (let i = 0; i < 4000; i++) d.modules.ecriture.scraps.push({ id: 'f' + i, text: phrase(40 + i % 30), date: `202${4 + i % 3}-0${1 + i % 9}-1${i % 9}` });
 for (let i = 0; i < 1500; i++) d.modules.inbox.entries.push({ id: 'n' + i, text: phrase(15 + i % 20), date: '2026-09-01' });
+// Un fragment sur trois dérive d'un fragment plus ancien ; un sur cinquante en contredit un autre.
+d.modules.ecriture.scraps.forEach((f, i) => { if (i && i % 3 === 0) f.links = [{ id: 'l' + i, to: 'ecriture/f' + Math.floor(rnd() * i), type: i % 50 === 0 ? 'contredit' : 'derive', date: f.date }]; });
 const m = t.createFromTemplate(d.modules, t.MODULE_TEMPLATES.find(x => x.id === 'motifs'), 'Motifs', 'motifs'); d.config.modules.push({ id: 'motifs', on: true });
 for (let i = 0; i < 60; i++) t.saveCollectionItem(m, { title: words[i % words.length] + (i >= words.length ? i : ''), subtitle: i % 3 ? '' : 'miroir, mercure' }, 'm' + i);
 const chars = [...d.modules.ecriture.scraps, ...d.modules.inbox.entries].reduce((a, x) => a + x.text.length, 0);
@@ -25,5 +27,6 @@ console.log('corpus', (chars / 1e6).toFixed(2), 'M caractères,', d.modules.ecri
 const time = (name, fn, n = 3) => { fn(); const s = process.hrtime.bigint(); for (let i = 0; i < n; i++) fn(); console.log(name.padEnd(28), (Number(process.hrtime.bigint() - s) / 1e6 / n).toFixed(1), 'ms'); };
 time('accueil (render)', () => { context.location.hash = '#accueil'; t.render(); });
 time('motifs (render)', () => { context.location.hash = '#motifs'; t.render(); });
+time('écriture (render)', () => { context.location.hash = '#ecriture'; t.render(); });
 time('bilan (render)', () => { context.location.hash = '#bilan'; t.render(); });
 time('recherche « lune porte »', () => t.searchAll('lune porte'));

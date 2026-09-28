@@ -102,6 +102,8 @@ ul.plain>.item:last-child{border-bottom:1px solid var(--rule)}
 .steps input{accent-color:var(--accent);width:16px;height:16px}
 .note{color:var(--muted);white-space:pre-wrap;margin:6px 0}
 .origin{font-style:italic;white-space:normal}
+.links{white-space:normal}.links a{color:inherit}.links .acts{margin-left:auto;display:inline-flex;gap:2px}.links .acts .btn{padding:0 6px;font-size:.8rem}
+.derive{padding:6px 10px;margin-bottom:8px;border-left:2px solid var(--accent);background:var(--surface);font-size:.92rem}
 select.ep{width:auto;padding:0 4px;font-size:.82rem;border-color:transparent;background:transparent;color:var(--muted)}
 select.ep.on{color:var(--accent);border-color:var(--rule)}
 
@@ -650,6 +652,9 @@ function parseBackup(text) {
       // Champs communs à tous les types : provenance d'une entrée rangée, pont de reprise du module.
       for (const x of [...inst.entries, ...(inst.scraps || [])]) if (x.origin != null &&
           (!record(x.origin) || typeof x.origin.text !== "string" || typeof x.origin.from !== "string" || (x.origin.date != null && !(typeof x.origin.date === "string" && validDate(x.origin.date))))) fail("provenance");
+      for (const x of [...inst.entries, ...(inst.scraps || [])]) if (x.links != null && (!Array.isArray(x.links) || x.links.some(l => !record(l) ||
+          typeof l.id !== "string" || !l.id || l.id.length > 64 || !Object.hasOwn(LINK_TYPES, l.type) || typeof l.to !== "string" || !LINK_REF.test(l.to) ||
+          (l.date != null && !(typeof l.date === "string" && validDate(l.date)))))) fail("liaison");
       if (inst.resume != null && (!record(inst.resume) || typeof inst.resume.text !== "string" || typeof inst.resume.at !== "string" || !validDate(inst.resume.at))) fail("pont de reprise");
       if (inst.resumeLog != null) collection(inst.resumeLog, `${where} ponts`);
       // Règles propres au type : déclarées dans le registre (domain.js), appliquées ici.
@@ -973,12 +978,35 @@ function setEpStatus(item, ep, date) {
    de son texte, de sa date et de son lieu d'origine. La plus ancienne origine l'emporte (une note déjà
    rangée une fois garde sa naissance). */
 const entryIds = inst => new Set(["entries", "scraps"].flatMap(l => (inst[l] || []).map(e => e.id)));
+/* Renvoie les entrées nées du rangement. Statut et liaisons suivent la note là où ils se lisent (fragments, notes). */
 function stampOrigin(inst, before, note, from) {
-  const origin = note.origin || { from, text: note.text, date: note.date };
+  const origin = note.origin || { from, text: note.text, date: note.date }, born = [];
   for (const list of ["entries", "scraps"]) for (const e of inst[list] || []) if (!before.has(e.id)) {
-    e.origin = origin;
-    if (note.ep && !e.ep && (list === "scraps" || inst.type === "notes")) e.ep = note.ep; // là où un statut se lit
+    e.origin = origin; born.push(e);
+    if (list === "scraps" || inst.type === "notes") {
+      if (note.ep && !e.ep) e.ep = note.ep;
+      if (note.links && note.links.length && !e.links) e.links = note.links;
+    }
   }
+  return born;
+}
+/* ---- liaisons : des liens typés entre fragments et notes, portés par l'entrée d'où ils partent ----
+   Référence d'une entrée : « module/identifiant ». Chaque lien a son identifiant : deux liens ajoutés à la même
+   entrée sur deux appareils fusionnent un par un au lieu de s'écraser. Une tension (« contredit ») reste
+   ouverte jusqu'à ce qu'une entrée dérive des deux. */
+const LINK_TYPES = { derive: "dérive de", contredit: "contredit", echo: "fait écho à", documente: "documente" };
+const LINK_REF = /^[a-z0-9][a-z0-9-]{0,63}\/[^/\s]{1,64}$/;
+function addLink(item, to, type, id, date) {
+  if (!Object.hasOwn(LINK_TYPES, type) || typeof to !== "string" || !LINK_REF.test(to)) throw new Error("Lien invalide");
+  if ((item.links || []).some(l => l.to === to && l.type === type)) return null; // déjà lié ainsi
+  const link = { id, to, type, date };
+  item.links = [...(item.links || []), link];
+  return link;
+}
+/* Une entrée qui disparaît au profit d'une autre (note rangée) : les liens qui la visaient la suivent. */
+function retargetLinks(modules, from, to) {
+  for (const inst of Object.values(modules)) for (const list of ["entries", "scraps"]) for (const e of inst[list] || [])
+    for (const l of e.links || []) if (l.to === from) l.to = to;
 }
 /* ---- pont de reprise : le prochain geste, noté en quittant un module ----
    Un pont remplacé ou levé part dans un historique court : ce qu'on comptait faire, et ce qu'il en est advenu. */
@@ -1072,7 +1100,16 @@ const iso = d => { const z = new Date(d); z.setMinutes(z.getMinutes() - z.getTim
 const todayISO = () => iso(new Date());
 const addDaysTo = (s, n) => { const d = new Date(s + "T12:00"); d.setDate(d.getDate() + n); return iso(d); };
 const diffDays = (a, b) => Math.round((new Date(a + "T12:00") - new Date(b + "T12:00")) / 86400000);
-const fmt = (s, o = { day: "numeric", month: "short" }) => s ? new Date(s + "T12:00").toLocaleDateString("fr-FR", o) : "";
+// Formater une date coûte cher (un formateur Intl reconstruit à chaque appel) et une liste de fragments en affiche
+// des milliers : fonction pure, donc résultats gardés, dans une limite de taille.
+const fmtCache = new Map();
+const fmt = (s, o = { day: "numeric", month: "short" }) => {
+  if (!s) return "";
+  const k = s + JSON.stringify(o);
+  let v = fmtCache.get(k);
+  if (v === undefined) { v = new Date(s + "T12:00").toLocaleDateString("fr-FR", o); if (fmtCache.size >= 5000) fmtCache.clear(); fmtCache.set(k, v); }
+  return v;
+};
 const clone = o => JSON.parse(JSON.stringify(o));
 const ago = s => { if (!s) return "jamais"; const n = diffDays(todayISO(), s); return n === 0 ? "aujourd'hui" : n === 1 ? "hier" : `il y a ${n} j`; };
 function toast(msg) { undoFn = null; const el = $("#toast"); el.textContent = msg; el.classList.remove("act"); el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 3400); }
@@ -1385,8 +1422,26 @@ VIEWS.bilan = () => {
   <p class="hint">Ce qui s'est passé dans chaque module pendant la période, et, en face, la période d'avant. Aucune note, aucun trophée : les chiffres suffisent à culpabiliser.</p>
   <section>${rows || `<p class="empty">Aucun module à résumer.</p>`}</section>
   ${epLine ? `<section><h3>Statut des idées notées</h3><p class="hint">Ce qu'elles revendiquent de savoir. Une hypothèse n'est pas une faiblesse, c'est une dette à rembourser.</p><div class="row">${epLine}</div></section>` : ""}
-  ${driftSection(mode, cur)}`;
+  ${driftSection(mode, cur)}
+  ${tensionSection()}`;
 };
+/* ================= tensions =================
+   Une tension (« contredit ») reste ouverte tant qu'aucune entrée ne dérive des deux à la fois. Ce n'est pas
+   une période : une contradiction ne s'éteint pas avec le cycle lunaire. Les plus anciennes d'abord. */
+function openTensions() {
+  const items = thoughtItems(), parents = [];
+  for (const it of items) { const ps = new Set((it.e.links || []).filter(l => l.type === "derive").map(l => l.to)); if (ps.size > 1) parents.push(ps); }
+  const resolved = (a, b) => parents.some(ps => ps.has(a) && ps.has(b));
+  const out = [];
+  for (const it of items) for (const l of it.e.links || []) if (l.type === "contredit" && refFind(l.to) && !resolved(it.ref, l.to)) out.push({ a: it.ref, b: l.to, date: l.date || "" });
+  return out.sort((x, y) => x.date.localeCompare(y.date));
+}
+function tensionSection() {
+  const ts = openTensions();
+  if (!ts.length) return "";
+  return `<section><h3>Tensions ouvertes</h3><p class="hint">Deux entrées qui se contredisent, en attente d'une synthèse qui dérive des deux. Aucune urgence : certaines contradictions sont plus fécondes que leurs solutions.</p>
+    <ul class="plain">${ts.map(t => `<li class="item"><span></span><div>${refHTML(t.a)} <span class="hint">contredit</span> ${refHTML(t.b)}${t.date ? `<div class="meta"><span>ouverte ${ago(t.date)}</span></div>` : ""}</div><button class="btn ghost sm" data-act="tension-resolve" data-a="${esc(t.a)}" data-b="${esc(t.b)}">résoudre</button></li>`).join("")}</ul></section>`;
+}
 /* ================= dérive lexicale =================
    Les mots propres à la période, comparés aux six précédentes (même découpage : cycles ou mois), dans tous
    les textes datés de tous les modules. Un mot compte une fois par texte (fréquence documentaire) : un texte
@@ -1405,8 +1460,12 @@ function driftWords(text) {
   let out = driftCache.get(text);
   if (!out) {
     out = new Map();
-    for (const raw of String(text).toLowerCase().split(/[^\p{L}\p{N}]+/u)) {
-      let k = fold(raw);
+    // Replié une seule fois (un fold par mot remplirait son cache de mots isolés et en chasserait les textes) ;
+    // fold garde lettres et séparateurs à leur place, donc les deux découpages se correspondent mot pour mot.
+    const sep = /[^\p{L}\p{N}]+/u, raws = String(text).toLowerCase().split(sep), keys = fold(text).split(sep);
+    for (let i = 0; i < raws.length; i++) {
+      const raw = raws[i];
+      let k = keys.length === raws.length ? keys[i] : fold(raw);
       if (k.length < 3 || /\d/.test(k) || STOPWORDS.has(k)) continue;
       if (k.length > 4 && /[sx]$/.test(k)) k = k.slice(0, -1);
       if (!out.has(k)) out.set(k, raw);
@@ -1807,6 +1866,65 @@ function originHTML(e, current) {
   const same = String(current ?? "").trim() === o.text.trim(), short = o.text.length > 90 ? o.text.slice(0, 90) + "…" : o.text;
   return `<span class="origin" title="${esc(o.text)}">↳ de ${esc(o.from)}${o.date ? `, ${fmt(o.date)}` : ""}${same ? "" : ` : « ${esc(short)} »`}</span>`;
 }
+/* ---- liaisons entre fragments et notes (ce qui se pense : fragments d'un cumul, notes) ---- */
+function thoughtItems() {
+  const out = [];
+  for (const [mod, m] of Object.entries(S().modules)) {
+    const list = m.type === "notes" ? m.entries : m.type === "cumul" ? m.scraps || [] : null;
+    if (list) for (const e of list) out.push({ ref: `${mod}/${e.id}`, mod, e });
+  }
+  return out;
+}
+/* « module/id » → l'entrée, par un index des entrées du module construit une fois par rendu (une liste de
+   fragments liés ferait sinon autant de parcours complets que de liens). */
+function refFind(ref) {
+  const [mod, id] = String(ref).split("/"), m = Object.hasOwn(S().modules, mod) ? S().modules[mod] : null;
+  if (!m) return null;
+  const e = memoInRender("refs:" + mod, () => new Map([...m.entries, ...(m.scraps || [])].map(x => [x.id, x]))).get(id);
+  return e ? { mod, e } : null;
+}
+const excerpt = (e, n = 60) => { const t = String(e.text || e.title || e.note || "").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n) + "…" : t; };
+/* Liens entrants : pour chaque entrée, qui la vise et comment. Calculé une fois par rendu. */
+const backlinks = () => memoInRender("backlinks", () => {
+  const by = new Map();
+  for (const it of thoughtItems()) for (const l of it.e.links || []) { if (!by.has(l.to)) by.set(l.to, []); by.get(l.to).push({ from: it.ref, type: l.type }); }
+  return by;
+});
+const LINK_BACK = { derive: "a donné", contredit: "contredit par", echo: "écho de", documente: "documenté par" };
+function refHTML(ref) {
+  const hit = refFind(ref);
+  return hit ? `<a href="#${esc(hit.mod)}">« ${esc(excerpt(hit.e))} »</a>` : `<i>(supprimé)</i>`;
+}
+/* Sous une entrée : ses liens sortants et entrants, puis « dériver » et « lier… ». */
+function linksHTML(mod, e) {
+  const out = (e.links || []).map(l => `<span>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</span>`);
+  const inc = (backlinks().get(`${mod}/${e.id}`) || []).map(b => `<span>${esc(LINK_BACK[b.type])} ${refHTML(b.from)}</span>`);
+  return `<div class="meta links">${[...out, ...inc].join("")}<span class="acts"><button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></span></div>`;
+}
+/* Dérivation en cours, par module : la prochaine entrée écrite dérivera de ces références (une, ou deux pour
+   résoudre une tension). Propre à l'appareil, oubliée si l'on quitte l'app. */
+const deriveFrom = {};
+function deriveBanner(mod) {
+  const refs = deriveFrom[mod]; if (!refs || !refs.length) return "";
+  return `<div class="derive">${refs.length > 1 ? "Synthèse de" : "Dérivé de"} ${refs.map(refHTML).join(" et ")} <button class="btn ghost sm" data-act="derive-cancel" data-mod="${esc(mod)}">annuler</button></div>`;
+}
+function applyDerive(mod, item) {
+  for (const ref of deriveFrom[mod] || []) if (ref !== `${mod}/${item.id}`) addLink(item, ref, "derive", uid(), todayISO());
+  const n = (deriveFrom[mod] || []).length; delete deriveFrom[mod];
+  return n;
+}
+function linkForm(mod, id) {
+  const self = `${mod}/${id}`, choices = thoughtItems().filter(x => x.ref !== self).sort((a, b) => (b.e.date || "").localeCompare(a.e.date || "")).slice(0, 300);
+  if (!choices.length) return toast("Rien d'autre à quoi le lier. Une pensée seule ne se contredit pas encore.");
+  openForm("Lier à une autre entrée", [
+    { n: "type", l: "Cette entrée…", t: "select", o: Object.entries(LINK_TYPES) },
+    { n: "to", l: "…quelle autre", t: "select", o: choices.map(x => [x.ref, `${label(x.mod)} · ${x.e.date ? fmt(x.e.date) + " · " : ""}${excerpt(x.e, 70)}`]) }
+  ], { type: "echo" }, v => {
+    const hit = refFind(self); if (!hit) return toast("Cette entrée a disparu entre-temps.");
+    if (!addLink(hit.e, v.to, v.type, uid(), todayISO())) return toast("Déjà lié ainsi.");
+    site.save(); render(); toast(v.type === "contredit" ? "Tension ouverte. Elle attendra sa synthèse." : "Lié.");
+  });
+}
 /* Le statut épistémique d'un fragment ou d'une note, modifiable sur place ; vide par défaut. */
 const epSelect = (id, e) => `<select class="ep ${e.ep ? "on" : ""}" data-act="ep-set" data-mod="${esc(id)}" aria-label="Statut">${[["", "statut…"], ...Object.entries(EP_STATUS)].map(([k, l]) => `<option value="${k}" ${(e.ep || "") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
 /* Fin estimée d'un cumul au rythme des 30 derniers jours : une phrase, ou rien sans objectif. */
@@ -1926,9 +2044,9 @@ const TYPE_UI = {
     <div class="row"><input type="number" id="cumIn" min="${total ? 0 : 1}" placeholder="${total ? `Total atteint (${esc(c.unitLabel)})` : `${esc(c.unitLabel)} aujourd'hui`}" style="max-width:200px" inputmode="numeric" aria-label="${total ? "Total atteint" : "Ajout du jour"}">${c.categories.length ? `<select id="cumCat" aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">Hors ${esc(c.categoryLabel).toLowerCase()}</option>${c.categories.map(x => `<option value="${esc(x.id)}" ${x.id === lastCat ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>` : ""}<button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">Ajouter</button></div>
     <div style="margin-top:28px">${c.categories.length ? cumulGroupPanel(id) : `<p class="hint">Ajoute des ${esc(c.categoryLabel).toLowerCase()}s dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a> pour suivre chacune en pourcentage.</p>`}</div>
   </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">Une phrase qui passe, avant qu'elle ne reparte. Un « ? » devant en fait une hypothèse.</p>
-    <textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="Nouveau"></textarea><div class="row" style="margin-top:8px">${catSelect("scrapCat", "", lastScrapCat)}<button class="btn" data-act="scrap-add" data-mod="${esc(id)}">Garder</button></div>
+    ${deriveBanner(id)}<textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="Nouveau"></textarea><div class="row" style="margin-top:8px">${catSelect("scrapCat", "", lastScrapCat)}<button class="btn" data-act="scrap-add" data-mod="${esc(id)}">Garder</button></div>
     ${c.categories.length || inst.scraps.length ? `<div class="row" style="margin-top:14px">${c.categories.length ? `<select data-act="scrap-f" data-mod="${esc(id)}" aria-label="Filtrer"><option value="*">Tous</option>${[["", `Hors ${c.categoryLabel.toLowerCase()}`], ...c.categories.map(x => [x.id, x.name])].map(([k, n]) => `<option value="${esc(k)}" ${ff === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : ""}<span class="spacer"></span>${inst.scraps.length ? `<button class="btn ghost sm" data-act="scrap-md" data-mod="${esc(id)}">Exporter en Markdown</button>` : ""}</div>` : ""}
-    <ul class="plain" style="margin-top:10px">${[...inst.scraps].reverse().filter(f => ff === "*" || (f.category || "") === ff).map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${originHTML(f, f.text)}</div></div><button class="btn ghost sm" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Rien pour l'instant.</li>`}</ul>
+    <ul class="plain" style="margin-top:10px">${[...inst.scraps].reverse().filter(f => ff === "*" || (f.category || "") === ff).map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${originHTML(f, f.text)}</div>${linksHTML(id, f)}</div><button class="btn ghost sm" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Rien pour l'instant.</li>`}</ul>
   </section>` : ""}</div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>Titre / sous-titre<input data-set-mod="${esc(id)}.title" value="${esc(c.title || "")}"></label><label>Objectif<input type="number" min="1" data-set-mod="${esc(id)}.goal" value="${esc(c.goal)}"></label></div>
@@ -1968,8 +2086,10 @@ const TYPE_UI = {
       "scrap-add": el => {
         const v = $("#scrapIn").value.trim(); if (!v) return;
         const cat = $("#scrapCat") ? $("#scrapCat").value : "", p = epPrefix(v);
-        instOf(el).scraps.push({ id: uid(), text: p.text, date: todayISO(), ...(cat ? { category: cat } : {}), ...(p.ep ? { ep: p.ep } : {}) }); $("#scrapIn").value = ""; site.save(); render();
-        if (p.ep) toast("Gardé comme hypothèse. Elle attendra ses preuves.");
+        const f = { id: uid(), text: p.text, date: todayISO(), ...(cat ? { category: cat } : {}), ...(p.ep ? { ep: p.ep } : {}) };
+        instOf(el).scraps.push(f); const derived = applyDerive(el.dataset.mod, f); $("#scrapIn").value = ""; site.save(); render();
+        if (derived) toast(derived > 1 ? "Synthèse gardée. La tension est levée." : "Dérivé, et relié à sa source.");
+        else if (p.ep) toast("Gardé comme hypothèse. Elle attendra ses preuves.");
       },
       "scrap-md": el => { const id = el.dataset.mod; downloadFile(`${id}-${todayISO()}.md`, scrapsMarkdown(id, S().modules[id]), "text/markdown", label(id)); },
       "scrap-del": el => removeWithUndo(el.dataset.mod, "scraps", idOf(el)),
@@ -2515,7 +2635,8 @@ function fileIntent(intent, fromId, noteId) {
 function acceptNote(toId, fromId, note, text = note.text) {
   const target = S().modules[toId], before = entryIds(target);
   const then = TYPE_UI[target.type].accept(toId, target, { ...note, text });
-  stampOrigin(target, before, note, label(fromId));
+  const born = stampOrigin(target, before, note, label(fromId));
+  if (born.length) retargetLinks(S().modules, `${fromId}/${note.id}`, `${toId}/${born[0].id}`); // les liens la suivent
   return then;
 }
 /* Saisie d'une note : un « ? » en tête la range parmi les hypothèses. */
@@ -2544,8 +2665,8 @@ TYPE_UI.notes = {
   view(id) {
     const inst = S().modules[id], c = inst.config, targets = noteTargets(id);
     return `<div data-mod="${esc(id)}"><h2>${esc(label(id))}</h2>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}
-  <div class="capture" style="margin-bottom:18px"><input id="noteIn" data-draft placeholder="${esc(c.placeholder)}" aria-label="Nouvelle note"><button class="btn acc" data-act="note-add">Garder</button></div>
-  <ul class="plain">${[...inst.entries].reverse().map(x => { const intent = captureIntent(x.text); return `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}${epSelect(id, x)}${originHTML(x, x.text)}</div>
+  ${deriveBanner(id)}<div class="capture" style="margin-bottom:18px"><input id="noteIn" data-draft placeholder="${esc(c.placeholder)}" aria-label="Nouvelle note"><button class="btn acc" data-act="note-add">Garder</button></div>
+  <ul class="plain">${[...inst.entries].reverse().map(x => { const intent = captureIntent(x.text); return `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}${epSelect(id, x)}${originHTML(x, x.text)}</div>${linksHTML(id, x)}
     ${intent && intent.to !== id ? `<div class="row" style="margin-top:6px"><button class="btn sm acc" data-act="note-file">Ranger : ${esc(intent.say)}</button></div>` : ""}
     ${targets.length ? `<div class="row" style="margin-top:6px">${targets.map(k => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
     <button class="btn ghost sm" data-act="note-del">suppr.</button></li>`; }).join("") || `<li class="empty">${c.inbox ? "Vide. Le silence d'une clairière, ou celui d'un cerveau." : "Rien pour l'instant."}</li>`}</ul></div>`;
@@ -2562,8 +2683,8 @@ TYPE_UI.notes = {
   click: {
     "note-add": el => {
       const inp = $("#noteIn"); if (!inp || !inp.value.trim()) return;
-      const id = modOf(el), item = addNote(S().modules[id], inp.value); inp.value = ""; site.save(); render();
-      afterCapture(id, item);
+      const id = modOf(el), item = addNote(S().modules[id], inp.value), derived = applyDerive(id, item); inp.value = ""; site.save(); render();
+      if (derived) toast(derived > 1 ? "Synthèse gardée. La tension est levée." : "Dérivé, et relié à sa source."); else afterCapture(id, item);
     },
     "note-file": el => { const id = modOf(el), note = S().modules[id].entries.find(x => x.id === idOf(el)), intent = note && captureIntent(note.text); if (intent) fileIntent(intent, id, note.id); },
     "note-del": el => removeWithUndo(modOf(el), "entries", idOf(el)),
@@ -2582,6 +2703,20 @@ TYPE_UI.notes = {
       site.save(); render();
     }
   }
+};
+/* Liaisons, communes aux fragments et aux notes (l'entrée est cherchée par sa référence « module/id »). */
+CLICK["derive-start"] = el => {
+  const mod = el.dataset.mod, id = idOf(el); if (!refFind(`${mod}/${id}`)) return;
+  deriveFrom[mod] = [`${mod}/${id}`]; render();
+  const inp = $("#scrapIn") || $("#noteIn"); if (inp) inp.focus();
+};
+CLICK["derive-cancel"] = el => { delete deriveFrom[el.dataset.mod]; render(); };
+CLICK["link-form"] = el => linkForm(el.dataset.mod, idOf(el));
+/* Résoudre une tension : écrire, dans le module de la première entrée, une synthèse qui dérive des deux. */
+CLICK["tension-resolve"] = el => {
+  const a = el.dataset.a, b = el.dataset.b, hit = refFind(a); if (!hit) return;
+  deriveFrom[hit.mod] = [a, b];
+  if (location.hash === "#" + hit.mod) render(); else location.hash = hit.mod;
 };
 /* Statut épistémique, commun aux fragments et aux notes : l'élément est cherché dans les deux listes du module. */
 CHANGE["ep-set"] = el => {

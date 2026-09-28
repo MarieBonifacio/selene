@@ -302,12 +302,35 @@ function setEpStatus(item, ep, date) {
    de son texte, de sa date et de son lieu d'origine. La plus ancienne origine l'emporte (une note déjà
    rangée une fois garde sa naissance). */
 const entryIds = inst => new Set(["entries", "scraps"].flatMap(l => (inst[l] || []).map(e => e.id)));
+/* Renvoie les entrées nées du rangement. Statut et liaisons suivent la note là où ils se lisent (fragments, notes). */
 function stampOrigin(inst, before, note, from) {
-  const origin = note.origin || { from, text: note.text, date: note.date };
+  const origin = note.origin || { from, text: note.text, date: note.date }, born = [];
   for (const list of ["entries", "scraps"]) for (const e of inst[list] || []) if (!before.has(e.id)) {
-    e.origin = origin;
-    if (note.ep && !e.ep && (list === "scraps" || inst.type === "notes")) e.ep = note.ep; // là où un statut se lit
+    e.origin = origin; born.push(e);
+    if (list === "scraps" || inst.type === "notes") {
+      if (note.ep && !e.ep) e.ep = note.ep;
+      if (note.links && note.links.length && !e.links) e.links = note.links;
+    }
   }
+  return born;
+}
+/* ---- liaisons : des liens typés entre fragments et notes, portés par l'entrée d'où ils partent ----
+   Référence d'une entrée : « module/identifiant ». Chaque lien a son identifiant : deux liens ajoutés à la même
+   entrée sur deux appareils fusionnent un par un au lieu de s'écraser. Une tension (« contredit ») reste
+   ouverte jusqu'à ce qu'une entrée dérive des deux. */
+const LINK_TYPES = { derive: "dérive de", contredit: "contredit", echo: "fait écho à", documente: "documente" };
+const LINK_REF = /^[a-z0-9][a-z0-9-]{0,63}\/[^/\s]{1,64}$/;
+function addLink(item, to, type, id, date) {
+  if (!Object.hasOwn(LINK_TYPES, type) || typeof to !== "string" || !LINK_REF.test(to)) throw new Error("Lien invalide");
+  if ((item.links || []).some(l => l.to === to && l.type === type)) return null; // déjà lié ainsi
+  const link = { id, to, type, date };
+  item.links = [...(item.links || []), link];
+  return link;
+}
+/* Une entrée qui disparaît au profit d'une autre (note rangée) : les liens qui la visaient la suivent. */
+function retargetLinks(modules, from, to) {
+  for (const inst of Object.values(modules)) for (const list of ["entries", "scraps"]) for (const e of inst[list] || [])
+    for (const l of e.links || []) if (l.to === from) l.to = to;
 }
 /* ---- pont de reprise : le prochain geste, noté en quittant un module ----
    Un pont remplacé ou levé part dans un historique court : ce qu'on comptait faire, et ce qu'il en est advenu. */

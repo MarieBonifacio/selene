@@ -60,6 +60,9 @@ function parseBackup(text) {
       // Champs communs à tous les types : provenance d'une entrée rangée, pont de reprise du module.
       for (const x of [...inst.entries, ...(inst.scraps || [])]) if (x.origin != null &&
           (!record(x.origin) || typeof x.origin.text !== "string" || typeof x.origin.from !== "string" || (x.origin.date != null && !(typeof x.origin.date === "string" && validDate(x.origin.date))))) fail("provenance");
+      for (const x of [...inst.entries, ...(inst.scraps || [])]) if (x.links != null && (!Array.isArray(x.links) || x.links.some(l => !record(l) ||
+          typeof l.id !== "string" || !l.id || l.id.length > 64 || !Object.hasOwn(LINK_TYPES, l.type) || typeof l.to !== "string" || !LINK_REF.test(l.to) ||
+          (l.date != null && !(typeof l.date === "string" && validDate(l.date)))))) fail("liaison");
       if (inst.resume != null && (!record(inst.resume) || typeof inst.resume.text !== "string" || typeof inst.resume.at !== "string" || !validDate(inst.resume.at))) fail("pont de reprise");
       if (inst.resumeLog != null) collection(inst.resumeLog, `${where} ponts`);
       // Règles propres au type : déclarées dans le registre (domain.js), appliquées ici.

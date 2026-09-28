@@ -6,7 +6,16 @@ const iso = d => { const z = new Date(d); z.setMinutes(z.getMinutes() - z.getTim
 const todayISO = () => iso(new Date());
 const addDaysTo = (s, n) => { const d = new Date(s + "T12:00"); d.setDate(d.getDate() + n); return iso(d); };
 const diffDays = (a, b) => Math.round((new Date(a + "T12:00") - new Date(b + "T12:00")) / 86400000);
-const fmt = (s, o = { day: "numeric", month: "short" }) => s ? new Date(s + "T12:00").toLocaleDateString("fr-FR", o) : "";
+// Formater une date coûte cher (un formateur Intl reconstruit à chaque appel) et une liste de fragments en affiche
+// des milliers : fonction pure, donc résultats gardés, dans une limite de taille.
+const fmtCache = new Map();
+const fmt = (s, o = { day: "numeric", month: "short" }) => {
+  if (!s) return "";
+  const k = s + JSON.stringify(o);
+  let v = fmtCache.get(k);
+  if (v === undefined) { v = new Date(s + "T12:00").toLocaleDateString("fr-FR", o); if (fmtCache.size >= 5000) fmtCache.clear(); fmtCache.set(k, v); }
+  return v;
+};
 const clone = o => JSON.parse(JSON.stringify(o));
 const ago = s => { if (!s) return "jamais"; const n = diffDays(todayISO(), s); return n === 0 ? "aujourd'hui" : n === 1 ? "hier" : `il y a ${n} j`; };
 function toast(msg) { undoFn = null; const el = $("#toast"); el.textContent = msg; el.classList.remove("act"); el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 3400); }
@@ -319,8 +328,26 @@ VIEWS.bilan = () => {
   <p class="hint">Ce qui s'est passé dans chaque module pendant la période, et, en face, la période d'avant. Aucune note, aucun trophée : les chiffres suffisent à culpabiliser.</p>
   <section>${rows || `<p class="empty">Aucun module à résumer.</p>`}</section>
   ${epLine ? `<section><h3>Statut des idées notées</h3><p class="hint">Ce qu'elles revendiquent de savoir. Une hypothèse n'est pas une faiblesse, c'est une dette à rembourser.</p><div class="row">${epLine}</div></section>` : ""}
-  ${driftSection(mode, cur)}`;
+  ${driftSection(mode, cur)}
+  ${tensionSection()}`;
 };
+/* ================= tensions =================
+   Une tension (« contredit ») reste ouverte tant qu'aucune entrée ne dérive des deux à la fois. Ce n'est pas
+   une période : une contradiction ne s'éteint pas avec le cycle lunaire. Les plus anciennes d'abord. */
+function openTensions() {
+  const items = thoughtItems(), parents = [];
+  for (const it of items) { const ps = new Set((it.e.links || []).filter(l => l.type === "derive").map(l => l.to)); if (ps.size > 1) parents.push(ps); }
+  const resolved = (a, b) => parents.some(ps => ps.has(a) && ps.has(b));
+  const out = [];
+  for (const it of items) for (const l of it.e.links || []) if (l.type === "contredit" && refFind(l.to) && !resolved(it.ref, l.to)) out.push({ a: it.ref, b: l.to, date: l.date || "" });
+  return out.sort((x, y) => x.date.localeCompare(y.date));
+}
+function tensionSection() {
+  const ts = openTensions();
+  if (!ts.length) return "";
+  return `<section><h3>Tensions ouvertes</h3><p class="hint">Deux entrées qui se contredisent, en attente d'une synthèse qui dérive des deux. Aucune urgence : certaines contradictions sont plus fécondes que leurs solutions.</p>
+    <ul class="plain">${ts.map(t => `<li class="item"><span></span><div>${refHTML(t.a)} <span class="hint">contredit</span> ${refHTML(t.b)}${t.date ? `<div class="meta"><span>ouverte ${ago(t.date)}</span></div>` : ""}</div><button class="btn ghost sm" data-act="tension-resolve" data-a="${esc(t.a)}" data-b="${esc(t.b)}">résoudre</button></li>`).join("")}</ul></section>`;
+}
 /* ================= dérive lexicale =================
    Les mots propres à la période, comparés aux six précédentes (même découpage : cycles ou mois), dans tous
    les textes datés de tous les modules. Un mot compte une fois par texte (fréquence documentaire) : un texte
@@ -339,8 +366,12 @@ function driftWords(text) {
   let out = driftCache.get(text);
   if (!out) {
     out = new Map();
-    for (const raw of String(text).toLowerCase().split(/[^\p{L}\p{N}]+/u)) {
-      let k = fold(raw);
+    // Replié une seule fois (un fold par mot remplirait son cache de mots isolés et en chasserait les textes) ;
+    // fold garde lettres et séparateurs à leur place, donc les deux découpages se correspondent mot pour mot.
+    const sep = /[^\p{L}\p{N}]+/u, raws = String(text).toLowerCase().split(sep), keys = fold(text).split(sep);
+    for (let i = 0; i < raws.length; i++) {
+      const raw = raws[i];
+      let k = keys.length === raws.length ? keys[i] : fold(raw);
       if (k.length < 3 || /\d/.test(k) || STOPWORDS.has(k)) continue;
       if (k.length > 4 && /[sx]$/.test(k)) k = k.slice(0, -1);
       if (!out.has(k)) out.set(k, raw);
