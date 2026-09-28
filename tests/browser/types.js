@@ -38,7 +38,7 @@ const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
   await p.click('#mreg-plantes [data-act="typ-add"]'); await p.waitForTimeout(150); await openAll();
   const every = p.locator('#mreg-plantes [data-act="typ-every"]').last(); await every.fill('3'); await every.press('Tab'); await p.waitForTimeout(150);
   s = await data(); ok(s.modules.plantes.config.types.at(-1).every === 3, 'type ajouté + fréquence (click + change du type)');
-  await go('accueil'); ok((await main()).includes('Nouveau type : Plantes'), 'alerte de rappel en retard sur l’accueil');
+  await go('accueil'); ok((await main()).includes('Plantes : Nouveau type (jamais)'), 'alerte de rappel en retard sur l’accueil');
   await go('plantes'); await p.click('[data-act="entry-log"] >> nth=0'); await p.fill('#rapNote', 'feuilles jaunes'); await p.click('[data-act="entry-note"]'); await p.waitForTimeout(150);
   ok((await main()).includes('feuilles jaunes'), 'journal : fait aujourd’hui + note');
 
