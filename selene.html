@@ -9,11 +9,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#e2e6de; --surface:#edf0e9; --ink:#1a211b; --muted:#5b6859; --rule:#c1c9bc; --alarm:#a8431f; --ok:#3d7a52;
+  /* Planche (clair). L'accent décore et oriente ; ok, warn, alarm et info informent : ils ne se prêtent jamais leurs teintes. */
+  --bg:#e2e6de; --surface:#edf0e9; --surface-2:#f4f2ea; --glass:rgba(226,230,222,.82); --ink:#1a211b; --ink-2:#394237; --muted:#5b6859;
+  --rule:#c1c9bc; --rule-strong:#75816f; --alarm:#a8431f; --ok:#2f6f62; --warn:#7d5a12; --info:#3f5d78;
   --moon:#f4f1e4; --moon-shadow:#b8c2b6; --glow:rgba(255,252,235,.0);
   --sky-top:#b9c7c0; --sky-bot:#dfe5dc; --tree-far:#8fa294; --tree-near:#3b4d40; --mist:rgba(226,230,222,.75); --star:0;
   --acc-l:#3d6a45; --acc-d:#8fbf86; --accent:var(--acc-l);
-  box-sizing:border-box;
+  --ease:cubic-bezier(.2,0,0,1); --t-1:120ms; --t-2:180ms;
+  box-sizing:border-box; accent-color:var(--accent);
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
 :root[data-palette="albedo"]{--acc-l:#5a6a5c;--acc-d:#bccab8}
@@ -21,21 +24,26 @@
 :root[data-palette="rubedo"]{--acc-l:#973a30;--acc-d:#d56455}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]):not([data-mode="light"]){
-    --bg:#0e1310; --surface:#151c17; --ink:#dde2d6; --muted:#8c998a; --rule:#243029; --alarm:#ff8a55; --ok:#7cc493;
+    --bg:#0e1310; --surface:#151c17; --surface-2:#1a231d; --glass:rgba(14,19,16,.78); --ink:#dde2d6; --ink-2:#b4bdb0; --muted:#8c998a;
+    --rule:#243029; --rule-strong:#56665a; --alarm:#e5785a; --ok:#6fb3a2; --warn:#d2a24c; --info:#8fa9c0;
     --moon:#ece8d6; --moon-shadow:#1c2620; --glow:rgba(236,232,214,.16);
     --sky-top:#070b10; --sky-bot:#132019; --tree-far:#1d2b23; --tree-near:#0a0f0c; --mist:rgba(40,58,48,.55); --star:.8;
     --accent:var(--acc-d);
   }
 }
 :root[data-theme="dark"]:not([data-mode="light"]),:root[data-mode="dark"]{
-  --bg:#0e1310; --surface:#151c17; --ink:#dde2d6; --muted:#8c998a; --rule:#243029; --alarm:#ff8a55; --ok:#7cc493;
+  --bg:#0e1310; --surface:#151c17; --surface-2:#1a231d; --glass:rgba(14,19,16,.78); --ink:#dde2d6; --ink-2:#b4bdb0; --muted:#8c998a;
+  --rule:#243029; --rule-strong:#56665a; --alarm:#e5785a; --ok:#6fb3a2; --warn:#d2a24c; --info:#8fa9c0;
     --moon:#ece8d6; --moon-shadow:#1c2620; --glow:rgba(236,232,214,.16);
     --sky-top:#070b10; --sky-bot:#132019; --tree-far:#1d2b23; --tree-near:#0a0f0c; --mist:rgba(40,58,48,.55); --star:.8;
     --accent:var(--acc-d);
 }
 *,*::before,*::after{box-sizing:border-box}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 60px)}
 html,body{margin:0;min-height:100%}
+/* Sous la barre d'état translucide d'iOS : un fond, pour que le contenu ne défile pas sous l'heure. */
+body::before{content:"";position:fixed;z-index:6;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg)}
+.sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 body{background:var(--bg);color:var(--ink);font-family:"Spectral",Georgia,"Times New Roman",serif;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
 .wrap{max-width:1040px;margin:0 auto;padding:22px 20px 90px}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -54,9 +62,13 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:14p
 .brand h1{font-size:2.1rem;letter-spacing:.01em}
 .brand small{display:block;color:var(--muted);font-size:.85rem;font-family:"Spectral",serif}
 .timer{display:flex;align-items:center;gap:8px}
-.clock{font-variant-numeric:tabular-nums;font-weight:600;min-width:4.4ch;text-align:right}
+.clock{font-weight:600;min-width:4.4ch;text-align:right}
 .clock.done{color:var(--ok)}
-nav.tabs{display:flex;gap:4px;overflow-x:auto;margin:16px -20px 28px;padding:0 20px;border-bottom:1px solid var(--rule);scrollbar-width:none}
+/* Chiffres de chasse fixe, alignés : montants, compteurs, minuteur, dates. */
+.clock,.big,.stats,.meta,.room b,.over span,.item .row b,.cal{font-variant-numeric:tabular-nums lining-nums}
+/* La navigation reste à portée pendant le défilement, sous un verre fumé. */
+nav.tabs{display:flex;gap:4px;overflow-x:auto;margin:16px -20px 28px;padding:0 20px;border-bottom:1px solid var(--rule);scrollbar-width:none;
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--glass);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2)}
 nav.tabs a{white-space:nowrap;text-decoration:none;padding:9px 12px 10px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
 nav.tabs a.on{color:var(--ink);border-bottom-color:var(--accent)}
 
@@ -70,9 +82,16 @@ nav.tabs a.on{color:var(--ink);border-bottom-color:var(--accent)}
 .spacer{flex:1}
 
 /* hero */
-.hero{position:relative;margin:-6px -20px 44px;overflow:hidden;border-bottom:1px solid var(--rule)}
+.hero{position:relative;margin:-6px -20px 44px;overflow:hidden}
 .hero svg.scene{display:block;width:100%;height:clamp(240px,36vw,340px)}
-.hero .txt{position:absolute;left:20px;top:clamp(18px,4vw,40px);max-width:min(52%,420px)}
+/* Trois plans : le ciel (qui donne la hauteur), la lune, les sapins. La lune vit hors du paysage recadré
+   (« slice »), sinon un écran étroit la coupe ; placée en proportion de la scène, elle garde sa taille. */
+.hero svg.trees{position:absolute;inset:0;height:100%}
+.hero .moon{position:absolute;left:82%;top:30.7%;height:100%;aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none}
+.hero .moon svg{display:block;width:100%;height:100%}
+/* Le ciel se fond dans la page par la brume, sans bordure : une lisière. */
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:44px;background:linear-gradient(transparent,var(--bg));pointer-events:none}
+.hero .txt{position:absolute;z-index:1;left:20px;top:clamp(18px,4vw,40px);max-width:min(52%,420px)}
 .hero .phase{font-family:"Cormorant Garamond",serif;font-size:clamp(2rem,6vw,3.4rem);line-height:1;color:var(--ink)}
 .hero p{margin:8px 0 0;color:var(--muted);font-size:.95rem}
 :root:not([data-mode="light"]) .hero .phase{text-shadow:0 1px 12px var(--bg)}
@@ -90,10 +109,12 @@ ul.plain>.item:last-child{border-bottom:1px solid var(--rule)}
 .t-title{font-weight:500;background:none;border:0;padding:0;text-align:left;cursor:pointer}
 .done .t-title{text-decoration:line-through;color:var(--muted)}
 .meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:2px;font-size:.85rem;color:var(--muted)}
-.tag{color:var(--accent);font-weight:500}
+/* Une étiquette est neutre, marquée d'un point : l'accent n'y dit rien de plus qu'ailleurs. */
+.tag{color:var(--ink-2);font-weight:500}
+.tag::before{content:"";display:inline-block;width:.42em;height:.42em;border-radius:50%;background:var(--accent);margin-right:.38em;vertical-align:.12em}
 .late{color:var(--alarm);font-weight:600}
-.soon{color:var(--accent);font-weight:600}
-.star{background:none;border:0;font-size:1.1rem;line-height:1;padding:2px 4px;color:var(--rule)}
+.soon{color:var(--warn);font-weight:600}
+.star{background:none;border:0;font-size:1.1rem;line-height:1;padding:2px 4px;color:var(--rule-strong)}
 .star.on{color:var(--accent)}
 .details{grid-column:2 / 4;font-size:.93rem;display:none}
 .open .details{display:block}
@@ -120,7 +141,13 @@ select.ep.on{color:var(--accent);border-color:var(--rule)}
 /* overview rows */
 .over{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:6px 18px;align-items:baseline;padding:12px 0;border-top:1px solid var(--rule);text-decoration:none}
 .over-wrap{border-top:1px solid var(--rule)}.over-wrap:last-child{border-bottom:1px solid var(--rule)}.over-wrap .over{border:0}
-.more{margin:-6px 0 10px}.more summary{cursor:pointer;color:var(--muted);font-size:.82rem;letter-spacing:.02em}.more ul{margin:6px 0 0;padding-left:18px;color:var(--muted);font-size:.9rem}
+/* Une ligne d'accueil se déplie sur ses derniers éléments par un chevron, à droite, au lieu d'un libellé répété. */
+.over-wrap{position:relative}.over-wrap.has-more .over{padding-right:44px}
+.more{margin:0}.more summary{position:absolute;top:4px;right:0;width:44px;height:44px;display:grid;place-items:center;cursor:pointer;list-style:none;color:var(--muted)}
+.more summary::-webkit-details-marker{display:none}
+.more summary::after{content:"›";font-size:1.3rem;line-height:1;transition:transform var(--t-2) var(--ease)}
+.more[open] summary::after{transform:rotate(90deg)}
+.more ul{margin:-6px 0 12px;padding-left:18px;color:var(--muted);font-size:.9rem}
 .over b{font-family:"Cormorant Garamond",serif;font-size:1.4rem;font-weight:600}
 .over span{color:var(--muted)}
 @media (max-width:560px){.over{grid-template-columns:1fr auto}.over span{grid-column:1 / 3}}
@@ -151,15 +178,29 @@ select.ep.on{color:var(--accent);border-color:var(--rule)}
 /* kanban */
 .board{display:grid;grid-template-columns:repeat(4,minmax(200px,1fr));gap:14px;overflow-x:auto;padding-bottom:6px}
 .col h3{font-size:1.2rem;border-bottom:1px solid var(--rule);padding-bottom:6px;margin-bottom:8px}
-.card{background:var(--surface);border:1px solid var(--rule);padding:10px;margin-bottom:8px}
+.card{background:var(--surface);border:1px solid var(--rule);padding:10px;margin-bottom:8px;position:relative}
 .card p{margin:4px 0;font-size:.9rem;color:var(--muted);white-space:pre-wrap}
+.col-empty{min-height:64px;border:1px dashed var(--rule);margin:0}
+
+/* Actions de ligne (classe .ra) : au repos, le contenu seul. Au survol ou au focus sur ordinateur ; sur un écran
+   tactile, un toucher sur la ligne les montre (« ⋯ » signale qu'il y en a). Jamais la seule voie d'une action primaire. */
+.ra{transition:opacity var(--t-1) var(--ease)}
+@media (hover:hover) and (pointer:fine){
+  .item .ra,.card .ra{opacity:0}
+  .item:hover .ra,.item:focus-within .ra,.item.reveal .ra,.card:hover .ra,.card:focus-within .ra,.card.reveal .ra{opacity:1}
+}
+@media (hover:none),(pointer:coarse){
+  .item:not(.reveal) .ra,.card:not(.reveal) .ra{display:none}
+  .item{position:relative}
+  .item:has(.ra):not(.reveal)::after,.card:has(.ra):not(.reveal)::after{content:"⋯";position:absolute;right:2px;bottom:4px;color:var(--muted);line-height:1;pointer-events:none}
+}
 
 /* forms */
-dialog{border:1px solid var(--rule);background:var(--surface);color:var(--ink);padding:0;width:min(560px,94vw);border-radius:3px}
-dialog::backdrop{background:rgba(10,8,14,.6)}
+dialog{border:1px solid var(--rule);background:var(--surface-2);color:var(--ink);padding:0;width:min(560px,94vw);border-radius:3px}
+dialog::backdrop{background:rgba(6,10,8,.55);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 dialog form{padding:22px;display:grid;gap:12px}
 label{display:grid;gap:4px;font-size:.88rem;font-weight:500}
-input,select,textarea{background:var(--bg);border:1px solid var(--rule);padding:8px;border-radius:2px;width:100%}
+input,select,textarea{background:var(--bg);border:1px solid var(--rule-strong);padding:8px;border-radius:2px;width:100%}
 input[type=checkbox],input[type=radio]{width:auto}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:480px){.field-row{grid-template-columns:1fr}}
@@ -170,7 +211,7 @@ input[type=checkbox],input[type=radio]{width:auto}
 .swatch i{width:14px;height:14px;border-radius:50%;display:block}
 .capture{display:flex;gap:8px}
 .capture input{flex:1}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:2px;font-size:.92rem;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center}
+.toast{position:fixed;z-index:10;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:2px;font-size:.92rem;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center}
 .toast.show{opacity:1}
 mark{background:var(--accent);color:var(--bg);padding:0 2px;border-radius:2px}
 .toast.act{pointer-events:auto}.toast .btn{margin-left:10px;color:var(--bg);border-color:var(--bg);background:transparent}
@@ -186,6 +227,17 @@ mark{background:var(--accent);color:var(--bg);padding:0 2px;border-radius:2px}
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .chip{display:inline-flex;align-items:center;border:1px solid var(--rule);border-radius:2px}.chip .btn{border:0}.chip .btn+.btn{padding-left:6px;padding-right:8px;color:var(--accent)}
 .status{font-size:.88rem;color:var(--muted);border-left:2px solid var(--accent);padding-left:10px;margin:6px 0 14px}
+/* Écran étroit : les boutons d'un rappel passent sous son texte, qui garde toute la largeur. */
+@media (max-width:560px){.item.alert>.row{grid-column:2 / 4}}
+@media (max-width:560px){.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.stats .big{font-size:clamp(1.05rem,5vw,1.4rem)}}
+/* Écran tactile : 16 px au moins dans les champs (sinon iOS zoome au focus), et 44 pt de cible autour des petits
+   contrôles, par une zone invisible qui ne change pas leur dessin. */
+@media (pointer:coarse){
+  input,select,textarea{font-size:max(16px,1em)}
+  .btn.sm,.btn.ghost,.star,.check{position:relative}
+  .btn.sm::after,.btn.ghost::after,.star::after{content:"";position:absolute;inset:-9px -3px}
+  .check::before{content:"";position:absolute;inset:-11px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -200,7 +252,7 @@ mark{background:var(--accent);color:var(--bg);padding:0 2px;border-radius:2px}
       <button class="btn ghost sm" id="timerReset" aria-label="Réinitialiser le minuteur">↺</button>
     </div>
   </header>
-  <nav class="tabs" id="nav"></nav>
+  <nav class="tabs" id="nav" aria-label="Navigation principale"></nav>
   <main id="main"></main>
 </div>
 
@@ -1197,21 +1249,26 @@ function buildTrees() {
   for (let i = 0; i < 70; i++) stars.push(`<circle cx="${(r() * 1000).toFixed(0)}" cy="${(r() * 170).toFixed(0)}" r="${(r() * .9 + .3).toFixed(2)}"/>`);
   TREES = { far: far.join(""), near: near.join(""), stars: stars.join("") };
 }
+/* Trois plans superposés : le ciel et ses étoiles, la lune et son halo, les sapins et la brume. Le ciel et les sapins
+   sont recadrés (« slice ») pour remplir toute largeur ; la lune ne l'est pas, sinon un écran étroit la coupe. Son
+   repère (-150…150) est à l'échelle du ciel (300 de haut) : même taille qu'avant, centrée à 82 % de la largeur. */
 function forestSVG(p) {
   if (!TREES) buildTrees();
   const r = 46, c = 50, rx = Math.abs(Math.cos(2 * Math.PI * p)) * r;
   const lit = p < .5 ? `M${c},${c - r} A${r},${r} 0 0 1 ${c},${c + r} A${rx},${r} 0 0 ${p < .25 ? 0 : 1} ${c},${c - r}Z`
                      : `M${c},${c - r} A${r},${r} 0 0 0 ${c},${c + r} A${rx},${r} 0 0 ${p < .75 ? 0 : 1} ${c},${c - r}Z`;
   return `<svg class="scene" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" role="img" aria-label="Lune au-dessus d'une lisière de sapins">
-    <defs>
-      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--sky-top)"/><stop offset="1" stop-color="var(--sky-bot)"/></linearGradient>
-      <radialGradient id="glow"><stop offset="0" stop-color="var(--glow)"/><stop offset="1" stop-color="var(--glow)" stop-opacity="0"/></radialGradient>
-      <linearGradient id="mist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--mist)" stop-opacity="0"/><stop offset=".6" stop-color="var(--mist)"/><stop offset="1" stop-color="var(--mist)" stop-opacity="0"/></linearGradient>
-    </defs>
+    <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--sky-top)"/><stop offset="1" stop-color="var(--sky-bot)"/></linearGradient></defs>
     <rect width="1000" height="300" fill="url(#sky)"/>
     <g fill="var(--moon)" opacity="var(--star)" style="opacity:var(--star)">${TREES.stars}</g>
-    <circle cx="790" cy="92" r="${40 + 120 * (1 - Math.abs(1 - 2 * p)) * .9}" fill="url(#glow)"/>
-    <g transform="translate(748 50) scale(.84)"><circle cx="50" cy="50" r="${r}" fill="var(--moon-shadow)" opacity=".85"/><path d="${lit}" fill="var(--moon)"/></g>
+  </svg>
+  <div class="moon" aria-hidden="true"><svg viewBox="-150 -150 300 300">
+    <defs><radialGradient id="glow"><stop offset="0" stop-color="var(--glow)"/><stop offset="1" stop-color="var(--glow)" stop-opacity="0"/></radialGradient></defs>
+    <circle r="${40 + 120 * (1 - Math.abs(1 - 2 * p)) * .9}" fill="url(#glow)"/>
+    <g transform="scale(.84) translate(-50 -50)"><circle cx="50" cy="50" r="${r}" fill="var(--moon-shadow)" opacity=".85"/><path d="${lit}" fill="var(--moon)"/></g>
+  </svg></div>
+  <svg class="scene trees" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <defs><linearGradient id="mist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--mist)" stop-opacity="0"/><stop offset=".6" stop-color="var(--mist)"/><stop offset="1" stop-color="var(--mist)" stop-opacity="0"/></linearGradient></defs>
     <path d="${TREES.far}" fill="var(--tree-far)"/>
     <rect y="205" width="1000" height="75" fill="url(#mist)"/>
     <path d="${TREES.near}" fill="var(--tree-near)"/>
@@ -1334,11 +1391,11 @@ VIEWS.accueil = () => {
   const alerts = [];
   for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) alerts.push(...TYPE_UI[inst.type].alerts(id, inst, now));
   const inbox = inboxId(s.modules), pending = inbox ? s.modules[inbox].entries.length : 0;
-  // Chaque ligne se déplie sur les derniers éléments du module, sans avoir à l'ouvrir.
+  // Toute la ligne mène au module ; un chevron la déplie sur ses derniers éléments, sans avoir à l'ouvrir.
   const rows = s.config.modules.filter(x => x.on && x.id !== inbox).map(x => {
     const inst = Object.hasOwn(s.modules, x.id) ? s.modules[x.id] : null, more = inst && TYPE_UI[inst.type].recent ? TYPE_UI[inst.type].recent(inst) : [];
     const r = inst && inst.resume, bridge = r ? `<small class="resume ${bridgeStale(r) ? "stale" : ""}">↳ ${esc(r.text)} · ${ago(r.at)}</small>` : "";
-    return `<div class="over-wrap"><a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}${bridge}</span><em class="hint" style="margin:0">ouvrir</em></a>${more.length ? `<details class="more"><summary>derniers éléments</summary><ul>${more.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
+    return `<div class="over-wrap${more.length ? " has-more" : ""}"><a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}${bridge}</span></a>${more.length ? `<details class="more"><summary><span class="sr">Derniers éléments de ${esc(label(x.id))}</span></summary><ul>${more.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
   }).join("");
   return `
   ${s.config.welcome ? `<section><h2>Composer ton espace</h2><p class="hint">Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.</p>
@@ -1352,7 +1409,7 @@ VIEWS.accueil = () => {
     <section><h2>Aujourd'hui</h2><p class="hint">Trois choses. La forêt pousse très bien sans que tu la surveilles.</p>
       <ul class="plain">
         ${tod.map(([id, t]) => taskHTML(id, t)).join("")}
-        ${alerts.map(a => `<li class="item"><span></span><div>${a.text}</div>${a.actions ? `<div class="row">${a.actions}</div>` : a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">voir</a>` : ""}</li>`).join("")}
+        ${alerts.map(a => `<li class="item alert"><span></span><div>${a.text}</div>${a.actions ? `<div class="row">${a.actions}</div>` : a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">voir</a>` : ""}</li>`).join("")}
       </ul>
       ${!tod.length ? (taskModules().length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : `<p class="empty">Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.</p>`) : ""}
     </section>
@@ -1647,7 +1704,7 @@ function renderNow() {
   $("#dateline").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
   const badge = id => { const m = Object.hasOwn(s.modules, id) && s.modules[id], n = m && TYPE_UI[m.type].badge ? TYPE_UI[m.type].badge(m) : 0; return n ? ` (${n})` : ""; };
   const links = [["accueil", "Accueil"], ...s.config.modules.filter(x => x.on).map(x => [x.id, label(x.id)]), ["recherche", "Chercher"], ["reglages", "Réglages"]];
-  $("#nav").innerHTML = links.map(([id, l]) => `<a href="#${esc(id)}" class="${id === view ? "on" : ""}">${esc(l)}${badge(id)}</a>`).join("");
+  $("#nav").innerHTML = links.map(([id, l]) => `<a href="#${esc(id)}" class="${id === view ? "on" : ""}"${id === view ? ' aria-current="page"' : ""}>${esc(l)}${badge(id)}</a>`).join("");
   // Les champs des Réglages n'ont pas d'id (donc pas de restauration ci-dessous) : tant que l'un d'eux
   // a le focus, ne pas redessiner, sinon une synchro arrivant pendant la frappe effacerait la saisie.
   const ae = document.activeElement, typing = ae && ae.closest && ae.closest("#main") &&
@@ -1661,9 +1718,34 @@ function renderNow() {
   for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && v !== "" && el.value !== v) el.value = v; }
   if (view !== lastView) $("#main").querySelectorAll("[data-draft]").forEach(el => { const v = loadDraft(view, el); if (v) el.value = v; });
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
+  if (view !== lastView) revealed = null;
+  if (revealed) $("#main").querySelectorAll(".item[data-id], .card[data-id]").forEach(el => { if (el.dataset.id === revealed) el.classList.add("reveal"); });
   lastView = view;
 }
-window.addEventListener("hashchange", () => { openId = null; bridgeOpen = null; render(); const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t); if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); } else window.scrollTo(0, 0); });
+/* Position de défilement de chaque vue, pour la session : revenir quelque part, c'est retrouver où l'on en était. */
+const scrollMemo = (() => { try { return JSON.parse(sessionStorage.getItem("selene-scrolls")) || {}; } catch { return {}; } })();
+function rememberScroll() {
+  if (!lastView) return;
+  scrollMemo[lastView] = Math.round(window.scrollY || 0);
+  try { sessionStorage.setItem("selene-scrolls", JSON.stringify(scrollMemo)); } catch {}
+}
+window.addEventListener("hashchange", () => {
+  if (lastView !== (location.hash.slice(1) || "accueil")) rememberScroll(); // « / » a déjà dessiné la recherche, et gardé la position d'avant
+  openId = null; bridgeOpen = null; render();
+  const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t);
+  if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); } else window.scrollTo(0, scrollMemo[lastView] || 0);
+});
+/* Sur un écran tactile, les actions d'une ligne (.ra) apparaissent quand on touche la ligne ailleurs que sur un contrôle.
+   Une seule ligne à la fois ; retenue par son identifiant pour survivre aux rendus. */
+let revealed = null;
+const touchUI = () => { try { return window.matchMedia("(hover: none), (pointer: coarse)").matches; } catch { return false; } };
+document.addEventListener("click", e => {
+  const row = e.target.closest && e.target.closest(".item[data-id], .card[data-id]");
+  if (!row || !row.querySelector(".ra") || e.target.closest("a,button,input,select,textarea,label,summary") || !touchUI()) return;
+  revealed = revealed === row.dataset.id ? null : row.dataset.id;
+  $("#main").querySelectorAll(".reveal").forEach(el => el.classList.remove("reveal"));
+  if (revealed) row.classList.add("reveal");
+});
 
 /* ================= actions ================= */
 const idOf = el => el.closest("[data-id]")?.dataset.id;
@@ -1755,7 +1837,7 @@ document.addEventListener("input", e => { if (e.target.id === "searchIn") { sear
 document.addEventListener("keydown", e => {
   if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || "")) return;
   // Dessiner tout de suite : attendre l'événement hashchange ferait courir le curseur contre le rendu.
-  e.preventDefault(); location.hash = "recherche"; render(); const el = document.getElementById("searchIn"); if (el) el.focus();
+  e.preventDefault(); rememberScroll(); location.hash = "recherche"; render(); const el = document.getElementById("searchIn"); if (el) el.focus();
 });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && e.target.id === "bridgeIn") bridgeSave(e.target.dataset.mod); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
 const CHANGE = {}; // actions « change » des types de module (remplie par types.js)
@@ -1899,7 +1981,7 @@ function refHTML(ref) {
 function linksHTML(mod, e) {
   const out = (e.links || []).map(l => `<span>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</span>`);
   const inc = (backlinks().get(`${mod}/${e.id}`) || []).map(b => `<span>${esc(LINK_BACK[b.type])} ${refHTML(b.from)}</span>`);
-  return `<div class="meta links">${[...out, ...inc].join("")}<span class="acts"><button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></span></div>`;
+  return `<div class="meta links">${[...out, ...inc].join("")}<span class="acts ra"><button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></span></div>`;
 }
 /* Dérivation en cours, par module : la prochaine entrée écrite dérivera de ces références (une, ou deux pour
    résoudre une tension). Propre à l'appareil, oubliée si l'on quitte l'app. */
@@ -1925,8 +2007,9 @@ function linkForm(mod, id) {
     site.save(); render(); toast(v.type === "contredit" ? "Tension ouverte. Elle attendra sa synthèse." : "Lié.");
   });
 }
-/* Le statut épistémique d'un fragment ou d'une note, modifiable sur place ; vide par défaut. */
-const epSelect = (id, e) => `<select class="ep ${e.ep ? "on" : ""}" data-act="ep-set" data-mod="${esc(id)}" aria-label="Statut">${[["", "statut…"], ...Object.entries(EP_STATUS)].map(([k, l]) => `<option value="${k}" ${(e.ep || "") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+/* Le statut épistémique d'un fragment ou d'une note, modifiable sur place ; vide par défaut. Vide, c'est une action
+   (discrète, comme les autres actions de ligne) ; posé, c'est une information, toujours visible. */
+const epSelect = (id, e) => `<select class="ep ${e.ep ? "on" : "ra"}" data-act="ep-set" data-mod="${esc(id)}" aria-label="Statut">${[["", "statut…"], ...Object.entries(EP_STATUS)].map(([k, l]) => `<option value="${k}" ${(e.ep || "") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
 /* Fin estimée d'un cumul au rythme des 30 derniers jours : une phrase, ou rien sans objectif. */
 function projection(inst) {
   const c = inst.config, goal = +c.goal || 0, tot = totalOf(inst);
@@ -1984,7 +2067,7 @@ const TYPE_UI = {
     <div class="cal">${cal}</div>
     <div style="margin-top:28px">${programmeGroupPanel(id)}</div>
   </section><section><h3>Journal</h3><p class="hint">Ce que le corps a fait, ce que la tête en a pensé.</p>
-    <ul class="plain">${recent.map(x => `<li class="item" data-id="${esc(x.id)}"><span></span><div>${fmt(x.date, { weekday: "short", day: "numeric", month: "short" })}, ${esc(x.value ?? "?")} ${esc(c.unitLabel)}${x.note ? `<div class="note" style="margin:2px 0 0">${esc(x.note)}</div>` : ""}</div><button class="btn ghost sm" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune séance notée.</li>`}</ul>
+    <ul class="plain">${recent.map(x => `<li class="item" data-id="${esc(x.id)}"><span></span><div>${fmt(x.date, { weekday: "short", day: "numeric", month: "short" })}, ${esc(x.value ?? "?")} ${esc(c.unitLabel)}${x.note ? `<div class="note" style="margin:2px 0 0">${esc(x.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune séance notée.</li>`}</ul>
   </section></div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>Début du protocole<input type="date" data-set-mod="${esc(id)}.start" value="${esc(c.start || "")}"></label><label>Durée (semaines)<input type="number" min="1" max="520" data-set-mod="${esc(id)}.weeks" value="${esc(c.weeks)}"></label></div>
@@ -2046,7 +2129,7 @@ const TYPE_UI = {
   </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">Une phrase qui passe, avant qu'elle ne reparte. Un « ? » devant en fait une hypothèse.</p>
     ${deriveBanner(id)}<textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="Nouveau"></textarea><div class="row" style="margin-top:8px">${catSelect("scrapCat", "", lastScrapCat)}<button class="btn" data-act="scrap-add" data-mod="${esc(id)}">Garder</button></div>
     ${c.categories.length || inst.scraps.length ? `<div class="row" style="margin-top:14px">${c.categories.length ? `<select data-act="scrap-f" data-mod="${esc(id)}" aria-label="Filtrer"><option value="*">Tous</option>${[["", `Hors ${c.categoryLabel.toLowerCase()}`], ...c.categories.map(x => [x.id, x.name])].map(([k, n]) => `<option value="${esc(k)}" ${ff === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : ""}<span class="spacer"></span>${inst.scraps.length ? `<button class="btn ghost sm" data-act="scrap-md" data-mod="${esc(id)}">Exporter en Markdown</button>` : ""}</div>` : ""}
-    <ul class="plain" style="margin-top:10px">${[...inst.scraps].reverse().filter(f => ff === "*" || (f.category || "") === ff).map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${originHTML(f, f.text)}</div>${linksHTML(id, f)}</div><button class="btn ghost sm" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Rien pour l'instant.</li>`}</ul>
+    <ul class="plain" style="margin-top:10px">${[...inst.scraps].reverse().filter(f => ff === "*" || (f.category || "") === ff).map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${originHTML(f, f.text)}</div>${linksHTML(id, f)}</div><button class="btn ghost sm ra" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Rien pour l'instant.</li>`}</ul>
   </section>` : ""}</div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>Titre / sous-titre<input data-set-mod="${esc(id)}.title" value="${esc(c.title || "")}"></label><label>Objectif<input type="number" min="1" data-set-mod="${esc(id)}.goal" value="${esc(c.goal)}"></label></div>
@@ -2115,7 +2198,7 @@ const TYPE_UI = {
     ${c.types.map(line).join("")}
     <div class="row" style="margin-top:14px"><input id="rapNote" data-draft placeholder="Observation…" aria-label="Observation"><button class="btn" data-act="entry-note" data-mod="${esc(id)}">Noter</button></div>
     <p class="hint" style="margin-top:10px">Réglable dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a>.</p>
-  </section><section><h3>Journal</h3><ul class="plain">${recent.map(l => `<li class="item" data-id="${esc(l.id)}"><span></span><div><span class="tag">${esc(l.type)}</span> ${fmt(l.date)}${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}${l.origin ? `<div class="meta">${originHTML(l, l.note)}</div>` : ""}</div><button class="btn ghost sm" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune entrée.</li>`}</ul></section></div>`;
+  </section><section><h3>Journal</h3><ul class="plain">${recent.map(l => `<li class="item" data-id="${esc(l.id)}"><span></span><div><span class="tag">${esc(l.type)}</span> ${fmt(l.date)}${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}${l.origin ? `<div class="meta">${originHTML(l, l.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune entrée.</li>`}</ul></section></div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>Sous-titre (ex. nom propre)<input data-set-mod="${esc(id)}.subtitle" value="${esc(c.subtitle || "")}"></label><span></span></div>
     <div style="margin-top:10px"><span class="hint" style="margin:0">Types et rappels</span>${c.types.map((t, i) => `<div class="set" data-ti="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="typ-name" data-mod="${esc(id)}" value="${esc(t.label)}" aria-label="Nom"><input type="number" min="0" data-act="typ-every" data-mod="${esc(id)}" value="${esc(t.every || "")}" placeholder="tous les X j" aria-label="Fréquence"><button class="btn ghost sm" data-act="typ-del" data-mod="${esc(id)}">suppr.</button></div>`).join("")}<button class="btn sm" data-act="typ-add" data-mod="${esc(id)}" style="margin-top:8px">Ajouter un type</button></div>`,
@@ -2123,11 +2206,14 @@ const TYPE_UI = {
       const t = inst.config.types[0];
       return t ? `${esc(t.label)} : ${ago(lastOf(inst, t.id))}` : plural(inst.entries.length, "entrée");
     },
-    alerts: (id, inst, now) => inst.config.types.filter(t => t.every).flatMap(t => {
-      const l = lastOf(inst, t.id);
-      return !l || diffDays(now, l) >= t.every ? [{ text: `${esc(t.label)} : ${esc(label(id))} (${ago(l)})`,
-        actions: `<button class="btn sm" data-act="entry-log" data-mod="${esc(id)}" data-t="${esc(t.id)}">fait</button><a class="btn ghost sm" href="#${esc(id)}">voir</a>` }] : [];
-    }),
+    // Une seule ligne par module sur l'accueil, quel que soit le nombre de rappels dus : « Phidippus : Repas (jamais) · Brumisation (jamais) ».
+    alerts(id, inst, now) {
+      const due = inst.config.types.filter(t => { const l = lastOf(inst, t.id); return t.every && (!l || diffDays(now, l) >= t.every); });
+      if (!due.length) return [];
+      const one = due.length === 1;
+      return [{ text: `<b>${esc(label(id))}</b> : ${due.map(t => `${esc(t.label)} (${ago(lastOf(inst, t.id))})`).join(" · ")}`,
+        actions: due.map(t => `<button class="btn sm" data-act="entry-log" data-mod="${esc(id)}" data-t="${esc(t.id)}">${one ? "fait" : `${esc(t.label.toLowerCase())} : fait`}</button>`).join("") + `<a class="btn ghost sm" href="#${esc(id)}">voir</a>` }];
+    },
     accept: (id, inst, note) => { addJournalEntry(inst, { date: note.date, type: "note", note: note.text }, uid(), todayISO()); },
     recent: inst => recentBy(inst.entries).map(x => `${fmt(x.date)} · ${(inst.config.types.find(t => t.id === x.type) || {}).label || x.type}${x.note ? " · " + x.note : ""}`),
     review: (inst, from, to) => { const es = within(inst.entries, from, to); if (!es.length) return "Rien de noté"; const by = [...new Set(es.map(x => x.type))].map(t => `${((inst.config.types.find(y => y.id === t) || {}).label || t).toLowerCase()} ×${es.filter(x => x.type === t).length}`); return by.join(", "); },
@@ -2171,7 +2257,7 @@ function collectionForm(id, item) {
 function collectionCard(id, e, ci, last) {
   const f = S().modules[id].config.fields, meta = [f.tag && e.tag ? `<span class="tag">${esc(e.tag)}</span>` : "", f.due && e.due ? `<span>${fmt(e.due)}</span>` : "", originHTML(e, e.title)].join("");
   return `<div class="card" data-id="${esc(e.id)}"><b>${esc(e.title)}</b>${f.subtitle && e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ""}${meta ? `<div class="meta">${meta}</div>` : ""}${f.text && e.text ? `<p>${esc(e.text.slice(0, 160))}${e.text.length > 160 ? "…" : ""}</p>` : ""}
-      <div class="row">${ci > 0 ? `<button class="btn ghost sm" data-act="col-move" data-d="-1" aria-label="Reculer">←</button>` : ""}${ci < last ? `<button class="btn ghost sm" data-act="col-move" data-d="1" aria-label="Avancer">→</button>` : ""}<span class="spacer"></span><button class="btn ghost sm" data-act="col-edit">modifier</button><button class="btn ghost sm" data-act="col-del">suppr.</button></div></div>`;
+      <div class="row">${ci > 0 ? `<button class="btn ghost sm" data-act="col-move" data-d="-1" aria-label="Reculer">←</button>` : ""}${ci < last ? `<button class="btn ghost sm" data-act="col-move" data-d="1" aria-label="Avancer">→</button>` : ""}<span class="spacer"></span><button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></div>`;
 }
 /* ---- concordance : une collection de motifs, comptés dans les textes de tous les autres modules ----
    Mot entier (« lune » ne trouve pas « lunettes »), sans accents ni casse, pluriel en s/x toléré ; les variantes
@@ -2237,7 +2323,7 @@ function concordanceView(id, inst, head) {
       <div class="meta"><span>${n ? plural(n, "occurrence") : "jamais rencontré"}${where}</span>${fallow(inst, r) ? `<span class="late">en jachère</span>` : ""}</div>
       ${r.neighbours.length ? `<div class="meta"><span>voisins : ${r.neighbours.map(x => `${esc(x.name)} (${x.n})`).join(", ")}</span></div>` : ""}
       ${c.fields.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}</div>
-      <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${n ? `<button class="btn ghost sm" data-act="search-for" data-q="${esc(e.title)}">voir</button>` : ""}<button class="btn ghost sm" data-act="col-edit">modifier</button><button class="btn ghost sm" data-act="col-del">suppr.</button></div></li>`;
+      <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${n ? `<button class="btn ghost sm" data-act="search-for" data-q="${esc(e.title)}">voir</button>` : ""}<button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></li>`;
   };
   return `<div data-mod="${esc(id)}">${head}
   ${sleeping.length ? `<section><h3>En jachère</h3><p class="hint">Vivants, mais absents depuis plus de ${esc(c.fallowDays)} jours. Reposés, pas perdus.</p><div class="row">${sleeping.map(r => `<button class="btn ghost sm" data-act="search-for" data-q="${esc(r.e.title)}">${esc(r.e.title)} · ${plural(moons(diffDays(todayISO(), r.last.date)), "lunaison")}</button>`).join("")}</div></section>` : ""}
@@ -2260,13 +2346,13 @@ TYPE_UI.collection = {
     if (c.display === "colonnes") {
       const byDue = (a, b) => (a.due || "9999").localeCompare(b.due || "9999");
       return `<div data-mod="${esc(id)}">${head}<div class="board" style="margin-bottom:34px">${c.statuses.map((st, ci) => { const col = items.filter(e => e.status === st).sort(byDue);
-        return `<div class="col"><h3>${esc(st)} <span class="hint" style="font-size:.95rem">${col.length}</span></h3>${col.map(e => collectionCard(id, e, ci, c.statuses.length - 1)).join("") || `<p class="empty">Vide.</p>`}</div>`; }).join("")}</div>${panel}</div>`;
+        return `<div class="col"><h3>${esc(st)} <span class="hint" style="font-size:.95rem">${col.length}</span></h3>${col.map(e => collectionCard(id, e, ci, c.statuses.length - 1)).join("") || `<p class="col-empty"><span class="sr">Aucun élément.</span></p>`}</div>`; }).join("")}</div>${panel}</div>`;
     }
     const filter = colFilter[id] || "", shown = items.filter(e => !filter || e.status === filter);
     return `<div data-mod="${esc(id)}">${head}
   <div class="row" style="margin-bottom:10px"><select data-act="col-f" aria-label="Filtrer"><option value="">Tous</option>${c.statuses.map(st => `<option ${st === filter ? "selected" : ""}>${esc(st)}</option>`).join("")}</select></div>
   <div class="two"><div><ul class="plain">${shown.map(e => `<li class="item" data-id="${esc(e.id)}"><span></span><div><b>${esc(e.title)}</b>${f.subtitle ? (e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ` <span class="hint">${esc(f.subtitle.toLowerCase())} à préciser</span>`) : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${c.review ? "à réexaminer le " : ""}${fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}${reviewedHTML(e) || e.origin ? `<div class="meta">${reviewedHTML(e)}${originHTML(e, e.title)}</div>` : ""}</div>
-    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm" data-act="col-edit">modifier</button><button class="btn ghost sm" data-act="col-del">suppr.</button></div></li>`).join("") || `<li class="empty">Rien dans ce filtre.</li>`}</ul></div><div>${panel}</div></div></div>`;
+    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></li>`).join("") || `<li class="empty">Rien dans ce filtre.</li>`}</ul></div><div>${panel}</div></div></div>`;
   },
   settings: (id, { config: c }) => {
     const f = c.fields, fid = esc(id);
@@ -2445,7 +2531,8 @@ TYPE_UI.taches = {
     const inst = S().modules[id], c = inst.config, now = todayISO(), o = inst.entries.filter(t => !t.done), f = tf(id);
     const tod = o.filter(t => t.today);
     const cats = [...new Set(inst.entries.map(t => t.cat))];
-    const filtered = o.filter(t => (!f.room || t.room === f.room) && (!f.cat || t.cat === f.cat) && gMatch(id, t)).sort(byDue);
+    // Une tâche du jour vit dans « Aujourd'hui », pas une seconde fois dans les échéances.
+    const filtered = o.filter(t => !t.today && (!f.room || t.room === f.room) && (!f.cat || t.cat === f.cat) && gMatch(id, t)).sort(byDue);
     const groups = [
       ["En retard", "Le passé ne se repeint pas. Ça, si.", t => t.due && t.due < now, true],
       ["Cette semaine", "Assez proche pour paniquer utilement.", t => t.due && t.due >= now && diffDays(t.due, now) <= 7],
@@ -2545,7 +2632,7 @@ TYPE_UI.budget = {
     <input id="bDate" type="date" value="${defDate}" style="max-width:160px" aria-label="Date">
     <button class="btn acc" data-act="bud-add">Ajouter</button></div>
   <div class="two"><section><h3>Opérations</h3><p class="hint">L'argent ne disparaît pas, il change simplement de propriétaire.</p>
-    <ul class="plain">${shown.map(e => `<li class="item" data-id="${esc(e.id)}"><span></span><div>${esc(e.note || e.cat || e.type)}<div class="meta">${fmt(e.date)}${e.cat ? `<span class="tag">${esc(e.cat)}</span>` : ""}</div></div><div class="row"><b class="${e.type === "revenu" ? "pos" : ""}">${e.type === "revenu" ? "+" : "−"}${money(e.amount)}</b><button class="btn ghost sm" data-act="bud-del">suppr.</button></div></li>`).join("") || `<li class="empty">Aucune opération ce mois-ci. Suspect.</li>`}</ul></section>
+    <ul class="plain">${shown.map(e => `<li class="item" data-id="${esc(e.id)}"><span></span><div>${esc(e.note || e.cat || e.type)}<div class="meta">${fmt(e.date)}${e.cat ? `<span class="tag">${esc(e.cat)}</span>` : ""}</div></div><div class="row"><b class="${e.type === "revenu" ? "pos" : ""}">${e.type === "revenu" ? "+" : "−"}${money(e.amount)}</b><button class="btn ghost sm ra" data-act="bud-del">suppr.</button></div></li>`).join("") || `<li class="empty">Aucune opération ce mois-ci. Suspect.</li>`}</ul></section>
   <div>${groupPanel(id, "Part de chaque enveloppe mensuelle déjà consommée. Le rouge signale le dépassement.")}
     ${tasksLeft ? `<p class="hint">Les tâches en cours estiment encore ${money(tasksLeft)} de dépenses à venir.</p>` : ""}</div></div></div>`;
   },
@@ -2668,8 +2755,8 @@ TYPE_UI.notes = {
   ${deriveBanner(id)}<div class="capture" style="margin-bottom:18px"><input id="noteIn" data-draft placeholder="${esc(c.placeholder)}" aria-label="Nouvelle note"><button class="btn acc" data-act="note-add">Garder</button></div>
   <ul class="plain">${[...inst.entries].reverse().map(x => { const intent = captureIntent(x.text); return `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}${epSelect(id, x)}${originHTML(x, x.text)}</div>${linksHTML(id, x)}
     ${intent && intent.to !== id ? `<div class="row" style="margin-top:6px"><button class="btn sm acc" data-act="note-file">Ranger : ${esc(intent.say)}</button></div>` : ""}
-    ${targets.length ? `<div class="row" style="margin-top:6px">${targets.map(k => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
-    <button class="btn ghost sm" data-act="note-del">suppr.</button></li>`; }).join("") || `<li class="empty">${c.inbox ? "Vide. Le silence d'une clairière, ou celui d'un cerveau." : "Rien pour l'instant."}</li>`}</ul></div>`;
+    ${targets.length ? `<div class="row${c.inbox ? "" : " ra"}" style="margin-top:6px">${targets.map(k => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
+    <button class="btn ghost sm ra" data-act="note-del">suppr.</button></li>`; }).join("") || `<li class="empty">${c.inbox ? "Vide. Le silence d'une clairière, ou celui d'un cerveau." : "Rien pour l'instant."}</li>`}</ul></div>`;
   },
   settings: (id, { config: c }) => `<label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="notes-inbox" data-mod="${esc(id)}" ${c.inbox ? "checked" : ""}>Boîte de réception : reçoit la capture rapide de l'accueil</label>
     <div class="field-row" style="margin-top:8px"><label>Description<input data-set-mod="${esc(id)}.description" value="${esc(c.description)}" placeholder="Une phrase sous le titre"></label><label>Texte d'invite<input data-set-mod="${esc(id)}.placeholder" value="${esc(c.placeholder)}" required></label></div>`,

@@ -9,11 +9,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#e2e6de; --surface:#edf0e9; --ink:#1a211b; --muted:#5b6859; --rule:#c1c9bc; --alarm:#a8431f; --ok:#3d7a52;
+  /* Planche (clair). L'accent décore et oriente ; ok, warn, alarm et info informent : ils ne se prêtent jamais leurs teintes. */
+  --bg:#e2e6de; --surface:#edf0e9; --surface-2:#f4f2ea; --glass:rgba(226,230,222,.82); --ink:#1a211b; --ink-2:#394237; --muted:#5b6859;
+  --rule:#c1c9bc; --rule-strong:#75816f; --alarm:#a8431f; --ok:#2f6f62; --warn:#7d5a12; --info:#3f5d78;
   --moon:#f4f1e4; --moon-shadow:#b8c2b6; --glow:rgba(255,252,235,.0);
   --sky-top:#b9c7c0; --sky-bot:#dfe5dc; --tree-far:#8fa294; --tree-near:#3b4d40; --mist:rgba(226,230,222,.75); --star:0;
   --acc-l:#3d6a45; --acc-d:#8fbf86; --accent:var(--acc-l);
-  box-sizing:border-box;
+  --ease:cubic-bezier(.2,0,0,1); --t-1:120ms; --t-2:180ms;
+  box-sizing:border-box; accent-color:var(--accent);
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
 :root[data-palette="albedo"]{--acc-l:#5a6a5c;--acc-d:#bccab8}
@@ -21,21 +24,26 @@
 :root[data-palette="rubedo"]{--acc-l:#973a30;--acc-d:#d56455}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]):not([data-mode="light"]){
-    --bg:#0e1310; --surface:#151c17; --ink:#dde2d6; --muted:#8c998a; --rule:#243029; --alarm:#ff8a55; --ok:#7cc493;
+    --bg:#0e1310; --surface:#151c17; --surface-2:#1a231d; --glass:rgba(14,19,16,.78); --ink:#dde2d6; --ink-2:#b4bdb0; --muted:#8c998a;
+    --rule:#243029; --rule-strong:#56665a; --alarm:#e5785a; --ok:#6fb3a2; --warn:#d2a24c; --info:#8fa9c0;
     --moon:#ece8d6; --moon-shadow:#1c2620; --glow:rgba(236,232,214,.16);
     --sky-top:#070b10; --sky-bot:#132019; --tree-far:#1d2b23; --tree-near:#0a0f0c; --mist:rgba(40,58,48,.55); --star:.8;
     --accent:var(--acc-d);
   }
 }
 :root[data-theme="dark"]:not([data-mode="light"]),:root[data-mode="dark"]{
-  --bg:#0e1310; --surface:#151c17; --ink:#dde2d6; --muted:#8c998a; --rule:#243029; --alarm:#ff8a55; --ok:#7cc493;
+  --bg:#0e1310; --surface:#151c17; --surface-2:#1a231d; --glass:rgba(14,19,16,.78); --ink:#dde2d6; --ink-2:#b4bdb0; --muted:#8c998a;
+  --rule:#243029; --rule-strong:#56665a; --alarm:#e5785a; --ok:#6fb3a2; --warn:#d2a24c; --info:#8fa9c0;
     --moon:#ece8d6; --moon-shadow:#1c2620; --glow:rgba(236,232,214,.16);
     --sky-top:#070b10; --sky-bot:#132019; --tree-far:#1d2b23; --tree-near:#0a0f0c; --mist:rgba(40,58,48,.55); --star:.8;
     --accent:var(--acc-d);
 }
 *,*::before,*::after{box-sizing:border-box}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 60px)}
 html,body{margin:0;min-height:100%}
+/* Sous la barre d'état translucide d'iOS : un fond, pour que le contenu ne défile pas sous l'heure. */
+body::before{content:"";position:fixed;z-index:6;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg)}
+.sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 body{background:var(--bg);color:var(--ink);font-family:"Spectral",Georgia,"Times New Roman",serif;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
 .wrap{max-width:1040px;margin:0 auto;padding:22px 20px 90px}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -54,9 +62,13 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:14p
 .brand h1{font-size:2.1rem;letter-spacing:.01em}
 .brand small{display:block;color:var(--muted);font-size:.85rem;font-family:"Spectral",serif}
 .timer{display:flex;align-items:center;gap:8px}
-.clock{font-variant-numeric:tabular-nums;font-weight:600;min-width:4.4ch;text-align:right}
+.clock{font-weight:600;min-width:4.4ch;text-align:right}
 .clock.done{color:var(--ok)}
-nav.tabs{display:flex;gap:4px;overflow-x:auto;margin:16px -20px 28px;padding:0 20px;border-bottom:1px solid var(--rule);scrollbar-width:none}
+/* Chiffres de chasse fixe, alignés : montants, compteurs, minuteur, dates. */
+.clock,.big,.stats,.meta,.room b,.over span,.item .row b,.cal{font-variant-numeric:tabular-nums lining-nums}
+/* La navigation reste à portée pendant le défilement, sous un verre fumé. */
+nav.tabs{display:flex;gap:4px;overflow-x:auto;margin:16px -20px 28px;padding:0 20px;border-bottom:1px solid var(--rule);scrollbar-width:none;
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--glass);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2)}
 nav.tabs a{white-space:nowrap;text-decoration:none;padding:9px 12px 10px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
 nav.tabs a.on{color:var(--ink);border-bottom-color:var(--accent)}
 
@@ -70,9 +82,16 @@ nav.tabs a.on{color:var(--ink);border-bottom-color:var(--accent)}
 .spacer{flex:1}
 
 /* hero */
-.hero{position:relative;margin:-6px -20px 44px;overflow:hidden;border-bottom:1px solid var(--rule)}
+.hero{position:relative;margin:-6px -20px 44px;overflow:hidden}
 .hero svg.scene{display:block;width:100%;height:clamp(240px,36vw,340px)}
-.hero .txt{position:absolute;left:20px;top:clamp(18px,4vw,40px);max-width:min(52%,420px)}
+/* Trois plans : le ciel (qui donne la hauteur), la lune, les sapins. La lune vit hors du paysage recadré
+   (« slice »), sinon un écran étroit la coupe ; placée en proportion de la scène, elle garde sa taille. */
+.hero svg.trees{position:absolute;inset:0;height:100%}
+.hero .moon{position:absolute;left:82%;top:30.7%;height:100%;aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none}
+.hero .moon svg{display:block;width:100%;height:100%}
+/* Le ciel se fond dans la page par la brume, sans bordure : une lisière. */
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:44px;background:linear-gradient(transparent,var(--bg));pointer-events:none}
+.hero .txt{position:absolute;z-index:1;left:20px;top:clamp(18px,4vw,40px);max-width:min(52%,420px)}
 .hero .phase{font-family:"Cormorant Garamond",serif;font-size:clamp(2rem,6vw,3.4rem);line-height:1;color:var(--ink)}
 .hero p{margin:8px 0 0;color:var(--muted);font-size:.95rem}
 :root:not([data-mode="light"]) .hero .phase{text-shadow:0 1px 12px var(--bg)}
@@ -90,10 +109,12 @@ ul.plain>.item:last-child{border-bottom:1px solid var(--rule)}
 .t-title{font-weight:500;background:none;border:0;padding:0;text-align:left;cursor:pointer}
 .done .t-title{text-decoration:line-through;color:var(--muted)}
 .meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:2px;font-size:.85rem;color:var(--muted)}
-.tag{color:var(--accent);font-weight:500}
+/* Une étiquette est neutre, marquée d'un point : l'accent n'y dit rien de plus qu'ailleurs. */
+.tag{color:var(--ink-2);font-weight:500}
+.tag::before{content:"";display:inline-block;width:.42em;height:.42em;border-radius:50%;background:var(--accent);margin-right:.38em;vertical-align:.12em}
 .late{color:var(--alarm);font-weight:600}
-.soon{color:var(--accent);font-weight:600}
-.star{background:none;border:0;font-size:1.1rem;line-height:1;padding:2px 4px;color:var(--rule)}
+.soon{color:var(--warn);font-weight:600}
+.star{background:none;border:0;font-size:1.1rem;line-height:1;padding:2px 4px;color:var(--rule-strong)}
 .star.on{color:var(--accent)}
 .details{grid-column:2 / 4;font-size:.93rem;display:none}
 .open .details{display:block}
@@ -120,7 +141,13 @@ select.ep.on{color:var(--accent);border-color:var(--rule)}
 /* overview rows */
 .over{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:6px 18px;align-items:baseline;padding:12px 0;border-top:1px solid var(--rule);text-decoration:none}
 .over-wrap{border-top:1px solid var(--rule)}.over-wrap:last-child{border-bottom:1px solid var(--rule)}.over-wrap .over{border:0}
-.more{margin:-6px 0 10px}.more summary{cursor:pointer;color:var(--muted);font-size:.82rem;letter-spacing:.02em}.more ul{margin:6px 0 0;padding-left:18px;color:var(--muted);font-size:.9rem}
+/* Une ligne d'accueil se déplie sur ses derniers éléments par un chevron, à droite, au lieu d'un libellé répété. */
+.over-wrap{position:relative}.over-wrap.has-more .over{padding-right:44px}
+.more{margin:0}.more summary{position:absolute;top:4px;right:0;width:44px;height:44px;display:grid;place-items:center;cursor:pointer;list-style:none;color:var(--muted)}
+.more summary::-webkit-details-marker{display:none}
+.more summary::after{content:"›";font-size:1.3rem;line-height:1;transition:transform var(--t-2) var(--ease)}
+.more[open] summary::after{transform:rotate(90deg)}
+.more ul{margin:-6px 0 12px;padding-left:18px;color:var(--muted);font-size:.9rem}
 .over b{font-family:"Cormorant Garamond",serif;font-size:1.4rem;font-weight:600}
 .over span{color:var(--muted)}
 @media (max-width:560px){.over{grid-template-columns:1fr auto}.over span{grid-column:1 / 3}}
@@ -151,15 +178,29 @@ select.ep.on{color:var(--accent);border-color:var(--rule)}
 /* kanban */
 .board{display:grid;grid-template-columns:repeat(4,minmax(200px,1fr));gap:14px;overflow-x:auto;padding-bottom:6px}
 .col h3{font-size:1.2rem;border-bottom:1px solid var(--rule);padding-bottom:6px;margin-bottom:8px}
-.card{background:var(--surface);border:1px solid var(--rule);padding:10px;margin-bottom:8px}
+.card{background:var(--surface);border:1px solid var(--rule);padding:10px;margin-bottom:8px;position:relative}
 .card p{margin:4px 0;font-size:.9rem;color:var(--muted);white-space:pre-wrap}
+.col-empty{min-height:64px;border:1px dashed var(--rule);margin:0}
+
+/* Actions de ligne (classe .ra) : au repos, le contenu seul. Au survol ou au focus sur ordinateur ; sur un écran
+   tactile, un toucher sur la ligne les montre (« ⋯ » signale qu'il y en a). Jamais la seule voie d'une action primaire. */
+.ra{transition:opacity var(--t-1) var(--ease)}
+@media (hover:hover) and (pointer:fine){
+  .item .ra,.card .ra{opacity:0}
+  .item:hover .ra,.item:focus-within .ra,.item.reveal .ra,.card:hover .ra,.card:focus-within .ra,.card.reveal .ra{opacity:1}
+}
+@media (hover:none),(pointer:coarse){
+  .item:not(.reveal) .ra,.card:not(.reveal) .ra{display:none}
+  .item{position:relative}
+  .item:has(.ra):not(.reveal)::after,.card:has(.ra):not(.reveal)::after{content:"⋯";position:absolute;right:2px;bottom:4px;color:var(--muted);line-height:1;pointer-events:none}
+}
 
 /* forms */
-dialog{border:1px solid var(--rule);background:var(--surface);color:var(--ink);padding:0;width:min(560px,94vw);border-radius:3px}
-dialog::backdrop{background:rgba(10,8,14,.6)}
+dialog{border:1px solid var(--rule);background:var(--surface-2);color:var(--ink);padding:0;width:min(560px,94vw);border-radius:3px}
+dialog::backdrop{background:rgba(6,10,8,.55);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 dialog form{padding:22px;display:grid;gap:12px}
 label{display:grid;gap:4px;font-size:.88rem;font-weight:500}
-input,select,textarea{background:var(--bg);border:1px solid var(--rule);padding:8px;border-radius:2px;width:100%}
+input,select,textarea{background:var(--bg);border:1px solid var(--rule-strong);padding:8px;border-radius:2px;width:100%}
 input[type=checkbox],input[type=radio]{width:auto}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:480px){.field-row{grid-template-columns:1fr}}
@@ -170,7 +211,7 @@ input[type=checkbox],input[type=radio]{width:auto}
 .swatch i{width:14px;height:14px;border-radius:50%;display:block}
 .capture{display:flex;gap:8px}
 .capture input{flex:1}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:2px;font-size:.92rem;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center}
+.toast{position:fixed;z-index:10;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:2px;font-size:.92rem;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center}
 .toast.show{opacity:1}
 mark{background:var(--accent);color:var(--bg);padding:0 2px;border-radius:2px}
 .toast.act{pointer-events:auto}.toast .btn{margin-left:10px;color:var(--bg);border-color:var(--bg);background:transparent}
@@ -186,6 +227,17 @@ mark{background:var(--accent);color:var(--bg);padding:0 2px;border-radius:2px}
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .chip{display:inline-flex;align-items:center;border:1px solid var(--rule);border-radius:2px}.chip .btn{border:0}.chip .btn+.btn{padding-left:6px;padding-right:8px;color:var(--accent)}
 .status{font-size:.88rem;color:var(--muted);border-left:2px solid var(--accent);padding-left:10px;margin:6px 0 14px}
+/* Écran étroit : les boutons d'un rappel passent sous son texte, qui garde toute la largeur. */
+@media (max-width:560px){.item.alert>.row{grid-column:2 / 4}}
+@media (max-width:560px){.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.stats .big{font-size:clamp(1.05rem,5vw,1.4rem)}}
+/* Écran tactile : 16 px au moins dans les champs (sinon iOS zoome au focus), et 44 pt de cible autour des petits
+   contrôles, par une zone invisible qui ne change pas leur dessin. */
+@media (pointer:coarse){
+  input,select,textarea{font-size:max(16px,1em)}
+  .btn.sm,.btn.ghost,.star,.check{position:relative}
+  .btn.sm::after,.btn.ghost::after,.star::after{content:"";position:absolute;inset:-9px -3px}
+  .check::before{content:"";position:absolute;inset:-11px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -200,7 +252,7 @@ mark{background:var(--accent);color:var(--bg);padding:0 2px;border-radius:2px}
       <button class="btn ghost sm" id="timerReset" aria-label="Réinitialiser le minuteur">↺</button>
     </div>
   </header>
-  <nav class="tabs" id="nav"></nav>
+  <nav class="tabs" id="nav" aria-label="Navigation principale"></nav>
   <main id="main"></main>
 </div>
 

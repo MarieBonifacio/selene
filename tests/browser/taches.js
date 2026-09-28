@@ -7,7 +7,7 @@ const v5site = { updatedAt: 10, schemaVersion: 5,
     modules: ['chantier', 'budget', 'inbox'].map(id => ({ id, on: true })), assistant: { model: 'claude-sonnet-5', actions: true, share: { chantier: true } } },
   modules: { inbox: { type: 'notes', label: 'Capture', config: { inbox: true, description: '', placeholder: '…' }, entries: [{ id: 'n1', text: 'réparer la porte', date: today }] },
     budget: { type: 'budget', label: 'Budget', config: { envelopes: [], groups: { on: true, by: 'cat', sort: 'name', hideDone: false, title: '' } }, entries: [] } } };
-const board = { updatedAt: 9, tasks: [T('t1', 'Poser le velux', { due: today, cost: 250, steps: [{ t: 'Devis', d: false }, { t: 'Achat', d: false }] }), T('t2', 'Plinthes', { room: 'Salon', today: true }), T('t3', 'Joints', { room: 'Salle de bain', today: true })] };
+const board = { updatedAt: 9, tasks: [T('t1', 'Poser le velux', { due: today, cost: 250, steps: [{ t: 'Devis', d: false }, { t: 'Achat', d: false }] }), T('t2', 'Plinthes', { room: 'Salon', today: true }), T('t3', 'Joints', { room: 'Salle de bain', today: true }), T('t4', 'Changer le robinet')] };
 (async () => {
   const b = await chromium.launch(launchOptions);
   const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => d.accept());
@@ -22,7 +22,7 @@ const board = { updatedAt: 9, tasks: [T('t1', 'Poser le velux', { due: today, co
 
   console.log('migration');
   let d = await data();
-  ok(d.modules.chantier.type === 'taches' && d.modules.chantier.entries.length === 3 && d.modules.chantier.label === 'Appartement', 'tâches du board versées dans le module (nom personnalisé gardé)');
+  ok(d.modules.chantier.type === 'taches' && d.modules.chantier.entries.length === 4 && d.modules.chantier.label === 'Appartement', 'tâches du board versées dans le module (nom personnalisé gardé)');
   ok((await p.evaluate(() => JSON.parse(localStorage.getItem('selene-board-v1')).tasks.length)) === 0, 'board vidé');
   ok((await p.textContent('#nav')).includes('Appartement'), 'navigation');
   ok((await main()).includes('Plinthes') && (await main()).includes('Joints'), 'accueil : tâches du jour');
@@ -43,7 +43,8 @@ const board = { updatedAt: 9, tasks: [T('t1', 'Poser le velux', { due: today, co
   ok((await main()).includes('Fait récemment') && (await data()).modules.chantier.entries.find(x => x.id === 't2').done, 'tâche terminée');
   await p.selectOption('[data-act="f-room"]', 'Cuisine'); await p.waitForTimeout(150);
   const ech = (await p.textContent('section:has(> .row h3:text("Échéances"))')).replace(/\s+/g, ' ');
-  ok(ech.includes('Poser le velux') && !ech.includes('Joints'), 'filtre par pièce (section Échéances)');
+  ok(ech.includes('Changer le robinet') && !ech.includes('Joints'), 'filtre par pièce (section Échéances)');
+  ok(!ech.includes('Poser le velux') && (await main()).includes('Poser le velux'), 'une tâche du jour n’est pas répétée dans les échéances');
 
   console.log('un second module de tâches');
   await go('reglages'); await openAll(); await p.selectOption('#newModType', 'taches'); await p.fill('#newModName', 'Jardin'); await p.click('[data-act="mod-add"]'); await p.waitForTimeout(200);
