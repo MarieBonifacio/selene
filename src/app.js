@@ -110,21 +110,26 @@ function buildTrees() {
   for (let i = 0; i < 70; i++) stars.push(`<circle cx="${(r() * 1000).toFixed(0)}" cy="${(r() * 170).toFixed(0)}" r="${(r() * .9 + .3).toFixed(2)}"/>`);
   TREES = { far: far.join(""), near: near.join(""), stars: stars.join("") };
 }
+/* Trois plans superposés : le ciel et ses étoiles, la lune et son halo, les sapins et la brume. Le ciel et les sapins
+   sont recadrés (« slice ») pour remplir toute largeur ; la lune ne l'est pas, sinon un écran étroit la coupe. Son
+   repère (-150…150) est à l'échelle du ciel (300 de haut) : même taille qu'avant, centrée à 82 % de la largeur. */
 function forestSVG(p) {
   if (!TREES) buildTrees();
   const r = 46, c = 50, rx = Math.abs(Math.cos(2 * Math.PI * p)) * r;
   const lit = p < .5 ? `M${c},${c - r} A${r},${r} 0 0 1 ${c},${c + r} A${rx},${r} 0 0 ${p < .25 ? 0 : 1} ${c},${c - r}Z`
                      : `M${c},${c - r} A${r},${r} 0 0 0 ${c},${c + r} A${rx},${r} 0 0 ${p < .75 ? 0 : 1} ${c},${c - r}Z`;
   return `<svg class="scene" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" role="img" aria-label="Lune au-dessus d'une lisière de sapins">
-    <defs>
-      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--sky-top)"/><stop offset="1" stop-color="var(--sky-bot)"/></linearGradient>
-      <radialGradient id="glow"><stop offset="0" stop-color="var(--glow)"/><stop offset="1" stop-color="var(--glow)" stop-opacity="0"/></radialGradient>
-      <linearGradient id="mist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--mist)" stop-opacity="0"/><stop offset=".6" stop-color="var(--mist)"/><stop offset="1" stop-color="var(--mist)" stop-opacity="0"/></linearGradient>
-    </defs>
+    <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--sky-top)"/><stop offset="1" stop-color="var(--sky-bot)"/></linearGradient></defs>
     <rect width="1000" height="300" fill="url(#sky)"/>
     <g fill="var(--moon)" opacity="var(--star)" style="opacity:var(--star)">${TREES.stars}</g>
-    <circle cx="790" cy="92" r="${40 + 120 * (1 - Math.abs(1 - 2 * p)) * .9}" fill="url(#glow)"/>
-    <g transform="translate(748 50) scale(.84)"><circle cx="50" cy="50" r="${r}" fill="var(--moon-shadow)" opacity=".85"/><path d="${lit}" fill="var(--moon)"/></g>
+  </svg>
+  <div class="moon" aria-hidden="true"><svg viewBox="-150 -150 300 300">
+    <defs><radialGradient id="glow"><stop offset="0" stop-color="var(--glow)"/><stop offset="1" stop-color="var(--glow)" stop-opacity="0"/></radialGradient></defs>
+    <circle r="${40 + 120 * (1 - Math.abs(1 - 2 * p)) * .9}" fill="url(#glow)"/>
+    <g transform="scale(.84) translate(-50 -50)"><circle cx="50" cy="50" r="${r}" fill="var(--moon-shadow)" opacity=".85"/><path d="${lit}" fill="var(--moon)"/></g>
+  </svg></div>
+  <svg class="scene trees" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <defs><linearGradient id="mist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--mist)" stop-opacity="0"/><stop offset=".6" stop-color="var(--mist)"/><stop offset="1" stop-color="var(--mist)" stop-opacity="0"/></linearGradient></defs>
     <path d="${TREES.far}" fill="var(--tree-far)"/>
     <rect y="205" width="1000" height="75" fill="url(#mist)"/>
     <path d="${TREES.near}" fill="var(--tree-near)"/>
@@ -247,11 +252,11 @@ VIEWS.accueil = () => {
   const alerts = [];
   for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) alerts.push(...TYPE_UI[inst.type].alerts(id, inst, now));
   const inbox = inboxId(s.modules), pending = inbox ? s.modules[inbox].entries.length : 0;
-  // Chaque ligne se déplie sur les derniers éléments du module, sans avoir à l'ouvrir.
+  // Toute la ligne mène au module ; un chevron la déplie sur ses derniers éléments, sans avoir à l'ouvrir.
   const rows = s.config.modules.filter(x => x.on && x.id !== inbox).map(x => {
     const inst = Object.hasOwn(s.modules, x.id) ? s.modules[x.id] : null, more = inst && TYPE_UI[inst.type].recent ? TYPE_UI[inst.type].recent(inst) : [];
     const r = inst && inst.resume, bridge = r ? `<small class="resume ${bridgeStale(r) ? "stale" : ""}">↳ ${esc(r.text)} · ${ago(r.at)}</small>` : "";
-    return `<div class="over-wrap"><a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}${bridge}</span><em class="hint" style="margin:0">ouvrir</em></a>${more.length ? `<details class="more"><summary>derniers éléments</summary><ul>${more.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
+    return `<div class="over-wrap${more.length ? " has-more" : ""}"><a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}${bridge}</span></a>${more.length ? `<details class="more"><summary><span class="sr">Derniers éléments de ${esc(label(x.id))}</span></summary><ul>${more.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
   }).join("");
   return `
   ${s.config.welcome ? `<section><h2>Composer ton espace</h2><p class="hint">Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.</p>
@@ -265,7 +270,7 @@ VIEWS.accueil = () => {
     <section><h2>Aujourd'hui</h2><p class="hint">Trois choses. La forêt pousse très bien sans que tu la surveilles.</p>
       <ul class="plain">
         ${tod.map(([id, t]) => taskHTML(id, t)).join("")}
-        ${alerts.map(a => `<li class="item"><span></span><div>${a.text}</div>${a.actions ? `<div class="row">${a.actions}</div>` : a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">voir</a>` : ""}</li>`).join("")}
+        ${alerts.map(a => `<li class="item alert"><span></span><div>${a.text}</div>${a.actions ? `<div class="row">${a.actions}</div>` : a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">voir</a>` : ""}</li>`).join("")}
       </ul>
       ${!tod.length ? (taskModules().length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : `<p class="empty">Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.</p>`) : ""}
     </section>
@@ -634,7 +639,7 @@ function renderNow() {
   $("#dateline").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
   const badge = id => { const m = Object.hasOwn(s.modules, id) && s.modules[id], n = m && TYPE_UI[m.type].badge ? TYPE_UI[m.type].badge(m) : 0; return n ? ` (${n})` : ""; };
   const links = [["accueil", "Accueil"], ...s.config.modules.filter(x => x.on).map(x => [x.id, label(x.id)]), ["recherche", "Chercher"], ["reglages", "Réglages"]];
-  $("#nav").innerHTML = links.map(([id, l]) => `<a href="#${esc(id)}" class="${id === view ? "on" : ""}">${esc(l)}${badge(id)}</a>`).join("");
+  $("#nav").innerHTML = links.map(([id, l]) => `<a href="#${esc(id)}" class="${id === view ? "on" : ""}"${id === view ? ' aria-current="page"' : ""}>${esc(l)}${badge(id)}</a>`).join("");
   // Les champs des Réglages n'ont pas d'id (donc pas de restauration ci-dessous) : tant que l'un d'eux
   // a le focus, ne pas redessiner, sinon une synchro arrivant pendant la frappe effacerait la saisie.
   const ae = document.activeElement, typing = ae && ae.closest && ae.closest("#main") &&
@@ -648,9 +653,34 @@ function renderNow() {
   for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && v !== "" && el.value !== v) el.value = v; }
   if (view !== lastView) $("#main").querySelectorAll("[data-draft]").forEach(el => { const v = loadDraft(view, el); if (v) el.value = v; });
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
+  if (view !== lastView) revealed = null;
+  if (revealed) $("#main").querySelectorAll(".item[data-id], .card[data-id]").forEach(el => { if (el.dataset.id === revealed) el.classList.add("reveal"); });
   lastView = view;
 }
-window.addEventListener("hashchange", () => { openId = null; bridgeOpen = null; for (const k of Object.keys(pageSize)) delete pageSize[k]; render(); const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t); if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); } else window.scrollTo(0, 0); });
+/* Position de défilement de chaque vue, pour la session : revenir quelque part, c'est retrouver où l'on en était. */
+const scrollMemo = (() => { try { return JSON.parse(sessionStorage.getItem("selene-scrolls")) || {}; } catch { return {}; } })();
+function rememberScroll() {
+  if (!lastView) return;
+  scrollMemo[lastView] = Math.round(window.scrollY || 0);
+  try { sessionStorage.setItem("selene-scrolls", JSON.stringify(scrollMemo)); } catch {}
+}
+window.addEventListener("hashchange", () => {
+  if (lastView !== (location.hash.slice(1) || "accueil")) rememberScroll(); // « / » a déjà dessiné la recherche, et gardé la position d'avant
+  openId = null; bridgeOpen = null; for (const k of Object.keys(pageSize)) delete pageSize[k]; render();
+  const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t);
+  if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); } else window.scrollTo(0, scrollMemo[lastView] || 0);
+});
+/* Sur un écran tactile, les actions d'une ligne (.ra) apparaissent quand on touche la ligne ailleurs que sur un contrôle.
+   Une seule ligne à la fois ; retenue par son identifiant pour survivre aux rendus. */
+let revealed = null;
+const touchUI = () => { try { return window.matchMedia("(hover: none), (pointer: coarse)").matches; } catch { return false; } };
+document.addEventListener("click", e => {
+  const row = e.target.closest && e.target.closest(".item[data-id], .card[data-id]");
+  if (!row || !row.querySelector(".ra") || e.target.closest("a,button,input,select,textarea,label,summary") || !touchUI()) return;
+  revealed = revealed === row.dataset.id ? null : row.dataset.id;
+  $("#main").querySelectorAll(".reveal").forEach(el => el.classList.remove("reveal"));
+  if (revealed) row.classList.add("reveal");
+});
 
 /* ================= actions ================= */
 const idOf = el => el.closest("[data-id]")?.dataset.id;
@@ -752,7 +782,7 @@ document.addEventListener("input", e => { if (e.target.id === "searchIn") { sear
 document.addEventListener("keydown", e => {
   if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || "")) return;
   // Dessiner tout de suite : attendre l'événement hashchange ferait courir le curseur contre le rendu.
-  e.preventDefault(); location.hash = "recherche"; render(); const el = document.getElementById("searchIn"); if (el) el.focus();
+  e.preventDefault(); rememberScroll(); location.hash = "recherche"; render(); const el = document.getElementById("searchIn"); if (el) el.focus();
 });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && e.target.id === "bridgeIn") bridgeSave(e.target.dataset.mod); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
 const CHANGE = {}; // actions « change » des types de module (remplie par types.js)
