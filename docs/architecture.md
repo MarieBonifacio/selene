@@ -35,9 +35,10 @@ les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne)
 | `auth.js` | comptes et adaptateur Supabase (hébergé seulement) | — |
 | `backup.js` | export / validation d'import | — |
 | `domain.js` | règles métier, registre pur `MODULE_TYPES`, `SCHEMA_VERSION` | — |
-| `sky.js` | ciel de l'accueil, pur : soleil, lune, levers et couchers, météo → scène, contraste du texte | — |
+| `sky.js` | ciel de l'accueil, pur : soleil, lune, levers et couchers, météo → scène, saisons, mouvement du vent, contraste du texte | — |
+| `carte.js` | carte céleste des liaisons, pure : placement déterministe (temps, bandes), voisinage borné | — |
 | `app.js` | utilitaires, modules fixes, normalisation, stores, vues, rendu, actions | `store.js`, `domain.js`, `sky.js` |
-| `types.js` | registre d'affichage `TYPE_UI`, branché dans `CLICK` / `CHANGE` | `app.js` |
+| `types.js` | registre d'affichage `TYPE_UI`, branché dans `CLICK` / `CHANGE` ; fiche, Vasculum, carte (`SHEETS`) | `app.js` |
 | `assistant.js` | contexte, outils, appels à Claude | — |
 | `boot.js` | cycle de vie (flush, onglets), démarrage | tout |
 
