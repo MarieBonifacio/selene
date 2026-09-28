@@ -9,7 +9,10 @@ assert shell.count("<!-- SELENE_SCRIPT -->") == 1
 # Un seul script, dans cet ordre : chaque fichier ne peut utiliser au chargement que ceux qui le précèdent.
 scripts = ["sync.js", "store.js", "auth.js", "backup.js", "domain.js", "sky.js", "app.js", "types.js", "assistant.js", "boot.js"]
 js = "\n".join((SOURCE / name).read_text(encoding="utf-8") for name in scripts)
-standalone = shell.replace("<!-- SELENE_SCRIPT -->", "<script>\n(() => {\n" + js + "})();\n</script>")
+# Le script est posé tel quel dans une balise <script> : « </script » dans une chaîne le fermerait avant sa fin.
+assert "</script" not in js.lower(), "« </script » dans le JavaScript : l'écrire en deux morceaux"
+script = "<script>\n(() => {\n" + js + "})();\n</script>"
+standalone = shell.replace("<!-- SELENE_SCRIPT -->", script)
 
 head = """<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.anthropic.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
@@ -24,8 +27,10 @@ head = """<meta http-equiv="Content-Security-Policy" content="default-src 'self'
 """
 sw = """<script>if ("serviceWorker" in navigator && !window.claude) navigator.serviceWorker.register("sw.js").catch(() => {});</script>
 """
-assert "<title>" in standalone and "</body>" in standalone
-hosted = standalone.replace("<title>", head + "<title>", 1).replace("</body>", sw + "</body>", 1)
+# Les ajouts de la version hébergée se font dans le squelette, avant d'y poser le script : le JavaScript peut contenir
+# « <title> » ou « </body> » dans ses chaînes (la planche téléchargée en a), et un remplacement ne doit jamais l'atteindre.
+assert shell.count("<title>") == 1 and shell.count("</body>") == 1
+hosted = shell.replace("<title>", head + "<title>", 1).replace("</body>", sw + "</body>", 1).replace("<!-- SELENE_SCRIPT -->", script)
 
 outputs = {"selene.html": standalone, "index.html": hosted}
 if sys.argv[1:2] == ["--bundle"]:

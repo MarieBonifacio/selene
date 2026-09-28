@@ -336,9 +336,15 @@ Du moins risqué au plus risqué ; chaque étape se suffit à elle-même (on peu
       par rendu (`motifIndex`) : Écriture passe de 5,0 à 6,9 ms sur l'historique du banc d'essai.
 
 **4c : planche de lunaison**
-- [ ] `#bilan/planche` : une planche A4 par cycle, numérotée par la lunaison de Meeus (le `k` de `periodOf`) ; règle
-      de lunaison (activité par jour), une ligne et une sparkline par module, mots émergents, motifs apparus, statuts,
-      tensions ouvertes. Feuille de style d'impression ; « Télécharger » en .html autonome si l'impression est bloquée.
+- [x] `#bilan/planche` (bouton « Planche » du Bilan) : une planche A4 par cycle, numérotée par la lunaison de Meeus
+      (le `k` de `periodOf`) ; règle de lunaison (entrées datées par jour, quartiers en glyphes), une ligne, la période
+      d'avant et une sparkline par espace, mots émergents, motifs apparus (première occurrence dans le cycle), statuts,
+      tensions ouvertes. ‹ › d'une lunaison à l'autre.
+- [x] Feuille de style d'impression (`@page` A4, rien d'autre que la planche, une seule page) ; « Télécharger » en
+      .html autonome, sans script, là où l'impression est bloquée. Le style vit en chaîne (`PLANCHE_CSS`), partagé par
+      la vue et le fichier.
+- [x] `build.py` : les ajouts de `index.html` se font dans le squelette avant d'y poser le script (le `</body>` de la
+      planche téléchargée avait cassé la page), et `</script` est refusé dans le JavaScript.
 
 **4d : carte céleste des liaisons (expérimentale)**
 - [ ] Jamais globale : « Carte du voisinage » (fiche Spécimen, deux degrés) et « Carte du motif » ; 80 étoiles au plus.
