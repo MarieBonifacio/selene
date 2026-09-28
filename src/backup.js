@@ -38,7 +38,11 @@ function parseBackup(text) {
           typeof f.title !== "string" || f.title.length > 200 || (f.mod != null && (typeof f.mod !== "string" || f.mod.length > 64)) ||
           (f.seen != null && !(Number.isFinite(f.seen) && f.seen >= 0)) || (f.motifs != null && typeof f.motifs !== "boolean")) ||
         (site.config.dehors.artists != null && typeof site.config.dehors.artists !== "boolean") ||
-        (site.config.dehors.artistsSeen != null && !(Number.isFinite(site.config.dehors.artistsSeen) && site.config.dehors.artistsSeen >= 0)))) ||
+        (site.config.dehors.artistsSeen != null && !(Number.isFinite(site.config.dehors.artistsSeen) && site.config.dehors.artistsSeen >= 0)) ||
+        (site.config.dehors.research != null && (!Array.isArray(site.config.dehors.research) || site.config.dehors.research.length > 30 ||
+          site.config.dehors.research.some(r => !record(r) || typeof r.id !== "string" || !/^[\w-]{1,64}$/.test(r.id) || !["q", "author"].includes(r.kind) ||
+            typeof r.q !== "string" || !r.q || r.q.length > 200 || (r.mod != null && (typeof r.mod !== "string" || r.mod.length > 64)) ||
+            (r.seen != null && !(Number.isFinite(r.seen) && r.seen >= 0))))))) ||
       // radar : les mots du radar culturel, facultatifs.
       (site.config.radar != null && (!record(site.config.radar) || typeof site.config.radar.words !== "string" || site.config.radar.words.length > 300))) throw new Error("Configuration invalide");
   for (const m of site.config.modules || []) moduleId(m.id, "Module");
