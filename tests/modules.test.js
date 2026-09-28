@@ -17,10 +17,11 @@ function launch(storage, { claude = null, bare = false } = {}) {
     });
     return nodes.get(id);
   };
+  const handlers = {};
   const document = {
     title: '', activeElement: null, documentElement: { dataset: {} },
     querySelector: element, getElementById: element,
-    addEventListener() {}
+    addEventListener(name, fn) { (handlers[name] = handlers[name] || []).push(fn); }
   };
   const localStorage = {
     getItem(key) { return storage.get(key) ?? null; },
@@ -35,7 +36,8 @@ function launch(storage, { claude = null, bare = false } = {}) {
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
   const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn };\n})();');
   vm.runInNewContext(instrumented, context);
-  return { ...context.__test, nodes, location, document };
+  const fire = (name, target) => (handlers[name] || []).forEach(fn => fn({ target, preventDefault() {} }));
+  return { ...context.__test, nodes, location, document, fire };
 }
 
 test('legacy site data (pre-generic-modules) migrates in place without data loss', () => {
@@ -798,4 +800,53 @@ test('concordance: motifs counted as whole words across modules, with neighbours
   assert.doesNotThrow(() => app.parseBackup(app.createBackup(app.board.data, d)));
   const bad = JSON.parse(app.createBackup(app.board.data, d)); bad.site.modules.motifs.config.fallowDays = -3;
   assert.throws(() => app.parseBackup(JSON.stringify(bad)), /jachère/);
+});
+
+test('settings numbers stay within what backup validation accepts, so an export can always be restored', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const input = (setMod, value, max = '') => ({ dataset: { setMod }, type: 'number', value, max, required: false, blur() {}, closest: () => null });
+  app.fire('change', input('kundalini.weeks', '600', '520'));
+  assert.equal(app.S().modules.kundalini.config.weeks, 520, 'clamped to the field maximum');
+  app.fire('change', input('kundalini.weeks', '-4', '520'));
+  assert.equal(app.S().modules.kundalini.config.weeks, 1, 'and to its minimum');
+  assert.doesNotThrow(() => app.parseBackup(app.createBackup(app.board.data, app.S())));
+  // Chaque champ numérique des réglages porte le plafond de sa validation.
+  app.location.hash = '#reglages'; app.render();
+  const html = app.nodes.get('#main').innerHTML;
+  assert.match(html, /max="520" data-set-mod="kundalini\.weeks"/);
+  assert.match(html, /max="7" data-set-mod="kundalini\.perWeek"/);
+});
+
+test('decisions: editing an overdue revision date counts as a review; an ordinary edit does not', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  const inst = app.createFromTemplate(d.modules, app.MODULE_TEMPLATES.find(x => x.id === 'decisions'), 'Décisions', 'decisions');
+  app.saveCollectionItem(inst, { title: 'Chaux', status: 'Prise', due: '2020-01-01' }, 'x1');
+  app.saveCollectionItem(inst, { title: 'Chaux, mur nord' }, 'x1', '2026-09-28');
+  assert.equal(inst.entries[0].reviews, undefined, 'date unchanged: not a review');
+  app.saveCollectionItem(inst, { title: 'Chaux, mur nord', due: '2027-03-01' }, 'x1', '2026-09-28');
+  assert.deepEqual([...inst.entries[0].reviews.map(r => `${r.date} ${r.verdict}`)], ['2026-09-28 revue']);
+  app.saveCollectionItem(inst, { title: 'Chaux', due: '2027-06-01' }, 'x1', '2026-09-28');
+  assert.equal(inst.entries[0].reviews.length, 1, 'moving a future date is planning, not reviewing');
+  app.saveCollectionItem(d.modules.moth, { title: 'Post', due: '2020-01-01' }, 'p1');
+  app.saveCollectionItem(d.modules.moth, { title: 'Post', due: '2027-01-01' }, 'p1', '2026-09-28');
+  assert.equal(d.modules.moth.entries.at(-1).reviews, undefined, 'only in revision mode');
+});
+
+test('concordance: multi-word variants, accents, and the same answer as before the inverted index', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  const inst = app.createFromTemplate(d.modules, app.MODULE_TEMPLATES.find(x => x.id === 'motifs'), 'Motifs', 'motifs');
+  app.saveCollectionItem(inst, { title: 'Phalène', subtitle: 'papillon de nuit, moth' }, 'm1');
+  app.saveCollectionItem(inst, { title: 'Œuvre au noir' }, 'm2');
+  d.modules.ecriture.scraps.push(
+    { id: 'a', text: 'Un PAPILLON  DE NUIT contre la vitre', date: '2026-09-01' },
+    { id: 'b', text: 'october.moth, encore', date: '2026-09-02' },
+    { id: 'c', text: 'les phalenes', date: '2026-09-03' },
+    { id: 'd', text: 'papillon de jour', date: '2026-09-04' },
+    { id: 'e', text: 'mothra', date: '2026-09-05' },
+    { id: 'f', text: 'L’œuvre au noir, chez Yourcenar', date: '2026-09-06' });
+  const by = Object.fromEntries(app.concordance(inst).map(r => [r.e.title, [...r.hits.map(h => h.date.slice(-2))]]));
+  assert.deepEqual(by['Phalène'], ['01', '02', '03'], 'several words with any spacing, a variant after punctuation, accents ignored; not « papillon de jour » nor « mothra »');
+  assert.deepEqual(by['Œuvre au noir'], ['06']);
 });

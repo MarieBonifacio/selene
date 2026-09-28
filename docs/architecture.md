@@ -122,6 +122,23 @@ version antérieure de l'app les ignore et la fusion les conserve, d'où l'absen
 Une collection peut être en mode `review` (la date est un rendez-vous de révision) ou `concordance` (ses
 éléments sont des motifs comptés dans les `texts` des autres modules, voir `concordance()` dans `types.js`) :
 deux réglages de l'instance, pas deux types, pour que tout le reste (formulaire, statuts, sauvegarde) serve tel quel.
+
+### Performances
+
+La recherche, la concordance et le bilan parcourent **tout** l'historique, à chaque rendu. Trois mécanismes
+les gardent rapides sans jamais servir un résultat périmé :
+
+- `fold` (texte sans accents ni casse) et `wordsOf` (ses mots) sont des fonctions pures : leurs résultats
+  sont gardés dans un cache borné, qu'aucune modification des données ne peut rendre faux.
+- La concordance passe par un **index inversé** (forme d'un mot → motifs), construit une fois par calcul :
+  un texte se parcourt mot à mot au lieu d'être confronté à chaque motif. Seules les variantes de plusieurs
+  mots passent par une expression régulière.
+- `memoInRender` garde un calcul partagé (la concordance sert la vue, le résumé d'accueil et deux périodes
+  du bilan) le temps d'**un** rendu seulement : pendant un rendu les données ne bougent pas, donc aucune
+  invalidation à gérer.
+
+`node tests/bench.js` mesure les vues sur un historique réaliste de plusieurs années (~2 millions de
+caractères) : à relancer après tout changement qui touche à ce qui parcourt l'historique.
 Routes fixes réservées : `accueil`, `reglages`, `recherche`, `bilan`. Les tests vérifient qu'ils ont les mêmes clés et font passer chaque type de bout
 en bout (création, entrée, vue, réglages, résumé, contexte, export puis import validé).
 

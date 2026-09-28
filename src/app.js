@@ -332,13 +332,26 @@ function epCounts(from, to) {
 let searchQuery = "";
 // Chaque caractère devient sa forme sans accent et en minuscule, de même longueur exactement (sinon il reste tel
 // quel : emoji sur deux unités, « İ » qui devient deux lettres) : les positions restent alignées pour surligner.
-const fold = s => [...String(s)].map(ch => { const b = ch.normalize("NFD")[0].toLowerCase(); return b.length === ch.length ? b : ch; }).join("");
-/* « statut:hypothèse » (ou « statut:hyp ») ne garde que ce qui porte ce statut ; seul, il les liste tous. */
-const epQuery = w => { const q = w.slice(7); return q ? Object.keys(EP_STATUS).find(k => fold(EP_STATUS[k]).startsWith(q)) || "?" : "?"; };
+// Fonction pure et appelée sur tout l'historique à chaque recherche ou concordance : ses résultats sont gardés
+// (jamais périmés, puisque la même entrée donne toujours la même sortie), dans une limite de taille.
+const foldCache = new Map();
+const fold = s => {
+  s = String(s);
+  let f = foldCache.get(s);
+  if (f === undefined) {
+    f = [...s].map(ch => { const b = ch.normalize("NFD")[0].toLowerCase(); return b.length === ch.length ? b : ch; }).join("");
+    if (foldCache.size >= 20000) foldCache.clear();
+    foldCache.set(s, f);
+  }
+  return f;
+};
+/* « statut:hypothèse » (ou « statut:hyp ») ne garde que ce qui porte ce statut ; seul, il les liste tous.
+   Un statut inconnu ou vide ne trouve rien, plutôt que d'être ignoré en silence. */
+const epQuery = w => { const q = w.slice("statut:".length); return (q && Object.keys(EP_STATUS).find(k => fold(EP_STATUS[k]).startsWith(q))) || null; };
 function searchAll(q) {
   const words = fold(q).split(/\s+/).filter(Boolean), st = words.find(w => w.startsWith("statut:")), want = st ? epQuery(st) : null;
   const terms = words.filter(w => !w.startsWith("statut:")), out = [];
-  if (!terms.length && !want) return out;
+  if ((st && !want) || (!terms.length && !want)) return out;
   for (const m of S().config.modules) {
     const inst = Object.hasOwn(S().modules, m.id) ? S().modules[m.id] : null, ui = inst && TYPE_UI[inst.type];
     if (!ui || !ui.texts) continue;
@@ -420,7 +433,19 @@ const draftKey = (view, el) => `${DRAFT_PREFIX}${view}:${el.id}`;
 function saveDraft(view, el) { if (!view || !el.id) return; try { if (el.value.trim()) localStorage.setItem(draftKey(view, el), el.value); else localStorage.removeItem(draftKey(view, el)); } catch {} }
 function loadDraft(view, el) { try { return localStorage.getItem(draftKey(view, el)) || ""; } catch { return ""; } }
 document.addEventListener("input", e => { if (e.target.dataset && e.target.dataset.draft !== undefined) saveDraft(lastView, e.target); });
+/* Calculs coûteux partagés par plusieurs parties d'un même rendu (la concordance sert la vue, l'accueil et
+   le bilan) : gardés le temps d'un rendu seulement, pendant lequel les données ne bougent pas. */
+let renderMemo = null;
+function memoInRender(key, compute) {
+  if (!renderMemo) return compute();
+  if (!renderMemo.has(key)) renderMemo.set(key, compute());
+  return renderMemo.get(key);
+}
 function render() {
+  renderMemo = new Map();
+  try { renderNow(); } finally { renderMemo = null; }
+}
+function renderNow() {
   applyTheme();
   if (hosted() && authReady() && !authSession) { $("#nav").innerHTML = ""; $("#main").innerHTML = authView(); return; }
   const s = S(), m = moon();
@@ -581,7 +606,9 @@ document.addEventListener("change", e => {
     const [id, ...path] = el.dataset.setMod.split("."), f = path.pop();
     if ([...path, f].some(k => k === "__proto__" || k === "constructor" || k === "prototype")) return;
     const cfg = path.reduce((o, k) => o[k], S().modules[id].config);
-    let v = el.value; if (el.type === "number") v = Math.max(1, +v || 1); if (el.type === "date") v = v || null;
+    // Un nombre reste dans les bornes du champ, qui sont celles de la validation des sauvegardes :
+    // sinon l'app accepterait une valeur que sa propre sauvegarde refuserait ensuite à l'import.
+    let v = el.value; if (el.type === "number") v = Math.min(el.max ? +el.max : Infinity, Math.max(1, +v || 1)); if (el.type === "date") v = v || null;
     if (el.required && !String(v).trim()) { el.blur(); return render(); } // champ obligatoire vidé : on garde l'ancienne valeur
     cfg[f] = v; site.save(); el.blur(); render();
   }

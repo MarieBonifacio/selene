@@ -262,8 +262,9 @@ const MODULE_TYPES = {
 };
 /* Une seule boîte de réception à la fois : c'est elle que remplit la capture rapide de l'accueil. */
 const inboxId = modules => Object.keys(modules).find(k => modules[k].type === "notes" && modules[k].config.inbox) || null;
-/* Crée ou met à jour un élément de collection. Un champ désactivé (absent du formulaire) garde sa valeur. */
-function saveCollectionItem(inst, input, id) {
+/* Crée ou met à jour un élément de collection. Un champ désactivé (absent du formulaire) garde sa valeur.
+   En mode révision, déplacer ou retirer un rendez-vous déjà échu (au jour `date`) compte comme un réexamen. */
+function saveCollectionItem(inst, input, id, date = null) {
   const c = inst.config, item = inst.entries.find(x => x.id === id) || null, keep = f => input[f] ?? (item ? item[f] : "");
   const v = {
     title: requireText(input.title, c.fields.title, 300),
@@ -271,7 +272,12 @@ function saveCollectionItem(inst, input, id) {
     due: input.due !== undefined ? (input.due && validDate(input.due) ? input.due : "") : (item ? item.due : ""),
     status: c.statuses.includes(input.status) ? input.status : item ? item.status : c.statuses[0]
   };
-  if (item) return Object.assign(item, v);
+  if (item) {
+    const was = item.due;
+    Object.assign(item, v);
+    if (date && c.review && was && was <= date && item.due !== was) item.reviews = [...(item.reviews || []), { date, verdict: "revue" }];
+    return item;
+  }
   const e = { id, ...v };
   inst.entries.push(e);
   return e;

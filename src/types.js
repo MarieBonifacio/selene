@@ -91,7 +91,7 @@ const TYPE_UI = {
     <ul class="plain">${recent.map(x => `<li class="item" data-id="${esc(x.id)}"><span></span><div>${fmt(x.date, { weekday: "short", day: "numeric", month: "short" })}, ${esc(x.value ?? "?")} ${esc(c.unitLabel)}${x.note ? `<div class="note" style="margin:2px 0 0">${esc(x.note)}</div>` : ""}</div><button class="btn ghost sm" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune séance notée.</li>`}</ul>
   </section></div>`;
     },
-    settings: (id, { config: c }) => `<div class="field-row"><label>Début du protocole<input type="date" data-set-mod="${esc(id)}.start" value="${esc(c.start || "")}"></label><label>Durée (semaines)<input type="number" min="1" data-set-mod="${esc(id)}.weeks" value="${esc(c.weeks)}"></label></div>
+    settings: (id, { config: c }) => `<div class="field-row"><label>Début du protocole<input type="date" data-set-mod="${esc(id)}.start" value="${esc(c.start || "")}"></label><label>Durée (semaines)<input type="number" min="1" max="520" data-set-mod="${esc(id)}.weeks" value="${esc(c.weeks)}"></label></div>
     <div class="field-row" style="margin-top:8px"><label>Unité<input data-set-mod="${esc(id)}.unitLabel" value="${esc(c.unitLabel)}" placeholder="min"></label><label>Séances visées par semaine<input type="number" min="1" max="7" data-set-mod="${esc(id)}.perWeek" value="${esc(c.perWeek)}"></label></div>`,
     summary(id, inst) {
       const c = inst.config;
@@ -267,11 +267,7 @@ function collectionForm(id, item) {
   openForm(item ? `Modifier « ${item.title} »` : c.addLabel, fields, item || { status: c.statuses[0] }, v => {
     const inst = S().modules[id]; // relu : une synchro a pu remplacer les données pendant la saisie
     if (!inst) return toast("Ce module a été supprimé entre-temps.");
-    const cur = item && inst.entries.find(x => x.id === item.id), wasDue = cur && inst.config.review && cur.due && cur.due <= todayISO();
-    const e = saveCollectionItem(inst, v, item ? item.id : uid());
-    // Un rendez-vous de révision échu, déplacé ou retiré en modifiant l'élément : c'est un réexamen.
-    if (wasDue && e.due !== cur.due) e.reviews = [...(e.reviews || []), { date: todayISO(), verdict: "revue" }];
-    site.save(); render();
+    saveCollectionItem(inst, v, item ? item.id : uid(), todayISO()); site.save(); render();
   });
 }
 function collectionCard(id, e, ci, last) {
@@ -285,20 +281,41 @@ function collectionCard(id, e, ci, last) {
    existant : rien n'est enregistré, donc rien à migrer ni à synchroniser. */
 const isConcordance = inst => inst.type === "collection" && !!inst.config.concordance;
 const reEscape = v => v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-function motifRe(e) {
+/* Les mots d'un texte déjà replié, découpé une fois pour toutes (même frontière de mot que motifMatcher). */
+const wordsCache = new Map();
+function wordsOf(f) {
+  let w = wordsCache.get(f);
+  if (!w) { w = new Set(f.split(/[^\p{L}\p{N}]+/u)); if (wordsCache.size >= 20000) wordsCache.clear(); wordsCache.set(f, w); }
+  return w;
+}
+/* Un motif et ses variantes, repliés : celles d'un seul mot (cherchées dans l'ensemble des mots d'un texte,
+   pluriel en s/x compris) et, pour celles de plusieurs mots, une expression régulière au mot entier. */
+function motifForms(e) {
   const vs = [e.title, ...String(e.subtitle || "").split(",")].map(v => fold(v.trim())).filter(v => v.length >= 2);
-  return vs.length ? new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${vs.map(v => reEscape(v).replace(/\s+/g, "\\s+")).join("|")})(?:s|x)?(?=$|[^\\p{L}\\p{N}])`, "u") : null;
+  const single = vs.filter(v => !/[^\p{L}\p{N}]/u.test(v)), multi = vs.filter(v => !single.includes(v));
+  return { single, re: multi.length ? new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${multi.map(v => reEscape(v).replace(/\s+/g, "\\s+")).join("|")})(?:s|x)?(?=$|[^\\p{L}\\p{N}])`, "u") : null };
 }
 /* Pour chaque motif : les textes où il apparaît ({ mod, date }), et ses voisins (motifs présents dans les mêmes textes). */
-function concordance(inst) {
+const concordance = inst => memoInRender(inst, () => computeConcordance(inst));
+function computeConcordance(inst) {
   const corpus = [];
   for (const [mid, m] of Object.entries(S().modules)) {
     const ui = TYPE_UI[m.type];
-    if (!isConcordance(m) && ui && ui.texts) for (const t of ui.texts(m)) corpus.push({ mod: mid, f: fold(t.text), date: t.date || null });
+    if (!isConcordance(m) && ui && ui.texts) for (const t of ui.texts(m)) { const f = fold(t.text); corpus.push({ mod: mid, f, w: wordsOf(f), date: t.date || null }); }
   }
-  const res = inst.entries.map(motifRe), hits = inst.entries.map(() => []), near = inst.entries.map(() => new Map());
+  // Index inversé : chaque forme de mot → les motifs qu'elle désigne. Un texte se parcourt alors mot à mot,
+  // au lieu d'être confronté à chaque motif (le coût suit la longueur des textes, plus leur nombre × motifs).
+  const forms = new Map(), multi = [], hits = inst.entries.map(() => []), near = inst.entries.map(() => new Map());
+  inst.entries.forEach((e, i) => {
+    const m = motifForms(e);
+    for (const v of m.single) for (const f of [v, v + "s", v + "x"]) { if (!forms.has(f)) forms.set(f, new Set()); forms.get(f).add(i); }
+    if (m.re) multi.push([i, m.re]);
+  });
   for (const d of corpus) {
-    const found = res.flatMap((re, i) => re && re.test(d.f) ? [i] : []);
+    const set = new Set();
+    for (const w of d.w) { const ms = forms.get(w); if (ms) for (const i of ms) set.add(i); }
+    for (const [i, re] of multi) if (!set.has(i) && re.test(d.f)) set.add(i);
+    const found = [...set];
     for (const i of found) { hits[i].push(d); for (const j of found) if (j !== i) near[i].set(j, (near[i].get(j) || 0) + 1); }
   }
   return inst.entries.map((e, i) => {
@@ -327,6 +344,10 @@ function concordanceView(id, inst, head) {
   return `<div data-mod="${esc(id)}">${head}
   ${sleeping.length ? `<section><h3>En jachère</h3><p class="hint">Vivants, mais absents depuis plus de ${esc(c.fallowDays)} jours. Reposés, pas perdus.</p><div class="row">${sleeping.map(r => `<button class="btn ghost sm" data-act="search-for" data-q="${esc(r.e.title)}">${esc(r.e.title)} · ${plural(moons(diffDays(todayISO(), r.last.date)), "lunaison")}</button>`).join("")}</div></section>` : ""}
   <ul class="plain">${[...rows].sort(order).map(line).join("") || `<li class="empty">Aucun motif. Ajoute un mot qui revient ; l'app comptera ses retours.</li>`}</ul></div>`;
+}
+function concordanceSummary(inst) {
+  const sleeping = concordance(inst).filter(r => fallow(inst, r)).length;
+  return `${plural(inst.entries.length, "motif")}${sleeping ? `, ${sleeping} en jachère` : ""}`;
 }
 /* Les motifs apparus dans une période, les plus fréquents d'abord : une ligne de bilan. */
 function motifsIn(inst, from, to) {
@@ -361,7 +382,7 @@ TYPE_UI.collection = {
     <div style="margin-top:10px"><span class="hint" style="margin:0">${esc(c.statusLabel)}s, dans l'ordre</span>${c.statuses.map((st, i) => `<div class="set" data-si="${i}" style="grid-template-columns:1fr auto"><input data-act="st-name" data-mod="${fid}" value="${esc(st)}" aria-label="Nom du statut"><div class="row"><button class="btn ghost sm" data-act="st-up" data-mod="${fid}" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="st-del" data-mod="${fid}">suppr.</button></div></div>`).join("")}<button class="btn sm" data-act="st-add" data-mod="${fid}" style="margin-top:8px">Ajouter un statut</button></div>
     <div class="field-row" style="margin-top:10px"><label>Compte comme fait à partir de<select data-act="col-done" data-mod="${fid}">${c.statuses.map((st, i) => i ? `<option value="${i}" ${c.doneFrom === i ? "selected" : ""}>${esc(st)}</option>` : "").join("")}</select></label><span></span></div>
     <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-concordance" data-mod="${fid}" ${c.concordance ? "checked" : ""}>Concordance : chaque élément est un motif, compté dans les textes de tous les autres modules (variantes dans le sous-titre)</label>
-    ${c.concordance ? `<div class="field-row" style="margin-top:8px"><label>En jachère après (jours d'absence)<input type="number" min="1" data-set-mod="${fid}.fallowDays" value="${esc(c.fallowDays)}"></label><span></span></div>` : ""}
+    ${c.concordance ? `<div class="field-row" style="margin-top:8px"><label>En jachère après (jours d'absence)<input type="number" min="1" max="3650" data-set-mod="${fid}.fallowDays" value="${esc(c.fallowDays)}"></label><span></span></div>` : ""}
     <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-review" data-mod="${fid}" ${c.review ? "checked" : ""}>La date est un rendez-vous de révision : elle revient sur l'accueil quel que soit le ${esc(c.statusLabel.toLowerCase())}, sauf le dernier</label>`;
   },
   accept: (id, inst, note) => { saveCollectionItem(inst, { title: note.text }, uid()); },
@@ -386,7 +407,7 @@ TYPE_UI.collection = {
     return inst.entries.filter(e => e.due && e.due <= now && c.statuses.indexOf(e.status) < c.doneFrom).map(e => ({
       text: `« ${esc(e.title)} » : ${e.due < now ? "en retard" : "prévu aujourd'hui"} (${esc(label(id))})`, href: `#${id}` }));
   },
-  summary: (id, inst) => isConcordance(inst) ? (n => `${plural(inst.entries.length, "motif")}${n ? `, ${n} en jachère` : ""}`)(concordance(inst).filter(r => fallow(inst, r)).length) : inst.config.statuses.map(st => [st, inst.entries.filter(e => e.status === st).length]).filter(([, n]) => n).map(([st, n]) => `${esc(st)} : ${n}`).join(", ") || "Vide",
+  summary: (id, inst) => isConcordance(inst) ? concordanceSummary(inst) : inst.config.statuses.map(st => [st, inst.entries.filter(e => e.status === st).length]).filter(([, n]) => n).map(([st, n]) => `${esc(st)} : ${n}`).join(", ") || "Vide",
   context(inst, nm) {
     const c = inst.config;
     return `\n${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map(e => `${e.title}${e.subtitle ? " – " + e.subtitle : ""} [${e.status}${e.tag ? ", " + e.tag : ""}${e.due ? ", " + e.due : ""}]`).join(" ; ") || "vide"}`;
