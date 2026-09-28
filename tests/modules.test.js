@@ -34,7 +34,7 @@ function launch(storage, { claude = null, bare = false } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn, lexicalDrift, driftWords, addLink, openTensions, mergeDocs, dossierMarkdown, arcCandidates, tierCurrent, firstDecisions, collectionForm };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn, lexicalDrift, driftWords, addLink, openTensions, mergeDocs, dossierMarkdown, arcCandidates, tierCurrent, firstDecisions, collectionForm, editFragmentText, sortesPool, sortesDraw, lunarTest, lunarPhase, NEW_MOON_REF, SYNODIC, LUNAR_MIN_N };\n})();');
   vm.runInNewContext(instrumented, context);
   const fire = (name, target) => (handlers[name] || []).forEach(fn => fn({ target, preventDefault() {} }));
   return { ...context.__test, nodes, location, document, fire };
@@ -1077,4 +1077,128 @@ test('tiers: criteria are self-written and self-checked, the app never advances 
   assert.throws(() => app.parseBackup(JSON.stringify(bad)), /palier/);
   const bad2 = JSON.parse(app.createBackup(app.board.data, d)); bad2.site.modules.kundalini.config.tiers[0].criteria = [{ id: 'c1', text: '', done: false }];
   assert.throws(() => app.parseBackup(JSON.stringify(bad2)), /critère/);
+});
+
+test('palimpsest: editing a fragment keeps its earlier text, capped, visible in place', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const e = app.S().modules.ecriture;
+  e.scraps.push({ id: 'f1', text: 'Le brouillard.', date: '2026-09-01' });
+  const f = e.scraps[0];
+  assert.equal(app.editFragmentText(f, 'Le brouillard.', '2000-01-01'), false, 'identical text is not an edit');
+  assert.equal(f.versions, undefined);
+  assert.equal(app.editFragmentText(f, '   ', '2000-01-01'), false, 'blank text is not an edit either');
+  assert.equal(app.editFragmentText(f, 'Le brouillard monte.', '2000-01-01'), true);
+  assert.deepEqual([...f.versions.map(v => v.text)], ['Le brouillard.']);
+  assert.equal(f.text, 'Le brouillard monte.'); assert.equal(f.editedAt, '2000-01-01');
+  // Plafonné à dix versions : la plus ancienne s'efface, jamais la plus récente.
+  for (let i = 0; i < 11; i++) app.editFragmentText(f, 'v' + i, '2000-01-0' + (2 + (i % 8)));
+  app.editFragmentText(f, 'v11', today());
+  assert.equal(f.versions.length, 10);
+  assert.equal(f.versions[0].text, 'v1', 'oldest dropped first');
+  assert.equal(f.versions.at(-1).text, 'v10');
+  assert.equal(f.text, 'v11'); assert.equal(f.editedAt, today());
+
+  app.location.hash = '#ecriture'; app.render();
+  const el = { dataset: { mod: 'ecriture' }, closest: sel => sel === '[data-id]' ? { dataset: { id: 'f1' } } : null };
+  app.CLICK['scrap-edit'](el);
+  assert.match(app.nodes.get('#form').innerHTML, /v11/, 'the edit form starts from the current text');
+  app.document.querySelector('[name=text]'); // (le champ existe dans #form ; pas de sélecteur dédié dans ce banc)
+  app.render();
+  const html = app.nodes.get('#main').innerHTML;
+  assert.match(html, /modifié aujourd'hui/);
+  assert.match(html, /10 versions antérieures/);
+  assert.match(html, / : v10/);
+  assert.doesNotMatch(html, />v1</, 'the oldest, dropped version is gone');
+
+  // Sauvegarde : forme valide acceptée, malformée refusée.
+  assert.doesNotThrow(() => app.parseBackup(app.createBackup(app.board.data, app.S())));
+  const bad = JSON.parse(app.createBackup(app.board.data, app.S())); bad.site.modules.ecriture.scraps[0].versions[0].text = 3;
+  assert.throws(() => app.parseBackup(JSON.stringify(bad)), /version/);
+  const bad2 = JSON.parse(app.createBackup(app.board.data, app.S())); bad2.site.modules.ecriture.scraps[0].editedAt = 'hier';
+  assert.throws(() => app.parseBackup(JSON.stringify(bad2)), /fragment/);
+});
+
+test('sortes: only what has been silent long enough is drawn, weighted by how long', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), e = d.modules.ecriture;
+  const old = new Date(Date.now() - 20 * 86400000).toISOString().slice(0, 10), ancient = new Date(Date.now() - 120 * 86400000).toISOString().slice(0, 10);
+  const recent = new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10);
+  e.scraps.push({ id: 'old', text: 'Un fragment oublié depuis longtemps', date: old });
+  e.scraps.push({ id: 'new', text: 'Écrit avant-hier', date: recent });
+  app.addCapture(d.modules.inbox.entries, 'une note ancienne', 'n1', old);
+  const pool = app.sortesPool();
+  assert.ok(pool.some(x => x.kind === 'fragment' && x.e.id === 'old'), 'old enough to be forgotten');
+  assert.ok(!pool.some(x => x.e && x.e.id === 'new'), 'three days is not neglect');
+  assert.ok(pool.some(x => x.kind === 'note' && x.e.id === 'n1'));
+  // Une édition récente sort un fragment ancien du bassin : ce qui compte, c'est le dernier contact.
+  app.editFragmentText(e.scraps[0], 'Un fragment repris', today());
+  assert.ok(!app.sortesPool().some(x => x.e && x.e.id === 'old'), 'freshly edited, no longer neglected');
+  // Un module désactivé n'alimente pas le tirage.
+  d.config.modules.find(m => m.id === 'inbox').on = false;
+  assert.ok(!app.sortesPool().some(x => x.kind === 'note'), 'a disabled module contributes nothing');
+  d.config.modules.find(m => m.id === 'inbox').on = true;
+  // Une tension ouverte, ancienne, entre dans le bassin ; résolue, elle en sort.
+  d.modules.ecriture.scraps.push({ id: 'a', text: 'Le soi comme réseau', date: old }, { id: 'b', text: 'Le soi comme symbole', date: old });
+  app.addLink(d.modules.ecriture.scraps.find(x => x.id === 'b'), 'ecriture/a', 'contredit', 'l1', old);
+  assert.ok(app.sortesPool().some(x => x.kind === 'tension'));
+  // Un motif en jachère, mais pas un motif « Épuisé » ni un motif vivant récemment rencontré.
+  const m = app.createFromTemplate(d.modules, app.MODULE_TEMPLATES.find(x => x.id === 'motifs'), 'Motifs', 'motifs');
+  d.config.modules.push({ id: 'motifs', on: true });
+  app.saveCollectionItem(m, { title: 'Sorcière' }, 'm1');
+  app.saveCollectionItem(m, { title: 'Jamais' }, 'm0'); // jamais rencontré : aspirationnel, pas oublié
+  app.saveCollectionItem(m, { title: 'Forêt' }, 'm2');
+  d.modules.ecriture.scraps.push({ id: 'sorc', text: 'La sorcière du seuil', date: ancient }, { id: 'c', text: 'La forêt, hier encore', date: recent });
+  app.saveCollectionItem(m, { title: 'Épuisé', status: 'Épuisé' }, 'm3');
+  const pool2 = app.sortesPool();
+  assert.ok(pool2.some(x => x.kind === 'motif' && x.e.title === 'Sorcière'), 'met long ago, silent since : fallow');
+  assert.ok(!pool2.some(x => x.kind === 'motif' && x.e.title === 'Jamais'), 'never met is not the same as forgotten');
+  assert.ok(!pool2.some(x => x.kind === 'motif' && x.e.title === 'Forêt'), 'recently met, not fallow');
+  assert.ok(!pool2.some(x => x.kind === 'motif' && x.e.title === 'Épuisé'), 'retired motifs are never fallow');
+  assert.ok(!pool2.some(x => x.mod === 'motifs' && x.kind !== 'motif'), 'the concordance module itself is not drawable content');
+
+  // Le tirage : toujours un élément du bassin, jamais rien s'il est vide.
+  const solo = launch(new Map(), { claude: { use: async () => null } });
+  assert.equal(solo.sortesDraw(), null, 'freshly seeded account: nothing old enough yet');
+  const draw = app.sortesDraw();
+  assert.ok(draw && pool2.concat([{ kind: 'tension' }]).some(x => x.kind === draw.kind), 'drew something from a real pool');
+});
+
+test('lunar test: the Rayleigh statistic tells concentrated activity from spread activity, honestly', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  assert.equal(app.lunarTest().enough, false, 'a fresh fixture has nowhere near 40 dated events yet');
+  // Une date qui tombe (à un jour près, seule granularité disponible) à la phase visée, k cycles après la référence.
+  const dateAt = (k, phase) => new Date(app.NEW_MOON_REF + (k + phase) * app.SYNODIC * 86400000).toISOString().slice(0, 10);
+  let n = 0; const note = date => d.modules.inbox.entries.push({ id: 'l' + n++, text: 'x', date });
+  // Concentrée autour de la pleine lune (phase 0.5).
+  for (let k = 0; k < app.LUNAR_MIN_N + 10; k++) note(dateAt(k, 0.5));
+  const conc = app.lunarTest();
+  assert.equal(conc.enough, true);
+  assert.equal(conc.n, app.LUNAR_MIN_N + 10);
+  assert.ok(conc.R > 0.9, `strongly concentrated: R = ${conc.R}`);
+  assert.ok(conc.p < 0.001, `far below the usual 0.05 threshold: p = ${conc.p}`);
+  assert.ok(Math.abs(conc.meanPhase - 0.5) < 0.05, `mean phase near full moon: ${conc.meanPhase}`);
+  app.location.hash = '#bilan'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /Concentration autour de pleine lune/);
+
+  // Étalée sur les huit octants du cycle : rien à en tirer.
+  d.modules.inbox.entries = [];
+  n = 0;
+  for (let k = 0; k < app.LUNAR_MIN_N + 20; k++) note(dateAt(k, (k % 8) / 8));
+  const flat = app.lunarTest();
+  assert.ok(flat.R < 0.2, `spread out: R = ${flat.R}`);
+  assert.ok(flat.p > 0.05, `not significant: p = ${flat.p}`);
+  app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /La lune plaide non coupable/);
+
+  // Sous le seuil : le bilan le dit plutôt que d'inventer une tendance.
+  d.modules.inbox.entries = d.modules.inbox.entries.slice(0, app.LUNAR_MIN_N - 1);
+  app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /Pas assez de matière pour un test honnête/);
+
+  // Un module concordance (motifs) ne participe pas au corpus, comme pour la dérive lexicale.
+  const m = app.createFromTemplate(d.modules, app.MODULE_TEMPLATES.find(x => x.id === 'motifs'), 'Motifs', 'motifs');
+  d.config.modules.push({ id: 'motifs', on: true });
+  for (let k = 0; k < app.LUNAR_MIN_N + 10; k++) app.saveCollectionItem(m, { title: 'm' + k }, 'mm' + k);
+  assert.equal(app.lunarTest().enough, false, 'collection items without dates, and a concordance module anyway, add nothing');
 });

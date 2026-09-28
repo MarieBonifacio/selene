@@ -65,6 +65,12 @@ function parseBackup(text) {
           (l.date != null && !(typeof l.date === "string" && validDate(l.date)))))) fail("liaison");
       if (inst.resume != null && (!record(inst.resume) || typeof inst.resume.text !== "string" || typeof inst.resume.at !== "string" || !validDate(inst.resume.at))) fail("pont de reprise");
       if (inst.resumeLog != null) collection(inst.resumeLog, `${where} ponts`);
+      // Palimpseste : les versions antérieures d'un fragment (cumul.scraps uniquement).
+      for (const f of inst.scraps || []) {
+        if (f.versions != null && (!Array.isArray(f.versions) || f.versions.some(x => !record(x) || typeof x.text !== "string" ||
+            (x.at != null && !(typeof x.at === "string" && validDate(x.at)))))) fail("version");
+        if (f.editedAt != null && !(typeof f.editedAt === "string" && validDate(f.editedAt))) fail("fragment");
+      }
       // Règles propres au type : déclarées dans le registre (domain.js), appliquées ici.
       MODULE_TYPES[inst.type].validate(inst, {
         num: (v, name, min, max) => num(v, `${where} : ${name}`, min, max),

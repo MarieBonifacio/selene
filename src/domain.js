@@ -364,6 +364,15 @@ function setResume(inst, text, date) {
   if (old) inst.resumeLog = [...(inst.resumeLog || []), { text: old.text, at: old.at, end: date, how: t ? "remplacé" : "repris" }].slice(-30);
   if (t) inst.resume = { text: t, at: date }; else delete inst.resume;
 }
+/* ---- palimpseste : un fragment réécrit garde ses versions précédentes, la plus ancienne perdue la première ----
+   Dix versions suffisent à retracer une dérive de formulation ; ce n'est pas un contrôle de version complet. */
+function editFragmentText(f, text, date) {
+  const t = String(text || "").trim();
+  if (!t || t === f.text) return false;
+  f.versions = [...(f.versions || []), { text: f.text, at: date }].slice(-10);
+  f.text = t; f.editedAt = date;
+  return true;
+}
 function numericValue(raw) {
   const value = raw != null && raw !== "" ? Number(raw) : null;
   if (value !== null && !Number.isFinite(value)) throw new Error("Valeur invalide"); // un NaN contaminerait tous les totaux

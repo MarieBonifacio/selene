@@ -10,7 +10,7 @@ const nodes = new Map(), element = id => { if (!nodes.has(id)) nodes.set(id, { i
 const context = { document: { title: '', activeElement: null, documentElement: { dataset: {} }, querySelector: element, getElementById: element, addEventListener() {} },
   window: { addEventListener() {}, claude: { use: async () => null } }, localStorage: { getItem: k => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, v), removeItem: k => storage.delete(k), key: i => [...storage.keys()][i] ?? null, get length() { return storage.size; } },
   location: { hash: '' }, navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-vm.runInNewContext(script.replace(/\}\)\(\);\s*$/, 'globalThis.__t = { S, render, createFromTemplate, MODULE_TEMPLATES, saveCollectionItem, searchAll, VIEWS };\n})();'), context);
+vm.runInNewContext(script.replace(/\}\)\(\);\s*$/, 'globalThis.__t = { S, render, createFromTemplate, MODULE_TEMPLATES, saveCollectionItem, searchAll, VIEWS, sortesDraw, sortesPool };\n})();'), context);
 const t = context.__t, d = t.S();
 const words = 'la lune le seuil une porte basse sorcière forêt nuit récit phalène dissociation soi symbole alchimie mercure spectre liminal transformation brouillard lichen mousse cendre miroir'.split(' ');
 let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
@@ -34,3 +34,6 @@ time('arc (render)', () => { context.location.hash = '#arc'; t.render(); });
 time('écriture (render)', () => { context.location.hash = '#ecriture'; t.render(); });
 time('bilan (render)', () => { context.location.hash = '#bilan'; t.render(); });
 time('recherche « lune porte »', () => t.searchAll('lune porte'));
+
+time('accueil, avec sortes (render)', () => { context.location.hash = '#accueil'; t.render(); });
+time('sortesDraw() un tirage', () => t.sortesDraw());

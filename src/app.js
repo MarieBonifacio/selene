@@ -72,16 +72,16 @@ function siteSeed() {
 /* ================= moon ================= */
 /* Mois synodique moyen (d'une nouvelle lune à la suivante) et une nouvelle lune de référence. */
 const SYNODIC = 29.530588853, NEW_MOON_REF = Date.UTC(2000, 0, 6, 18, 14);
+const MOON_NAMES = ["Nouvelle lune", "Premier croissant", "Premier quartier", "Gibbeuse croissante", "Pleine lune", "Gibbeuse décroissante", "Dernier quartier", "Dernier croissant"];
+const moonName = p => MOON_NAMES[Math.floor(((p + 1 / 16) % 1) * 8)];
 function moon() {
   const syn = SYNODIC, ref = NEW_MOON_REF;
   const age = (((Date.now() - ref) / 86400000) % syn + syn) % syn;
   const p = age / syn;
   const illum = (1 - Math.cos(2 * Math.PI * p)) / 2;
-  const names = ["Nouvelle lune", "Premier croissant", "Premier quartier", "Gibbeuse croissante", "Pleine lune", "Gibbeuse décroissante", "Dernier quartier", "Dernier croissant"];
-  const name = names[Math.floor(((p + 1 / 16) % 1) * 8)];
   const nextFull = p < .5 ? (0.5 - p) * syn : (1.5 - p) * syn;
   const nextNew = (1 - p) * syn;
-  return { p, age, illum, name, nextFull: Math.round(nextFull), nextNew: Math.round(nextNew) };
+  return { p, age, illum, name: moonName(p), nextFull: Math.round(nextFull), nextNew: Math.round(nextNew) };
 }
 function moonSVG(p, size = 100) {
   const r = 46, c = 50, rx = Math.abs(Math.cos(2 * Math.PI * p)) * r;
@@ -275,7 +275,8 @@ VIEWS.accueil = () => {
       : `<p class="hint">Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans <a href="#reglages">Réglages</a>.</p>`}
     </section>
   </div>
-  <section><div class="row" style="align-items:baseline"><h2>Où en sont les choses</h2><span class="spacer"></span><a class="btn ghost sm" href="#bilan">Bilan du ${bilanMode() === "mois" ? "mois" : "cycle"}</a></div>${rows}</section>`;
+  <section><div class="row" style="align-items:baseline"><h2>Où en sont les choses</h2><span class="spacer"></span><a class="btn ghost sm" href="#bilan">Bilan du ${bilanMode() === "mois" ? "mois" : "cycle"}</a></div>${rows}</section>
+  ${sortesSection()}`;
 };
 
 /* ================= pont de reprise =================
@@ -321,6 +322,41 @@ function periodOf(mode, offset, now = Date.now()) {
   const len = SYNODIC * 86400000, k = Math.floor((now - NEW_MOON_REF) / len) - offset, start = NEW_MOON_REF + k * len, end = start + len;
   return { from: iso(new Date(start)), to: iso(new Date(end)), name: `Cycle du ${fmt(iso(new Date(start)), { day: "numeric", month: "long" })} au ${fmt(iso(new Date(end - 86400000)), { day: "numeric", month: "long" })}` };
 }
+
+/* ================= test lunaire =================
+   Test de Rayleigh (statistique circulaire) : l'activité (tout ce qui est daté, le même corpus que la
+   recherche) se concentre-t-elle autour d'une phase de la lune, plutôt que d'être uniformément répartie sur
+   le cycle ? Un résultat nul a de la valeur : il dit que la lune n'y est pour rien. Un seul test, ici — le
+   répéter ailleurs avec d'autres découpages ferait courir le risque classique des tests multiples : à force
+   d'essayer, on finit par trouver un faux signal. */
+const LUNAR_MIN_N = 40;
+const lunarPhase = date => { const t = ((Date.parse(date + "T12:00:00Z") - NEW_MOON_REF) / 86400000 % SYNODIC + SYNODIC) % SYNODIC; return t / SYNODIC; };
+function lunarTest() {
+  const angles = [];
+  for (const inst of Object.values(S().modules)) {
+    const ui = TYPE_UI[inst.type];
+    if (!ui || !ui.texts || isConcordance(inst)) continue;
+    for (const t of ui.texts(inst)) if (t.date) angles.push(lunarPhase(t.date) * 2 * Math.PI);
+  }
+  const n = angles.length;
+  if (n < LUNAR_MIN_N) return { n, enough: false };
+  let c = 0, s = 0;
+  for (const a of angles) { c += Math.cos(a); s += Math.sin(a); }
+  const R = Math.sqrt(c * c + s * s) / n, Z = n * R * R;
+  // Approximation asymptotique classique du p (Zar, Biostatistical Analysis) ; suffisante au-delà de 40 événements.
+  const p = Math.exp(-Z) * (1 + (2 * Z - Z * Z) / (4 * n) - (24 * Z - 132 * Z * Z + 76 * Z ** 3 - 9 * Z ** 4) / (288 * n * n));
+  const meanPhase = (Math.atan2(s, c) / (2 * Math.PI) + 1) % 1;
+  return { n, enough: true, R, p: Math.max(0, Math.min(1, p)), meanPhase };
+}
+function lunarSection() {
+  const r = lunarTest();
+  if (!r.enough) return `<section><h3>Lune</h3><p class="hint">Pas assez de matière pour un test honnête : ${r.n} événement${r.n > 1 ? "s" : ""} daté${r.n > 1 ? "s" : ""} au lieu de ${LUNAR_MIN_N} au moins. Reviens quand le corpus aura grandi.</p></section>`;
+  const sig = r.p < .05;
+  return `<section><h3>Lune</h3><p class="hint">Test de Rayleigh sur ${r.n} événement${r.n > 1 ? "s" : ""} daté${r.n > 1 ? "s" : ""} : ta lune éclaire-t-elle vraiment ton activité, ou est-ce une histoire qu'on se raconte ? Un seul test compte ici ; le refaire ailleurs sous d'autres formes userait sa valeur (tests multiples).</p>
+    <p>${sig
+      ? `Concentration autour de ${esc(moonName(r.meanPhase).toLowerCase())} (R = ${r.R.toFixed(2)}, p = ${r.p.toFixed(3)}). Ce n'est pas rien, mais ce n'est pas une preuve : une seule corrélation, jamais répétée ni contrôlée.`
+      : `Rien de concentré (R = ${r.R.toFixed(2)}, p = ${r.p.toFixed(3)}) : la répartition ne se distingue pas de l'uniforme. La lune plaide non coupable, ce qui est aussi une réponse.`}</p></section>`;
+}
 VIEWS.bilan = () => {
   const mode = bilanMode(), cur = periodOf(mode, bilanOffset), prev = periodOf(mode, bilanOffset + 1), s = S();
   const rows = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id) && TYPE_UI[s.modules[m.id].type].review).map(m => {
@@ -336,7 +372,8 @@ VIEWS.bilan = () => {
   <section>${rows || `<p class="empty">Aucun module à résumer.</p>`}</section>
   ${epLine ? `<section><h3>Statut des idées notées</h3><p class="hint">Ce qu'elles revendiquent de savoir. Une hypothèse n'est pas une faiblesse, c'est une dette à rembourser.</p><div class="row">${epLine}</div></section>` : ""}
   ${driftSection(mode, cur)}
-  ${tensionSection()}`;
+  ${tensionSection()}
+  ${lunarSection()}`;
 };
 /* ================= tensions =================
    Une tension (« contredit ») reste ouverte tant qu'aucune entrée ne dérive des deux à la fois. Ce n'est pas
@@ -348,6 +385,43 @@ function openTensions() {
   const out = [];
   for (const it of items) for (const l of it.e.links || []) if (l.type === "contredit" && refFind(l.to) && !resolved(it.ref, l.to)) out.push({ a: it.ref, b: l.to, date: l.date || "" });
   return out.sort((x, y) => x.date.localeCompare(y.date));
+}
+/* ================= sortes =================
+   Un tirage dans son propre matériau : un fragment ou une note qu'on n'a pas retouché depuis longtemps, une
+   tension ouverte, un motif en jachère. Pondéré par l'oubli : plus c'est ancien, plus ça a de chances de
+   sortir. Rien n'est enregistré ; le dernier tirage vit dans une variable, oublié à la prochaine ouverture. */
+const SORTES_MIN_DAYS = 14; // en dessous, ce n'est pas de l'oubli, c'est hier
+let sortesLast = null;
+function sortesPool() {
+  const now = todayISO(), out = [];
+  for (const [mod, m] of Object.entries(S().modules)) {
+    if (!enabled(mod)) continue;
+    // Accolades obligatoires sur chaque branche : un « if » nu dans un for (comme celui des notes) capturerait
+    // sinon le « else if » suivant (dangling else), et la branche motifs ne s'exécuterait jamais.
+    if (m.type === "cumul") { for (const f of m.scraps || []) { const last = f.editedAt || f.date; if (last) out.push({ kind: "fragment", mod, e: f, days: diffDays(now, last) }); } }
+    else if (m.type === "notes") { for (const e of m.entries) if (e.date) out.push({ kind: "note", mod, e, days: diffDays(now, e.date) }); }
+    else if (isConcordance(m)) { for (const r of concordance(m)) if (fallow(m, r)) out.push({ kind: "motif", mod, e: r.e, days: r.last ? diffDays(now, r.last.date) : 3650 }); }
+  }
+  for (const t of openTensions()) out.push({ kind: "tension", a: t.a, b: t.b, days: t.date ? diffDays(now, t.date) : SORTES_MIN_DAYS });
+  return out.filter(x => x.days >= SORTES_MIN_DAYS);
+}
+/* Tirage pondéré : chaque candidat pèse son nombre de jours de silence, donc davantage de chances pour ce qui
+   dort depuis longtemps, sans jamais exclure ce qui vient tout juste de passer le seuil. */
+function sortesDraw() {
+  const pool = sortesPool(); if (!pool.length) return null;
+  let r = Math.random() * pool.reduce((a, x) => a + x.days, 0);
+  for (const x of pool) { r -= x.days; if (r <= 0) return x; }
+  return pool.at(-1);
+}
+function sortesCard(x) {
+  if (x.kind === "tension") return `<div class="card"><span class="tag">Tension ouverte</span><p>${refHTML(x.a)} <span class="hint">contredit</span> ${refHTML(x.b)}</p><div class="row"><button class="btn ghost sm" data-act="tension-resolve" data-a="${esc(x.a)}" data-b="${esc(x.b)}">résoudre</button><button class="btn ghost sm" data-act="tension-dossier" data-a="${esc(x.a)}" data-b="${esc(x.b)}">dossier</button></div></div>`;
+  if (x.kind === "motif") return `<div class="card"><span class="tag">Motif en jachère, ${esc(label(x.mod))}</span><p><b>${esc(x.e.title)}</b></p><div class="row"><a class="btn ghost sm" href="#${esc(x.mod)}">voir</a><button class="btn ghost sm" data-act="search-for" data-q="${esc(x.e.title)}">chercher</button></div></div>`;
+  return `<div class="card"><span class="tag">${esc(label(x.mod))}, ${x.kind === "fragment" ? "fragment" : "note"} endormi</span><p style="white-space:pre-wrap">${esc(excerpt(x.e, 200))}</p><div class="meta"><span>${plural(x.days, "jour")} sans y toucher</span></div><div class="row"><a class="btn ghost sm" href="#${esc(x.mod)}">voir</a></div></div>`;
+}
+function sortesSection() {
+  return `<section><h2>Tirer un sort</h2><p class="hint">Un fragment endormi, une note oubliée, une tension ouverte ou un motif en jachère — le hasard pondéré par l'oubli, dans ton seul matériau.</p>
+    ${sortesLast ? sortesCard(sortesLast) : ""}
+    <button class="btn ${sortesLast ? "ghost" : ""} sm" data-act="sortes-draw">${sortesLast ? "Retirer" : "Tirer"}</button></section>`;
 }
 function tensionSection() {
   const ts = openTensions();
@@ -620,6 +694,7 @@ const CLICK = {
     if (items.length) dossierFile(`Recherche — ${q}`, `Résultats de la recherche « ${q} »`, items);
   },
   "page-more": el => { const k = el.dataset.k; pageSize[k] = (pageSize[k] || PAGE) + PAGE; render(); },
+  "sortes-draw": () => { sortesLast = sortesDraw(); render(); if (!sortesLast) toast("Rien d'assez ancien à tirer. Reviens dans deux semaines."); },
   "search-for": el => { searchQuery = el.dataset.q; if (location.hash === "#recherche") render(); else location.hash = "recherche"; },
   "entry-add": el => entryAdd(el.dataset.mod),
   "entry-del": el => removeWithUndo(el.dataset.mod, "entries", idOf(el)),

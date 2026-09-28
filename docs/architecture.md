@@ -147,6 +147,20 @@ les gardent rapides sans jamais servir un résultat périmé :
   mots passent par une expression régulière.
 - La dérive lexicale du bilan (`lexicalDrift`, `app.js`) découpe chaque texte une fois (`driftWords`, même cache
   borné) et compte chaque mot une fois par texte, sur sept périodes seulement.
+
+Trois fonctionnalités s'appuient directement sur ce qui précède, sans rien y ajouter de nouveau :
+- **Palimpseste** (`editFragmentText`, domain.js) : `f.versions` (plafonné à 10) et `f.editedAt` sur un fragment
+  de `cumul.scraps` uniquement ; validé en générique dans backup.js (comme `origin`/`links`), pas dans le
+  registre par type.
+- **Sortes** (`sortesPool`/`sortesDraw`, app.js) : un tirage pondéré (probabilité proportionnelle au nombre de
+  jours de silence) sur trois bassins déjà calculés ailleurs — fragments/notes via `editedAt || date`, tensions
+  via `openTensions()`, motifs via `concordance()` + `fallow()`. Rien n'est stocké ; l'état affiché (`sortesLast`)
+  est une variable de module, oubliée à la fermeture de l'onglet.
+- **Test lunaire** (`lunarTest`, app.js) : un test de Rayleigh sur le même corpus que la dérive lexicale (`ui.texts()`
+  de chaque module non-concordance). Piège rencontré en écrivant `sortesPool` : un `if` sans accolades dans une
+  boucle peut capturer le `else if` suivant (*dangling else*) et rendre une branche entière inatteignable sans la
+  moindre erreur ; d'où la règle désormais suivie dans ces fonctions-là : chaque branche d'un if/else-if qui
+  contient un `for`/`if` imbriqué porte ses propres accolades.
 - `fmt` (dates) est aussi mis en cache : chaque appel à `toLocaleDateString` reconstruit un formateur `Intl`,
   et une liste de fragments en affiche des milliers. Les références `module/id` se résolvent par un index
   construit une fois par rendu (`refFind`).
