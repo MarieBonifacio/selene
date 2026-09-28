@@ -34,7 +34,7 @@ function launch(storage, { claude = null, bare = false } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn, lexicalDrift, driftWords, addLink, openTensions, mergeDocs };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn, lexicalDrift, driftWords, addLink, openTensions, mergeDocs, dossierMarkdown };\n})();');
   vm.runInNewContext(instrumented, context);
   const fire = (name, target) => (handlers[name] || []).forEach(fn => fn({ target, preventDefault() {} }));
   return { ...context.__test, nodes, location, document, fire };
@@ -938,4 +938,42 @@ test('links: added on two devices to the same entry, both survive the merge', ()
   const local = { ...doc([frag([l1])]), updatedAt: 2 }, remote = { ...doc([frag([l2])]), updatedAt: 3 };
   const merged = app.mergeDocs(base, local, remote);
   assert.deepEqual([...merged.modules.ecriture.scraps[0].links.map(l => l.id)].sort(), ['l1', 'l2']);
+});
+
+test('dossier: dated, labelled entries with status, provenance and links as internal cross-references', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const e = app.S().modules.ecriture;
+  e.scraps.push(
+    { id: 'a', text: 'Le DMN fabrique le soi', date: '2026-09-01', ep: 'hyp', origin: { from: 'Capture', text: 'Écriture : le DMN fabrique le soi', date: '2026-08-30' } },
+    { id: 'b', text: 'Le soi est symbolique', date: '2026-09-02', ep: 'int' },
+    { id: 'c', text: 'Hors dossier', date: '2026-09-03' });
+  app.addLink(e.scraps[1], 'ecriture/a', 'contredit', 'l1', '2026-09-04');
+  app.addLink(e.scraps[1], 'ecriture/c', 'echo', 'l2', '2026-09-04');
+  app.addLink(e.scraps[1], 'ecriture/zz', 'documente', 'l3', '2026-09-04');
+  const md = app.dossierMarkdown('Écriture "brouillon"', 'Fragments', [
+    { mod: 'ecriture', text: e.scraps[0].text, date: '2026-09-01', e: e.scraps[0] },
+    { mod: 'ecriture', text: e.scraps[1].text, date: '2026-09-02', e: e.scraps[1] },
+    { mod: 'budget', text: 'Pas une pensée, juste une ligne', date: null }]);
+  assert.match(md, /^---\ntitre: "Écriture \\"brouillon\\""\nsource: "Selene"/, 'YAML front matter, quotes escaped');
+  assert.match(md, /entrees: 3\n---/);
+  assert.match(md, /Ne pas traiter une hypothèse comme un fait, ni combler un inexpliqué/, 'reading legend for an assistant');
+  assert.match(md, /## 1\. 1 septembre 2026 · Écriture · hypothèse\n\nLe DMN fabrique le soi\n\n\*Provenance : Capture, 30 août 2026 : « Écriture : le DMN fabrique le soi »\*/);
+  assert.match(md, /\*Liens : contredit \[1\] ; fait écho à « Hors dossier » \(hors dossier\) ; documente \(supprimé\)\*/, 'links: cross-reference inside, excerpt outside, deletion said');
+  assert.match(md, /## 3\. Budget\n\nPas une pensée/, 'an entry without date or status still has its module');
+  assert.doesNotMatch(md, /\n\n\n/, 'no blank-line pile-ups');
+});
+
+test('long lists show a hundred items, then « voir les suivants »', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const inbox = app.S().modules.inbox.entries;
+  for (let i = 0; i < 250; i++) inbox.push({ id: 'n' + i, text: 'note ' + i, date: '2026-09-01' });
+  const count = () => (app.nodes.get('#main').innerHTML.match(/<li class="item" data-id=/g) || []).length;
+  app.location.hash = '#inbox'; app.render();
+  assert.equal(count(), 100);
+  assert.match(app.nodes.get('#main').innerHTML, /Voir les 100 suivants \(150 de plus\)/);
+  assert.match(app.nodes.get('#main').innerHTML, /note 249/, 'newest first');
+  app.CLICK['page-more']({ dataset: { k: 'notes:inbox' } });
+  app.CLICK['page-more']({ dataset: { k: 'notes:inbox' } });
+  assert.equal(count(), 250);
+  assert.doesNotMatch(app.nodes.get('#main').innerHTML, /Voir les/, 'nothing more to show');
 });

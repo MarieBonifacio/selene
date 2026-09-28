@@ -88,6 +88,28 @@ function linkForm(mod, id) {
     site.save(); render(); toast(v.type === "contredit" ? "Tension ouverte. Elle attendra sa synthèse." : "Lié.");
   });
 }
+/* ---- dossier de passation : un périmètre exporté en Markdown pour être relu ailleurs (NotebookLM, Claude,
+   Obsidian). Chaque entrée garde sa date, son module, son statut, sa provenance ; ses liens deviennent des renvois
+   numérotés quand leur cible est dans le dossier. Le préambule dit comment lire les statuts, pour qu'un modèle ne
+   traite pas une hypothèse comme un fait. items : [{ mod, text, date?, e? }] (e : l'entrée, si on la connaît). */
+const yamlStr = v => `"${String(v).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ")}"`;
+function dossierMarkdown(title, scope, items) {
+  const num = new Map(items.map((it, i) => [it.e ? `${it.mod}/${it.e.id}` : "", i + 1]).filter(([k]) => k));
+  const refText = ref => { if (num.has(ref)) return `[${num.get(ref)}]`; const hit = refFind(ref); return hit ? `« ${excerpt(hit.e, 80)} » (hors dossier)` : "(supprimé)"; };
+  const head = ["---", `titre: ${yamlStr(title)}`, `source: "Selene"`, `exporte_le: "${todayISO()}"`, `perimetre: ${yamlStr(scope)}`, `entrees: ${items.length}`, "---", "", `# ${title}`, "",
+    "> Chaque entrée porte sa date, son module et, s'il est indiqué, son statut épistémique : *observé* (ce qui s'est présenté), " +
+    "*hypothèse* (une conjecture à tester), *interprétation* (une lecture, un cadre appliqué), *inexpliqué* (laissé ouvert à dessein). " +
+    "Ne pas traiter une hypothèse comme un fait, ni combler un inexpliqué. Les renvois [n] désignent les entrées de ce dossier.", ""];
+  const body = items.map((it, i) => {
+    const e = it.e || {}, meta = [it.date ? fmt(it.date, { day: "numeric", month: "long", year: "numeric" }) : "", label(it.mod), e.ep ? EP_STATUS[e.ep] : ""].filter(Boolean).join(" · ");
+    const lines = [`## ${i + 1}. ${meta}`, "", String(it.text).trim(), ""];
+    if (e.origin && e.origin.text.trim() !== String(it.text).trim()) lines.push(`*Provenance : ${e.origin.from}${e.origin.date ? `, ${fmt(e.origin.date, { day: "numeric", month: "long", year: "numeric" })}` : ""} : « ${e.origin.text.trim()} »*`, "");
+    if ((e.links || []).length) lines.push(`*Liens : ${e.links.map(l => `${LINK_TYPES[l.type]} ${refText(l.to)}`).join(" ; ")}*`, "");
+    return lines.join("\n");
+  });
+  return [...head, ...body].join("\n").replace(/\n{3,}/g, "\n\n").trim() + "\n";
+}
+const dossierFile = (title, scope, items) => downloadFile(`dossier-${slugId(title, [])}-${todayISO()}.md`, dossierMarkdown(title, scope, items), "text/markdown", title);
 /* Le statut épistémique d'un fragment ou d'une note, modifiable sur place ; vide par défaut. */
 const epSelect = (id, e) => `<select class="ep ${e.ep ? "on" : ""}" data-act="ep-set" data-mod="${esc(id)}" aria-label="Statut">${[["", "statut…"], ...Object.entries(EP_STATUS)].map(([k, l]) => `<option value="${k}" ${(e.ep || "") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
 /* Fin estimée d'un cumul au rythme des 30 derniers jours : une phrase, ou rien sans objectif. */
@@ -208,8 +230,8 @@ const TYPE_UI = {
     <div style="margin-top:28px">${c.categories.length ? cumulGroupPanel(id) : `<p class="hint">Ajoute des ${esc(c.categoryLabel).toLowerCase()}s dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a> pour suivre chacune en pourcentage.</p>`}</div>
   </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">Une phrase qui passe, avant qu'elle ne reparte. Un « ? » devant en fait une hypothèse.</p>
     ${deriveBanner(id)}<textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="Nouveau"></textarea><div class="row" style="margin-top:8px">${catSelect("scrapCat", "", lastScrapCat)}<button class="btn" data-act="scrap-add" data-mod="${esc(id)}">Garder</button></div>
-    ${c.categories.length || inst.scraps.length ? `<div class="row" style="margin-top:14px">${c.categories.length ? `<select data-act="scrap-f" data-mod="${esc(id)}" aria-label="Filtrer"><option value="*">Tous</option>${[["", `Hors ${c.categoryLabel.toLowerCase()}`], ...c.categories.map(x => [x.id, x.name])].map(([k, n]) => `<option value="${esc(k)}" ${ff === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : ""}<span class="spacer"></span>${inst.scraps.length ? `<button class="btn ghost sm" data-act="scrap-md" data-mod="${esc(id)}">Exporter en Markdown</button>` : ""}</div>` : ""}
-    <ul class="plain" style="margin-top:10px">${[...inst.scraps].reverse().filter(f => ff === "*" || (f.category || "") === ff).map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${originHTML(f, f.text)}</div>${linksHTML(id, f)}</div><button class="btn ghost sm" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Rien pour l'instant.</li>`}</ul>
+    ${c.categories.length || inst.scraps.length ? `<div class="row" style="margin-top:14px">${c.categories.length ? `<select data-act="scrap-f" data-mod="${esc(id)}" aria-label="Filtrer"><option value="*">Tous</option>${[["", `Hors ${c.categoryLabel.toLowerCase()}`], ...c.categories.map(x => [x.id, x.name])].map(([k, n]) => `<option value="${esc(k)}" ${ff === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : ""}<span class="spacer"></span>${inst.scraps.length ? `<button class="btn ghost sm" data-act="scrap-md" data-mod="${esc(id)}">Exporter en Markdown</button><button class="btn ghost sm" data-act="scrap-dossier" data-mod="${esc(id)}" title="Avec dates, statuts, provenance et liens, pour une lecture assistée">Dossier</button>` : ""}</div>` : ""}
+    <ul class="plain" style="margin-top:10px">${(pg => pg.items.map(f => `<li class="item" data-id="${esc(f.id)}"><span></span><div style="white-space:pre-wrap">${esc(f.text)}<div class="meta">${fmt(f.date)}${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${originHTML(f, f.text)}</div>${linksHTML(id, f)}</div><button class="btn ghost sm" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") + pg.more)(paged(`scraps:${id}`, [...inst.scraps].reverse().filter(f => ff === "*" || (f.category || "") === ff))) || `<li class="empty">Rien pour l'instant.</li>`}</ul>
   </section>` : ""}</div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>Titre / sous-titre<input data-set-mod="${esc(id)}.title" value="${esc(c.title || "")}"></label><label>Objectif<input type="number" min="1" data-set-mod="${esc(id)}.goal" value="${esc(c.goal)}"></label></div>
@@ -253,6 +275,13 @@ const TYPE_UI = {
         instOf(el).scraps.push(f); const derived = applyDerive(el.dataset.mod, f); $("#scrapIn").value = ""; site.save(); render();
         if (derived) toast(derived > 1 ? "Synthèse gardée. La tension est levée." : "Dérivé, et relié à sa source.");
         else if (p.ep) toast("Gardé comme hypothèse. Elle attendra ses preuves.");
+      },
+      // Le dossier suit le filtre de chapitre affiché ; les fragments dans l'ordre où ils ont été écrits.
+      "scrap-dossier": el => {
+        const id = el.dataset.mod, inst = S().modules[id], ff = fragFilter[id] ?? "*", c = inst.config;
+        const fs = inst.scraps.filter(f => ff === "*" || (f.category || "") === ff);
+        const chap = ff === "*" ? "" : ff === "" ? ` — hors ${c.categoryLabel.toLowerCase()}` : ` — ${(c.categories.find(x => x.id === ff) || {}).name || ""}`;
+        dossierFile(`${label(id)}${chap}`, `${label(id)} : ${c.scrapsLabel.toLowerCase()}${chap}`, fs.map(f => ({ mod: id, text: f.text, date: f.date, e: f })));
       },
       "scrap-md": el => { const id = el.dataset.mod; downloadFile(`${id}-${todayISO()}.md`, scrapsMarkdown(id, S().modules[id]), "text/markdown", label(id)); },
       "scrap-del": el => removeWithUndo(el.dataset.mod, "scraps", idOf(el)),
@@ -428,8 +457,8 @@ TYPE_UI.collection = {
     const filter = colFilter[id] || "", shown = items.filter(e => !filter || e.status === filter);
     return `<div data-mod="${esc(id)}">${head}
   <div class="row" style="margin-bottom:10px"><select data-act="col-f" aria-label="Filtrer"><option value="">Tous</option>${c.statuses.map(st => `<option ${st === filter ? "selected" : ""}>${esc(st)}</option>`).join("")}</select></div>
-  <div class="two"><div><ul class="plain">${shown.map(e => `<li class="item" data-id="${esc(e.id)}"><span></span><div><b>${esc(e.title)}</b>${f.subtitle ? (e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ` <span class="hint">${esc(f.subtitle.toLowerCase())} à préciser</span>`) : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${c.review ? "à réexaminer le " : ""}${fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}${reviewedHTML(e) || e.origin ? `<div class="meta">${reviewedHTML(e)}${originHTML(e, e.title)}</div>` : ""}</div>
-    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm" data-act="col-edit">modifier</button><button class="btn ghost sm" data-act="col-del">suppr.</button></div></li>`).join("") || `<li class="empty">Rien dans ce filtre.</li>`}</ul></div><div>${panel}</div></div></div>`;
+  <div class="two"><div><ul class="plain">${(pg => pg.items.map(e => `<li class="item" data-id="${esc(e.id)}"><span></span><div><b>${esc(e.title)}</b>${f.subtitle ? (e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ` <span class="hint">${esc(f.subtitle.toLowerCase())} à préciser</span>`) : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${c.review ? "à réexaminer le " : ""}${fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}${reviewedHTML(e) || e.origin ? `<div class="meta">${reviewedHTML(e)}${originHTML(e, e.title)}</div>` : ""}</div>
+    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm" data-act="col-edit">modifier</button><button class="btn ghost sm" data-act="col-del">suppr.</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">Rien dans ce filtre.</li>`}</ul></div><div>${panel}</div></div></div>`;
   },
   settings: (id, { config: c }) => {
     const f = c.fields, fid = esc(id);
@@ -829,10 +858,10 @@ TYPE_UI.notes = {
     const inst = S().modules[id], c = inst.config, targets = noteTargets(id);
     return `<div data-mod="${esc(id)}"><h2>${esc(label(id))}</h2>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}
   ${deriveBanner(id)}<div class="capture" style="margin-bottom:18px"><input id="noteIn" data-draft placeholder="${esc(c.placeholder)}" aria-label="Nouvelle note"><button class="btn acc" data-act="note-add">Garder</button></div>
-  <ul class="plain">${[...inst.entries].reverse().map(x => { const intent = captureIntent(x.text); return `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}${epSelect(id, x)}${originHTML(x, x.text)}</div>${linksHTML(id, x)}
+  <ul class="plain">${(pg => pg.items.map(x => { const intent = captureIntent(x.text); return `<li class="item" data-id="${esc(x.id)}"><span></span><div>${esc(x.text)}<div class="meta">${fmt(x.date)}${epSelect(id, x)}${originHTML(x, x.text)}</div>${linksHTML(id, x)}
     ${intent && intent.to !== id ? `<div class="row" style="margin-top:6px"><button class="btn sm acc" data-act="note-file">Ranger : ${esc(intent.say)}</button></div>` : ""}
     ${targets.length ? `<div class="row" style="margin-top:6px">${targets.map(k => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
-    <button class="btn ghost sm" data-act="note-del">suppr.</button></li>`; }).join("") || `<li class="empty">${c.inbox ? "Vide. Le silence d'une clairière, ou celui d'un cerveau." : "Rien pour l'instant."}</li>`}</ul></div>`;
+    <button class="btn ghost sm" data-act="note-del">suppr.</button></li>`; }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? "Vide. Le silence d'une clairière, ou celui d'un cerveau." : "Rien pour l'instant."}</li>`}</ul></div>`;
   },
   settings: (id, { config: c }) => `<label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="notes-inbox" data-mod="${esc(id)}" ${c.inbox ? "checked" : ""}>Boîte de réception : reçoit la capture rapide de l'accueil</label>
     <div class="field-row" style="margin-top:8px"><label>Description<input data-set-mod="${esc(id)}.description" value="${esc(c.description)}" placeholder="Une phrase sous le titre"></label><label>Texte d'invite<input data-set-mod="${esc(id)}.placeholder" value="${esc(c.placeholder)}" required></label></div>`,
@@ -880,6 +909,17 @@ CLICK["tension-resolve"] = el => {
   const a = el.dataset.a, b = el.dataset.b, hit = refFind(a); if (!hit) return;
   deriveFrom[hit.mod] = [a, b];
   if (location.hash === "#" + hit.mod) render(); else location.hash = hit.mod;
+};
+/* Dossier d'une tension : les deux entrées, puis leur voisinage direct (ce qui les lie ou les vise). */
+CLICK["tension-dossier"] = el => {
+  const refs = [el.dataset.a, el.dataset.b], seen = new Set(refs);
+  for (const it of thoughtItems()) for (const l of it.e.links || []) {
+    if (refs.includes(it.ref) && !seen.has(l.to)) seen.add(l.to);
+    if (refs.includes(l.to) && !seen.has(it.ref)) seen.add(it.ref);
+  }
+  const items = [...seen].map(refFind).filter(Boolean).map(h => ({ mod: h.mod, text: h.e.text, date: h.e.date, e: h.e }));
+  if (items.length < 2) return toast("L'une des deux entrées a disparu.");
+  dossierFile(`Tension — ${excerpt(items[0].e, 40)}`, `« ${excerpt(items[0].e, 80)} » contredit « ${excerpt(items[1].e, 80)} », et leur voisinage`, items);
 };
 /* Statut épistémique, commun aux fragments et aux notes : l'élément est cherché dans les deux listes du module. */
 CHANGE["ep-set"] = el => {
