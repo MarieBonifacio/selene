@@ -133,6 +133,8 @@ les gardent rapides sans jamais servir un résultat périmé :
 - La concordance passe par un **index inversé** (forme d'un mot → motifs), construit une fois par calcul :
   un texte se parcourt mot à mot au lieu d'être confronté à chaque motif. Seules les variantes de plusieurs
   mots passent par une expression régulière.
+- La dérive lexicale du bilan (`lexicalDrift`, `app.js`) découpe chaque texte une fois (`driftWords`, même cache
+  borné) et compte chaque mot une fois par texte, sur sept périodes seulement.
 - `memoInRender` garde un calcul partagé (la concordance sert la vue, le résumé d'accueil et deux périodes
   du bilan) le temps d'**un** rendu seulement : pendant un rendu les données ne bougent pas, donc aucune
   invalidation à gérer.

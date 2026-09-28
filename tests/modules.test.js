@@ -34,7 +34,7 @@ function launch(storage, { claude = null, bare = false } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn, lexicalDrift, driftWords };\n})();');
   vm.runInNewContext(instrumented, context);
   const fire = (name, target) => (handlers[name] || []).forEach(fn => fn({ target, preventDefault() {} }));
   return { ...context.__test, nodes, location, document, fire };
@@ -849,4 +849,30 @@ test('concordance: multi-word variants, accents, and the same answer as before t
   const by = Object.fromEntries(app.concordance(inst).map(r => [r.e.title, [...r.hits.map(h => h.date.slice(-2))]]));
   assert.deepEqual(by['Phalène'], ['01', '02', '03'], 'several words with any spacing, a variant after punctuation, accents ignored; not « papillon de jour » nor « mothra »');
   assert.deepEqual(by['Œuvre au noir'], ['06']);
+});
+
+test('lexical drift: words proper to the period against the six before, stopwords and plurals handled', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), inbox = d.modules.inbox.entries, month = k => app.periodOf('mois', k).from;
+  let n = 0; const note = (text, date) => inbox.push({ id: 'n' + n++, text, date });
+  assert.equal(app.lexicalDrift('mois', 0).enough, false, 'too few texts: says so instead of inventing a trend');
+  for (const t of ['La lune sur le seuil', 'Des lunes et du brouillard', 'Encore la lune, encore', 'Le brouillard monte', 'Une phrase quelconque', 'La forêt']) note(t, month(0));
+  for (const [t, k] of [['La forêt, la cendre', 1], ['Forêt noire', 2], ['Cendre et forêt', 3], ['Cendres froides', 4], ['Une forêt', 5], ['La lune, une fois', 6], ['Rien de neuf', 6]]) note(t, month(k));
+  note('Lune lune lune, trop ancienne', month(7)); // hors des six périodes de référence
+  const r = app.lexicalDrift('mois', 0);
+  assert.equal(r.enough, true);
+  assert.deepEqual([...r.rising.map(x => `${r.word(x.k)}:${x.n}/${x.before}`)], ['brouillard:2/0', 'lune:3/1'], 'plural folded into the singular, one count per text, displayed as written; what is new outranks what merely grew');
+  assert.deepEqual([...r.fading.map(x => `${r.word(x.k)}:${x.n}`)], ['cendre:3'], 'frequent before, absent now; « forêt » is still here');
+  assert.ok(![...app.driftWords('Encore sur le seuil, avec 12 € et des lunes').keys()].some(k => ['encore', 'sur', 'avec', 'des', '12'].includes(k)), 'stopwords, short words and numbers ignored');
+  assert.equal(app.driftWords('Forêts').get('foret'), 'forêts', 'key folded, surface kept');
+  // Un motif ajouté depuis le bilan ; la concordance elle-même n'entre pas dans le vocabulaire.
+  const m = app.createFromTemplate(d.modules, app.MODULE_TEMPLATES.find(x => x.id === 'motifs'), 'Motifs', 'motifs');
+  d.config.modules.push({ id: 'motifs', on: true });
+  app.CLICK['motif-add']({ dataset: { mod: 'motifs', q: 'brouillard' } });
+  app.CLICK['motif-add']({ dataset: { mod: 'motifs', q: 'Brouillard' } });
+  assert.deepEqual([...m.entries.map(e => e.title)], ['brouillard'], 'added once');
+  m.entries[0].text = 'brouillard brouillard';
+  assert.equal(app.lexicalDrift('mois', 0).rising.find(x => x.k === 'brouillard').n, 2, 'the motifs module is not part of the corpus');
+  app.location.hash = '#bilan'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /<h3>Vocabulaire<\/h3>/);
 });
