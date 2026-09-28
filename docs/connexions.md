@@ -107,9 +107,28 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
 - [x] Ces sorties comptent à partir du jour où on les découvre, pas de leur date de parution (MusicBrainz les enregistre
       souvent après coup) ; rangées sous le module de musique, avec « ajouter à Musique » au lieu de « garder ».
 
-**6d : Research Watch** : OpenAlex, ta clé sur l'appareil.
+**6d : Research Watch**
+- [x] Dans Dehors, « Veille de recherche » : des recherches (« depersonalization ») et des auteurs (identifiant OpenAlex
+      ou ORCID), trente au plus, rangés par projet, synchronisés (`config.dehors.research`).
+- [x] Une fois par semaine (ou « Relire maintenant ») : ce qui est paru depuis la dernière relecture (la première fois,
+      le mois écoulé), dix au plus par veille, directement auprès d'OpenAlex (CORS ouvert, pas de passeur). Comptés à
+      partir de leur découverte (OpenAlex indexe avec retard) ; revue, auteurs, date et résumé (index inversé remis
+      en ordre) affichés.
+- [x] « Garder » : une Source avec son DOI, sa revue, ses auteurs, et la provenance « Veille : … ».
+- [x] Clé OpenAlex **facultative** : sans elle, une petite limite quotidienne ; une clé gratuite la décuple. Saisie
+      par toi, gardée dans ce navigateur, jamais synchronisée ; quota épuisé : dit, avec le remède.
+- [x] La veille ne classe rien selon ce qui te donnerait raison, et le dit à l'écran.
+- [x] Se déconnecter efface aussi la clé OpenAlex et tout ce que le dehors a apporté sur l'appareil.
 
-**6e : Calendrier dédié** : iCal, aujourd'hui et demain.
+**6e : Calendrier dédié**
+- [x] Réglages → Calendrier : l'adresse iCal secrète d'un calendrier dédié (Google : « Adresse secrète au format iCal » ;
+      Apple : lien webcal, converti en https). C'est une capacité au porteur : **dans ce navigateur seulement**, jamais
+      synchronisée, jamais réaffichée, effacée à la déconnexion ; elle ne voyage que vers ton passeur, qui ne garde rien.
+- [x] Lue par le passeur au plus une fois par heure (onglet visible) ; iCalendar lu juste assez : lignes repliées,
+      journées entières, fuseaux (TZID), récurrences simples (RRULE, EXDATE, exceptions déplacées) ; ce qui est fini
+      depuis plus d'un jour n'est pas gardé.
+- [x] Sous « Aujourd'hui » : aujourd'hui (ce qui n'est pas encore passé) et demain, huit au plus par jour. « Chantier :
+      plombier » se range sous Chantier (le préfixe de la Capture). Selene ne devient pas un agenda.
 
 ## Phase 3
 

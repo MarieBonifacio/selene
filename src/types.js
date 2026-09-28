@@ -1582,11 +1582,17 @@ const dehorsFeeds = () => (S().config.dehors && Array.isArray(S().config.dehors.
 const dehorsConf = () => S().config.dehors || {};
 /* Écrit la configuration de Dehors en gardant le reste (flux, Artist Watch) ; vide, elle disparaît. */
 function dehorsSet(patch) {
-  const d = { feeds: dehorsFeeds(), ...(dehorsConf().artists ? { artists: true, artistsSeen: dehorsConf().artistsSeen || 0 } : {}), ...patch };
+  const d = { ...dehorsConf(), feeds: dehorsFeeds(), ...patch };
   if (!d.artists) { delete d.artists; delete d.artistsSeen; }
-  if (!d.feeds.length && !d.artists) delete S().config.dehors; else S().config.dehors = d;
+  if (!Array.isArray(d.research) || !d.research.length) delete d.research;
+  if (!d.feeds.length && !d.artists && !d.research) delete S().config.dehors; else S().config.dehors = d;
   site.save();
 }
+/* Research Watch (veille.js) : des recherches et des auteurs, relus une fois par semaine ; la clé OpenAlex, facultative,
+   reste sur l'appareil (jamais synchronisée, effacée à la déconnexion). */
+const OA_KEY = "selene-openalex-key";
+const oaKey = () => { try { return localStorage.getItem(OA_KEY) || ""; } catch { return ""; } };
+const dehorsResearch = () => (Array.isArray(dehorsConf().research) ? dehorsConf().research : []);
 /* Artist Watch : un flux de plus, fabriqué ici (MusicBrainz, sans passeur), rangé sous le premier module de musique. */
 const MB_WATCH = "mb-artists";
 const musicMods = () => Object.keys(S().modules).filter(k => enabled(k) && S().modules[k].type === "collection" && S().modules[k].config.music);
@@ -1595,7 +1601,8 @@ function watchedArtists() {
   for (const k of musicMods()) for (const e of S().modules[k].entries) if (e.mb && e.mb.a) { m.delete(e.mb.a); m.set(e.mb.a, { name: e.title, mod: k }); }
   return [...m].slice(-30); // trente au plus, les plus récemment ajoutés : trente secondes de MusicBrainz, une fois par semaine
 }
-const dehorsAll = () => [...dehorsFeeds(), ...(dehorsConf().artists ? [{ id: MB_WATCH, title: "Sorties de tes artistes", mod: musicMods()[0] || "", seen: dehorsConf().artistsSeen || 0, watch: true }] : [])];
+const dehorsAll = () => [...dehorsFeeds(), ...(dehorsConf().artists ? [{ id: MB_WATCH, title: "Sorties de tes artistes", mod: musicMods()[0] || "", seen: dehorsConf().artistsSeen || 0, watch: true }] : []),
+  ...dehorsResearch().map(r => ({ id: "oa-" + r.id, title: `Veille : ${r.q}`, mod: r.mod || "", seen: r.seen || 0, research: r }))];
 const dehorsOn = () => hosted() && authReady() && !!authSession;
 function dehorsCache() {
   try { const c = JSON.parse(localStorage.getItem(DEHORS_KEY) || "null"); if (c && typeof c === "object" && c.feeds && typeof c.feeds === "object") return { at: +c.at || 0, feeds: c.feeds, hidden: Array.isArray(c.hidden) ? c.hidden : [] }; } catch {}
@@ -1614,7 +1621,8 @@ async function dehorsRefresh(force = false) {
   if (dehorsBusy || !dehorsOn() || document.visibilityState !== "visible") return;
   const feeds = dehorsFeeds(), due = feeds.length && passeurPret() && (force || Date.now() - dehorsCache().at >= 3 * 3600000);
   const watchDue = dehorsConf().artists && (force || Date.now() - ((dehorsCache().feeds[MB_WATCH] || {}).at || 0) >= 7 * 86400000);
-  if (!due && !watchDue) return;
+  const research = dehorsResearch().filter(r => force || Date.now() - ((dehorsCache().feeds["oa-" + r.id] || {}).at || 0) >= 7 * 86400000);
+  if (!due && !watchDue && !research.length) return;
   dehorsBusy = true; if (routeOf().view === "dehors") render();
   try {
     if (due) {
@@ -1635,7 +1643,25 @@ async function dehorsRefresh(force = false) {
       const c = dehorsCache(); c.at = Date.now(); dehorsStore(c);
     }
     if (watchDue) await artistWatch();
+    for (const r of research) await researchWatch(r);
   } finally { dehorsBusy = false; render(); }
+}
+/* Une veille : ce qui est paru depuis la dernière relecture (la première fois, le mois écoulé). Comme les sorties
+   d'artistes, un article compte à partir de sa découverte (OpenAlex indexe avec retard) ; sa date reste affichée. */
+async function researchWatch(r) {
+  const c0 = dehorsCache(), fc = c0.feeds["oa-" + r.id] || { items: [] };
+  const since = fc.at ? new Date(fc.at - 14 * 86400000).toISOString().slice(0, 10) : addDaysTo(todayISO(), -30);
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), 10000);
+  try {
+    const res = await fetch(oaUrl(r, since, oaKey()), { signal: ac.signal });
+    if (res.status === 429) fc.err = "quota du jour atteint (une clé OpenAlex gratuite le décuple)";
+    else if (!res.ok) fc.err = `OpenAlex répond ${res.status}`;
+    else {
+      const got = oaWorks(await res.json()).map(x => ({ ...x, text: [x.oa.day && pubDate(x.oa.day), x.text].filter(Boolean).join(" · ") }));
+      fc.items = feedMerge(fc.items, got, Date.now()); fc.err = "";
+    }
+  } catch { fc.err = "OpenAlex injoignable"; } finally { clearTimeout(t); }
+  fc.at = Date.now(); const c = dehorsCache(); c.feeds["oa-" + r.id] = fc; dehorsStore(c);
 }
 /* Artist Watch : pour chaque artiste relié, ce qu'il a publié depuis la dernière vérification (la même mémoire que
    « Nouvelles sorties », selene-mb-seen ; la première fois, le mois écoulé). Ces éléments comptent à partir du jour où
@@ -1706,14 +1732,22 @@ VIEWS.dehors = () => {
       + `<div class="row" style="margin-top:12px">${total > items.length ? `<span class="hint" style="margin:0">Et ${total - items.length} autre${total - items.length > 1 ? "s" : ""}, qui attendront.</span>` : ""}<span class="spacer"></span><button class="btn sm" data-act="dehors-seen">Tout marquer comme vu</button></div>`;
   const opts = sel => `<option value="">Sans projet</option>${mods.map(m => `<option value="${esc(m)}" ${sel === m ? "selected" : ""}>${esc(label(m))}</option>`).join("")}`;
   const state = f => { const fc = cache.feeds[f.id]; return !fc ? "pas encore lu" : fc.err ? `ne répond pas : ${fc.err}` : `lu ${dehorsWhen(fc.at)}`; };
-  return `<div class="dehors-view">` + head + `<div class="row" style="margin:-4px 0 12px"><span class="hint" style="margin:0">${dehorsBusy ? "Lecture des flux…" : cache.at ? `Flux relus ${esc(dehorsWhen(cache.at))}.` : ""}</span><span class="spacer"></span>${feeds.length ? `<button class="btn ghost sm" data-act="dehors-refresh" ${dehorsBusy ? "disabled" : ""}>Relire maintenant</button>` : ""}</div>
+  return `<div class="dehors-view">` + head + `<div class="row" style="margin:-4px 0 12px"><span class="hint" style="margin:0">${dehorsBusy ? "Lecture des flux…" : cache.at ? `Flux relus ${esc(dehorsWhen(cache.at))}.` : ""}</span><span class="spacer"></span>${dehorsAll().length ? `<button class="btn ghost sm" data-act="dehors-refresh" ${dehorsBusy ? "disabled" : ""}>Relire maintenant</button>` : ""}</div>
     ${list}
     <h3 style="margin-top:28px">Suivre</h3>
     <div class="capture capture-wrap"><input id="dehorsIn" inputmode="url" autocomplete="off" placeholder="L'adresse d'un site ou d'un flux…" aria-label="Adresse à suivre"><select id="dehorsMod" aria-label="Projet">${opts("")}</select><button class="btn" data-act="dehors-add">Suivre</button></div>
     ${watchedArtists().length || dehorsConf().artists ? `<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:8px 0 4px"><input type="checkbox" data-act="dehors-artists" ${dehorsConf().artists ? "checked" : ""}>Les sorties de mes artistes : MusicBrainz, une fois par semaine, pour ${watchedArtists().length} artiste${watchedArtists().length > 1 ? "s" : ""} relié${watchedArtists().length > 1 ? "s" : ""} (trente au plus)</label>` : ""}
     <p class="hint" style="margin:4px 0 10px">Une newsletter : abonne-toi avec une adresse de <a href="https://kill-the-newsletter.com/" target="_blank" rel="noopener noreferrer">Kill the Newsletter</a>, puis suis le flux Atom qu'il te donne (il garde les lettres chez lui : pas pour une correspondance privée).</p>
+    <h3 style="margin-top:28px">Veille de recherche</h3>
+    <p class="hint" style="margin:0 0 8px">Une recherche (« depersonalization », « default mode network self ») ou un auteur (identifiant OpenAlex ou ORCID) : chaque semaine, ce qui vient de paraître, selon OpenAlex. Elle ne trie pas selon ce qui te donnerait raison ; les liens, c'est toi qui les poses.</p>
+    <div class="capture capture-wrap"><input id="oaIn" autocomplete="off" placeholder="Une recherche, un ORCID, un identifiant OpenAlex…" aria-label="Recherche ou auteur à suivre"><select id="oaMod" aria-label="Projet">${opts("")}</select><button class="btn" data-act="oa-add">Veiller</button></div>
+    ${dehorsResearch().length ? `<ul class="plain dehors-cfg">${dehorsResearch().map(r => { const fc = cache.feeds["oa-" + r.id]; return `<li class="item" data-oa="${esc(r.id)}"><span></span><div><b>${esc(r.q)}</b><div class="meta"><span>${r.kind === "author" ? "auteur" : "recherche"}</span><span>${esc(!fc ? "pas encore lue" : fc.err ? `ne répond pas : ${fc.err}` : `lue ${dehorsWhen(fc.at)}`)}</span></div></div>
+      <div class="row"><select data-act="oa-mod" aria-label="Projet de cette veille">${opts(r.mod || "")}</select><button class="btn ghost sm" data-act="oa-del">retirer</button></div></li>`; }).join("")}</ul>` : ""}
+    <details style="margin-top:8px"><summary class="hint">Clé OpenAlex (facultative)</summary>
+      <p class="hint" style="margin:6px 0">Sans clé, OpenAlex répond dans une petite limite quotidienne ; une clé gratuite (<a href="https://openalex.org/settings/api" target="_blank" rel="noopener noreferrer">openalex.org</a>) la décuple. Elle reste dans ce navigateur, n'est jamais synchronisée, et s'efface à la déconnexion.</p>
+      <label>Clé API OpenAlex<input type="password" data-act="oa-key" value="${oaKey() ? "••••••••" : ""}" autocomplete="off" placeholder="colle ta clé"></label></details>
     ${feeds.length ? `<details class="dehors-feeds"><summary>Flux suivis (${feeds.length})</summary>
-      <ul class="plain">${feeds.map(f => `<li class="item" data-feed="${esc(f.id)}"><span></span><div><b>${esc(f.title)}</b><div class="meta"><span>${esc((() => { try { return new URL(f.url).hostname.replace(/^www\./, ""); } catch { return ""; } })())}</span><span>${esc(state(f))}</span></div>
+      <ul class="plain dehors-cfg">${feeds.map(f => `<li class="item" data-feed="${esc(f.id)}"><span></span><div><b>${esc(f.title)}</b><div class="meta"><span>${esc((() => { try { return new URL(f.url).hostname.replace(/^www\./, ""); } catch { return ""; } })())}</span><span>${esc(state(f))}</span></div>
         <label style="display:flex;gap:6px;align-items:center;font-weight:400;margin-top:4px"><input type="checkbox" data-act="dehors-motifs" ${f.motifs ? "checked" : ""}>Seulement ce qui touche mes motifs</label></div>
         <div class="row"><select data-act="dehors-mod" aria-label="Projet de ce flux">${opts(f.mod)}</select><button class="btn ghost sm" data-act="dehors-del">retirer</button></div></li>`).join("")}</ul>
     </details>` : ""}</div>`;
@@ -1729,7 +1763,7 @@ CLICK["dehors-add"] = async el => {
 };
 CLICK["dehors-refresh"] = () => dehorsRefresh(true);
 CLICK["dehors-seen"] = () => {
-  const now = Date.now(); dehorsSet({ feeds: dehorsFeeds().map(f => ({ ...f, seen: now })), ...(dehorsConf().artists ? { artistsSeen: now } : {}) });
+  const now = Date.now(); dehorsSet({ feeds: dehorsFeeds().map(f => ({ ...f, seen: now })), ...(dehorsConf().artists ? { artistsSeen: now } : {}), ...(dehorsResearch().length ? { research: dehorsResearch().map(r => ({ ...r, seen: now })) } : {}) });
   const c = dehorsCache(); c.hidden = []; dehorsStore(c); render(); toast("Tout est vu. Dehors se tait jusqu'à la prochaine parution.");
 };
 CLICK["dehors-hide"] = el => { const { f, x } = dehorsHit(el); if (!x) return; dehorsHideItem(f, x); render(); };
@@ -1739,10 +1773,11 @@ CLICK["dehors-note"] = el => {
 };
 CLICK["dehors-keep"] = el => {
   const { f, x } = dehorsHit(el), to = sourcesModule(); if (!x || !to) return;
-  const src = { title: x.title, url: normalizeUrl(x.link), doi: findDoi(x.link), site: f.title, date: x.date.slice(0, 10), kind: "page", abstract: x.text };
+  const src = x.oa ? { title: x.title, url: x.link, doi: x.oa.doi || null, site: x.oa.site, date: x.oa.day, kind: x.oa.kind === "article" ? "article" : x.oa.kind || "article", authors: x.oa.authors, abstract: x.text }
+    : { title: x.title, url: normalizeUrl(x.link), doi: findDoi(x.link), site: f.title, date: x.date.slice(0, 10), kind: "page", abstract: x.text };
   const dup = findSourceDup(src);
   if (dup) { dehorsHideItem(f, x); render(); return toast(`Déjà gardée dans ${label(dup.mod)}.`); }
-  const e = keepSource(to, src, { from: "Dehors", text: f.title, date: todayISO() }); dehorsHideItem(f, x); site.save(); render(); toast(`Gardée dans ${label(to)} : « ${excerpt(e, 50)} ».`);
+  const e = keepSource(to, src, { from: f.research ? "Veille" : "Dehors", text: f.research ? f.research.q : f.title, date: todayISO() }); dehorsHideItem(f, x); site.save(); render(); toast(`Gardée dans ${label(to)} : « ${excerpt(e, 50)} ».`);
 };
 CLICK["dehors-del"] = async el => {
   const { f } = dehorsHit(el); if (!f || !await ask(`Ne plus suivre « ${f.title} » ?`)) return;
@@ -1760,10 +1795,92 @@ CHANGE["dehors-artists"] = el => {
   dehorsStore(dehorsCache()); render();
   if (el.checked) { toast("Artist Watch : première vérification, une seconde par artiste."); dehorsRefresh(); }
 };
+CLICK["oa-add"] = () => {
+  const inp = $("#oaIn"), w = oaWatch(inp ? inp.value : ""); if (!w) return toast("Une recherche de deux cents caractères au plus, ou un auteur.");
+  const list = dehorsResearch();
+  if (list.some(r => r.kind === w.kind && fold(r.q) === fold(w.q))) return toast("Déjà en veille.");
+  if (list.length >= 30) return toast("Trente veilles, c'est une thèse. Retires-en avant d'en ajouter.");
+  const mod = ($("#oaMod") || {}).value || "";
+  dehorsSet({ research: [...list, { id: uid(), kind: w.kind, q: w.q, ...(mod && Object.hasOwn(S().modules, mod) ? { mod } : {}), seen: Date.now() - 7 * 86400000 }] });
+  if (inp) inp.value = ""; render(); toast(`En veille : ${w.q}. Première lecture…`); dehorsRefresh();
+};
+CLICK["oa-del"] = async el => {
+  const id = el.closest("[data-oa]").dataset.oa, r = dehorsResearch().find(x => x.id === id); if (!r || !await ask(`Arrêter la veille « ${r.q} » ?`)) return;
+  dehorsSet({ research: dehorsResearch().filter(x => x.id !== id) }); dehorsStore(dehorsCache()); render();
+};
+CHANGE["oa-mod"] = el => { const id = el.closest("[data-oa]").dataset.oa; dehorsSet({ research: dehorsResearch().map(r => r.id === id ? { ...r, mod: el.value } : r) }); render(); };
+CHANGE["oa-key"] = el => {
+  const v = el.value.trim(); if (v.startsWith("•")) return;
+  try { if (v) localStorage.setItem(OA_KEY, v); else localStorage.removeItem(OA_KEY); } catch {}
+  el.blur(); render(); toast(v ? "Clé OpenAlex gardée dans ce navigateur." : "Clé OpenAlex oubliée.");
+};
 CLICK["dehors-mb-add"] = el => {
   const { f, x } = dehorsHit(el); if (!x || !x.mb || !Object.hasOwn(S().modules, x.mb.mod)) return;
   const n = saveCollectionItem(S().modules[x.mb.mod], { title: x.mb.artist, subtitle: x.mb.album }, uid());
   n.mb = { a: x.mb.a, rg: x.mb.rg, ...(x.mb.y ? { y: x.mb.y } : {}) };
   dehorsHideItem(f, x); site.save(); render(); toast(`Ajouté à ${label(x.mb.mod)} : ${x.mb.artist}, « ${x.mb.album} ».`);
 };
+
+/* ================= Agenda : un calendrier dédié, aujourd'hui et demain (agenda.js pour la lecture iCal) =================
+   L'adresse iCal secrète est une capacité au porteur : qui la possède lit l'agenda. Elle reste donc dans ce navigateur
+   (jamais synchronisée, effacée à la déconnexion) et ne voyage que vers ton passeur, qui ne garde rien. Lue au plus
+   une fois par heure, onglet visible. Un préfixe « Chantier : » range l'événement sous l'espace de ce nom. */
+const ICS_URL = "selene-ics-url", ICS_CACHE = "selene-ics";
+const icsUrl = () => { try { return localStorage.getItem(ICS_URL) || ""; } catch { return ""; } };
+function icsCache() { try { const c = JSON.parse(localStorage.getItem(ICS_CACHE) || "null"); if (c && Array.isArray(c.events)) return c; } catch {} return { at: 0, events: [], err: "" }; }
+let agendaBusy = false;
+async function agendaRefresh(force = false) {
+  const url = icsUrl();
+  if (agendaBusy || !url || !passeurPret() || document.visibilityState !== "visible") return;
+  if (!force && Date.now() - icsCache().at < 3600000) return;
+  agendaBusy = true;
+  const c = icsCache();
+  try {
+    const r = await passeurFetch(url, "ics");
+    if (r.status >= 200 && r.status < 300 && typeof r.texte === "string") {
+      const now = Date.now(), ev = icsParse(r.texte);
+      // On ne garde que ce qui peut encore servir : les récurrences, et ce qui n'est pas fini depuis plus d'un jour.
+      c.events = ev.filter(e => e.rrule || e.end > now - 86400000).slice(0, 800); c.err = ev.length || /BEGIN:VCALENDAR/.test(r.texte) ? "" : "ce n'est pas un calendrier iCal";
+    } else c.err = r.erreur || `le calendrier répond ${r.status}`;
+  } catch (e) { c.err = e.message; }
+  c.at = Date.now();
+  try { localStorage.setItem(ICS_CACHE, JSON.stringify(c)); } catch {}
+  agendaBusy = false; render();
+}
+/* « Chantier : plombier » → l'espace Chantier, et « plombier ». */
+function agendaRoute(summary) {
+  const m = String(summary).match(/^([^:]{2,40}?)\s*:\s*(.+)$/); if (!m) return { mod: "", text: summary };
+  const mod = S().config.modules.find(x => x.on && Object.hasOwn(S().modules, x.id) && fold(label(x.id)) === fold(m[1].trim()));
+  return mod ? { mod: mod.id, text: m[2].trim() } : { mod: "", text: summary };
+}
+function agendaHTML() {
+  if (!dehorsOn() || !icsUrl()) return "";
+  const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+  const day = n => { const a = new Date(t0); a.setDate(a.getDate() + n); return a.getTime(); };
+  const hhmm = t => hm(t).replace(" h 00", " h");
+  const block = (n, name) => {
+    const occ = icsBetween(icsCache().events, Math.max(day(n), n ? 0 : Date.now() - 3600000), day(n + 1));
+    if (!occ.length) return "";
+    return `<div class="agenda-day"><p class="hint" style="margin:10px 0 2px">${name}</p><ul class="plain">${occ.slice(0, 8).map(o => { const r = agendaRoute(o.summary);
+      return `<li class="agenda-ev"><span class="when">${o.allDay ? "journée" : `${esc(hhmm(o.start))}${o.end - o.start > 0 && o.end - o.start < 86400000 ? `–${esc(hhmm(o.end))}` : ""}`}</span> ${r.mod ? `<a class="tag" href="#${esc(r.mod)}">${esc(label(r.mod))}</a> ` : ""}${esc(r.text)}${o.location ? ` <span class="hint" style="margin:0">· ${esc(o.location)}</span>` : ""}</li>`; }).join("")}</ul></div>`;
+  };
+  return block(0, "Aujourd'hui, au calendrier") + block(1, "Demain");
+}
+function agendaSettingsHTML() {
+  const c = icsCache(), has = !!icsUrl();
+  return `<section id="agenda"><h3>Calendrier</h3><p class="hint">Un seul calendrier, dédié (crée-en un « Selene ») : aujourd'hui et demain s'affichent sous « Aujourd'hui ». Un titre « Chantier : plombier » se range sous Chantier. Google : paramètres de l'agenda → Intégrer l'agenda → Adresse secrète au format iCal. Apple : partager en public, lien webcal.</p>
+    <label>Adresse iCal secrète<input type="password" data-act="ics-url" value="${has ? "••••••••" : ""}" autocomplete="off" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"></label>
+    <p class="hint" style="margin-top:6px">Qui possède cette adresse lit tout le calendrier : elle reste dans ce navigateur, n'est jamais synchronisée, ne passe que par ton passeur (qui ne garde rien), et s'efface à la déconnexion. Si elle fuit, réinitialise-la dans l'agenda.</p>
+    ${has ? `<p class="row" style="margin:0"><span>${esc(agendaBusy ? "Lecture…" : c.err ? `Ne répond pas : ${c.err}` : c.at ? `Lu ${dehorsWhen(c.at)} : ${c.events.length} événement${c.events.length > 1 ? "s" : ""} à venir ou récurrent${c.events.length > 1 ? "s" : ""}.` : "Pas encore lu.")}</span><button class="btn sm" data-act="ics-check">Relire</button><button class="btn ghost sm" data-act="ics-forget">oublier</button></p>` : ""}</section>`;
+}
+CHANGE["ics-url"] = el => {
+  let v = el.value.trim(); if (v.startsWith("•")) return;
+  v = v.replace(/^webcal:\/\//i, "https://");
+  if (v && !/^https:\/\//i.test(v)) { el.value = ""; return toast("Une adresse https:// (ou webcal://) est attendue."); }
+  try { if (v) localStorage.setItem(ICS_URL, v); else localStorage.removeItem(ICS_URL); localStorage.removeItem(ICS_CACHE); } catch {}
+  el.blur(); render();
+  if (v) { toast("Adresse gardée dans ce navigateur. Lecture…"); agendaRefresh(true); }
+};
+CLICK["ics-check"] = () => agendaRefresh(true);
+CLICK["ics-forget"] = () => { try { localStorage.removeItem(ICS_URL); localStorage.removeItem(ICS_CACHE); } catch {} render(); toast("Calendrier oublié sur cet appareil."); };
 

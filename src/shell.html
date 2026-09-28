@@ -329,7 +329,8 @@ ul.dehors>.item>div:nth-child(2){min-width:0}
 ul.dehors+ul.dehors,h3+ul.dehors{margin-top:0}
 .dehors-view h3{margin-top:22px}
 .capture select{flex:0 1 auto;width:auto;max-width:11em}
-@media (max-width:640px){ul.dehors>.item{grid-template-columns:auto minmax(0,1fr)}ul.dehors>.item>.row{grid-column:2;justify-content:flex-start}
+.agenda-ev{padding:3px 0}.agenda-ev .when{display:inline-block;min-width:7.5em;font-variant-numeric:tabular-nums;color:var(--muted)}
+@media (max-width:640px){ul.dehors>.item,ul.dehors-cfg>.item{grid-template-columns:auto minmax(0,1fr)}ul.dehors>.item>.row,ul.dehors-cfg>.item>.row{grid-column:2;justify-content:flex-start}
   .capture.capture-wrap{flex-wrap:wrap}.capture.capture-wrap input{flex:1 1 100%}}
 .meta .acts{margin-left:auto;display:inline-flex;gap:2px}.meta .acts .btn{padding:0 6px;font-size:.8rem}
 .marg .links{display:flex;flex-direction:column;gap:2px}
