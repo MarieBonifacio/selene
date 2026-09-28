@@ -39,8 +39,16 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
 - [x] Une requête par seconde au plus, en file (règle de MusicBrainz) ; pochettes de Cover Art Archive en `<img>`
       (pas besoin de CORS, seulement de la CSP `img-src`) ; une pochette absente s'efface.
 
-**5c : Ciel et chantier** : pluie prévue sur une tâche extérieure (Open-Meteo) ; étoiles filantes et éclipses visibles
-depuis Lille, en table fixe (aucun réseau).
+**5c : Ciel et chantier**
+- [x] Étoiles filantes : les six grandes pluies (calendrier de l'IMO), une ligne sous le ciel la veille et le soir du
+      maximum, avec leur taux théorique (ZHR) et la réserve qui s'impose : bien moins en ville, et la lune en efface
+      la plupart quand elle est éclairée à plus de 60 %.
+- [x] Éclipses visibles depuis Lille jusqu'en 2030, en table fixe (aucun réseau), annoncées une semaine avant ;
+      seulement si le lieu réglé est dans le Nord de la France ou en Belgique, là où la table vaut. « Jamais sans
+      lunettes d'éclipse » pour le Soleil. Une ligne d'événement renforce le voile de lecture (elle descend sur les arbres).
+- [x] Pluie sur une tâche à ciel ouvert : des mots réglables par module (« extérieur, balcon, jardin… », cherchés dans
+      le titre et le lieu) ; la pluie des cinq prochains jours (1 mm ou 60 % au moins), « le jour prévu » si l'échéance
+      tombe dessus, sinon « sec jusqu'à ». Aucun appel de plus : la prévision quotidienne vient avec la météo du ciel.
 
 **5d : Radar culturel** : événements de la Métropole de Lille (OpenData MEL, OpenAgenda), filtrés par tes mots.
 

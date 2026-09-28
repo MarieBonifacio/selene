@@ -200,7 +200,8 @@ const MODULE_TYPES = {
   taches: {
     label: "Tâches (échéances, lieux, étapes, coûts)",
     datedEntries: false, // une tâche a une échéance facultative, pas une date de journal
-    defaults: () => ({ config: { groupLabel: "Lieu", catLabel: "Type", cats: ["Général"], costs: true,
+    // outdoor : mots qui désignent une tâche à ciel ouvert ; la pluie prévue s'y affiche (si un lieu est réglé).
+    defaults: () => ({ config: { groupLabel: "Lieu", catLabel: "Type", cats: ["Général"], costs: true, outdoor: "extérieur, dehors, balcon, jardin, terrasse, façade, toit",
       groups: { on: true, by: "room", sort: "name", hideDone: false, title: "" } }, entries: [] }),
     normalize(inst) {
       const c = inst.config, def = MODULE_TYPES.taches.defaults().config;
@@ -211,6 +212,7 @@ const MODULE_TYPES = {
     validate(inst, v) {
       const c = inst.config;
       if (c.cats != null && (!Array.isArray(c.cats) || c.cats.some(x => typeof x !== "string"))) v.fail("types de tâche");
+      if (c.outdoor != null && (typeof c.outdoor !== "string" || c.outdoor.length > 300)) v.fail("tâches à ciel ouvert");
       for (const t of inst.entries) {
         if (typeof t.title !== "string") v.fail("titre");
         if (t.steps != null && (!Array.isArray(t.steps) || t.steps.some(x => !x || typeof x.t !== "string"))) v.fail("étapes");

@@ -675,12 +675,25 @@ function dueLabel(t) {
   if (n <= 7) return { txt: `Dans ${n} j`, cls: "soon" };
   return { txt: fmt(t.due), cls: "" };
 }
+/* Une tâche à ciel ouvert (un des mots réglés dans son titre ou son lieu) : la pluie des cinq prochains jours, lue dans
+   la prévision déjà gardée par la Fenêtre (aucun appel de plus). Sans lieu réglé ou sans météo : rien. */
+function outdoorRain(c, t) {
+  if (t.done) return "";
+  const words = String(c.outdoor || "").split(",").map(w => fold(w.trim())).filter(w => w.length > 1), f = fold(`${t.title} ${t.room || ""}`);
+  if (!words.some(w => f.includes(w))) return "";
+  const sc = skyConf(), w = sc && sc.weather !== false ? freshWeather(sc) : null;
+  if (!w || !Array.isArray(w.days) || !w.days.length) return "";
+  const today = todayISO(), rain = rainDays(w.days, today, 5), day = d => fmt(d, { weekday: "short", day: "numeric" });
+  const tip = `title="Prévision Open-Meteo pour ${esc(sc.name)}, cinq jours"`;
+  if (!rain.length) return `<span class="wx" ${tip}>sec jusqu'à ${esc(day(addDaysTo(today, 4)))}</span>`;
+  return `<span class="wx rain" ${tip}>pluie prévue ${esc(rain.map(day).join(", "))}${t.due && rain.includes(t.due) ? ", le jour prévu" : ""}</span>`;
+}
 function taskHTML(id, t) {
   const c = S().modules[id].config, d = dueLabel(t), sd = (t.steps || []).filter(x => x.d).length, ef = Math.min(3, Math.max(1, Math.round(+t.effort) || 1));
   return `<li class="item ${t.done ? "done" : ""} ${openId === t.id ? "open" : ""}" data-task="${esc(t.id)}" data-mod="${esc(id)}">
     <input type="checkbox" class="check" data-act="task-done" ${t.done ? "checked" : ""} aria-label="Marquer comme fait">
     <div><button class="t-title" data-act="task-open">${esc(t.title)}</button>
-      <div class="meta">${t.room ? `<span class="tag">${esc(t.room)}</span>` : ""}<span class="${t.done ? "" : d.cls}">${esc(d.txt)}</span><span>${esc(t.cat)}</span><span>${"●".repeat(ef)}${"○".repeat(3 - ef)}</span>${(t.steps || []).length ? `<span>${sd}/${t.steps.length} étapes</span>` : ""}${c.costs && t.cost ? `<span>${esc(t.cost)} €</span>` : ""}</div></div>
+      <div class="meta">${t.room ? `<span class="tag">${esc(t.room)}</span>` : ""}<span class="${t.done ? "" : d.cls}">${esc(d.txt)}</span><span>${esc(t.cat)}</span><span>${"●".repeat(ef)}${"○".repeat(3 - ef)}</span>${(t.steps || []).length ? `<span>${sd}/${t.steps.length} étapes</span>` : ""}${c.costs && t.cost ? `<span>${esc(t.cost)} €</span>` : ""}${outdoorRain(c, t)}</div></div>
     <button class="star ${t.today ? "on" : ""}" data-act="task-today" title="Faire aujourd'hui" aria-label="Faire aujourd'hui">★</button>
     <div class="details">
       ${(t.steps || []).length ? `<ul class="steps">${t.steps.map((x, i) => `<li><input type="checkbox" data-act="task-step" data-i="${i}" ${x.d ? "checked" : ""} id="s${esc(t.id)}-${i}"><label for="s${esc(t.id)}-${i}" style="font-weight:400;display:inline">${esc(x.t)}</label></li>`).join("")}</ul>` : ""}
@@ -754,6 +767,8 @@ TYPE_UI.taches = {
   </aside></div></div>`;
   },
   settings: (id, { config: c }) => `<div class="field-row"><label>Nom du regroupement<input data-set-mod="${esc(id)}.groupLabel" value="${esc(c.groupLabel)}" placeholder="Pièce, lieu, client…" required></label><label>Nom des types<input data-set-mod="${esc(id)}.catLabel" value="${esc(c.catLabel)}" required></label></div>
+    <label style="margin-top:8px;display:block">Tâches à ciel ouvert (mots dans le titre ou le lieu, séparés par des virgules)<input data-set-mod="${esc(id)}.outdoor" value="${esc(c.outdoor || "")}" placeholder="extérieur, balcon, jardin…" maxlength="300"></label>
+    <p class="hint" style="margin:4px 0 0">Elles montrent la pluie des cinq prochains jours, si un lieu est réglé (Réglages → Ciel).</p>
     <div class="field-row" style="margin-top:8px"><label>Types de tâche (un par ligne)<textarea data-act="task-cats" data-mod="${esc(id)}" rows="4">${esc(c.cats.join("\n"))}</textarea></label>
     <label style="display:flex;gap:8px;align-items:center;align-self:start;margin-top:26px"><input type="checkbox" data-act="task-costs" data-mod="${esc(id)}" ${c.costs ? "checked" : ""}>Suivre les coûts estimés</label></div>
     ${c.costs && firstOfType("budget") ? `<div class="field-row" style="margin-top:8px"><label>Enveloppe du budget pour les coûts<input data-set-mod="${esc(id)}.costEnvelope" value="${esc(costEnvelope(id, firstOfType("budget")))}" list="env-${esc(id)}" placeholder="aucune"><datalist id="env-${esc(id)}">${S().modules[firstOfType("budget")].config.envelopes.map(v => `<option value="${esc(v.name)}">`).join("")}</datalist></label><span></span></div>` : ""}`,

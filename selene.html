@@ -321,6 +321,8 @@ ul.plain>.item:last-child{border-bottom:1px solid var(--rule)}
 /* Musique : la pochette dans la marge de la ligne (celle des dates ailleurs) ; absente, elle s'efface. */
 img.cover{display:block;width:44px;height:44px;object-fit:cover;border:1px solid var(--rule);background:var(--surface)}
 img.cover.none{display:none}
+.wx.rain{color:var(--info,var(--accent))}
+.hero .sky-event{font-style:italic}
 .mb-albums .item{align-items:center}
 .meta .acts{margin-left:auto;display:inline-flex;gap:2px}.meta .acts .btn{padding:0 6px;font-size:.8rem}
 .marg .links{display:flex;flex-direction:column;gap:2px}
@@ -1191,7 +1193,8 @@ const MODULE_TYPES = {
   taches: {
     label: "Tâches (échéances, lieux, étapes, coûts)",
     datedEntries: false, // une tâche a une échéance facultative, pas une date de journal
-    defaults: () => ({ config: { groupLabel: "Lieu", catLabel: "Type", cats: ["Général"], costs: true,
+    // outdoor : mots qui désignent une tâche à ciel ouvert ; la pluie prévue s'y affiche (si un lieu est réglé).
+    defaults: () => ({ config: { groupLabel: "Lieu", catLabel: "Type", cats: ["Général"], costs: true, outdoor: "extérieur, dehors, balcon, jardin, terrasse, façade, toit",
       groups: { on: true, by: "room", sort: "name", hideDone: false, title: "" } }, entries: [] }),
     normalize(inst) {
       const c = inst.config, def = MODULE_TYPES.taches.defaults().config;
@@ -1202,6 +1205,7 @@ const MODULE_TYPES = {
     validate(inst, v) {
       const c = inst.config;
       if (c.cats != null && (!Array.isArray(c.cats) || c.cats.some(x => typeof x !== "string"))) v.fail("types de tâche");
+      if (c.outdoor != null && (typeof c.outdoor !== "string" || c.outdoor.length > 300)) v.fail("tâches à ciel ouvert");
       for (const t of inst.entries) {
         if (typeof t.title !== "string") v.fail("titre");
         if (t.steps != null && (!Array.isArray(t.steps) || t.steps.some(x => !x || typeof x.t !== "string"))) v.fail("étapes");
@@ -1658,6 +1662,36 @@ function skyMotion({ wind = 8, dir = 270, precip = 0, lat = 45 } = {}) {
   };
 }
 
+/* ---- le ciel des jours qui viennent : étoiles filantes, éclipses (tables fixes, aucun réseau) ----
+   Astronomie seulement : des dates et des chiffres, jamais d'interprétation. Pluies majeures visibles de nos latitudes,
+   selon le calendrier de l'IMO (Organisation internationale des météores) : jour du maximum et taux horaire zénithal
+   (ZHR), un maximum théorique sous un ciel parfaitement noir, radiant au zénith ; on en voit toujours moins. */
+const SHOWERS = [["Quadrantides", 1, 4, 110], ["Lyrides", 4, 22, 18], ["Perséides", 8, 12, 100], ["Orionides", 10, 21, 20], ["Léonides", 11, 17, 15], ["Géminides", 12, 14, 150]];
+/* Éclipses visibles depuis Lille jusqu'en 2030 (visibilité locale recoupée : icalendrier.fr, lunettes-eclipse.fr,
+   eclipse.previplus.fr ; à prolonger au-delà). Valables pour le Nord de la France et la Belgique seulement. */
+const ECLIPSES = [
+  ["2026-08-12", "soleil", "partielle", "90 % du Soleil masqué, maximum vers 20 h 14"], ["2026-08-28", "lune", "partielle", ""],
+  ["2027-02-20", "lune", "pénombre", ""], ["2027-08-02", "soleil", "partielle", ""], ["2028-01-12", "lune", "partielle", ""],
+  ["2028-01-26", "soleil", "partielle", ""], ["2028-07-06", "lune", "pénombre", ""], ["2028-12-31", "lune", "totale", ""],
+  ["2029-06-26", "lune", "totale", ""], ["2029-12-20", "lune", "totale", ""], ["2030-06-01", "soleil", "partielle", ""],
+  ["2030-06-15", "lune", "pénombre", ""], ["2030-12-09", "lune", "pénombre", ""]];
+const nearLille = (lat, lon) => lat >= 48.5 && lat <= 52.5 && lon >= 0.5 && lon <= 6.5;
+const dayDiff = (a, b) => Math.round((Date.parse(b + "T12:00:00Z") - Date.parse(a + "T12:00:00Z")) / 86400000);
+/* Ce qui mérite une ligne sous le ciel, d'aujourd'hui (AAAA-MM-JJ) : une pluie d'étoiles filantes la veille ou le
+   jour de son maximum ; une éclipse visible d'ici dans les sept jours (seulement près de Lille, là où la table vaut). */
+function skyEvents(today, place) {
+  const out = [], y = +today.slice(0, 4);
+  for (const [name, m, d, zhr] of SHOWERS) {
+    for (const yy of [y, y + 1]) { const peak = `${yy}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`, n = dayDiff(today, peak); if (n === 0 || n === 1) out.push({ kind: "shower", name, zhr, inDays: n, date: peak }); }
+  }
+  if (place && nearLille(place.lat, place.lon)) for (const [date, body, type, note] of ECLIPSES) {
+    const n = dayDiff(today, date); if (n >= 0 && n <= 7) out.push({ kind: "eclipse", body, type, note, inDays: n, date });
+  }
+  return out;
+}
+/* Les jours de pluie à venir d'une prévision quotidienne [{ d, mm, pp }] : 1 mm au moins, ou 60 % de probabilité. */
+const rainDays = (days, from, n = 5) => (days || []).filter(x => x && x.d >= from && dayDiff(from, x.d) < n && ((+x.mm || 0) >= 1 || (+x.pp || 0) >= 60)).map(x => x.d);
+
 /* ================= carte céleste des liaisons (pur, sans DOM) =================
    Une lentille secondaire, jamais une vue d'ensemble : le voisinage d'une entrée, ou les entrées d'un motif. Le
    placement est déterministe, comme une carte du ciel et contrairement aux graphes « à ressorts » (force-directed) qui
@@ -2033,10 +2067,12 @@ async function refreshWeather(force = false) {
   const w = freshWeather(c); if (!force && w && Date.now() - w.at < 30 * 60000) return;
   weatherBusy = true;
   try {
-    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${+c.lat}&longitude=${+c.lon}&current=temperature_2m,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,precipitation&timezone=auto`);
-    const cur = r.ok ? (await r.json()).current : null;
+    // Le temps présent, et les cinq jours qui viennent (pluie) pour les tâches à ciel ouvert : un seul appel.
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${+c.lat}&longitude=${+c.lon}&current=temperature_2m,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,precipitation&daily=precipitation_sum,precipitation_probability_max&forecast_days=7&timezone=auto`);
+    const j = r.ok ? await r.json() : null, cur = j && j.current, dl = j && j.daily;
     if (!cur || !Number.isFinite(+cur.weather_code)) return;
-    localStorage.setItem(WEATHER_KEY, JSON.stringify({ at: Date.now(), lat: +c.lat, lon: +c.lon, code: +cur.weather_code, temp: +cur.temperature_2m, cloud: +cur.cloud_cover, wind: +cur.wind_speed_10m, dir: +cur.wind_direction_10m, precip: +cur.precipitation }));
+    const days = dl && Array.isArray(dl.time) ? dl.time.slice(0, 7).map((d, i) => ({ d: String(d).slice(0, 10), mm: +((dl.precipitation_sum || [])[i]) || 0, pp: +((dl.precipitation_probability_max || [])[i]) || 0 })) : [];
+    localStorage.setItem(WEATHER_KEY, JSON.stringify({ at: Date.now(), lat: +c.lat, lon: +c.lon, code: +cur.weather_code, temp: +cur.temperature_2m, cloud: +cur.cloud_cover, wind: +cur.wind_speed_10m, dir: +cur.wind_direction_10m, precip: +cur.precipitation, days }));
     render();
   } catch {} finally { weatherBusy = false; } // hors ligne, ou l'artefact claude.ai qui ne sort pas : le ciel reste sans météo
 }
@@ -2050,6 +2086,13 @@ function skyWatch() {
     heroObs = heroObs || new window.IntersectionObserver(es => es.forEach(e => e.target.classList.toggle("still", !e.isIntersecting)));
     heroObs.disconnect(); heroObs.observe(h);
   } catch {}
+}
+/* Une pluie d'étoiles filantes ou une éclipse, en une phrase : ce qu'on verra vraiment, sans promettre le ciel. */
+function skyEventText(ev, illum) {
+  if (ev.kind === "shower") return `${ev.name} ${ev.inDays ? "demain soir" : "cette nuit"} : jusqu'à ${ev.zhr} météores par heure sous un ciel parfaitement noir, bien moins en ville${illum > .6 ? " ; la lune en effacera la plupart" : ""}.`;
+  const when = ev.inDays === 0 ? "aujourd'hui" : ev.inDays === 1 ? "demain" : `dans ${ev.inDays} jours (${fmt(ev.date, { day: "numeric", month: "long" })})`;
+  const what = ev.type === "pénombre" ? `Éclipse de Lune par la pénombre ${when} : un voile léger, à peine perceptible` : `Éclipse ${ev.type} de ${ev.body === "soleil" ? "Soleil" : "Lune"} ${when}${ev.note ? ` : ${ev.note}` : ""}`;
+  return `${what}${ev.body === "soleil" ? ". Jamais sans lunettes d'éclipse." : "."}`;
 }
 const hm = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
 /* La scène du moment : couleurs (skyScene), place de la lune, et ce qu'on peut en dire en une ligne. */
@@ -2077,10 +2120,12 @@ function sceneNow(m) {
   // Le texte se pose du côté opposé à la lune (qui se lève à gauche, à l'est) ; si elle le chevauche encore (écran étroit,
   // lune haute), le voile de lecture se renforce : un disque clair sous des lettres claires ne se lit pas.
   const right = !!(moonAt && moonAt.x < 50), clash = !!(moonAt && (right ? moonAt.x > 36 : moonAt.x < 64) && moonAt.y < 52);
-  if (clash) sc.scrim = Math.max(sc.scrim, .6);
+  // Une ligne d'événement allonge le texte jusqu'à la cime des arbres : même renfort.
+  const events = skyEvents(todayISO(), c ? place : null).map(ev => skyEventText(ev, m.illum));
+  if (clash || events.length) sc.scrim = Math.max(sc.scrim, .6);
   const cap = t => t && t[0].toUpperCase() + t.slice(1);
   const lineHTML = !line ? "" : wind ? `${esc(cap(facts[0]))}<span class="sky-wind"> · ${esc(wind)}</span>${esc(line.slice(facts[0].length))}` : esc(cap(line));
-  return { sc, sun, dark, moonAt, right, mo, line: cap(line), lineHTML };
+  return { sc, sun, dark, moonAt, right, mo, line: cap(line), lineHTML, events };
 }
 /* Réglages → Ciel : le lieu (une ville, ou la position de l'appareil, jamais demandée d'office), la météo, la lune. */
 let skyResults = []; // résultats de la dernière recherche de ville (propres à l'appareil, oubliés au rechargement)
@@ -2254,7 +2299,7 @@ VIEWS.accueil = () => {
   <section class="hero${HERO_COMPACT ? " compact" : ""}${win.right ? " txt-right" : ""}${skyLive() ? " live" : ""}" style="${heroStyle(win.sc, win.dark)}" data-weather="${win.sc.weather || ""}" data-leaves="${win.sc.leaves}" data-sun="${win.sun.alt.toFixed(1)}">${forestSVG(m.p, win.sc, win.moonAt, win.mo)}<div class="txt">
     <div class="phase">${m.name}</div>
     <p>Éclairée à ${Math.round(m.illum * 100)} %, jour ${Math.floor(m.age) + 1} du cycle. ${m.p < .5 ? `Pleine lune dans ${m.nextFull} j.` : `Nouvelle lune dans ${m.nextNew} j.`}</p>
-    ${win.lineHTML ? `<p class="sky-line">${win.lineHTML}</p>` : ""}
+    ${win.lineHTML ? `<p class="sky-line">${win.lineHTML}</p>` : ""}${win.events.map(t => `<p class="sky-line sky-event">${esc(t)}</p>`).join("")}
   </div></section>
   ${resumeSection()}
   <div class="two">
@@ -4023,12 +4068,25 @@ function dueLabel(t) {
   if (n <= 7) return { txt: `Dans ${n} j`, cls: "soon" };
   return { txt: fmt(t.due), cls: "" };
 }
+/* Une tâche à ciel ouvert (un des mots réglés dans son titre ou son lieu) : la pluie des cinq prochains jours, lue dans
+   la prévision déjà gardée par la Fenêtre (aucun appel de plus). Sans lieu réglé ou sans météo : rien. */
+function outdoorRain(c, t) {
+  if (t.done) return "";
+  const words = String(c.outdoor || "").split(",").map(w => fold(w.trim())).filter(w => w.length > 1), f = fold(`${t.title} ${t.room || ""}`);
+  if (!words.some(w => f.includes(w))) return "";
+  const sc = skyConf(), w = sc && sc.weather !== false ? freshWeather(sc) : null;
+  if (!w || !Array.isArray(w.days) || !w.days.length) return "";
+  const today = todayISO(), rain = rainDays(w.days, today, 5), day = d => fmt(d, { weekday: "short", day: "numeric" });
+  const tip = `title="Prévision Open-Meteo pour ${esc(sc.name)}, cinq jours"`;
+  if (!rain.length) return `<span class="wx" ${tip}>sec jusqu'à ${esc(day(addDaysTo(today, 4)))}</span>`;
+  return `<span class="wx rain" ${tip}>pluie prévue ${esc(rain.map(day).join(", "))}${t.due && rain.includes(t.due) ? ", le jour prévu" : ""}</span>`;
+}
 function taskHTML(id, t) {
   const c = S().modules[id].config, d = dueLabel(t), sd = (t.steps || []).filter(x => x.d).length, ef = Math.min(3, Math.max(1, Math.round(+t.effort) || 1));
   return `<li class="item ${t.done ? "done" : ""} ${openId === t.id ? "open" : ""}" data-task="${esc(t.id)}" data-mod="${esc(id)}">
     <input type="checkbox" class="check" data-act="task-done" ${t.done ? "checked" : ""} aria-label="Marquer comme fait">
     <div><button class="t-title" data-act="task-open">${esc(t.title)}</button>
-      <div class="meta">${t.room ? `<span class="tag">${esc(t.room)}</span>` : ""}<span class="${t.done ? "" : d.cls}">${esc(d.txt)}</span><span>${esc(t.cat)}</span><span>${"●".repeat(ef)}${"○".repeat(3 - ef)}</span>${(t.steps || []).length ? `<span>${sd}/${t.steps.length} étapes</span>` : ""}${c.costs && t.cost ? `<span>${esc(t.cost)} €</span>` : ""}</div></div>
+      <div class="meta">${t.room ? `<span class="tag">${esc(t.room)}</span>` : ""}<span class="${t.done ? "" : d.cls}">${esc(d.txt)}</span><span>${esc(t.cat)}</span><span>${"●".repeat(ef)}${"○".repeat(3 - ef)}</span>${(t.steps || []).length ? `<span>${sd}/${t.steps.length} étapes</span>` : ""}${c.costs && t.cost ? `<span>${esc(t.cost)} €</span>` : ""}${outdoorRain(c, t)}</div></div>
     <button class="star ${t.today ? "on" : ""}" data-act="task-today" title="Faire aujourd'hui" aria-label="Faire aujourd'hui">★</button>
     <div class="details">
       ${(t.steps || []).length ? `<ul class="steps">${t.steps.map((x, i) => `<li><input type="checkbox" data-act="task-step" data-i="${i}" ${x.d ? "checked" : ""} id="s${esc(t.id)}-${i}"><label for="s${esc(t.id)}-${i}" style="font-weight:400;display:inline">${esc(x.t)}</label></li>`).join("")}</ul>` : ""}
@@ -4102,6 +4160,8 @@ TYPE_UI.taches = {
   </aside></div></div>`;
   },
   settings: (id, { config: c }) => `<div class="field-row"><label>Nom du regroupement<input data-set-mod="${esc(id)}.groupLabel" value="${esc(c.groupLabel)}" placeholder="Pièce, lieu, client…" required></label><label>Nom des types<input data-set-mod="${esc(id)}.catLabel" value="${esc(c.catLabel)}" required></label></div>
+    <label style="margin-top:8px;display:block">Tâches à ciel ouvert (mots dans le titre ou le lieu, séparés par des virgules)<input data-set-mod="${esc(id)}.outdoor" value="${esc(c.outdoor || "")}" placeholder="extérieur, balcon, jardin…" maxlength="300"></label>
+    <p class="hint" style="margin:4px 0 0">Elles montrent la pluie des cinq prochains jours, si un lieu est réglé (Réglages → Ciel).</p>
     <div class="field-row" style="margin-top:8px"><label>Types de tâche (un par ligne)<textarea data-act="task-cats" data-mod="${esc(id)}" rows="4">${esc(c.cats.join("\n"))}</textarea></label>
     <label style="display:flex;gap:8px;align-items:center;align-self:start;margin-top:26px"><input type="checkbox" data-act="task-costs" data-mod="${esc(id)}" ${c.costs ? "checked" : ""}>Suivre les coûts estimés</label></div>
     ${c.costs && firstOfType("budget") ? `<div class="field-row" style="margin-top:8px"><label>Enveloppe du budget pour les coûts<input data-set-mod="${esc(id)}.costEnvelope" value="${esc(costEnvelope(id, firstOfType("budget")))}" list="env-${esc(id)}" placeholder="aucune"><datalist id="env-${esc(id)}">${S().modules[firstOfType("budget")].config.envelopes.map(v => `<option value="${esc(v.name)}">`).join("")}</datalist></label><span></span></div>` : ""}`,

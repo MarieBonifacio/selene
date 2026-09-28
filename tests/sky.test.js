@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const ctx = {};
-vm.runInNewContext(fs.readFileSync('src/sky.js', 'utf8') + '\n;globalThis.__sky = { sunPosition, moonPosition, nextCrossing, approxPlace, moonPlacement, weatherState, skyScene, skyMotion, windName, seasonAt, contrast, mixHex, WEATHER };', ctx);
+vm.runInNewContext(fs.readFileSync('src/sky.js', 'utf8') + '\n;globalThis.__sky = { sunPosition, moonPosition, nextCrossing, approxPlace, moonPlacement, weatherState, skyScene, skyMotion, windName, seasonAt, skyEvents, rainDays, contrast, mixHex, WEATHER };', ctx);
 const S = ctx.__sky;
 const PARIS = [48.85, 2.35];
 const at = s => Date.parse(s);
@@ -125,4 +125,29 @@ test('saisons : couleurs éteintes la nuit, givre seulement s’il est mesuré',
   assert.equal(S.skyScene({ sunAlt: -30 }).frost, null, 'pas de givre sans mesure');
   assert.match(S.skyScene({ sunAlt: -30, frost: true }).frost, /^#[0-9a-f]{6}$/);
   assert.equal(S.skyScene({ sunAlt: -30 }).leaves, 'feuille', 'sans saison, un été neutre');
+});
+
+test('ciel des jours qui viennent : étoiles filantes la veille et le jour du maximum, pas après', () => {
+  const lille = { lat: 50.6, lon: 3.1 };
+  assert.deepEqual([...S.skyEvents('2026-12-13', lille).map(e => `${e.name}:${e.inDays}`)], ['Géminides:1']);
+  assert.deepEqual([...S.skyEvents('2026-12-14', lille).map(e => `${e.name}:${e.inDays}`)], ['Géminides:0']);
+  assert.equal(S.skyEvents('2026-12-15', lille).length, 0);
+  assert.deepEqual([...S.skyEvents('2026-01-03', null).map(e => e.name)], ['Quadrantides'], 'sans lieu : les étoiles filantes, pas les éclipses');
+  assert.deepEqual([...S.skyEvents('2025-12-31', null).map(e => e.date)], [], 'le passage d’année ne décale rien');
+});
+
+test('éclipses : visibles depuis Lille, annoncées sept jours avant, jamais ailleurs', () => {
+  const lille = { lat: 50.6, lon: 3.1 }, marseille = { lat: 43.3, lon: 5.4 };
+  const e = S.skyEvents('2028-12-24', lille);
+  assert.equal(e.length, 1); assert.equal(e[0].body, 'lune'); assert.equal(e[0].type, 'totale'); assert.equal(e[0].inDays, 7);
+  assert.equal(S.skyEvents('2028-12-23', lille).length, 0, 'huit jours avant : pas encore');
+  assert.equal(S.skyEvents('2028-12-31', marseille).length, 0, 'la table ne vaut que pour le Nord');
+  assert.ok(S.skyEvents('2026-08-12', lille).some(x => x.body === 'soleil' && x.note.includes('90 %')));
+});
+
+test('pluie : 1 mm ou 60 % de probabilité, dans les cinq jours', () => {
+  const days = [{ d: '2026-09-29', mm: 0.4, pp: 30 }, { d: '2026-09-30', mm: 0, pp: 70 }, { d: '2026-10-01', mm: 2, pp: 10 }, { d: '2026-10-04', mm: 9, pp: 90 }];
+  assert.deepEqual([...S.rainDays(days, '2026-09-29')], ['2026-09-30', '2026-10-01']);
+  assert.deepEqual([...S.rainDays(days, '2026-09-29', 7)], ['2026-09-30', '2026-10-01', '2026-10-04']);
+  assert.deepEqual([...S.rainDays(null, '2026-09-29')], []);
 });
