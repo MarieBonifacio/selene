@@ -334,6 +334,13 @@ img.cover.none{display:none}
 .wx.rain{color:var(--info,var(--accent))}
 .hero .sky-event{font-style:italic}
 .mb-albums .item{align-items:center}
+/* Dehors : un titre d'article est long ; les actions passent à la ligne sous le texte plutôt que de l'étrangler. */
+ul.dehors>.item>div:nth-child(2){min-width:0}
+ul.dehors+ul.dehors,h3+ul.dehors{margin-top:0}
+.dehors-view h3{margin-top:22px}
+.capture select{flex:0 1 auto;width:auto;max-width:11em}
+@media (max-width:640px){ul.dehors>.item{grid-template-columns:auto minmax(0,1fr)}ul.dehors>.item>.row{grid-column:2;justify-content:flex-start}
+  .capture.capture-wrap{flex-wrap:wrap}.capture.capture-wrap input{flex:1 1 100%}}
 .meta .acts{margin-left:auto;display:inline-flex;gap:2px}.meta .acts .btn{padding:0 6px;font-size:.8rem}
 .marg .links{display:flex;flex-direction:column;gap:2px}
 .marg .m-motifs{display:inline-flex;flex-wrap:wrap;gap:0 8px;align-items:baseline}
@@ -940,6 +947,11 @@ function parseBackup(text) {
       // sky : le lieu du ciel de l'accueil, facultatif ; ses coordonnées finissent dans une URL, son nom dans le HTML.
       (site.config.sky != null && (!record(site.config.sky) || typeof site.config.sky.name !== "string" || site.config.sky.name.length > 80 ||
         typeof site.config.sky.lat !== "number" || !(Math.abs(site.config.sky.lat) <= 90) || typeof site.config.sky.lon !== "number" || !(Math.abs(site.config.sky.lon) <= 180))) ||
+      // dehors : les flux suivis (adresse http(s), titre, projet, « vu jusqu'à »), cent au plus.
+      (site.config.dehors != null && (!record(site.config.dehors) || !Array.isArray(site.config.dehors.feeds) || site.config.dehors.feeds.length > 100 ||
+        site.config.dehors.feeds.some(f => !record(f) || typeof f.id !== "string" || !/^[\w-]{1,64}$/.test(f.id) || typeof f.url !== "string" || f.url.length > 2000 || !/^https?:\/\//i.test(f.url) ||
+          typeof f.title !== "string" || f.title.length > 200 || (f.mod != null && (typeof f.mod !== "string" || f.mod.length > 64)) ||
+          (f.seen != null && !(Number.isFinite(f.seen) && f.seen >= 0)) || (f.motifs != null && typeof f.motifs !== "boolean")))) ||
       // radar : les mots du radar culturel, facultatifs.
       (site.config.radar != null && (!record(site.config.radar) || typeof site.config.radar.words !== "string" || site.config.radar.words.length > 300))) throw new Error("Configuration invalide");
   for (const m of site.config.modules || []) moduleId(m.id, "Module");
@@ -2016,6 +2028,69 @@ function passeurSettingsHTML() {
     <p class="hint">Ton identifiant, à mettre dans le secret <code>PASSEUR_USERS</code> : <code style="word-break:break-all">${esc(authSession.user.id)}</code> <button class="btn ghost sm" data-act="passeur-copy">copier</button>. Mode d'emploi : <a href="https://github.com/MarieBonifacio/selene/blob/main/docs/passeur.md" target="_blank" rel="noopener noreferrer">docs/passeur.md</a>.</p></section>`;
 }
 
+/* ================= dehors : lire un flux, dire ce qui est nouveau (sans réseau) =================
+   RSS 2.0, RSS 1.0 (RDF), Atom et JSON Feed, lus par DOMParser en XML (rien ne s'exécute) ou JSON.parse.
+   Le réseau (le passeur), le cache de l'appareil et l'interface sont dans types.js ; la validation, dans backup.js. */
+const DEHORS_MAX = 12; // éléments montrés au plus : au-delà, ils attendent
+const DEHORS_DAYS = 30; // un élément non gardé s'efface du cache de l'appareil au bout d'un mois
+/* Du HTML (résumé d'un flux) → du texte : parsé comme document inerte, jamais inséré. */
+const feedText = (s, n) => { const d = new window.DOMParser().parseFromString(`<body>${String(s || "")}</body>`, "text/html"); return clip(d.body.textContent || "", n); };
+const feedDate = v => { const t = Date.parse(String(v || "").trim()); return Number.isFinite(t) ? new Date(t).toISOString() : ""; };
+const feedLink = (h, base) => { try { const u = new URL(String(h || "").trim(), base); return /^https?:$/.test(u.protocol) ? u.toString() : ""; } catch { return ""; } };
+/* Un flux (texte) → { title, items: [{ id, title, link, date, text }] } ; null si ce n'en est pas un. */
+function parseFeed(text, base) {
+  const t = String(text || "").replace(/^﻿/, "").trim();
+  const item = (id, title, link, date, body) => { const l = feedLink(link, base), ti = clip(feedText(title, 300) || l, 300); return ti ? { id: clip(String(id || l || ti), 300), title: ti, link: l, date: feedDate(date), text: feedText(body, 400) } : null; };
+  if (t.startsWith("{")) {
+    let j; try { j = JSON.parse(t); } catch { return null; }
+    if (!j || !Array.isArray(j.items) || !/jsonfeed/.test(String(j.version || ""))) return null;
+    return { title: clip(j.title || "", 200), items: j.items.slice(0, 100).map(x => x && item(x.id, x.title || x.summary, x.url || x.external_url, x.date_published || x.date_modified, x.summary || x.content_text || x.content_html)).filter(Boolean) };
+  }
+  const d = new window.DOMParser().parseFromString(t, "application/xml");
+  if (d.querySelector("parsererror")) return null;
+  const root = d.documentElement, name = root.localName.toLowerCase();
+  const kid = (el, ...ns) => { for (const n of ns) { const c = [...el.children].find(x => x.localName === n || x.nodeName === n); if (c) return c; } return null; };
+  const txt = (el, ...ns) => { const c = kid(el, ...ns); return c ? c.textContent.trim() : ""; };
+  if (name === "feed") { // Atom
+    const alt = e => { const ls = [...e.children].filter(x => x.localName === "link"); const l = ls.find(x => (x.getAttribute("rel") || "alternate") === "alternate") || ls[0]; return l ? l.getAttribute("href") : ""; };
+    return { title: clip(txt(root, "title"), 200), items: [...root.children].filter(x => x.localName === "entry").slice(0, 100)
+      .map(e => item(txt(e, "id"), txt(e, "title"), alt(e), txt(e, "published", "updated"), txt(e, "summary", "content"))).filter(Boolean) };
+  }
+  if (name === "rss" || name === "rdf") { // RSS 2.0 (items dans channel) ou 1.0 (items à côté)
+    const ch = kid(root, "channel") || root, items = [...(name === "rss" ? ch.children : root.children)].filter(x => x.localName === "item");
+    return { title: clip(txt(ch, "title"), 200), items: items.slice(0, 100)
+      .map(e => item(txt(e, "guid") || e.getAttribute("rdf:about"), txt(e, "title"), txt(e, "link"), txt(e, "pubDate", "date", "dc:date", "published", "updated"), txt(e, "description", "encoded", "content:encoded", "summary"))).filter(Boolean) };
+  }
+  return null;
+}
+/* Fusionne une lecture dans le cache d'un flux : un élément déjà vu garde sa date de première vue (first). */
+function feedMerge(old, items, now) {
+  const seen = new Map((old || []).map(x => [x.id, x])), out = [];
+  for (const x of items) out.push({ ...x, first: (seen.get(x.id) || {}).first || now });
+  for (const x of old || []) if (!out.some(y => y.id === x.id)) out.push(x);
+  const limit = now - DEHORS_DAYS * 86400000;
+  return out.filter(x => x.first >= limit).slice(0, 50);
+}
+/* L'instant d'un élément : sa date publiée (jamais dans le futur), sinon quand on l'a vu pour la première fois. */
+const feedTime = (x, now) => { const t = x.date ? Date.parse(x.date) : NaN; return Number.isFinite(t) ? Math.min(t, now) : x.first; };
+/* Le nouveau, tous flux confondus : postérieur au « vu jusqu'à » de son flux, pas écarté sur cet appareil, et, si le
+   flux le demande, touchant un motif (test : fonction texte → motifs). Du plus récent au plus ancien ; `max` au plus. */
+function dehorsNew(feeds, cache, hidden, now, test = null, max = DEHORS_MAX) {
+  const all = [];
+  for (const f of feeds) {
+    const c = cache[f.id]; if (!c || !Array.isArray(c.items)) continue;
+    for (const x of c.items) {
+      const t = feedTime(x, now);
+      if (t <= (f.seen || 0) || hidden.has(`${f.id}|${x.id}`)) continue;
+      const motifs = f.motifs && test ? test(`${x.title} ${x.text}`) : null;
+      if (f.motifs && test && !motifs.length) continue;
+      all.push({ f, x, t, motifs });
+    }
+  }
+  all.sort((a, b) => b.t - a.t);
+  return { items: all.slice(0, max), total: all.length };
+}
+
 /* ================= utils ================= */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -2479,6 +2554,7 @@ VIEWS.accueil = () => {
         ${alerts.map(a => `<li class="item alert"><span></span><div>${a.text}</div>${a.actions ? `<div class="row">${a.actions}</div>` : a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">voir</a>` : ""}</li>`).join("")}
       </ul>
       ${!tod.length ? (taskModules().length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : `<p class="empty">Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.</p>`) : ""}
+      ${dehorsLine()}
       ${radarPlace() && radarWords(radarConf().words).length ? `<p class="hint radar-go"><button class="btn ghost sm" data-act="radar-open">Radar culturel</button> ce qui, près d'ici, parle de tes mots</p>` : ""}
     </section>
     <section class="capsec"><h2>Capturer</h2><p class="hint">Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.</p>
@@ -2956,7 +3032,7 @@ function navMarks(id) {
 function navHTML(view) {
   const link = (id, text, extra = "", cls = "") => `<a href="#${esc(id)}" class="${id === view ? "on" : ""} ${cls}"${id === view ? ' aria-current="page"' : ""}>${text}${extra}</a>`;
   return `<button type="button" class="pal-hint" data-act="palette-open">Aller à… <kbd>⌘K</kbd></button>
-    ${link("accueil", "Aujourd'hui")}${link("bilan", "Bilan")}${link("recherche", "Chercher")}
+    ${link("accueil", "Aujourd'hui")}${link("bilan", "Bilan")}${link("recherche", "Chercher")}${dehorsOn() ? link("dehors", "Dehors") : ""}
     ${domains().map(d => `<p class="grp">${esc(d.name || "Espaces")}</p>${d.ids.map(id => link(id, `${sigil(id)}${esc(label(id))}`, navMarks(id), tintOf(id))).join("")}`).join("")}
     <div class="sys">${enabled("assistant") ? link("assistant", `${sigil("assistant")}${esc(label("assistant"))}`) : ""}${link("reglages", "Réglages")}</div>`;
 }
@@ -3088,7 +3164,7 @@ function paletteItems(q) {
   const spaces = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id)).map(m => [m.id, label(m.id)]);
   if (!f) for (const r of liveRecents().slice(0, 3)) out.push({ k: "Récent", t: label(r.id), run: goTo(r.id) });
   for (const [id, t] of spaces) if (match(t) && !out.some(o => o.t === t)) out.push({ k: "Espace", t, run: goTo(id) });
-  for (const [id, t] of [["accueil", "Aujourd'hui"], ["bilan", "Bilan"], ["recherche", "Chercher"], ["reglages", "Réglages"], ...(enabled("assistant") ? [["assistant", label("assistant")]] : [])])
+  for (const [id, t] of [["accueil", "Aujourd'hui"], ["bilan", "Bilan"], ["recherche", "Chercher"], ...(dehorsOn() ? [["dehors", "Dehors"]] : []), ["reglages", "Réglages"], ...(enabled("assistant") ? [["assistant", label("assistant")]] : [])])
     if (match(t)) out.push({ k: "Vue", t, run: goTo(id) });
   const other = bilanMode() === "mois" ? "lune" : "mois";
   for (const [t, run] of [[tick ? "Mettre le minuteur en pause" : "Lancer le minuteur (15 min)", () => { closeOverlays(); $("#timerBtn").click(); }],
@@ -3124,7 +3200,7 @@ $("#palList").addEventListener("click", e => { const li = e.target.closest && e.
 
 /* ---- entrée visée par une route « #module/identifiant » : trouvée, montrée, surlignée ---- */
 let backTo = null; // { from, to, label } : la puce « ‹ … » qui ramène d'où l'on vient
-const backLabel = v => v === "recherche" ? (searchQuery.trim() ? `Recherche « ${searchQuery.trim()} »` : "Recherche") : v === "accueil" ? "Aujourd'hui" : v === "bilan" ? "Bilan" : v === "reglages" ? "Réglages" : label(v) || v;
+const backLabel = v => v === "dehors" ? "Dehors" : v === "recherche" ? (searchQuery.trim() ? `Recherche « ${searchQuery.trim()} »` : "Recherche") : v === "accueil" ? "Aujourd'hui" : v === "bilan" ? "Bilan" : v === "reglages" ? "Réglages" : label(v) || v;
 function entryEl(id) { let hit = null; $("#main").querySelectorAll("[data-id], [data-task]").forEach(el => { if (!hit && (el.dataset.id === id || el.dataset.task === id)) hit = el; }); return hit; }
 function focusEntry(id) {
   const view = routeOf().view;
@@ -3257,7 +3333,7 @@ function renderNow() {
   const s = S(), m = moon();
   let view = routeOf().view;
   // Les vues fixes priment toujours ; hasOwn évite qu'un « #constructor » trouve Object.prototype.
-  const fixed = v => v === "accueil" || v === "reglages" || v === "recherche" || v === "bilan";
+  const fixed = v => v === "accueil" || v === "reglages" || v === "recherche" || v === "bilan" || (v === "dehors" && dehorsOn());
   if (!fixed(view) && (!(Object.hasOwn(s.modules, view) || Object.hasOwn(VIEWS, view)) || !enabled(view))) view = "accueil";
   const inst = !fixed(view) && Object.hasOwn(s.modules, view) ? s.modules[view] : null;
   $("#brandName").textContent = s.config.name || "Selene";
@@ -4926,7 +5002,7 @@ function sourceBar(id) {
     <b>${esc(d.title)}</b>${d.authors ? `<div>${esc(d.authors)}</div>` : ""}
     <div class="meta">${[d.site, pubDate(d.date), d.kind].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("")}${d.doi ? `<span>doi:${esc(d.doi)}</span>` : ""}</div>
     ${d.abstract ? `<p class="note">${esc(d.abstract)}</p>` : ""}
-    ${d.feeds && d.feeds.length ? `<p class="hint">Ce site publie un flux : ${d.feeds.map(f => `<span class="tag">${esc(f.title || f.url)}</span>`).join(" ")}</p>` : ""}
+    ${d.feeds && d.feeds.length ? `<p class="hint">Ce site publie un flux : ${d.feeds.map(f => `<span class="tag">${esc(f.title || f.url)}</span>`).join(" ")}${passeurPret() && !dehorsFeeds().some(x => sourceKey({ url: x.url }) === sourceKey({ url: d.feeds[0].url })) ? ` <button class="btn ghost sm" data-act="dehors-follow" data-url="${esc(d.feeds[0].url)}">le suivre dans Dehors</button>` : ""}</p>` : ""}
     ${d.partial ? `<p class="hint">Métadonnées indisponibles (hors ligne, service muet ou quota du jour atteint) : elle sera gardée avec son adresse seule.</p>` : ""}
     ${p.dup ? `<p class="hint">Déjà gardée${p.dup.mod !== id ? ` dans ${esc(label(p.dup.mod))}` : ""} : <a href="#${esc(p.dup.mod)}/${esc(p.dup.e.id)}">« ${esc(excerpt(p.dup.e, 60))} »</a>.</p>` : ""}
     <div class="row"><button class="btn acc sm" data-act="src-keep" ${p.dup ? "disabled" : ""}>Garder</button><button class="btn ghost sm" data-act="src-cancel">Annuler</button></div></div>`;
@@ -5143,6 +5219,149 @@ CLICK["passeur-copy"] = async () => {
   try { await navigator.clipboard.writeText(authSession.user.id); toast("Identifiant copié."); } catch { toast("Copie impossible ici : sélectionne-le à la main."); }
 };
 
+/* ================= Dehors : la seule porte vers le dehors (dehors.js pour la lecture des flux) =================
+   Une vue qu'on ouvre, jamais poussée : le nouveau depuis ta dernière visite, douze au plus, par projet. Les flux
+   suivis et leur « vu jusqu'à » sont synchronisés (quelques octets, config.dehors) ; ce qu'ils contiennent reste sur
+   l'appareil (cache, un mois). Les flux sont relus par le passeur, un par un, en GET conditionnel, au plus toutes
+   les trois heures, à l'ouverture ou sur demande. */
+const DEHORS_KEY = "selene-dehors";
+const dehorsFeeds = () => (S().config.dehors && Array.isArray(S().config.dehors.feeds) ? S().config.dehors.feeds : []);
+const dehorsOn = () => hosted() && authReady() && !!authSession;
+function dehorsCache() {
+  try { const c = JSON.parse(localStorage.getItem(DEHORS_KEY) || "null"); if (c && typeof c === "object" && c.feeds && typeof c.feeds === "object") return { at: +c.at || 0, feeds: c.feeds, hidden: Array.isArray(c.hidden) ? c.hidden : [] }; } catch {}
+  return { at: 0, feeds: {}, hidden: [] };
+}
+function dehorsStore(c) {
+  const ids = new Set(dehorsFeeds().map(f => f.id));
+  for (const k of Object.keys(c.feeds)) if (!ids.has(k)) delete c.feeds[k]; // un flux retiré emporte son cache
+  c.hidden = c.hidden.slice(-500);
+  try { localStorage.setItem(DEHORS_KEY, JSON.stringify(c)); } catch {}
+}
+const dehorsTest = () => memoInRender("dehorsTest", () => text => motifsOf(text).map(({ e }) => e.title));
+function dehorsNow() { const c = dehorsCache(); return dehorsNew(dehorsFeeds(), c.feeds, new Set(c.hidden), Date.now(), dehorsTest()); }
+let dehorsBusy = false;
+async function dehorsRefresh(force = false) {
+  if (dehorsBusy || !dehorsOn() || !passeurPret() || document.visibilityState !== "visible") return;
+  const feeds = dehorsFeeds(); if (!feeds.length) return;
+  if (!force && Date.now() - dehorsCache().at < 3 * 3600000) return;
+  dehorsBusy = true; if (routeOf().view === "dehors") render();
+  try {
+    for (const f of feeds) {
+      const c = dehorsCache(), fc = c.feeds[f.id] || { items: [] };
+      try {
+        const r = await passeurFetch(f.url, "feed", { etag: fc.etag, modifie: fc.modifie });
+        if (r.status === 304) fc.err = "";
+        else if (r.status >= 200 && r.status < 300 && typeof r.texte === "string") {
+          const pf = parseFeed(r.texte, r.url || f.url);
+          if (!pf) fc.err = "ce n'est plus un flux lisible";
+          else { fc.items = feedMerge(fc.items, pf.items, Date.now()); fc.etag = r.etag || ""; fc.modifie = r.modifie || ""; fc.err = ""; }
+        } else fc.err = r.erreur || `le site répond ${r.status}`;
+      } catch (e) { fc.err = e.message; }
+      fc.at = Date.now(); c.feeds[f.id] = fc; dehorsStore(c);
+      if (passeurEtat === "absent") break;
+    }
+    const c = dehorsCache(); c.at = Date.now(); dehorsStore(c);
+  } finally { dehorsBusy = false; render(); }
+}
+/* Suivre un flux : l'adresse d'un flux, ou d'un site dont la page annonce son flux (découverte). */
+async function dehorsFind(raw) {
+  const url = normalizeUrl(raw) || normalizeUrl("https://" + String(raw).replace(/^\/+/, ""));
+  if (!url) throw new Error("Ce n'est pas une adresse.");
+  const r = await passeurFetch(url, "feed");
+  if (r.status >= 300 || typeof r.texte !== "string") throw new Error(r.erreur || `Le site répond ${r.status}.`);
+  const pf = parseFeed(r.texte, r.url || url);
+  if (pf) return { url: r.url || url, title: pf.title, items: pf.items, etag: r.etag, modifie: r.modifie };
+  const found = pageToSource(r.texte, r.url || url).feeds[0];
+  if (!found) throw new Error("Aucun flux à cette adresse, ni annoncé par la page.");
+  const r2 = await passeurFetch(found.url, "feed"), pf2 = r2.status < 300 && typeof r2.texte === "string" ? parseFeed(r2.texte, r2.url || found.url) : null;
+  if (!pf2) throw new Error("La page annonce un flux, mais il est illisible.");
+  return { url: r2.url || found.url, title: pf2.title || found.title, items: pf2.items, etag: r2.etag, modifie: r2.modifie };
+}
+async function dehorsFollow(raw, mod) {
+  const got = await dehorsFind(raw);
+  const feeds = dehorsFeeds();
+  if (feeds.some(f => sourceKey({ url: f.url }) === sourceKey({ url: got.url }))) throw new Error("Ce flux est déjà suivi.");
+  if (feeds.length >= 100) throw new Error("Cent flux, c'est déjà un kiosque. Retire-en avant d'en ajouter.");
+  const f = { id: uid(), url: got.url, title: clip(got.title || new URL(got.url).hostname, 200), mod: mod && Object.hasOwn(S().modules, mod) ? mod : "", seen: Date.now() - 7 * 86400000 };
+  S().config.dehors = { feeds: [...feeds, f] }; site.save();
+  const c = dehorsCache(); c.feeds[f.id] = { items: feedMerge([], got.items, Date.now()), etag: got.etag || "", modifie: got.modifie || "", err: "", at: Date.now() }; dehorsStore(c);
+  return f;
+}
+/* Sur l'accueil, une ligne de texte, et seulement s'il y a du nouveau : pas de pastille. */
+function dehorsLine() {
+  if (!dehorsOn() || !dehorsFeeds().length) return "";
+  const n = dehorsNow().total;
+  return n ? `<p class="hint dehors-go"><a href="#dehors">Dehors : ${n} nouveauté${n > 1 ? "s" : ""}</a></p>` : "";
+}
+const dehorsWhen = t => { const d = new Date(t), days = Math.round((Date.now() - t) / 86400000); return days < 1 ? `aujourd'hui, ${hm(t)}` : days < 7 ? d.toLocaleDateString("fr-FR", { weekday: "long" }) : fmt(d.toISOString().slice(0, 10)); };
+VIEWS.dehors = () => {
+  const feeds = dehorsFeeds(), mods = S().config.modules.filter(m => m.on && Object.hasOwn(S().modules, m.id) && !SYSTEM.includes(m.id)).map(m => m.id);
+  const head = `<h2>Dehors</h2><p class="hint">Ce qui est paru depuis ta dernière visite, dans les flux que tu suis. Douze au plus : le reste attend, rien ne défile. Garde ce qui compte, le reste s'efface en un mois.</p>`;
+  if (!dehorsOn()) return head + `<p class="empty">Dehors passe par le passeur : il n'existe que dans la version hébergée, connectée à ton compte.</p>`;
+  const cache = dehorsCache(), { items, total } = dehorsNow(), byMod = new Map();
+  for (const it of items) { const k = it.f.mod && Object.hasOwn(S().modules, it.f.mod) ? it.f.mod : ""; if (!byMod.has(k)) byMod.set(k, []); byMod.get(k).push(it); }
+  const itemHTML = ({ f, x, t, motifs }) => `<li class="item" data-feed="${esc(f.id)}" data-item="${esc(x.id)}"><span></span><div>
+      ${x.link ? `<a class="t-title" href="${esc(x.link)}" target="_blank" rel="noopener noreferrer">${esc(x.title)} ↗</a>` : `<b>${esc(x.title)}</b>`}
+      <div class="meta"><span>${esc(f.title)}</span><span>${esc(dehorsWhen(t))}</span>${(motifs || []).map(m => `<span class="tag">${esc(m)}</span>`).join("")}</div>
+      ${x.text ? `<p class="hint" style="margin:4px 0 0">${esc(x.text)}</p>` : ""}</div>
+    <div class="row">${sourcesModule() && x.link ? `<button class="btn sm" data-act="dehors-keep">garder</button>` : ""}${inboxId(S().modules) ? `<button class="btn ghost sm" data-act="dehors-note">vers une note</button>` : ""}<button class="btn ghost sm" data-act="dehors-hide" aria-label="Écarter">vu</button></div></li>`;
+  const list = !feeds.length ? `<p class="empty">Aucun flux suivi. Colle ci-dessous l'adresse d'un site, d'une revue, d'une chaîne : Selene trouve son flux.</p>`
+    : !items.length ? `<p class="empty">${dehorsBusy ? "Lecture des flux…" : "Rien de neuf. Le monde a pu se passer de toi, et toi de lui."}</p>`
+    : [...byMod].map(([k, its]) => `<h3>${esc(k ? label(k) : "Sans projet")}</h3><ul class="plain dehors">${its.map(itemHTML).join("")}</ul>`).join("")
+      + `<div class="row" style="margin-top:12px">${total > items.length ? `<span class="hint" style="margin:0">Et ${total - items.length} autre${total - items.length > 1 ? "s" : ""}, qui attendront.</span>` : ""}<span class="spacer"></span><button class="btn sm" data-act="dehors-seen">Tout marquer comme vu</button></div>`;
+  const opts = sel => `<option value="">Sans projet</option>${mods.map(m => `<option value="${esc(m)}" ${sel === m ? "selected" : ""}>${esc(label(m))}</option>`).join("")}`;
+  const state = f => { const fc = cache.feeds[f.id]; return !fc ? "pas encore lu" : fc.err ? `ne répond pas : ${fc.err}` : `lu ${dehorsWhen(fc.at)}`; };
+  return `<div class="dehors-view">` + head + `<div class="row" style="margin:-4px 0 12px"><span class="hint" style="margin:0">${dehorsBusy ? "Lecture des flux…" : cache.at ? `Flux relus ${esc(dehorsWhen(cache.at))}.` : ""}</span><span class="spacer"></span>${feeds.length ? `<button class="btn ghost sm" data-act="dehors-refresh" ${dehorsBusy ? "disabled" : ""}>Relire maintenant</button>` : ""}</div>
+    ${list}
+    <h3 style="margin-top:28px">Suivre</h3>
+    <div class="capture capture-wrap"><input id="dehorsIn" inputmode="url" autocomplete="off" placeholder="L'adresse d'un site ou d'un flux…" aria-label="Adresse à suivre"><select id="dehorsMod" aria-label="Projet">${opts("")}</select><button class="btn" data-act="dehors-add">Suivre</button></div>
+    <p class="hint" style="margin:4px 0 10px">Une newsletter : abonne-toi avec une adresse de <a href="https://kill-the-newsletter.com/" target="_blank" rel="noopener noreferrer">Kill the Newsletter</a>, puis suis le flux Atom qu'il te donne (il garde les lettres chez lui : pas pour une correspondance privée).</p>
+    ${feeds.length ? `<details class="dehors-feeds"><summary>Flux suivis (${feeds.length})</summary>
+      <ul class="plain">${feeds.map(f => `<li class="item" data-feed="${esc(f.id)}"><span></span><div><b>${esc(f.title)}</b><div class="meta"><span>${esc((() => { try { return new URL(f.url).hostname.replace(/^www\./, ""); } catch { return ""; } })())}</span><span>${esc(state(f))}</span></div>
+        <label style="display:flex;gap:6px;align-items:center;font-weight:400;margin-top:4px"><input type="checkbox" data-act="dehors-motifs" ${f.motifs ? "checked" : ""}>Seulement ce qui touche mes motifs</label></div>
+        <div class="row"><select data-act="dehors-mod" aria-label="Projet de ce flux">${opts(f.mod)}</select><button class="btn ghost sm" data-act="dehors-del">retirer</button></div></li>`).join("")}</ul>
+    </details>` : ""}</div>`;
+};
+const dehorsHit = el => { const li = el.closest("[data-feed]"), f = dehorsFeeds().find(x => x.id === li.dataset.feed); const fc = f && dehorsCache().feeds[f.id]; return { li, f, x: fc && li.dataset.item ? fc.items.find(i => i.id === li.dataset.item) : null }; };
+const dehorsHideItem = (f, x) => { const c = dehorsCache(); c.hidden.push(`${f.id}|${x.id}`); dehorsStore(c); };
+CLICK["dehors-add"] = async el => {
+  const inp = $("#dehorsIn"), raw = inp ? inp.value.trim() : ""; if (!raw) return;
+  el.disabled = true; el.textContent = "Recherche…";
+  try { const f = await dehorsFollow(raw, ($("#dehorsMod") || {}).value || ""); if (inp) inp.value = ""; toast(`Suivi : ${f.title}.`); }
+  catch (e) { toast(e.message); }
+  render();
+};
+CLICK["dehors-refresh"] = () => dehorsRefresh(true);
+CLICK["dehors-seen"] = () => {
+  const now = Date.now(); S().config.dehors = { feeds: dehorsFeeds().map(f => ({ ...f, seen: now })) }; site.save();
+  const c = dehorsCache(); c.hidden = []; dehorsStore(c); render(); toast("Tout est vu. Dehors se tait jusqu'à la prochaine parution.");
+};
+CLICK["dehors-hide"] = el => { const { f, x } = dehorsHit(el); if (!x) return; dehorsHideItem(f, x); render(); };
+CLICK["dehors-note"] = el => {
+  const { f, x } = dehorsHit(el), box = inboxId(S().modules); if (!x || !box) return;
+  addNote(S().modules[box], [x.title, x.link].filter(Boolean).join(" — ").slice(0, 2000)); dehorsHideItem(f, x); site.save(); render(); toast(`Dans ${label(box)}.`);
+};
+CLICK["dehors-keep"] = el => {
+  const { f, x } = dehorsHit(el), to = sourcesModule(); if (!x || !to) return;
+  const src = { title: x.title, url: normalizeUrl(x.link), doi: findDoi(x.link), site: f.title, date: x.date.slice(0, 10), kind: "page", abstract: x.text };
+  const dup = findSourceDup(src);
+  if (dup) { dehorsHideItem(f, x); render(); return toast(`Déjà gardée dans ${label(dup.mod)}.`); }
+  const e = keepSource(to, src, { from: "Dehors", text: f.title, date: todayISO() }); dehorsHideItem(f, x); site.save(); render(); toast(`Gardée dans ${label(to)} : « ${excerpt(e, 50)} ».`);
+};
+CLICK["dehors-del"] = async el => {
+  const { f } = dehorsHit(el); if (!f || !await ask(`Ne plus suivre « ${f.title} » ?`)) return;
+  S().config.dehors = { feeds: dehorsFeeds().filter(x => x.id !== f.id) }; if (!S().config.dehors.feeds.length) delete S().config.dehors;
+  site.save(); const c = dehorsCache(); dehorsStore(c); render();
+};
+/* Depuis l'aperçu d'une source : suivre le flux que la page annonce. */
+CLICK["dehors-follow"] = async el => {
+  el.disabled = true;
+  try { const f = await dehorsFollow(el.dataset.url, ""); toast(`Suivi dans Dehors : ${f.title}.`); } catch (e) { toast(e.message); el.disabled = false; }
+};
+CHANGE["dehors-mod"] = el => { const { f } = dehorsHit(el); if (!f) return; S().config.dehors = { feeds: dehorsFeeds().map(x => x.id === f.id ? { ...x, mod: el.value } : x) }; site.save(); render(); };
+CHANGE["dehors-motifs"] = el => { const { f } = dehorsHit(el); if (!f) return; S().config.dehors = { feeds: dehorsFeeds().map(x => x.id === f.id ? { ...x, motifs: el.checked } : x) }; site.save(); render(); };
+
+
 /* ================= assistant =================
    Deux branchements : claude.ai (window.claude.use("sample"), sans clé) ou l'API Anthropic avec la clé
    de l'utilisatrice (build hébergé). Le contexte ne contient que les modules qu'elle a choisi de partager. */
@@ -5271,8 +5490,9 @@ render();
   const t = setTimeout(() => { if (!document.hidden) { if (routeOf().view === "accueil" || S().config.mode === "sun") render(); refreshWeather(); } skyTick(); }, 300000);
   if (t && t.unref) t.unref();
 })();
-document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshWeather(); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { refreshWeather(); dehorsRefresh(); } });
 refreshWeather();
+setTimeout(() => dehorsRefresh(), 1500); // les flux de Dehors, au plus toutes les trois heures, après le premier affichage
 (async () => {
   try {
     if (!window.claude || !window.claude.use) {

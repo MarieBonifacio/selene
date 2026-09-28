@@ -32,6 +32,11 @@ function parseBackup(text) {
       // sky : le lieu du ciel de l'accueil, facultatif ; ses coordonnées finissent dans une URL, son nom dans le HTML.
       (site.config.sky != null && (!record(site.config.sky) || typeof site.config.sky.name !== "string" || site.config.sky.name.length > 80 ||
         typeof site.config.sky.lat !== "number" || !(Math.abs(site.config.sky.lat) <= 90) || typeof site.config.sky.lon !== "number" || !(Math.abs(site.config.sky.lon) <= 180))) ||
+      // dehors : les flux suivis (adresse http(s), titre, projet, « vu jusqu'à »), cent au plus.
+      (site.config.dehors != null && (!record(site.config.dehors) || !Array.isArray(site.config.dehors.feeds) || site.config.dehors.feeds.length > 100 ||
+        site.config.dehors.feeds.some(f => !record(f) || typeof f.id !== "string" || !/^[\w-]{1,64}$/.test(f.id) || typeof f.url !== "string" || f.url.length > 2000 || !/^https?:\/\//i.test(f.url) ||
+          typeof f.title !== "string" || f.title.length > 200 || (f.mod != null && (typeof f.mod !== "string" || f.mod.length > 64)) ||
+          (f.seen != null && !(Number.isFinite(f.seen) && f.seen >= 0)) || (f.motifs != null && typeof f.motifs !== "boolean")))) ||
       // radar : les mots du radar culturel, facultatifs.
       (site.config.radar != null && (!record(site.config.radar) || typeof site.config.radar.words !== "string" || site.config.radar.words.length > 300))) throw new Error("Configuration invalide");
   for (const m of site.config.modules || []) moduleId(m.id, "Module");

@@ -461,6 +461,7 @@ VIEWS.accueil = () => {
         ${alerts.map(a => `<li class="item alert"><span></span><div>${a.text}</div>${a.actions ? `<div class="row">${a.actions}</div>` : a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">voir</a>` : ""}</li>`).join("")}
       </ul>
       ${!tod.length ? (taskModules().length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : `<p class="empty">Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.</p>`) : ""}
+      ${dehorsLine()}
       ${radarPlace() && radarWords(radarConf().words).length ? `<p class="hint radar-go"><button class="btn ghost sm" data-act="radar-open">Radar culturel</button> ce qui, près d'ici, parle de tes mots</p>` : ""}
     </section>
     <section class="capsec"><h2>Capturer</h2><p class="hint">Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.</p>
@@ -938,7 +939,7 @@ function navMarks(id) {
 function navHTML(view) {
   const link = (id, text, extra = "", cls = "") => `<a href="#${esc(id)}" class="${id === view ? "on" : ""} ${cls}"${id === view ? ' aria-current="page"' : ""}>${text}${extra}</a>`;
   return `<button type="button" class="pal-hint" data-act="palette-open">Aller à… <kbd>⌘K</kbd></button>
-    ${link("accueil", "Aujourd'hui")}${link("bilan", "Bilan")}${link("recherche", "Chercher")}
+    ${link("accueil", "Aujourd'hui")}${link("bilan", "Bilan")}${link("recherche", "Chercher")}${dehorsOn() ? link("dehors", "Dehors") : ""}
     ${domains().map(d => `<p class="grp">${esc(d.name || "Espaces")}</p>${d.ids.map(id => link(id, `${sigil(id)}${esc(label(id))}`, navMarks(id), tintOf(id))).join("")}`).join("")}
     <div class="sys">${enabled("assistant") ? link("assistant", `${sigil("assistant")}${esc(label("assistant"))}`) : ""}${link("reglages", "Réglages")}</div>`;
 }
@@ -1070,7 +1071,7 @@ function paletteItems(q) {
   const spaces = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id)).map(m => [m.id, label(m.id)]);
   if (!f) for (const r of liveRecents().slice(0, 3)) out.push({ k: "Récent", t: label(r.id), run: goTo(r.id) });
   for (const [id, t] of spaces) if (match(t) && !out.some(o => o.t === t)) out.push({ k: "Espace", t, run: goTo(id) });
-  for (const [id, t] of [["accueil", "Aujourd'hui"], ["bilan", "Bilan"], ["recherche", "Chercher"], ["reglages", "Réglages"], ...(enabled("assistant") ? [["assistant", label("assistant")]] : [])])
+  for (const [id, t] of [["accueil", "Aujourd'hui"], ["bilan", "Bilan"], ["recherche", "Chercher"], ...(dehorsOn() ? [["dehors", "Dehors"]] : []), ["reglages", "Réglages"], ...(enabled("assistant") ? [["assistant", label("assistant")]] : [])])
     if (match(t)) out.push({ k: "Vue", t, run: goTo(id) });
   const other = bilanMode() === "mois" ? "lune" : "mois";
   for (const [t, run] of [[tick ? "Mettre le minuteur en pause" : "Lancer le minuteur (15 min)", () => { closeOverlays(); $("#timerBtn").click(); }],
@@ -1106,7 +1107,7 @@ $("#palList").addEventListener("click", e => { const li = e.target.closest && e.
 
 /* ---- entrée visée par une route « #module/identifiant » : trouvée, montrée, surlignée ---- */
 let backTo = null; // { from, to, label } : la puce « ‹ … » qui ramène d'où l'on vient
-const backLabel = v => v === "recherche" ? (searchQuery.trim() ? `Recherche « ${searchQuery.trim()} »` : "Recherche") : v === "accueil" ? "Aujourd'hui" : v === "bilan" ? "Bilan" : v === "reglages" ? "Réglages" : label(v) || v;
+const backLabel = v => v === "dehors" ? "Dehors" : v === "recherche" ? (searchQuery.trim() ? `Recherche « ${searchQuery.trim()} »` : "Recherche") : v === "accueil" ? "Aujourd'hui" : v === "bilan" ? "Bilan" : v === "reglages" ? "Réglages" : label(v) || v;
 function entryEl(id) { let hit = null; $("#main").querySelectorAll("[data-id], [data-task]").forEach(el => { if (!hit && (el.dataset.id === id || el.dataset.task === id)) hit = el; }); return hit; }
 function focusEntry(id) {
   const view = routeOf().view;
@@ -1239,7 +1240,7 @@ function renderNow() {
   const s = S(), m = moon();
   let view = routeOf().view;
   // Les vues fixes priment toujours ; hasOwn évite qu'un « #constructor » trouve Object.prototype.
-  const fixed = v => v === "accueil" || v === "reglages" || v === "recherche" || v === "bilan";
+  const fixed = v => v === "accueil" || v === "reglages" || v === "recherche" || v === "bilan" || (v === "dehors" && dehorsOn());
   if (!fixed(view) && (!(Object.hasOwn(s.modules, view) || Object.hasOwn(VIEWS, view)) || !enabled(view))) view = "accueil";
   const inst = !fixed(view) && Object.hasOwn(s.modules, view) ? s.modules[view] : null;
   $("#brandName").textContent = s.config.name || "Selene";
