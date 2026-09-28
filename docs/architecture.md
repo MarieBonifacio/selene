@@ -117,7 +117,13 @@ passent par ces deux registres. Crochets facultatifs de `TYPE_UI` (liste complè
 `badge` (navigation). Un élément de `texts` peut porter `ep` (statut épistémique) : la recherche et le
 bilan le lisent. Champs communs à tous les types, hors registre (validés par `parseBackup`) : `resume` et
 `resumeLog` sur l'instance (pont de reprise), `origin` sur une entrée (provenance, posée par `stampOrigin`
-quand une note est rangée), `ep`/`epLog` et `links` sur les fragments et les notes. Le type `arc` (étapes + placements référençant `module/id` via `LINK_REF`) réutilise `refFind` pour résoudre
+quand une note est rangée), `ep`/`epLog` et `links` sur les fragments et les notes. Les paliers d'un `programme` (`config.tiers`) sont un cas où l'affichage lit et écrit un état (cases cochées)
+sans que ce même état ne déclenche jamais d'action : `advancedAt` n'est posé que par le clic explicite sur
+« Passer au palier suivant » (`tier-advance`), jamais par la lecture des critères cochés. Ce clic peut ouvrir
+`collectionForm` avec un élément préempli sans `id` : `collectionForm` traite alors la sauvegarde comme une
+création (`item && item.id ? item.id : uid()`), jamais comme une modification d'un élément existant.
+
+Le type `arc` (étapes + placements référençant `module/id` via `LINK_REF`) réutilise `refFind` pour résoudre
 une cible de n'importe quel type, `excerpt` pour l'afficher, et le motif kanban (`.board`/`.col`/`.card`) déjà
 utilisé par les collections en colonnes.
 

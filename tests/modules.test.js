@@ -13,7 +13,7 @@ function launch(storage, { claude = null, bare = false } = {}) {
     if (!nodes.has(id)) nodes.set(id, {
       id, dataset: {}, value: '', textContent: '', innerHTML: '',
       classList: { add() {}, remove() {} }, addEventListener() {},
-      querySelectorAll() { return []; }, focus() {}
+      querySelectorAll() { return []; }, focus() {}, showModal() {} // n'ouvre rien pour de vrai : un formulaire sans confirmation reste testable ici
     });
     return nodes.get(id);
   };
@@ -34,7 +34,7 @@ function launch(storage, { claude = null, bare = false } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn, lexicalDrift, driftWords, addLink, openTensions, mergeDocs, dossierMarkdown, arcCandidates };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn, lexicalDrift, driftWords, addLink, openTensions, mergeDocs, dossierMarkdown, arcCandidates, tierCurrent, firstDecisions, collectionForm };\n})();');
   vm.runInNewContext(instrumented, context);
   const fire = (name, target) => (handlers[name] || []).forEach(fn => fn({ target, preventDefault() {} }));
   return { ...context.__test, nodes, location, document, fire };
@@ -1016,4 +1016,65 @@ test('arc: placing, empty stations stay visible, removal, station lifecycle', ()
   assert.throws(() => app.parseBackup(JSON.stringify(bad)), /placement/);
   const bad2 = JSON.parse(app.createBackup(app.board.data, d)); bad2.site.modules.album.config.stations[0].name = '';
   assert.throws(() => app.parseBackup(JSON.stringify(bad2)), /étape/);
+});
+
+
+test('tiers: criteria are self-written and self-checked, the app never advances a tier on its own', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), k = d.modules.kundalini;
+  k.config.start = '2026-01-05'; // un protocole commencé : la vue principale s'affiche, pas l'écran « commencer »
+  assert.equal(k.config.tiers.length, 0, 'invisible until added, an existing protocol is untouched');
+  assert.equal(app.tierCurrent(k.config), null);
+  // Réglages : ajouter un palier et un critère, comme on le ferait à l'écran.
+  const ti = { dataset: { mod: 'kundalini' }, closest: () => ({ dataset: { tri: '0' } }) };
+  app.CLICK['tier-add'](ti);
+  app.CLICK['tier-add'](ti);
+  app.CHANGE['tier-name']({ ...ti, value: 'Souffle', blur() {} });
+  app.CLICK['crit-add']({ dataset: { mod: 'kundalini', tri: '0' } });
+  const cri = { dataset: { mod: 'kundalini' }, closest: sel => sel === '[data-cri]' ? { dataset: { tri: '0', cri: '0' } } : null };
+  app.CHANGE['crit-text']({ ...cri, value: '12 séances à 20 min', blur() {} });
+  assert.equal(k.config.tiers[0].name, 'Souffle');
+  assert.equal(k.config.tiers[0].criteria[0].text, '12 séances à 20 min');
+  // Vider le texte d'un critère le retire, plutôt que de garder une ligne vide.
+  app.CLICK['crit-add']({ dataset: { mod: 'kundalini', tri: '0' } });
+  app.CHANGE['crit-text']({ dataset: { mod: 'kundalini' }, closest: sel => sel === '[data-cri]' ? { dataset: { tri: '0', cri: '1' } } : null, value: '  ', blur() {} });
+  assert.equal(k.config.tiers[0].criteria.length, 1, 'an emptied criterion disappears instead of lingering blank');
+
+  const cId = k.config.tiers[0].criteria[0].id;
+  assert.equal(app.tierCurrent(k.config).name, 'Souffle');
+  // Cocher un critère ne fait rien avancer : c'est une note, pas un déclencheur.
+  app.CHANGE['tier-check']({ dataset: { mod: 'kundalini' }, closest: sel => sel === '[data-id]' ? { dataset: { id: cId } } : null, checked: true });
+  assert.equal(k.config.tiers[0].criteria[0].done, true);
+  assert.equal(k.config.tiers[0].advancedAt, undefined, 'checking a box never advances anything');
+  assert.equal(app.tierCurrent(k.config).name, 'Souffle');
+  app.location.hash = '#kundalini'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /1 sur 1 critère coché\. Tous cochés\. Le passage reste ton choix/);
+
+  // Sans module Décisions actif : le passage a lieu, un simple message le confirme.
+  assert.equal(app.firstDecisions(), null, 'the demo fixture ships no decisions-mode collection');
+  app.CLICK['tier-advance'](ti);
+  assert.equal(k.config.tiers[0].advancedAt, today());
+  assert.equal(app.tierCurrent(k.config).name, 'Palier 2', 'moved on to the next tier');
+  assert.match(app.nodes.get('#toast').textContent, /Palier « Souffle » atteint\./);
+  app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /« Souffle » atteint le/);
+
+  // Avec un module Décisions actif : le passage propose une décision prête à compléter, jamais enregistrée seule.
+  const dec = app.createFromTemplate(d.modules, app.MODULE_TEMPLATES.find(x => x.id === 'decisions'), 'Décisions', 'decisions');
+  d.config.modules.push({ id: 'decisions', on: true });
+  assert.equal(app.firstDecisions(), 'decisions');
+  app.CLICK['tier-advance'](ti);
+  assert.equal(app.tierCurrent(k.config), null, 'both tiers now passed');
+  assert.equal(dec.entries.length, 0, 'nothing is saved before the form is actually submitted');
+  assert.match(app.nodes.get('#form').innerHTML, /Noter la décision.*Palier 2/s);
+  assert.match(app.nodes.get('#form').innerHTML, /value="Palier « Palier 2 » atteint \(Kundalini\)"/);
+  app.location.hash = '#kundalini'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /Tous les paliers sont franchis\./);
+
+  // Sauvegarde : formes valides acceptées, malformées refusées.
+  assert.doesNotThrow(() => app.parseBackup(app.createBackup(app.board.data, d)));
+  const bad = JSON.parse(app.createBackup(app.board.data, d)); bad.site.modules.kundalini.config.tiers[0].name = '';
+  assert.throws(() => app.parseBackup(JSON.stringify(bad)), /palier/);
+  const bad2 = JSON.parse(app.createBackup(app.board.data, d)); bad2.site.modules.kundalini.config.tiers[0].criteria = [{ id: 'c1', text: '', done: false }];
+  assert.throws(() => app.parseBackup(JSON.stringify(bad2)), /critère/);
 });

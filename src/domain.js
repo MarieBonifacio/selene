@@ -148,12 +148,22 @@ function migrateModules(d) {
 const MODULE_TYPES = {
   programme: {
     label: "Programme (calendrier + objectif hebdomadaire)",
-    defaults: () => ({ config: { unitLabel: "min", start: null, weeks: 12, perWeek: 5 }, entries: [] }),
+    // paliers : des étapes qu'on rédige et qu'on coche soi-même. L'app affiche l'avancement, ne décide jamais
+    // du passage : `advancedAt` n'est écrit que par un geste explicite, jamais par un critère coché.
+    defaults: () => ({ config: { unitLabel: "min", start: null, weeks: 12, perWeek: 5, tiers: [] }, entries: [] }),
     entry: (e, input) => { e.value = numericValue(input.value); },
+    normalize(inst) { if (!Array.isArray(inst.config.tiers)) inst.config.tiers = []; },
     validate(inst, v) {
       v.num(inst.config.weeks, "durée", 1, 520); v.num(inst.config.perWeek, "séances par semaine", 1, 7);
       if (inst.config.start != null && !(typeof inst.config.start === "string" && validDate(inst.config.start))) v.fail("date de début");
       for (const e of inst.entries) v.num(e.value, "valeur");
+      v.list(inst.config.tiers || [], "paliers").forEach(t => {
+        if (typeof t.name !== "string" || !t.name.trim() || t.name.length > 60) v.fail("palier");
+        if (t.advancedAt != null && !(typeof t.advancedAt === "string" && validDate(t.advancedAt))) v.fail("palier");
+        v.list(t.criteria || [], "critères").forEach(cr => {
+          if (typeof cr.text !== "string" || !cr.text.trim() || cr.text.length > 200 || typeof cr.done !== "boolean") v.fail("critère");
+        });
+      });
     }
   },
   cumul: {
