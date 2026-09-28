@@ -72,7 +72,27 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
 - [x] Confirmation avant tout (combien, de quand à quand, où) ; un second import n'ajoute que les nouvelles.
 - Pas de lien : l'export n'en contient pas (seulement le chemin local des médias). La légende et la date, oui.
 
-## Phase 2 et 3
+## Phase 2 : Selene connectée (le passeur, et quelques clés à toi)
 
-Voir l'exploration du 28 septembre 2026 : l'intermédiaire (flux, pages, calendrier), Dehors, veille de recherche
-(OpenAlex), Artist Watch, newsletters ; puis motifs croisés, « cité par tes sources », sources oubliées.
+**6a : Le passeur** (voir [passeur.md](passeur.md))
+- [x] Une fonction Supabase Edge, `supabase/functions/passeur` : `feed`, `page`, `ics`. Fermée (session vérifiée, comptes
+      de `PASSEUR_USERS`, sinon personne ; origines de `PASSEUR_ORIGINS`), protégée contre la SSRF (IP écrites ou
+      résolues, redirections revérifiées), 2 Mo, 8 secondes, texte seulement, GET conditionnel, rien de gardé.
+- [x] Testée avec Deno (garde et parcours complet, faux réseau et faux DNS), en CI (job `passeur`).
+- [x] Fiche Source : une page passe par le passeur (OpenGraph, balises `citation_*`, JSON-LD, adresse canonique du
+      même site) ; un DOI trouvé dans la page est complété par Crossref ; le flux annoncé est repéré. Passeur absent
+      ou refusé : Microlink, sans insister.
+- [x] Réglages → Passeur : état, « Vérifier », ton identifiant à copier.
+- [ ] Déployer (toi : `docs/passeur.md`, dix minutes).
+
+**6b : Dehors** : flux RSS, Atom et JSON Feed par projet, GET conditionnel, « vu jusqu'à », 12 au plus.
+
+**6c : Artist Watch et newsletters** : sorties MusicBrainz et Kill the Newsletter dans Dehors.
+
+**6d : Research Watch** : OpenAlex, ta clé sur l'appareil.
+
+**6e : Calendrier dédié** : iCal, aujourd'hui et demain.
+
+## Phase 3
+
+Voir l'exploration du 28 septembre 2026 : motifs croisés, « cité par tes sources », sources oubliées.
