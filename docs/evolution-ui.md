@@ -196,8 +196,9 @@ lointains bleuissent (perspective aérienne).
 **Météo** : les codes WMO ramenés à sept états, dessinés en gravure :
 clair (0), voilé (1–2, strates horizontales), couvert (3), brume (45, 48, la brume monte et efface le lointain),
 pluie (51–67, 80–82, fines hachures obliques), neige (71–77, 85–86, points et givre sur les cimes),
-orage (95–99, ciel bas, lueur chaude à l'horizon, **jamais d'éclair qui clignote**). Statique par défaut ;
-animé lentement seulement avec « Ciel vivant » et sans réduction des mouvements. Le vent n'accélère que la brume.
+orage (95–99, ciel bas, lueur chaude à l'horizon, **jamais d'éclair qui clignote**). « Ciel vivant » : nuages,
+brume, pluie et neige bougent lentement au rythme du vent mesuré (sens, vitesse, pente de la pluie) ; immobile si le
+système demande moins d'animations, hors de vue, ou si on le coupe (Réglages → Ciel, par appareil).
 
 **Lune** : la mini-lune du header montre toujours la phase nettement ; seule la lune de la scène peut être
 voilée ou pâlie. Étoiles visibles = f(soleil, illumination, nuages). Lumière cendrée sur les croissants.
@@ -284,7 +285,13 @@ Livrée en quatre temps, pour que chaque pull request reste relisible.
       5 000 combinaisons heure × temps × mode × phase).
 - [x] Réglages → Ciel : une ville (recherche) ou la position de l'appareil, arrondies à ~10 km ; « Météo en direct » ;
       « La lune à sa vraie place ». Mode « Suivre le soleil ». Ligne de données : `9 °C · pluie · coucher 19 h 34`.
-- [ ] « Ciel vivant » (brume qui dérive, pluie qui tombe lentement) : laissé pour plus tard ; tout est statique.
+- [x] « Ciel vivant » : les nuages et la brume dérivent dans le sens du vent mesuré (Open-Meteo : vitesse et
+      direction ; un vent d'ouest pousse vers la gauche, puisque la fenêtre regarde le sud), la pluie tombe penchée
+      par lui, plus vite sous l'averse que sous la bruine, la neige descend. La ligne de données dit le vent
+      (« vent d'ouest 22 km/h », omis sur téléphone). Coût : des calques animés par `transform` seul, confiés au
+      compositeur, soit environ 7 ms de fil principal sur 5 s mesurées, aucune mise en page ; phase prise sur
+      l'horloge (un nouveau rendu ne remet pas le ciel à zéro) ; pause hors de vue ; rien si le système demande moins
+      d'animations ; se coupe par appareil (Réglages → Ciel).
 
 **3c : signatures**
 - [x] Fiche Spécimen (« fiche » dans les actions d'un fragment, d'une note, d'un élément de collection) : texte,

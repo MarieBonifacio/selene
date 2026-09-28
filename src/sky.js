@@ -141,3 +141,24 @@ function skyScene({ sunAlt, illum = 0.5, weather = null, dark = true }) {
     ink, scrim: Math.round(scrim * 100) / 100, scrimColor, sample
   };
 }
+
+/* ---- ciel vivant : le mouvement d'après le vent réel ----
+   Open-Meteo donne la direction d'où le vent vient (270 : d'ouest). La fenêtre regarde le sud au nord de l'équateur :
+   l'est y est à gauche, donc un vent d'ouest pousse les nuages vers la gauche (l'inverse au sud de l'équateur).
+   Le vent qui souffle vers nous ou de nous ne se voit presque pas en travers : la dérive ralentit, sans s'arrêter.
+   Durées en secondes : une traversée complète pour les nuages, une période de motif pour la pluie et la neige. */
+const WIND_NAMES = ["du nord", "du nord-est", "d'est", "du sud-est", "du sud", "du sud-ouest", "d'ouest", "du nord-ouest"];
+const windName = dir => WIND_NAMES[Math.round((((+dir % 360) + 360) % 360) / 45) % 8];
+function skyMotion({ wind = 8, dir = 270, precip = 0, lat = 45 } = {}) {
+  const w = Number.isFinite(+wind) ? Math.max(0, +wind) : 8, from = Number.isFinite(+dir) ? +dir : 270;
+  const east = Math.sin((from + 180) * RAD), dx = (lat >= 0 ? -1 : 1) * east; // > 0 : vers la droite de l'écran
+  const eff = Math.max(3, w * Math.max(0.35, Math.abs(dx)));
+  const clouds = Math.round(Math.max(45, Math.min(600, 2400 / eff)));
+  const p = Number.isFinite(+precip) ? Math.max(0, +precip) : 0;
+  const fall = Math.max(70, Math.min(220, 70 + 25 * p)); // px/s : la bruine descend lentement, l'averse moins
+  return {
+    toRight: dx > 0, clouds, mist: Math.round(clouds * 1.8),
+    slant: Math.round(Math.max(-30, Math.min(30, dx * w * 0.9))), // degrés : la pluie penche avec le vent
+    rain: +(24 / fall).toFixed(3), snow: +(60 / Math.max(10, Math.min(30, 10 + w * 0.4))).toFixed(2)
+  };
+}

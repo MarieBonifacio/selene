@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const ctx = {};
-vm.runInNewContext(fs.readFileSync('src/sky.js', 'utf8') + '\n;globalThis.__sky = { sunPosition, moonPosition, nextCrossing, approxPlace, moonPlacement, weatherState, skyScene, contrast, mixHex, WEATHER };', ctx);
+vm.runInNewContext(fs.readFileSync('src/sky.js', 'utf8') + '\n;globalThis.__sky = { sunPosition, moonPosition, nextCrossing, approxPlace, moonPlacement, weatherState, skyScene, skyMotion, windName, contrast, mixHex, WEATHER };', ctx);
 const S = ctx.__sky;
 const PARIS = [48.85, 2.35];
 const at = s => Date.parse(s);
@@ -80,4 +80,20 @@ test('scène : étoiles, halo et lune suivent la lumière réelle', () => {
   assert.ok(night.earthshine > 0 && fullMoon.earthshine === 0, 'lumière cendrée des croissants seulement');
   assert.ok(S.skyScene({ sunAlt: -30, weather: 'rain' }).rain > 0 && S.skyScene({ sunAlt: -30, weather: 'snow' }).snow > 0);
   assert.notEqual(S.skyScene({ sunAlt: 40, dark: true }).top, S.skyScene({ sunAlt: -30, dark: true }).top, 'le jour ne ressemble pas à la nuit');
+});
+
+test('ciel vivant : le vent réel donne le sens, la vitesse et la pente', () => {
+  const west = S.skyMotion({ wind: 20, dir: 270, lat: 50.6 }), east = S.skyMotion({ wind: 20, dir: 90, lat: 50.6 });
+  assert.equal(west.toRight, false, 'un vent d’ouest pousse vers l’est, à gauche quand on regarde le sud');
+  assert.equal(east.toRight, true);
+  assert.equal(S.skyMotion({ wind: 20, dir: 270, lat: -33 }).toRight, true, 'au sud de l’équateur, la fenêtre regarde le nord');
+  assert.ok(S.skyMotion({ wind: 50, dir: 270 }).clouds < west.clouds && west.clouds < S.skyMotion({ wind: 3, dir: 270 }).clouds, 'plus de vent, dérive plus rapide');
+  assert.ok(S.skyMotion({ wind: 20, dir: 0 }).clouds > west.clouds, 'un vent du nord se voit à peine en travers');
+  assert.ok(west.slant < 0 && east.slant > 0 && Math.abs(S.skyMotion({ wind: 200, dir: 270 }).slant) <= 30, 'la pluie penche avec le vent, jamais plus de 30°');
+  assert.ok(S.skyMotion({ precip: 8 }).rain < S.skyMotion({ precip: 0 }).rain, 'l’averse tombe plus vite que la bruine');
+  const d = S.skyMotion({});
+  for (const k of ['clouds', 'mist', 'rain', 'snow']) assert.ok(Number.isFinite(d[k]) && d[k] > 0, `sans météo, ${k} a une durée`);
+  const junk = S.skyMotion({ wind: 'x', dir: null, precip: NaN });
+  assert.ok(Number.isFinite(junk.clouds) && Number.isFinite(junk.rain));
+  assert.equal(S.windName(270), 'd\'ouest'); assert.equal(S.windName(-10), 'du nord'); assert.equal(S.windName(225), 'du sud-ouest');
 });

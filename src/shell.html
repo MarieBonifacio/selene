@@ -218,6 +218,30 @@ dialog.palette input:focus-visible{outline:none;border-bottom-color:var(--accent
 .hero svg.trees{position:absolute;inset:0;height:100%}
 .hero .moon{position:absolute;left:82%;top:30.7%;height:100%;aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none}
 .hero .moon svg{display:block;width:100%;height:100%}
+/* Ciel vivant : des calques qui ne font que glisser (transform), confiés à la carte graphique. Nuages et brume : un
+   motif deux fois plus large que la fenêtre, décalé d'une largeur en boucle ; pluie et neige : un masque qui descend
+   d'une période, penché par le vent. Immobile sans .live, hors de vue (.still), ou si le système demande moins
+   d'animations (règle globale plus bas). */
+.hero .drift,.hero .fall{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.hero .drift .band{width:200%;height:100%}
+.hero .drift svg{display:block;width:100%;height:100%}
+.hero .wisps{opacity:.45}.hero .wisps.fog{opacity:.9}
+.hero .fall .tilt{position:absolute;inset:-45%}
+.hero .fall .drops{position:absolute;inset:0}
+.hero .rain .drops{background:var(--rain-c);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='24'%3E%3Cpath d='M7 0v10M21 12v10' stroke='%23000' stroke-width='.9'/%3E%3C/svg%3E") 0 0/28px 24px;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='24'%3E%3Cpath d='M7 0v10M21 12v10' stroke='%23000' stroke-width='.9'/%3E%3C/svg%3E") 0 0/28px 24px}
+.hero .snow .drops{background:#eef1ee;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cg fill='%23000'%3E%3Ccircle cx='8' cy='6' r='1.3'/%3E%3Ccircle cx='37' cy='19' r='1'/%3E%3Ccircle cx='21' cy='33' r='1.5'/%3E%3Ccircle cx='52' cy='44' r='1.2'/%3E%3Ccircle cx='11' cy='53' r='.9'/%3E%3C/g%3E%3C/svg%3E") 0 0/60px 60px;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cg fill='%23000'%3E%3Ccircle cx='8' cy='6' r='1.3'/%3E%3Ccircle cx='37' cy='19' r='1'/%3E%3Ccircle cx='21' cy='33' r='1.5'/%3E%3Ccircle cx='52' cy='44' r='1.2'/%3E%3Ccircle cx='11' cy='53' r='.9'/%3E%3C/g%3E%3C/svg%3E") 0 0/60px 60px}
+@keyframes sky-drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+@keyframes sky-rain{from{transform:translate3d(0,-24px,0)}to{transform:translate3d(0,0,0)}}
+@keyframes sky-snow{from{transform:translate3d(0,-60px,0)}to{transform:translate3d(0,0,0)}}
+.hero.live .band{animation:sky-drift linear infinite;will-change:transform}
+.hero.live .band.rev{animation-direction:reverse}
+.hero.live .rain .drops{animation:sky-rain linear infinite;will-change:transform}
+.hero.live .snow .drops{animation:sky-snow linear infinite;will-change:transform}
+.hero.live.still .band,.hero.live.still .fall .drops{animation-play-state:paused}
 /* Le ciel se fond dans la page par la brume, sans bordure : une lisière. */
 .hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:44px;background:linear-gradient(transparent,var(--bg));pointer-events:none}
 /* Le texte posé sur le ciel : son encre et son voile de lecture viennent de skyScene (sky.js), qui les choisit pour
@@ -228,7 +252,7 @@ dialog.palette input:focus-visible{outline:none;border-bottom-color:var(--accent
 .hero p{margin:8px 0 0;color:var(--scene-ink,var(--muted));font-size:.95rem}
 .hero.txt-right .txt{left:auto;right:var(--g,20px);text-align:right}
 .hero .sky-line{margin-top:4px;font-family:var(--f-ui);font-size:.82rem;letter-spacing:.01em}
-@media (max-width:520px){.hero .txt{max-width:62%}}
+@media (max-width:520px){.hero .txt{max-width:62%}.hero .sky-wind{display:none}}
 @media (max-width:640px){.hero.compact{margin-bottom:24px}.hero.compact svg.scene{height:120px}.hero.compact .txt{top:14px}.hero.compact .phase{font-size:1.7rem}.hero.compact p{display:none}}
 
 /* lists */

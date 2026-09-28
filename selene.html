@@ -218,6 +218,30 @@ dialog.palette input:focus-visible{outline:none;border-bottom-color:var(--accent
 .hero svg.trees{position:absolute;inset:0;height:100%}
 .hero .moon{position:absolute;left:82%;top:30.7%;height:100%;aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none}
 .hero .moon svg{display:block;width:100%;height:100%}
+/* Ciel vivant : des calques qui ne font que glisser (transform), confiés à la carte graphique. Nuages et brume : un
+   motif deux fois plus large que la fenêtre, décalé d'une largeur en boucle ; pluie et neige : un masque qui descend
+   d'une période, penché par le vent. Immobile sans .live, hors de vue (.still), ou si le système demande moins
+   d'animations (règle globale plus bas). */
+.hero .drift,.hero .fall{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.hero .drift .band{width:200%;height:100%}
+.hero .drift svg{display:block;width:100%;height:100%}
+.hero .wisps{opacity:.45}.hero .wisps.fog{opacity:.9}
+.hero .fall .tilt{position:absolute;inset:-45%}
+.hero .fall .drops{position:absolute;inset:0}
+.hero .rain .drops{background:var(--rain-c);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='24'%3E%3Cpath d='M7 0v10M21 12v10' stroke='%23000' stroke-width='.9'/%3E%3C/svg%3E") 0 0/28px 24px;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='24'%3E%3Cpath d='M7 0v10M21 12v10' stroke='%23000' stroke-width='.9'/%3E%3C/svg%3E") 0 0/28px 24px}
+.hero .snow .drops{background:#eef1ee;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cg fill='%23000'%3E%3Ccircle cx='8' cy='6' r='1.3'/%3E%3Ccircle cx='37' cy='19' r='1'/%3E%3Ccircle cx='21' cy='33' r='1.5'/%3E%3Ccircle cx='52' cy='44' r='1.2'/%3E%3Ccircle cx='11' cy='53' r='.9'/%3E%3C/g%3E%3C/svg%3E") 0 0/60px 60px;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cg fill='%23000'%3E%3Ccircle cx='8' cy='6' r='1.3'/%3E%3Ccircle cx='37' cy='19' r='1'/%3E%3Ccircle cx='21' cy='33' r='1.5'/%3E%3Ccircle cx='52' cy='44' r='1.2'/%3E%3Ccircle cx='11' cy='53' r='.9'/%3E%3C/g%3E%3C/svg%3E") 0 0/60px 60px}
+@keyframes sky-drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+@keyframes sky-rain{from{transform:translate3d(0,-24px,0)}to{transform:translate3d(0,0,0)}}
+@keyframes sky-snow{from{transform:translate3d(0,-60px,0)}to{transform:translate3d(0,0,0)}}
+.hero.live .band{animation:sky-drift linear infinite;will-change:transform}
+.hero.live .band.rev{animation-direction:reverse}
+.hero.live .rain .drops{animation:sky-rain linear infinite;will-change:transform}
+.hero.live .snow .drops{animation:sky-snow linear infinite;will-change:transform}
+.hero.live.still .band,.hero.live.still .fall .drops{animation-play-state:paused}
 /* Le ciel se fond dans la page par la brume, sans bordure : une lisière. */
 .hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:44px;background:linear-gradient(transparent,var(--bg));pointer-events:none}
 /* Le texte posé sur le ciel : son encre et son voile de lecture viennent de skyScene (sky.js), qui les choisit pour
@@ -228,7 +252,7 @@ dialog.palette input:focus-visible{outline:none;border-bottom-color:var(--accent
 .hero p{margin:8px 0 0;color:var(--scene-ink,var(--muted));font-size:.95rem}
 .hero.txt-right .txt{left:auto;right:var(--g,20px);text-align:right}
 .hero .sky-line{margin-top:4px;font-family:var(--f-ui);font-size:.82rem;letter-spacing:.01em}
-@media (max-width:520px){.hero .txt{max-width:62%}}
+@media (max-width:520px){.hero .txt{max-width:62%}.hero .sky-wind{display:none}}
 @media (max-width:640px){.hero.compact{margin-bottom:24px}.hero.compact svg.scene{height:120px}.hero.compact .txt{top:14px}.hero.compact .phase{font-size:1.7rem}.hero.compact p{display:none}}
 
 /* lists */
@@ -1507,6 +1531,27 @@ function skyScene({ sunAlt, illum = 0.5, weather = null, dark = true }) {
   };
 }
 
+/* ---- ciel vivant : le mouvement d'après le vent réel ----
+   Open-Meteo donne la direction d'où le vent vient (270 : d'ouest). La fenêtre regarde le sud au nord de l'équateur :
+   l'est y est à gauche, donc un vent d'ouest pousse les nuages vers la gauche (l'inverse au sud de l'équateur).
+   Le vent qui souffle vers nous ou de nous ne se voit presque pas en travers : la dérive ralentit, sans s'arrêter.
+   Durées en secondes : une traversée complète pour les nuages, une période de motif pour la pluie et la neige. */
+const WIND_NAMES = ["du nord", "du nord-est", "d'est", "du sud-est", "du sud", "du sud-ouest", "d'ouest", "du nord-ouest"];
+const windName = dir => WIND_NAMES[Math.round((((+dir % 360) + 360) % 360) / 45) % 8];
+function skyMotion({ wind = 8, dir = 270, precip = 0, lat = 45 } = {}) {
+  const w = Number.isFinite(+wind) ? Math.max(0, +wind) : 8, from = Number.isFinite(+dir) ? +dir : 270;
+  const east = Math.sin((from + 180) * RAD), dx = (lat >= 0 ? -1 : 1) * east; // > 0 : vers la droite de l'écran
+  const eff = Math.max(3, w * Math.max(0.35, Math.abs(dx)));
+  const clouds = Math.round(Math.max(45, Math.min(600, 2400 / eff)));
+  const p = Number.isFinite(+precip) ? Math.max(0, +precip) : 0;
+  const fall = Math.max(70, Math.min(220, 70 + 25 * p)); // px/s : la bruine descend lentement, l'averse moins
+  return {
+    toRight: dx > 0, clouds, mist: Math.round(clouds * 1.8),
+    slant: Math.round(Math.max(-30, Math.min(30, dx * w * 0.9))), // degrés : la pluie penche avec le vent
+    rain: +(24 / fall).toFixed(3), snow: +(60 / Math.max(10, Math.min(30, 10 + w * 0.4))).toFixed(2)
+  };
+}
+
 /* ================= utils ================= */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -1620,21 +1665,33 @@ function fir(x, base, hgt, w) {
   return d + `M${(x - w * .05).toFixed(1)},${(base - hgt * .06).toFixed(1)}h${(w * .1).toFixed(1)}v${(hgt * .08).toFixed(1)}h${(-w * .1).toFixed(1)}Z`;
 }
 function buildTrees() {
-  const r = rng(1729), far = [], near = [], stars = [], snow = [];
+  const r = rng(1729), far = [], near = [], stars = [];
   for (let x = -20; x < 1030; x += 14 + r() * 18) far.push(fir(x, 262 + r() * 10, x < 540 ? 55 + r() * 50 : 70 + r() * 70, 26 + r() * 14));
   for (let x = -30; x < 1040; x += 26 + r() * 40) { if (x > 380 && x < 470 && r() < .7) continue; const low = x < 540; near.push(fir(x, 300 + r() * 6, low ? 70 + r() * 80 : 100 + r() * 120, 40 + r() * 26)); }
   for (let i = 0; i < 70; i++) stars.push(`<circle cx="${(r() * 1000).toFixed(0)}" cy="${(r() * 170).toFixed(0)}" r="${(r() * .9 + .3).toFixed(2)}"/>`);
-  for (let i = 0; i < 110; i++) snow.push(`<circle cx="${(r() * 1000).toFixed(0)}" cy="${(r() * 300).toFixed(0)}" r="${(r() * .9 + .7).toFixed(2)}"/>`);
-  TREES = { far: far.join(""), near: near.join(""), stars: stars.join(""), snow: snow.join("") };
+  TREES = { far: far.join(""), near: near.join(""), stars: stars.join("") };
 }
 /* Des nuages en strates horizontales, comme dans les ciels gravés : trois bandes, plus ou moins présentes. */
 const cloudsSVG = o => `<g fill="var(--cloud)"><ellipse cx="260" cy="58" rx="330" ry="15" opacity="${(o * .8).toFixed(2)}"/><ellipse cx="720" cy="96" rx="360" ry="19" opacity="${o.toFixed(2)}"/><ellipse cx="470" cy="140" rx="420" ry="13" opacity="${(o * .6).toFixed(2)}"/></g>`;
-/* Trois plans superposés : le ciel et ses étoiles, la lune et son halo, puis les nuages, les sapins, la brume et ce qui
-   tombe (pluie en fines hachures obliques, neige en points). Le ciel et les sapins sont recadrés (« slice ») pour remplir
-   toute largeur ; la lune ne l'est pas, sinon un écran étroit la coupe. Son repère (-150…150) est à l'échelle du ciel
-   (300 de haut). Sans lieu, elle garde sa place d'origine (82 %) ; avec un lieu, `at` la place où elle est
-   (moonPlacement), et `at === false` dit qu'elle est sous l'horizon. Les couleurs viennent de skyScene (sky.js). */
-function forestSVG(p, sc = skyScene({ sunAlt: -30, illum: .5 }), at) {
+/* Le ciel vivant : chaque couche qui bouge est un calque HTML à part, déplacé par une animation CSS de `transform`
+   seulement. Le navigateur la confie à la carte graphique (le « compositeur ») : rien n'est redessiné ni recalculé
+   image par image, le processeur ne fait presque rien. Les nuages et la brume sont un motif périodique deux fois plus
+   large que la fenêtre, qui glisse d'une largeur puis recommence ; la pluie et la neige, un motif qui descend d'une
+   période. Le retard négatif, pris sur l'horloge, fait qu'un nouveau rendu de l'accueil reprend le mouvement où il en
+   était au lieu de le remettre à zéro. Sans `.live` sur la scène (réglage coupé), rien ne bouge. */
+const periodic = g => [-1000, 0, 1000, 2000].map(x => `<g transform="translate(${x} 0)">${g}</g>`).join("");
+const phase = (dur, now) => `animation-duration:${dur}s;animation-delay:-${((now / 1000) % dur).toFixed(2)}s`;
+const driftLayer = (cls, dur, toRight, now, inner) => `<div class="drift ${cls}" aria-hidden="true"><div class="band${toRight ? " rev" : ""}" style="${phase(dur, now)}"><svg viewBox="0 0 2000 300" preserveAspectRatio="none">${inner}</svg></div></div>`;
+const fallLayer = (cls, dur, tilt, now, o) => `<div class="fall ${cls}" aria-hidden="true" style="opacity:${o}"><div class="tilt" style="transform:rotate(${tilt}deg)"><div class="drops" style="${phase(dur, now)}"></div></div></div>`;
+/* Des lambeaux de brume, bas sur la lisière, entre les sapins lointains et les proches. */
+const WISPS = `<ellipse cx="130" cy="226" rx="250" ry="22" fill="url(#wisp)"/><ellipse cx="540" cy="212" rx="210" ry="15" fill="url(#wisp)"/><ellipse cx="840" cy="238" rx="270" ry="20" fill="url(#wisp)"/>`;
+/* Plans superposés : le ciel et ses étoiles, la lune et son halo, les nuages, les sapins lointains, la brume, les sapins
+   proches, puis ce qui tombe (pluie en fines hachures, neige en points). Le ciel et les sapins sont recadrés (« slice »)
+   pour remplir toute largeur ; la lune ne l'est pas, sinon un écran étroit la coupe. Son repère (-150…150) est à
+   l'échelle du ciel (300 de haut). Sans lieu, elle garde sa place d'origine (82 %) ; avec un lieu, `at` la place où elle
+   est (moonPlacement), et `at === false` dit qu'elle est sous l'horizon. Les couleurs viennent de skyScene, le
+   mouvement de skyMotion (sky.js). */
+function forestSVG(p, sc = skyScene({ sunAlt: -30, illum: .5 }), at, mo = skyMotion(), now = Date.now()) {
   if (!TREES) buildTrees();
   const r = 46, c = 50, rx = Math.abs(Math.cos(2 * Math.PI * p)) * r;
   const lit = p < .5 ? `M${c},${c - r} A${r},${r} 0 0 1 ${c},${c + r} A${rx},${r} 0 0 ${p < .25 ? 0 : 1} ${c},${c - r}Z`
@@ -1650,15 +1707,16 @@ function forestSVG(p, sc = skyScene({ sunAlt: -30, illum: .5 }), at) {
     <circle r="${40 + 120 * (1 - Math.abs(1 - 2 * p)) * .9}" fill="url(#glow)"/>
     <g transform="scale(.84) translate(-50 -50)"><circle cx="50" cy="50" r="${r}" fill="var(--moon-shadow)" opacity=".85"/>${sc.earthshine ? `<circle class="earthshine" cx="50" cy="50" r="${r}" fill="var(--moon)" opacity="${sc.earthshine.toFixed(3)}"/>` : ""}<path d="${lit}" fill="var(--moon)"/></g>
   </svg></div>`}
+  ${sc.clouds ? driftLayer("clouds", mo.clouds, mo.toRight, now, periodic(cloudsSVG(sc.clouds))) : ""}
   <svg class="scene trees" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-    <defs><linearGradient id="mist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--mist)" stop-opacity="0"/><stop offset=".6" stop-color="var(--mist)"/><stop offset="1" stop-color="var(--mist)" stop-opacity="0"/></linearGradient>${sc.rain ? `<pattern id="rain" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(18)"><path d="M7 0v9" stroke="var(--rain-c)" stroke-width=".7"/></pattern>` : ""}</defs>
-    ${sc.clouds ? cloudsSVG(sc.clouds) : ""}
+    <defs><linearGradient id="mist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--mist)" stop-opacity="0"/><stop offset=".6" stop-color="var(--mist)"/><stop offset="1" stop-color="var(--mist)" stop-opacity="0"/></linearGradient></defs>
     <path d="${TREES.far}" fill="var(--tree-far)"/>
     <rect y="${sc.fog ? 140 : 205}" width="1000" height="${sc.fog ? 150 : 75}" fill="url(#mist)"/>
-    <path d="${TREES.near}" fill="var(--tree-near)"/>
-    ${sc.rain ? `<rect class="rain" width="1000" height="300" fill="url(#rain)" opacity="${sc.rain}"/>` : ""}
-    ${sc.snow ? `<g class="snow" fill="#eef1ee" opacity="${sc.snow}">${TREES.snow}</g>` : ""}
-  </svg>`;
+  </svg>
+  ${driftLayer(`wisps${sc.fog ? " fog" : ""}`, mo.mist, mo.toRight, now, `<defs><radialGradient id="wisp"><stop offset="0" stop-color="var(--mist)"/><stop offset="1" stop-color="var(--mist)" stop-opacity="0"/></radialGradient></defs>${periodic(WISPS)}`)}
+  <svg class="scene trees" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><path d="${TREES.near}" fill="var(--tree-near)"/></svg>
+  ${sc.rain ? fallLayer("rain", mo.rain, -mo.slant, now, sc.rain) : ""}
+  ${sc.snow ? fallLayer("snow", mo.snow, -Math.round(mo.slant / 2), now, sc.snow) : ""}`;
 }
 /* ================= la Fenêtre : lieu, météo, scène du moment =================
    Le lieu (config.sky, synchronisé) est arrondi au dixième de degré (~10 km) avant tout envoi. La météo vient
@@ -1683,12 +1741,23 @@ async function refreshWeather(force = false) {
   const w = freshWeather(c); if (!force && w && Date.now() - w.at < 30 * 60000) return;
   weatherBusy = true;
   try {
-    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${+c.lat}&longitude=${+c.lon}&current=temperature_2m,weather_code,cloud_cover,wind_speed_10m&timezone=auto`);
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${+c.lat}&longitude=${+c.lon}&current=temperature_2m,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,precipitation&timezone=auto`);
     const cur = r.ok ? (await r.json()).current : null;
     if (!cur || !Number.isFinite(+cur.weather_code)) return;
-    localStorage.setItem(WEATHER_KEY, JSON.stringify({ at: Date.now(), lat: +c.lat, lon: +c.lon, code: +cur.weather_code, temp: +cur.temperature_2m, cloud: +cur.cloud_cover, wind: +cur.wind_speed_10m }));
+    localStorage.setItem(WEATHER_KEY, JSON.stringify({ at: Date.now(), lat: +c.lat, lon: +c.lon, code: +cur.weather_code, temp: +cur.temperature_2m, cloud: +cur.cloud_cover, wind: +cur.wind_speed_10m, dir: +cur.wind_direction_10m, precip: +cur.precipitation }));
     render();
   } catch {} finally { weatherBusy = false; } // hors ligne, ou l'artefact claude.ai qui ne sort pas : le ciel reste sans météo
+}
+/* Le ciel vivant se règle par appareil : c'est l'appareil qui paie l'animation, pas le compte. */
+const skyLive = () => { try { return localStorage.getItem("selene-sky-live") !== "off"; } catch { return true; } };
+/* Hors de vue (la page défilée plus bas), la scène s'immobilise : aucune image calculée pour personne. */
+let heroObs = null;
+function skyWatch() {
+  try {
+    const h = document.querySelector("#main .hero.live"); if (!h || !("IntersectionObserver" in window)) return;
+    heroObs = heroObs || new window.IntersectionObserver(es => es.forEach(e => e.target.classList.toggle("still", !e.isIntersecting)));
+    heroObs.disconnect(); heroObs.observe(h);
+  } catch {}
 }
 const hm = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
 /* La scène du moment : couleurs (skyScene), place de la lune, et ce qu'on peut en dire en une ligne. */
@@ -1697,7 +1766,11 @@ function sceneNow(m) {
   const sun = sunPosition(t, place.lat, place.lon), w = c && c.weather !== false ? freshWeather(c) : null, weather = w ? weatherState(w.code) : null;
   const sc = skyScene({ sunAlt: sun.alt, illum: m.illum, weather, dark }), facts = [];
   let moonAt;
+  // Le mouvement suit le vent mesuré ; sans météo, une brise d'ouest légère, celle qui domine sous nos latitudes.
+  const mo = skyMotion(w ? { wind: w.wind, dir: w.dir, precip: w.precip, lat: place.lat } : { lat: place.lat });
   if (weather) facts.push(`${Math.round(w.temp)} °C · ${WEATHER[weather]}`);
+  // Le vent, en clair ; sur un écran étroit, la ligne s'en passe (le ciel le montre déjà en bougeant).
+  const wind = w && weather && Number.isFinite(w.dir) && w.wind >= 1 ? `vent ${windName(w.dir)} ${Math.round(w.wind)} km/h` : "";
   if (c) {
     const ev = nextCrossing(sunPosition, t, place.lat, place.lon, -0.833);
     if (ev) facts.push(`${ev.rising ? "lever" : "coucher"} ${hm(ev.at)}`);
@@ -1711,7 +1784,9 @@ function sceneNow(m) {
   // lune haute), le voile de lecture se renforce : un disque clair sous des lettres claires ne se lit pas.
   const right = !!(moonAt && moonAt.x < 50), clash = !!(moonAt && (right ? moonAt.x > 36 : moonAt.x < 64) && moonAt.y < 52);
   if (clash) sc.scrim = Math.max(sc.scrim, .6);
-  return { sc, sun, dark, moonAt, right, line: line && line[0].toUpperCase() + line.slice(1) };
+  const cap = t => t && t[0].toUpperCase() + t.slice(1);
+  const lineHTML = !line ? "" : wind ? `${esc(cap(facts[0]))}<span class="sky-wind"> · ${esc(wind)}</span>${esc(line.slice(facts[0].length))}` : esc(cap(line));
+  return { sc, sun, dark, moonAt, right, mo, line: cap(line), lineHTML };
 }
 /* Réglages → Ciel : le lieu (une ville, ou la position de l'appareil, jamais demandée d'office), la météo, la lune. */
 let skyResults = []; // résultats de la dernière recherche de ville (propres à l'appareil, oubliés au rechargement)
@@ -1723,6 +1798,7 @@ function skySettingsHTML() {
     ${skyResults.length ? `<ul class="plain" style="margin-top:8px">${skyResults.map((r, i) => `<li class="item"><span></span><div>${esc(r.name)}</div><button class="btn sm" data-act="sky-pick" data-i="${i}">Choisir</button></li>`).join("")}</ul>` : ""}
     ${c ? `<label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:400"><input type="checkbox" data-act="sky-weather" ${c.weather !== false ? "checked" : ""}>Météo en direct</label>
     <label style="display:flex;gap:8px;align-items:center;margin-top:6px;font-weight:400"><input type="checkbox" data-act="sky-moon" ${c.realMoon !== false ? "checked" : ""}>La lune à sa vraie place (sinon, toujours dans le ciel)</label>` : ""}
+    <label style="display:flex;gap:8px;align-items:center;margin-top:6px;font-weight:400"><input type="checkbox" data-act="sky-live" ${skyLive() ? "checked" : ""}>Ciel vivant : nuages, brume, pluie ou neige bougent au rythme du vent mesuré (sur cet appareil ; immobile si le système demande moins d'animations)</label>
     <p class="hint" style="margin-top:10px">La météo et la recherche de ville passent par Open-Meteo : le service voit ce lieu arrondi et l'adresse de l'appareil, rien d'autre.</p></section>`;
 }
 function setSky(name, lat, lon) {
@@ -1881,10 +1957,10 @@ VIEWS.accueil = () => {
   ${s.config.welcome ? `<section><h2>Composer ton espace</h2><p class="hint">Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.</p>
     ${MODULE_TEMPLATES.map(t => `<div class="set" style="grid-template-columns:1fr auto"><div><b>${esc(t.name)}</b><div class="hint" style="margin:2px 0 0">${esc(t.hint)}</div></div><button class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}">Ajouter</button></div>`).join("")}
     <div class="row" style="margin-top:12px"><button class="btn acc" data-act="welcome-done">C'est bon</button></div></section>` : ""}
-  <section class="hero${HERO_COMPACT ? " compact" : ""}${win.right ? " txt-right" : ""}" style="${heroStyle(win.sc, win.dark)}" data-weather="${win.sc.weather || ""}" data-sun="${win.sun.alt.toFixed(1)}">${forestSVG(m.p, win.sc, win.moonAt)}<div class="txt">
+  <section class="hero${HERO_COMPACT ? " compact" : ""}${win.right ? " txt-right" : ""}${skyLive() ? " live" : ""}" style="${heroStyle(win.sc, win.dark)}" data-weather="${win.sc.weather || ""}" data-sun="${win.sun.alt.toFixed(1)}">${forestSVG(m.p, win.sc, win.moonAt, win.mo)}<div class="txt">
     <div class="phase">${m.name}</div>
     <p>Éclairée à ${Math.round(m.illum * 100)} %, jour ${Math.floor(m.age) + 1} du cycle. ${m.p < .5 ? `Pleine lune dans ${m.nextFull} j.` : `Nouvelle lune dans ${m.nextNew} j.`}</p>
-    ${win.line ? `<p class="sky-line">${esc(win.line)}</p>` : ""}
+    ${win.lineHTML ? `<p class="sky-line">${win.lineHTML}</p>` : ""}
   </div></section>
   ${resumeSection()}
   <div class="two">
@@ -2510,6 +2586,7 @@ function memoInRender(key, compute) {
 function render() {
   renderMemo = new Map();
   try { renderNow(); } finally { renderMemo = null; }
+  skyWatch();
 }
 function renderNow() {
   applyTheme();
@@ -2753,6 +2830,7 @@ document.addEventListener("change", e => {
     c[act === "sky-weather" ? "weather" : "realMoon"] = el.checked; site.save(); render();
     if (act === "sky-weather" && el.checked) refreshWeather(true);
   }
+  else if (act === "sky-live") { try { localStorage.setItem("selene-sky-live", el.checked ? "on" : "off"); } catch {} render(); }
   else if (act === "open-on") { try { localStorage.setItem("selene-open", el.value); } catch {} toast(el.value === "last" ? "L'app rouvrira le dernier espace où tu étais." : "L'app s'ouvrira sur l'accueil."); }
   else if (act === "mod-on") { S().config.modules[+el.closest("[data-i]").dataset.i].on = el.checked; site.save(); render(); }
   else if (act === "mod-label") {
