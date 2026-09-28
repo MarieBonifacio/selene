@@ -74,3 +74,18 @@ test('a backup from a newer schema is refused with an explicit message', () => {
   const d = valid(); d.site.schemaVersion = 99;
   assert.throws(() => api.parseBackup(JSON.stringify(d)), /plus récente/);
 });
+
+test('connexions externes : Dehors et le radar, validés comme le reste', () => {
+  const ok = d => api.parseBackup(JSON.stringify(d)), feed = extra => ({ id: 'f1', url: 'https://revue.example/feed.xml', title: 'Revue', mod: 'ecriture', seen: 1, ...extra });
+  const d = valid(); d.site.config.dehors = { feeds: [feed()], artists: true, artistsSeen: 5 }; d.site.config.radar = { words: 'poésie, jazz' };
+  assert.doesNotThrow(() => ok(d));
+  for (const mutate of [
+    x => { x.site.config.dehors = { feeds: 'non' }; },
+    x => { x.site.config.dehors = { feeds: [feed({ url: 'javascript:alert(1)' })] }; },
+    x => { x.site.config.dehors = { feeds: [feed({ id: '<img>' })] }; },
+    x => { x.site.config.dehors = { feeds: [feed({ seen: -1 })] }; },
+    x => { x.site.config.dehors = { feeds: Array.from({ length: 101 }, (_, i) => feed({ id: 'f' + i })) }; },
+    x => { x.site.config.dehors = { feeds: [], artists: 'oui' }; },
+    x => { x.site.config.radar = { words: 'x'.repeat(301) }; }
+  ]) { const x = valid(); mutate(x); assert.throws(() => ok(x), /Configuration invalide/); }
+});

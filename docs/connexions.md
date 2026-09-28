@@ -98,7 +98,14 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
       heures, à l'ouverture (onglet visible) ou sur demande. Le contenu reste sur l'appareil, un mois au plus.
 - [x] Newsletters : Kill the Newsletter donne un flux Atom par adresse (conseil affiché, pas pour du courrier privé).
 
-**6c : Artist Watch** : les sorties MusicBrainz de tes artistes, une fois par semaine, dans Dehors.
+**6c : Artist Watch**
+- [x] Dans Dehors, une case : « Les sorties de mes artistes » (synchronisée, `config.dehors.artists`). Les artistes
+      reliés à MusicBrainz dans tes collections de musique, trente au plus (les plus récemment ajoutés).
+- [x] Une fois par semaine, à l'ouverture (ou « Relire maintenant ») : leurs parutions depuis la dernière vérification
+      (la même mémoire que « Nouvelles sorties » ; la première fois, le mois écoulé), une requête par seconde.
+      Directement auprès de MusicBrainz (CORS ouvert) : pas besoin du passeur.
+- [x] Ces sorties comptent à partir du jour où on les découvre, pas de leur date de parution (MusicBrainz les enregistre
+      souvent après coup) ; rangées sous le module de musique, avec « ajouter à Musique » au lieu de « garder ».
 
 **6d : Research Watch** : OpenAlex, ta clé sur l'appareil.
 
