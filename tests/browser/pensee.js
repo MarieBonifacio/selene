@@ -5,6 +5,8 @@ const SHOTS = process.env.SELENE_SHOTS;
 (async () => {
   const b = await chromium.launch(launchOptions);
   const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
+  // Sur téléphone, la capture passe par le ⊕ de la barre basse (une feuille), plus par l'accueil.
+  const capture = async t => { await p.click('[data-act="sheet-capture"]'); await p.fill('#capSheetIn', t); await p.press('#capSheetIn', 'Enter'); };
   await p.addInitScript(l => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', l); }, fixture());
   await p.goto(BASE + '/index.html'); await p.waitForTimeout(300);
   const go = async h => { await p.evaluate(h => location.hash = h, h); await p.waitForTimeout(200); };
@@ -13,13 +15,13 @@ const SHOTS = process.env.SELENE_SHOTS;
   const shot = async n => { if (SHOTS) await p.screenshot({ path: `${SHOTS}/${n}.png`, fullPage: true }); };
 
   console.log('statut épistémique');
-  await p.fill('#capIn', '? le seuil précède le récit'); await p.press('#capIn', 'Enter'); await p.waitForTimeout(200);
+  await capture('? le seuil précède le récit'); await p.waitForTimeout(200);
   let n = (await data()).modules.inbox.entries.at(-1);
   check(n.text === 'le seuil précède le récit' && n.ep === 'hyp', '« ? » devant une capture : une hypothèse, le « ? » retiré');
   check((await p.textContent('#toast')).includes('hypothèse'), 'le message le dit');
 
   console.log('provenance');
-  await p.fill('#capIn', 'Écriture : une phrase née ailleurs'); await p.press('#capIn', 'Enter'); await p.waitForTimeout(200);
+  await capture('Écriture : une phrase née ailleurs'); await p.waitForTimeout(200);
   await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(200); // « Ranger »
   let f = (await data()).modules.ecriture.scraps.at(-1);
   check(f.text === 'une phrase née ailleurs' && f.origin && f.origin.text === 'Écriture : une phrase née ailleurs' && f.origin.from === 'Capture', 'le fragment rangé garde une copie de la note d’origine');
@@ -74,7 +76,7 @@ const SHOTS = process.env.SELENE_SHOTS;
   let t = await main();
   check(/Seuil.*1 occurrence · dernière aujourd'hui \(Capture\)/.test(t), 'un motif est compté dans les autres modules, avec sa dernière apparition');
   check(/Sorcière.*jamais rencontré/.test(t), 'un motif absent le dit');
-  await go('accueil'); await p.fill('#capIn', 'Une porte, un seuil, un récit'); await p.press('#capIn', 'Enter'); await p.waitForTimeout(200);
+  await go('accueil'); await capture('Une porte, un seuil, un récit'); await p.waitForTimeout(200);
   await go('motifs'); t = await main();
   check(/Seuil.*2 occurrences/.test(t) && t.includes('voisins : Récit (2)'), 'variantes comptées, voisins dès deux rencontres communes');
   await shot('motifs');

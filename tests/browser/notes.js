@@ -21,7 +21,7 @@ const v3 = { updatedAt: 10, schemaVersion: 3,
   const openAll = () => p.evaluate(() => document.querySelectorAll('details').forEach(d => d.open = true));
 
   console.log('migration + accueil');
-  ok((await nav()).includes('Capture (2)'), 'compteur de la boîte dans la navigation');
+  ok((await nav()).includes('Capture') && (await p.textContent('#nav a[href="#inbox"] .badge')).startsWith('2'), 'compteur de la boîte dans la navigation');
   ok((await main()).includes('2 éléments à trier'), 'lien « à trier » sur l’accueil');
   await p.fill('#capIn', 'idée de chapitre'); await p.press('#capIn', 'Enter'); await p.waitForTimeout(200);
   ok((await data()).modules.inbox.entries.length === 3, 'capture rapide (Entrée) → boîte de réception');

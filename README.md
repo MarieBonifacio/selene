@@ -45,7 +45,10 @@ Pour ajouter un *type* de module au code, voir [docs/architecture.md](docs/archi
 - **Annuler** : supprimer un élément affiche « Annuler » pendant quelques secondes, au lieu d'une confirmation.
 - **Accueil** : « fait » sur un rappel en retard (une ligne par module), « Noter N min » pour la séance du jour (dernière durée), éléments prévus ou en retard ; le chevron d'une ligne la déplie sur ses derniers éléments. Sur téléphone, le paysage se réduit à partir de la deuxième ouverture du jour.
 - **Actions de ligne** (supprimer, modifier, dériver, lier…) : au survol sur ordinateur ; sur téléphone, toucher la ligne (« ⋯ » signale qu'il y en a). Chaque vue retrouve sa position de défilement quand on y revient.
-- **Chercher** (touche « / » sur ordinateur) : dans tous les modules, sans tenir compte des accents.
+- **Navigation** : sur téléphone, une barre en bas (Aujourd'hui, Espaces, ⊕ Capturer, Chercher, Bilan) ; sur ordinateur, une barre latérale. Réglages → Modules : un « Domaine » par module (Maison, Création…) regroupe la navigation et l'accueil. Réglages → Apparence : « Ouvrir sur » l'accueil ou là où tu en étais (propre à l'appareil).
+- **Palette** (`⌘K` ou `Ctrl+K`) : aller à un espace, lancer le minuteur, garder une phrase dans la boîte, retrouver un texte et y aller directement.
+- **Chercher** (touche « / » sur ordinateur) : dans tous les modules, sans tenir compte des accents. « ouvrir » mène à l'entrée elle-même, surlignée ; la puce « ‹ Recherche » ramène aux résultats. De même pour les liens entre fragments et notes.
+- **Reprendre** : sous le ciel de l'accueil, le dernier espace ouvert, son pont de reprise et les brouillons en cours.
 - **Minuteur** : à la fin des 15 minutes, le module ouvert propose la suite (noter la séance, donner le nouveau total).
 - **Écriture** : saisie du total atteint (l'app calcule la différence), dernier chapitre présélectionné, fin estimée au rythme des 30 derniers jours.
 - **Tâches → Budget** : terminer une tâche qui a un coût propose de l'ajouter en dépense (enveloppe réglable).

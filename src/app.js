@@ -253,11 +253,14 @@ VIEWS.accueil = () => {
   for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) alerts.push(...TYPE_UI[inst.type].alerts(id, inst, now));
   const inbox = inboxId(s.modules), pending = inbox ? s.modules[inbox].entries.length : 0;
   // Toute la ligne mène au module ; un chevron la déplie sur ses derniers éléments, sans avoir à l'ouvrir.
-  const rows = s.config.modules.filter(x => x.on && x.id !== inbox).map(x => {
-    const inst = Object.hasOwn(s.modules, x.id) ? s.modules[x.id] : null, more = inst && TYPE_UI[inst.type].recent ? TYPE_UI[inst.type].recent(inst) : [];
+  const row = id => {
+    const inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null, more = inst && TYPE_UI[inst.type].recent ? TYPE_UI[inst.type].recent(inst) : [];
     const r = inst && inst.resume, bridge = r ? `<small class="resume ${bridgeStale(r) ? "stale" : ""}">↳ ${esc(r.text)} · ${ago(r.at)}</small>` : "";
-    return `<div class="over-wrap${more.length ? " has-more" : ""}"><a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}${bridge}</span></a>${more.length ? `<details class="more"><summary><span class="sr">Derniers éléments de ${esc(label(x.id))}</span></summary><ul>${more.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
-  }).join("");
+    return `<div class="over-wrap${more.length ? " has-more" : ""}"><a class="over" href="#${esc(id)}"><b>${esc(label(id))}</b><span>${summaryFor(id)}${bridge}</span></a>${more.length ? `<details class="more"><summary><span class="sr">Derniers éléments de ${esc(label(id))}</span></summary><ul>${more.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
+  };
+  // Regroupées par domaine quand il y en a (un titre en petites capitales par domaine), sinon une seule liste.
+  const ds = domains().map(d => ({ ...d, ids: d.ids.filter(id => id !== inbox) })).filter(d => d.ids.length), named = ds.some(d => d.name);
+  const rows = ds.map(d => `${named ? `<p class="grp over-grp">${esc(d.name || "Espaces")}</p>` : ""}${d.ids.map(row).join("")}`).join("") + (enabled("assistant") ? row("assistant") : "");
   return `
   ${s.config.welcome ? `<section><h2>Composer ton espace</h2><p class="hint">Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.</p>
     ${MODULE_TEMPLATES.map(t => `<div class="set" style="grid-template-columns:1fr auto"><div><b>${esc(t.name)}</b><div class="hint" style="margin:2px 0 0">${esc(t.hint)}</div></div><button class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}">Ajouter</button></div>`).join("")}
@@ -266,6 +269,7 @@ VIEWS.accueil = () => {
     <div class="phase">${m.name}</div>
     <p>Éclairée à ${Math.round(m.illum * 100)} %, jour ${Math.floor(m.age) + 1} du cycle. ${m.p < .5 ? `Pleine lune dans ${m.nextFull} j.` : `Nouvelle lune dans ${m.nextNew} j.`}</p>
   </div></section>
+  ${resumeSection()}
   <div class="two">
     <section><h2>Aujourd'hui</h2><p class="hint">Trois choses. La forêt pousse très bien sans que tu la surveilles.</p>
       <ul class="plain">
@@ -274,7 +278,7 @@ VIEWS.accueil = () => {
       </ul>
       ${!tod.length ? (taskModules().length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : `<p class="empty">Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.</p>`) : ""}
     </section>
-    <section><h2>Capturer</h2><p class="hint">Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.</p>
+    <section class="capsec"><h2>Capturer</h2><p class="hint">Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.</p>
       ${inbox ? `<div class="capture"><input id="capIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="Capture rapide"><button class="btn acc" data-act="cap-add">Garder</button></div>
       ${pending ? `<p class="hint" style="margin-top:8px"><a href="#${esc(inbox)}">${pending} élément${pending > 1 ? "s" : ""} à trier</a></p>` : ""}`
       : `<p class="hint">Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans <a href="#reglages">Réglages</a>.</p>`}
@@ -551,7 +555,7 @@ VIEWS.recherche = () => {
   return `<h2>Chercher</h2><p class="hint">Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « statut:hypothèse » ne garde que les hypothèses (de même pour observé, interprétation, inexpliqué). Touche « / » pour venir ici.</p>
   <input id="searchIn" type="search" value="${esc(searchQuery)}" placeholder="Un mot, un bout de phrase…" aria-label="Chercher" autocomplete="off" style="max-width:520px">
   ${searchQuery.trim() ? `<div class="row" style="margin-top:12px"><p class="hint" style="margin:0">${hits.length ? plural(hits.length, "résultat") : "Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire."}</p>${hits.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="search-dossier" title="Tous les résultats, avec dates, statuts, provenance et liens, pour une lecture assistée">Exporter en dossier</button>` : ""}</div>
-  <ul class="plain">${hits.slice(0, 80).map(h => `<li class="item"><span></span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}<div class="meta"><span class="tag">${esc(label(h.id))}</span>${h.date ? `<span>${fmt(h.date)}</span>` : ""}${h.ep ? `<span>${esc(EP_STATUS[h.ep])}</span>` : ""}</div></div><a class="btn ghost sm" href="#${esc(h.id)}">ouvrir</a></li>`).join("")}</ul>` : ""}`;
+  <ul class="plain">${hits.slice(0, 80).map(h => `<li class="item"><span></span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}<div class="meta"><span class="tag">${esc(label(h.id))}</span>${h.date ? `<span>${fmt(h.date)}</span>` : ""}${h.ep ? `<span>${esc(EP_STATUS[h.ep])}</span>` : ""}</div></div><a class="btn ghost sm" href="#${esc(h.id)}${h.eid ? "/" + esc(h.eid) : ""}">ouvrir</a></li>`).join("")}</ul>` : ""}`;
 };
 const PALETTES = [["nigredo", "Nigredo, mousse", "#6f9a68"], ["albedo", "Albedo, lichen", "#aab7a6"], ["citrinitas", "Citrinitas, résine", "#c99a3c"], ["rubedo", "Rubedo, amanite", "#c0554a"]];
 VIEWS.reglages = () => {
@@ -560,9 +564,11 @@ VIEWS.reglages = () => {
   <section><h3>Apparence</h3><p class="hint">Quatre étapes de l'Œuvre, prises dans le sous-bois.</p>
     <div class="swatches">${PALETTES.map(([id, n, col]) => `<button class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}"><i style="background:${col}"></i>${n}</button>`).join("")}</div>
     <div class="field-row" style="margin-top:14px"><label>Mode<select data-set="config.mode"><option value="auto" ${c.mode === "auto" ? "selected" : ""}>Suivre l'appareil</option><option value="dark" ${c.mode === "dark" ? "selected" : ""}>Toujours sombre</option><option value="light" ${c.mode === "light" ? "selected" : ""}>Toujours clair</option></select></label>
-    <label>Nom affiché<input data-set="config.name" value="${esc(c.name)}"></label></div></section>
-  <section><h3>Modules</h3><p class="hint">Active, renomme, réordonne. Les modules personnalisés (marqués ✕) peuvent être supprimés définitivement.</p>
-    ${c.modules.map((m, i) => `<div class="set" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="Activer ${esc(label(m.id))}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="Nom du module"><div class="row">${s.modules[m.id] ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="Supprimer définitivement" title="Supprimer définitivement">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="Descendre">↓</button></div></div>`).join("")}
+    <label>Nom affiché<input data-set="config.name" value="${esc(c.name)}"></label></div>
+    <div class="field-row" style="margin-top:12px"><label>Ouvrir sur (cet appareil)<select data-act="open-on"><option value="accueil" ${openOn() === "accueil" ? "selected" : ""}>L'accueil</option><option value="last" ${openOn() === "last" ? "selected" : ""}>Là où j'en étais</option></select></label><span></span></div></section>
+  <section><h3>Modules</h3><p class="hint">Active, renomme, réordonne, range par domaine (Maison, Création… : la navigation les regroupe). Les modules personnalisés (marqués ✕) peuvent être supprimés définitivement.</p>
+    <datalist id="domainList">${[...new Set(c.modules.map(m => String(m.group || "").trim()).filter(Boolean))].map(g => `<option value="${esc(g)}">`).join("")}</datalist>
+    ${c.modules.map((m, i) => `<div class="set mod" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="Activer ${esc(label(m.id))}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="Nom du module">${SYSTEM.includes(m.id) ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="Domaine" aria-label="Domaine de ${esc(label(m.id))}">`}<div class="row">${s.modules[m.id] ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="Supprimer définitivement" title="Supprimer définitivement">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="Descendre">↓</button></div></div>`).join("")}
     <details style="margin-top:14px"><summary class="hint" style="cursor:pointer;margin:0">+ Créer un module</summary>
       <div class="field-row" style="margin-top:10px"><label>Modèle ou type<select id="newModType"><optgroup label="Modèles">${MODULE_TEMPLATES.map(t => `<option value="tpl:${esc(t.id)}">${esc(t.name)} — ${esc(t.hint)}</option>`).join("")}</optgroup><optgroup label="Types vides">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}">${esc(t.label)}</option>`).join("")}</optgroup></select></label>
       <label>Nom<input id="newModName" placeholder="Nom du modèle si vide"></label></div>
@@ -598,6 +604,174 @@ VIEWS.reglages = () => {
     <div class="row"><button class="btn" data-act="exp">Exporter</button><label class="btn" style="display:inline-block;font-weight:500">Importer<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label></div></section>`;
 };
 
+/* ================= navigation =================
+   Trois strates : lentilles (Aujourd'hui, Bilan, Chercher), espaces regroupés par domaine (config.modules[].group,
+   facultatif), système (Assistant, Réglages). Une route peut viser une entrée : « #module/identifiant ». */
+const routeOf = () => { const [view, entry] = location.hash.slice(1).split("/"); return { view: view || "accueil", entry: /^[\w-]{1,64}$/.test(entry || "") ? entry : "" }; };
+const SYSTEM = ["assistant"];
+/* Les espaces actifs, par domaine, dans l'ordre de la navigation ; un domaine apparaît là où apparaît son premier espace. */
+function domains() {
+  const s = S(), out = new Map();
+  for (const m of s.config.modules) if (m.on && !SYSTEM.includes(m.id) && Object.hasOwn(s.modules, m.id)) {
+    const g = String(m.group || "").trim(); if (!out.has(g)) out.set(g, []); out.get(g).push(m.id);
+  }
+  return [...out].map(([name, ids]) => ({ name, ids }));
+}
+const badgeOf = id => { const m = Object.hasOwn(S().modules, id) && S().modules[id]; return m && TYPE_UI[m.type].badge ? TYPE_UI[m.type].badge(m) : 0; };
+/* À droite d'un espace : un point s'il attend une reprise (pont), le nombre d'éléments en attente. */
+function navMarks(id) {
+  const n = badgeOf(id), r = Object.hasOwn(S().modules, id) && S().modules[id].resume;
+  return n || r ? `<span class="nx">${r ? `<i class="dot" title="Pont de reprise en attente"><span class="sr">reprise en attente</span></i>` : ""}${n ? `<span class="badge">${n}<span class="sr"> en attente</span></span>` : ""}</span>` : "";
+}
+function navHTML(view) {
+  const link = (id, text, extra = "") => `<a href="#${esc(id)}" class="${id === view ? "on" : ""}"${id === view ? ' aria-current="page"' : ""}>${text}${extra}</a>`;
+  return `<button type="button" class="pal-hint" data-act="palette-open">Aller à… <kbd>⌘K</kbd></button>
+    ${link("accueil", "Aujourd'hui")}${link("bilan", "Bilan")}${link("recherche", "Chercher")}
+    ${domains().map(d => `<p class="grp">${esc(d.name || "Espaces")}</p>${d.ids.map(id => link(id, esc(label(id)), navMarks(id))).join("")}`).join("")}
+    <div class="sys">${enabled("assistant") ? link("assistant", esc(label("assistant"))) : ""}${link("reglages", "Réglages")}</div>`;
+}
+/* Icônes de la barre basse : un trait fin, sans remplissage (une seule exception : la lunaison du bilan). */
+const ICONS = {
+  moon: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4.2a8.2 8.2 0 1 0 4.3 12.6A6.6 6.6 0 0 1 15.5 4.2z"/></svg>`,
+  cabinet: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 12h16M12 4v16M7.5 8h1.5M15 8h1.5M7.5 16h1.5M15 16h1.5"/></svg>`,
+  plus: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>`,
+  search: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M15.5 15.5 20 20"/></svg>`,
+  lunation: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"/></svg>`
+};
+function barHTML(view) {
+  const inbox = inboxId(S().modules), pending = inbox ? S().modules[inbox].entries.length : 0;
+  const inSpace = Object.hasOwn(S().modules, view) || view === "reglages" || view === "assistant";
+  const link = (id, text, icon) => `<a href="#${id}" class="${view === id ? "on" : ""}"${view === id ? ' aria-current="page"' : ""}>${ICONS[icon]}<span>${text}</span></a>`;
+  return `${link("accueil", "Aujourd'hui", "moon")}
+    <button type="button" data-act="sheet-espaces" class="${inSpace ? "on" : ""}" aria-haspopup="dialog">${ICONS.cabinet}<span>Espaces</span>${pending ? `<i class="pip">${pending}<span class="sr"> à trier</span></i>` : ""}</button>
+    <button type="button" data-act="sheet-capture" class="cap" aria-haspopup="dialog">${ICONS.plus}<span>Capturer</span></button>
+    ${link("recherche", "Chercher", "search")}${link("bilan", "Bilan", "lunation")}`;
+}
+/* Les derniers espaces ouverts sur cet appareil (jamais synchronisés), le plus récent d'abord. */
+const RECENT_KEY = "selene-recent";
+function recents() { try { const r = JSON.parse(localStorage.getItem(RECENT_KEY)); return Array.isArray(r) ? r.filter(x => x && typeof x.id === "string") : []; } catch { return []; } }
+function noteVisit(id) { try { localStorage.setItem(RECENT_KEY, JSON.stringify([{ id, at: new Date().toISOString() }, ...recents().filter(x => x.id !== id)].slice(0, 5))); } catch {} }
+const liveRecents = () => recents().filter(r => Object.hasOwn(S().modules, r.id) && enabled(r.id));
+const agoTime = t => { const m = Math.round((Date.now() - Date.parse(t)) / 60000); return !(m >= 0) ? "" : m < 2 ? "à l'instant" : m < 60 ? `il y a ${m} min` : m < 1440 ? `il y a ${Math.round(m / 60)} h` : ago(iso(new Date(t))); };
+
+/* ---- feuilles (sheets) : Espaces et Capturer, depuis la barre basse ---- */
+const SHEETS = {
+  espaces() {
+    const rec = liveRecents().filter(r => r.id !== lastView).slice(0, 3);
+    const row = id => `<a class="srow" href="#${esc(id)}"><b>${esc(label(id))}</b><span class="sub">${summaryFor(id)}</span>${navMarks(id)}</a>`;
+    return `<h2 id="sheetTitle">Espaces</h2>
+      ${rec.length ? `<p class="grp">Récents</p><div class="recents">${rec.map(r => `<a class="btn" href="#${esc(r.id)}">${esc(label(r.id))}</a>`).join("")}</div>` : ""}
+      ${domains().map(d => `<p class="grp">${esc(d.name || "Espaces")}</p>${d.ids.map(row).join("")}`).join("")}
+      <p class="grp">Système</p>${enabled("assistant") ? `<a class="srow" href="#assistant"><b>${esc(label("assistant"))}</b></a>` : ""}<a class="srow" href="#reglages"><b>Réglages</b></a>`;
+  },
+  capture() {
+    const s = S(), inbox = inboxId(s.modules), n = inbox ? s.modules[inbox].entries.length : 0;
+    return `<h2 id="sheetTitle">Capturer</h2>${inbox ? `<div class="capture"><input id="capSheetIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="Capture rapide" enterkeyhint="done"><button class="btn acc" data-act="cap-sheet-add">Garder</button></div>
+      <p class="hint" style="margin:10px 0 0">« 12 € courses », « 25 min kundalini », « Module : une note » se rangent d'un geste.${n ? ` <a href="#${esc(inbox)}">${plural(n, "élément")} à trier</a>` : ""}</p>`
+      : `<p class="hint">Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans <a href="#reglages">Réglages</a>.</p>`}`;
+  }
+};
+function openSheet(kind) {
+  const d = $("#sheet"); closePalette();
+  $("#sheetBody").innerHTML = SHEETS[kind]();
+  if (!d.open) d.showModal();
+  const i = $("#capSheetIn"); if (kind === "capture" && i) { i.value = loadDraft("sheet", i); i.focus(); }
+}
+function closeSheet() { const d = $("#sheet"); if (d.open) d.close(); }
+function closePalette() { const d = $("#palette"); if (d.open) d.close(); }
+function closeOverlays() { closeSheet(); closePalette(); }
+/* Un clic sur le voile (hors du cadre) ferme ; un lien suivi depuis une feuille ou la palette la ferme aussi. */
+for (const d of ["#sheet", "#palette"]) $(d).addEventListener("click", e => {
+  const r = e.currentTarget.getBoundingClientRect();
+  if (e.target === e.currentTarget && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) e.currentTarget.close();
+  else if (e.target.closest && e.target.closest('a[href^="#"]')) e.currentTarget.close();
+});
+
+/* ---- palette de commandes (⌘K) : aller à un espace ou une vue, agir, garder une phrase, chercher ---- */
+let palIdx = 0, palItems = [];
+const goTo = hash => () => { closeOverlays(); if (location.hash === "#" + hash) render(); else location.hash = hash; };
+function paletteItems(q) {
+  const s = S(), f = fold(q.trim()), out = [], match = t => !f || fold(t).includes(f);
+  const spaces = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id)).map(m => [m.id, label(m.id)]);
+  if (!f) for (const r of liveRecents().slice(0, 3)) out.push({ k: "Récent", t: label(r.id), run: goTo(r.id) });
+  for (const [id, t] of spaces) if (match(t) && !out.some(o => o.t === t)) out.push({ k: "Espace", t, run: goTo(id) });
+  for (const [id, t] of [["accueil", "Aujourd'hui"], ["bilan", "Bilan"], ["recherche", "Chercher"], ["reglages", "Réglages"], ...(enabled("assistant") ? [["assistant", label("assistant")]] : [])])
+    if (match(t)) out.push({ k: "Vue", t, run: goTo(id) });
+  const other = bilanMode() === "mois" ? "lune" : "mois";
+  for (const [t, run] of [[tick ? "Mettre le minuteur en pause" : "Lancer le minuteur (15 min)", () => { closeOverlays(); $("#timerBtn").click(); }],
+    ["Capturer…", () => openSheet("capture")],
+    [`Bilan par ${other === "lune" ? "cycle lunaire" : "mois"}`, () => { try { localStorage.setItem("selene-bilan", other); } catch {} bilanOffset = 0; goTo("bilan")(); }]])
+    if (match(t)) out.push({ k: "Action", t, run });
+  if (f) {
+    const inbox = inboxId(s.modules), text = q.trim();
+    if (inbox) out.push({ k: "Garder", t: `« ${text} » dans ${label(inbox)}`, run: () => { const item = addNote(S().modules[inbox], text); site.save(); closeOverlays(); render(); afterCapture(inbox, item, "Gardé. Tu peux oublier, c'est écrit."); } });
+    for (const h of searchAll(text).slice(0, 6)) out.push({ k: label(h.id), t: h.text.replace(/\s+/g, " ").slice(0, 110), sub: h.date ? fmt(h.date) : "", run: goTo(h.id + (h.eid ? "/" + h.eid : "")) });
+    out.push({ k: "Chercher", t: `« ${text} » partout`, run: () => { searchQuery = text; goTo("recherche")(); } });
+  }
+  return out;
+}
+function renderPalette() {
+  palItems = paletteItems($("#palIn").value); palIdx = Math.max(0, Math.min(palIdx, palItems.length - 1));
+  $("#palList").innerHTML = palItems.map((it, i) => `<li id="pal-${i}" role="option" aria-selected="${i === palIdx}" data-i="${i}"><span class="k">${esc(it.k)}</span><span class="t">${esc(it.t)}</span>${it.sub ? `<span class="sub">${esc(it.sub)}</span>` : ""}</li>`).join("")
+    || `<li class="empty" aria-disabled="true">Rien. Ni espace, ni action, ni trace écrite.</li>`;
+  if (palItems.length) $("#palIn").setAttribute("aria-activedescendant", `pal-${palIdx}`); else $("#palIn").removeAttribute("aria-activedescendant");
+  const a = document.getElementById(`pal-${palIdx}`); if (a && a.scrollIntoView) a.scrollIntoView({ block: "nearest" });
+}
+function openPalette() {
+  const d = $("#palette"); if (d.open) return d.close();
+  closeSheet(); $("#palIn").value = ""; palIdx = 0; renderPalette(); d.showModal(); $("#palIn").focus();
+}
+$("#palIn").addEventListener("input", () => { palIdx = 0; renderPalette(); });
+$("#palIn").addEventListener("keydown", e => {
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); palIdx = (palIdx + (e.key === "ArrowDown" ? 1 : -1) + palItems.length) % Math.max(1, palItems.length); renderPalette(); }
+  else if (e.key === "Enter" && palItems[palIdx]) { e.preventDefault(); palItems[palIdx].run(); }
+});
+$("#palList").addEventListener("click", e => { const li = e.target.closest && e.target.closest("li[data-i]"); if (li && palItems[+li.dataset.i]) palItems[+li.dataset.i].run(); });
+
+/* ---- entrée visée par une route « #module/identifiant » : trouvée, montrée, surlignée ---- */
+let backTo = null; // { from, to, label } : la puce « ‹ … » qui ramène d'où l'on vient
+const backLabel = v => v === "recherche" ? (searchQuery.trim() ? `Recherche « ${searchQuery.trim()} »` : "Recherche") : v === "accueil" ? "Aujourd'hui" : v === "bilan" ? "Bilan" : v === "reglages" ? "Réglages" : label(v) || v;
+function entryEl(id) { let hit = null; $("#main").querySelectorAll("[data-id], [data-task]").forEach(el => { if (!hit && (el.dataset.id === id || el.dataset.task === id)) hit = el; }); return hit; }
+function focusEntry(id) {
+  const view = routeOf().view;
+  // Plus loin dans une liste paginée : on déplie ; masquée par un filtre de l'appareil : on le lève, puis on déplie encore.
+  const unfold = () => { let el = entryEl(id); for (let i = 0; !el && i < 50; i++) { const more = [...$("#main").querySelectorAll('[data-act="page-more"]')]; if (!more.length) break; for (const b of more) pageSize[b.dataset.k] = (pageSize[b.dataset.k] || PAGE) + 10 * PAGE; render(); el = entryEl(id); } return el; };
+  let el = unfold();
+  if (!el && Object.hasOwn(S().modules, view)) {
+    const inst = S().modules[view], e = inst.type === "budget" && inst.entries.find(x => x.id === id);
+    if (e) budMonths[view] = e.date.slice(0, 7); // une opération d'un autre mois : afficher son mois
+    fragFilter[view] = "*"; colFilter[view] = ""; gFilter[view] = ""; if (taskFilters[view]) taskFilters[view] = { room: "", cat: "" };
+    render(); el = unfold();
+  }
+  if (!el) return false;
+  el.scrollIntoView({ block: "center" }); el.classList.add("flash");
+  return true;
+}
+
+/* ---- reprise : ce qui attend, sur l'accueil (dernier espace ouvert, son pont, les brouillons en cours) ---- */
+const DRAFT_WHAT = { scrapIn: "un fragment", noteIn: "une note", rapNote: "une observation", chatIn: "un message", capSheetIn: "une capture" };
+function pendingDrafts() {
+  const out = [];
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!k || !k.startsWith(DRAFT_PREFIX)) continue;
+    const [view, field] = k.slice(DRAFT_PREFIX.length).split(":"); if (view !== "accueil") out.push({ view, what: DRAFT_WHAT[field] || "un texte" }); } } catch {}
+  return out;
+}
+function resumeSection() {
+  const s = S(), drafts = pendingDrafts(), last = liveRecents()[0], lines = [];
+  if (last) {
+    const r = s.modules[last.id].resume, mine = drafts.filter(d => d.view === last.id).map(d => d.what);
+    if (r || mine.length) lines.push(`<li><a href="#${esc(last.id)}"><b>${esc(label(last.id))}</b></a>${r ? ` — ↳ ${esc(r.text)}` : ""}${mine.length ? ` · ${esc(mine.join(", "))} en cours` : ""} <span class="hint">· ${agoTime(last.at)}</span></li>`);
+  }
+  for (const d of drafts) {
+    if (last && d.view === last.id) continue;
+    if (d.view === "sheet") lines.push(`<li>${d.what} en cours <button class="btn ghost sm" data-act="sheet-capture">reprendre</button></li>`);
+    else if (Object.hasOwn(s.modules, d.view) ? enabled(d.view) : d.view === "assistant" && enabled("assistant")) lines.push(`<li><a href="#${esc(d.view)}"><b>${esc(label(d.view))}</b></a> · ${d.what} en cours</li>`);
+  }
+  return lines.length ? `<section class="resume-box" aria-label="Reprendre"><h3>Reprendre</h3><ul>${lines.join("")}</ul></section>` : "";
+}
+/* Ouvrir sur l'accueil ou là où l'on en était : propre à l'appareil. */
+const openOn = () => { try { return localStorage.getItem("selene-open") === "last" ? "last" : "accueil"; } catch { return "accueil"; } };
+
 /* ================= render ================= */
 function applyTheme() {
   const c = S().config, r = document.documentElement;
@@ -611,7 +785,8 @@ const DRAFT_PREFIX = "selene-draft:";
 const draftKey = (view, el) => `${DRAFT_PREFIX}${view}:${el.id}`;
 function saveDraft(view, el) { if (!view || !el.id) return; try { if (el.value.trim()) localStorage.setItem(draftKey(view, el), el.value); else localStorage.removeItem(draftKey(view, el)); } catch {} }
 function loadDraft(view, el) { try { return localStorage.getItem(draftKey(view, el)) || ""; } catch { return ""; } }
-document.addEventListener("input", e => { if (e.target.dataset && e.target.dataset.draft !== undefined) saveDraft(lastView, e.target); });
+// Le brouillon d'une feuille (la capture de la barre basse) ne dépend pas de la vue ouverte derrière elle.
+document.addEventListener("input", e => { if (e.target.dataset && e.target.dataset.draft !== undefined) saveDraft(e.target.closest && e.target.closest("dialog") ? "sheet" : lastView, e.target); });
 /* Calculs coûteux partagés par plusieurs parties d'un même rendu (la concordance sert la vue, l'accueil et
    le bilan) : gardés le temps d'un rendu seulement, pendant lequel les données ne bougent pas. */
 let renderMemo = null;
@@ -626,9 +801,9 @@ function render() {
 }
 function renderNow() {
   applyTheme();
-  if (hosted() && authReady() && !authSession) { $("#nav").innerHTML = ""; $("#main").innerHTML = authView(); return; }
+  if (hosted() && authReady() && !authSession) { $("#nav").innerHTML = ""; $("#bar").innerHTML = ""; $("#main").innerHTML = authView(); return; }
   const s = S(), m = moon();
-  let view = location.hash.slice(1) || "accueil";
+  let view = routeOf().view;
   // Les vues fixes priment toujours ; hasOwn évite qu'un « #constructor » trouve Object.prototype.
   const fixed = v => v === "accueil" || v === "reglages" || v === "recherche" || v === "bilan";
   if (!fixed(view) && (!(Object.hasOwn(s.modules, view) || Object.hasOwn(VIEWS, view)) || !enabled(view))) view = "accueil";
@@ -637,9 +812,9 @@ function renderNow() {
   document.title = s.config.name || "Selene";
   $("#miniMoon").innerHTML = moonSVG(m.p, 40);
   $("#dateline").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
-  const badge = id => { const m = Object.hasOwn(s.modules, id) && s.modules[id], n = m && TYPE_UI[m.type].badge ? TYPE_UI[m.type].badge(m) : 0; return n ? ` (${n})` : ""; };
-  const links = [["accueil", "Accueil"], ...s.config.modules.filter(x => x.on).map(x => [x.id, label(x.id)]), ["recherche", "Chercher"], ["reglages", "Réglages"]];
-  $("#nav").innerHTML = links.map(([id, l]) => `<a href="#${esc(id)}" class="${id === view ? "on" : ""}"${id === view ? ' aria-current="page"' : ""}>${esc(l)}${badge(id)}</a>`).join("");
+  $("#nav").innerHTML = navHTML(view);
+  $("#bar").innerHTML = barHTML(view);
+  if (inst && view !== lastView) noteVisit(view);
   // Les champs des Réglages n'ont pas d'id (donc pas de restauration ci-dessous) : tant que l'un d'eux
   // a le focus, ne pas redessiner, sinon une synchro arrivant pendant la frappe effacerait la saisie.
   const ae = document.activeElement, typing = ae && ae.closest && ae.closest("#main") &&
@@ -649,7 +824,8 @@ function renderNow() {
   $("#main").querySelectorAll("[data-draft]").forEach(el => saveDraft(lastView, el)); // un champ vidé par l'envoi efface son brouillon
   if (view === lastView) $("#main").querySelectorAll("input[id],textarea[id],select[id]").forEach(el => { if (el.type !== "file" && el.type !== "checkbox") keep[el.id] = el.value; });
   if (document.activeElement && document.activeElement.id && keep[document.activeElement.id] != null) { focusId = document.activeElement.id; try { caret = document.activeElement.selectionStart; } catch {} }
-  $("#main").innerHTML = inst ? bridgeBar(view, inst) + TYPE_UI[inst.type].view(view) : VIEWS[view]();
+  const back = backTo && backTo.to === view ? `<a class="back" href="#${esc(backTo.from)}">‹ ${esc(backTo.label)}</a>` : "";
+  $("#main").innerHTML = back + (inst ? bridgeBar(view, inst) + TYPE_UI[inst.type].view(view) : VIEWS[view]());
   for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && v !== "" && el.value !== v) el.value = v; }
   if (view !== lastView) $("#main").querySelectorAll("[data-draft]").forEach(el => { const v = loadDraft(view, el); if (v) el.value = v; });
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
@@ -665,10 +841,18 @@ function rememberScroll() {
   try { sessionStorage.setItem("selene-scrolls", JSON.stringify(scrollMemo)); } catch {}
 }
 window.addEventListener("hashchange", () => {
-  if (lastView !== (location.hash.slice(1) || "accueil")) rememberScroll(); // « / » a déjà dessiné la recherche, et gardé la position d'avant
-  openId = null; bridgeOpen = null; for (const k of Object.keys(pageSize)) delete pageSize[k]; render();
+  const { view, entry } = routeOf();
+  if (lastView !== view) rememberScroll(); // « / » a déjà dessiné la recherche, et gardé la position d'avant
+  // Arriver sur une entrée depuis une autre vue : une puce ramène d'où l'on vient (liste et position comprises).
+  if (entry && lastView && lastView !== view) backTo = { from: lastView, to: view, label: backLabel(lastView) };
+  else if (!backTo || view !== backTo.to) backTo = null;
+  closeOverlays();
+  openId = null; bridgeOpen = null; for (const k of Object.keys(pageSize)) delete pageSize[k];
+  if (entry && Object.hasOwn(S().modules, view) && S().modules[view].type === "taches") openId = entry; // une tâche visée s'ouvre
+  render();
   const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t);
-  if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); } else window.scrollTo(0, scrollMemo[lastView] || 0);
+  if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); }
+  else if (!(entry && focusEntry(entry))) window.scrollTo(0, scrollMemo[lastView] || 0);
 });
 /* Sur un écran tactile, les actions d'une ligne (.ra) apparaissent quand on touche la ligne ailleurs que sur un contrôle.
    Une seule ligne à la fois ; retenue par son identifiant pour survivre aux rendus. */
@@ -684,10 +868,13 @@ document.addEventListener("click", e => {
 
 /* ================= actions ================= */
 const idOf = el => el.closest("[data-id]")?.dataset.id;
-function capture() {
-  const inp = $("#capIn"); if (!inp || !inp.value.trim()) return;
+/* Capture rapide, depuis l'accueil ou depuis la feuille « Capturer » (barre basse du téléphone). */
+function capture(inp = $("#capIn")) {
+  if (!inp || !inp.value.trim()) return;
   const id = inboxId(S().modules); if (!id) return toast("Aucune boîte de réception : voir Réglages.");
-  const item = addNote(S().modules[id], inp.value); site.save(); inp.value = ""; render();
+  const item = addNote(S().modules[id], inp.value); site.save(); inp.value = "";
+  if (inp.id === "capSheetIn") { saveDraft("sheet", inp); closeSheet(); } // fermée avant le message, qui passerait dessous
+  render();
   afterCapture(id, item, "Gardé. Tu peux oublier, c'est écrit.");
 }
 function entryAdd(id) {
@@ -697,7 +884,11 @@ function entryAdd(id) {
 const CLICK = {
   "grp-filter": el => { const m = el.dataset.mod, g = el.dataset.g; gFilter[m] = gFilter[m] === g ? "" : g; render(); },
   "goto-groups": el => { const id = "mreg-" + el.dataset.mod; if (location.hash === "#reglages") { const d = document.getElementById(id); if (d) { d.open = true; d.scrollIntoView(); } } else sessionStorage.setItem("selene-scroll", id); },
-  "cap-add": capture,
+  "cap-add": () => capture(),
+  "cap-sheet-add": () => capture($("#capSheetIn")),
+  "sheet-espaces": () => openSheet("espaces"),
+  "sheet-capture": () => openSheet("capture"),
+  "palette-open": () => openPalette(),
   "bridge-edit": el => { bridgeOpen = el.dataset.mod; render(); const i = $("#bridgeIn"); if (i) i.focus(); },
   "bridge-save": el => bridgeSave(el.dataset.mod),
   "bridge-close": () => { bridgeOpen = null; render(); },
@@ -784,7 +975,9 @@ document.addEventListener("keydown", e => {
   // Dessiner tout de suite : attendre l'événement hashchange ferait courir le curseur contre le rendu.
   e.preventDefault(); rememberScroll(); location.hash = "recherche"; render(); const el = document.getElementById("searchIn"); if (el) el.focus();
 });
-document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && e.target.id === "bridgeIn") bridgeSave(e.target.dataset.mod); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
+// ⌘K (Ctrl+K) ouvre ou ferme la palette, même pendant une saisie.
+document.addEventListener("keydown", e => { if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === "k" || e.key === "K")) { e.preventDefault(); openPalette(); } });
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "capSheetIn") capture(e.target); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && e.target.id === "bridgeIn") bridgeSave(e.target.dataset.mod); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
 const CHANGE = {}; // actions « change » des types de module (remplie par types.js)
 document.addEventListener("change", e => {
   const el = e.target, act = el.dataset.act;
@@ -814,6 +1007,12 @@ document.addEventListener("change", e => {
     const f = el.files && el.files[0]; if (!f) return;
     f.text().then(async t => { const d = parseBackup(t); if (!await ask("Remplacer tout l'état actuel par celui du fichier ?")) return; site.replaceAll(d.site); board.replaceAll(d.board); /* le site d'abord : les tâches d'une ancienne sauvegarde y sont versées */ render(); toast("Sauvegarde importée."); }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene.")).finally(() => { el.value = ""; });
   }
+  else if (act === "mod-group") {
+    const m = S().config.modules[+el.closest("[data-i]").dataset.i], v = el.value.trim().slice(0, 40);
+    if (v) m.group = v; else delete m.group;
+    site.save(); el.blur(); render();
+  }
+  else if (act === "open-on") { try { localStorage.setItem("selene-open", el.value); } catch {} toast(el.value === "last" ? "L'app rouvrira le dernier espace où tu étais." : "L'app s'ouvrira sur l'accueil."); }
   else if (act === "mod-on") { S().config.modules[+el.closest("[data-i]").dataset.i].on = el.checked; site.save(); render(); }
   else if (act === "mod-label") {
     const s = S(), m = s.config.modules[+el.closest("[data-i]").dataset.i], v = el.value.trim();
@@ -842,7 +1041,7 @@ document.addEventListener("change", e => {
 /* ================= timer ================= */
 /* Au bout des quinze minutes, le module ouvert peut proposer une suite (noter la séance, le nouveau total). */
 function timerDone() {
-  const view = location.hash.slice(1), inst = Object.hasOwn(S().modules, view) ? S().modules[view] : null, hook = inst && TYPE_UI[inst.type].timerDone;
+  const view = routeOf().view, inst = Object.hasOwn(S().modules, view) ? S().modules[view] : null, hook = inst && TYPE_UI[inst.type].timerDone;
   if (inst) { bridgeOpen = view; render(); } // et le prochain geste, pendant qu'on s'en souvient
   if (!(hook && hook(view, inst, 15))) toast("Quinze minutes. Tu as le droit d'arrêter. Et celui de continuer.");
 }

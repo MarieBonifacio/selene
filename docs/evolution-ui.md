@@ -239,10 +239,22 @@ plutôt qu'une pluie périmée. La CSP hébergée (`build.py`) devra autoriser `
 
 ### Vague 2 : navigation
 
-- [ ] Shell adaptatif : barre basse iPhone, barre latérale desktop, domaines.
-- [ ] Palette de commandes `⌘K` / `/`.
-- [ ] Liens profonds `#module/entrée` et retour contextuel.
-- [ ] Reprise : bandeau « Reprendre », brouillons en attente, « Ouvrir sur : là où j'étais ».
+- [x] Shell adaptatif : barre basse sur téléphone (Aujourd'hui · Espaces · ⊕ Capturer · Chercher · Bilan),
+      barre latérale collante sur ordinateur (≥ 900 px), feuilles Espaces et Capturer.
+- [x] Domaines : un champ « Domaine » par module (Réglages → Modules) ; la navigation, la feuille Espaces et
+      le sommaire de l'accueil se regroupent. Facultatif, synchronisé, validé à l'import (40 caractères).
+- [x] Palette de commandes `⌘K` / `Ctrl+K` : aller (récents, espaces, vues), agir (minuteur, capturer,
+      mode du bilan), garder une phrase dans la boîte, chercher (textes menant à leur entrée).
+- [x] Liens profonds `#module/entrée` (recherche, liaisons, tensions, arcs, palette) : la page qui contient
+      l'entrée est dépliée, les filtres de l'appareil levés, l'entrée montrée et surlignée ; une puce « ‹ … »
+      ramène d'où l'on vient, avec sa position.
+- [x] Reprise : bloc « Reprendre » sous le ciel (dernier espace, son pont, brouillons en cours), et
+      « Ouvrir sur : là où j'en étais » (Réglages → Apparence, propre à l'appareil).
+
+Écarts assumés par rapport au plan : « / » garde son rôle (la page Chercher, déjà connue des doigts) et la
+palette prend `⌘K` ; « deux touchers sur Espaces rouvrent le dernier espace » devient une rangée de récents en
+tête de la feuille (un geste caché ne se découvre pas) ; sur téléphone, la capture de l'accueil laisse la place
+au ⊕ de la barre basse. Les derniers espaces ouverts restent sur l'appareil et s'effacent à la déconnexion.
 
 ### Vague 3 : système visuel et signatures
 

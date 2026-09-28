@@ -11,7 +11,7 @@
      accept(id, inst, note) recevoir une note triée depuis un module Notes ; canAccept(inst) pour conditionner
      badge(inst)           nombre affiché à côté du nom dans la navigation
      recent(inst)          derniers éléments, en texte (lignes dépliables de l'accueil)
-     texts(inst)           textes parcourus par la recherche : [{ text, date? }]
+     texts(inst)           textes parcourus par la recherche : [{ text, date?, ep?, eid? }] (eid : l'entrée, pour y mener)
      timerDone(id, inst)   suite proposée à la fin du minuteur quand ce module est ouvert
      review(inst, from, to) une ligne de bilan pour la période [from, to[ (dates ISO), ou null
      click / change        actions propres au type, fusionnées dans CLICK / CHANGE */
@@ -56,7 +56,7 @@ const backlinks = () => memoInRender("backlinks", () => {
 const LINK_BACK = { derive: "a donné", contredit: "contredit par", echo: "écho de", documente: "documenté par" };
 function refHTML(ref) {
   const hit = refFind(ref);
-  return hit ? `<a href="#${esc(hit.mod)}">« ${esc(excerpt(hit.e))} »</a>` : `<i>(supprimé)</i>`;
+  return hit ? `<a href="#${esc(hit.mod)}/${esc(hit.e.id)}">« ${esc(excerpt(hit.e))} »</a>` : `<i>(supprimé)</i>`;
 }
 /* Sous une entrée : ses liens sortants et entrants, puis « dériver » et « lier… ». */
 function linksHTML(mod, e) {
@@ -222,7 +222,7 @@ const TYPE_UI = {
     },
     recent: inst => recentBy(inst.entries).map(x => `${fmt(x.date)} · ${x.value ?? "?"} ${inst.config.unitLabel}${x.note ? " · " + x.note : ""}`),
     review: (inst, from, to) => { const es = within(inst.entries, from, to); return `${plural(es.length, "séance")}, ${es.reduce((a, x) => a + (+x.value || 0), 0)} ${inst.config.unitLabel}`; },
-    texts: inst => inst.entries.filter(x => x.note).map(x => ({ text: x.note, date: x.date })),
+    texts: inst => inst.entries.filter(x => x.note).map(x => ({ text: x.note, date: x.date, eid: x.id })),
     timerDone(id, inst, minutes) {
       if (!/^min/i.test(inst.config.unitLabel)) return false; // une séance comptée autrement qu'en minutes : rien à déduire
       toastAction(`Quinze minutes. Les noter dans ${label(id)} ?`, `Noter ${minutes} min`, () => {
@@ -304,7 +304,7 @@ const TYPE_UI = {
     },
     recent: inst => recentBy(inst.entries).map(x => `${fmt(x.date)} · ${x.value > 0 ? "+" : ""}${x.value ?? "?"} ${inst.config.unitLabel}`),
     review: (inst, from, to) => { const n = within(inst.entries, from, to).reduce((a, x) => a + (+x.value || 0), 0), f = within(inst.scraps || [], from, to).length; return `${n > 0 ? "+" : ""}${n.toLocaleString("fr-FR")} ${inst.config.unitLabel}${inst.config.scraps ? `, ${plural(f, inst.config.scrapsLabel.toLowerCase().replace(/s$/, ""))}` : ""}`; },
-    texts: inst => [...(inst.scraps || []).map(f => ({ text: f.text, date: f.date, ep: f.ep })), ...inst.config.categories.map(c => ({ text: c.name }))],
+    texts: inst => [...(inst.scraps || []).map(f => ({ text: f.text, date: f.date, ep: f.ep, eid: f.id })), ...inst.config.categories.map(c => ({ text: c.name }))],
     timerDone(id, inst) {
       const inp = $("#cumIn"); if (!inp) return false;
       inp.focus();
@@ -390,7 +390,7 @@ const TYPE_UI = {
     accept: (id, inst, note) => { addJournalEntry(inst, { date: note.date, type: "note", note: note.text }, uid(), todayISO()); },
     recent: inst => recentBy(inst.entries).map(x => `${fmt(x.date)} · ${(inst.config.types.find(t => t.id === x.type) || {}).label || x.type}${x.note ? " · " + x.note : ""}`),
     review: (inst, from, to) => { const es = within(inst.entries, from, to); if (!es.length) return "Rien de noté"; const by = [...new Set(es.map(x => x.type))].map(t => `${((inst.config.types.find(y => y.id === t) || {}).label || t).toLowerCase()} ×${es.filter(x => x.type === t).length}`); return by.join(", "); },
-    texts: inst => inst.entries.filter(x => x.note).map(x => ({ text: x.note, date: x.date })),
+    texts: inst => inst.entries.filter(x => x.note).map(x => ({ text: x.note, date: x.date, eid: x.id })),
     context(inst, nm) {
       const c = inst.config;
       return `\n${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map(t => `${t.label.toLowerCase()} ${lastOf(inst, t.id) || "jamais"}`).join(", ")}.`;
@@ -555,7 +555,7 @@ TYPE_UI.collection = {
       const due = within(inst.entries, from, to, "due").filter(e => e.status !== c.statuses.at(-1)).length, done = inst.entries.flatMap(e => within(e.reviews || [], from, to)).length;
       return due || done ? `${due} à réexaminer, ${plural(done, "réexamen")} fait${done > 1 ? "s" : ""}` : "Rien à réexaminer";
     } const es = within(inst.entries, from, to, "due"); return es.length ? `${plural(es.length, "prévu")}, dont ${es.filter(e => c.statuses.indexOf(e.status) >= c.doneFrom).length} « ${c.statuses[c.doneFrom]} »` : "Rien de prévu"; },
-  texts: inst => inst.entries.map(e => ({ text: [e.title, e.subtitle, e.tag, e.text].filter(Boolean).join(" · "), date: e.due || null })),
+  texts: inst => inst.entries.map(e => ({ text: [e.title, e.subtitle, e.tag, e.text].filter(Boolean).join(" · "), date: e.due || null, eid: e.id })),
   // Ce qui est prévu aujourd'hui ou en retard, et pas encore « fait ».
   alerts: (id, inst, now) => {
     const c = inst.config; if (!c.fields.due) return [];
@@ -750,7 +750,7 @@ TYPE_UI.taches = {
   },
   recent: inst => inst.entries.filter(t => !t.done).sort(byDue).slice(0, 3).map(t => `${t.title} · ${dueLabel(t).txt}`),
   review: (inst, from, to) => { const done = within(inst.entries, from, to, "doneAt"), cost = done.reduce((a, t) => a + (+t.cost || 0), 0); return `${plural(done.length, "tâche")} terminée${done.length > 1 ? "s" : ""}${inst.config.costs && cost ? `, ${money(cost)} de coûts estimés` : ""}`; },
-  texts: inst => inst.entries.map(t => ({ text: [t.title, t.room, t.note, ...(t.steps || []).map(x => x.t)].filter(Boolean).join(" · "), date: t.due || t.created })),
+  texts: inst => inst.entries.map(t => ({ text: [t.title, t.room, t.note, ...(t.steps || []).map(x => x.t)].filter(Boolean).join(" · "), date: t.due || t.created, eid: t.id })),
   accept(id, inst, note) { const t = addTask(inst.entries, { title: note.text, cat: inst.config.cats[0] }, uid(), todayISO()); return () => taskForm(id, t); },
   click: {
     "task-open": el => { const t = taskOf(el); openId = openId === t.id ? null : t.id; render(); },
@@ -814,7 +814,7 @@ TYPE_UI.budget = {
   settings: (id, { config: c }) => `<div><span class="hint" style="margin:0">Enveloppes mensuelles</span>${c.envelopes.map((v, i) => `<div class="set" data-vi="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="env-name" data-mod="${esc(id)}" value="${esc(v.name)}" aria-label="Nom de l'enveloppe"><input type="number" min="0" data-act="env-limit" data-mod="${esc(id)}" value="${esc(v.limit || "")}" placeholder="€ / mois" aria-label="Plafond mensuel"><button class="btn ghost sm" data-act="env-del" data-mod="${esc(id)}">suppr.</button></div>`).join("")}<button class="btn sm" data-act="env-add" data-mod="${esc(id)}" style="margin-top:8px">Ajouter une enveloppe</button></div>`,
   recent: inst => recentBy(inst.entries).map(e => `${fmt(e.date)} · ${e.note || e.cat || e.type} · ${e.type === "revenu" ? "+" : "−"}${money(e.amount)}`),
   review: (inst, from, to) => { const es = within(inst.entries, from, to), out = sumOf(es, "dépense"), inn = sumOf(es, "revenu"); return `${money(out)} dépensés, ${money(inn)} reçus, solde ${money(inn - out)}`; },
-  texts: inst => inst.entries.filter(e => e.note || e.cat).map(e => ({ text: [e.note, e.cat, money(e.amount)].filter(Boolean).join(" · "), date: e.date })),
+  texts: inst => inst.entries.filter(e => e.note || e.cat).map(e => ({ text: [e.note, e.cat, money(e.amount)].filter(Boolean).join(" · "), date: e.date, eid: e.id })),
   summary(id, inst) {
     const es = inMonth(inst, todayISO().slice(0, 7)), out = sumOf(es, "dépense"), bal = sumOf(es, "revenu") - out;
     return `Ce mois-ci : ${money(out)} dépensés, solde <span class="${bal < 0 ? "neg" : "pos"}">${money(bal)}</span>`;
@@ -940,7 +940,7 @@ TYPE_UI.notes = {
   badge: inst => inst.config.inbox ? inst.entries.length : 0,
   recent: inst => inst.entries.slice(-3).reverse().map(x => x.text.length > 80 ? x.text.slice(0, 80) + "…" : x.text),
   review: (inst, from, to) => plural(within(inst.entries, from, to).length, "note"),
-  texts: inst => inst.entries.map(x => ({ text: x.text, date: x.date, ep: x.ep })),
+  texts: inst => inst.entries.map(x => ({ text: x.text, date: x.date, ep: x.ep, eid: x.id })),
   accept: (id, inst, note) => { addCapture(inst.entries, note.text, uid(), note.date); },
   click: {
     "note-add": el => {
@@ -1032,7 +1032,7 @@ TYPE_UI.arc = {
     const placed = st => [...inst.entries].filter(p => p.station === st.id).sort((a, b) => (a.at || "").localeCompare(b.at || ""));
     const card = p => {
       const hit = refFind(p.ref);
-      return `<div class="card" data-id="${esc(p.id)}">${hit ? `<span class="tag">${esc(label(hit.mod))}</span><p style="margin:6px 0">${esc(excerpt(hit.e, 140))}</p>${hit.e.date ? `<div class="meta">${fmt(hit.e.date)}</div>` : ""}` : `<i>(supprimé)</i>`}<div class="row"><button class="btn ghost sm ra" data-act="arc-remove" data-mod="${esc(id)}">retirer</button></div></div>`;
+      return `<div class="card" data-id="${esc(p.id)}">${hit ? `<span class="tag">${esc(label(hit.mod))}</span><p style="margin:6px 0"><a href="#${esc(hit.mod)}/${esc(hit.e.id)}">${esc(excerpt(hit.e, 140))}</a></p>${hit.e.date ? `<div class="meta">${fmt(hit.e.date)}</div>` : ""}` : `<i>(supprimé)</i>`}<div class="row"><button class="btn ghost sm ra" data-act="arc-remove" data-mod="${esc(id)}">retirer</button></div></div>`;
     };
     return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="arc-place" data-mod="${esc(id)}">Placer un élément</button></div>
     ${c.stations.length ? `<div class="board">${c.stations.map(st => `<div class="col"><h3>${esc(st.name)} <span class="hint" style="font-size:.95rem">${placed(st).length}</span></h3>${placed(st).map(card).join("") || `<p class="empty">Vide.</p>`}</div>`).join("")}</div>`

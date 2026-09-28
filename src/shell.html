@@ -15,7 +15,7 @@
   --moon:#f4f1e4; --moon-shadow:#b8c2b6; --glow:rgba(255,252,235,.0);
   --sky-top:#b9c7c0; --sky-bot:#dfe5dc; --tree-far:#8fa294; --tree-near:#3b4d40; --mist:rgba(226,230,222,.75); --star:0;
   --acc-l:#3d6a45; --acc-d:#8fbf86; --accent:var(--acc-l);
-  --ease:cubic-bezier(.2,0,0,1); --t-1:120ms; --t-2:180ms;
+  --ease:cubic-bezier(.2,0,0,1); --t-1:120ms; --t-2:180ms; --t-3:260ms;
   box-sizing:border-box; accent-color:var(--accent);
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
@@ -45,7 +45,7 @@ html,body{margin:0;min-height:100%}
 body::before{content:"";position:fixed;z-index:6;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg)}
 .sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 body{background:var(--bg);color:var(--ink);font-family:"Spectral",Georgia,"Times New Roman",serif;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1040px;margin:0 auto;padding:22px 20px 90px}
+.wrap{--g:20px;max-width:1040px;margin:0 auto;padding:22px var(--g) 90px}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 a{color:inherit}
@@ -66,11 +66,80 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:14p
 .clock.done{color:var(--ok)}
 /* Chiffres de chasse fixe, alignés : montants, compteurs, minuteur, dates. */
 .clock,.big,.stats,.meta,.room b,.over span,.item .row b,.cal{font-variant-numeric:tabular-nums lining-nums}
-/* La navigation reste à portée pendant le défilement, sous un verre fumé. */
-nav.tabs{display:flex;gap:4px;overflow-x:auto;margin:16px -20px 28px;padding:0 20px;border-bottom:1px solid var(--rule);scrollbar-width:none;
-  position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--glass);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2)}
-nav.tabs a{white-space:nowrap;text-decoration:none;padding:9px 12px 10px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
-nav.tabs a.on{color:var(--ink);border-bottom-color:var(--accent)}
+/* ================= shell =================
+   Trois strates : lentilles (Aujourd'hui, Bilan, Chercher), espaces regroupés par domaine, système (Réglages).
+   Téléphone : l'en-tête en haut, une barre de cinq destinations fixes en bas, au pouce ; Espaces et Capturer
+   s'ouvrent en feuille (sheet). Ordinateur (≥ 900 px) : une barre latérale collante, la barre basse disparaît. */
+.side{max-width:1040px;margin:0 auto;padding:22px 20px 0}
+#nav{display:none}
+.grp{margin:16px 0 4px;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-style:normal}
+.badge{font-size:.78rem;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.nx{margin-left:auto;display:inline-flex;align-items:center;gap:8px}
+nav.tabbar{position:fixed;z-index:7;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);padding:0 4px env(safe-area-inset-bottom,0px);
+  background:var(--glass);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);border-top:1px solid var(--rule)}
+nav.tabbar a,nav.tabbar button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:54px;padding:4px 0;
+  background:none;border:0;color:var(--muted);text-decoration:none;font-size:.7rem;line-height:1.1}
+nav.tabbar svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+nav.tabbar .cap svg{width:31px;height:31px}
+nav.tabbar .on{color:var(--ink)}
+nav.tabbar .on::after{content:"";position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:var(--accent)}
+nav.tabbar .pip{position:absolute;top:5px;left:calc(50% + 7px);min-width:16px;padding:0 4px;border-radius:8px;background:var(--accent);color:var(--bg);font-size:.66rem;font-weight:600;line-height:16px;text-align:center;font-style:normal}
+@media (max-width:899px){
+  .wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+  .capsec{display:none}
+}
+@media (min-width:900px){
+  nav.tabbar{display:none}
+  .app{display:grid;grid-template-columns:236px minmax(0,1fr)}
+  .side{position:sticky;top:0;height:100vh;overflow-y:auto;margin:0;max-width:none;padding:22px 12px 18px 16px;border-right:1px solid var(--rule);display:flex;flex-direction:column;gap:14px}
+  .side header.top{flex-direction:column;align-items:flex-start;gap:12px;padding:0 6px}
+  .side .brand h1{font-size:1.75rem}
+  .side .timer{flex-wrap:wrap;gap:6px}
+  .side .saving:empty{display:none}
+  .side .saving{flex-basis:100%;order:1}
+  .wrap{--g:36px;padding-top:28px}
+  #nav{display:flex;flex-direction:column;gap:1px;flex:1}
+  #nav a{display:flex;align-items:center;gap:8px;padding:6px 10px;border-left:2px solid transparent;border-radius:0 3px 3px 0;text-decoration:none;color:var(--muted)}
+  #nav a:hover{color:var(--ink);background:var(--surface)}
+  #nav a.on{color:var(--ink);background:var(--surface);border-left-color:var(--accent)}
+  #nav .grp{margin:18px 12px 4px}
+  #nav .sys{margin-top:auto;padding-top:18px;display:flex;flex-direction:column;gap:1px}
+}
+.pal-hint{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;margin:0 0 8px;padding:7px 10px;border:1px solid var(--rule);border-radius:3px;background:transparent;color:var(--muted);font-size:.9rem;text-align:left}
+kbd{font-family:inherit;font-size:.75rem;padding:0 5px;border:1px solid var(--rule-strong);border-radius:3px;color:var(--ink-2)}
+/* Feuilles (sheets) : du bas de l'écran sur téléphone, au centre sur ordinateur. */
+dialog.sheet{margin:auto 0 0;width:100%;max-width:100%;max-height:86vh;overflow:auto;border:0;border-top:1px solid var(--rule);border-radius:12px 12px 0 0;
+  padding:10px 20px calc(22px + env(safe-area-inset-bottom,0px));background:var(--surface-2)}
+dialog.sheet::before{content:"";display:block;width:36px;height:4px;border-radius:2px;background:var(--rule-strong);margin:0 auto 14px}
+dialog.sheet[open]{animation:sheet-in var(--t-3) var(--ease)}
+@keyframes sheet-in{from{transform:translateY(28px);opacity:.4}}
+@media (min-width:900px){dialog.sheet{margin:auto;width:min(560px,94vw);border:1px solid var(--rule);border-radius:3px}}
+.srow{display:flex;align-items:baseline;gap:12px;min-height:48px;padding:11px 2px;border-top:1px solid var(--rule);text-decoration:none}
+.srow b{font-family:"Cormorant Garamond",serif;font-size:1.3rem;font-weight:600}
+.srow .sub{color:var(--muted);font-size:.85rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recents{display:flex;gap:8px;flex-wrap:wrap}.recents .btn{text-decoration:none}
+/* Palette de commandes (⌘K) : aller, agir, chercher. */
+dialog.palette{margin:12vh auto auto;width:min(620px,94vw);padding:0;background:var(--surface-2);border:1px solid var(--rule);border-radius:3px}
+dialog.palette input{border:0;border-bottom:1px solid var(--rule);border-radius:0;background:transparent;padding:14px 16px;font-size:max(16px,1.05rem)}
+dialog.palette input:focus-visible{outline:none;border-bottom-color:var(--accent)}
+#palList{list-style:none;margin:0;padding:6px 0;max-height:min(52vh,460px);overflow:auto}
+#palList li{display:flex;gap:12px;align-items:baseline;padding:8px 16px;cursor:pointer}
+#palList li[aria-selected="true"]{background:var(--surface);box-shadow:inset 2px 0 0 var(--accent)}
+#palList .k{flex:none;min-width:6.5em;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+#palList .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#palList .sub{margin-left:auto;flex:none;color:var(--muted);font-size:.82rem}
+/* Retour contextuel, reprise, entrée visée par un lien. */
+.back{display:inline-block;margin:0 0 14px;padding:4px 10px;border:1px solid var(--rule-strong);border-radius:3px;color:var(--ink-2);font-size:.88rem;text-decoration:none}
+.resume-box{margin:-18px 0 32px;padding:10px 14px;border-left:2px solid var(--accent);background:var(--surface)}
+.resume-box h3{font-size:1.1rem;margin:0 0 4px}
+.resume-box ul{list-style:none;margin:0;padding:0}.resume-box li{padding:3px 0}
+.resume-box a{text-decoration:none}
+.flash{animation:flash 1.8s var(--ease)}
+@keyframes flash{from{background:color-mix(in srgb,var(--accent) 24%,transparent)}to{background:transparent}}
+.over-grp{margin:18px 0 0;padding-bottom:4px}
+.set.mod{grid-template-columns:auto minmax(0,1fr) 9em auto}
+@media (max-width:560px){.set.mod{grid-template-columns:auto minmax(0,1fr) auto}.set.mod>:nth-child(3){grid-column:2;grid-row:2}}
 
 /* buttons */
 .btn{border:1px solid var(--ink);background:transparent;padding:7px 14px;border-radius:2px;font-weight:500}
@@ -82,7 +151,7 @@ nav.tabs a.on{color:var(--ink);border-bottom-color:var(--accent)}
 .spacer{flex:1}
 
 /* hero */
-.hero{position:relative;margin:-6px -20px 44px;overflow:hidden}
+.hero{position:relative;margin:-6px calc(-1 * var(--g, 20px)) 44px;overflow:hidden}
 .hero svg.scene{display:block;width:100%;height:clamp(240px,36vw,340px)}
 /* Trois plans : le ciel (qui donne la hauteur), la lune, les sapins. La lune vit hors du paysage recadré
    (« slice »), sinon un écran étroit la coupe ; placée en proportion de la scène, elle garde sa taille. */
@@ -91,7 +160,7 @@ nav.tabs a.on{color:var(--ink);border-bottom-color:var(--accent)}
 .hero .moon svg{display:block;width:100%;height:100%}
 /* Le ciel se fond dans la page par la brume, sans bordure : une lisière. */
 .hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:44px;background:linear-gradient(transparent,var(--bg));pointer-events:none}
-.hero .txt{position:absolute;z-index:1;left:20px;top:clamp(18px,4vw,40px);max-width:min(52%,420px)}
+.hero .txt{position:absolute;z-index:1;left:var(--g,20px);top:clamp(18px,4vw,40px);max-width:min(52%,420px)}
 .hero .phase{font-family:"Cormorant Garamond",serif;font-size:clamp(2rem,6vw,3.4rem);line-height:1;color:var(--ink)}
 .hero p{margin:8px 0 0;color:var(--muted);font-size:.95rem}
 :root:not([data-mode="light"]) .hero .phase{text-shadow:0 1px 12px var(--bg)}
@@ -161,7 +230,8 @@ select.ep.on{color:var(--accent);border-color:var(--rule)}
 
 /* grids */
 .two{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:36px}
-@media (max-width:820px){.two{grid-template-columns:1fr}}
+/* Deux colonnes seulement quand la place le permet (la barre latérale en prend dès 900 px). */
+@media (max-width:819px),(min-width:900px) and (max-width:1079px){.two{grid-template-columns:1fr}}
 .rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
 .room{border:1px solid var(--rule);background:var(--surface);padding:10px;position:relative;overflow:hidden;text-align:left;min-height:84px}
 .room .fill{position:absolute;left:0;bottom:0;width:100%;background:var(--accent);opacity:.18}
@@ -215,6 +285,7 @@ input[type=checkbox],input[type=radio]{width:auto}
 .capture input{flex:1}
 .toast{position:fixed;z-index:10;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:2px;font-size:.92rem;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center}
 .toast.show{opacity:1}
+@media (max-width:899px){.toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}} /* au-dessus de la barre basse, jamais dessus */
 mark{background:var(--accent);color:var(--bg);padding:0 2px;border-radius:2px}
 .toast.act{pointer-events:auto}.toast .btn{margin-left:10px;color:var(--bg);border-color:var(--bg);background:transparent}
 .saving{font-size:.78rem;color:var(--muted)}
@@ -240,11 +311,12 @@ mark{background:var(--accent);color:var(--bg);padding:0 2px;border-radius:2px}
   .btn.sm::after,.btn.ghost::after,.star::after{content:"";position:absolute;inset:-9px -3px}
   .check::before{content:"";position:absolute;inset:-11px}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.flash{box-shadow:inset 2px 0 0 var(--accent)}}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app">
+<aside class="side">
   <header class="top">
     <a class="brand" href="#accueil"><div id="miniMoon"></div><div><h1 id="brandName">Selene</h1><small id="dateline"></small></div></a>
     <div class="timer">
@@ -254,9 +326,13 @@ mark{background:var(--accent);color:var(--bg);padding:0 2px;border-radius:2px}
       <button class="btn ghost sm" id="timerReset" aria-label="Réinitialiser le minuteur">↺</button>
     </div>
   </header>
-  <nav class="tabs" id="nav" aria-label="Navigation principale"></nav>
-  <main id="main"></main>
+  <nav id="nav" aria-label="Navigation principale"></nav>
+</aside>
+<div class="wrap"><main id="main"></main></div>
 </div>
+<nav class="tabbar" id="bar" aria-label="Navigation rapide"></nav>
+<dialog id="sheet" class="sheet" aria-labelledby="sheetTitle"><div id="sheetBody"></div></dialog>
+<dialog id="palette" class="palette" aria-label="Aller, agir, chercher"><input id="palIn" role="combobox" aria-expanded="true" aria-controls="palList" aria-autocomplete="list" placeholder="Aller, agir, chercher…" autocomplete="off" spellcheck="false"><ul id="palList" role="listbox" aria-label="Suggestions"></ul></dialog>
 
 <dialog id="dlg"><form method="dialog" id="form"></form></dialog>
 <dialog id="cdlg"><form method="dialog" style="padding:22px;display:grid;gap:14px"><p id="cmsg" style="margin:0"></p><div class="row"><button class="btn solid" value="ok">Confirmer</button><button class="btn" value="cancel">Annuler</button></div></form></dialog>

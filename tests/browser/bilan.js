@@ -21,7 +21,7 @@ demo.modules.ecriture.entries = [{ id: 'e1', date: today, value: 1200, category:
   await p.click('[data-act="bilan-nav"][data-d="1"]'); await p.waitForTimeout(150);
   ok((await main()).includes('1 séance, 30 min') && await p.isVisible('[data-act="bilan-nav"][data-d="-1"]'), 'remonter d’un mois, puis pouvoir revenir');
   await p.reload(); await p.waitForTimeout(300); await p.evaluate(() => location.hash = 'accueil'); await p.waitForTimeout(200);
-  ok((await p.textContent('a[href="#bilan"]')).includes('Bilan du mois'), 'le mode choisi est retenu sur l’appareil');
+  ok((await p.textContent('#main a[href="#bilan"]')).includes('Bilan du mois'), 'le mode choisi est retenu sur l’appareil');
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

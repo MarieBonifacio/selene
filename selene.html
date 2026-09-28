@@ -15,7 +15,7 @@
   --moon:#f4f1e4; --moon-shadow:#b8c2b6; --glow:rgba(255,252,235,.0);
   --sky-top:#b9c7c0; --sky-bot:#dfe5dc; --tree-far:#8fa294; --tree-near:#3b4d40; --mist:rgba(226,230,222,.75); --star:0;
   --acc-l:#3d6a45; --acc-d:#8fbf86; --accent:var(--acc-l);
-  --ease:cubic-bezier(.2,0,0,1); --t-1:120ms; --t-2:180ms;
+  --ease:cubic-bezier(.2,0,0,1); --t-1:120ms; --t-2:180ms; --t-3:260ms;
   box-sizing:border-box; accent-color:var(--accent);
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
@@ -45,7 +45,7 @@ html,body{margin:0;min-height:100%}
 body::before{content:"";position:fixed;z-index:6;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg)}
 .sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 body{background:var(--bg);color:var(--ink);font-family:"Spectral",Georgia,"Times New Roman",serif;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1040px;margin:0 auto;padding:22px 20px 90px}
+.wrap{--g:20px;max-width:1040px;margin:0 auto;padding:22px var(--g) 90px}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 a{color:inherit}
@@ -66,11 +66,80 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:14p
 .clock.done{color:var(--ok)}
 /* Chiffres de chasse fixe, alignés : montants, compteurs, minuteur, dates. */
 .clock,.big,.stats,.meta,.room b,.over span,.item .row b,.cal{font-variant-numeric:tabular-nums lining-nums}
-/* La navigation reste à portée pendant le défilement, sous un verre fumé. */
-nav.tabs{display:flex;gap:4px;overflow-x:auto;margin:16px -20px 28px;padding:0 20px;border-bottom:1px solid var(--rule);scrollbar-width:none;
-  position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--glass);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2)}
-nav.tabs a{white-space:nowrap;text-decoration:none;padding:9px 12px 10px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
-nav.tabs a.on{color:var(--ink);border-bottom-color:var(--accent)}
+/* ================= shell =================
+   Trois strates : lentilles (Aujourd'hui, Bilan, Chercher), espaces regroupés par domaine, système (Réglages).
+   Téléphone : l'en-tête en haut, une barre de cinq destinations fixes en bas, au pouce ; Espaces et Capturer
+   s'ouvrent en feuille (sheet). Ordinateur (≥ 900 px) : une barre latérale collante, la barre basse disparaît. */
+.side{max-width:1040px;margin:0 auto;padding:22px 20px 0}
+#nav{display:none}
+.grp{margin:16px 0 4px;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-style:normal}
+.badge{font-size:.78rem;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.nx{margin-left:auto;display:inline-flex;align-items:center;gap:8px}
+nav.tabbar{position:fixed;z-index:7;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);padding:0 4px env(safe-area-inset-bottom,0px);
+  background:var(--glass);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);border-top:1px solid var(--rule)}
+nav.tabbar a,nav.tabbar button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:54px;padding:4px 0;
+  background:none;border:0;color:var(--muted);text-decoration:none;font-size:.7rem;line-height:1.1}
+nav.tabbar svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+nav.tabbar .cap svg{width:31px;height:31px}
+nav.tabbar .on{color:var(--ink)}
+nav.tabbar .on::after{content:"";position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:var(--accent)}
+nav.tabbar .pip{position:absolute;top:5px;left:calc(50% + 7px);min-width:16px;padding:0 4px;border-radius:8px;background:var(--accent);color:var(--bg);font-size:.66rem;font-weight:600;line-height:16px;text-align:center;font-style:normal}
+@media (max-width:899px){
+  .wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+  .capsec{display:none}
+}
+@media (min-width:900px){
+  nav.tabbar{display:none}
+  .app{display:grid;grid-template-columns:236px minmax(0,1fr)}
+  .side{position:sticky;top:0;height:100vh;overflow-y:auto;margin:0;max-width:none;padding:22px 12px 18px 16px;border-right:1px solid var(--rule);display:flex;flex-direction:column;gap:14px}
+  .side header.top{flex-direction:column;align-items:flex-start;gap:12px;padding:0 6px}
+  .side .brand h1{font-size:1.75rem}
+  .side .timer{flex-wrap:wrap;gap:6px}
+  .side .saving:empty{display:none}
+  .side .saving{flex-basis:100%;order:1}
+  .wrap{--g:36px;padding-top:28px}
+  #nav{display:flex;flex-direction:column;gap:1px;flex:1}
+  #nav a{display:flex;align-items:center;gap:8px;padding:6px 10px;border-left:2px solid transparent;border-radius:0 3px 3px 0;text-decoration:none;color:var(--muted)}
+  #nav a:hover{color:var(--ink);background:var(--surface)}
+  #nav a.on{color:var(--ink);background:var(--surface);border-left-color:var(--accent)}
+  #nav .grp{margin:18px 12px 4px}
+  #nav .sys{margin-top:auto;padding-top:18px;display:flex;flex-direction:column;gap:1px}
+}
+.pal-hint{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;margin:0 0 8px;padding:7px 10px;border:1px solid var(--rule);border-radius:3px;background:transparent;color:var(--muted);font-size:.9rem;text-align:left}
+kbd{font-family:inherit;font-size:.75rem;padding:0 5px;border:1px solid var(--rule-strong);border-radius:3px;color:var(--ink-2)}
+/* Feuilles (sheets) : du bas de l'écran sur téléphone, au centre sur ordinateur. */
+dialog.sheet{margin:auto 0 0;width:100%;max-width:100%;max-height:86vh;overflow:auto;border:0;border-top:1px solid var(--rule);border-radius:12px 12px 0 0;
+  padding:10px 20px calc(22px + env(safe-area-inset-bottom,0px));background:var(--surface-2)}
+dialog.sheet::before{content:"";display:block;width:36px;height:4px;border-radius:2px;background:var(--rule-strong);margin:0 auto 14px}
+dialog.sheet[open]{animation:sheet-in var(--t-3) var(--ease)}
+@keyframes sheet-in{from{transform:translateY(28px);opacity:.4}}
+@media (min-width:900px){dialog.sheet{margin:auto;width:min(560px,94vw);border:1px solid var(--rule);border-radius:3px}}
+.srow{display:flex;align-items:baseline;gap:12px;min-height:48px;padding:11px 2px;border-top:1px solid var(--rule);text-decoration:none}
+.srow b{font-family:"Cormorant Garamond",serif;font-size:1.3rem;font-weight:600}
+.srow .sub{color:var(--muted);font-size:.85rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recents{display:flex;gap:8px;flex-wrap:wrap}.recents .btn{text-decoration:none}
+/* Palette de commandes (⌘K) : aller, agir, chercher. */
+dialog.palette{margin:12vh auto auto;width:min(620px,94vw);padding:0;background:var(--surface-2);border:1px solid var(--rule);border-radius:3px}
+dialog.palette input{border:0;border-bottom:1px solid var(--rule);border-radius:0;background:transparent;padding:14px 16px;font-size:max(16px,1.05rem)}
+dialog.palette input:focus-visible{outline:none;border-bottom-color:var(--accent)}
+#palList{list-style:none;margin:0;padding:6px 0;max-height:min(52vh,460px);overflow:auto}
+#palList li{display:flex;gap:12px;align-items:baseline;padding:8px 16px;cursor:pointer}
+#palList li[aria-selected="true"]{background:var(--surface);box-shadow:inset 2px 0 0 var(--accent)}
+#palList .k{flex:none;min-width:6.5em;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+#palList .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#palList .sub{margin-left:auto;flex:none;color:var(--muted);font-size:.82rem}
+/* Retour contextuel, reprise, entrée visée par un lien. */
+.back{display:inline-block;margin:0 0 14px;padding:4px 10px;border:1px solid var(--rule-strong);border-radius:3px;color:var(--ink-2);font-size:.88rem;text-decoration:none}
+.resume-box{margin:-18px 0 32px;padding:10px 14px;border-left:2px solid var(--accent);background:var(--surface)}
+.resume-box h3{font-size:1.1rem;margin:0 0 4px}
+.resume-box ul{list-style:none;margin:0;padding:0}.resume-box li{padding:3px 0}
+.resume-box a{text-decoration:none}
+.flash{animation:flash 1.8s var(--ease)}
+@keyframes flash{from{background:color-mix(in srgb,var(--accent) 24%,transparent)}to{background:transparent}}
+.over-grp{margin:18px 0 0;padding-bottom:4px}
+.set.mod{grid-template-columns:auto minmax(0,1fr) 9em auto}
+@media (max-width:560px){.set.mod{grid-template-columns:auto minmax(0,1fr) auto}.set.mod>:nth-child(3){grid-column:2;grid-row:2}}
 
 /* buttons */
 .btn{border:1px solid var(--ink);background:transparent;padding:7px 14px;border-radius:2px;font-weight:500}
@@ -82,7 +151,7 @@ nav.tabs a.on{color:var(--ink);border-bottom-color:var(--accent)}
 .spacer{flex:1}
 
 /* hero */
-.hero{position:relative;margin:-6px -20px 44px;overflow:hidden}
+.hero{position:relative;margin:-6px calc(-1 * var(--g, 20px)) 44px;overflow:hidden}
 .hero svg.scene{display:block;width:100%;height:clamp(240px,36vw,340px)}
 /* Trois plans : le ciel (qui donne la hauteur), la lune, les sapins. La lune vit hors du paysage recadré
    (« slice »), sinon un écran étroit la coupe ; placée en proportion de la scène, elle garde sa taille. */
@@ -91,7 +160,7 @@ nav.tabs a.on{color:var(--ink);border-bottom-color:var(--accent)}
 .hero .moon svg{display:block;width:100%;height:100%}
 /* Le ciel se fond dans la page par la brume, sans bordure : une lisière. */
 .hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:44px;background:linear-gradient(transparent,var(--bg));pointer-events:none}
-.hero .txt{position:absolute;z-index:1;left:20px;top:clamp(18px,4vw,40px);max-width:min(52%,420px)}
+.hero .txt{position:absolute;z-index:1;left:var(--g,20px);top:clamp(18px,4vw,40px);max-width:min(52%,420px)}
 .hero .phase{font-family:"Cormorant Garamond",serif;font-size:clamp(2rem,6vw,3.4rem);line-height:1;color:var(--ink)}
 .hero p{margin:8px 0 0;color:var(--muted);font-size:.95rem}
 :root:not([data-mode="light"]) .hero .phase{text-shadow:0 1px 12px var(--bg)}
@@ -161,7 +230,8 @@ select.ep.on{color:var(--accent);border-color:var(--rule)}
 
 /* grids */
 .two{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:36px}
-@media (max-width:820px){.two{grid-template-columns:1fr}}
+/* Deux colonnes seulement quand la place le permet (la barre latérale en prend dès 900 px). */
+@media (max-width:819px),(min-width:900px) and (max-width:1079px){.two{grid-template-columns:1fr}}
 .rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
 .room{border:1px solid var(--rule);background:var(--surface);padding:10px;position:relative;overflow:hidden;text-align:left;min-height:84px}
 .room .fill{position:absolute;left:0;bottom:0;width:100%;background:var(--accent);opacity:.18}
@@ -215,6 +285,7 @@ input[type=checkbox],input[type=radio]{width:auto}
 .capture input{flex:1}
 .toast{position:fixed;z-index:10;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:2px;font-size:.92rem;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center}
 .toast.show{opacity:1}
+@media (max-width:899px){.toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}} /* au-dessus de la barre basse, jamais dessus */
 mark{background:var(--accent);color:var(--bg);padding:0 2px;border-radius:2px}
 .toast.act{pointer-events:auto}.toast .btn{margin-left:10px;color:var(--bg);border-color:var(--bg);background:transparent}
 .saving{font-size:.78rem;color:var(--muted)}
@@ -240,11 +311,12 @@ mark{background:var(--accent);color:var(--bg);padding:0 2px;border-radius:2px}
   .btn.sm::after,.btn.ghost::after,.star::after{content:"";position:absolute;inset:-9px -3px}
   .check::before{content:"";position:absolute;inset:-11px}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.flash{box-shadow:inset 2px 0 0 var(--accent)}}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app">
+<aside class="side">
   <header class="top">
     <a class="brand" href="#accueil"><div id="miniMoon"></div><div><h1 id="brandName">Selene</h1><small id="dateline"></small></div></a>
     <div class="timer">
@@ -254,9 +326,13 @@ mark{background:var(--accent);color:var(--bg);padding:0 2px;border-radius:2px}
       <button class="btn ghost sm" id="timerReset" aria-label="Réinitialiser le minuteur">↺</button>
     </div>
   </header>
-  <nav class="tabs" id="nav" aria-label="Navigation principale"></nav>
-  <main id="main"></main>
+  <nav id="nav" aria-label="Navigation principale"></nav>
+</aside>
+<div class="wrap"><main id="main"></main></div>
 </div>
+<nav class="tabbar" id="bar" aria-label="Navigation rapide"></nav>
+<dialog id="sheet" class="sheet" aria-labelledby="sheetTitle"><div id="sheetBody"></div></dialog>
+<dialog id="palette" class="palette" aria-label="Aller, agir, chercher"><input id="palIn" role="combobox" aria-expanded="true" aria-controls="palList" aria-autocomplete="list" placeholder="Aller, agir, chercher…" autocomplete="off" spellcheck="false"><ul id="palList" role="listbox" aria-label="Suggestions"></ul></dialog>
 
 <dialog id="dlg"><form method="dialog" id="form"></form></dialog>
 <dialog id="cdlg"><form method="dialog" style="padding:22px;display:grid;gap:14px"><p id="cmsg" style="margin:0"></p><div class="row"><button class="btn solid" value="ok">Confirmer</button><button class="btn" value="cancel">Annuler</button></div></form></dialog>
@@ -464,7 +540,7 @@ function authPersist(s) {
 const LAST_UID_KEY = "selene-auth-last-uid";
 /* Déconnexion ou changement de compte : rien de la personne précédente ne doit rester sur l'appareil —
    ni ses données, ni sa conversation avec l'assistant, ni sa clé API (facturée à elle). */
-const PERSONAL_KEYS = ["selene-chat", "selene-api-key"];
+const PERSONAL_KEYS = ["selene-chat", "selene-api-key", "selene-recent"]; // selene-recent : les derniers espaces ouverts
 function authResetLocal() {
   board.reset({ updatedAt: 0, tasks: [] });
   site.reset(siteSeed());
@@ -668,7 +744,8 @@ function parseBackup(text) {
   if (board.tasks.some(t => typeof t.id !== "string" || typeof t.title !== "string" ||
       (t.steps != null && (!Array.isArray(t.steps) || t.steps.some(s => !record(s) || typeof s.t !== "string"))))) throw new Error("Tâche invalide");
   if (!record(site.config) || (site.config.modules != null &&
-      (!Array.isArray(site.config.modules) || site.config.modules.some(m => !record(m) || typeof m.id !== "string" || typeof m.on !== "boolean"))) ||
+      (!Array.isArray(site.config.modules) || site.config.modules.some(m => !record(m) || typeof m.id !== "string" || typeof m.on !== "boolean" ||
+        (m.group != null && (typeof m.group !== "string" || m.group.length > 40))))) || // group : domaine de navigation, facultatif
       (site.config.groups != null && !record(site.config.groups)) ||
       (site.config.labels != null && !record(site.config.labels)) ||
       (site.config.assistant != null && (!record(site.config.assistant) ||
@@ -1442,11 +1519,14 @@ VIEWS.accueil = () => {
   for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) alerts.push(...TYPE_UI[inst.type].alerts(id, inst, now));
   const inbox = inboxId(s.modules), pending = inbox ? s.modules[inbox].entries.length : 0;
   // Toute la ligne mène au module ; un chevron la déplie sur ses derniers éléments, sans avoir à l'ouvrir.
-  const rows = s.config.modules.filter(x => x.on && x.id !== inbox).map(x => {
-    const inst = Object.hasOwn(s.modules, x.id) ? s.modules[x.id] : null, more = inst && TYPE_UI[inst.type].recent ? TYPE_UI[inst.type].recent(inst) : [];
+  const row = id => {
+    const inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null, more = inst && TYPE_UI[inst.type].recent ? TYPE_UI[inst.type].recent(inst) : [];
     const r = inst && inst.resume, bridge = r ? `<small class="resume ${bridgeStale(r) ? "stale" : ""}">↳ ${esc(r.text)} · ${ago(r.at)}</small>` : "";
-    return `<div class="over-wrap${more.length ? " has-more" : ""}"><a class="over" href="#${esc(x.id)}"><b>${esc(label(x.id))}</b><span>${summaryFor(x.id)}${bridge}</span></a>${more.length ? `<details class="more"><summary><span class="sr">Derniers éléments de ${esc(label(x.id))}</span></summary><ul>${more.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
-  }).join("");
+    return `<div class="over-wrap${more.length ? " has-more" : ""}"><a class="over" href="#${esc(id)}"><b>${esc(label(id))}</b><span>${summaryFor(id)}${bridge}</span></a>${more.length ? `<details class="more"><summary><span class="sr">Derniers éléments de ${esc(label(id))}</span></summary><ul>${more.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
+  };
+  // Regroupées par domaine quand il y en a (un titre en petites capitales par domaine), sinon une seule liste.
+  const ds = domains().map(d => ({ ...d, ids: d.ids.filter(id => id !== inbox) })).filter(d => d.ids.length), named = ds.some(d => d.name);
+  const rows = ds.map(d => `${named ? `<p class="grp over-grp">${esc(d.name || "Espaces")}</p>` : ""}${d.ids.map(row).join("")}`).join("") + (enabled("assistant") ? row("assistant") : "");
   return `
   ${s.config.welcome ? `<section><h2>Composer ton espace</h2><p class="hint">Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.</p>
     ${MODULE_TEMPLATES.map(t => `<div class="set" style="grid-template-columns:1fr auto"><div><b>${esc(t.name)}</b><div class="hint" style="margin:2px 0 0">${esc(t.hint)}</div></div><button class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}">Ajouter</button></div>`).join("")}
@@ -1455,6 +1535,7 @@ VIEWS.accueil = () => {
     <div class="phase">${m.name}</div>
     <p>Éclairée à ${Math.round(m.illum * 100)} %, jour ${Math.floor(m.age) + 1} du cycle. ${m.p < .5 ? `Pleine lune dans ${m.nextFull} j.` : `Nouvelle lune dans ${m.nextNew} j.`}</p>
   </div></section>
+  ${resumeSection()}
   <div class="two">
     <section><h2>Aujourd'hui</h2><p class="hint">Trois choses. La forêt pousse très bien sans que tu la surveilles.</p>
       <ul class="plain">
@@ -1463,7 +1544,7 @@ VIEWS.accueil = () => {
       </ul>
       ${!tod.length ? (taskModules().length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : `<p class="empty">Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.</p>`) : ""}
     </section>
-    <section><h2>Capturer</h2><p class="hint">Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.</p>
+    <section class="capsec"><h2>Capturer</h2><p class="hint">Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.</p>
       ${inbox ? `<div class="capture"><input id="capIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="Capture rapide"><button class="btn acc" data-act="cap-add">Garder</button></div>
       ${pending ? `<p class="hint" style="margin-top:8px"><a href="#${esc(inbox)}">${pending} élément${pending > 1 ? "s" : ""} à trier</a></p>` : ""}`
       : `<p class="hint">Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans <a href="#reglages">Réglages</a>.</p>`}
@@ -1740,7 +1821,7 @@ VIEWS.recherche = () => {
   return `<h2>Chercher</h2><p class="hint">Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « statut:hypothèse » ne garde que les hypothèses (de même pour observé, interprétation, inexpliqué). Touche « / » pour venir ici.</p>
   <input id="searchIn" type="search" value="${esc(searchQuery)}" placeholder="Un mot, un bout de phrase…" aria-label="Chercher" autocomplete="off" style="max-width:520px">
   ${searchQuery.trim() ? `<div class="row" style="margin-top:12px"><p class="hint" style="margin:0">${hits.length ? plural(hits.length, "résultat") : "Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire."}</p>${hits.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="search-dossier" title="Tous les résultats, avec dates, statuts, provenance et liens, pour une lecture assistée">Exporter en dossier</button>` : ""}</div>
-  <ul class="plain">${hits.slice(0, 80).map(h => `<li class="item"><span></span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}<div class="meta"><span class="tag">${esc(label(h.id))}</span>${h.date ? `<span>${fmt(h.date)}</span>` : ""}${h.ep ? `<span>${esc(EP_STATUS[h.ep])}</span>` : ""}</div></div><a class="btn ghost sm" href="#${esc(h.id)}">ouvrir</a></li>`).join("")}</ul>` : ""}`;
+  <ul class="plain">${hits.slice(0, 80).map(h => `<li class="item"><span></span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}<div class="meta"><span class="tag">${esc(label(h.id))}</span>${h.date ? `<span>${fmt(h.date)}</span>` : ""}${h.ep ? `<span>${esc(EP_STATUS[h.ep])}</span>` : ""}</div></div><a class="btn ghost sm" href="#${esc(h.id)}${h.eid ? "/" + esc(h.eid) : ""}">ouvrir</a></li>`).join("")}</ul>` : ""}`;
 };
 const PALETTES = [["nigredo", "Nigredo, mousse", "#6f9a68"], ["albedo", "Albedo, lichen", "#aab7a6"], ["citrinitas", "Citrinitas, résine", "#c99a3c"], ["rubedo", "Rubedo, amanite", "#c0554a"]];
 VIEWS.reglages = () => {
@@ -1749,9 +1830,11 @@ VIEWS.reglages = () => {
   <section><h3>Apparence</h3><p class="hint">Quatre étapes de l'Œuvre, prises dans le sous-bois.</p>
     <div class="swatches">${PALETTES.map(([id, n, col]) => `<button class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}"><i style="background:${col}"></i>${n}</button>`).join("")}</div>
     <div class="field-row" style="margin-top:14px"><label>Mode<select data-set="config.mode"><option value="auto" ${c.mode === "auto" ? "selected" : ""}>Suivre l'appareil</option><option value="dark" ${c.mode === "dark" ? "selected" : ""}>Toujours sombre</option><option value="light" ${c.mode === "light" ? "selected" : ""}>Toujours clair</option></select></label>
-    <label>Nom affiché<input data-set="config.name" value="${esc(c.name)}"></label></div></section>
-  <section><h3>Modules</h3><p class="hint">Active, renomme, réordonne. Les modules personnalisés (marqués ✕) peuvent être supprimés définitivement.</p>
-    ${c.modules.map((m, i) => `<div class="set" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="Activer ${esc(label(m.id))}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="Nom du module"><div class="row">${s.modules[m.id] ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="Supprimer définitivement" title="Supprimer définitivement">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="Descendre">↓</button></div></div>`).join("")}
+    <label>Nom affiché<input data-set="config.name" value="${esc(c.name)}"></label></div>
+    <div class="field-row" style="margin-top:12px"><label>Ouvrir sur (cet appareil)<select data-act="open-on"><option value="accueil" ${openOn() === "accueil" ? "selected" : ""}>L'accueil</option><option value="last" ${openOn() === "last" ? "selected" : ""}>Là où j'en étais</option></select></label><span></span></div></section>
+  <section><h3>Modules</h3><p class="hint">Active, renomme, réordonne, range par domaine (Maison, Création… : la navigation les regroupe). Les modules personnalisés (marqués ✕) peuvent être supprimés définitivement.</p>
+    <datalist id="domainList">${[...new Set(c.modules.map(m => String(m.group || "").trim()).filter(Boolean))].map(g => `<option value="${esc(g)}">`).join("")}</datalist>
+    ${c.modules.map((m, i) => `<div class="set mod" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="Activer ${esc(label(m.id))}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="Nom du module">${SYSTEM.includes(m.id) ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="Domaine" aria-label="Domaine de ${esc(label(m.id))}">`}<div class="row">${s.modules[m.id] ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="Supprimer définitivement" title="Supprimer définitivement">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="Descendre">↓</button></div></div>`).join("")}
     <details style="margin-top:14px"><summary class="hint" style="cursor:pointer;margin:0">+ Créer un module</summary>
       <div class="field-row" style="margin-top:10px"><label>Modèle ou type<select id="newModType"><optgroup label="Modèles">${MODULE_TEMPLATES.map(t => `<option value="tpl:${esc(t.id)}">${esc(t.name)} — ${esc(t.hint)}</option>`).join("")}</optgroup><optgroup label="Types vides">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}">${esc(t.label)}</option>`).join("")}</optgroup></select></label>
       <label>Nom<input id="newModName" placeholder="Nom du modèle si vide"></label></div>
@@ -1787,6 +1870,174 @@ VIEWS.reglages = () => {
     <div class="row"><button class="btn" data-act="exp">Exporter</button><label class="btn" style="display:inline-block;font-weight:500">Importer<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label></div></section>`;
 };
 
+/* ================= navigation =================
+   Trois strates : lentilles (Aujourd'hui, Bilan, Chercher), espaces regroupés par domaine (config.modules[].group,
+   facultatif), système (Assistant, Réglages). Une route peut viser une entrée : « #module/identifiant ». */
+const routeOf = () => { const [view, entry] = location.hash.slice(1).split("/"); return { view: view || "accueil", entry: /^[\w-]{1,64}$/.test(entry || "") ? entry : "" }; };
+const SYSTEM = ["assistant"];
+/* Les espaces actifs, par domaine, dans l'ordre de la navigation ; un domaine apparaît là où apparaît son premier espace. */
+function domains() {
+  const s = S(), out = new Map();
+  for (const m of s.config.modules) if (m.on && !SYSTEM.includes(m.id) && Object.hasOwn(s.modules, m.id)) {
+    const g = String(m.group || "").trim(); if (!out.has(g)) out.set(g, []); out.get(g).push(m.id);
+  }
+  return [...out].map(([name, ids]) => ({ name, ids }));
+}
+const badgeOf = id => { const m = Object.hasOwn(S().modules, id) && S().modules[id]; return m && TYPE_UI[m.type].badge ? TYPE_UI[m.type].badge(m) : 0; };
+/* À droite d'un espace : un point s'il attend une reprise (pont), le nombre d'éléments en attente. */
+function navMarks(id) {
+  const n = badgeOf(id), r = Object.hasOwn(S().modules, id) && S().modules[id].resume;
+  return n || r ? `<span class="nx">${r ? `<i class="dot" title="Pont de reprise en attente"><span class="sr">reprise en attente</span></i>` : ""}${n ? `<span class="badge">${n}<span class="sr"> en attente</span></span>` : ""}</span>` : "";
+}
+function navHTML(view) {
+  const link = (id, text, extra = "") => `<a href="#${esc(id)}" class="${id === view ? "on" : ""}"${id === view ? ' aria-current="page"' : ""}>${text}${extra}</a>`;
+  return `<button type="button" class="pal-hint" data-act="palette-open">Aller à… <kbd>⌘K</kbd></button>
+    ${link("accueil", "Aujourd'hui")}${link("bilan", "Bilan")}${link("recherche", "Chercher")}
+    ${domains().map(d => `<p class="grp">${esc(d.name || "Espaces")}</p>${d.ids.map(id => link(id, esc(label(id)), navMarks(id))).join("")}`).join("")}
+    <div class="sys">${enabled("assistant") ? link("assistant", esc(label("assistant"))) : ""}${link("reglages", "Réglages")}</div>`;
+}
+/* Icônes de la barre basse : un trait fin, sans remplissage (une seule exception : la lunaison du bilan). */
+const ICONS = {
+  moon: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4.2a8.2 8.2 0 1 0 4.3 12.6A6.6 6.6 0 0 1 15.5 4.2z"/></svg>`,
+  cabinet: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 12h16M12 4v16M7.5 8h1.5M15 8h1.5M7.5 16h1.5M15 16h1.5"/></svg>`,
+  plus: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>`,
+  search: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M15.5 15.5 20 20"/></svg>`,
+  lunation: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"/></svg>`
+};
+function barHTML(view) {
+  const inbox = inboxId(S().modules), pending = inbox ? S().modules[inbox].entries.length : 0;
+  const inSpace = Object.hasOwn(S().modules, view) || view === "reglages" || view === "assistant";
+  const link = (id, text, icon) => `<a href="#${id}" class="${view === id ? "on" : ""}"${view === id ? ' aria-current="page"' : ""}>${ICONS[icon]}<span>${text}</span></a>`;
+  return `${link("accueil", "Aujourd'hui", "moon")}
+    <button type="button" data-act="sheet-espaces" class="${inSpace ? "on" : ""}" aria-haspopup="dialog">${ICONS.cabinet}<span>Espaces</span>${pending ? `<i class="pip">${pending}<span class="sr"> à trier</span></i>` : ""}</button>
+    <button type="button" data-act="sheet-capture" class="cap" aria-haspopup="dialog">${ICONS.plus}<span>Capturer</span></button>
+    ${link("recherche", "Chercher", "search")}${link("bilan", "Bilan", "lunation")}`;
+}
+/* Les derniers espaces ouverts sur cet appareil (jamais synchronisés), le plus récent d'abord. */
+const RECENT_KEY = "selene-recent";
+function recents() { try { const r = JSON.parse(localStorage.getItem(RECENT_KEY)); return Array.isArray(r) ? r.filter(x => x && typeof x.id === "string") : []; } catch { return []; } }
+function noteVisit(id) { try { localStorage.setItem(RECENT_KEY, JSON.stringify([{ id, at: new Date().toISOString() }, ...recents().filter(x => x.id !== id)].slice(0, 5))); } catch {} }
+const liveRecents = () => recents().filter(r => Object.hasOwn(S().modules, r.id) && enabled(r.id));
+const agoTime = t => { const m = Math.round((Date.now() - Date.parse(t)) / 60000); return !(m >= 0) ? "" : m < 2 ? "à l'instant" : m < 60 ? `il y a ${m} min` : m < 1440 ? `il y a ${Math.round(m / 60)} h` : ago(iso(new Date(t))); };
+
+/* ---- feuilles (sheets) : Espaces et Capturer, depuis la barre basse ---- */
+const SHEETS = {
+  espaces() {
+    const rec = liveRecents().filter(r => r.id !== lastView).slice(0, 3);
+    const row = id => `<a class="srow" href="#${esc(id)}"><b>${esc(label(id))}</b><span class="sub">${summaryFor(id)}</span>${navMarks(id)}</a>`;
+    return `<h2 id="sheetTitle">Espaces</h2>
+      ${rec.length ? `<p class="grp">Récents</p><div class="recents">${rec.map(r => `<a class="btn" href="#${esc(r.id)}">${esc(label(r.id))}</a>`).join("")}</div>` : ""}
+      ${domains().map(d => `<p class="grp">${esc(d.name || "Espaces")}</p>${d.ids.map(row).join("")}`).join("")}
+      <p class="grp">Système</p>${enabled("assistant") ? `<a class="srow" href="#assistant"><b>${esc(label("assistant"))}</b></a>` : ""}<a class="srow" href="#reglages"><b>Réglages</b></a>`;
+  },
+  capture() {
+    const s = S(), inbox = inboxId(s.modules), n = inbox ? s.modules[inbox].entries.length : 0;
+    return `<h2 id="sheetTitle">Capturer</h2>${inbox ? `<div class="capture"><input id="capSheetIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="Capture rapide" enterkeyhint="done"><button class="btn acc" data-act="cap-sheet-add">Garder</button></div>
+      <p class="hint" style="margin:10px 0 0">« 12 € courses », « 25 min kundalini », « Module : une note » se rangent d'un geste.${n ? ` <a href="#${esc(inbox)}">${plural(n, "élément")} à trier</a>` : ""}</p>`
+      : `<p class="hint">Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans <a href="#reglages">Réglages</a>.</p>`}`;
+  }
+};
+function openSheet(kind) {
+  const d = $("#sheet"); closePalette();
+  $("#sheetBody").innerHTML = SHEETS[kind]();
+  if (!d.open) d.showModal();
+  const i = $("#capSheetIn"); if (kind === "capture" && i) { i.value = loadDraft("sheet", i); i.focus(); }
+}
+function closeSheet() { const d = $("#sheet"); if (d.open) d.close(); }
+function closePalette() { const d = $("#palette"); if (d.open) d.close(); }
+function closeOverlays() { closeSheet(); closePalette(); }
+/* Un clic sur le voile (hors du cadre) ferme ; un lien suivi depuis une feuille ou la palette la ferme aussi. */
+for (const d of ["#sheet", "#palette"]) $(d).addEventListener("click", e => {
+  const r = e.currentTarget.getBoundingClientRect();
+  if (e.target === e.currentTarget && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) e.currentTarget.close();
+  else if (e.target.closest && e.target.closest('a[href^="#"]')) e.currentTarget.close();
+});
+
+/* ---- palette de commandes (⌘K) : aller à un espace ou une vue, agir, garder une phrase, chercher ---- */
+let palIdx = 0, palItems = [];
+const goTo = hash => () => { closeOverlays(); if (location.hash === "#" + hash) render(); else location.hash = hash; };
+function paletteItems(q) {
+  const s = S(), f = fold(q.trim()), out = [], match = t => !f || fold(t).includes(f);
+  const spaces = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id)).map(m => [m.id, label(m.id)]);
+  if (!f) for (const r of liveRecents().slice(0, 3)) out.push({ k: "Récent", t: label(r.id), run: goTo(r.id) });
+  for (const [id, t] of spaces) if (match(t) && !out.some(o => o.t === t)) out.push({ k: "Espace", t, run: goTo(id) });
+  for (const [id, t] of [["accueil", "Aujourd'hui"], ["bilan", "Bilan"], ["recherche", "Chercher"], ["reglages", "Réglages"], ...(enabled("assistant") ? [["assistant", label("assistant")]] : [])])
+    if (match(t)) out.push({ k: "Vue", t, run: goTo(id) });
+  const other = bilanMode() === "mois" ? "lune" : "mois";
+  for (const [t, run] of [[tick ? "Mettre le minuteur en pause" : "Lancer le minuteur (15 min)", () => { closeOverlays(); $("#timerBtn").click(); }],
+    ["Capturer…", () => openSheet("capture")],
+    [`Bilan par ${other === "lune" ? "cycle lunaire" : "mois"}`, () => { try { localStorage.setItem("selene-bilan", other); } catch {} bilanOffset = 0; goTo("bilan")(); }]])
+    if (match(t)) out.push({ k: "Action", t, run });
+  if (f) {
+    const inbox = inboxId(s.modules), text = q.trim();
+    if (inbox) out.push({ k: "Garder", t: `« ${text} » dans ${label(inbox)}`, run: () => { const item = addNote(S().modules[inbox], text); site.save(); closeOverlays(); render(); afterCapture(inbox, item, "Gardé. Tu peux oublier, c'est écrit."); } });
+    for (const h of searchAll(text).slice(0, 6)) out.push({ k: label(h.id), t: h.text.replace(/\s+/g, " ").slice(0, 110), sub: h.date ? fmt(h.date) : "", run: goTo(h.id + (h.eid ? "/" + h.eid : "")) });
+    out.push({ k: "Chercher", t: `« ${text} » partout`, run: () => { searchQuery = text; goTo("recherche")(); } });
+  }
+  return out;
+}
+function renderPalette() {
+  palItems = paletteItems($("#palIn").value); palIdx = Math.max(0, Math.min(palIdx, palItems.length - 1));
+  $("#palList").innerHTML = palItems.map((it, i) => `<li id="pal-${i}" role="option" aria-selected="${i === palIdx}" data-i="${i}"><span class="k">${esc(it.k)}</span><span class="t">${esc(it.t)}</span>${it.sub ? `<span class="sub">${esc(it.sub)}</span>` : ""}</li>`).join("")
+    || `<li class="empty" aria-disabled="true">Rien. Ni espace, ni action, ni trace écrite.</li>`;
+  if (palItems.length) $("#palIn").setAttribute("aria-activedescendant", `pal-${palIdx}`); else $("#palIn").removeAttribute("aria-activedescendant");
+  const a = document.getElementById(`pal-${palIdx}`); if (a && a.scrollIntoView) a.scrollIntoView({ block: "nearest" });
+}
+function openPalette() {
+  const d = $("#palette"); if (d.open) return d.close();
+  closeSheet(); $("#palIn").value = ""; palIdx = 0; renderPalette(); d.showModal(); $("#palIn").focus();
+}
+$("#palIn").addEventListener("input", () => { palIdx = 0; renderPalette(); });
+$("#palIn").addEventListener("keydown", e => {
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); palIdx = (palIdx + (e.key === "ArrowDown" ? 1 : -1) + palItems.length) % Math.max(1, palItems.length); renderPalette(); }
+  else if (e.key === "Enter" && palItems[palIdx]) { e.preventDefault(); palItems[palIdx].run(); }
+});
+$("#palList").addEventListener("click", e => { const li = e.target.closest && e.target.closest("li[data-i]"); if (li && palItems[+li.dataset.i]) palItems[+li.dataset.i].run(); });
+
+/* ---- entrée visée par une route « #module/identifiant » : trouvée, montrée, surlignée ---- */
+let backTo = null; // { from, to, label } : la puce « ‹ … » qui ramène d'où l'on vient
+const backLabel = v => v === "recherche" ? (searchQuery.trim() ? `Recherche « ${searchQuery.trim()} »` : "Recherche") : v === "accueil" ? "Aujourd'hui" : v === "bilan" ? "Bilan" : v === "reglages" ? "Réglages" : label(v) || v;
+function entryEl(id) { let hit = null; $("#main").querySelectorAll("[data-id], [data-task]").forEach(el => { if (!hit && (el.dataset.id === id || el.dataset.task === id)) hit = el; }); return hit; }
+function focusEntry(id) {
+  const view = routeOf().view;
+  // Plus loin dans une liste paginée : on déplie ; masquée par un filtre de l'appareil : on le lève, puis on déplie encore.
+  const unfold = () => { let el = entryEl(id); for (let i = 0; !el && i < 50; i++) { const more = [...$("#main").querySelectorAll('[data-act="page-more"]')]; if (!more.length) break; for (const b of more) pageSize[b.dataset.k] = (pageSize[b.dataset.k] || PAGE) + 10 * PAGE; render(); el = entryEl(id); } return el; };
+  let el = unfold();
+  if (!el && Object.hasOwn(S().modules, view)) {
+    const inst = S().modules[view], e = inst.type === "budget" && inst.entries.find(x => x.id === id);
+    if (e) budMonths[view] = e.date.slice(0, 7); // une opération d'un autre mois : afficher son mois
+    fragFilter[view] = "*"; colFilter[view] = ""; gFilter[view] = ""; if (taskFilters[view]) taskFilters[view] = { room: "", cat: "" };
+    render(); el = unfold();
+  }
+  if (!el) return false;
+  el.scrollIntoView({ block: "center" }); el.classList.add("flash");
+  return true;
+}
+
+/* ---- reprise : ce qui attend, sur l'accueil (dernier espace ouvert, son pont, les brouillons en cours) ---- */
+const DRAFT_WHAT = { scrapIn: "un fragment", noteIn: "une note", rapNote: "une observation", chatIn: "un message", capSheetIn: "une capture" };
+function pendingDrafts() {
+  const out = [];
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!k || !k.startsWith(DRAFT_PREFIX)) continue;
+    const [view, field] = k.slice(DRAFT_PREFIX.length).split(":"); if (view !== "accueil") out.push({ view, what: DRAFT_WHAT[field] || "un texte" }); } } catch {}
+  return out;
+}
+function resumeSection() {
+  const s = S(), drafts = pendingDrafts(), last = liveRecents()[0], lines = [];
+  if (last) {
+    const r = s.modules[last.id].resume, mine = drafts.filter(d => d.view === last.id).map(d => d.what);
+    if (r || mine.length) lines.push(`<li><a href="#${esc(last.id)}"><b>${esc(label(last.id))}</b></a>${r ? ` — ↳ ${esc(r.text)}` : ""}${mine.length ? ` · ${esc(mine.join(", "))} en cours` : ""} <span class="hint">· ${agoTime(last.at)}</span></li>`);
+  }
+  for (const d of drafts) {
+    if (last && d.view === last.id) continue;
+    if (d.view === "sheet") lines.push(`<li>${d.what} en cours <button class="btn ghost sm" data-act="sheet-capture">reprendre</button></li>`);
+    else if (Object.hasOwn(s.modules, d.view) ? enabled(d.view) : d.view === "assistant" && enabled("assistant")) lines.push(`<li><a href="#${esc(d.view)}"><b>${esc(label(d.view))}</b></a> · ${d.what} en cours</li>`);
+  }
+  return lines.length ? `<section class="resume-box" aria-label="Reprendre"><h3>Reprendre</h3><ul>${lines.join("")}</ul></section>` : "";
+}
+/* Ouvrir sur l'accueil ou là où l'on en était : propre à l'appareil. */
+const openOn = () => { try { return localStorage.getItem("selene-open") === "last" ? "last" : "accueil"; } catch { return "accueil"; } };
+
 /* ================= render ================= */
 function applyTheme() {
   const c = S().config, r = document.documentElement;
@@ -1800,7 +2051,8 @@ const DRAFT_PREFIX = "selene-draft:";
 const draftKey = (view, el) => `${DRAFT_PREFIX}${view}:${el.id}`;
 function saveDraft(view, el) { if (!view || !el.id) return; try { if (el.value.trim()) localStorage.setItem(draftKey(view, el), el.value); else localStorage.removeItem(draftKey(view, el)); } catch {} }
 function loadDraft(view, el) { try { return localStorage.getItem(draftKey(view, el)) || ""; } catch { return ""; } }
-document.addEventListener("input", e => { if (e.target.dataset && e.target.dataset.draft !== undefined) saveDraft(lastView, e.target); });
+// Le brouillon d'une feuille (la capture de la barre basse) ne dépend pas de la vue ouverte derrière elle.
+document.addEventListener("input", e => { if (e.target.dataset && e.target.dataset.draft !== undefined) saveDraft(e.target.closest && e.target.closest("dialog") ? "sheet" : lastView, e.target); });
 /* Calculs coûteux partagés par plusieurs parties d'un même rendu (la concordance sert la vue, l'accueil et
    le bilan) : gardés le temps d'un rendu seulement, pendant lequel les données ne bougent pas. */
 let renderMemo = null;
@@ -1815,9 +2067,9 @@ function render() {
 }
 function renderNow() {
   applyTheme();
-  if (hosted() && authReady() && !authSession) { $("#nav").innerHTML = ""; $("#main").innerHTML = authView(); return; }
+  if (hosted() && authReady() && !authSession) { $("#nav").innerHTML = ""; $("#bar").innerHTML = ""; $("#main").innerHTML = authView(); return; }
   const s = S(), m = moon();
-  let view = location.hash.slice(1) || "accueil";
+  let view = routeOf().view;
   // Les vues fixes priment toujours ; hasOwn évite qu'un « #constructor » trouve Object.prototype.
   const fixed = v => v === "accueil" || v === "reglages" || v === "recherche" || v === "bilan";
   if (!fixed(view) && (!(Object.hasOwn(s.modules, view) || Object.hasOwn(VIEWS, view)) || !enabled(view))) view = "accueil";
@@ -1826,9 +2078,9 @@ function renderNow() {
   document.title = s.config.name || "Selene";
   $("#miniMoon").innerHTML = moonSVG(m.p, 40);
   $("#dateline").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
-  const badge = id => { const m = Object.hasOwn(s.modules, id) && s.modules[id], n = m && TYPE_UI[m.type].badge ? TYPE_UI[m.type].badge(m) : 0; return n ? ` (${n})` : ""; };
-  const links = [["accueil", "Accueil"], ...s.config.modules.filter(x => x.on).map(x => [x.id, label(x.id)]), ["recherche", "Chercher"], ["reglages", "Réglages"]];
-  $("#nav").innerHTML = links.map(([id, l]) => `<a href="#${esc(id)}" class="${id === view ? "on" : ""}"${id === view ? ' aria-current="page"' : ""}>${esc(l)}${badge(id)}</a>`).join("");
+  $("#nav").innerHTML = navHTML(view);
+  $("#bar").innerHTML = barHTML(view);
+  if (inst && view !== lastView) noteVisit(view);
   // Les champs des Réglages n'ont pas d'id (donc pas de restauration ci-dessous) : tant que l'un d'eux
   // a le focus, ne pas redessiner, sinon une synchro arrivant pendant la frappe effacerait la saisie.
   const ae = document.activeElement, typing = ae && ae.closest && ae.closest("#main") &&
@@ -1838,7 +2090,8 @@ function renderNow() {
   $("#main").querySelectorAll("[data-draft]").forEach(el => saveDraft(lastView, el)); // un champ vidé par l'envoi efface son brouillon
   if (view === lastView) $("#main").querySelectorAll("input[id],textarea[id],select[id]").forEach(el => { if (el.type !== "file" && el.type !== "checkbox") keep[el.id] = el.value; });
   if (document.activeElement && document.activeElement.id && keep[document.activeElement.id] != null) { focusId = document.activeElement.id; try { caret = document.activeElement.selectionStart; } catch {} }
-  $("#main").innerHTML = inst ? bridgeBar(view, inst) + TYPE_UI[inst.type].view(view) : VIEWS[view]();
+  const back = backTo && backTo.to === view ? `<a class="back" href="#${esc(backTo.from)}">‹ ${esc(backTo.label)}</a>` : "";
+  $("#main").innerHTML = back + (inst ? bridgeBar(view, inst) + TYPE_UI[inst.type].view(view) : VIEWS[view]());
   for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && v !== "" && el.value !== v) el.value = v; }
   if (view !== lastView) $("#main").querySelectorAll("[data-draft]").forEach(el => { const v = loadDraft(view, el); if (v) el.value = v; });
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
@@ -1854,10 +2107,18 @@ function rememberScroll() {
   try { sessionStorage.setItem("selene-scrolls", JSON.stringify(scrollMemo)); } catch {}
 }
 window.addEventListener("hashchange", () => {
-  if (lastView !== (location.hash.slice(1) || "accueil")) rememberScroll(); // « / » a déjà dessiné la recherche, et gardé la position d'avant
-  openId = null; bridgeOpen = null; for (const k of Object.keys(pageSize)) delete pageSize[k]; render();
+  const { view, entry } = routeOf();
+  if (lastView !== view) rememberScroll(); // « / » a déjà dessiné la recherche, et gardé la position d'avant
+  // Arriver sur une entrée depuis une autre vue : une puce ramène d'où l'on vient (liste et position comprises).
+  if (entry && lastView && lastView !== view) backTo = { from: lastView, to: view, label: backLabel(lastView) };
+  else if (!backTo || view !== backTo.to) backTo = null;
+  closeOverlays();
+  openId = null; bridgeOpen = null; for (const k of Object.keys(pageSize)) delete pageSize[k];
+  if (entry && Object.hasOwn(S().modules, view) && S().modules[view].type === "taches") openId = entry; // une tâche visée s'ouvre
+  render();
   const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t);
-  if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); } else window.scrollTo(0, scrollMemo[lastView] || 0);
+  if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); }
+  else if (!(entry && focusEntry(entry))) window.scrollTo(0, scrollMemo[lastView] || 0);
 });
 /* Sur un écran tactile, les actions d'une ligne (.ra) apparaissent quand on touche la ligne ailleurs que sur un contrôle.
    Une seule ligne à la fois ; retenue par son identifiant pour survivre aux rendus. */
@@ -1873,10 +2134,13 @@ document.addEventListener("click", e => {
 
 /* ================= actions ================= */
 const idOf = el => el.closest("[data-id]")?.dataset.id;
-function capture() {
-  const inp = $("#capIn"); if (!inp || !inp.value.trim()) return;
+/* Capture rapide, depuis l'accueil ou depuis la feuille « Capturer » (barre basse du téléphone). */
+function capture(inp = $("#capIn")) {
+  if (!inp || !inp.value.trim()) return;
   const id = inboxId(S().modules); if (!id) return toast("Aucune boîte de réception : voir Réglages.");
-  const item = addNote(S().modules[id], inp.value); site.save(); inp.value = ""; render();
+  const item = addNote(S().modules[id], inp.value); site.save(); inp.value = "";
+  if (inp.id === "capSheetIn") { saveDraft("sheet", inp); closeSheet(); } // fermée avant le message, qui passerait dessous
+  render();
   afterCapture(id, item, "Gardé. Tu peux oublier, c'est écrit.");
 }
 function entryAdd(id) {
@@ -1886,7 +2150,11 @@ function entryAdd(id) {
 const CLICK = {
   "grp-filter": el => { const m = el.dataset.mod, g = el.dataset.g; gFilter[m] = gFilter[m] === g ? "" : g; render(); },
   "goto-groups": el => { const id = "mreg-" + el.dataset.mod; if (location.hash === "#reglages") { const d = document.getElementById(id); if (d) { d.open = true; d.scrollIntoView(); } } else sessionStorage.setItem("selene-scroll", id); },
-  "cap-add": capture,
+  "cap-add": () => capture(),
+  "cap-sheet-add": () => capture($("#capSheetIn")),
+  "sheet-espaces": () => openSheet("espaces"),
+  "sheet-capture": () => openSheet("capture"),
+  "palette-open": () => openPalette(),
   "bridge-edit": el => { bridgeOpen = el.dataset.mod; render(); const i = $("#bridgeIn"); if (i) i.focus(); },
   "bridge-save": el => bridgeSave(el.dataset.mod),
   "bridge-close": () => { bridgeOpen = null; render(); },
@@ -1973,7 +2241,9 @@ document.addEventListener("keydown", e => {
   // Dessiner tout de suite : attendre l'événement hashchange ferait courir le curseur contre le rendu.
   e.preventDefault(); rememberScroll(); location.hash = "recherche"; render(); const el = document.getElementById("searchIn"); if (el) el.focus();
 });
-document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && e.target.id === "bridgeIn") bridgeSave(e.target.dataset.mod); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
+// ⌘K (Ctrl+K) ouvre ou ferme la palette, même pendant une saisie.
+document.addEventListener("keydown", e => { if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === "k" || e.key === "K")) { e.preventDefault(); openPalette(); } });
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "capSheetIn") capture(e.target); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && e.target.id === "bridgeIn") bridgeSave(e.target.dataset.mod); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
 const CHANGE = {}; // actions « change » des types de module (remplie par types.js)
 document.addEventListener("change", e => {
   const el = e.target, act = el.dataset.act;
@@ -2003,6 +2273,12 @@ document.addEventListener("change", e => {
     const f = el.files && el.files[0]; if (!f) return;
     f.text().then(async t => { const d = parseBackup(t); if (!await ask("Remplacer tout l'état actuel par celui du fichier ?")) return; site.replaceAll(d.site); board.replaceAll(d.board); /* le site d'abord : les tâches d'une ancienne sauvegarde y sont versées */ render(); toast("Sauvegarde importée."); }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene.")).finally(() => { el.value = ""; });
   }
+  else if (act === "mod-group") {
+    const m = S().config.modules[+el.closest("[data-i]").dataset.i], v = el.value.trim().slice(0, 40);
+    if (v) m.group = v; else delete m.group;
+    site.save(); el.blur(); render();
+  }
+  else if (act === "open-on") { try { localStorage.setItem("selene-open", el.value); } catch {} toast(el.value === "last" ? "L'app rouvrira le dernier espace où tu étais." : "L'app s'ouvrira sur l'accueil."); }
   else if (act === "mod-on") { S().config.modules[+el.closest("[data-i]").dataset.i].on = el.checked; site.save(); render(); }
   else if (act === "mod-label") {
     const s = S(), m = s.config.modules[+el.closest("[data-i]").dataset.i], v = el.value.trim();
@@ -2031,7 +2307,7 @@ document.addEventListener("change", e => {
 /* ================= timer ================= */
 /* Au bout des quinze minutes, le module ouvert peut proposer une suite (noter la séance, le nouveau total). */
 function timerDone() {
-  const view = location.hash.slice(1), inst = Object.hasOwn(S().modules, view) ? S().modules[view] : null, hook = inst && TYPE_UI[inst.type].timerDone;
+  const view = routeOf().view, inst = Object.hasOwn(S().modules, view) ? S().modules[view] : null, hook = inst && TYPE_UI[inst.type].timerDone;
   if (inst) { bridgeOpen = view; render(); } // et le prochain geste, pendant qu'on s'en souvient
   if (!(hook && hook(view, inst, 15))) toast("Quinze minutes. Tu as le droit d'arrêter. Et celui de continuer.");
 }
@@ -2064,7 +2340,7 @@ $("#timerReset").addEventListener("click", () => { clearInterval(tick); tick = n
      accept(id, inst, note) recevoir une note triée depuis un module Notes ; canAccept(inst) pour conditionner
      badge(inst)           nombre affiché à côté du nom dans la navigation
      recent(inst)          derniers éléments, en texte (lignes dépliables de l'accueil)
-     texts(inst)           textes parcourus par la recherche : [{ text, date? }]
+     texts(inst)           textes parcourus par la recherche : [{ text, date?, ep?, eid? }] (eid : l'entrée, pour y mener)
      timerDone(id, inst)   suite proposée à la fin du minuteur quand ce module est ouvert
      review(inst, from, to) une ligne de bilan pour la période [from, to[ (dates ISO), ou null
      click / change        actions propres au type, fusionnées dans CLICK / CHANGE */
@@ -2109,7 +2385,7 @@ const backlinks = () => memoInRender("backlinks", () => {
 const LINK_BACK = { derive: "a donné", contredit: "contredit par", echo: "écho de", documente: "documenté par" };
 function refHTML(ref) {
   const hit = refFind(ref);
-  return hit ? `<a href="#${esc(hit.mod)}">« ${esc(excerpt(hit.e))} »</a>` : `<i>(supprimé)</i>`;
+  return hit ? `<a href="#${esc(hit.mod)}/${esc(hit.e.id)}">« ${esc(excerpt(hit.e))} »</a>` : `<i>(supprimé)</i>`;
 }
 /* Sous une entrée : ses liens sortants et entrants, puis « dériver » et « lier… ». */
 function linksHTML(mod, e) {
@@ -2275,7 +2551,7 @@ const TYPE_UI = {
     },
     recent: inst => recentBy(inst.entries).map(x => `${fmt(x.date)} · ${x.value ?? "?"} ${inst.config.unitLabel}${x.note ? " · " + x.note : ""}`),
     review: (inst, from, to) => { const es = within(inst.entries, from, to); return `${plural(es.length, "séance")}, ${es.reduce((a, x) => a + (+x.value || 0), 0)} ${inst.config.unitLabel}`; },
-    texts: inst => inst.entries.filter(x => x.note).map(x => ({ text: x.note, date: x.date })),
+    texts: inst => inst.entries.filter(x => x.note).map(x => ({ text: x.note, date: x.date, eid: x.id })),
     timerDone(id, inst, minutes) {
       if (!/^min/i.test(inst.config.unitLabel)) return false; // une séance comptée autrement qu'en minutes : rien à déduire
       toastAction(`Quinze minutes. Les noter dans ${label(id)} ?`, `Noter ${minutes} min`, () => {
@@ -2357,7 +2633,7 @@ const TYPE_UI = {
     },
     recent: inst => recentBy(inst.entries).map(x => `${fmt(x.date)} · ${x.value > 0 ? "+" : ""}${x.value ?? "?"} ${inst.config.unitLabel}`),
     review: (inst, from, to) => { const n = within(inst.entries, from, to).reduce((a, x) => a + (+x.value || 0), 0), f = within(inst.scraps || [], from, to).length; return `${n > 0 ? "+" : ""}${n.toLocaleString("fr-FR")} ${inst.config.unitLabel}${inst.config.scraps ? `, ${plural(f, inst.config.scrapsLabel.toLowerCase().replace(/s$/, ""))}` : ""}`; },
-    texts: inst => [...(inst.scraps || []).map(f => ({ text: f.text, date: f.date, ep: f.ep })), ...inst.config.categories.map(c => ({ text: c.name }))],
+    texts: inst => [...(inst.scraps || []).map(f => ({ text: f.text, date: f.date, ep: f.ep, eid: f.id })), ...inst.config.categories.map(c => ({ text: c.name }))],
     timerDone(id, inst) {
       const inp = $("#cumIn"); if (!inp) return false;
       inp.focus();
@@ -2443,7 +2719,7 @@ const TYPE_UI = {
     accept: (id, inst, note) => { addJournalEntry(inst, { date: note.date, type: "note", note: note.text }, uid(), todayISO()); },
     recent: inst => recentBy(inst.entries).map(x => `${fmt(x.date)} · ${(inst.config.types.find(t => t.id === x.type) || {}).label || x.type}${x.note ? " · " + x.note : ""}`),
     review: (inst, from, to) => { const es = within(inst.entries, from, to); if (!es.length) return "Rien de noté"; const by = [...new Set(es.map(x => x.type))].map(t => `${((inst.config.types.find(y => y.id === t) || {}).label || t).toLowerCase()} ×${es.filter(x => x.type === t).length}`); return by.join(", "); },
-    texts: inst => inst.entries.filter(x => x.note).map(x => ({ text: x.note, date: x.date })),
+    texts: inst => inst.entries.filter(x => x.note).map(x => ({ text: x.note, date: x.date, eid: x.id })),
     context(inst, nm) {
       const c = inst.config;
       return `\n${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map(t => `${t.label.toLowerCase()} ${lastOf(inst, t.id) || "jamais"}`).join(", ")}.`;
@@ -2608,7 +2884,7 @@ TYPE_UI.collection = {
       const due = within(inst.entries, from, to, "due").filter(e => e.status !== c.statuses.at(-1)).length, done = inst.entries.flatMap(e => within(e.reviews || [], from, to)).length;
       return due || done ? `${due} à réexaminer, ${plural(done, "réexamen")} fait${done > 1 ? "s" : ""}` : "Rien à réexaminer";
     } const es = within(inst.entries, from, to, "due"); return es.length ? `${plural(es.length, "prévu")}, dont ${es.filter(e => c.statuses.indexOf(e.status) >= c.doneFrom).length} « ${c.statuses[c.doneFrom]} »` : "Rien de prévu"; },
-  texts: inst => inst.entries.map(e => ({ text: [e.title, e.subtitle, e.tag, e.text].filter(Boolean).join(" · "), date: e.due || null })),
+  texts: inst => inst.entries.map(e => ({ text: [e.title, e.subtitle, e.tag, e.text].filter(Boolean).join(" · "), date: e.due || null, eid: e.id })),
   // Ce qui est prévu aujourd'hui ou en retard, et pas encore « fait ».
   alerts: (id, inst, now) => {
     const c = inst.config; if (!c.fields.due) return [];
@@ -2803,7 +3079,7 @@ TYPE_UI.taches = {
   },
   recent: inst => inst.entries.filter(t => !t.done).sort(byDue).slice(0, 3).map(t => `${t.title} · ${dueLabel(t).txt}`),
   review: (inst, from, to) => { const done = within(inst.entries, from, to, "doneAt"), cost = done.reduce((a, t) => a + (+t.cost || 0), 0); return `${plural(done.length, "tâche")} terminée${done.length > 1 ? "s" : ""}${inst.config.costs && cost ? `, ${money(cost)} de coûts estimés` : ""}`; },
-  texts: inst => inst.entries.map(t => ({ text: [t.title, t.room, t.note, ...(t.steps || []).map(x => x.t)].filter(Boolean).join(" · "), date: t.due || t.created })),
+  texts: inst => inst.entries.map(t => ({ text: [t.title, t.room, t.note, ...(t.steps || []).map(x => x.t)].filter(Boolean).join(" · "), date: t.due || t.created, eid: t.id })),
   accept(id, inst, note) { const t = addTask(inst.entries, { title: note.text, cat: inst.config.cats[0] }, uid(), todayISO()); return () => taskForm(id, t); },
   click: {
     "task-open": el => { const t = taskOf(el); openId = openId === t.id ? null : t.id; render(); },
@@ -2867,7 +3143,7 @@ TYPE_UI.budget = {
   settings: (id, { config: c }) => `<div><span class="hint" style="margin:0">Enveloppes mensuelles</span>${c.envelopes.map((v, i) => `<div class="set" data-vi="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="env-name" data-mod="${esc(id)}" value="${esc(v.name)}" aria-label="Nom de l'enveloppe"><input type="number" min="0" data-act="env-limit" data-mod="${esc(id)}" value="${esc(v.limit || "")}" placeholder="€ / mois" aria-label="Plafond mensuel"><button class="btn ghost sm" data-act="env-del" data-mod="${esc(id)}">suppr.</button></div>`).join("")}<button class="btn sm" data-act="env-add" data-mod="${esc(id)}" style="margin-top:8px">Ajouter une enveloppe</button></div>`,
   recent: inst => recentBy(inst.entries).map(e => `${fmt(e.date)} · ${e.note || e.cat || e.type} · ${e.type === "revenu" ? "+" : "−"}${money(e.amount)}`),
   review: (inst, from, to) => { const es = within(inst.entries, from, to), out = sumOf(es, "dépense"), inn = sumOf(es, "revenu"); return `${money(out)} dépensés, ${money(inn)} reçus, solde ${money(inn - out)}`; },
-  texts: inst => inst.entries.filter(e => e.note || e.cat).map(e => ({ text: [e.note, e.cat, money(e.amount)].filter(Boolean).join(" · "), date: e.date })),
+  texts: inst => inst.entries.filter(e => e.note || e.cat).map(e => ({ text: [e.note, e.cat, money(e.amount)].filter(Boolean).join(" · "), date: e.date, eid: e.id })),
   summary(id, inst) {
     const es = inMonth(inst, todayISO().slice(0, 7)), out = sumOf(es, "dépense"), bal = sumOf(es, "revenu") - out;
     return `Ce mois-ci : ${money(out)} dépensés, solde <span class="${bal < 0 ? "neg" : "pos"}">${money(bal)}</span>`;
@@ -2993,7 +3269,7 @@ TYPE_UI.notes = {
   badge: inst => inst.config.inbox ? inst.entries.length : 0,
   recent: inst => inst.entries.slice(-3).reverse().map(x => x.text.length > 80 ? x.text.slice(0, 80) + "…" : x.text),
   review: (inst, from, to) => plural(within(inst.entries, from, to).length, "note"),
-  texts: inst => inst.entries.map(x => ({ text: x.text, date: x.date, ep: x.ep })),
+  texts: inst => inst.entries.map(x => ({ text: x.text, date: x.date, ep: x.ep, eid: x.id })),
   accept: (id, inst, note) => { addCapture(inst.entries, note.text, uid(), note.date); },
   click: {
     "note-add": el => {
@@ -3085,7 +3361,7 @@ TYPE_UI.arc = {
     const placed = st => [...inst.entries].filter(p => p.station === st.id).sort((a, b) => (a.at || "").localeCompare(b.at || ""));
     const card = p => {
       const hit = refFind(p.ref);
-      return `<div class="card" data-id="${esc(p.id)}">${hit ? `<span class="tag">${esc(label(hit.mod))}</span><p style="margin:6px 0">${esc(excerpt(hit.e, 140))}</p>${hit.e.date ? `<div class="meta">${fmt(hit.e.date)}</div>` : ""}` : `<i>(supprimé)</i>`}<div class="row"><button class="btn ghost sm ra" data-act="arc-remove" data-mod="${esc(id)}">retirer</button></div></div>`;
+      return `<div class="card" data-id="${esc(p.id)}">${hit ? `<span class="tag">${esc(label(hit.mod))}</span><p style="margin:6px 0"><a href="#${esc(hit.mod)}/${esc(hit.e.id)}">${esc(excerpt(hit.e, 140))}</a></p>${hit.e.date ? `<div class="meta">${fmt(hit.e.date)}</div>` : ""}` : `<i>(supprimé)</i>`}<div class="row"><button class="btn ghost sm ra" data-act="arc-remove" data-mod="${esc(id)}">retirer</button></div></div>`;
     };
     return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="arc-place" data-mod="${esc(id)}">Placer un élément</button></div>
     ${c.stations.length ? `<div class="board">${c.stations.map(st => `<div class="col"><h3>${esc(st.name)} <span class="hint" style="font-size:.95rem">${placed(st).length}</span></h3>${placed(st).map(card).join("") || `<p class="empty">Vide.</p>`}</div>`).join("")}</div>`
@@ -3240,7 +3516,16 @@ window.addEventListener("storage", e => { if ((e.key === board.key && board.relo
 if (!window.claude) { try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {} }
 
 /* ================= boot ================= */
+// « Ouvrir sur : là où j'en étais » : au premier chargement de la session seulement (la PWA démarre toujours sur #accueil).
+try {
+  if (!sessionStorage.getItem("selene-session")) {
+    sessionStorage.setItem("selene-session", "1");
+    const r = liveRecents()[0], here = routeOf();
+    if (openOn() === "last" && r && here.view === "accueil" && !here.entry) window.history.replaceState(null, "", "#" + r.id);
+  }
+} catch {}
 render();
+{ const e = routeOf().entry; if (e) focusEntry(e); } // un lien direct vers une entrée, ouvert tel quel
 (async () => {
   try {
     if (!window.claude || !window.claude.use) {
