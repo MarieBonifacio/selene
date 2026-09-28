@@ -43,6 +43,7 @@ les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne)
 | `sources.js` | sources, pur : adresses normalisées, DOI, traduction des réponses Crossref et Microlink | — |
 | `musique.js` | musique, pur : traduction des réponses MusicBrainz, albums studio, parutions récentes, pochettes | — |
 | `radar.js` | radar culturel, pur : requête OpenAgenda (zone et dates), traduction tolérante, tri par tes mots | — |
+| `instagram.js` | mémoire éditoriale, pur : lecture de l'export Instagram (posts, reels), encodage de Meta réparé, éléments de collection | — |
 | `app.js` | utilitaires, modules fixes, normalisation, stores, vues, rendu, actions | `store.js`, `domain.js`, `sky.js` |
 | `types.js` | registre d'affichage `TYPE_UI`, branché dans `CLICK` / `CHANGE` ; fiche, Vasculum, carte (`SHEETS`) | `app.js` |
 | `assistant.js` | contexte, outils, appels à Claude | — |

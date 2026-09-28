@@ -7,7 +7,7 @@ SOURCE = ROOT / "src"
 shell = (SOURCE / "shell.html").read_text(encoding="utf-8")
 assert shell.count("<!-- SELENE_SCRIPT -->") == 1
 # Un seul script, dans cet ordre : chaque fichier ne peut utiliser au chargement que ceux qui le précèdent.
-scripts = ["sync.js", "store.js", "auth.js", "backup.js", "domain.js", "sky.js", "carte.js", "sources.js", "musique.js", "radar.js", "app.js", "types.js", "assistant.js", "boot.js"]
+scripts = ["sync.js", "store.js", "auth.js", "backup.js", "domain.js", "sky.js", "carte.js", "sources.js", "musique.js", "radar.js", "instagram.js", "app.js", "types.js", "assistant.js", "boot.js"]
 js = "\n".join((SOURCE / name).read_text(encoding="utf-8") for name in scripts)
 # Le script est posé tel quel dans une balise <script> : « </script » dans une chaîne le fermerait avant sa fin.
 assert "</script" not in js.lower(), "« </script » dans le JavaScript : l'écrire en deux morceaux"
