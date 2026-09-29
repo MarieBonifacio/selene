@@ -45,7 +45,7 @@ const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
   console.log('écriture (instance d’origine, fragments)');
   await go('ecriture'); await p.fill('#scrapIn', 'une phrase'); await p.click('[data-act="scrap-add"]'); await p.waitForTimeout(150);
   ok((await main()).includes('une phrase'), 'fragment ajouté');
-  await p.click('[data-act="scrap-del"]'); await p.waitForTimeout(100); await p.click('#cdlg button[value=ok]').catch(() => {}); await p.waitForTimeout(150);
+  await p.click('[data-act="scrap-del"]'); await p.waitForTimeout(100); await p.click('#cdlg button[value=ok]', { timeout: 300 }).catch(() => {}); await p.waitForTimeout(150);
   ok(!(await main()).includes('une phrase'), 'fragment supprimé après confirmation');
 
   console.log('vues fixes');
