@@ -48,6 +48,7 @@ les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne)
 | `dehors.js` | Dehors, lecture des flux (RSS, Atom, JSON Feed) par DOMParser, fusion du cache, « nouveau depuis » | — |
 | `veille.js` | Research Watch, pur : ce que l'on suit (recherche, ORCID, OpenAlex), requête, traduction des résultats | — |
 | `agenda.js` | calendrier dédié, pur : lecture iCalendar (fuseaux, journées entières), récurrences dépliées sur une fenêtre | — |
+| `zotero.js` | Zotero, pur : ce que permet une clé, une fiche traduite en Source (DOI, revue, auteurs, lien vers la fiche) | — |
 | `app.js` | utilitaires, modules fixes, normalisation, stores, vues, rendu, actions | `store.js`, `domain.js`, `sky.js` |
 | `types.js` | registre d'affichage `TYPE_UI`, branché dans `CLICK` / `CHANGE` ; fiche, Vasculum, carte (`SHEETS`) | `app.js` |
 | `assistant.js` | contexte, outils, appels à Claude | — |
@@ -239,7 +240,7 @@ la conversation avec l'assistant et la clé API.
   identifiants, bornes des nombres, dates réelles, types connus.
 - **CSP** du build hébergé : scripts du site seulement, connexions limitées à Anthropic, Google Fonts,
   `*.supabase.co` et aux services publics de la phase 1, chacun nommé (Open-Meteo, Crossref, Microlink,
-  MusicBrainz, open data de la MEL, OpenAlex ; images de Cover Art Archive) : voir [connexions.md](connexions.md).
+  MusicBrainz, open data de la MEL, OpenAlex, Zotero ; images de Cover Art Archive) : voir [connexions.md](connexions.md).
 - **Assistant** : ne lit que les modules cochés dans Réglages → Assistant ; ses actions sont revérifiées
   à l'exécution (module actif, écriture autorisée) et passent par les mêmes règles métier que l'interface.
 

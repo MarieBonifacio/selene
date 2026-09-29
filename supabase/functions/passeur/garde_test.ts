@@ -31,6 +31,7 @@ Deno.test("types : du texte selon le genre, jamais un binaire", () => {
   assert(typeAccepte("page", "text/html")); assert(!typeAccepte("page", "application/pdf"));
   assert(typeAccepte("ics", "text/calendar")); assert(!typeAccepte("ics", "text/html"));
   assert(typeAccepte("page", null));
+  assert(typeAccepte("json", "application/json; charset=utf-8")); assert(!typeAccepte("json", "text/html"));
 });
 
 Deno.test("encodage : en-tête, déclaration XML, balise meta, sinon UTF-8", () => {
