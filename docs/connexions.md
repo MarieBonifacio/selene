@@ -84,7 +84,7 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
       ou refusé : Microlink, sans insister.
 - [x] Réglages → Passeur : état, « Vérifier », ton identifiant à copier.
 - [x] Déploiement automatisable : `.github/workflows/passeur.yml` (jeton dans les secrets du dépôt, tests Deno d'abord).
-- [ ] Déployer (toi : le jeton et ton identifiant dans GitHub, `docs/passeur.md` ; puis le workflow).
+- [x] Déployé le 29 septembre 2026 par le workflow (jeton et identifiant dans GitHub) ; « Vérifier » : reconnu.
 
 **6b : Dehors**
 - [x] Une vue fixe, « Dehors » (navigation, palette), dans la version hébergée connectée. Suivre l'adresse d'un flux ou
