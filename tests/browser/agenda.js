@@ -24,6 +24,7 @@ const SECRET = 'https://calendar.example/ical/secret-abc/basic.ics';
   await p.clock.setFixedTime(new Date('2026-09-29T09:00:00+02:00'));
   await p.goto(BASE + '/index.html#reglages'); await p.waitForTimeout(600);
 
+  await p.waitForSelector('#agenda', { timeout: 10000 }).catch(() => {});
   console.log('régler l’adresse secrète');
   ok(await p.isVisible('#agenda') && !calls.length, 'une section Calendrier ; rien n’est lu sans adresse');
   await p.fill('[data-act="ics-url"]', 'webcal://calendar.example/ical/secret-abc/basic.ics'); await p.press('[data-act="ics-url"]', 'Tab'); await p.waitForTimeout(600);

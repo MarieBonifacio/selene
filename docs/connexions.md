@@ -60,8 +60,9 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
       jamais déroulé. « voir » ouvre l'événement à part ; « garder » le dépose dans la boîte (titre, date, lieu, lien).
 - [x] Cache de six heures sur l'appareil ; si le portail refuse la sélection de champs (400 : un champ renommé),
       second essai sans elle ; muet : dit, et « Réessayer ». Adresse d'événement gardée seulement si elle est en https.
-- [ ] À vérifier en conditions réelles : les noms de champs viennent des facettes publiques du jeu, l'environnement
-      de développement n'atteignant pas le portail.
+- [x] Vérifié en conditions réelles le 29 septembre 2026 : le jeu et ses champs sont bien ceux attendus, mais le portail
+      **n'envoie pas d'en-tête CORS** (la requête marche ouverte à la main, pas depuis une page). Le radar passe donc
+      par le passeur (genre `json`) quand la lecture directe est refusée, et le retient pour la session.
 
 **5e : Mémoire éditoriale**
 - [x] Dans les réglages de toute collection : « Importer un export Instagram » (un ou plusieurs fichiers JSON :
@@ -150,5 +151,41 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
       gardée (`kept`, validé ; sinon la date de sa provenance ; sans date, au seuil de quatorze jours) : « gardée il y a
       2 lunaisons, jamais relue ». Reliée, elle quitte le bassin.
 
-À venir : « cité par tes sources » (couplage bibliographique par OpenAlex), motifs croisés dans Dehors, Dehors dans la
-planche de lunaison, dossier de passation enrichi des DOI.
+**7b : ce que tes sources ont en commun (OpenAlex)**
+- [x] À la demande, dans un module de Sources (dès deux sources à DOI) : « Ce que tes sources ont en commun ». OpenAlex
+      reçoit les DOI, par lots de cinquante, rien d'autre (ni titres, ni notes, ni adresses).
+- [x] **Cité par plusieurs de tes sources** : les références communes (citées par au moins deux de tes sources, hors tes
+      sources elles-mêmes), la plus citée d'abord, avec qui les cite ; « garder » en fait une Source (provenance
+      « Cité par tes sources »). Gardée, elle rejoint le corpus et cesse d'être une suggestion.
+- [x] **Tes sources qui se parlent** : le couplage bibliographique (Kessler, 1963), deux sources qui partagent au moins
+      deux références.
+- [x] **Ces auteurs reviennent** : un auteur présent dans au moins deux de tes sources ; « suivre dans la veille » l'ajoute
+      à Research Watch (version hébergée), sous son nom (`name`, facultatif, validé).
+- [x] Cache de l'appareil (`selene-cites`, effacé à la déconnexion) : bibliographies et titres gardés trente jours ; une
+      source retirée emporte le sien ; un DOI inconnu d'OpenAlex n'est pas redemandé avant un mois ; un lot refusé
+      (400) passe pour inconnu au lieu de tout bloquer.
+
+**7c : motifs croisés dans Dehors (pertinence explicable)**
+- [x] Ce qui croise ce que tu gardes passe devant, avec la raison en toutes lettres (« parce que : … ») : un **motif**
+      (tous les flux, plus seulement ceux filtrés), un **auteur de tes sources** (veille OpenAlex ; les trois premiers
+      auteurs, deux mots au moins ; pas pour la veille d'un auteur, qui l'est par construction), **une de tes sources
+      citée** (veille OpenAlex, d'après le cache de 7b), un **lien paru dans deux flux** (« aussi dans… »). Le plus de
+      raisons d'abord ; à égalité, et pour tout le reste, le plus récent. Aucun score caché, aucune raison inventée.
+- [x] Le même lien (DOI, sinon adresse sans traceurs) paru dans deux flux n'apparaît qu'une fois ; « vu » l'écarte
+      partout. Déjà dans tes sources : « déjà gardée » au lieu de « garder ».
+- [x] Des références d'un article de veille, le cache de l'appareil ne garde que celles qui sont tes sources (cinq au plus).
+
+**7d : Dehors dans la planche de lunaison**
+- [x] Une section « Venu du dehors » : les sources gardées pendant le cycle (`kept`), comptées par provenance (Dehors,
+      Veille, Cité par tes sources, Zotero, depuis une note, à la main), et les cinq premières nommées. Ce qui a été lu
+      puis laissé n'y figure pas : Dehors ne date pas ses « vu », et une planche n'a pas à tenir le registre de ce qu'on
+      a eu raison d'ignorer. À l'impression, la règle se resserre pour que la planche tienne toujours sur une page A4.
+
+**7e : dossier de passation enrichi des DOI**
+- [x] Dans le dossier (fragments, recherche, tension), une entrée dit quelles sources la documentent (`*Documenté par :
+      [S1], [S2]*`) ; une source qui figure elle-même dans le dossier renvoie à sa référence. En fin de dossier, une
+      section « Références » : auteurs (année). *Titre*. Revue. `https://doi.org/…`, sinon l'adresse ; « Anonyme » et
+      « s. d. » quand on ne sait pas. Numérotées dans l'ordre de première citation ; l'en-tête YAML les compte
+      (`references`). Le préambule rappelle qu'une source qui documente une entrée ne la prouve pas.
+
+La phase 3 est terminée.

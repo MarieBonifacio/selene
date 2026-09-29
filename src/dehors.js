@@ -44,19 +44,27 @@ function feedMerge(old, items, now) {
 /* L'instant d'un élément : sa date publiée (jamais dans le futur), sinon quand on l'a vu pour la première fois. */
 const feedTime = (x, now) => { const t = x.date ? Date.parse(x.date) : NaN; return Number.isFinite(t) ? Math.min(t, now) : x.first; };
 /* Le nouveau, tous flux confondus : postérieur au « vu jusqu'à » de son flux, pas écarté sur cet appareil, et, si le
-   flux le demande, touchant un motif (test : fonction texte → motifs). Du plus récent au plus ancien ; `max` au plus. */
-function dehorsNew(feeds, cache, hidden, now, test = null, max = DEHORS_MAX) {
-  const all = [];
+   flux le demande, touchant un motif. Puis croisé avec ce que tu gardes, et dit en clair (pertinence explicable) :
+   - `test` : texte → noms des motifs qu'il touche ;
+   - `key` : élément → clé (DOI, adresse) ; le même lien paru dans deux flux n'apparaît qu'une fois, « aussi dans » l'autre ;
+   - `why` : (élément, flux) → d'autres raisons, en toutes lettres (un auteur de tes sources, une de tes sources citée).
+   Ce qui a au moins une raison passe devant, le plus de raisons d'abord ; à égalité, le plus récent. `max` au plus. */
+function dehorsNew(feeds, cache, hidden, now, { test = null, key = null, why = null, max = DEHORS_MAX } = {}) {
+  const all = [], byKey = new Map();
   for (const f of feeds) {
     const c = cache[f.id]; if (!c || !Array.isArray(c.items)) continue;
     for (const x of c.items) {
-      const t = feedTime(x, now);
-      if (t <= (f.seen || 0) || hidden.has(`${f.id}|${x.id}`)) continue;
-      const motifs = f.motifs && test ? test(`${x.title} ${x.text}`) : null;
+      const t = feedTime(x, now), k = key ? key(x) : null;
+      if (t <= (f.seen || 0) || hidden.has(`${f.id}|${x.id}`) || (k && hidden.has(`k|${k}`))) continue;
+      const motifs = test ? test(`${x.title} ${x.text}`) : [];
       if (f.motifs && test && !motifs.length) continue;
-      all.push({ f, x, t, motifs });
+      if (k && byKey.has(k)) { const o = byKey.get(k); if (o.f.title !== f.title && !o.also.includes(f.title)) o.also.push(f.title); continue; }
+      const it = { f, x, t, k, motifs, also: [], extra: why ? why(x, f) : [] };
+      if (k) byKey.set(k, it);
+      all.push(it);
     }
   }
-  all.sort((a, b) => b.t - a.t);
+  for (const it of all) it.why = [...(it.motifs.length ? [`motif : ${it.motifs.join(", ")}`] : []), ...(it.also.length ? [`aussi dans ${it.also.join(", ")}`] : []), ...it.extra];
+  all.sort((a, b) => b.why.length - a.why.length || b.t - a.t);
   return { items: all.slice(0, max), total: all.length };
 }

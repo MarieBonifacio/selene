@@ -23,4 +23,9 @@ function check(cond, msg) {
 }
 process.on('unhandledRejection', e => { console.log('  ✗ erreur :', (e && e.message ? e.message : String(e)).split('\n')[0]); process.exitCode = 1; });
 
-module.exports = { engine, ENGINE, BASE, launchOptions, fixture, check };
+// Attendre une condition côté test (appels réseau simulés, compteurs) plutôt qu'un délai fixe, trop court sous charge.
+async function until(cond, ms = 10000) {
+  for (const end = Date.now() + ms; !cond() && Date.now() < end;) await new Promise(r => setTimeout(r, 50));
+}
+
+module.exports = { until, engine, ENGINE, BASE, launchOptions, fixture, check };

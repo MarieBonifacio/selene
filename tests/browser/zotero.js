@@ -47,6 +47,7 @@ const ITEMS = [
 
   console.log('la clé, en lecture seule');
   const p = await open();
+  await p.waitForSelector('#zotero', { timeout: 10000 }).catch(() => {});
   ok(await p.isVisible('#zotero') && !p.zot.length, 'une section Zotero ; rien n’est demandé sans clé');
   await setKey(p);
   ok(p.zot.length === 1 && p.zot[0].u.pathname === '/keys/current' && p.zot[0].key === KEY && !p.zot[0].u.search.includes(KEY), 'la clé est vérifiée, en en-tête (jamais dans l’adresse)');

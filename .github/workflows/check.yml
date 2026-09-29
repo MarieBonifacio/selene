@@ -1,11 +1,18 @@
 name: Check
 on:
-  push:
+  # Pas de `push` : une PR était testée deux fois (push + pull_request), et un merge sur main deux fois aussi
+  # (ici, puis via pages.yml). main est couvert par pages.yml ; les branches, par leur pull request.
   pull_request:
+  workflow_dispatch:
   workflow_call: # réutilisé par pages.yml : pas de déploiement sans tests verts
+concurrency:
+  # Un nouveau push sur la même branche annule l'exécution devenue inutile ; jamais celle de main.
+  group: check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,6 +29,7 @@ jobs:
   passeur:
     # La fonction Supabase Edge (supabase/functions/passeur, docs/passeur.md) : types et tests, avec Deno.
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,6 +43,7 @@ jobs:
     # WebKit : le moteur de Safari, des WebView iOS et de Tauri sous macOS et Linux ; Chromium : celui de Chrome,
     # d'Android et de Tauri sous Windows (WebView2).
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false # un moteur en échec n'interrompt pas l'autre : on veut les deux verdicts
       matrix:
@@ -50,6 +59,16 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:check
-      - name: Navigateur (version liée à Playwright, épinglé dans package-lock.json)
+      - name: Navigateur (en cache tant que package-lock.json, donc la version de Playwright, ne change pas)
+        id: browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ hashFiles('package-lock.json') }}-${{ matrix.browser }}-${{ runner.os }}
+      - name: Télécharger le navigateur
+        if: steps.browser.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Bibliothèques système du navigateur
+        if: steps.browser.outputs.cache-hit == 'true'
+        run: npx playwright install-deps ${{ matrix.browser }}
       - run: npm run test:browser

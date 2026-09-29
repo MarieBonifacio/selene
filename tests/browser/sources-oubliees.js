@@ -42,6 +42,13 @@ demo.config.modules.push({ id: 'sources', on: true });
   ok((await p.textContent('[data-id="s1"] .src-docs')).includes('documente « Le soi qui se regarde'), 'la source dit ce qu’elle documente');
   ok(!!(await p.$('[data-id="s1"] [data-act="src-link"]')), 'et se relie depuis sa ligne');
 
+  console.log('dans le dossier de passation');
+  await p.evaluate(() => location.hash = 'ecriture'); await p.waitForTimeout(300);
+  const [dl] = await Promise.all([p.waitForEvent('download'), p.click('[data-act="scrap-dossier"]')]);
+  const md = require('fs').readFileSync(await dl.path(), 'utf8');
+  ok(md.includes('references: 1') && md.includes('*Documenté par : [S1]*') && md.includes('## Références\n\n[S1] Anna Ciaunica (2020). *Depersonalization and the self <img src=x onerror=window.__pwn=1>*. Consciousness and Cognition. https://doi.org/10.1016/j.concog.2020.102946'),
+    'le fragment dit qui le documente, et la source est en référence, avec son DOI');
+
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

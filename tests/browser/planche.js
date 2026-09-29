@@ -15,7 +15,11 @@ demo.modules.ecriture.scraps = [
 demo.modules.inbox.entries = [{ id: 'n1', text: 'une note du jour', date: today }];
 demo.modules.motifs = { type: 'collection', label: 'Motifs', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), concordance: true, display: 'liste', statuses: ['Vivant', 'Épuisé'], doneFrom: 1, fallowDays: 90 },
   entries: [{ id: 'm1', title: 'lune', status: 'Vivant' }, { id: 'm2', title: 'mue', status: 'Vivant' }, { id: 'm3', title: 'contradiction <img src=x onerror=window.__pwn=1>', status: 'Vivant' }] };
-demo.config.modules.push({ id: 'motifs', on: true });
+demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, sources: true, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1 },
+  entries: [['s1', 'Un article venu de Dehors <img src=x onerror=window.__pwn=1>', today, { from: 'Dehors', text: 'Revue', date: today }], ['s2', 'Un article de la veille', today, { from: 'Veille', text: 'self', date: today }],
+    ['s3', 'Un lien collé à la main', today, null], ['s4', 'Une vieille source', old, { from: 'Dehors', text: 'Revue', date: old }]]
+    .map(([id, title, kept, origin]) => ({ id, title, subtitle: '', tag: '', due: '', text: '', status: 'À lire', kept, src: { url: `https://x.example/${id}` }, ...(origin ? { origin } : {}) })) };
+demo.config.modules.push({ id: 'motifs', on: true }, { id: 'sources', on: true });
 (async () => {
   const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
@@ -36,12 +40,15 @@ demo.config.modules.push({ id: 'motifs', on: true });
   ok(t.includes('Écriture') && t.includes('avant :') && (await p.$$('.pl-spark svg')).length >= 2, 'une ligne par espace, la période d’avant, une sparkline');
   const appeared = await p.textContent('.pl-cols section:nth-child(2)');
   ok(appeared.includes('mue') && !appeared.includes('lune'), 'motifs apparus : « mue » est neuf, « lune » ne l’est pas');
+  const dehors = (await p.textContent('.pl-cols .pl-wide')).replace(/\s+/g, ' ');
+  ok(dehors.includes('3 sources gardées (Dehors 1 · Veille 1 · à la main 1) : « Un article venu de Dehors') && dehors.includes('Un article venu de Dehors <img') && !dehors.includes('Une vieille source') && !(await p.evaluate(() => window.__pwn)),
+    `venu du dehors : les sources gardées pendant le cycle, par provenance (${dehors})`);
   ok((await p.textContent('.pl-cols section:nth-child(3)')).includes('hypothèse') && (await p.textContent('.pl-cols section:nth-child(4)')).includes('1 à ce jour'), 'statuts et tension ouverte');
 
   console.log('naviguer, imprimer, télécharger');
   await p.click('[data-act="planche-nav"][data-d="1"]'); await p.waitForTimeout(250);
   t = await text(p);
-  ok(t.includes(`Planche ${k - 1}`) && t.includes('0 entrée datée'), 'la lunaison précédente, vide');
+  ok(t.includes(`Planche ${k - 1}`) && t.includes('0 entrée datée') && t.includes('Rien gardé du dehors'), 'la lunaison précédente, vide');
   await p.click('[data-act="planche-nav"][data-d="-1"]'); await p.waitForTimeout(250);
   ok((await text(p)).includes(`Planche ${k}`), 'et retour');
   await p.click('[data-act="planche-print"]');
