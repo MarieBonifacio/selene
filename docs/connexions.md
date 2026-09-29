@@ -140,6 +140,15 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
 - [x] L'appel part directement vers api.zotero.org (clé en en-tête) ; si le navigateur n'a pas le droit d'en lire la
       réponse (CORS, non documenté par Zotero), le passeur relaie (genre `json`, clé dans l'adresse, jamais journalisée).
 
-## Phase 3
+## Phase 3 : intelligence ambiante (faire travailler ce qui est déjà gardé)
 
-Voir l'exploration du 28 septembre 2026 : motifs croisés, « cité par tes sources », sources oubliées.
+**7a : Sources oubliées, et des Sources qui documentent**
+- [x] Une Source se relie enfin à ce qu'elle documente : « documente… » (sa ligne, sa fiche, sa carte dans les sortes)
+      vers une note ou un fragment ; en marge de celui-ci, « documenté par ». Le modèle Sources le promettait ; le
+      formulaire « lier… » n'offrait que notes et fragments.
+- [x] Les sortes tirent aussi une **source gardée puis reliée à rien**, pondérée par l'oubli depuis le jour où elle a été
+      gardée (`kept`, validé ; sinon la date de sa provenance ; sans date, au seuil de quatorze jours) : « gardée il y a
+      2 lunaisons, jamais relue ». Reliée, elle quitte le bassin.
+
+À venir : « cité par tes sources » (couplage bibliographique par OpenAlex), motifs croisés dans Dehors, Dehors dans la
+planche de lunaison, dossier de passation enrichi des DOI.
