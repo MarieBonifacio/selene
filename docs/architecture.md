@@ -45,7 +45,7 @@ les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne)
 | `radar.js` | radar culturel, pur : requête OpenAgenda (zone et dates), traduction tolérante, tri par tes mots | — |
 | `instagram.js` | mémoire éditoriale, pur : lecture de l'export Instagram (posts, reels), encodage de Meta réparé, éléments de collection | — |
 | `passeur.js` | appel du passeur (Supabase Edge, version hébergée connectée) et lecture d'une page : métadonnées, flux annoncés | — |
-| `dehors.js` | Dehors, lecture des flux (RSS, Atom, JSON Feed) par DOMParser, fusion du cache, « nouveau depuis » | — |
+| `dehors.js` | Dehors, lecture des flux (RSS, Atom, JSON Feed) par DOMParser, fusion du cache, « nouveau depuis », croisé avec ce que tu gardes (raisons dites, doublons entre flux fusionnés) | — |
 | `veille.js` | Research Watch, pur : ce que l'on suit (recherche, ORCID, OpenAlex), requête, traduction des résultats ; « cité par tes sources » (références communes, couplage bibliographique, auteurs qui reviennent) | — |
 | `agenda.js` | calendrier dédié, pur : lecture iCalendar (fuseaux, journées entières), récurrences dépliées sur une fenêtre | — |
 | `zotero.js` | Zotero, pur : ce que permet une clé, une fiche traduite en Source (DOI, revue, auteurs, lien vers la fiche) | — |

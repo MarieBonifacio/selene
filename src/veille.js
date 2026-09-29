@@ -5,7 +5,7 @@
    articles selon qu'ils « confirment » quoi que ce soit. Le lien « documente », c'est toi qui le poses.
    Se teste seul (tests/veille.test.js). */
 const OA_API = "https://api.openalex.org/works";
-const OA_SELECT = "id,doi,title,publication_date,type,primary_location,authorships,abstract_inverted_index";
+const OA_SELECT = "id,doi,title,publication_date,type,primary_location,authorships,abstract_inverted_index,referenced_works";
 /* Ce que l'on suit : un auteur (identifiant OpenAlex A…, son adresse, ou un ORCID), sinon une recherche. */
 function oaWatch(raw) {
   const t = String(raw || "").trim().replace(/\s+/g, " ");
@@ -44,7 +44,9 @@ function oaWorks(json) {
     const who = names.length > 3 ? names.slice(0, 3).join(", ") + " et al." : names.join(", ");
     out.push({ id, title: oaText(r.title, 300) || id, link: /^10\.\d{4,9}\//.test(doi) ? `https://doi.org/${doi}` : `https://openalex.org/${id}`, date: "",
       text: oaText([src, who].filter(Boolean).join(" · ") + (r.abstract_inverted_index ? " — " + oaAbstract(r.abstract_inverted_index) : ""), 420),
-      oa: { doi: /^10\.\d{4,9}\//.test(doi) ? doi : "", day: /^\d{4}-\d{2}-\d{2}$/.test(r.publication_date || "") ? r.publication_date : "", site: oaText(src, 200), authors: oaText(who, 200), kind: oaText(r.type, 40) } });
+      oa: { doi: /^10\.\d{4,9}\//.test(doi) ? doi : "", day: /^\d{4}-\d{2}-\d{2}$/.test(r.publication_date || "") ? r.publication_date : "", site: oaText(src, 200), authors: oaText(who, 200), kind: oaText(r.type, 40) },
+      // ses références (W…), le temps de les croiser avec tes sources : l'appelant n'en garde que l'intersection
+      ...(Array.isArray(r.referenced_works) ? { refs: r.referenced_works.map(x => String(x || "").replace(/^https:\/\/openalex\.org\//, "")).filter(x => /^W\d+$/.test(x)).slice(0, 2000) } : {}) });
   }
   return out;
 }
