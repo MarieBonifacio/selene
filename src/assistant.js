@@ -1,11 +1,10 @@
 /* ================= assistant =================
-   Deux branchements : claude.ai (window.claude.use("sample"), sans clé) ou l'API Anthropic avec la clé
+   Deux branchements : claude.ai (platform.claude.use("sample"), sans clé) ou l'API Anthropic avec la clé
    de l'utilisatrice (build hébergé). Le contexte ne contient que les modules qu'elle a choisi de partager. */
 let sampleNS = null, downloadsNS = null, chatBusy = false;
-const hosted = () => !window.claude;
-const getKey = () => { try { return localStorage.getItem("selene-api-key") || ""; } catch { return ""; } };
+const getKey = () => platform.secrets.get("selene-api-key") || "";
 function backend() { if (!enabled("assistant")) return "off"; if (sampleNS) return "sample"; if (hosted() && getKey()) return "api"; return "none"; }
-const chatLog = { get() { try { return JSON.parse(localStorage.getItem("selene-chat") || "[]"); } catch { return []; } }, set(v) { try { localStorage.setItem("selene-chat", JSON.stringify(v.slice(-40))); } catch {} } };
+const chatLog = { get() { try { return JSON.parse(platform.storage.get("selene-chat") || "[]"); } catch { return []; } }, set(v) { try { platform.storage.set("selene-chat", JSON.stringify(v.slice(-40))); } catch {} } };
 function contextText() {
   const s = S(), sh = s.config.assistant.share, now = todayISO(), m = moon(), L = [];
   L.push(`Date : ${fmt(now, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}. Lune : ${m.name.toLowerCase()}, éclairée à ${Math.round(m.illum * 100)} %.`);

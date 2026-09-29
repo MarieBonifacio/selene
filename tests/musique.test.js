@@ -1,13 +1,9 @@
-/* Musique (src/musique.js) : traduire MusicBrainz, choisir les albums studio, les parutions récentes, les pochettes. */
+/* Musique (src/core/musique.js) : traduire MusicBrainz, choisir les albums studio, les parutions récentes, les pochettes. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
 
-const ctx = {};
-vm.runInNewContext(fs.readFileSync('src/musique.js', 'utf8') + fs.readFileSync('src/domain.js', 'utf8') +
-  '\n;globalThis.__m = { mbArtistQuery, mbArtists, mbAlbums, mbSince, coverUrl, mbValid, MODULE_TEMPLATES };', ctx);
-const M = ctx.__m;
+const { mbValid, MODULE_TEMPLATES } = require('../src/core/domain.js');
+const M = { ...require('../src/core/musique.js'), mbValid, MODULE_TEMPLATES };
 const U = n => `0000000${n}-aaaa-bbbb-cccc-dddddddddddd`.slice(-36);
 
 test('recherche d’artiste : le nom entre guillemets, sans casser la syntaxe', () => {

@@ -1,8 +1,8 @@
 /* Scénario de navigateur : chaque route s'affiche ; une route inconnue ou piégée ramène à l'accueil ;
    un module nommé comme une route fixe ne la masque pas. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.addInitScript(d => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, fixture());
   await p.goto(BASE + '/index.html'); await p.waitForTimeout(400);

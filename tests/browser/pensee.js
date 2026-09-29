@@ -1,9 +1,9 @@
 /* Scénario de navigateur : statut épistémique, provenance, pont de reprise, décisions. Lancé par tests/browser/run.js.
    SELENE_SHOTS=dossier y dépose des captures d'écran (téléphone), pour relire l'affichage à l'œil. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const SHOTS = process.env.SELENE_SHOTS;
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
   // Sur téléphone, la capture passe par le ⊕ de la barre basse (une feuille), plus par l'accueil.
   const capture = async t => { await p.click('[data-act="sheet-capture"]'); await p.fill('#capSheetIn', t); await p.press('#capSheetIn', 'Enter'); };

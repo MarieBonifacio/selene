@@ -1,6 +1,6 @@
 /* Scénario de navigateur : le passeur côté Selene (connexions externes, phase 2, vague 6a : docs/connexions.md).
    Version hébergée simulée : un faux Supabase (compte, table) et un faux passeur. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources',
   config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, display: 'liste', sources: true, statuses: ['À lire', 'Lue', 'Utilisée'], doneFrom: 1, addLabel: 'Ajouter à la main',
@@ -18,7 +18,7 @@ const BLOG = `<!doctype html><html><head><title>Titre de repli</title>
 const ARTICLE = `<html><head><meta name="citation_title" content="Depersonalization and the self"><meta name="citation_doi" content="10.1016/j.concog.2020.102946"></head></html>`;
 const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journal-article', title: ['Depersonalization and the self (Crossref)'], 'container-title': ['Consciousness and Cognition'], issued: { 'date-parts': [[2020, 5]] } } };
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const open = async (mode = 'ok', path = '/index.html#sources') => {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));

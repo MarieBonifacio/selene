@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Dehors (connexions externes, phase 2, vague 6b : docs/connexions.md).
    Version hébergée simulée : faux Supabase, faux passeur qui sert des flux. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { until, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 const col = (label, extra) => ({ type: 'collection', label, config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1, addLabel: 'Ajouter',
   fields: { title: 'Titre', subtitle: 'Variantes', tag: '', due: '', text: 'Notes' }, ...extra }, entries: [] });
@@ -26,7 +26,7 @@ const PAGES = {
   'https://vide.example/': { type: 'text/html', texte: '<html><head><title>Rien</title></head></html>' }
 };
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
   const calls = [];
@@ -54,7 +54,7 @@ const PAGES = {
 
   console.log('suivre, découvrir');
   ok(await p.isVisible('#nav a[href="#dehors"]') && (await p.textContent('#main')).includes('Aucun flux suivi'), 'une porte dans la navigation ; rien encore');
-  await follow('revue.example', 'ecriture');
+  await follow('revue.example', 'ecriture'); await until(() => calls.length >= 2); // la page, puis le flux qu'elle annonce
   ok(calls.map(c => c.url).join(' ') === 'https://revue.example/ https://revue.example/feed.xml' && calls.every(c => c.genre === 'feed'), 'une adresse de site : sa page annonce le flux, qui est suivi');
   let t = await titles();
   ok(t.length === 2 && t[0].startsWith('Les phalènes') && t[1] === 'Lien piégé' && !t.includes('Vieux numéro'), `la semaine écoulée seulement, du plus récent au plus ancien (${t.join(' | ')})`);
@@ -85,7 +85,14 @@ const PAGES = {
   await p.goto(BASE + '/index.html'); await p.waitForTimeout(500);
   ok((await p.textContent('.dehors-go')).includes('Dehors : 15 nouveautés'), 'sur l’accueil : une ligne de texte, pas de pastille');
   await p.goto(BASE + '/index.html#dehors'); await p.waitForTimeout(400);
-  await p.click('details.dehors-feeds summary'); await p.check('[data-feed] [data-act="dehors-motifs"] >> nth=1'); await p.waitForTimeout(300); // le Carnet (Atom)
+  // Le Carnet (Atom). Le rafraîchissement de Dehors, lancé en arrière-plan après le chargement, refait le rendu et
+  // referme la liste : s'il tombe entre l'ouverture et le clic (WebKit, plus lent), la case est cachée. Rouvrir et
+  // cocher jusqu'à ce que le réglage soit pris ; l'effet est vérifié juste après.
+  const motifs = '[data-feed] [data-act="dehors-motifs"] >> nth=1';
+  for (let i = 0; i < 5 && !(await p.$eval(motifs, el => el.checked).catch(() => false)); i++) {
+    await p.evaluate(() => { const d = document.querySelector('details.dehors-feeds'); if (d) d.open = true; });
+    await p.click(motifs, { timeout: 3000 }).catch(() => {}); await p.waitForTimeout(300);
+  }
   ok(!(await p.$('[data-item="a1"]')) && (await p.textContent('[data-item="a2"]')).includes('phalène'), 'seulement ce qui touche mes motifs : le motif est nommé');
 
   console.log('vu jusqu’à, relecture conditionnelle');

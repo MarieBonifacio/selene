@@ -1,5 +1,5 @@
 /* Scénario de navigateur : marginalia (évolution de l'interface, vague 4b : docs/evolution-ui.md). Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.ecriture.config.scraps = true;
 demo.modules.ecriture.scraps = [
@@ -13,7 +13,7 @@ demo.modules.motifs = { type: 'collection', label: 'Motifs', config: { ...JSON.p
 demo.config.modules.push({ id: 'motifs', on: true });
 demo.modules.inbox.entries = [{ id: 'n1', text: 'la lune revient chaque soir <img src=x onerror=window.__pwn=1>', date: '2026-09-27', origin: { text: 'x', from: 'Écriture', date: '2026-09-26' } }];
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const open = async (opts, hash) => {
     const ctx = await b.newContext(opts); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));

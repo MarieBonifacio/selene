@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Zotero en lecture seule (connexions externes, phase 2, vague 6f : docs/connexions.md).
    Version hébergée simulée (faux Supabase, faux passeur), API Zotero simulée. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, sources: true, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1,
   fields: { title: 'Titre', subtitle: 'Auteurs', tag: 'Type', due: '', text: 'Résumé' } }, entries: [] };
@@ -15,7 +15,7 @@ const ITEMS = [
   { key: 'PDF12345', data: { itemType: 'attachment', title: 'fichier.pdf' } }
 ];
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const open = async (mode = 'direct', path = '/index.html#reglages') => {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
@@ -47,6 +47,7 @@ const ITEMS = [
 
   console.log('la clé, en lecture seule');
   const p = await open();
+  await p.waitForSelector('#zotero', { timeout: 10000 }).catch(() => {});
   ok(await p.isVisible('#zotero') && !p.zot.length, 'une section Zotero ; rien n’est demandé sans clé');
   await setKey(p);
   ok(p.zot.length === 1 && p.zot[0].u.pathname === '/keys/current' && p.zot[0].key === KEY && !p.zot[0].u.search.includes(KEY), 'la clé est vérifiée, en en-tête (jamais dans l’adresse)');

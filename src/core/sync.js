@@ -7,7 +7,7 @@
    côté n'a pas modifié l'entrée), et pour une simple valeur le plus récent gagne
    (`preferLocal`, décidé une fois pour tout le document d'après updatedAt). */
 const isRecord = v => v !== null && typeof v === "object" && !Array.isArray(v);
-function deepEqual(a, b) {
+export function deepEqual(a, b) {
   if (a === b) return true;
   if (typeof a !== typeof b || a === null || b === null || typeof a !== "object") return false;
   if (Array.isArray(a) !== Array.isArray(b)) return false;
@@ -50,7 +50,7 @@ function merge3(base, local, remote, preferLocal) {
 /* Point d'entrée pour un document entier. Sans base (premier contact de cet appareil) :
    un appareil vierge (updatedAt nul, jamais modifié) adopte le serveur tel quel, sinon
    on fusionne sans rien supprimer — mieux vaut une entrée ressuscitée qu'une entrée perdue. */
-function mergeDocs(base, local, remote) {
+export function mergeDocs(base, local, remote) {
   if (!remote) return local;
   if (!base && !local.updatedAt) return remote;
   return merge3(base || undefined, local, remote, (local.updatedAt || 0) >= (remote.updatedAt || 0));

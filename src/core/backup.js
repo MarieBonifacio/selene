@@ -1,4 +1,5 @@
 /* Backup contract v1. Keep the existing format and browser storage keys stable. */
+import { EP_STATUS, LINK_REF, LINK_TYPES, MODULE_ID, MODULE_TYPES, SCHEMA_VERSION, reservedId, validDate } from "./domain.js";
 const record = value => value !== null && typeof value === "object" && !Array.isArray(value);
 const collection = (value, name) => {
   if (!Array.isArray(value) || value.some(item => !record(item))) throw new Error(`${name} invalide`);
@@ -11,7 +12,7 @@ const num = (v, name, min = -Infinity, max = Infinity) => {
 };
 const ids = (list, name) => { if (list.some(x => typeof x.id !== "string" || !x.id || x.id.length > 64)) throw new Error(`${name} : identifiant invalide`); };
 const dated = (list, name) => { if (list.some(x => typeof x.date !== "string" || !validDate(x.date))) throw new Error(`${name} : date invalide`); };
-function parseBackup(text) {
+export function parseBackup(text) {
   if (typeof text !== "string" || text.length > 5_000_000) throw new Error("Sauvegarde trop volumineuse");
   const data = JSON.parse(text);
   if (!record(data) || data.format !== "selene-v1" || !record(data.board) || !record(data.site)) throw new Error("Format de sauvegarde invalide");
@@ -41,7 +42,7 @@ function parseBackup(text) {
         (site.config.dehors.artistsSeen != null && !(Number.isFinite(site.config.dehors.artistsSeen) && site.config.dehors.artistsSeen >= 0)) ||
         (site.config.dehors.research != null && (!Array.isArray(site.config.dehors.research) || site.config.dehors.research.length > 30 ||
           site.config.dehors.research.some(r => !record(r) || typeof r.id !== "string" || !/^[\w-]{1,64}$/.test(r.id) || !["q", "author"].includes(r.kind) ||
-            typeof r.q !== "string" || !r.q || r.q.length > 200 || (r.mod != null && (typeof r.mod !== "string" || r.mod.length > 64)) ||
+            typeof r.q !== "string" || !r.q || r.q.length > 200 || (r.name != null && (typeof r.name !== "string" || !r.name || r.name.length > 200)) || (r.mod != null && (typeof r.mod !== "string" || r.mod.length > 64)) ||
             (r.seen != null && !(Number.isFinite(r.seen) && r.seen >= 0))))))) ||
       // radar : les mots du radar culturel, facultatifs.
       (site.config.radar != null && (!record(site.config.radar) || typeof site.config.radar.words !== "string" || site.config.radar.words.length > 300))) throw new Error("Configuration invalide");
@@ -102,6 +103,6 @@ function parseBackup(text) {
       (typeof state.updatedAt !== "number" || !Number.isFinite(state.updatedAt) || state.updatedAt < 0)) throw new Error("Date de modification invalide");
   return { board, site };
 }
-function createBackup(boardData, siteData, exportedAt = new Date().toISOString()) {
+export function createBackup(boardData, siteData, exportedAt = new Date().toISOString()) {
   return JSON.stringify({ format: "selene-v1", exportedAt, board: boardData, site: siteData }, null, 2);
 }

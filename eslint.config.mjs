@@ -1,4 +1,5 @@
-// Analyse statique du script assemblé (python3 build.py --bundle .lint/selene.js) et du service worker.
+// Analyse statique du script assemblé (python3 build.py --bundle .lint/selene.js), des modules du noyau un à un
+// (src/core), de l'outillage (scripts) et du service worker.
 // Aucune dépendance : seulement les règles intégrées d'eslint, globals déclarés à la main.
 const browser = Object.fromEntries(["window", "document", "localStorage", "sessionStorage", "location", "navigator",
   "fetch", "setTimeout", "clearTimeout", "setInterval", "clearInterval", "AbortController", "URL", "Blob", "File",
@@ -12,6 +13,9 @@ const rules = {
 };
 export default [
   { files: [".lint/selene.js"], languageOptions: { ecmaVersion: 2023, sourceType: "script", globals: browser }, rules },
+  // Le noyau est pur (ni DOM, ni stockage, ni réseau) : un module n'y voit que ses imports et URL.
+  { files: ["src/core/**/*.js"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { URL: "readonly" } }, rules },
+  { files: ["scripts/**/*.mjs"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { process: "readonly", URL: "readonly" } }, rules },
   { files: ["sw.js"], languageOptions: { ecmaVersion: 2023, sourceType: "script",
     globals: { self: "readonly", caches: "readonly", fetch: "readonly", location: "readonly", URL: "readonly" } }, rules }
 ];

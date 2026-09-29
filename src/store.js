@@ -1,4 +1,4 @@
-/* Un store = un document JSON gardé dans localStorage (source de vérité locale) et,
+/* Un store = un document JSON gardé dans le stockage de l'appareil (platform.storage, source de vérité locale) et,
    une fois connecté, synchronisé avec une base distante par lecture → fusion à trois
    voies → écriture conditionnelle. La « base » (dernier état commun connu avec le
    serveur) est gardée à côté, sous `${key}-base` : c'est elle qui permet de savoir qui
@@ -10,15 +10,15 @@
    dans le store (lecture locale, synchro, import, réinitialisation), jamais à la lecture. */
 function makeStore(key, path, seed, normalize = d => d) {
   const BASE = key + "-base";
-  const read = k => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } };
+  const read = k => { try { const v = platform.storage.get(k); return v ? JSON.parse(v) : null; } catch { return null; } };
   const s = { db: null, timer: null, unsub: null, syncing: null, again: false, key };
   s.data = normalize(read(key) || seed());
   // Une migration faite au chargement est écrite aussitôt : sinon, sans synchro (artefact, hors ligne),
   // chaque chargement la referait depuis l'ancienne forme (et, pour le board, reverserait des tâches supprimées).
-  try { const raw = localStorage.getItem(key); if (raw && raw !== JSON.stringify(s.data)) localStorage.setItem(key, JSON.stringify(s.data)); } catch {}
+  try { const raw = platform.storage.get(key); if (raw && raw !== JSON.stringify(s.data)) platform.storage.set(key, JSON.stringify(s.data)); } catch {}
   s.base = read(BASE);
-  const saveLS = () => { try { localStorage.setItem(key, JSON.stringify(s.data)); } catch {} };
-  const saveBase = () => { try { if (s.base) localStorage.setItem(BASE, JSON.stringify(s.base)); else localStorage.removeItem(BASE); } catch {} };
+  const saveLS = () => { try { platform.storage.set(key, JSON.stringify(s.data)); } catch {} };
+  const saveBase = () => { try { if (s.base) platform.storage.set(BASE, JSON.stringify(s.base)); else platform.storage.remove(BASE); } catch {} };
   const write = (doc, value, expected, opts) => doc.replace ? doc.replace(value, expected, opts) : doc.set(value).then(() => true);
 
   async function syncOnce(db, prefetched) {
@@ -76,7 +76,7 @@ function makeStore(key, path, seed, normalize = d => d) {
   };
   /* Fermeture ou mise en arrière-plan : pas le temps de relire, donc une seule écriture conditionnelle
      sur la base connue (keepalive = survit à la fermeture de l'onglet). Si le serveur a bougé, elle est
-     refusée sans dégât : les données restent dans localStorage et seront fusionnées au prochain lancement. */
+     refusée sans dégât : les données restent sur l'appareil et seront fusionnées au prochain lancement. */
   s.flush = () => {
     if (!s.timer || !s.db) return;
     clearTimeout(s.timer); s.timer = null;
@@ -112,7 +112,7 @@ function makeStore(key, path, seed, normalize = d => d) {
   s.reset = data => {
     s.disconnect();
     s.data = normalize(data); s.base = null;
-    try { localStorage.removeItem(key); localStorage.removeItem(BASE); } catch {}
+    platform.storage.remove(key); platform.storage.remove(BASE);
   };
   return s;
 }

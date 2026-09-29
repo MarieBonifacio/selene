@@ -274,7 +274,7 @@ Livrée en quatre temps, pour que chaque pull request reste relisible.
 - [x] Formulaires en feuille sur téléphone.
 
 **3b : la Fenêtre**
-- [x] Heure du jour : `src/sky.js` (pur, testé seul) calcule la hauteur du soleil ; le ciel s'interpole entre sept
+- [x] Heure du jour : `src/core/sky.js` (pur, testé seul) calcule la hauteur du soleil ; le ciel s'interpole entre sept
       repères (nuit, crépuscule nautique, heure bleue, horizon cuivré, heure dorée, jour bas, jour), tonalisé par le
       mode (un jour vu depuis une pièce sombre ; une nuit relevée en mode clair). Recalculé toutes les cinq minutes.
 - [x] Lune à sa place (face au sud, l'est à gauche ; au nord dans l'hémisphère austral), absente sous l'horizon,

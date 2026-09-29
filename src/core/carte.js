@@ -5,12 +5,12 @@
    bande horizontale par espace, et la même entrée toujours au même endroit. La taille d'une étoile dit son nombre de
    liens (sa magnitude, à l'envers de l'astronomie où la plus brillante a le plus petit chiffre). Ce fichier ne fait
    que la géométrie ; le choix des étoiles et le dessin sont dans types.js. Il se teste seul (tests/carte.test.js). */
-const CARTE_MAX = 80; // au-delà, c'est une nébuleuse, pas une carte
+export const CARTE_MAX = 80; // au-delà, c'est une nébuleuse, pas une carte
 /* Un nombre stable dans [0, 1[ tiré d'une chaîne (FNV-1a) : le « hasard » d'une étoile ne change jamais. */
-function hash01(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
+export function hash01(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
 /* nodes : [{ ref, mod, date?, links }] ; edges : [{ from, to, type, open? }] ; bands : ordre des espaces (navigation).
    → { width, height, bands: [{ mod, y }], stars: [{ ref, mod, x, y, r }], lines: [{ from, to, type, open, d }], span } */
-function carteLayout(nodes, edges, bands, { W = 720, bandH = 64, top = 18, left = 96, right = 18 } = {}) {
+export function carteLayout(nodes, edges, bands, { W = 720, bandH = 64, top = 18, left = 96, right = 18 } = {}) {
   const used = bands.filter(m => nodes.some(n => n.mod === m));
   const extra = [...new Set(nodes.map(n => n.mod).filter(m => !used.includes(m)))].sort();
   const order = [...used, ...extra], bandOf = new Map(order.map((m, i) => [m, i]));
@@ -44,7 +44,7 @@ function carteLayout(nodes, edges, bands, { W = 720, bandH = 64, top = 18, left 
 }
 /* Le voisinage d'une entrée, en largeur d'abord (les plus proches gardées quand il faut couper) : adjacency est une
    Map ref → [refs voisines], dans les deux sens. → { refs, capped } */
-function carteNeighbourhood(start, adjacency, depth = 2, max = CARTE_MAX) {
+export function carteNeighbourhood(start, adjacency, depth = 2, max = CARTE_MAX) {
   const seen = new Set([start]); let frontier = [start];
   for (let d = 0; d < depth && frontier.length; d++) {
     const next = [];

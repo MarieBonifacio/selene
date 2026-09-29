@@ -1,12 +1,8 @@
-/* Carte céleste (src/carte.js) : placement déterministe, bandes, temps, collisions, voisinage. */
+/* Carte céleste (src/core/carte.js) : placement déterministe, bandes, temps, collisions, voisinage. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
 
-const ctx = {};
-vm.runInNewContext(fs.readFileSync('src/carte.js', 'utf8') + '\n;globalThis.__c = { carteLayout, carteNeighbourhood, hash01, CARTE_MAX };', ctx);
-const C = ctx.__c;
+const C = require('../src/core/carte.js');
 const nodes = [
   { ref: 'ecriture/a', mod: 'ecriture', date: '2026-09-01', links: 3 },
   { ref: 'ecriture/b', mod: 'ecriture', date: '2026-09-20', links: 1 },

@@ -1,7 +1,7 @@
 /* Scénario de navigateur : compte-neuf. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.addInitScript(() => { window.claude = { use: async () => null }; });
   await p.goto(BASE + '/index.html'); await p.waitForTimeout(300);
@@ -20,6 +20,7 @@ const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
   await p.fill('#form [name="perWeek"]', '2');
   await p.fill('#form [name="unitLabel"]', 'longueurs');
   await p.click('#form button[value="save"]');
+  await p.waitForFunction(() => !!JSON.parse(localStorage.getItem('selene-site-v1')).modules.natation);
   ok((await nav()).includes('Natation'), 'le programme porte la pratique choisie');
   for (const tpl of ['budget', 'rappels']) await p.click(`[data-act="tpl-add"][data-tpl="${tpl}"]`);
   const saved = await p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')));
@@ -38,4 +39,3 @@ const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();
-

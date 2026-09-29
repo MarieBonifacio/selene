@@ -6,15 +6,23 @@ refactorisation, dont toutes les étapes sont livrées ou abandonnées au profit
 
 ## Deux cibles, une source
 
-`python3 build.py` concatène les fichiers de `src/` dans **un seul script**, enveloppé dans une
-fonction immédiatement exécutée, et l'insère dans `src/shell.html` :
+`python3 build.py` (`npm run build`) assemble **un seul script**, enveloppé dans une fonction immédiatement
+exécutée, et l'insère dans `src/shell.html`. Dans l'ordre :
+
+1. le **noyau** : les modules ES de `src/core/`, qu'esbuild assemble depuis `src/core/index.js` en une fonction qui
+   pose `__core` (`scripts/bundle-core.mjs`, appelé par `build.py`) ;
+2. `const { … } = __core;` : chaque nom exporté devient une constante de la portée commune. Les noms sont lus dans
+   le métafichier d'esbuild : aucune liste n'est tenue à la main ;
+3. les fichiers historiques de `src/`, concaténés dans l'ordre de `scripts` (`build.py`).
+
+Le build demande donc Python, Node et `npm ci` (esbuild). Pourquoi ce découpage : ADR 9.
 
 | Sortie | Pour | Particularités |
 |---|---|---|
 | `selene.html` | artefact claude.ai | synchro par `window.claude.use("db")`, assistant sans clé |
 | `index.html` | PWA sur GitHub Pages | CSP, manifeste, service worker, comptes Supabase |
 
-`hosted()` (= `!window.claude`) distingue les deux au démarrage. Ne jamais modifier les HTML générés :
+`hosted()` (= `platform.runtime() !== "artifact"`, voir `platform.js`) distingue les deux au démarrage. Ne jamais modifier les HTML générés :
 la CI (`build.py --check`) refuse un HTML qui ne correspond pas aux sources.
 
 Les ajouts propres à `index.html` (CSP, manifeste, service worker) se font dans le **squelette**, avant d'y
@@ -27,16 +35,13 @@ Connexions externes (Crossref, Microlink, Open-Meteo…) : chaque hôte est nomm
 
 ### Ordre de chargement
 
-Tous les fichiers partagent la même portée. Au **chargement**, un fichier ne peut utiliser que ce que
-les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne) ; à l'**exécution**
-(dans une fonction appelée plus tard), tout est visible.
+Le **noyau** passe en premier : ce qu'il exporte est visible de tous les fichiers historiques dès le chargement.
+Un module n'y voit que ce qu'il importe (eslint le vérifie module par module) ; esbuild les ordonne d'après leurs imports.
 
-| Fichier | Rôle | Dépend au chargement de |
+| Module (`src/core/`) | Rôle | Importe |
 |---|---|---|
 | `sync.js` | fusion à trois voies, pure | — |
-| `store.js` | un document JSON : localStorage + synchro | — |
-| `auth.js` | comptes et adaptateur Supabase (hébergé seulement) | — |
-| `backup.js` | export / validation d'import | — |
+| `backup.js` | export / validation d'import | `domain.js` |
 | `domain.js` | règles métier, registre pur `MODULE_TYPES`, `SCHEMA_VERSION` | — |
 | `sky.js` | ciel de l'accueil, pur : soleil, lune, levers et couchers, météo → scène, saisons, mouvement du vent, contraste du texte | — |
 | `carte.js` | carte céleste des liaisons, pure : placement déterministe (temps, bandes), voisinage borné | — |
@@ -44,12 +49,23 @@ les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne)
 | `musique.js` | musique, pur : traduction des réponses MusicBrainz, albums studio, parutions récentes, pochettes | — |
 | `radar.js` | radar culturel, pur : requête OpenAgenda (zone et dates), traduction tolérante, tri par tes mots | — |
 | `instagram.js` | mémoire éditoriale, pur : lecture de l'export Instagram (posts, reels), encodage de Meta réparé, éléments de collection | — |
-| `passeur.js` | appel du passeur (Supabase Edge, version hébergée connectée) et lecture d'une page : métadonnées, flux annoncés | — |
-| `dehors.js` | Dehors, lecture des flux (RSS, Atom, JSON Feed) par DOMParser, fusion du cache, « nouveau depuis » | — |
-| `veille.js` | Research Watch, pur : ce que l'on suit (recherche, ORCID, OpenAlex), requête, traduction des résultats | — |
+| `veille.js` | Research Watch, pur : ce que l'on suit (recherche, ORCID, OpenAlex), requête, traduction des résultats ; « cité par tes sources » (références communes, couplage bibliographique, auteurs qui reviennent) | — |
 | `agenda.js` | calendrier dédié, pur : lecture iCalendar (fuseaux, journées entières), récurrences dépliées sur une fenêtre | — |
 | `zotero.js` | Zotero, pur : ce que permet une clé, une fiche traduite en Source (DOI, revue, auteurs, lien vers la fiche) | — |
-| `app.js` | utilitaires, modules fixes, normalisation, stores, vues, rendu, actions | `store.js`, `domain.js`, `sky.js` |
+
+Les **fichiers historiques** partagent une même portée. Au **chargement**, un fichier ne peut utiliser que le noyau
+et ce que les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne) ; à l'**exécution**
+(dans une fonction appelée plus tard), tout est visible. Un nom exporté par le noyau n'y est jamais redéclaré : le
+script ne se chargerait plus (eslint et les tests le signalent).
+
+| Fichier | Rôle | Dépend au chargement de |
+|---|---|---|
+| `platform.js` | seul accès aux API de l'hôte : `platform.storage`, `secrets`, `session`, `claude`, `runtime()`, `hosted()` | — |
+| `store.js` | un document JSON : `platform.storage` + synchro | — |
+| `auth.js` | comptes et adaptateur Supabase (hébergé seulement) | — |
+| `passeur.js` | appel du passeur (Supabase Edge, version hébergée connectée) et lecture d'une page : métadonnées, flux annoncés | — |
+| `dehors.js` | Dehors, lecture des flux (RSS, Atom, JSON Feed) par DOMParser, fusion du cache, « nouveau depuis », croisé avec ce que tu gardes (raisons dites, doublons entre flux fusionnés) | — |
+| `app.js` | utilitaires, modules fixes, normalisation, stores, vues, rendu, actions | `store.js` (et le noyau) |
 | `types.js` | registre d'affichage `TYPE_UI`, branché dans `CLICK` / `CHANGE` ; fiche, Vasculum, carte (`SHEETS`) | `app.js` |
 | `assistant.js` | contexte, outils, appels à Claude | — |
 | `boot.js` | cycle de vie (flush, onglets), démarrage | tout |
@@ -233,12 +249,20 @@ la conversation avec l'assistant et la clé API.
 
 ## Sécurité
 
+- **Frontière de plateforme** : seul `platform.js` touche à `localStorage`, `sessionStorage`, `window.claude`
+  et `navigator.storage` (vérifié par `tests/platform.test.js`). Les secrets (session Supabase, clés
+  Anthropic, OpenAlex et Zotero, adresse privée d'agenda) passent par `platform.secrets` : sur le web, le même
+  `localStorage` que le reste, donc lisibles par un script qui s'exécuterait dans la page (d'où la CSP
+  ci-dessous) ; une coquille native les rangera dans le trousseau du système.
 - **Isolation entre comptes** : RLS sur `app_state` (`auth.uid() = user_id`). La clé publique Supabase
   est faite pour être exposée ; la clé `service_role` ne doit jamais entrer dans ce dépôt.
 - **Injection** : toute donnée insérée dans le HTML passe par `esc()` ; les identifiants de module sont
   en plus contraints par `MODULE_ID`. Un fichier de sauvegarde est traité comme hostile : forme des
   identifiants, bornes des nombres, dates réelles, types connus.
-- **CSP** du build hébergé : scripts du site seulement, connexions limitées à Anthropic, Google Fonts,
+- **CSP** du build hébergé : pas de `'unsafe-inline'` pour les scripts ; `build.py` inscrit l'empreinte
+  SHA-256 des deux seuls scripts de la page (le script principal, l'enregistrement du service worker), donc
+  un script injecté ou un attribut `onerror=` est refusé par le navigateur même si l'échappement faillait
+  (`tests/browser/csp.js`). Les styles gardent `'unsafe-inline'` (voir ADR 8). Connexions limitées à Anthropic, Google Fonts,
   `*.supabase.co` et aux services publics de la phase 1, chacun nommé (Open-Meteo, Crossref, Microlink,
   MusicBrainz, open data de la MEL, OpenAlex, Zotero ; images de Cover Art Archive) : voir [connexions.md](connexions.md).
 - **Assistant** : ne lit que les modules cochés dans Réglages → Assistant ; ses actions sont revérifiées
@@ -246,14 +270,28 @@ la conversation avec l'assistant et la clé API.
 
 ## Vérification
 
-`python3 build.py --check`, `node --test tests/*.test.js`, `node --check` sur chaque source et eslint
-sur le script assemblé (`python3 build.py --bundle .lint/selene.js`, puis
-`npx eslint@10.11.0 .lint/selene.js sw.js`) tournent en CI ; `pages.yml` ne publie que si tout est vert.
+Les outils (esbuild, eslint, Playwright, Deno) sont épinglés dans `package.json` et `package-lock.json` ; la CI les
+installe par `npm ci`, et les scripts npm sont les seules commandes, en local comme en CI :
+
+| Script | Ce qu'il fait |
+|---|---|
+| `npm run build` | `python3 build.py` : assemble le noyau (esbuild), génère `selene.html` et `index.html` |
+| `npm run build:check` | refuse des HTML générés qui ne correspondent pas aux sources |
+| `npm test` | tests unitaires Node (`tests/*.test.js`) |
+| `npm run test:syntax` | `node --check` sur chaque source (`src/`, `src/core/`, `scripts/`), arrêt au premier fichier invalide |
+| `npm run lint` | eslint sur le script assemblé (`build.py --bundle .lint/selene.js`), sur chaque module du noyau (`sourceType: "module"`), sur `scripts/` et `sw.js` |
+| `npm run test:passeur` | types et tests Deno du passeur |
+| `npm run test:browser` | parcours Playwright dans Chromium (`npx playwright install chromium` une fois) ; `SELENE_BROWSER=webkit` pour WebKit |
+| `npm run check` / `check:all` | tout sauf le navigateur / tout |
+
+`pages.yml` ne publie que si tout est vert.
 
 - `tests/hosted-harness.js` : le build hébergé dans une VM Node, avec un faux PostgREST partagé entre
   plusieurs « appareils » ; `auth.test.js` et `sync.test.js` s'en servent.
 - `modules.test.js`, `app.test.js`, `backup.test.js`, `domain.test.js` : règles métier, registres,
   routage, sauvegardes hostiles.
+- Les tests d'un module du noyau l'importent (`require` d'un module ES, Node 22) ; ceux d'un fichier historique
+  (`dehors.test.js`) l'exécutent encore brut dans une VM.
 
 - `tests/browser/` : parcours dans un vrai Chromium (Playwright), un fichier par sujet, lancés par
   `run.js` contre un petit serveur de fichiers statique ; chaque vérification affiche ✓ / ✗ et un seul ✗
@@ -325,3 +363,75 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   seule.
 - **Conséquences** : une seule forme de données en mémoire ; toute nouvelle voie d'entrée doit passer
   par le store.
+
+### ADR 7 — Outils épinglés par package.json, sans dépendance de production
+
+- **Contexte** : la CI installait ses outils à la volée (`npx --yes eslint@…`, `npm i --no-save playwright@…`,
+  CLI Supabase `latest`) : versions épinglées une à une, ou pas du tout, et rien de commun avec le poste
+  local. Les coquilles natives prévues (Capacitor, Tauri) ajouteront des dizaines de paquets.
+- **Décision** : un `package.json` privé, uniquement des `devDependencies` en version exacte, un
+  `package-lock.json` versionné, `npm ci` en CI ; `.nvmrc` fixe Node 22 pour la CI et le poste local ;
+  la CLI Supabase du déploiement est épinglée.
+- **Écarté** : réécrire `build.py` en Node dès maintenant (ce sera le rôle du bundler, plus tard) ;
+  `"type": "module"` (les tests sont en CommonJS).
+- **Conséquences** : l'application publiée reste sans dépendance ; Python reste requis pour le build tant
+  que `build.py` existe ; monter un outil = changer `package.json` et régénérer le lockfile.
+
+### ADR 8 — CSP par empreintes pour les scripts, WebKit en CI
+
+- **Contexte** : `script-src 'unsafe-inline'` laissait l'échappement (`esc()`) seul rempart contre une
+  injection. Or la page n'a que deux scripts, tous deux inline par construction (l'artefact claude.ai doit
+  tenir en un fichier), et aucun gestionnaire `on…=` dans le HTML produit. Par ailleurs, les coquilles
+  natives prévues tourneront dans WebKit (iOS, Tauri sous macOS et Linux), que la CI n'exécutait pas.
+- **Décision** : `build.py` calcule l'empreinte SHA-256 de chaque script et l'inscrit dans `script-src` ;
+  un scénario vérifie qu'aucune vue ne viole la CSP et qu'un script injecté est bloqué. Les parcours de
+  navigateur tournent dans Chromium et WebKit (matrice de `check.yml`, `SELENE_BROWSER`).
+- **Écarté** : un fichier `.js` externe (casse l'artefact en un seul fichier) ; un nonce (exige un serveur
+  qui en tire un à chaque requête, GitHub Pages sert des fichiers statiques) ; retirer `'unsafe-inline'` de
+  `style-src` (l'interface pose plus de 150 attributs `style="…"`, qu'une empreinte ne couvre pas sans
+  `'unsafe-hashes'` ; une injection de style peut défigurer ou exfiltrer par sélecteurs, pas exécuter de code).
+- **Conséquences** : tout nouveau script inline passe par `build.py` (sinon il est bloqué, et le scénario
+  `csp` échoue) ; ne jamais écrire de gestionnaire `onclick=` dans un gabarit : `data-act` et délégation.
+
+### ADR 9 — Le noyau en modules ES, assemblé par esbuild
+
+- **Contexte** : les fichiers de `src/` partageaient une seule portée, concaténés par `build.py` : leurs dépendances
+  n'étaient écrites nulle part (l'ordre de chargement seul les trahissait), un fichier pur ne se testait qu'exécuté
+  brut dans une VM, et `no-undef` n'avait de sens que sur le script entier.
+- **Décision** : les fichiers purs deviennent des modules ES (`src/core/`, `import` / `export` explicites), qu'esbuild
+  (version exacte, `package.json`) assemble au format IIFE **en tête** du script unique ; `build.py` y ajoute
+  `const { … } = __core;`, avec les noms que liste le métafichier d'esbuild, pour les fichiers historiques. La
+  migration part des feuilles : un fichier n'entre au noyau que s'il ne dépend que du noyau.
+- **Écarté** : Vite (fait pour un framework et un serveur de développement, dont Selene n'a pas l'usage ; il
+  s'appuie lui-même sur esbuild et Rollup) ; une sortie ESM ou des `<script type="module">` (un module ne partage pas
+  sa portée avec les fichiers historiques ; plusieurs scripts, ou un fichier externe, cassent l'artefact en un seul
+  fichier) ; tout convertir d'un coup (l'interface dépend d'elle-même dans tous les sens et de l'état global : en
+  tirer des modules serait y traîner ce code) ; réécrire `build.py` en Node dans le même mouvement.
+- **Conséquences** : les deux sorties gardent un seul script inline, dont `build.py` calcule l'empreinte CSP sur le
+  texte final, comme avant (ADR 8) ; le build demande Node et `npm ci` en plus de Python ; dans les HTML, le noyau est
+  tel qu'esbuild l'écrit (sans commentaires : on le lit dans `src/core/`) ; un module se teste en l'important.
+  La ligne `const { … } = __core;` porte `eslint-disable-next-line no-unused-vars` (une exportation peut ne servir
+  qu'aux modules entre eux ou aux tests) ; `no-undef` sur le script assemblé signale, lui, tout nom qu'un fichier
+  historique utilise sans qu'un module l'exporte. Un fichier historique n'entre au noyau que lorsqu'il ne lit plus
+  rien de la portée commune.
+- **Restent historiques** : `platform.js` (les API de l'hôte, par nature ; voir ADR 10), `store.js` (`render`, `setSaving`, `clone` d'`app.js`), `auth.js` et `passeur.js`
+  (`hosted`, `esc`, l'état et la session), `app.js`, `types.js`, `assistant.js` et `boot.js` (l'interface, qui
+  dépend d'elle-même dans tous les sens), `dehors.js` (lit les flux par `window.DOMParser` ; du noyau, il n'emprunte
+  que `clip`).
+
+### ADR 10 — Une couche `platform`, seul accès aux API de l'hôte
+
+- **Contexte** : `localStorage`, `sessionStorage` et `window.claude` étaient lus en direct dans six fichiers
+  (environ 70 endroits). Les coquilles natives prévues (Capacitor sur mobile, Tauri sur ordinateur) n'offrent
+  pas les mêmes API : stockage asynchrone, trousseau du système pour les secrets, pas de service worker.
+- **Décision** : `src/platform.js`, premier fichier historique du script (après le noyau, qui n'en a pas besoin), expose `platform.storage` (données de
+  l'appareil), `platform.secrets` (session, clés d'API, adresse d'agenda), `platform.session` (durée de
+  l'onglet), `platform.claude` (espaces de noms de l'artefact), `platform.runtime()` et `platform.persist()` ;
+  `hosted()` y est défini. Toutes les opérations sont sûres (null ou false, jamais d'exception). Un test
+  refuse tout accès direct ailleurs.
+- **Écarté** : attendre la coquille native pour découper (on découperait sous la pression d'une plateforme) ;
+  une API asynchrone dès maintenant (tout le code de rendu lit le stockage de façon synchrone : ce sera
+  l'objet d'une façade en mémoire, hydratée au démarrage, avant tout backend natif).
+- **Conséquences** : comportement inchangé sur le web et dans l'artefact (mêmes clés, même stockage) ;
+  une coquille native n'a qu'un fichier à remplacer ; `authResetLocal` efface les secrets par
+  `platform.secrets`, pour qu'aucun ne survive à une déconnexion quel que soit leur coffre.
