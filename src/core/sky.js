@@ -13,12 +13,12 @@ function toHorizon(ra, dec, d, lat, lon) {
   const azS = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi)); // depuis le sud, vers l'ouest
   return { alt: alt / RAD, az: ((azS / RAD + 180) % 360 + 360) % 360 };
 }
-function sunPosition(t, lat, lon) {
+export function sunPosition(t, lat, lon) {
   const d = daysJ2000(t), g = (357.529 + 0.98560028 * d) * RAD, q = 280.459 + 0.98564736 * d;
   const L = (q + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * RAD, e = (23.439 - 0.00000036 * d) * RAD;
   return toHorizon(Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L)), Math.asin(Math.sin(e) * Math.sin(L)), d, lat, lon);
 }
-function moonPosition(t, lat, lon) {
+export function moonPosition(t, lat, lon) {
   const d = daysJ2000(t), L = (218.316 + 13.176396 * d) * RAD, M = (134.963 + 13.064993 * d) * RAD, F = (93.272 + 13.229350 * d) * RAD;
   const l = L + 6.289 * RAD * Math.sin(M), b = 5.128 * RAD * Math.sin(F), e = 23.4397 * RAD;
   const ra = Math.atan2(Math.sin(l) * Math.cos(e) - Math.tan(b) * Math.sin(e), Math.cos(l));
@@ -28,7 +28,7 @@ function moonPosition(t, lat, lon) {
   return p;
 }
 /* Prochain passage d'un astre à une hauteur donnée (lever si montant, coucher sinon), dans les heures qui viennent. */
-function nextCrossing(pos, t, lat, lon, h, hours = 26, step = 5) {
+export function nextCrossing(pos, t, lat, lon, h, hours = 26, step = 5) {
   let prev = pos(t, lat, lon).alt - h;
   for (let m = step; m <= hours * 60; m += step) {
     const tt = t + m * 60000, cur = pos(tt, lat, lon).alt - h;
@@ -40,18 +40,18 @@ function nextCrossing(pos, t, lat, lon, h, hours = 26, step = 5) {
 /* Sans lieu réglé : une longitude déduite du fuseau horaire d'hiver (l'heure d'été fausserait de 15°), une latitude
    moyenne. L'heure solaire est alors juste à trois quarts d'heure près : assez pour la couleur du ciel, pas pour
    afficher une heure de coucher. */
-function approxPlace(now = new Date()) { return { lat: 45, lon: -new Date(now.getFullYear(), 0, 1).getTimezoneOffset() / 4, approx: true }; }
+export function approxPlace(now = new Date()) { return { lat: 45, lon: -new Date(now.getFullYear(), 0, 1).getTimezoneOffset() / 4, approx: true }; }
 /* Où dessiner la lune dans la fenêtre, face au sud (au nord dans l'hémisphère austral) : l'est à gauche, l'ouest à
    droite (l'inverse au sud de l'équateur), plus haut qu'elle est haute. Sous l'horizon : nulle part. */
-function moonPlacement(p, lat) {
+export function moonPlacement(p, lat) {
   if (p.alt < -1) return null;
   const rel = lat >= 0 ? p.az - 180 : ((p.az + 180) % 360) - 180;
   return { x: 50 + Math.max(-1, Math.min(1, rel / 90)) * 38, y: 62 - clamp01(p.alt / 60) * 52 };
 }
 
 /* ---- météo : les codes WMO (Open-Meteo) ramenés à sept états, chacun dessiné en gravure ---- */
-const WEATHER = { clear: "dégagé", veiled: "voilé", overcast: "couvert", fog: "brume", rain: "pluie", snow: "neige", storm: "orage" };
-function weatherState(code) {
+export const WEATHER = { clear: "dégagé", veiled: "voilé", overcast: "couvert", fog: "brume", rain: "pluie", snow: "neige", storm: "orage" };
+export function weatherState(code) {
   if (code == null || code === "" || !Number.isFinite(+code)) return null;
   const c = +code;
   if (c === 0) return "clear";
@@ -66,10 +66,10 @@ function weatherState(code) {
 /* ---- couleurs ---- */
 const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 const rgbHex = c => "#" + c.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, "0")).join("");
-const mixHex = (a, b, f) => { const x = hexRgb(a), y = hexRgb(b); return rgbHex(x.map((v, i) => v + (y[i] - v) * f)); };
+export const mixHex = (a, b, f) => { const x = hexRgb(a), y = hexRgb(b); return rgbHex(x.map((v, i) => v + (y[i] - v) * f)); };
 const lin = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
 const luminance = h => { const [r, g, b] = hexRgb(h); return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b); };
-const contrast = (a, b) => { const x = luminance(a), y = luminance(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+export const contrast = (a, b) => { const x = luminance(a), y = luminance(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
 const desaturate = (h, f) => { const l = luminance(h) ** (1 / 2.2) * 255; return mixHex(h, rgbHex([l, l, l]), f); };
 
 /* Le ciel selon la hauteur du soleil, pour une interface sombre (un jour vu depuis une pièce sombre : désaturé,
@@ -121,7 +121,7 @@ const INK_LIGHT = "#eceee6", INK_DARK = "#1a211b";
    ciel : entre deux repères on interpole, jamais de saut au 21 septembre. [jour de l'année, densité, couleur] */
 const LEAF_KEYS = [[0, 0, "#6f5a3e"], [100, 0, "#6f5a3e"], [118, 0.55, "#9db36c"], [140, 1, "#5d7a48"], [250, 1, "#56703f"],
   [278, 1, "#b08a3e"], [298, 0.75, "#9c5b30"], [318, 0.2, "#7d4c2c"], [330, 0, "#6f5a3e"], [367, 0, "#6f5a3e"]];
-function seasonAt(t, lat = 45) {
+export function seasonAt(t, lat = 45) {
   const y = new Date(t).getUTCFullYear(), doy = (t - Date.UTC(y, 0, 1)) / 86400000;
   const d = lat < 0 ? (doy + 182.5) % 365.25 : doy;
   const i = LEAF_KEYS.findIndex(k => k[0] > d), a = LEAF_KEYS[i - 1], b = LEAF_KEYS[i], f = (d - a[0]) / (b[0] - a[0]);
@@ -131,7 +131,7 @@ function seasonAt(t, lat = 45) {
 }
 /* La scène complète : couleurs, étoiles, halo, voile de la lune, couches météo, et l'encre du texte posé sur le ciel
    avec son voile de lecture (le moins opaque qui garantit 4,5:1, calculé ici plutôt qu'espéré). */
-function skyScene({ sunAlt, illum = 0.5, weather = null, dark = true, season = null, frost = false }) {
+export function skyScene({ sunAlt, illum = 0.5, weather = null, dark = true, season = null, frost = false }) {
   const fx = WEATHER_FX[weather] || WEATHER_FX.clear;
   let [top, bot, far, near] = skyAt(sunAlt, dark);
   const shade = c => { const d = desaturate(c, fx.desat); return fx.dark < 1 ? mixHex(d, "#000000", 1 - fx.dark) : d; };
@@ -172,8 +172,8 @@ function skyScene({ sunAlt, illum = 0.5, weather = null, dark = true, season = n
    Le vent qui souffle vers nous ou de nous ne se voit presque pas en travers : la dérive ralentit, sans s'arrêter.
    Durées en secondes : une traversée complète pour les nuages, une période de motif pour la pluie et la neige. */
 const WIND_NAMES = ["du nord", "du nord-est", "d'est", "du sud-est", "du sud", "du sud-ouest", "d'ouest", "du nord-ouest"];
-const windName = dir => WIND_NAMES[Math.round((((+dir % 360) + 360) % 360) / 45) % 8];
-function skyMotion({ wind = 8, dir = 270, precip = 0, lat = 45 } = {}) {
+export const windName = dir => WIND_NAMES[Math.round((((+dir % 360) + 360) % 360) / 45) % 8];
+export function skyMotion({ wind = 8, dir = 270, precip = 0, lat = 45 } = {}) {
   const w = Number.isFinite(+wind) ? Math.max(0, +wind) : 8, from = Number.isFinite(+dir) ? +dir : 270;
   const east = Math.sin((from + 180) * RAD), dx = (lat >= 0 ? -1 : 1) * east; // > 0 : vers la droite de l'écran
   const eff = Math.max(3, w * Math.max(0.35, Math.abs(dx)));
@@ -200,11 +200,11 @@ const ECLIPSES = [
   ["2028-01-26", "soleil", "partielle", ""], ["2028-07-06", "lune", "pénombre", ""], ["2028-12-31", "lune", "totale", ""],
   ["2029-06-26", "lune", "totale", ""], ["2029-12-20", "lune", "totale", ""], ["2030-06-01", "soleil", "partielle", ""],
   ["2030-06-15", "lune", "pénombre", ""], ["2030-12-09", "lune", "pénombre", ""]];
-const nearLille = (lat, lon) => lat >= 48.5 && lat <= 52.5 && lon >= 0.5 && lon <= 6.5;
+export const nearLille = (lat, lon) => lat >= 48.5 && lat <= 52.5 && lon >= 0.5 && lon <= 6.5;
 const dayDiff = (a, b) => Math.round((Date.parse(b + "T12:00:00Z") - Date.parse(a + "T12:00:00Z")) / 86400000);
 /* Ce qui mérite une ligne sous le ciel, d'aujourd'hui (AAAA-MM-JJ) : une pluie d'étoiles filantes la veille ou le
    jour de son maximum ; une éclipse visible d'ici dans les sept jours (seulement près de Lille, là où la table vaut). */
-function skyEvents(today, place) {
+export function skyEvents(today, place) {
   const out = [], y = +today.slice(0, 4);
   for (const [name, m, d, zhr] of SHOWERS) {
     for (const yy of [y, y + 1]) { const peak = `${yy}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`, n = dayDiff(today, peak); if (n === 0 || n === 1) out.push({ kind: "shower", name, zhr, inDays: n, date: peak }); }
@@ -215,4 +215,4 @@ function skyEvents(today, place) {
   return out;
 }
 /* Les jours de pluie à venir d'une prévision quotidienne [{ d, mm, pp }] : 1 mm au moins, ou 60 % de probabilité. */
-const rainDays = (days, from, n = 5) => (days || []).filter(x => x && x.d >= from && dayDiff(from, x.d) < n && ((+x.mm || 0) >= 1 || (+x.pp || 0) >= 60)).map(x => x.d);
+export const rainDays = (days, from, n = 5) => (days || []).filter(x => x && x.d >= from && dayDiff(from, x.d) < n && ((+x.mm || 0) >= 1 || (+x.pp || 0) >= 60)).map(x => x.d);

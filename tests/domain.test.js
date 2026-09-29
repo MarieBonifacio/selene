@@ -1,10 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
-const source = fs.readFileSync('src/domain.js', 'utf8');
-const { addTask, setTaskDone, setTaskToday, addCapture, addBudgetEntry } =
-  vm.runInNewContext(source + '\n({ addTask, setTaskDone, setTaskToday, addCapture, addBudgetEntry })');
+const { addTask, setTaskDone, setTaskToday, addCapture, addBudgetEntry } = require('../src/core/domain.js');
 const date = '2026-09-24';
 
 test('task rules are shared by the UI and assistant', () => {

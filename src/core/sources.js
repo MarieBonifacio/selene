@@ -4,9 +4,9 @@
    Il se teste seul (tests/sources.test.js). */
 /* Paramètres qui ne servent qu'à suivre le lecteur : les retirer rend deux liens vers la même page identiques. */
 const TRACKERS = /^(utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|yclid|mc_cid|mc_eid|igshid|igsh|ref_src|ref_url|_hsenc|_hsmi|mkt_tok|spm)$/i;
-const clip = (s, n) => { const t = String(s ?? "").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t; };
+export const clip = (s, n) => { const t = String(s ?? "").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t; };
 /* Une adresse http(s) débarrassée des traceurs et du fragment ; null si ce n'en est pas une. */
-function normalizeUrl(raw) {
+export function normalizeUrl(raw) {
   let u;
   try { u = new URL(String(raw).trim()); } catch { return null; }
   if (u.protocol !== "http:" && u.protocol !== "https:") return null;
@@ -17,19 +17,19 @@ function normalizeUrl(raw) {
   return s;
 }
 /* Le premier DOI d'un texte ou d'une adresse (doi.org/…, …/doi/10.…), sans la ponctuation qui le suit. */
-function findDoi(text) {
+export function findDoi(text) {
   let t = String(text || "");
   try { t = decodeURIComponent(t); } catch {}
   const m = t.match(/\b(10\.\d{4,9}\/[^\s"'<>]+)/i);
   return m ? m[1].replace(/[.,;:)\]}>»]+$/, "").toLowerCase() : null;
 }
 /* La première adresse http(s) d'un texte. */
-function findUrl(text) {
+export function findUrl(text) {
   const m = String(text || "").match(/https?:\/\/[^\s"'<>]+/i);
   return m ? normalizeUrl(m[0].replace(/[.,;:)\]}>»]+$/, "")) : null;
 }
 /* Ce qui identifie une source : son DOI, sinon son adresse sans protocole ni « www. ». */
-function sourceKey(src) {
+export function sourceKey(src) {
   if (!src) return null;
   if (src.doi) return "doi:" + String(src.doi).toLowerCase();
   const u = src.url && normalizeUrl(src.url);
@@ -41,7 +41,7 @@ const partsDate = p => { const d = p && p["date-parts"] && p["date-parts"][0]; i
 const people = list => { const n = (list || []).map(a => clip(a.name || [a.given, a.family].filter(Boolean).join(" "), 80)).filter(Boolean); return n.length > 3 ? n.slice(0, 3).join(", ") + " et al." : n.join(", "); };
 /* La réponse de Crossref (message d'un /works/{doi}) → les champs d'une source. Le résumé arrive en JATS (XML) :
    on n'en garde que le texte. L'adresse est celle du résolveur officiel, en https (pas l'ancien dx.doi.org). */
-function crossrefToSource(msg, doi) {
+export function crossrefToSource(msg, doi) {
   const m = msg || {}, d = String(m.DOI || doi || "").toLowerCase();
   return {
     title: clip((m.title || [])[0] || d, 300), authors: people(m.author), site: clip((m["container-title"] || [])[0] || m.publisher || "", 200),
@@ -51,14 +51,14 @@ function crossrefToSource(msg, doi) {
   };
 }
 /* La réponse de Microlink (data d'un aperçu de page) → les champs d'une source. */
-function microlinkToSource(data, url) {
+export function microlinkToSource(data, url) {
   const d = data || {}, u = normalizeUrl(d.url || url) || normalizeUrl(url);
   let host = ""; try { host = new URL(u).hostname.replace(/^www\./, ""); } catch {}
   return { title: clip(d.title || u || "", 300), authors: clip(d.author || "", 200), site: clip(d.publisher || host, 200),
     date: /^\d{4}-\d{2}-\d{2}/.test(d.date || "") ? d.date.slice(0, 10) : "", kind: "page", doi: findDoi(u) || null, url: u, abstract: clip(d.description || "", 600) };
 }
 /* Sans réseau (ou quota épuisé) : l'adresse seule, et son site. */
-function bareSource(url, doi) {
+export function bareSource(url, doi) {
   const u = normalizeUrl(url || (doi ? "https://doi.org/" + doi : ""));
   let host = ""; try { host = new URL(u).hostname.replace(/^www\./, ""); } catch {}
   return { title: doi || clip(u || "", 300), authors: "", site: host, date: "", kind: doi ? "article" : "page", doi: doi || null, url: u, abstract: "" };

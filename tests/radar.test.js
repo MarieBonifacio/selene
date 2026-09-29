@@ -1,12 +1,8 @@
-/* Radar culturel (src/radar.js) : la requête (zone et dates, jamais les mots), la traduction, le tri par tes mots. */
+/* Radar culturel (src/core/radar.js) : la requête (zone et dates, jamais les mots), la traduction, le tri par tes mots. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
 
-const ctx = { URL };
-vm.runInNewContext(fs.readFileSync('src/radar.js', 'utf8') + '\n;globalThis.__r = { radarUrl, radarEvents, radarWords, radarMatch };', ctx);
-const R = ctx.__r;
+const R = require('../src/core/radar.js');
 
 test('requête : la zone arrondie et deux semaines, sans aucun mot', () => {
   const u = new URL(R.radarUrl({ lat: 50.6321, lon: 3.0578 }, '2026-09-28'));

@@ -5,7 +5,7 @@
    Le réseau (le passeur) et l'affichage sont dans types.js. Se teste seul (tests/agenda.test.js). */
 const ICS_DAYS = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
 /* L'instant (UTC) d'une heure murale dans un fuseau : on devine, on mesure l'écart du fuseau, on corrige. */
-function zoned(y, mo, d, h, mi, s, tz) {
+export function zoned(y, mo, d, h, mi, s, tz) {
   let t = Date.UTC(y, mo - 1, d, h, mi, s);
   if (!tz) return t;
   try {
@@ -29,7 +29,7 @@ function icsTime(v, params) {
 }
 const icsUnescape = s => String(s || "").replace(/\\n/gi, " ").replace(/\\([,;\\])/g, "$1").replace(/\s+/g, " ").trim();
 /* Le texte d'un calendrier → ses événements : { uid, summary, location, start, end, allDay, rrule, exdates }. */
-function icsParse(text) {
+export function icsParse(text) {
   const lines = String(text || "").replace(/\r\n?/g, "\n").replace(/\n[ \t]/g, "").split("\n"), out = [];
   let ev = null;
   for (const line of lines) {
@@ -87,7 +87,7 @@ function icsExpand(e, from, to) {
 }
 /* Ce qui se tient entre `from` et `to` : récurrences dépliées, exceptions (RECURRENCE-ID) à la place de l'occurrence
    qu'elles remplacent, dans l'ordre (les journées entières d'abord). */
-function icsBetween(events, from, to) {
+export function icsBetween(events, from, to) {
   const moved = new Set(events.filter(e => e.recurrenceId != null).map(e => `${e.uid}|${e.recurrenceId}`));
   const all = [];
   for (const e of events) {

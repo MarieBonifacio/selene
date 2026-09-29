@@ -2,15 +2,25 @@
 from pathlib import Path
 import base64
 import hashlib
+import json
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "src"
 shell = (SOURCE / "shell.html").read_text(encoding="utf-8")
 assert shell.count("<!-- SELENE_SCRIPT -->") == 1
-# Un seul script, dans cet ordre : chaque fichier ne peut utiliser au chargement que ceux qui le précèdent.
-scripts = ["platform.js", "sync.js", "store.js", "auth.js", "backup.js", "domain.js", "sky.js", "carte.js", "sources.js", "musique.js", "radar.js", "instagram.js", "passeur.js", "dehors.js", "veille.js", "agenda.js", "zotero.js", "app.js", "types.js", "assistant.js", "boot.js"]
-js = "\n".join((SOURCE / name).read_text(encoding="utf-8") for name in scripts)
+# Le noyau (src/core, modules ES) d'abord, assemblé par esbuild (scripts/bundle-core.mjs) : il pose `__core`, dont
+# chaque exportation devient une constante de la portée commune. Certaines ne servent qu'aux modules entre eux ou aux
+# tests : eslint ne les signale pas comme inutilisées.
+bundled = subprocess.run(["node", str(ROOT / "scripts" / "bundle-core.mjs")], cwd=ROOT, capture_output=True, encoding="utf-8")
+if bundled.returncode:
+    sys.exit(bundled.stderr + "\nAssemblage du noyau impossible (esbuild s'installe par `npm ci`)")
+core = json.loads(bundled.stdout)
+bridge = "// eslint-disable-next-line no-unused-vars\nconst { " + ", ".join(core["exports"]) + " } = __core;\n"
+# Puis les fichiers historiques, dans cet ordre : chacun ne peut utiliser au chargement que le noyau et ceux qui le précèdent.
+scripts = ["platform.js", "store.js", "auth.js", "passeur.js", "dehors.js", "app.js", "types.js", "assistant.js", "boot.js"]
+js = core["code"] + bridge + "\n".join((SOURCE / name).read_text(encoding="utf-8") for name in scripts)
 # Le script est posé tel quel dans une balise <script> : « </script » dans une chaîne le fermerait avant sa fin.
 assert "</script" not in js.lower(), "« </script » dans le JavaScript : l'écrire en deux morceaux"
 code = "\n(() => {\n" + js + "})();\n"
@@ -44,8 +54,8 @@ hosted = shell.replace("<title>", head + "<title>", 1).replace("</body>", sw + "
 
 outputs = {"selene.html": standalone, "index.html": hosted}
 if sys.argv[1:2] == ["--bundle"]:
-    # Le script assemblé seul, pour l'analyse statique (eslint) : c'est lui, et non chaque fichier
-    # isolé, qui a une portée cohérente, puisque les fichiers de src/ partagent la même.
+    # Le script assemblé seul, pour l'analyse statique (eslint) : c'est lui, et non chaque fichier isolé, qui a une
+    # portée cohérente, puisque les fichiers historiques de src/ partagent la même (ceux de src/core, eux, s'analysent un à un).
     out = ROOT / sys.argv[2]
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text("(() => {\n" + js + "})();\n", encoding="utf-8")
