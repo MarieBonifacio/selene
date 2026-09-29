@@ -1,11 +1,11 @@
 /* Scénario de navigateur : quotidien. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.kundalini.config.start = '2026-01-05';
 demo.modules.kundalini.entries = [{ id: 'k1', date: '2026-01-05', value: 25, note: '' }];
 demo.modules.moth.entries = [{ id: 'p1', title: 'Le lichen', subtitle: '', tag: 'Nigredo', due: '2020-01-01', text: '', status: 'Prêt' }];
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 }); // un iPhone
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.addInitScript(d => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, JSON.stringify(demo));

@@ -1,5 +1,7 @@
 """Generate the standalone Claude artifact and the hosted PWA from one source tree."""
 from pathlib import Path
+import base64
+import hashlib
 import sys
 
 ROOT = Path(__file__).resolve().parent
@@ -11,10 +13,19 @@ scripts = ["sync.js", "store.js", "auth.js", "backup.js", "domain.js", "sky.js",
 js = "\n".join((SOURCE / name).read_text(encoding="utf-8") for name in scripts)
 # Le script est posé tel quel dans une balise <script> : « </script » dans une chaîne le fermerait avant sa fin.
 assert "</script" not in js.lower(), "« </script » dans le JavaScript : l'écrire en deux morceaux"
-script = "<script>\n(() => {\n" + js + "})();\n</script>"
+code = "\n(() => {\n" + js + "})();\n"
+script = "<script>" + code + "</script>"
 standalone = shell.replace("<!-- SELENE_SCRIPT -->", script)
 
-head = """<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://api.anthropic.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+sw_code = 'if ("serviceWorker" in navigator && !window.claude) navigator.serviceWorker.register("sw.js").catch(() => {});'
+sw = "<script>" + sw_code + "</script>\n"
+# Pas de 'unsafe-inline' pour les scripts : la CSP n'autorise que ces deux scripts-ci, par leur empreinte SHA-256
+# (calculée sur le texte exact entre <script> et </script>). Un script injecté, ou un attribut onclick=…, est refusé.
+def csp_hash(text):
+    return "'sha256-" + base64.b64encode(hashlib.sha256(text.encode("utf-8")).digest()).decode("ascii") + "'"
+script_src = " ".join(["'self'", csp_hash(code), csp_hash(sw_code)])
+# Les styles gardent 'unsafe-inline' : l'interface pose des attributs style="…", qu'une empreinte ne couvre pas.
+head = """<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src """ + script_src + """; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://api.anthropic.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -25,8 +36,7 @@ head = """<meta http-equiv="Content-Security-Policy" content="default-src 'self'
 <meta name="theme-color" content="#0e1310" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#e2e6de" media="(prefers-color-scheme: light)">
 """
-sw = """<script>if ("serviceWorker" in navigator && !window.claude) navigator.serviceWorker.register("sw.js").catch(() => {});</script>
-"""
+
 # Les ajouts de la version hébergée se font dans le squelette, avant d'y poser le script : le JavaScript peut contenir
 # « <title> » ou « </body> » dans ses chaînes (la planche téléchargée en a), et un remplacement ne doit jamais l'atteindre.
 assert shell.count("<title>") == 1 and shell.count("</body>") == 1

@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Research Watch dans Dehors (connexions externes, phase 2, vague 6d : docs/connexions.md).
    Version hébergée simulée (faux Supabase), OpenAlex simulé ; pas besoin du passeur. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, sources: true, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1,
   fields: { title: 'Titre', subtitle: 'Auteurs', tag: 'Type', due: '', text: 'Résumé' } }, entries: [] };
@@ -9,7 +9,7 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
 const WORK = (n, extra = {}) => ({ id: `https://openalex.org/W${n}`, doi: `https://doi.org/10.1000/test.${n}`, title: `Article ${n}`, publication_date: '2026-09-2' + (n % 10), type: 'article',
   primary_location: { source: { display_name: 'Consciousness and Cognition' } }, authorships: [{ author: { display_name: 'Anna Ciaunica' } }], abstract_inverted_index: { Un: [0], résumé: [1] }, ...extra });
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [], oa = [];
   let mode = 'ok';
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });

@@ -1,5 +1,5 @@
 /* Scénario de navigateur : signatures (évolution de l'interface, vague 3c : docs/evolution-ui.md). Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.ecriture.config.scraps = true;
 demo.modules.ecriture.scraps = [
@@ -15,7 +15,7 @@ demo.modules.inbox.entries = [
   { id: 'n3', text: 'à jeter', date: '2026-09-28' }
 ];
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const open = async (opts, clock) => {
     const ctx = await b.newContext(opts); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));

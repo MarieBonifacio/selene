@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Dehors (connexions externes, phase 2, vague 6b : docs/connexions.md).
    Version hébergée simulée : faux Supabase, faux passeur qui sert des flux. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 const col = (label, extra) => ({ type: 'collection', label, config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1, addLabel: 'Ajouter',
   fields: { title: 'Titre', subtitle: 'Variantes', tag: '', due: '', text: 'Notes' }, ...extra }, entries: [] });
@@ -26,7 +26,7 @@ const PAGES = {
   'https://vide.example/': { type: 'text/html', texte: '<html><head><title>Rien</title></head></html>' }
 };
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
   const calls = [];

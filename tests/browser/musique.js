@@ -1,5 +1,5 @@
 /* Scénario de navigateur : Musique et MusicBrainz (connexions externes, phase 1, vague 5b : docs/connexions.md). Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const U = n => `0000000${n}-aaaa-bbbb-cccc-dddddddddddd`.slice(-36);
 const iso = d => new Date(d).toISOString().slice(0, 10);
 const recent = iso(Date.now() - 30 * 86400000);
@@ -19,7 +19,7 @@ const GROUPS = {
 };
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const open = async (mbDown = false) => {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));

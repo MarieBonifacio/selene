@@ -1,7 +1,7 @@
 /* Scénario de navigateur : deux appareils du même compte, branchés sur un faux Supabase (interception réseau).
    Vérifie la fusion (B n'a jamais vu ce qu'a écrit A) et qu'une saisie faite juste avant de fermer l'onglet
    n'est pas perdue : restée sur l'appareil, elle part à la réouverture. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, check } = require('./helpers');
+const { engine, BASE, launchOptions, check } = require('./helpers');
 const rows = new Map();
 const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 async function supabase(route) {
@@ -28,7 +28,7 @@ async function device(browser, errs) {
 }
 const capture = async (p, text) => { await p.fill('#capIn', text); await p.click('[data-act="cap-add"]'); };
 (async () => {
-  const browser = await chromium.launch(launchOptions), errs = [];
+  const browser = await engine.launch(launchOptions), errs = [];
   const A = await device(browser, errs);
   check(!!rows.get('u1')?.site?.config, 'le premier appareil crée le compte sur le serveur');
   const B = await device(browser, errs);

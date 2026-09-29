@@ -1,9 +1,9 @@
 /* Scénario de navigateur : saisons de la lisière (évolution de l'interface, vague 4a : docs/evolution-ui.md). Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const lille = JSON.parse(fixture());
 lille.config.sky = { name: 'Lille, Hauts-de-France, France', lat: 50.6, lon: 3.1, weather: true, realMoon: true };
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const open = async (when, temp, data = lille) => {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 800 }, timezoneId: 'Europe/Paris' }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));

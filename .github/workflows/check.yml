@@ -31,8 +31,17 @@ jobs:
       - run: npm ci
       - run: npm run test:passeur
   browser:
-    # Parcours dans un vrai Chromium (tests/browser) : ce que le faux DOM des tests unitaires ne voit pas.
+    # Parcours dans un vrai navigateur (tests/browser) : ce que le faux DOM des tests unitaires ne voit pas.
+    # WebKit : le moteur de Safari, des WebView iOS et de Tauri sous macOS et Linux ; Chromium : celui de Chrome,
+    # d'Android et de Tauri sous Windows (WebView2).
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # un moteur en échec n'interrompt pas l'autre : on veut les deux verdicts
+      matrix:
+        browser: [chromium, webkit]
+    name: browser (${{ matrix.browser }})
+    env:
+      SELENE_BROWSER: ${{ matrix.browser }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,6 +50,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:check
-      - name: Chromium (version liée à Playwright, épinglé dans package-lock.json)
-        run: npx playwright install --with-deps chromium
+      - name: Navigateur (version liée à Playwright, épinglé dans package-lock.json)
+        run: npx playwright install --with-deps ${{ matrix.browser }}
       - run: npm run test:browser

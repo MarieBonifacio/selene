@@ -238,7 +238,10 @@ la conversation avec l'assistant et la clé API.
 - **Injection** : toute donnée insérée dans le HTML passe par `esc()` ; les identifiants de module sont
   en plus contraints par `MODULE_ID`. Un fichier de sauvegarde est traité comme hostile : forme des
   identifiants, bornes des nombres, dates réelles, types connus.
-- **CSP** du build hébergé : scripts du site seulement, connexions limitées à Anthropic, Google Fonts,
+- **CSP** du build hébergé : pas de `'unsafe-inline'` pour les scripts ; `build.py` inscrit l'empreinte
+  SHA-256 des deux seuls scripts de la page (le script principal, l'enregistrement du service worker), donc
+  un script injecté ou un attribut `onerror=` est refusé par le navigateur même si l'échappement faillait
+  (`tests/browser/csp.js`). Les styles gardent `'unsafe-inline'` (voir ADR 8). Connexions limitées à Anthropic, Google Fonts,
   `*.supabase.co` et aux services publics de la phase 1, chacun nommé (Open-Meteo, Crossref, Microlink,
   MusicBrainz, open data de la MEL, OpenAlex, Zotero ; images de Cover Art Archive) : voir [connexions.md](connexions.md).
 - **Assistant** : ne lit que les modules cochés dans Réglages → Assistant ; ses actions sont revérifiées
@@ -257,7 +260,7 @@ installe par `npm ci`, et les scripts npm sont les seules commandes, en local co
 | `npm run test:syntax` | `node --check` sur chaque source, arrêt au premier fichier invalide |
 | `npm run lint` | eslint sur le script assemblé (`build.py --bundle .lint/selene.js`) et sur `sw.js` |
 | `npm run test:passeur` | types et tests Deno du passeur |
-| `npm run test:browser` | parcours Playwright (Chromium : `npx playwright install chromium` une fois) |
+| `npm run test:browser` | parcours Playwright dans Chromium (`npx playwright install chromium` une fois) ; `SELENE_BROWSER=webkit` pour WebKit |
 | `npm run check` / `check:all` | tout sauf le navigateur / tout |
 
 `pages.yml` ne publie que si tout est vert.
@@ -350,3 +353,19 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   `"type": "module"` (les tests sont en CommonJS).
 - **Conséquences** : l'application publiée reste sans dépendance ; Python reste requis pour le build tant
   que `build.py` existe ; monter un outil = changer `package.json` et régénérer le lockfile.
+
+### ADR 8 — CSP par empreintes pour les scripts, WebKit en CI
+
+- **Contexte** : `script-src 'unsafe-inline'` laissait l'échappement (`esc()`) seul rempart contre une
+  injection. Or la page n'a que deux scripts, tous deux inline par construction (l'artefact claude.ai doit
+  tenir en un fichier), et aucun gestionnaire `on…=` dans le HTML produit. Par ailleurs, les coquilles
+  natives prévues tourneront dans WebKit (iOS, Tauri sous macOS et Linux), que la CI n'exécutait pas.
+- **Décision** : `build.py` calcule l'empreinte SHA-256 de chaque script et l'inscrit dans `script-src` ;
+  un scénario vérifie qu'aucune vue ne viole la CSP et qu'un script injecté est bloqué. Les parcours de
+  navigateur tournent dans Chromium et WebKit (matrice de `check.yml`, `SELENE_BROWSER`).
+- **Écarté** : un fichier `.js` externe (casse l'artefact en un seul fichier) ; un nonce (exige un serveur
+  qui en tire un à chaque requête, GitHub Pages sert des fichiers statiques) ; retirer `'unsafe-inline'` de
+  `style-src` (l'interface pose plus de 150 attributs `style="…"`, qu'une empreinte ne couvre pas sans
+  `'unsafe-hashes'` ; une injection de style peut défigurer ou exfiltrer par sélecteurs, pas exécuter de code).
+- **Conséquences** : tout nouveau script inline passe par `build.py` (sinon il est bloqué, et le scénario
+  `csp` échoue) ; ne jamais écrire de gestionnaire `onclick=` dans un gabarit : `data-act` et délégation.

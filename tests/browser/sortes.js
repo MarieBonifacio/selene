@@ -1,6 +1,6 @@
 /* Scénario de navigateur : sortes (tirage pondéré par l'oubli). Lancé par tests/browser/run.js.
    SELENE_SHOTS=dossier y dépose une capture d'écran (téléphone). */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const SHOTS = process.env.SELENE_SHOTS;
 const demo = JSON.parse(fixture());
 const old = new Date(Date.now() - 40 * 86400000).toISOString().slice(0, 10);
@@ -8,7 +8,7 @@ const recent = new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10);
 demo.modules.ecriture.scraps = [{ id: 'f1', text: 'Un fragment qui dort depuis longtemps, oublié dans un coin', date: old }];
 demo.modules.inbox.entries = [{ id: 'n1', text: 'Une note ancienne, jamais rangée', date: old }, { id: 'n2', text: 'Une note toute fraîche', date: recent }];
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.addInitScript(d => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, JSON.stringify(demo));
   await p.goto(BASE + '/index.html'); await p.waitForTimeout(300);

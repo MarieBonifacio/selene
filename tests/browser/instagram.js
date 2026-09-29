@@ -1,5 +1,5 @@
 /* Scénario de navigateur : Mémoire éditoriale, l'export Instagram (connexions externes, phase 1, vague 5e : docs/connexions.md). Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const moji = s => [...Buffer.from(s, 'utf8')].map(b => String.fromCharCode(b)).join('');
 const at = iso => Math.floor(Date.parse(iso) / 1000);
 const POSTS = [
@@ -9,7 +9,7 @@ const POSTS = [
 const REELS = { ig_reels_media: [{ media: [{ uri: 'r.mp4', creation_timestamp: at('2026-06-21T21:00:00Z'), title: '' }] }] };
 const file = (name, data) => ({ name, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(data)) });
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, timezoneId: 'Europe/Paris' }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
   p.on('request', r => { if (!r.url().startsWith(BASE) && !/fonts\.(googleapis|gstatic)\.com/.test(r.url())) errs.push('appel réseau : ' + r.url()); });

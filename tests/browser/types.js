@@ -1,7 +1,7 @@
 /* Scénario de navigateur : types. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const p = await b.newPage(); const errs = [];
   p.on('pageerror', e => errs.push(e.message));
   p.on('dialog', d => d.accept());

@@ -1,11 +1,11 @@
 /* Scénario de navigateur : recherche-minuteur. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.kundalini.config.start = '2026-01-05';
 demo.modules.ecriture.scraps = [{ id: 'f1', text: 'Une phrase sur l’été dissocié', date: '2026-09-01' }];
 demo.modules.chantier.entries = [{ id: 't1', title: 'Poser le velux', room: 'Chambre', cat: 'Bricolage', due: null, effort: 1, cost: 250, note: '', today: false, done: false, doneAt: null, created: '2026-09-01', steps: [] }];
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.clock.install();
   await p.addInitScript(d => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, JSON.stringify(demo));

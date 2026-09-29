@@ -1,12 +1,12 @@
 /* Scénario de navigateur : bilan. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 const iso = d => new Date(d - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 const today = iso(Date.now()), lastMonth = iso(Date.now() - 33 * 864e5);
 demo.modules.kundalini.entries = [{ id: 'k1', date: today, value: 20, note: '' }, { id: 'k2', date: lastMonth, value: 30, note: '' }];
 demo.modules.ecriture.entries = [{ id: 'e1', date: today, value: 1200, category: '' }];
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const p = await (await b.newContext({ viewport: { width: 900, height: 900 } })).newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.addInitScript(d => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, JSON.stringify(demo));
   await p.goto(BASE + '/index.html'); await p.waitForTimeout(400);

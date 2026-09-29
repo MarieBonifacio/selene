@@ -1,5 +1,5 @@
 /* Scénario de navigateur : Sources (connexions externes, phase 1, vague 5a : docs/connexions.md). Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources',
   config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), display: 'liste', sources: true, statuses: ['À lire', 'Lue', 'Utilisée'], doneFrom: 1, addLabel: 'Ajouter à la main',
@@ -10,7 +10,7 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   author: [{ given: 'Anna', family: 'Ciaunica' }, { given: 'B', family: 'C' }, { given: 'D', family: 'E' }, { given: 'F', family: 'G' }], issued: { 'date-parts': [[2020, 5, 12]] },
   URL: 'http://dx.doi.org/10.1016/j.concog.2020.102946', abstract: '<jats:p>Un résumé.</jats:p>' } };
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const open = async (opts = {}, path = '/index.html#sources', microlink = 'ok', hostedMode = false) => {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, ...opts }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));

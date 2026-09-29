@@ -1,9 +1,9 @@
 /* Scénario de navigateur : la Fenêtre (évolution de l'interface, vague 3b : docs/evolution-ui.md). Lancé par tests/browser/run.js.
    Horloge simulée (heure de Paris) et Open-Meteo simulé : le test ne dépend ni de l'heure réelle ni du réseau. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = fixture();
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const ctx = await b.newContext({ viewport: { width: 1280, height: 800 }, colorScheme: 'dark', timezoneId: 'Europe/Paris' });
   await ctx.addInitScript(d => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, demo);

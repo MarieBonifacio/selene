@@ -1,6 +1,6 @@
 /* Scénario de navigateur : le calendrier dédié (connexions externes, phase 2, vague 6e : docs/connexions.md).
    Version hébergée simulée (faux Supabase, faux passeur qui sert un .ics), horloge fixée. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const UID = '0b8f0c2e-1111-2222-3333-444455556666';
 const ICS = ['BEGIN:VCALENDAR', 'VERSION:2.0',
   'BEGIN:VEVENT', 'UID:a', 'SUMMARY:Chantier : plombier', 'LOCATION:Salle de bain', 'DTSTART;TZID=Europe/Paris:20260929T140000', 'DTEND;TZID=Europe/Paris:20260929T150000', 'END:VEVENT',
@@ -10,7 +10,7 @@ const ICS = ['BEGIN:VCALENDAR', 'VERSION:2.0',
   'END:VCALENDAR'].join('\r\n');
 const SECRET = 'https://calendar.example/ical/secret-abc/basic.ics';
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [], calls = [];
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block', timezoneId: 'Europe/Paris' });
   await ctx.route('https://*.supabase.co/**', r => {

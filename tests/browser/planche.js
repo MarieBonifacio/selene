@@ -1,5 +1,5 @@
 /* Scénario de navigateur : planche de lunaison (évolution de l'interface, vague 4c : docs/evolution-ui.md). Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const fs = require('fs');
 const iso = d => { const z = new Date(d); z.setMinutes(z.getMinutes() - z.getTimezoneOffset()); return z.toISOString().slice(0, 10); };
 const today = iso(Date.now()), old = iso(Date.now() - 200 * 86400000);
@@ -17,7 +17,7 @@ demo.modules.motifs = { type: 'collection', label: 'Motifs', config: { ...JSON.p
   entries: [{ id: 'm1', title: 'lune', status: 'Vivant' }, { id: 'm2', title: 'mue', status: 'Vivant' }, { id: 'm3', title: 'contradiction <img src=x onerror=window.__pwn=1>', status: 'Vivant' }] };
 demo.config.modules.push({ id: 'motifs', on: true });
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const open = async opts => {
     const ctx = await b.newContext({ acceptDownloads: true, ...opts }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
