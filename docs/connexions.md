@@ -131,6 +131,15 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
 - [x] Sous « Aujourd'hui » : aujourd'hui (ce qui n'est pas encore passé) et demain, huit au plus par jour. « Chantier :
       plombier » se range sous Chantier (le préfixe de la Capture). Selene ne devient pas un agenda.
 
+**6f : Zotero** (lecture seule)
+- [x] Réglages → Zotero : une clé créée sur zotero.org avec « Allow library access » seulement ; dans ce navigateur,
+      jamais synchronisée, effacée à la déconnexion. « Vérifier » dit à qui elle est, et signale une clé qui peut écrire.
+- [x] Dans un module de Sources : chercher dans ta bibliothèque (titre, auteur, année) ou voir les dix dernières fiches ;
+      « garder » crée une Source reliée à sa fiche (`zot = { k, l }`, validé), avec DOI, revue, auteurs et date ; un
+      lien « Zotero ↗ » y ramène. Doublons reconnus par DOI, adresse ou clé Zotero. Rien n'est importé en masse.
+- [x] L'appel part directement vers api.zotero.org (clé en en-tête) ; si le navigateur n'a pas le droit d'en lire la
+      réponse (CORS, non documenté par Zotero), le passeur relaie (genre `json`, clé dans l'adresse, jamais journalisée).
+
 ## Phase 3
 
 Voir l'exploration du 28 septembre 2026 : motifs croisés, « cité par tes sources », sources oubliées.

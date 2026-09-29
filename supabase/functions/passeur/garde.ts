@@ -6,8 +6,8 @@
    D'où : http(s) seulement, ports usuels, pas d'identifiants dans l'adresse, pas de nom local, et toute adresse IP
    (écrite dans l'URL ou obtenue par le DNS) doit être publique. */
 
-export type Genre = "feed" | "page" | "ics";
-export const GENRES: readonly Genre[] = ["feed", "page", "ics"];
+export type Genre = "feed" | "page" | "ics" | "json";
+export const GENRES: readonly Genre[] = ["feed", "page", "ics", "json"]; // json : une API qui n'ouvre pas CORS (Zotero)
 export const MAX_OCTETS = 2 * 1024 * 1024; // 2 Mo : un flux ou une page, jamais une vidéo
 export const MAX_SAUTS = 4; // redirections suivies au plus, chacune revérifiée
 
@@ -93,6 +93,7 @@ export function typeAccepte(genre: Genre, type: string | null): boolean {
   if (!t) return true;
   if (genre === "ics") return t === "text/calendar" || t === "text/plain";
   if (genre === "page") return t === "text/html" || t === "application/xhtml+xml";
+  if (genre === "json") return t === "application/json";
   return /^(text\/(xml|html|plain)|application\/((rss|atom|rdf|feed)\+)?(xml|json)|application\/(rss|atom)\+xml|application\/feed\+json)$/.test(t);
 }
 

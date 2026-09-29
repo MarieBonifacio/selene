@@ -1305,7 +1305,8 @@ function srcMeta(e) {
   const x = e.src; if (!x) return "";
   const url = x.url && /^https?:\/\//i.test(x.url) ? x.url : "";
   return [x.site && `<span>${esc(x.site)}</span>`, x.date && `<span>${esc(pubDate(x.date))}</span>`, x.doi && `<span>doi:${esc(x.doi)}</span>`,
-    url && `<a class="src-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">ouvrir ↗</a>`].filter(Boolean).join("");
+    url && `<a class="src-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">ouvrir ↗</a>`,
+    e.zot && e.zot.l && /^https:\/\/www\.zotero\.org\//.test(e.zot.l) && `<a class="src-link" href="${esc(e.zot.l)}" target="_blank" rel="noopener noreferrer">Zotero ↗</a>`].filter(Boolean).join("");
 }
 async function fetchSource(raw) {
   const doi = findDoi(raw), url = findUrl(raw);
@@ -1335,10 +1336,10 @@ async function fetchSource(raw) {
 }
 /* Une source déjà gardée, dans n'importe quel module de sources : même DOI, ou même adresse. */
 function findSourceDup(src) {
-  const key = sourceKey(src); if (!key) return null;
+  const key = sourceKey(src), zk = src && src.zot && src.zot.k; if (!key && !zk) return null;
   for (const [mod, m] of Object.entries(S().modules)) {
     if (m.type !== "collection" || !m.config.sources) continue;
-    const e = m.entries.find(x => x.src && sourceKey(x.src) === key);
+    const e = m.entries.find(x => (key && x.src && sourceKey(x.src) === key) || (zk && x.zot && x.zot.k === zk));
     if (e) return { mod, e };
   }
   return null;
@@ -1346,6 +1347,7 @@ function findSourceDup(src) {
 function keepSource(mod, x, origin) {
   const e = saveCollectionItem(S().modules[mod], { title: x.title || x.url || x.doi, subtitle: x.authors || "", tag: x.kind || "", text: x.abstract || "" }, uid());
   e.src = Object.fromEntries(Object.entries({ url: x.url, doi: x.doi, site: x.site, date: x.date }).filter(([, v]) => v));
+  if (x.zot) e.zot = { ...x.zot }; // reliée à sa fiche Zotero
   if (origin) e.origin = origin;
   return e;
 }
@@ -1360,7 +1362,7 @@ function sourceBar(id) {
     ${p.dup ? `<p class="hint">Déjà gardée${p.dup.mod !== id ? ` dans ${esc(label(p.dup.mod))}` : ""} : <a href="#${esc(p.dup.mod)}/${esc(p.dup.e.id)}">« ${esc(excerpt(p.dup.e, 60))} »</a>.</p>` : ""}
     <div class="row"><button class="btn acc sm" data-act="src-keep" ${p.dup ? "disabled" : ""}>Garder</button><button class="btn ghost sm" data-act="src-cancel">Annuler</button></div></div>`;
   return `<div class="capture src-bar"><input id="srcIn" inputmode="url" autocomplete="off" placeholder="Un lien ou un DOI…" aria-label="Lien ou DOI"><button class="btn" data-act="src-fetch">Chercher</button></div>
-  <p class="hint" style="margin:4px 0 12px">Un DOI est complété par Crossref ; une page, ${passeurPret() ? "par ton passeur (sinon Microlink, qui voit l'adresse demandée, 25 par jour)" : "par Microlink, qui voit l'adresse demandée (25 par jour)"}.</p>${prev}`;
+  <p class="hint" style="margin:4px 0 12px">Un DOI est complété par Crossref ; une page, ${passeurPret() ? "par ton passeur (sinon Microlink, qui voit l'adresse demandée, 25 par jour)" : "par Microlink, qui voit l'adresse demandée (25 par jour)"}.</p>${prev}${zotBar(id)}`;
 }
 CLICK["src-fetch"] = async el => {
   const id = modOf(el), inp = $("#srcIn"), raw = inp ? inp.value.trim() : "";
@@ -1883,4 +1885,83 @@ CHANGE["ics-url"] = el => {
 };
 CLICK["ics-check"] = () => agendaRefresh(true);
 CLICK["ics-forget"] = () => { try { localStorage.removeItem(ICS_URL); localStorage.removeItem(ICS_CACHE); } catch {} render(); toast("Calendrier oublié sur cet appareil."); };
+
+/* ================= Zotero : ta bibliothèque, en lecture seule (zotero.js pour la traduction des fiches) =================
+   La clé reste dans ce navigateur (jamais synchronisée, effacée à la déconnexion). Un appel part directement vers
+   api.zotero.org ; si le navigateur n'a pas le droit d'en lire la réponse (CORS), il passe par ton passeur. Tirer,
+   jamais pousser : rien n'est importé en masse, on garde une fiche à la fois. */
+const ZOT_KEY = "selene-zotero-key", ZOT_INFO = "selene-zotero";
+const zotKey = () => { try { return localStorage.getItem(ZOT_KEY) || ""; } catch { return ""; } };
+const zotInfo = () => { try { const x = JSON.parse(localStorage.getItem(ZOT_INFO) || "null"); return x && Number.isInteger(x.userID) ? x : null; } catch { return null; } };
+async function zotGet(path, viaPasseur = path) {
+  const key = zotKey(); if (!key) throw new Error("Pas de clé Zotero (Réglages → Zotero).");
+  const refuse = s => new Error(s === 403 ? "Zotero refuse cette clé (révoquée, ou sans accès à ta bibliothèque)." : `Zotero répond ${s}.`);
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), 10000);
+  let r = null;
+  try { r = await fetch(ZOT_API + path, { headers: { "Zotero-API-Key": key, "Zotero-API-Version": "3" }, signal: ac.signal }); } catch {} finally { clearTimeout(t); }
+  if (r) { if (!r.ok) throw refuse(r.status); return r.json(); }
+  // Pas de réponse lisible : CORS refusé, hors ligne, ou trop lent. Le passeur, s'il existe, essaie à son tour.
+  if (!passeurPret()) throw new Error("Zotero injoignable depuis le navigateur, et pas de passeur pour le relayer.");
+  const q = await passeurFetch(`${ZOT_API}${viaPasseur}${viaPasseur.includes("?") ? "&" : "?"}key=${encodeURIComponent(key)}`, "json");
+  if (q.status !== 200 || typeof q.texte !== "string") throw q.status ? refuse(q.status) : new Error(q.erreur || "Zotero injoignable.");
+  return JSON.parse(q.texte);
+}
+async function zotCheck() {
+  const key = zotKey(); if (!key) return null;
+  const info = zotKeyInfo(await zotGet("/keys/current", `/keys/${encodeURIComponent(key)}`));
+  if (!info) throw new Error("Réponse inattendue de Zotero.");
+  if (!info.library) throw new Error("Cette clé n'a pas accès à ta bibliothèque personnelle (coche « Allow library access »).");
+  try { localStorage.setItem(ZOT_INFO, JSON.stringify(info)); } catch {}
+  return info;
+}
+const zotState = {}; // par module de sources : { busy, err, items, label } (propre à l'appareil, oublié au rechargement)
+function zotBar(id) {
+  if (!hosted() || !zotKey()) return "";
+  const st = zotState[id];
+  const list = !st ? "" : st.busy ? `<p class="hint" role="status">Recherche dans Zotero…</p>` : st.err ? `<p class="hint" role="status">${esc(st.err)}</p>`
+    : !st.items.length ? `<p class="empty">Rien de tel dans ta bibliothèque.</p>`
+    : `<p class="hint" style="margin:6px 0 0">${esc(st.label)}</p><ul class="plain zot-list">${st.items.map((x, i) => { const dup = findSourceDup(x);
+      return `<li class="item" data-zi="${i}"><span></span><div><b>${esc(x.title)}</b><div class="meta">${[x.authors, x.site, pubDate(x.date), x.kind].filter(Boolean).map(v => `<span>${esc(v)}</span>`).join("")}</div></div>
+        <div class="row">${dup ? `<a class="hint" href="#${esc(dup.mod)}/${esc(dup.e.id)}">déjà gardée</a>` : `<button class="btn sm" data-act="zot-keep">garder</button>`}</div></li>`; }).join("")}</ul>`;
+  return `<div class="zot-bar" style="margin:4px 0 14px"><div class="capture capture-wrap"><input id="zotIn" autocomplete="off" placeholder="Dans ta bibliothèque Zotero : titre, auteur, année…" aria-label="Chercher dans Zotero"><button class="btn" data-act="zot-search">Chercher</button><button class="btn ghost sm" data-act="zot-recent">récents</button></div>${list}</div>`;
+}
+async function zotList(id, path, label) {
+  zotState[id] = { busy: true, items: [], err: "", label }; render();
+  try {
+    const info = zotInfo() || await zotCheck();
+    const items = zotItems(await zotGet(`/users/${info.userID}${path}`));
+    zotState[id] = { busy: false, items, err: "", label };
+  } catch (e) { zotState[id] = { busy: false, items: [], err: e.message, label }; }
+  render();
+}
+CLICK["zot-search"] = el => {
+  const id = modOf(el), q = (($("#zotIn") || {}).value || "").trim().slice(0, 200); if (!q) return;
+  zotList(id, `/items/top?q=${encodeURIComponent(q)}&qmode=titleCreatorYear&limit=10&sort=dateModified&direction=desc&format=json`, `Dans ta bibliothèque : « ${q} »`);
+};
+CLICK["zot-recent"] = el => zotList(modOf(el), `/items/top?limit=10&sort=dateAdded&direction=desc&format=json`, "Les dix dernières fiches ajoutées à ta bibliothèque");
+CLICK["zot-keep"] = el => {
+  const id = modOf(el), st = zotState[id], x = st && st.items[+el.closest("[data-zi]").dataset.zi]; if (!x || findSourceDup(x)) return;
+  const e = keepSource(id, x, { from: "Zotero", text: (zotInfo() || {}).username || "ta bibliothèque", date: todayISO() });
+  site.save(); render(); toast(`Gardée, reliée à Zotero : « ${excerpt(e, 50)} ».`);
+};
+function zotSettingsHTML() {
+  const info = zotInfo(), has = !!zotKey();
+  return `<section id="zotero"><h3>Zotero</h3><p class="hint">Ta bibliothèque Zotero, en lecture seule : dans un module de Sources, cherche une fiche (ou les dernières ajoutées) et garde-la comme Source, reliée à sa fiche Zotero. Zotero reste l'archive ; Selene, l'endroit où tu t'en sers.</p>
+    <p class="hint">Crée une clé sur <a href="https://www.zotero.org/settings/keys/new" target="_blank" rel="noopener noreferrer">zotero.org/settings/keys/new</a> : sous « Personal Library », coche <b>Allow library access</b> seulement (ni « Allow write access », ni les groupes). Elle reste dans ce navigateur, n'est jamais synchronisée et s'efface à la déconnexion.</p>
+    <label>Clé API Zotero<input type="password" data-act="zot-key" value="${has ? "••••••••" : ""}" autocomplete="off" placeholder="colle ta clé"></label>
+    ${has ? `<p class="row" style="margin:6px 0 0"><span>${esc(info ? `Bibliothèque de ${info.username || "#" + info.userID}${info.write ? " : attention, cette clé peut écrire ; une clé en lecture seule suffit." : ", en lecture seule."}` : "Pas encore vérifiée.")}</span><button class="btn sm" data-act="zot-check">Vérifier</button><button class="btn ghost sm" data-act="zot-forget">oublier</button></p>` : ""}</section>`;
+}
+CHANGE["zot-key"] = async el => {
+  const v = el.value.trim(); if (v.startsWith("•")) return;
+  try { if (v) localStorage.setItem(ZOT_KEY, v); else localStorage.removeItem(ZOT_KEY); localStorage.removeItem(ZOT_INFO); } catch {}
+  el.blur(); render();
+  if (v) CLICK["zot-check"]();
+};
+CLICK["zot-check"] = async () => {
+  try { localStorage.removeItem(ZOT_INFO); } catch {}
+  try { const i = await zotCheck(); toast(`Zotero : bibliothèque de ${i.username || "#" + i.userID}${i.write ? " (clé en écriture : préfère une clé en lecture seule)" : ", lecture seule"}.`); }
+  catch (e) { toast(e.message); }
+  render();
+};
+CLICK["zot-forget"] = () => { try { localStorage.removeItem(ZOT_KEY); localStorage.removeItem(ZOT_INFO); } catch {} for (const k of Object.keys(zotState)) delete zotState[k]; render(); toast("Clé Zotero oubliée sur cet appareil."); };
 

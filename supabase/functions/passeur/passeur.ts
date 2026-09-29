@@ -5,7 +5,7 @@
    depuis une origine listée dans PASSEUR_ORIGINS. Protégé contre la SSRF (garde.ts), chaque redirection revérifiée,
    2 Mo et 8 secondes au plus. Il ne garde rien : ni journal des adresses, ni cache.
 
-   Requête : POST { url, genre: "feed" | "page" | "ics", etag?, modifie? }  (etag et modifie : GET conditionnel)
+   Requête : POST { url, genre: "feed" | "page" | "ics" | "json", etag?, modifie? }  (etag et modifie : GET conditionnel)
    Réponse : { status, url, type, etag, modifie, texte } ; status 304 sans texte si rien n'a changé ;
              { erreur } avec un code HTTP 4xx ou 5xx sinon.
    Déploiement et secrets : docs/passeur.md. Point d'entrée : index.ts. */
@@ -104,7 +104,7 @@ export const passeur = (m: Monde) => async (req: Request): Promise<Response> => 
   let c = cible(q.url);
   if ("refus" in c) return reponse({ erreur: c.refus }, 400, origine);
 
-  const entetes: Record<string, string> = { "user-agent": AGENT, accept: genre === "ics" ? "text/calendar, text/plain" : genre === "page" ? "text/html, application/xhtml+xml" : "application/rss+xml, application/atom+xml, application/feed+json, application/xml, text/xml, */*;q=0.5" };
+  const entetes: Record<string, string> = { "user-agent": AGENT, accept: genre === "json" ? "application/json" : genre === "ics" ? "text/calendar, text/plain" : genre === "page" ? "text/html, application/xhtml+xml" : "application/rss+xml, application/atom+xml, application/feed+json, application/xml, text/xml, */*;q=0.5" };
   if (typeof q.etag === "string" && q.etag.length < 300) entetes["if-none-match"] = q.etag;
   if (typeof q.modifie === "string" && q.modifie.length < 100) entetes["if-modified-since"] = q.modifie;
   const signal = AbortSignal.timeout(DELAI_MS);

@@ -915,6 +915,7 @@ VIEWS.reglages = () => {
   ${hosted() ? shareSettingsHTML() : ""}
   ${hosted() && authReady() && authSession ? passeurSettingsHTML() : ""}
   ${hosted() && authReady() && authSession ? agendaSettingsHTML() : ""}
+  ${hosted() ? zotSettingsHTML() : ""}
   <section><h3>Sauvegarde</h3><p class="hint">Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.</p>
     <div class="row"><button class="btn" data-act="exp">Exporter</button><label class="btn" style="display:inline-block;font-weight:500">Importer<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label></div></section>`;
 };
@@ -1443,7 +1444,10 @@ document.addEventListener("keydown", e => {
 // ⌘K (Ctrl+K) ouvre ou ferme la palette, même pendant une saisie.
 document.addEventListener("keydown", e => { if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === "k" || e.key === "K")) { e.preventDefault(); openPalette(); } });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "skyCity") skySearch(); });
-document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "srcIn") { e.preventDefault(); CLICK["src-fetch"](e.target); } });
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.id === "srcIn") { e.preventDefault(); CLICK["src-fetch"](e.target); }
+  if (e.key === "Enter" && e.target.id === "zotIn") { e.preventDefault(); CLICK["zot-search"](e.target); }
+});
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "capSheetIn") capture(e.target); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && e.target.id === "bridgeIn") bridgeSave(e.target.dataset.mod); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
 const CHANGE = {}; // actions « change » des types de module (remplie par types.js)
 document.addEventListener("change", e => {

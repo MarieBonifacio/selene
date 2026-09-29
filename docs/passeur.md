@@ -9,8 +9,8 @@ les pages passent par Microlink, et ce qui demande le passeur (Dehors, calendrie
 
 ## Ce qu'il fait, et ce qu'il refuse
 
-- **Une requête** : `POST { url, genre, etag?, modifie? }`, où `genre` vaut `feed` (flux), `page` ou `ics`
-  (calendrier). Réponse : `{ status, url, type, etag, modifie, texte }`, ou `{ erreur }`.
+- **Une requête** : `POST { url, genre, etag?, modifie? }`, où `genre` vaut `feed` (flux), `page`, `ics`
+  (calendrier) ou `json` (une API qui n'ouvre pas CORS, comme Zotero ; JSON seulement). Réponse : `{ status, url, type, etag, modifie, texte }`, ou `{ erreur }`.
 - **Fermé.** Il faut une session Supabase valide (vérifiée auprès de Supabase Auth), d'un compte listé dans le secret
   `PASSEUR_USERS`, appelée depuis une origine listée dans `PASSEUR_ORIGINS`. Sans liste de comptes, il refuse tout
   (*fermé par défaut*). Un proxy ouvert est une porte que tout internet finit par trouver.
