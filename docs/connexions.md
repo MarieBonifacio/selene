@@ -83,7 +83,8 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
       même site) ; un DOI trouvé dans la page est complété par Crossref ; le flux annoncé est repéré. Passeur absent
       ou refusé : Microlink, sans insister.
 - [x] Réglages → Passeur : état, « Vérifier », ton identifiant à copier.
-- [ ] Déployer (toi : `docs/passeur.md`, dix minutes).
+- [x] Déploiement automatisable : `.github/workflows/passeur.yml` (jeton dans les secrets du dépôt, tests Deno d'abord).
+- [ ] Déployer (toi : le jeton et ton identifiant dans GitHub, `docs/passeur.md` ; puis le workflow).
 
 **6b : Dehors**
 - [x] Une vue fixe, « Dehors » (navigation, palette), dans la version hébergée connectée. Suivre l'adresse d'un flux ou
