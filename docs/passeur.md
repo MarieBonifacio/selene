@@ -74,6 +74,12 @@ Coût : l'offre gratuite de Supabase compte 500 000 invocations par mois ; un us
 
 ## Couper
 
+- Révoquer le jeton Supabase (recommandé entre deux déploiements, puisqu'il n'est pas restreint à un projet) :
+  [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) → le jeton « selene-github » →
+  *Revoke*, puis, dans le dépôt, *Settings → Secrets and variables → Actions* → `SUPABASE_ACCESS_TOKEN` → supprimer.
+  Le passeur déjà déployé continue de marcher. Si la fonction change ensuite sur `main`, le déploiement automatique est
+  sauté avec un avis (le dépôt reste vert) ; pour redéployer, un nouveau jeton, le secret recréé, puis *Run workflow*.
+
 - Retirer un compte : `npx supabase secrets set PASSEUR_USERS=…` sans lui (ou vide : plus personne).
 - Tout arrêter : `npx supabase functions delete passeur`. Selene revient à Microlink pour les pages.
 
