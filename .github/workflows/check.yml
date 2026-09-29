@@ -1,11 +1,18 @@
 name: Check
 on:
-  push:
+  # Pas de `push` : une PR était testée deux fois (push + pull_request), et un merge sur main deux fois aussi
+  # (ici, puis via pages.yml). main est couvert par pages.yml ; les branches, par leur pull request.
   pull_request:
+  workflow_dispatch:
   workflow_call: # réutilisé par pages.yml : pas de déploiement sans tests verts
+concurrency:
+  # Un nouveau push sur la même branche annule l'exécution devenue inutile ; jamais celle de main.
+  group: check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,6 +28,7 @@ jobs:
   passeur:
     # La fonction Supabase Edge (supabase/functions/passeur, docs/passeur.md) : types et tests, avec Deno.
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,14 +39,25 @@ jobs:
   browser:
     # Parcours dans un vrai Chromium (tests/browser) : ce que le faux DOM des tests unitaires ne voit pas.
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - run: python3 build.py --check
-      - name: Playwright (version épinglée) et Chromium
-        run: |
-          npm i --no-save --no-package-lock playwright@1.56.1
-          npx playwright install --with-deps chromium
+      - name: Playwright (version épinglée)
+        run: npm i --no-save --no-package-lock playwright@1.56.1
+      - name: Chromium (en cache tant que la version de Playwright ne change pas)
+        id: chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-1.56.1-chromium-${{ runner.os }}
+      - name: Télécharger Chromium
+        if: steps.chromium.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - name: Bibliothèques système de Chromium
+        if: steps.chromium.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
       - run: node tests/browser/run.js

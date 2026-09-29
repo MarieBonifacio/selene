@@ -45,7 +45,7 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
   const e = (await data()).modules.musique.entries.find(x => x.mb && x.mb.rg === U(3));
   ok(e && e.title === 'Ulver' && e.subtitle.startsWith('Neptune') && e.mb.a === U(1) && /^\d{4}$/.test(e.mb.y), 'ajouté à Musique, relié à MusicBrainz');
   ok(!(await p.$(`[data-item="${U(3)}"]`)) && (await p.textContent('#main')).includes('Rien de neuf'), 'et quitte Dehors');
-  await p.click('details.dehors-feeds summary').catch(() => {});
+  await p.click('details.dehors-feeds summary', { timeout: 300 }).catch(() => {}); // s'il est là : sans délai court, Playwright attend 30 s
 
   console.log('une fois par semaine');
   mb.length = 0;
