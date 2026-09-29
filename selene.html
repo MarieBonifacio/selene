@@ -562,8 +562,103 @@ var __core = (() => {
   // src/core/index.js
   var index_exports = {};
   __export(index_exports, {
+    CARTE_MAX: () => CARTE_MAX,
+    EP_STATUS: () => EP_STATUS,
+    LINK_REF: () => LINK_REF,
+    LINK_TYPES: () => LINK_TYPES,
+    MODULE_ID: () => MODULE_ID,
+    MODULE_TEMPLATES: () => MODULE_TEMPLATES,
+    MODULE_TYPES: () => MODULE_TYPES,
+    OA_DOI: () => OA_DOI,
+    SCHEMA_VERSION: () => SCHEMA_VERSION,
+    SECTION_TO_MODULE: () => SECTION_TO_MODULE,
+    WEATHER: () => WEATHER,
+    ZOT_API: () => ZOT_API,
+    addBudgetEntry: () => addBudgetEntry,
+    addCapture: () => addCapture,
+    addJournalEntry: () => addJournalEntry,
+    addLink: () => addLink,
+    addTask: () => addTask,
+    approxPlace: () => approxPlace,
+    bareSource: () => bareSource,
+    carteLayout: () => carteLayout,
+    carteNeighbourhood: () => carteNeighbourhood,
+    clip: () => clip,
+    contrast: () => contrast,
+    coverUrl: () => coverUrl,
+    createBackup: () => createBackup,
+    createFromTemplate: () => createFromTemplate,
+    createModuleInstance: () => createModuleInstance,
+    crossrefToSource: () => crossrefToSource,
     deepEqual: () => deepEqual,
-    mergeDocs: () => mergeDocs
+    deleteModuleInstance: () => deleteModuleInstance,
+    editFragmentText: () => editFragmentText,
+    entryIds: () => entryIds,
+    epPrefix: () => epPrefix,
+    findDoi: () => findDoi,
+    findUrl: () => findUrl,
+    hash01: () => hash01,
+    icsBetween: () => icsBetween,
+    icsParse: () => icsParse,
+    igDay: () => igDay,
+    igEntry: () => igEntry,
+    igFix: () => igFix,
+    igPosts: () => igPosts,
+    igValid: () => igValid,
+    inboxId: () => inboxId,
+    mbAlbums: () => mbAlbums,
+    mbArtistQuery: () => mbArtistQuery,
+    mbArtists: () => mbArtists,
+    mbSince: () => mbSince,
+    mbValid: () => mbValid,
+    mergeDocs: () => mergeDocs,
+    microlinkToSource: () => microlinkToSource,
+    migrateModules: () => migrateModules,
+    mixHex: () => mixHex,
+    moonPlacement: () => moonPlacement,
+    moonPosition: () => moonPosition,
+    nearLille: () => nearLille,
+    nextCrossing: () => nextCrossing,
+    normalizeUrl: () => normalizeUrl,
+    oaAbstract: () => oaAbstract,
+    oaCoupling: () => oaCoupling,
+    oaRefs: () => oaRefs,
+    oaRefsUrls: () => oaRefsUrls,
+    oaTitlesUrls: () => oaTitlesUrls,
+    oaUrl: () => oaUrl,
+    oaWatch: () => oaWatch,
+    oaWorks: () => oaWorks,
+    parseBackup: () => parseBackup,
+    radarEvents: () => radarEvents,
+    radarFold: () => radarFold,
+    radarMatch: () => radarMatch,
+    radarUrl: () => radarUrl,
+    radarWords: () => radarWords,
+    rainDays: () => rainDays,
+    reservedId: () => reservedId,
+    retargetLinks: () => retargetLinks,
+    saveCollectionItem: () => saveCollectionItem,
+    seasonAt: () => seasonAt,
+    setEpStatus: () => setEpStatus,
+    setResume: () => setResume,
+    setTaskDone: () => setTaskDone,
+    setTaskToday: () => setTaskToday,
+    skyEvents: () => skyEvents,
+    skyMotion: () => skyMotion,
+    skyScene: () => skyScene,
+    slugId: () => slugId,
+    sourceKey: () => sourceKey,
+    srcValid: () => srcValid,
+    stampOrigin: () => stampOrigin,
+    sunPosition: () => sunPosition,
+    validDate: () => validDate,
+    weatherState: () => weatherState,
+    windName: () => windName,
+    zoned: () => zoned,
+    zotItems: () => zotItems,
+    zotKeyInfo: () => zotKeyInfo,
+    zotSource: () => zotSource,
+    zotValid: () => zotValid
   });
 
   // src/core/sync.js
@@ -602,8 +697,8 @@ var __core = (() => {
       return Object.fromEntries(mergeEntries(keys, objAccess, base, local, remote, preferLocal));
     }
     if (idList(local) && idList(remote)) {
-      const ids = [.../* @__PURE__ */ new Set([...remote.map((x) => x.id), ...local.map((x) => x.id), ...idList(base) ? base.map((x) => x.id) : []])];
-      return mergeEntries(ids, listAccess, idList(base) ? base : void 0, local, remote, preferLocal).map(([, v]) => v);
+      const ids2 = [.../* @__PURE__ */ new Set([...remote.map((x) => x.id), ...local.map((x) => x.id), ...idList(base) ? base.map((x) => x.id) : []])];
+      return mergeEntries(ids2, listAccess, idList(base) ? base : void 0, local, remote, preferLocal).map(([, v]) => v);
     }
     return preferLocal ? local : remote;
   }
@@ -612,9 +707,1533 @@ var __core = (() => {
     if (!base && !local.updatedAt) return remote;
     return merge3(base || void 0, local, remote, (local.updatedAt || 0) >= (remote.updatedAt || 0));
   }
+
+  // src/core/domain.js
+  var requireText = (value, label, max) => {
+    if (typeof value !== "string" || !value.trim()) throw new Error(`${label} manquant`);
+    return value.trim().slice(0, max);
+  };
+  var validDate = (value) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const d = /* @__PURE__ */ new Date(value + "T12:00:00Z");
+    return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === value;
+  };
+  function addTask(tasks, input, id, date) {
+    const t = {
+      id,
+      title: requireText(input.title, "Tâche", 140),
+      room: input.room || "",
+      cat: input.cat || "Bricolage",
+      due: input.due && validDate(input.due) ? input.due : null,
+      effort: input.effort || 1,
+      cost: input.cost ?? null,
+      note: input.note || "",
+      today: false,
+      done: false,
+      doneAt: null,
+      created: date,
+      steps: (input.steps || []).map((s) => ({ t: s.t, d: !!s.d }))
+    };
+    tasks.push(t);
+    return t;
+  }
+  function setTaskDone(tasks, id, done, date) {
+    const t = tasks.find((x) => x.id === id);
+    if (!t) throw new Error("Tâche introuvable");
+    t.done = !!done;
+    t.doneAt = done ? date : null;
+    if (done) t.today = false;
+    return t;
+  }
+  function setTaskToday(tasks, id, value, elsewhere = 0) {
+    const t = tasks.find((x) => x.id === id);
+    if (!t) throw new Error("Tâche introuvable");
+    if (value && !t.today && tasks.filter((x) => !x.done && x.today).length + elsewhere >= 3) throw new Error("Trois tâches du jour maximum");
+    t.today = !!value;
+    return t;
+  }
+  function addCapture(items, text, id, date) {
+    const item = { id, text: requireText(text, "Note", 500), date };
+    items.push(item);
+    return item;
+  }
+  function addBudgetEntry(entries, input, id, defaultDate) {
+    const amount = Number(input.amount);
+    if (!Number.isFinite(amount) || amount <= 0) throw new Error("Montant invalide");
+    const date = input.date || defaultDate;
+    if (!validDate(date)) throw new Error("Date invalide");
+    const entry = {
+      id,
+      type: input.type === "revenu" ? "revenu" : "dépense",
+      amount,
+      cat: input.cat || "",
+      note: input.note || "",
+      date
+    };
+    entries.push(entry);
+    return entry;
+  }
+  var SCHEMA_VERSION = 6;
+  var SECTION_TO_MODULE = {
+    kundalini: (old, name) => ({
+      type: "programme",
+      label: name || "Kundalini",
+      config: { unitLabel: "min", start: old.start ?? null, weeks: old.weeks ?? 12, perWeek: old.perWeek ?? 5 },
+      entries: (old.sessions || []).map((x) => ({ id: x.id, date: x.date, value: x.min ?? null, note: x.note || "" }))
+    }),
+    ecriture: (old, name) => ({
+      type: "cumul",
+      label: name || "Écriture",
+      config: { unitLabel: "mots", goal: old.goal ?? 4e4, title: old.title || "", categories: (old.chapters || []).map((x) => ({ id: x.id, name: x.name, goal: x.goal })), categoryLabel: "Chapitre", scraps: true, scrapsLabel: "Fragments" },
+      entries: (old.sessions || []).map((x) => ({ id: x.id, date: x.date, value: x.words ?? null, category: x.chapter || "" })),
+      scraps: (old.fragments || []).map((f) => ({ id: f.id, date: f.date, text: f.text }))
+    }),
+    phidippus: (old, name) => ({
+      type: "rappels",
+      label: name || "Phidippus",
+      config: { subtitle: old.name || "", types: [{ id: "repas", label: "Repas", every: old.feedEvery ?? 6 }, { id: "brumisation", label: "Brumisation", every: old.mistEvery ?? 3 }, { id: "mue", label: "Mue", every: 0 }] },
+      entries: (old.log || []).map((x) => ({ id: x.id, date: x.date, type: x.type, note: x.note || "" }))
+    }),
+    moth: (old, name, groups) => ({
+      type: "collection",
+      label: name || "october.moth",
+      config: {
+        display: "colonnes",
+        description: "",
+        statuses: ["Idée", "Brouillon", "Prêt", "Publié"],
+        doneFrom: 3,
+        statusLabel: "Étape",
+        addLabel: "Nouvelle idée de post",
+        fields: { title: "Titre ou accroche", subtitle: "", tag: "Thème, archétype", due: "Publication prévue", text: "Légende" },
+        groups: { on: true, sort: "name", hideDone: false, title: "", ...groups || {}, by: "tag" }
+      },
+      entries: (old.posts || []).map((p) => ({ id: p.id, title: p.title || "", subtitle: "", tag: p.theme || "", due: p.due || "", text: p.caption || "", status: p.status }))
+    }),
+    musique: (old, name, groups) => ({
+      type: "collection",
+      label: name || "Musique",
+      config: {
+        display: "liste",
+        music: true,
+        description: "Albums de l'éveil, et artistes dont la mue stylistique fait elle-même le récit d'une transformation.",
+        statuses: ["À écouter", "Écouté", "Retenu"],
+        doneFrom: 1,
+        statusLabel: "Statut",
+        addLabel: "Ajouter un album",
+        fields: { title: "Artiste", subtitle: "Album", tag: "", due: "", text: "Note" },
+        groups: { on: true, sort: "name", hideDone: false, title: "", ...groups || {}, by: "title" }
+      },
+      entries: (old.albums || []).map((a) => ({ id: a.id, title: a.artist || "", subtitle: a.album || "", tag: "", due: "", text: a.note || "", status: a.status }))
+    }),
+    inbox: (old, name) => ({
+      type: "notes",
+      label: name || "Capture",
+      config: { inbox: true, description: "Tout ce qui traîne dans ta tête, en attendant d'avoir une place.", placeholder: "Une idée, une course, un rêve…" },
+      entries: (old.items || []).map((x) => ({ id: x.id, text: x.text, date: x.date }))
+    }),
+    budget: (old, name, groups) => ({
+      type: "budget",
+      label: name || "Budget",
+      config: { envelopes: old.envelopes || [], groups: { on: true, sort: "name", hideDone: false, title: "", ...groups || {}, by: "cat" } },
+      entries: old.entries || []
+    })
+  };
+  var TASK_CATS = ["Bricolage", "Administratif", "Achat", "Artisan", "Rangement", "Ménage"];
+  var boardToModule = (tasks, name, groups) => ({
+    type: "taches",
+    label: name || "Chantier",
+    config: {
+      groupLabel: "Pièce",
+      catLabel: "Type",
+      cats: TASK_CATS.slice(),
+      costs: true,
+      groups: { on: true, by: "room", sort: "name", hideDone: false, title: "", ...groups || {} }
+    },
+    entries: tasks || []
+  });
+  function migrateModules(d) {
+    d.modules = d.modules || {};
+    const cfg = d.config || {}, labels = cfg.labels || {}, groups = cfg.groups || {};
+    if (!d.boardMerged) {
+      if (!d.modules.chantier) d.modules.chantier = boardToModule([], labels.chantier, groups.chantier);
+      delete groups.chantier;
+      d.boardMerged = true;
+    }
+    for (const [key, convert] of Object.entries(SECTION_TO_MODULE)) {
+      if (!d[key]) continue;
+      const inst = convert(d[key], labels[key], groups[key]), cur = d.modules[key];
+      if (!cur) d.modules[key] = inst;
+      else if (cur.type === inst.type) {
+        for (const list of ["entries", "scraps"]) if (inst[list]) {
+          cur[list] = cur[list] || [];
+          for (const x of inst[list]) if (!cur[list].some((y) => y.id === x.id)) cur[list].push(x);
+        }
+      }
+      delete d[key];
+      if (inst.config.groups) delete groups[key];
+    }
+    for (const [id, inst] of Object.entries(d.modules)) if (Object.hasOwn(labels, id)) {
+      if (labels[id]) inst.label = labels[id];
+      delete labels[id];
+    }
+  }
+  var MODULE_TYPES = {
+    programme: {
+      label: "Programme (calendrier + objectif hebdomadaire)",
+      // paliers : des étapes qu'on rédige et qu'on coche soi-même. L'app affiche l'avancement, ne décide jamais
+      // du passage : `advancedAt` n'est écrit que par un geste explicite, jamais par un critère coché.
+      defaults: () => ({ config: { unitLabel: "min", start: null, weeks: 12, perWeek: 5, tiers: [] }, entries: [] }),
+      entry: (e, input) => {
+        e.value = numericValue(input.value);
+      },
+      normalize(inst) {
+        if (!Array.isArray(inst.config.tiers)) inst.config.tiers = [];
+      },
+      validate(inst, v) {
+        v.num(inst.config.weeks, "durée", 1, 520);
+        v.num(inst.config.perWeek, "séances par semaine", 1, 7);
+        if (inst.config.start != null && !(typeof inst.config.start === "string" && validDate(inst.config.start))) v.fail("date de début");
+        for (const e of inst.entries) v.num(e.value, "valeur");
+        v.list(inst.config.tiers || [], "paliers").forEach((t) => {
+          if (typeof t.name !== "string" || !t.name.trim() || t.name.length > 60) v.fail("palier");
+          if (t.advancedAt != null && !(typeof t.advancedAt === "string" && validDate(t.advancedAt))) v.fail("palier");
+          v.list(t.criteria || [], "critères").forEach((cr) => {
+            if (typeof cr.text !== "string" || !cr.text.trim() || cr.text.length > 200 || typeof cr.done !== "boolean") v.fail("critère");
+          });
+        });
+      }
+    },
+    cumul: {
+      label: "Objectif cumulatif (compteur + catégories)",
+      defaults: () => ({ config: { unitLabel: "unités", goal: 100, title: "", categories: [], categoryLabel: "Catégorie", scraps: false, scrapsLabel: "Notes", entryMode: "delta" }, entries: [], scraps: [] }),
+      entry: (e, input) => {
+        e.value = numericValue(input.value);
+        if (input.category != null) e.category = input.category;
+      },
+      validate(inst, v) {
+        v.num(inst.config.goal, "objectif", 0);
+        if (inst.config.entryMode != null && inst.config.entryMode !== "delta" && inst.config.entryMode !== "total") v.fail("mode de saisie");
+        if (inst.config.categories != null) v.list(inst.config.categories, "catégories").forEach((x) => v.num(x.goal, "objectif de catégorie", 0));
+        for (const e of inst.entries) v.num(e.value, "valeur");
+        for (const f of inst.scraps || []) {
+          if (f.category != null && typeof f.category !== "string") v.fail("fragment");
+          v.ep(f);
+        }
+      }
+    },
+    rappels: {
+      label: "Rappels (types récurrents + journal)",
+      defaults: () => ({ config: { subtitle: "", types: [{ id: "fait", label: "Fait", every: 0 }] }, entries: [] }),
+      entry: (e, input) => {
+        e.type = input.type || "note";
+      },
+      validate(inst, v) {
+        if (inst.config.types != null) v.list(inst.config.types, "types").forEach((x) => v.num(x.every, "fréquence", 0, 3650));
+      }
+    },
+    budget: {
+      label: "Budget (opérations, enveloppes à plafond mensuel)",
+      defaults: () => ({ config: { envelopes: [], groups: { on: true, by: "cat", sort: "name", hideDone: false, title: "" } }, entries: [] }),
+      normalize(inst) {
+        const def = MODULE_TYPES.budget.defaults().config;
+        if (!Array.isArray(inst.config.envelopes)) inst.config.envelopes = [];
+        inst.config.groups = { ...def.groups, ...inst.config.groups, by: "cat" };
+      },
+      validate(inst, v) {
+        v.list(inst.config.envelopes || [], "enveloppes").forEach((x) => {
+          if (typeof x.name !== "string") v.fail("enveloppe");
+          v.num(x.limit, "plafond", 0);
+        });
+        for (const e of inst.entries) {
+          v.num(e.amount, "montant", 0);
+          if (e.type !== "dépense" && e.type !== "revenu") v.fail("type d'opération");
+        }
+      }
+    },
+    taches: {
+      label: "Tâches (échéances, lieux, étapes, coûts)",
+      datedEntries: false,
+      // une tâche a une échéance facultative, pas une date de journal
+      // outdoor : mots qui désignent une tâche à ciel ouvert ; la pluie prévue s'y affiche (si un lieu est réglé).
+      defaults: () => ({ config: {
+        groupLabel: "Lieu",
+        catLabel: "Type",
+        cats: ["Général"],
+        costs: true,
+        outdoor: "extérieur, dehors, balcon, jardin, terrasse, façade, toit",
+        groups: { on: true, by: "room", sort: "name", hideDone: false, title: "" }
+      }, entries: [] }),
+      normalize(inst) {
+        const c = inst.config, def = MODULE_TYPES.taches.defaults().config;
+        for (const k of Object.keys(def)) if (c[k] == null) c[k] = def[k];
+        if (!Array.isArray(c.cats) || !c.cats.length) c.cats = def.cats.slice();
+        c.groups = { ...def.groups, ...c.groups };
+      },
+      validate(inst, v) {
+        const c = inst.config;
+        if (c.cats != null && (!Array.isArray(c.cats) || c.cats.some((x) => typeof x !== "string"))) v.fail("types de tâche");
+        if (c.outdoor != null && (typeof c.outdoor !== "string" || c.outdoor.length > 300)) v.fail("tâches à ciel ouvert");
+        for (const t of inst.entries) {
+          if (typeof t.title !== "string") v.fail("titre");
+          if (t.steps != null && (!Array.isArray(t.steps) || t.steps.some((x) => !x || typeof x.t !== "string"))) v.fail("étapes");
+          if (t.due && !(typeof t.due === "string" && validDate(t.due))) v.fail("échéance");
+          v.num(t.effort, "effort", 1, 3);
+          v.num(t.cost, "coût", 0);
+        }
+      }
+    },
+    notes: {
+      label: "Notes (textes datés, à garder ou à trier)",
+      defaults: () => ({ config: { inbox: false, description: "", placeholder: "Une note…" }, entries: [] }),
+      entry: (e, input) => {
+        e.text = requireText(input.text ?? input.note, "Note", 2e3);
+        delete e.note;
+      },
+      normalize(inst) {
+        const def = MODULE_TYPES.notes.defaults().config;
+        for (const k of Object.keys(def)) if (inst.config[k] == null) inst.config[k] = def[k];
+      },
+      validate(inst, v) {
+        if (inst.config.inbox != null && typeof inst.config.inbox !== "boolean") v.fail("boîte de réception");
+        for (const e of inst.entries) {
+          if (typeof e.text !== "string") v.fail("texte");
+          v.ep(e);
+        }
+      }
+    },
+    collection: {
+      label: "Collection (éléments à statuts, en colonnes ou en liste)",
+      datedEntries: false,
+      // un élément n'a pas de date de journal ; `due` est facultative
+      // review : la date d'un élément est un rendez-vous de révision (une décision à réexaminer), qui revient
+      // quel que soit son statut, sauf le dernier (abandonné, clos).
+      // concordance : chaque élément est un motif (variantes en sous-titre), cherché dans tous les autres modules ;
+      // un motif vivant absent depuis fallowDays jours est « en jachère ».
+      // sources : chaque élément est une source (un article, une page), avec son adresse et son DOI dans `src`.
+      // music : le titre est un artiste, le sous-titre un album, reliés à MusicBrainz dans `mb`.
+      defaults: () => ({ config: {
+        display: "liste",
+        description: "",
+        review: false,
+        concordance: false,
+        sources: false,
+        music: false,
+        fallowDays: 90,
+        statuses: ["À faire", "En cours", "Fait"],
+        doneFrom: 2,
+        statusLabel: "Statut",
+        addLabel: "Ajouter",
+        fields: { title: "Titre", subtitle: "", tag: "Étiquette", due: "", text: "Note" },
+        groups: { on: true, by: "tag", sort: "name", hideDone: false, title: "" }
+      }, entries: [] }),
+      normalize(inst) {
+        const c = inst.config, def = MODULE_TYPES.collection.defaults().config;
+        for (const k of Object.keys(def)) if (c[k] == null) c[k] = def[k];
+        c.fields = { ...def.fields, ...c.fields };
+        if (!c.fields.title) c.fields.title = def.fields.title;
+        c.groups = { ...def.groups, ...c.groups };
+        if (!Array.isArray(c.statuses) || c.statuses.length < 2) c.statuses = def.statuses;
+        c.doneFrom = Math.min(c.statuses.length - 1, Math.max(1, Math.round(+c.doneFrom) || 1));
+        for (const e of inst.entries) if (!c.statuses.includes(e.status)) e.status = c.statuses[0];
+      },
+      validate(inst, v) {
+        const c = inst.config;
+        if (c.statuses != null && (!Array.isArray(c.statuses) || c.statuses.length < 2 || c.statuses.length > 12 || c.statuses.some((x) => typeof x !== "string" || !x.trim() || x.length > 40))) v.fail("statuts");
+        v.num(c.doneFrom, "statut « fait »", 0, 12);
+        if (c.display != null && !["liste", "colonnes"].includes(c.display)) v.fail("affichage");
+        if (c.review != null && typeof c.review !== "boolean") v.fail("révision");
+        if (c.concordance != null && typeof c.concordance !== "boolean") v.fail("concordance");
+        if (c.sources != null && typeof c.sources !== "boolean") v.fail("sources");
+        if (c.music != null && typeof c.music !== "boolean") v.fail("musique");
+        v.num(c.fallowDays, "jachère", 1, 3650);
+        if (c.fields != null && (typeof c.fields !== "object" || Object.values(c.fields).some((x) => typeof x !== "string"))) v.fail("champs");
+        for (const e of inst.entries) {
+          if (typeof e.title !== "string") v.fail("titre");
+          if (e.due && !(typeof e.due === "string" && validDate(e.due))) v.fail("date");
+          if (e.reviews != null && (!Array.isArray(e.reviews) || e.reviews.some((r) => !r || typeof r.date !== "string" || !validDate(r.date) || typeof r.verdict !== "string"))) v.fail("réexamens");
+          if (e.src != null && !srcValid(e.src)) v.fail("source");
+          if (e.mb != null && !mbValid(e.mb)) v.fail("MusicBrainz");
+          if (e.ig != null && !igValid(e.ig)) v.fail("Instagram");
+          if (e.zot != null && !zotValid(e.zot)) v.fail("Zotero");
+          if (e.kept != null && !(typeof e.kept === "string" && validDate(e.kept))) v.fail("date");
+        }
+      }
+    },
+    arc: {
+      label: "Arc (étapes, où l'on place des fragments et des éléments d'autres modules)",
+      datedEntries: false,
+      // un placement n'a pas de date de journal ; `at` note juste quand il a été fait
+      defaults: () => ({ config: { stations: [] }, entries: [] }),
+      normalize(inst) {
+        if (!Array.isArray(inst.config.stations)) inst.config.stations = [];
+      },
+      validate(inst, v) {
+        v.list(inst.config.stations || [], "étapes").forEach((x) => {
+          if (typeof x.name !== "string" || !x.name.trim() || x.name.length > 60) v.fail("étape");
+        });
+        for (const p of inst.entries) {
+          if (typeof p.station !== "string") v.fail("placement");
+          if (typeof p.ref !== "string" || !LINK_REF.test(p.ref)) v.fail("placement");
+          if (p.at != null && !(typeof p.at === "string" && validDate(p.at))) v.fail("placement");
+        }
+      }
+    }
+  };
+  var inboxId = (modules) => Object.keys(modules).find((k) => modules[k].type === "notes" && modules[k].config.inbox) || null;
+  function saveCollectionItem(inst, input, id, date = null) {
+    const c = inst.config, item = inst.entries.find((x) => x.id === id) || null, keep = (f) => input[f] ?? (item ? item[f] : "");
+    const v = {
+      title: requireText(input.title, c.fields.title, 300),
+      subtitle: String(keep("subtitle")).trim(),
+      tag: String(keep("tag")).trim(),
+      text: String(keep("text")),
+      due: input.due !== void 0 ? input.due && validDate(input.due) ? input.due : "" : item ? item.due : "",
+      status: c.statuses.includes(input.status) ? input.status : item ? item.status : c.statuses[0]
+    };
+    if (item) {
+      const was = item.due;
+      Object.assign(item, v);
+      if (date && c.review && was && was <= date && item.due !== was) item.reviews = [...item.reviews || [], { date, verdict: "revue" }];
+      return item;
+    }
+    const e = { id, ...v };
+    inst.entries.push(e);
+    return e;
+  }
+  function srcValid(x) {
+    const str = (v, n) => v == null || v === "" || typeof v === "string" && v.length <= n;
+    return !!x && typeof x === "object" && !Array.isArray(x) && str(x.url, 2e3) && (!x.url || /^https?:\/\//i.test(x.url)) && str(x.doi, 200) && (!x.doi || /^10\.\d{4,9}\//.test(x.doi)) && str(x.site, 200) && str(x.date, 10) && (!x.date || /^\d{4}(-\d{2}(-\d{2})?)?$/.test(x.date));
+  }
+  function mbValid(x) {
+    const id = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+    return !!x && typeof x === "object" && !Array.isArray(x) && id.test(x.a || "") && (x.rg == null || id.test(x.rg)) && (x.y == null || /^\d{4}$/.test(x.y));
+  }
+  var zotValid = (x) => !!x && typeof x === "object" && !Array.isArray(x) && /^[A-Z0-9]{8}$/.test(x.k || "") && (x.l == null || typeof x.l === "string" && /^https:\/\/www\.zotero\.org\/[\w.-]+\/items\/[A-Z0-9]{8}$/.test(x.l));
+  var igValid = (x) => !!x && typeof x === "object" && !Array.isArray(x) && Number.isInteger(x.t) && x.t > 0 && x.t < 1e10 && (x.k === "post" || x.k === "reel");
+  var EP_STATUS = { obs: "observé", hyp: "hypothèse", int: "interprétation", inx: "inexpliqué" };
+  function epPrefix(raw) {
+    const m = String(raw).match(/^\s*\?\s*(\S[\s\S]*)$/);
+    return m ? { text: m[1], ep: "hyp" } : { text: String(raw), ep: null };
+  }
+  function setEpStatus(item, ep, date) {
+    const to = Object.hasOwn(EP_STATUS, ep) ? ep : null, from = item.ep || null;
+    if (to === from) return item;
+    if (to) item.ep = to;
+    else delete item.ep;
+    item.epLog = [...item.epLog || [], { from, to, date }].slice(-20);
+    return item;
+  }
+  var entryIds = (inst) => new Set(["entries", "scraps"].flatMap((l) => (inst[l] || []).map((e) => e.id)));
+  function stampOrigin(inst, before, note, from) {
+    const origin = note.origin || { from, text: note.text, date: note.date }, born = [];
+    for (const list of ["entries", "scraps"]) for (const e of inst[list] || []) if (!before.has(e.id)) {
+      e.origin = origin;
+      born.push(e);
+      if (list === "scraps" || inst.type === "notes") {
+        if (note.ep && !e.ep) e.ep = note.ep;
+        if (note.links && note.links.length && !e.links) e.links = note.links;
+      }
+    }
+    return born;
+  }
+  var LINK_TYPES = { derive: "dérive de", contredit: "contredit", echo: "fait écho à", documente: "documente" };
+  var LINK_REF = /^[a-z0-9][a-z0-9-]{0,63}\/[^/\s]{1,64}$/;
+  function addLink(item, to, type, id, date) {
+    if (!Object.hasOwn(LINK_TYPES, type) || typeof to !== "string" || !LINK_REF.test(to)) throw new Error("Lien invalide");
+    if ((item.links || []).some((l) => l.to === to && l.type === type)) return null;
+    const link = { id, to, type, date };
+    item.links = [...item.links || [], link];
+    return link;
+  }
+  function retargetLinks(modules, from, to) {
+    for (const inst of Object.values(modules)) for (const list of ["entries", "scraps"]) for (const e of inst[list] || [])
+      for (const l of e.links || []) if (l.to === from) l.to = to;
+  }
+  function setResume(inst, text, date) {
+    const t = String(text || "").trim().slice(0, 200), old = inst.resume;
+    if (old && old.text === t) return;
+    if (old) inst.resumeLog = [...inst.resumeLog || [], { text: old.text, at: old.at, end: date, how: t ? "remplacé" : "repris" }].slice(-30);
+    if (t) inst.resume = { text: t, at: date };
+    else delete inst.resume;
+  }
+  function editFragmentText(f, text, date) {
+    const t = String(text || "").trim();
+    if (!t || t === f.text) return false;
+    f.versions = [...f.versions || [], { text: f.text, at: date }].slice(-10);
+    f.text = t;
+    f.editedAt = date;
+    return true;
+  }
+  function numericValue(raw) {
+    const value = raw != null && raw !== "" ? Number(raw) : null;
+    if (value !== null && !Number.isFinite(value)) throw new Error("Valeur invalide");
+    return value;
+  }
+  function addJournalEntry(instance, input, id, defaultDate) {
+    const date = input.date && validDate(input.date) ? input.date : defaultDate;
+    const type = MODULE_TYPES[instance.type];
+    if (!type.entry) throw new Error("Ce module ne tient pas de journal");
+    const entry = { id, date, note: input.note || "" };
+    type.entry(entry, input);
+    instance.entries.push(entry);
+    return entry;
+  }
+  var RESERVED_IDS = ["accueil", "reglages", "recherche", "bilan"];
+  var reservedId = (id) => RESERVED_IDS.includes(id) || id in Object.prototype;
+  var MODULE_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
+  function slugId(name, existing) {
+    const base = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "module";
+    let id = base, n = 2;
+    while (existing.includes(id) || reservedId(id)) {
+      id = `${base}-${n}`;
+      n++;
+    }
+    return id;
+  }
+  function createModuleInstance(modules, type, name, id) {
+    const label = requireText(name, "Nom du module", 60);
+    if (reservedId(id)) throw new Error("Identifiant réservé");
+    if (Object.hasOwn(modules, id)) throw new Error("Identifiant déjà utilisé");
+    if (!Object.hasOwn(MODULE_TYPES, type)) throw new Error("Type de module inconnu");
+    return modules[id] = { type, label, ...MODULE_TYPES[type].defaults() };
+  }
+  var MODULE_TEMPLATES = [
+    { id: "taches", name: "Tâches", type: "taches", hint: "Échéances, étapes, et trois tâches du jour au plus" },
+    { id: "protocole", name: "Protocole", type: "programme", hint: "Une pratique sur N semaines, un calendrier, un objectif hebdomadaire" },
+    {
+      id: "ecriture",
+      name: "Écriture",
+      type: "cumul",
+      hint: "Un compteur de mots, des chapitres, un carnet de fragments",
+      config: { unitLabel: "mots", goal: 5e4, categoryLabel: "Chapitre", scraps: true, scrapsLabel: "Fragments", entryMode: "total" }
+    },
+    {
+      id: "budget",
+      name: "Budget",
+      type: "budget",
+      hint: "Dépenses et revenus du mois, des enveloppes à plafond",
+      config: { envelopes: [{ id: "courses", name: "Courses", limit: 300 }, { id: "loisirs", name: "Loisirs", limit: 100 }] }
+    },
+    {
+      id: "tableau",
+      name: "Tableau de production",
+      type: "collection",
+      hint: "Des idées qui avancent de colonne en colonne jusqu'à publication",
+      config: {
+        display: "colonnes",
+        statuses: ["Idée", "En cours", "Prêt", "Publié"],
+        doneFrom: 3,
+        statusLabel: "Étape",
+        addLabel: "Nouvelle idée",
+        fields: { title: "Titre", subtitle: "", tag: "Thème", due: "Date prévue", text: "Texte" }
+      }
+    },
+    {
+      id: "decouvertes",
+      name: "À découvrir",
+      type: "collection",
+      hint: "Livres, albums, films : une liste à statuts",
+      config: {
+        display: "liste",
+        statuses: ["À découvrir", "Découvert", "Retenu"],
+        doneFrom: 1,
+        addLabel: "Ajouter",
+        fields: { title: "Titre", subtitle: "Auteur", tag: "Genre", due: "", text: "Note" }
+      }
+    },
+    {
+      id: "decisions",
+      name: "Décisions",
+      type: "collection",
+      hint: "Ce que tu as décidé, pourquoi, et quand le réexaminer",
+      config: {
+        display: "liste",
+        review: true,
+        description: "La raison écrite au moment de décider, relue au moment de réexaminer.",
+        statuses: ["À décider", "Prise", "Abandonnée"],
+        doneFrom: 1,
+        statusLabel: "État",
+        addLabel: "Noter une décision",
+        fields: { title: "Décision", subtitle: "", tag: "Domaine", due: "À réexaminer le", text: "Contexte, options écartées, raison, et ce qui te ferait changer d'avis" }
+      }
+    },
+    {
+      id: "motifs",
+      name: "Motifs",
+      type: "collection",
+      hint: "Tes motifs récurrents, comptés partout : dernière apparition, voisins, jachère",
+      config: {
+        display: "liste",
+        concordance: true,
+        fallowDays: 90,
+        description: "Chaque motif est cherché dans tous tes autres modules, en mot entier, pluriel et variantes compris.",
+        statuses: ["Vivant", "Épuisé"],
+        doneFrom: 1,
+        statusLabel: "État",
+        addLabel: "Ajouter un motif",
+        fields: { title: "Motif", subtitle: "Variantes (séparées par des virgules)", tag: "Famille", due: "", text: "Note" }
+      }
+    },
+    {
+      id: "musique",
+      name: "Musique",
+      type: "collection",
+      hint: "Des artistes et leurs albums, précisés par MusicBrainz, pochettes et nouvelles sorties comprises",
+      config: {
+        display: "liste",
+        music: true,
+        statuses: ["À écouter", "Écouté", "Retenu"],
+        doneFrom: 1,
+        addLabel: "Ajouter un artiste",
+        fields: { title: "Artiste", subtitle: "Album", tag: "Genre", due: "", text: "Note" }
+      }
+    },
+    {
+      id: "sources",
+      name: "Sources",
+      type: "collection",
+      hint: "Articles, livres, pages : un lien ou un DOI suffit, le reste se complète",
+      config: {
+        display: "liste",
+        sources: true,
+        description: "Colle un lien ou un DOI : titre, auteurs, revue et date se complètent. Relie ensuite une source au fragment qu'elle documente.",
+        statuses: ["À lire", "Lue", "Utilisée"],
+        doneFrom: 1,
+        statusLabel: "Lecture",
+        addLabel: "Ajouter à la main",
+        fields: { title: "Titre", subtitle: "Auteurs", tag: "Type", due: "", text: "Résumé et notes" }
+      }
+    },
+    {
+      id: "arc",
+      name: "Arc",
+      type: "arc",
+      hint: "Une séquence d'étapes où loger des fragments et des éléments d'autres modules",
+      config: { stations: [{ id: "1", name: "Étape 1" }, { id: "2", name: "Étape 2" }, { id: "3", name: "Étape 3" }] }
+    },
+    {
+      id: "rappels",
+      name: "Soins",
+      type: "rappels",
+      hint: "Des gestes récurrents et depuis quand ils attendent",
+      config: { types: [{ id: "arrosage", label: "Arrosage", every: 3 }] }
+    },
+    { id: "carnet", name: "Carnet", type: "notes", hint: "Des notes datées, gardées ou rangées ailleurs ensuite" }
+  ];
+  function createFromTemplate(modules, tpl, name, id) {
+    const inst = createModuleInstance(modules, tpl.type, name, id);
+    for (const [k, v] of Object.entries(JSON.parse(JSON.stringify(tpl.config || {}))))
+      inst.config[k] = v && typeof v === "object" && !Array.isArray(v) && inst.config[k] && typeof inst.config[k] === "object" ? { ...inst.config[k], ...v } : v;
+    return inst;
+  }
+  function deleteModuleInstance(modules, moduleList, id) {
+    if (!Object.hasOwn(modules, id)) throw new Error("Module introuvable");
+    delete modules[id];
+    const i = moduleList.findIndex((m) => m.id === id);
+    if (i >= 0) moduleList.splice(i, 1);
+  }
+
+  // src/core/backup.js
+  var record = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+  var collection = (value, name) => {
+    if (!Array.isArray(value) || value.some((item) => !record(item))) throw new Error(`${name} invalide`);
+  };
+  var moduleId = (id, name) => {
+    if (typeof id !== "string" || !MODULE_ID.test(id)) throw new Error(`${name} : identifiant invalide`);
+  };
+  var num = (v, name, min = -Infinity, max = Infinity) => {
+    if (v != null && (typeof v !== "number" || !Number.isFinite(v) || v < min || v > max)) throw new Error(`${name} invalide`);
+  };
+  var ids = (list, name) => {
+    if (list.some((x) => typeof x.id !== "string" || !x.id || x.id.length > 64)) throw new Error(`${name} : identifiant invalide`);
+  };
+  var dated = (list, name) => {
+    if (list.some((x) => typeof x.date !== "string" || !validDate(x.date))) throw new Error(`${name} : date invalide`);
+  };
+  function parseBackup(text) {
+    if (typeof text !== "string" || text.length > 5e6) throw new Error("Sauvegarde trop volumineuse");
+    const data = JSON.parse(text);
+    if (!record(data) || data.format !== "selene-v1" || !record(data.board) || !record(data.site)) throw new Error("Format de sauvegarde invalide");
+    const { board, site } = data;
+    if (site.schemaVersion != null && !(Number.isInteger(site.schemaVersion) && site.schemaVersion >= 1)) throw new Error("Version de format invalide");
+    if ((site.schemaVersion || 1) > SCHEMA_VERSION) throw new Error("Sauvegarde créée par une version plus récente de Selene : mets l'application à jour d'abord.");
+    collection(board.tasks, "Tâches");
+    if (board.tasks.some((t) => typeof t.id !== "string" || typeof t.title !== "string" || t.steps != null && (!Array.isArray(t.steps) || t.steps.some((s) => !record(s) || typeof s.t !== "string")))) throw new Error("Tâche invalide");
+    if (!record(site.config) || site.config.modules != null && (!Array.isArray(site.config.modules) || site.config.modules.some((m) => !record(m) || typeof m.id !== "string" || typeof m.on !== "boolean" || m.group != null && (typeof m.group !== "string" || m.group.length > 40) || // group : domaine de navigation, facultatif
+    m.sigil != null && (typeof m.sigil !== "string" || !/^[a-z]{1,20}$/.test(m.sigil)))) || // sigil : glyphe de l'espace, facultatif
+    site.config.groups != null && !record(site.config.groups) || site.config.labels != null && !record(site.config.labels) || site.config.assistant != null && (!record(site.config.assistant) || site.config.assistant.share != null && !record(site.config.assistant.share)) || // sky : le lieu du ciel de l'accueil, facultatif ; ses coordonnées finissent dans une URL, son nom dans le HTML.
+    site.config.sky != null && (!record(site.config.sky) || typeof site.config.sky.name !== "string" || site.config.sky.name.length > 80 || typeof site.config.sky.lat !== "number" || !(Math.abs(site.config.sky.lat) <= 90) || typeof site.config.sky.lon !== "number" || !(Math.abs(site.config.sky.lon) <= 180)) || // dehors : les flux suivis (adresse http(s), titre, projet, « vu jusqu'à »), cent au plus.
+    site.config.dehors != null && (!record(site.config.dehors) || !Array.isArray(site.config.dehors.feeds) || site.config.dehors.feeds.length > 100 || site.config.dehors.feeds.some((f) => !record(f) || typeof f.id !== "string" || !/^[\w-]{1,64}$/.test(f.id) || typeof f.url !== "string" || f.url.length > 2e3 || !/^https?:\/\//i.test(f.url) || typeof f.title !== "string" || f.title.length > 200 || f.mod != null && (typeof f.mod !== "string" || f.mod.length > 64) || f.seen != null && !(Number.isFinite(f.seen) && f.seen >= 0) || f.motifs != null && typeof f.motifs !== "boolean") || site.config.dehors.artists != null && typeof site.config.dehors.artists !== "boolean" || site.config.dehors.artistsSeen != null && !(Number.isFinite(site.config.dehors.artistsSeen) && site.config.dehors.artistsSeen >= 0) || site.config.dehors.research != null && (!Array.isArray(site.config.dehors.research) || site.config.dehors.research.length > 30 || site.config.dehors.research.some((r) => !record(r) || typeof r.id !== "string" || !/^[\w-]{1,64}$/.test(r.id) || !["q", "author"].includes(r.kind) || typeof r.q !== "string" || !r.q || r.q.length > 200 || r.name != null && (typeof r.name !== "string" || !r.name || r.name.length > 200) || r.mod != null && (typeof r.mod !== "string" || r.mod.length > 64) || r.seen != null && !(Number.isFinite(r.seen) && r.seen >= 0)))) || // radar : les mots du radar culturel, facultatifs.
+    site.config.radar != null && (!record(site.config.radar) || typeof site.config.radar.words !== "string" || site.config.radar.words.length > 300)) throw new Error("Configuration invalide");
+    for (const m of site.config.modules || []) moduleId(m.id, "Module");
+    for (const map of [site.config.groups, site.config.labels, site.config.assistant && site.config.assistant.share])
+      if (map) for (const k of Object.keys(map)) moduleId(k, "Configuration");
+    const sections = {
+      budget: ["entries", "envelopes"],
+      kundalini: ["sessions"],
+      ecriture: ["chapters", "sessions", "fragments"],
+      moth: ["posts"],
+      phidippus: ["log"],
+      musique: ["albums"],
+      inbox: ["items"]
+    };
+    for (const [name, fields] of Object.entries(sections)) {
+      if (site[name] == null) continue;
+      if (!record(site[name])) throw new Error(`${name} invalide`);
+      for (const field of fields) if (site[name][field] != null) collection(site[name][field], `${name}.${field}`);
+    }
+    if (site.kundalini) {
+      num(site.kundalini.weeks, "kundalini.weeks", 1, 520);
+      num(site.kundalini.perWeek, "kundalini.perWeek", 1, 7);
+    }
+    if (site.ecriture) num(site.ecriture.goal, "ecriture.goal", 0);
+    if (site.phidippus) {
+      num(site.phidippus.feedEvery, "phidippus.feedEvery", 0, 3650);
+      num(site.phidippus.mistEvery, "phidippus.mistEvery", 0, 3650);
+    }
+    if (site.budget && site.budget.entries) for (const e of site.budget.entries) num(e.amount, "budget : montant");
+    if (site.modules != null) {
+      if (!record(site.modules)) throw new Error("modules invalide");
+      for (const [id, inst] of Object.entries(site.modules)) {
+        moduleId(id, "Module");
+        if (reservedId(id)) throw new Error(`module ${id} : identifiant réservé`);
+        if (!record(inst) || !Object.hasOwn(MODULE_TYPES, inst.type) || typeof inst.label !== "string" || !record(inst.config)) throw new Error(`module ${id} invalide`);
+        const where = `module ${id}`;
+        collection(inst.entries, `${where} entries`);
+        ids(inst.entries, where);
+        if (MODULE_TYPES[inst.type].datedEntries !== false) dated(inst.entries, where);
+        if (inst.scraps != null) {
+          collection(inst.scraps, `${where} scraps`);
+          ids(inst.scraps, where);
+        }
+        const fail = (name) => {
+          throw new Error(`${where} : ${name} invalide`);
+        };
+        for (const x of [...inst.entries, ...inst.scraps || []]) if (x.origin != null && (!record(x.origin) || typeof x.origin.text !== "string" || typeof x.origin.from !== "string" || x.origin.date != null && !(typeof x.origin.date === "string" && validDate(x.origin.date)))) fail("provenance");
+        for (const x of [...inst.entries, ...inst.scraps || []]) if (x.links != null && (!Array.isArray(x.links) || x.links.some((l) => !record(l) || typeof l.id !== "string" || !l.id || l.id.length > 64 || !Object.hasOwn(LINK_TYPES, l.type) || typeof l.to !== "string" || !LINK_REF.test(l.to) || l.date != null && !(typeof l.date === "string" && validDate(l.date))))) fail("liaison");
+        if (inst.resume != null && (!record(inst.resume) || typeof inst.resume.text !== "string" || typeof inst.resume.at !== "string" || !validDate(inst.resume.at))) fail("pont de reprise");
+        if (inst.resumeLog != null) collection(inst.resumeLog, `${where} ponts`);
+        for (const f of inst.scraps || []) {
+          if (f.versions != null && (!Array.isArray(f.versions) || f.versions.some((x) => !record(x) || typeof x.text !== "string" || x.at != null && !(typeof x.at === "string" && validDate(x.at))))) fail("version");
+          if (f.editedAt != null && !(typeof f.editedAt === "string" && validDate(f.editedAt))) fail("fragment");
+        }
+        MODULE_TYPES[inst.type].validate(inst, {
+          num: (v, name, min, max) => num(v, `${where} : ${name}`, min, max),
+          list: (l, name) => {
+            collection(l, `${where} ${name}`);
+            ids(l, where);
+            return l;
+          },
+          ep: (x) => {
+            if (x.ep != null && !Object.hasOwn(EP_STATUS, x.ep) || x.epLog != null && !Array.isArray(x.epLog)) fail("statut");
+          },
+          fail
+        });
+      }
+    }
+    for (const state of [board, site]) if (state.updatedAt != null && (typeof state.updatedAt !== "number" || !Number.isFinite(state.updatedAt) || state.updatedAt < 0)) throw new Error("Date de modification invalide");
+    return { board, site };
+  }
+  function createBackup(boardData, siteData, exportedAt = (/* @__PURE__ */ new Date()).toISOString()) {
+    return JSON.stringify({ format: "selene-v1", exportedAt, board: boardData, site: siteData }, null, 2);
+  }
+
+  // src/core/sky.js
+  var RAD = Math.PI / 180;
+  var daysJ2000 = (t) => t / 864e5 - 10957.5;
+  var clamp01 = (x) => Math.max(0, Math.min(1, x));
+  function toHorizon(ra, dec, d, lat, lon) {
+    const H = (280.46061837 + 360.98564736629 * d + lon) * RAD - ra, phi = lat * RAD;
+    const alt = Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H));
+    const azS = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi));
+    return { alt: alt / RAD, az: ((azS / RAD + 180) % 360 + 360) % 360 };
+  }
+  function sunPosition(t, lat, lon) {
+    const d = daysJ2000(t), g = (357.529 + 0.98560028 * d) * RAD, q = 280.459 + 0.98564736 * d;
+    const L = (q + 1.915 * Math.sin(g) + 0.02 * Math.sin(2 * g)) * RAD, e = (23.439 - 36e-8 * d) * RAD;
+    return toHorizon(Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L)), Math.asin(Math.sin(e) * Math.sin(L)), d, lat, lon);
+  }
+  function moonPosition(t, lat, lon) {
+    const d = daysJ2000(t), L = (218.316 + 13.176396 * d) * RAD, M = (134.963 + 13.064993 * d) * RAD, F = (93.272 + 13.22935 * d) * RAD;
+    const l = L + 6.289 * RAD * Math.sin(M), b = 5.128 * RAD * Math.sin(F), e = 23.4397 * RAD;
+    const ra = Math.atan2(Math.sin(l) * Math.cos(e) - Math.tan(b) * Math.sin(e), Math.cos(l));
+    const dec = Math.asin(Math.sin(b) * Math.cos(e) + Math.cos(b) * Math.sin(e) * Math.sin(l));
+    const p = toHorizon(ra, dec, d, lat, lon);
+    p.alt -= 0.95 * Math.cos(p.alt * RAD);
+    return p;
+  }
+  function nextCrossing(pos, t, lat, lon, h, hours = 26, step = 5) {
+    let prev = pos(t, lat, lon).alt - h;
+    for (let m = step; m <= hours * 60; m += step) {
+      const tt = t + m * 6e4, cur = pos(tt, lat, lon).alt - h;
+      if (prev < 0 !== cur < 0) return { at: tt - step * 6e4 * (cur / (cur - prev)), rising: cur > prev };
+      prev = cur;
+    }
+    return null;
+  }
+  function approxPlace(now = /* @__PURE__ */ new Date()) {
+    return { lat: 45, lon: -new Date(now.getFullYear(), 0, 1).getTimezoneOffset() / 4, approx: true };
+  }
+  function moonPlacement(p, lat) {
+    if (p.alt < -1) return null;
+    const rel = lat >= 0 ? p.az - 180 : (p.az + 180) % 360 - 180;
+    return { x: 50 + Math.max(-1, Math.min(1, rel / 90)) * 38, y: 62 - clamp01(p.alt / 60) * 52 };
+  }
+  var WEATHER = { clear: "dégagé", veiled: "voilé", overcast: "couvert", fog: "brume", rain: "pluie", snow: "neige", storm: "orage" };
+  function weatherState(code) {
+    if (code == null || code === "" || !Number.isFinite(+code)) return null;
+    const c = +code;
+    if (c === 0) return "clear";
+    if (c <= 2) return "veiled";
+    if (c === 45 || c === 48) return "fog";
+    if (c >= 51 && c <= 67 || c >= 80 && c <= 82) return "rain";
+    if (c >= 71 && c <= 77 || c === 85 || c === 86) return "snow";
+    if (c >= 95) return "storm";
+    return "overcast";
+  }
+  var hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  var rgbHex = (c) => "#" + c.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, "0")).join("");
+  var mixHex = (a, b, f) => {
+    const x = hexRgb(a), y = hexRgb(b);
+    return rgbHex(x.map((v, i) => v + (y[i] - v) * f));
+  };
+  var lin = (v) => {
+    v /= 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  var luminance = (h) => {
+    const [r, g, b] = hexRgb(h);
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  };
+  var contrast = (a, b) => {
+    const x = luminance(a), y = luminance(b);
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  };
+  var desaturate = (h, f) => {
+    const l = luminance(h) ** (1 / 2.2) * 255;
+    return mixHex(h, rgbHex([l, l, l]), f);
+  };
+  var SKY_KEYS = {
+    dark: [
+      [-18, "#070b10", "#132019", "#1d2b23", "#0a0f0c"],
+      // nuit
+      [-12, "#0a1220", "#1a2a2e", "#1f2e2a", "#0a100d"],
+      // crépuscule nautique
+      [-6, "#142033", "#3a4a55", "#26363a", "#0c1210"],
+      // heure bleue
+      [-1, "#1d2a3d", "#6a5a4e", "#2d3a36", "#0d1411"],
+      // horizon cuivré
+      [4, "#2a3a4a", "#86684a", "#3a4a40", "#111a14"],
+      // heure dorée
+      [12, "#3a4c58", "#6f7d78", "#45584e", "#16201a"],
+      // jour bas
+      [35, "#445866", "#7c8a86", "#4c5f55", "#18231c"]
+      // jour
+    ],
+    light: [
+      [-18, "#3a4656", "#7d8a8c", "#5d6d66", "#2f3d35"],
+      [-12, "#4d5b6c", "#98a3a2", "#66766e", "#314038"],
+      [-6, "#6d7c8e", "#b4b8b0", "#72827a", "#34443a"],
+      [-1, "#8a97a4", "#d9c7aa", "#7d8d84", "#37473d"],
+      [4, "#9fb0b8", "#e3d2b4", "#869a8d", "#394a3f"],
+      [12, "#b0c2c4", "#dfe5dc", "#8b9e91", "#3a4c40"],
+      [35, "#b9c7c0", "#dfe5dc", "#8fa294", "#3b4d40"]
+    ]
+  };
+  function skyAt(alt, dark) {
+    const keys = SKY_KEYS[dark ? "dark" : "light"];
+    if (alt <= keys[0][0]) return keys[0].slice(1);
+    if (alt >= keys.at(-1)[0]) return keys.at(-1).slice(1);
+    const i = keys.findIndex((k) => k[0] > alt), a = keys[i - 1], b = keys[i], f = (alt - a[0]) / (b[0] - a[0]);
+    return a.slice(1).map((c, j) => mixHex(c, b[j + 1], f));
+  }
+  var WEATHER_FX = {
+    clear: { desat: 0, dark: 1, veil: 0, stars: 1, clouds: 0 },
+    veiled: { desat: 0.25, dark: 0.97, veil: 0.25, stars: 0.5, clouds: 0.35 },
+    overcast: { desat: 0.7, dark: 0.9, veil: 0.75, stars: 0, clouds: 0.7 },
+    fog: { desat: 0.5, dark: 0.95, veil: 0.6, stars: 0, clouds: 0.3, fog: 1 },
+    rain: { desat: 0.6, dark: 0.82, veil: 0.8, stars: 0, clouds: 0.75, rain: 0.35 },
+    snow: { desat: 0.6, dark: 1, veil: 0.7, stars: 0, clouds: 0.6, snow: 0.8 },
+    storm: { desat: 0.5, dark: 0.65, veil: 0.9, stars: 0, clouds: 0.85, rain: 0.45, warm: 0.25 }
+  };
+  var INK_LIGHT = "#eceee6";
+  var INK_DARK = "#1a211b";
+  var LEAF_KEYS = [
+    [0, 0, "#6f5a3e"],
+    [100, 0, "#6f5a3e"],
+    [118, 0.55, "#9db36c"],
+    [140, 1, "#5d7a48"],
+    [250, 1, "#56703f"],
+    [278, 1, "#b08a3e"],
+    [298, 0.75, "#9c5b30"],
+    [318, 0.2, "#7d4c2c"],
+    [330, 0, "#6f5a3e"],
+    [367, 0, "#6f5a3e"]
+  ];
+  function seasonAt(t, lat = 45) {
+    const y = new Date(t).getUTCFullYear(), doy = (t - Date.UTC(y, 0, 1)) / 864e5;
+    const d = lat < 0 ? (doy + 182.5) % 365.25 : doy;
+    const i = LEAF_KEYS.findIndex((k) => k[0] > d), a = LEAF_KEYS[i - 1], b = LEAF_KEYS[i], f = (d - a[0]) / (b[0] - a[0]);
+    const leaf = Math.round((a[1] + (b[1] - a[1]) * f) * 1e3) / 1e3;
+    const phase = leaf < 0.05 ? "nu" : d < 140 ? "debourrement" : d < 262 ? "feuille" : d < 300 ? "rouille" : "chute";
+    return { leaf, color: mixHex(a[2], b[2], f), phase };
+  }
+  function skyScene({ sunAlt, illum = 0.5, weather = null, dark = true, season = null, frost = false }) {
+    const fx = WEATHER_FX[weather] || WEATHER_FX.clear;
+    let [top, bot, far, near] = skyAt(sunAlt, dark);
+    const shade = (c) => {
+      const d = desaturate(c, fx.desat);
+      return fx.dark < 1 ? mixHex(d, "#000000", 1 - fx.dark) : d;
+    };
+    top = shade(top);
+    bot = shade(bot);
+    if (fx.warm) bot = mixHex(bot, "#6b4a2e", fx.warm);
+    if (fx.fog) far = mixHex(far, bot, 0.6);
+    if (weather === "snow") {
+      top = mixHex(top, "#dde3e0", dark ? 0.08 : 0.15);
+      bot = mixHex(bot, "#e6ebe8", dark ? 0.12 : 0.2);
+    }
+    const night = clamp01((-4 - sunAlt) / 11);
+    const star = night * (1 - 0.7 * illum) * fx.stars * (dark ? 0.85 : 0.45);
+    const glow = (dark ? 0.16 : 0.1) * clamp01((2 - sunAlt) / 10) * (1 - fx.veil * 0.5);
+    const moonOpacity = (1 - 0.85 * fx.veil) * (sunAlt > 0 ? 0.55 : 1);
+    const earthshine = illum < 0.4 ? 0.1 * (1 - illum / 0.4) * (sunAlt < -4 ? 1 : 0.3) : 0;
+    const se = season || { leaf: 1, color: "#56703f", phase: "feuille" }, vivid = 0.2 + 0.45 * (1 - night);
+    const leafColor = desaturate(mixHex(far, se.color, vivid), fx.desat * 0.5), wood = mixHex(far, near, 0.6);
+    const birch = mixHex(far, dark ? "#d8d8cf" : "#f1efe8", 0.2 + 0.35 * (1 - night));
+    const frostColor = frost ? mixHex(far, "#eef3f2", dark ? 0.55 : 0.75) : null;
+    const mistA = fx.fog ? 0.9 : dark ? 0.55 : 0.75, mistRgb = hexRgb(mixHex(bot, dark ? "#28392f" : "#e2e6de", 0.5));
+    const sample = mixHex(top, bot, 0.3);
+    const ink = contrast(INK_LIGHT, sample) >= contrast(INK_DARK, sample) ? INK_LIGHT : INK_DARK;
+    const scrimColor = ink === INK_LIGHT ? "#060907" : "#f2f3ee";
+    let scrim = 0;
+    while (scrim < 0.9 && contrast(ink, mixHex(sample, scrimColor, scrim)) < 4.8) scrim += 0.05;
+    return {
+      top,
+      bot,
+      far,
+      near,
+      star,
+      glow,
+      moonOpacity,
+      earthshine,
+      weather,
+      mist: `rgba(${mistRgb.join(",")},${mistA})`,
+      fog: !!fx.fog,
+      clouds: fx.clouds,
+      cloud: mixHex(bot, dark ? "#9aa3a3" : "#ffffff", 0.18),
+      rain: fx.rain || 0,
+      snow: fx.snow || 0,
+      leaf: leafColor,
+      leafO: se.leaf,
+      leaves: se.phase,
+      wood,
+      birch,
+      frost: frostColor,
+      ink,
+      scrim: Math.round(scrim * 100) / 100,
+      scrimColor,
+      sample
+    };
+  }
+  var WIND_NAMES = ["du nord", "du nord-est", "d'est", "du sud-est", "du sud", "du sud-ouest", "d'ouest", "du nord-ouest"];
+  var windName = (dir) => WIND_NAMES[Math.round((+dir % 360 + 360) % 360 / 45) % 8];
+  function skyMotion({ wind = 8, dir = 270, precip = 0, lat = 45 } = {}) {
+    const w = Number.isFinite(+wind) ? Math.max(0, +wind) : 8, from = Number.isFinite(+dir) ? +dir : 270;
+    const east = Math.sin((from + 180) * RAD), dx = (lat >= 0 ? -1 : 1) * east;
+    const eff = Math.max(3, w * Math.max(0.35, Math.abs(dx)));
+    const clouds = Math.round(Math.max(45, Math.min(600, 2400 / eff)));
+    const p = Number.isFinite(+precip) ? Math.max(0, +precip) : 0;
+    const fall = Math.max(70, Math.min(220, 70 + 25 * p));
+    return {
+      toRight: dx > 0,
+      clouds,
+      mist: Math.round(clouds * 1.8),
+      slant: Math.round(Math.max(-30, Math.min(30, dx * w * 0.9))),
+      // degrés : la pluie penche avec le vent
+      rain: +(24 / fall).toFixed(3),
+      snow: +(60 / Math.max(10, Math.min(30, 10 + w * 0.4))).toFixed(2)
+    };
+  }
+  var SHOWERS = [["Quadrantides", 1, 4, 110], ["Lyrides", 4, 22, 18], ["Perséides", 8, 12, 100], ["Orionides", 10, 21, 20], ["Léonides", 11, 17, 15], ["Géminides", 12, 14, 150]];
+  var ECLIPSES = [
+    ["2026-08-12", "soleil", "partielle", "90 % du Soleil masqué, maximum vers 20 h 14"],
+    ["2026-08-28", "lune", "partielle", ""],
+    ["2027-02-20", "lune", "pénombre", ""],
+    ["2027-08-02", "soleil", "partielle", ""],
+    ["2028-01-12", "lune", "partielle", ""],
+    ["2028-01-26", "soleil", "partielle", ""],
+    ["2028-07-06", "lune", "pénombre", ""],
+    ["2028-12-31", "lune", "totale", ""],
+    ["2029-06-26", "lune", "totale", ""],
+    ["2029-12-20", "lune", "totale", ""],
+    ["2030-06-01", "soleil", "partielle", ""],
+    ["2030-06-15", "lune", "pénombre", ""],
+    ["2030-12-09", "lune", "pénombre", ""]
+  ];
+  var nearLille = (lat, lon) => lat >= 48.5 && lat <= 52.5 && lon >= 0.5 && lon <= 6.5;
+  var dayDiff = (a, b) => Math.round((Date.parse(b + "T12:00:00Z") - Date.parse(a + "T12:00:00Z")) / 864e5);
+  function skyEvents(today, place) {
+    const out = [], y = +today.slice(0, 4);
+    for (const [name, m, d, zhr] of SHOWERS) {
+      for (const yy of [y, y + 1]) {
+        const peak = `${yy}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`, n = dayDiff(today, peak);
+        if (n === 0 || n === 1) out.push({ kind: "shower", name, zhr, inDays: n, date: peak });
+      }
+    }
+    if (place && nearLille(place.lat, place.lon)) for (const [date, body, type, note] of ECLIPSES) {
+      const n = dayDiff(today, date);
+      if (n >= 0 && n <= 7) out.push({ kind: "eclipse", body, type, note, inDays: n, date });
+    }
+    return out;
+  }
+  var rainDays = (days, from, n = 5) => (days || []).filter((x) => x && x.d >= from && dayDiff(from, x.d) < n && ((+x.mm || 0) >= 1 || (+x.pp || 0) >= 60)).map((x) => x.d);
+
+  // src/core/carte.js
+  var CARTE_MAX = 80;
+  function hash01(s) {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0) / 4294967296;
+  }
+  function carteLayout(nodes, edges, bands, { W = 720, bandH = 64, top = 18, left = 96, right = 18 } = {}) {
+    const used = bands.filter((m) => nodes.some((n) => n.mod === m));
+    const extra = [...new Set(nodes.map((n) => n.mod).filter((m) => !used.includes(m)))].sort();
+    const order = [...used, ...extra], bandOf = new Map(order.map((m, i) => [m, i]));
+    const dated2 = nodes.filter((n) => n.date).map((n) => Date.parse(n.date + "T12:00:00Z")).filter(Number.isFinite);
+    const t0 = dated2.length ? Math.min(...dated2) : 0, t1 = dated2.length ? Math.max(...dated2) : 0;
+    const undated = nodes.some((n) => !n.date), x0 = left + (undated ? 34 : 0), x1 = W - right;
+    const xOf = (n) => {
+      if (!n.date) return left + 10;
+      const t = Date.parse(n.date + "T12:00:00Z");
+      return t1 > t0 ? x0 + (x1 - x0) * (t - t0) / (t1 - t0) : (x0 + x1) / 2;
+    };
+    const stars = [], buckets = /* @__PURE__ */ new Map();
+    for (const n of [...nodes].sort((a, b) => a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0)) {
+      const b = bandOf.get(n.mod), x = Math.round(xOf(n) * 10) / 10, key = `${b}:${Math.round(x / 10)}`;
+      const i = buckets.get(key) || 0;
+      buckets.set(key, i + 1);
+      const cy = top + b * bandH + bandH / 2, jitter = (hash01(n.ref) - 0.5) * bandH * 0.3;
+      const step = i ? Math.ceil(i / 2) * (i % 2 ? 1 : -1) * 11 : 0;
+      const y = Math.max(top + b * bandH + 7, Math.min(top + (b + 1) * bandH - 7, cy + (i ? step : jitter)));
+      stars.push({ ref: n.ref, mod: n.mod, x, y: Math.round(y * 10) / 10, r: Math.round(Math.min(8, 3.2 + 1.3 * Math.sqrt(n.links || 0)) * 10) / 10 });
+    }
+    const at = new Map(stars.map((s) => [s.ref, s]));
+    const lines = edges.filter((e) => at.has(e.from) && at.has(e.to) && e.from !== e.to).map((e) => {
+      const a = at.get(e.from), b = at.get(e.to), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, dx = b.x - a.x, dy = b.y - a.y, k = 0.18;
+      const d = `M${a.x},${a.y}Q${Math.round((mx - dy * k) * 10) / 10},${Math.round((my + dx * k) * 10) / 10} ${b.x},${b.y}`;
+      return { from: e.from, to: e.to, type: e.type, open: !!e.open, d };
+    });
+    return {
+      width: W,
+      height: top * 2 + order.length * bandH,
+      bands: order.map((mod, i) => ({ mod, y: top + i * bandH })),
+      stars,
+      lines,
+      span: dated2.length ? { from: new Date(t0).toISOString().slice(0, 10), to: new Date(t1).toISOString().slice(0, 10), x0, x1 } : null
+    };
+  }
+  function carteNeighbourhood(start, adjacency, depth = 2, max = CARTE_MAX) {
+    const seen = /* @__PURE__ */ new Set([start]);
+    let frontier = [start];
+    for (let d = 0; d < depth && frontier.length; d++) {
+      const next = [];
+      for (const r of frontier) for (const n of [...adjacency.get(r) || []].sort()) if (!seen.has(n)) {
+        seen.add(n);
+        next.push(n);
+      }
+      frontier = next;
+    }
+    const refs = [...seen];
+    return { refs: refs.slice(0, max), capped: refs.length > max };
+  }
+
+  // src/core/sources.js
+  var TRACKERS = /^(utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|yclid|mc_cid|mc_eid|igshid|igsh|ref_src|ref_url|_hsenc|_hsmi|mkt_tok|spm)$/i;
+  var clip = (s, n) => {
+    const t = String(s ?? "").replace(/\s+/g, " ").trim();
+    return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t;
+  };
+  function normalizeUrl(raw) {
+    let u;
+    try {
+      u = new URL(String(raw).trim());
+    } catch {
+      return null;
+    }
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    u.hash = "";
+    u.hostname = u.hostname.toLowerCase();
+    for (const k of [...u.searchParams.keys()]) if (TRACKERS.test(k)) u.searchParams.delete(k);
+    let s = u.toString();
+    if (u.pathname !== "/" && !u.search && s.endsWith("/")) s = s.slice(0, -1);
+    return s;
+  }
+  function findDoi(text) {
+    let t = String(text || "");
+    try {
+      t = decodeURIComponent(t);
+    } catch {
+    }
+    const m = t.match(/\b(10\.\d{4,9}\/[^\s"'<>]+)/i);
+    return m ? m[1].replace(/[.,;:)\]}>»]+$/, "").toLowerCase() : null;
+  }
+  function findUrl(text) {
+    const m = String(text || "").match(/https?:\/\/[^\s"'<>]+/i);
+    return m ? normalizeUrl(m[0].replace(/[.,;:)\]}>»]+$/, "")) : null;
+  }
+  function sourceKey(src) {
+    if (!src) return null;
+    if (src.doi) return "doi:" + String(src.doi).toLowerCase();
+    const u = src.url && normalizeUrl(src.url);
+    return u ? "url:" + u.replace(/^https?:\/\/(www\.)?/, "") : null;
+  }
+  var CROSSREF_KIND = {
+    "journal-article": "article",
+    "book": "livre",
+    "monograph": "livre",
+    "edited-book": "livre",
+    "book-chapter": "chapitre",
+    "posted-content": "prépublication",
+    "proceedings-article": "actes",
+    "dissertation": "thèse",
+    "report": "rapport",
+    "reference-entry": "notice"
+  };
+  var partsDate = (p) => {
+    const d = p && p["date-parts"] && p["date-parts"][0];
+    if (!d || !d[0]) return "";
+    return [String(d[0]).padStart(4, "0"), ...d.slice(1, 3).map((x) => String(x).padStart(2, "0"))].join("-");
+  };
+  var people = (list) => {
+    const n = (list || []).map((a) => clip(a.name || [a.given, a.family].filter(Boolean).join(" "), 80)).filter(Boolean);
+    return n.length > 3 ? n.slice(0, 3).join(", ") + " et al." : n.join(", ");
+  };
+  function crossrefToSource(msg, doi) {
+    const m = msg || {}, d = String(m.DOI || doi || "").toLowerCase();
+    return {
+      title: clip((m.title || [])[0] || d, 300),
+      authors: people(m.author),
+      site: clip((m["container-title"] || [])[0] || m.publisher || "", 200),
+      date: partsDate(m.issued) || partsDate(m.published) || partsDate(m["published-print"]) || partsDate(m["published-online"]),
+      kind: CROSSREF_KIND[m.type] || clip(m.type || "", 40),
+      doi: d || null,
+      url: d ? "https://doi.org/" + d : normalizeUrl(m.URL || ""),
+      abstract: clip(String(m.abstract || "").replace(/<\/?(?:jats:)?(?:p|sec|title)\b[^>]*>/g, " ").replace(/<[^>]*>/g, ""), 1200)
+    };
+  }
+  function microlinkToSource(data, url) {
+    const d = data || {}, u = normalizeUrl(d.url || url) || normalizeUrl(url);
+    let host = "";
+    try {
+      host = new URL(u).hostname.replace(/^www\./, "");
+    } catch {
+    }
+    return {
+      title: clip(d.title || u || "", 300),
+      authors: clip(d.author || "", 200),
+      site: clip(d.publisher || host, 200),
+      date: /^\d{4}-\d{2}-\d{2}/.test(d.date || "") ? d.date.slice(0, 10) : "",
+      kind: "page",
+      doi: findDoi(u) || null,
+      url: u,
+      abstract: clip(d.description || "", 600)
+    };
+  }
+  function bareSource(url, doi) {
+    const u = normalizeUrl(url || (doi ? "https://doi.org/" + doi : ""));
+    let host = "";
+    try {
+      host = new URL(u).hostname.replace(/^www\./, "");
+    } catch {
+    }
+    return { title: doi || clip(u || "", 300), authors: "", site: host, date: "", kind: doi ? "article" : "page", doi: doi || null, url: u, abstract: "" };
+  }
+
+  // src/core/musique.js
+  var MBID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  var mbArtistQuery = (name) => `artist:"${String(name).trim().replace(/[\\"]/g, "\\$&")}"`;
+  function mbArtists(json) {
+    return (json && json.artists || []).filter((a) => MBID.test(a.id || "")).slice(0, 6).map((a) => ({
+      id: a.id,
+      name: String(a.name || ""),
+      note: String(a.disambiguation || ""),
+      country: String(a.country || ""),
+      begin: String(a["life-span"] && a["life-span"].begin || "").slice(0, 4)
+    }));
+  }
+  function mbAlbums(json) {
+    const seen = /* @__PURE__ */ new Set(), out = [];
+    for (const g of json && json["release-groups"] || []) {
+      if (!MBID.test(g.id || "") || seen.has(g.id)) continue;
+      if (!["Album", "EP"].includes(g["primary-type"]) || (g["secondary-types"] || []).length) continue;
+      seen.add(g.id);
+      out.push({ id: g.id, title: String(g.title || ""), date: String(g["first-release-date"] || ""), type: g["primary-type"] === "EP" ? "EP" : "album" });
+    }
+    return out.sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999"));
+  }
+  var mbSince = (albums, since) => albums.filter((x) => x.date && (x.date + "-01-01").slice(0, 10) > since);
+  var coverUrl = (rg) => MBID.test(rg || "") ? `https://coverartarchive.org/release-group/${rg}/front-250` : "";
+
+  // src/core/radar.js
+  var RADAR_HOST = "https://opendata.lillemetropole.fr";
+  var RADAR_FIELDS = "uid,title_fr,description_fr,keywords_fr,firstdate_begin,lastdate_end,location_name,location_city,canonicalurl";
+  var radarFold = (s) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  var addDaysISO = (iso, n) => new Date(Date.parse(iso + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+  function radarUrl(place, from, { days = 14, km = 20, lean = true } = {}) {
+    const lat = Math.round(+place.lat * 10) / 10, lon = Math.round(+place.lon * 10) / 10;
+    const where = `lastdate_end >= date'${from}' and firstdate_begin < date'${addDaysISO(from, days)}' and within_distance(location_coordinates, geom'POINT(${lon} ${lat})', ${km}km)`;
+    const q = Object.entries({ where, order_by: "firstdate_begin", limit: "100", ...lean ? { select: RADAR_FIELDS } : {} }).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+    return `${RADAR_HOST}/api/explore/v2.1/catalog/datasets/evenements-publics-openagenda/records?${q}`;
+  }
+  var radarText = (v, n) => {
+    const t = String(Array.isArray(v) ? v.join(", ") : v ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t;
+  };
+  var radarDay = (v) => /^\d{4}-\d{2}-\d{2}/.test(String(v || "")) ? String(v).slice(0, 10) : "";
+  function radarEvents(json) {
+    const seen = /* @__PURE__ */ new Set(), out = [];
+    for (const r of json && Array.isArray(json.results) ? json.results : []) {
+      if (!r || typeof r !== "object") continue;
+      const title = radarText(r.title_fr ?? r.title, 200);
+      if (!title) continue;
+      const from = radarDay(r.firstdate_begin), to = radarDay(r.lastdate_end) || from;
+      let url = "";
+      try {
+        const u = new URL(String(r.canonicalurl || ""));
+        if (u.protocol === "https:") url = u.toString();
+      } catch {
+      }
+      const id = String(r.uid ?? url ?? title).slice(0, 80);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const kw = (Array.isArray(r.keywords_fr) ? r.keywords_fr : String(r.keywords_fr ?? r.keywords ?? "").split(/[,;]/)).map((k) => radarText(k, 40)).filter(Boolean).slice(0, 8);
+      out.push({ id, title, from, to, place: radarText(r.location_name, 120), city: radarText(r.location_city, 80), url, kw, text: radarText(r.description_fr ?? r.description, 300) });
+    }
+    return out;
+  }
+  var radarWords = (s) => [...new Set(String(s || "").split(",").map((w) => radarFold(w.trim())).filter((w) => w.length > 1))];
+  function radarMatch(events, words, n = 5) {
+    const hits = [];
+    for (const e of events || []) {
+      const f = radarFold(`${e.title} ${e.kw.join(" ")} ${e.text} ${e.place}`), on = words.filter((w) => f.includes(w));
+      if (on.length) hits.push({ ...e, on });
+    }
+    hits.sort((a, b) => (a.from || "9999").localeCompare(b.from || "9999") || a.title.localeCompare(b.title));
+    return { items: hits.slice(0, n), total: hits.length };
+  }
+
+  // src/core/instagram.js
+  function igFix(s) {
+    s = String(s ?? "");
+    if (!/[Â-ô][\u0080-¿]/.test(s) || /[^\u0000-ÿ]/.test(s)) return s;
+    try {
+      return decodeURIComponent(s.replace(/%/g, "%25").replace(/[\u0080-ÿ]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase()));
+    } catch {
+      return s;
+    }
+  }
+  var igTime = (v) => Number.isInteger(+v) && +v > 946684800 && +v < 1e10 ? +v : 0;
+  function igPosts(json) {
+    const lists = Array.isArray(json) ? [["post", json]] : json && typeof json === "object" ? Object.entries(json).filter(([k, v]) => Array.isArray(v) && /reel|post|media/i.test(k) && !/stor/i.test(k)).map(([k, v]) => [/reel/i.test(k) ? "reel" : "post", v]) : [];
+    const out = [];
+    for (const [k, list] of lists) for (const p of list) {
+      if (!p || typeof p !== "object") continue;
+      const media = Array.isArray(p.media) ? p.media.filter((m) => m && typeof m === "object") : [];
+      const t = igTime(p.creation_timestamp) || igTime(media[0] && media[0].creation_timestamp);
+      if (!t) continue;
+      out.push({ t, k, caption: igFix(p.title || media[0] && media[0].title || "").trim(), n: media.length || 1 });
+    }
+    return out;
+  }
+  var igDay = (t) => {
+    const d = new Date(t * 1e3);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  function igEntry(p) {
+    const first = p.caption.split("\n").map((x) => x.trim()).find(Boolean) || "", day = igDay(p.t);
+    const title = first ? first.length > 120 ? first.slice(0, 119).trimEnd() + "…" : first : `${p.k === "reel" ? "Reel" : "Publication"} du ${day}`;
+    return { title, text: p.caption === title ? "" : p.caption, due: day, ig: { t: p.t, k: p.k } };
+  }
+
+  // src/core/veille.js
+  var OA_API = "https://api.openalex.org/works";
+  var OA_SELECT = "id,doi,title,publication_date,type,primary_location,authorships,abstract_inverted_index,referenced_works";
+  function oaWatch(raw) {
+    const t = String(raw || "").trim().replace(/\s+/g, " ");
+    if (!t || t.length > 200) return null;
+    const orcid = t.match(/(\d{4}-\d{4}-\d{4}-\d{3}[\dX])/i);
+    if (orcid) return { kind: "author", q: orcid[1].toUpperCase(), filter: `author.orcid:${orcid[1].toUpperCase()}` };
+    const a = t.match(/^(?:https?:\/\/(?:api\.)?openalex\.org\/(?:authors\/)?)?(A\d{4,12})$/i);
+    if (a) return { kind: "author", q: a[1].toUpperCase(), filter: `author.id:${a[1].toUpperCase()}` };
+    return { kind: "q", q: t };
+  }
+  function oaUrl(w, since, key) {
+    const x = w.kind === "author" ? oaWatch(w.q) : w;
+    const filter = [x.filter, `from_publication_date:${since}`].filter(Boolean).join(",");
+    const p = { ...x.kind === "q" ? { search: x.q } : {}, filter, sort: "publication_date:desc", per_page: "10", select: OA_SELECT, ...key ? { api_key: key } : {} };
+    return `${OA_API}?${Object.entries(p).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`;
+  }
+  function oaAbstract(idx) {
+    if (!idx || typeof idx !== "object") return "";
+    const words = [];
+    for (const [w, pos] of Object.entries(idx)) if (Array.isArray(pos)) {
+      for (const i of pos) if (Number.isInteger(i) && i >= 0 && i < 5e3) words[i] = w;
+    }
+    return words.filter(Boolean).join(" ");
+  }
+  var oaText = (v, n) => {
+    const t = String(v ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t;
+  };
+  function oaWorks(json) {
+    const out = [];
+    for (const r of json && Array.isArray(json.results) ? json.results : []) {
+      if (!r || typeof r !== "object") continue;
+      const id = String(r.id || "").replace(/^https:\/\/openalex\.org\//, "");
+      if (!/^W\d+$/.test(id)) continue;
+      const doi = String(r.doi || "").replace(/^https?:\/\/(dx\.)?doi\.org\//i, "").toLowerCase();
+      const src = r.primary_location && r.primary_location.source && r.primary_location.source.display_name;
+      const names = (Array.isArray(r.authorships) ? r.authorships : []).map((a) => a && a.author && a.author.display_name).filter((x) => typeof x === "string");
+      const who = names.length > 3 ? names.slice(0, 3).join(", ") + " et al." : names.join(", ");
+      out.push({
+        id,
+        title: oaText(r.title, 300) || id,
+        link: /^10\.\d{4,9}\//.test(doi) ? `https://doi.org/${doi}` : `https://openalex.org/${id}`,
+        date: "",
+        text: oaText([src, who].filter(Boolean).join(" · ") + (r.abstract_inverted_index ? " — " + oaAbstract(r.abstract_inverted_index) : ""), 420),
+        oa: { doi: /^10\.\d{4,9}\//.test(doi) ? doi : "", day: /^\d{4}-\d{2}-\d{2}$/.test(r.publication_date || "") ? r.publication_date : "", site: oaText(src, 200), authors: oaText(who, 200), kind: oaText(r.type, 40) },
+        // ses références (W…), le temps de les croiser avec tes sources : l'appelant n'en garde que l'intersection
+        ...Array.isArray(r.referenced_works) ? { refs: r.referenced_works.map((x) => String(x || "").replace(/^https:\/\/openalex\.org\//, "")).filter((x) => /^W\d+$/.test(x)).slice(0, 2e3) } : {}
+      });
+    }
+    return out;
+  }
+  var OA_DOI = /^10\.\d{4,9}\/[^\s|,]+$/;
+  var oaId = (v) => {
+    const m = String(v || "").match(/(?:^|\/)([WA]\d{1,14})$/);
+    return m ? m[1] : "";
+  };
+  function oaBatchUrls(field, values, select, key) {
+    const out = [];
+    for (let i = 0; i < values.length; i += 50) {
+      const p = { filter: `${field}:${values.slice(i, i + 50).join("|")}`, per_page: "50", select, ...key ? { api_key: key } : {} };
+      out.push(`${OA_API}?${Object.entries(p).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`);
+    }
+    return out;
+  }
+  var oaRefsUrls = (dois, key) => oaBatchUrls("doi", dois.filter((d) => OA_DOI.test(d)), "id,doi,referenced_works,authorships", key);
+  var oaTitlesUrls = (ids2, key) => oaBatchUrls("openalex", ids2.filter((x) => /^W\d+$/.test(x)), "id,doi,title,publication_date,type,primary_location,authorships", key);
+  function oaRefs(json) {
+    const out = {};
+    for (const r of json && Array.isArray(json.results) ? json.results : []) {
+      if (!r || typeof r !== "object") continue;
+      const id = oaId(r.id), doi = String(r.doi || "").replace(/^https?:\/\/(dx\.)?doi\.org\//i, "").toLowerCase();
+      if (!/^W\d+$/.test(id) || !OA_DOI.test(doi)) continue;
+      const refs = [...new Set((Array.isArray(r.referenced_works) ? r.referenced_works : []).map(oaId).filter((x) => /^W\d+$/.test(x)))].slice(0, 2e3);
+      const authors = (Array.isArray(r.authorships) ? r.authorships : []).map((a) => a && a.author && { id: oaId(a.author.id), name: oaText(a.author.display_name, 120) }).filter((a) => a && /^A\d+$/.test(a.id) && a.name).slice(0, 100);
+      out[doi] = { id, refs, authors };
+    }
+    return out;
+  }
+  function oaCoupling(works, max = 12) {
+    const entries = Object.entries(works || {}).filter(([, w]) => w && /^W\d+$/.test(w.id));
+    const own = new Set(entries.map(([, w]) => w.id)), cite = /* @__PURE__ */ new Map(), who = /* @__PURE__ */ new Map();
+    for (const [doi, w] of entries) {
+      for (const r of new Set(w.refs || [])) if (!own.has(r)) {
+        if (!cite.has(r)) cite.set(r, []);
+        cite.get(r).push(doi);
+      }
+      for (const a of new Map((w.authors || []).map((a2) => [a2.id, a2])).values()) {
+        if (!who.has(a.id)) who.set(a.id, { id: a.id, name: a.name, by: [] });
+        who.get(a.id).by.push(doi);
+      }
+    }
+    const common = [...cite].filter(([, by]) => by.length >= 2).map(([id, by]) => ({ id, by })).sort((a, b) => b.by.length - a.by.length || a.id.localeCompare(b.id)).slice(0, max);
+    const pairs = [];
+    for (let i = 0; i < entries.length; i++) {
+      const a = new Set(entries[i][1].refs || []);
+      for (let j = i + 1; j < entries.length; j++) {
+        let n = 0;
+        for (const r of new Set(entries[j][1].refs || [])) if (a.has(r)) n++;
+        if (n >= 2) pairs.push({ a: entries[i][0], b: entries[j][0], n });
+      }
+    }
+    pairs.sort((x, y) => y.n - x.n || x.a.localeCompare(y.a));
+    const authors = [...who.values()].filter((a) => a.by.length >= 2).sort((a, b) => b.by.length - a.by.length || a.name.localeCompare(b.name)).slice(0, max);
+    return { common, pairs: pairs.slice(0, 6), authors, known: entries.length };
+  }
+
+  // src/core/agenda.js
+  var ICS_DAYS = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
+  function zoned(y, mo, d, h, mi, s, tz) {
+    let t = Date.UTC(y, mo - 1, d, h, mi, s);
+    if (!tz) return t;
+    try {
+      const f = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      for (let i = 0; i < 2; i++) {
+        const p = Object.fromEntries(f.formatToParts(new Date(t)).map((x) => [x.type, +x.value]));
+        t -= Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Date.UTC(y, mo - 1, d, h, mi, s);
+      }
+    } catch {
+    }
+    return t;
+  }
+  function icsTime(v, params) {
+    const m = String(v || "").trim().match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z?))?$/);
+    if (!m) return null;
+    const [, y, mo, d, h, mi, s, z] = m;
+    if (h == null) return { t: new Date(+y, +mo - 1, +d).getTime(), allDay: true };
+    if (z) return { t: Date.UTC(+y, +mo - 1, +d, +h, +mi, +s), allDay: false };
+    const tz = (params.match(/TZID=("?)([^;:"]+)\1/) || [])[2];
+    return { t: tz ? zoned(+y, +mo, +d, +h, +mi, +s, tz) : new Date(+y, +mo - 1, +d, +h, +mi, +s).getTime(), allDay: false };
+  }
+  var icsUnescape = (s) => String(s || "").replace(/\\n/gi, " ").replace(/\\([,;\\])/g, "$1").replace(/\s+/g, " ").trim();
+  function icsParse(text) {
+    const lines = String(text || "").replace(/\r\n?/g, "\n").replace(/\n[ \t]/g, "").split("\n"), out = [];
+    let ev = null;
+    for (const line of lines) {
+      if (line === "BEGIN:VEVENT") {
+        ev = { exdates: [] };
+        continue;
+      }
+      if (line === "END:VEVENT") {
+        if (ev && ev.start && ev.status !== "CANCELLED") {
+          const end = ev.end ? ev.end.t : ev.start.t + (ev.start.allDay ? 864e5 : 36e5);
+          out.push({ uid: ev.uid || "", summary: ev.summary || "(sans titre)", location: ev.location || "", start: ev.start.t, end: Math.max(end, ev.start.t), allDay: ev.start.allDay, rrule: ev.rrule || "", exdates: ev.exdates, recurrenceId: ev.recurrenceId || null });
+        }
+        ev = null;
+        continue;
+      }
+      if (!ev) continue;
+      const i = line.indexOf(":");
+      if (i < 0) continue;
+      const head = line.slice(0, i), val = line.slice(i + 1), name = head.split(";")[0].toUpperCase(), params = head.slice(name.length);
+      if (name === "SUMMARY") ev.summary = icsUnescape(val).slice(0, 200);
+      else if (name === "LOCATION") ev.location = icsUnescape(val).slice(0, 200);
+      else if (name === "UID") ev.uid = val.trim().slice(0, 300);
+      else if (name === "STATUS") ev.status = val.trim().toUpperCase();
+      else if (name === "DTSTART") ev.start = icsTime(val, params);
+      else if (name === "DTEND") ev.end = icsTime(val, params);
+      else if (name === "RRULE") ev.rrule = val.trim();
+      else if (name === "RECURRENCE-ID") {
+        const r = icsTime(val, params);
+        if (r) ev.recurrenceId = r.t;
+      } else if (name === "EXDATE") for (const x of val.split(",")) {
+        const r = icsTime(x, params);
+        if (r) ev.exdates.push(r.t);
+      }
+    }
+    return out;
+  }
+  function icsExpand(e, from, to) {
+    const len = e.end - e.start, out = [];
+    if (!e.rrule) return e.end > from && e.start < to ? [{ ...e }] : [];
+    const r = Object.fromEntries(e.rrule.split(";").map((x) => x.split("=")).map(([k, v]) => [String(k).toUpperCase(), v || ""]));
+    const freq = r.FREQ, every = Math.max(1, +r.INTERVAL || 1), count = +r.COUNT || 0, until = r.UNTIL ? (icsTime(r.UNTIL, "") || {}).t : null;
+    const byday = (r.BYDAY || "").split(",").map((x) => ICS_DAYS[x.replace(/^[+-]?\d+/, "")]).filter((x) => x != null);
+    if (!["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].includes(freq)) return e.end > from && e.start < to ? [{ ...e }] : [];
+    const s0 = new Date(e.start), wall = (y, m, d) => new Date(y, m, d, s0.getHours(), s0.getMinutes(), s0.getSeconds()).getTime();
+    const ex = new Set(e.exdates);
+    let n = 0;
+    for (let i = 0; i < 800; i++) {
+      let cands;
+      if (freq === "DAILY") cands = [wall(s0.getFullYear(), s0.getMonth(), s0.getDate() + i * every)];
+      else if (freq === "WEEKLY") {
+        const monday = s0.getDate() - (s0.getDay() + 6) % 7 + i * 7 * every, days = byday.length ? byday : [s0.getDay()];
+        cands = days.map((d) => wall(s0.getFullYear(), s0.getMonth(), monday + (d + 6) % 7)).sort((a, b) => a - b);
+      } else if (freq === "MONTHLY") {
+        const t = new Date(s0.getFullYear(), s0.getMonth() + i * every, 1);
+        cands = t.getMonth() === new Date(s0.getFullYear(), s0.getMonth() + i * every, s0.getDate()).getMonth() ? [wall(t.getFullYear(), t.getMonth(), s0.getDate())] : [];
+      } else {
+        const y = s0.getFullYear() + i * every;
+        cands = new Date(y, s0.getMonth(), s0.getDate()).getMonth() === s0.getMonth() ? [wall(y, s0.getMonth(), s0.getDate())] : [];
+      }
+      for (const t of cands) {
+        if (t < e.start) continue;
+        if (until != null && t > until || count && n >= count || t >= to) return out;
+        n++;
+        if (!ex.has(t) && t + len > from) out.push({ ...e, start: t, end: t + len });
+      }
+    }
+    return out;
+  }
+  function icsBetween(events, from, to) {
+    const moved = new Set(events.filter((e) => e.recurrenceId != null).map((e) => `${e.uid}|${e.recurrenceId}`));
+    const all = [];
+    for (const e of events) {
+      if (e.recurrenceId != null) {
+        if (e.end > from && e.start < to) all.push({ ...e });
+        continue;
+      }
+      for (const o of icsExpand(e, from, to)) if (!moved.has(`${e.uid}|${o.start}`)) all.push(o);
+    }
+    return all.sort((a, b) => b.allDay - a.allDay || a.start - b.start);
+  }
+
+  // src/core/zotero.js
+  var ZOT_API = "https://api.zotero.org";
+  function zotKeyInfo(j) {
+    if (!j || typeof j !== "object" || !Number.isInteger(j.userID) || j.userID <= 0) return null;
+    const u = j.access && j.access.user || {};
+    return { userID: j.userID, username: String(j.username || "").slice(0, 100), library: !!u.library, write: !!u.write };
+  }
+  var ZOT_KIND = {
+    journalArticle: "article",
+    magazineArticle: "article",
+    newspaperArticle: "article",
+    book: "livre",
+    bookSection: "chapitre",
+    thesis: "thèse",
+    report: "rapport",
+    preprint: "prépublication",
+    conferencePaper: "actes",
+    webpage: "page",
+    blogPost: "page",
+    videoRecording: "vidéo",
+    podcast: "podcast",
+    encyclopediaArticle: "notice",
+    dictionaryEntry: "notice"
+  };
+  var zotText = (v, n) => {
+    const t = String(v ?? "").replace(/\s+/g, " ").trim();
+    return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t;
+  };
+  function zotSource(item) {
+    const d = item && item.data;
+    if (!d || typeof d !== "object" || ["attachment", "note", "annotation"].includes(d.itemType)) return null;
+    const k = String(item.key || d.key || "");
+    if (!/^[A-Z0-9]{8}$/.test(k)) return null;
+    const names = (Array.isArray(d.creators) ? d.creators : []).filter((c) => c && (!c.creatorType || /author|editor|director|podcaster|presenter/.test(c.creatorType))).map((c) => zotText(c.name || [c.firstName, c.lastName].filter(Boolean).join(" "), 80)).filter(Boolean);
+    const doi = (String(d.DOI || "").match(/10\.\d{4,9}\/\S+/) || [""])[0].toLowerCase().replace(/[.,;]+$/, "");
+    let url = "";
+    try {
+      const u = new URL(String(d.url || ""));
+      if (/^https?:$/.test(u.protocol)) url = u.toString();
+    } catch {
+    }
+    const pd = String(item.meta && item.meta.parsedDate || "").match(/^\d{4}(-\d{2}(-\d{2})?)?/);
+    const alt = item.links && item.links.alternate && String(item.links.alternate.href || "");
+    return {
+      title: zotText(d.title, 300) || "(sans titre)",
+      authors: zotText(names.length > 3 ? names.slice(0, 3).join(", ") + " et al." : names.join(", "), 200),
+      site: zotText(d.publicationTitle || d.bookTitle || d.websiteTitle || d.blogTitle || d.proceedingsTitle || d.university || d.publisher || "", 200),
+      date: pd ? pd[0] : "",
+      kind: ZOT_KIND[d.itemType] || zotText(d.itemType, 40),
+      doi: doi || null,
+      url: doi ? "https://doi.org/" + doi : url,
+      abstract: zotText(d.abstractNote, 1200),
+      zot: { k, .../^https:\/\/www\.zotero\.org\/[\w.-]+\/items\/[A-Z0-9]{8}$/.test(alt) ? { l: alt } : {} }
+    };
+  }
+  var zotItems = (json) => (Array.isArray(json) ? json : []).map(zotSource).filter(Boolean);
   return __toCommonJS(index_exports);
 })();
-const { deepEqual, mergeDocs } = __core;
+// eslint-disable-next-line no-unused-vars
+const { CARTE_MAX, EP_STATUS, LINK_REF, LINK_TYPES, MODULE_ID, MODULE_TEMPLATES, MODULE_TYPES, OA_DOI, SCHEMA_VERSION, SECTION_TO_MODULE, WEATHER, ZOT_API, addBudgetEntry, addCapture, addJournalEntry, addLink, addTask, approxPlace, bareSource, carteLayout, carteNeighbourhood, clip, contrast, coverUrl, createBackup, createFromTemplate, createModuleInstance, crossrefToSource, deepEqual, deleteModuleInstance, editFragmentText, entryIds, epPrefix, findDoi, findUrl, hash01, icsBetween, icsParse, igDay, igEntry, igFix, igPosts, igValid, inboxId, mbAlbums, mbArtistQuery, mbArtists, mbSince, mbValid, mergeDocs, microlinkToSource, migrateModules, mixHex, moonPlacement, moonPosition, nearLille, nextCrossing, normalizeUrl, oaAbstract, oaCoupling, oaRefs, oaRefsUrls, oaTitlesUrls, oaUrl, oaWatch, oaWorks, parseBackup, radarEvents, radarFold, radarMatch, radarUrl, radarWords, rainDays, reservedId, retargetLinks, saveCollectionItem, seasonAt, setEpStatus, setResume, setTaskDone, setTaskToday, skyEvents, skyMotion, skyScene, slugId, sourceKey, srcValid, stampOrigin, sunPosition, validDate, weatherState, windName, zoned, zotItems, zotKeyInfo, zotSource, zotValid } = __core;
 /* Un store = un document JSON gardé dans localStorage (source de vérité locale) et,
    une fois connecté, synchronisé avec une base distante par lecture → fusion à trois
    voies → écriture conditionnelle. La « base » (dernier état commun connu avec le
@@ -936,1062 +2555,6 @@ function authView() {
 }
 document.addEventListener("submit", e => { if (e.target.id === "authForm") { e.preventDefault(); authSubmit(); } });
 
-/* Backup contract v1. Keep the existing format and browser storage keys stable. */
-const record = value => value !== null && typeof value === "object" && !Array.isArray(value);
-const collection = (value, name) => {
-  if (!Array.isArray(value) || value.some(item => !record(item))) throw new Error(`${name} invalide`);
-};
-/* Un fichier de sauvegarde peut venir de n'importe où : chaque identifiant finit dans un attribut HTML
-   et chaque nombre dans un calcul ou une boucle. On décrit ce qui est permis, tout le reste est refusé. */
-const moduleId = (id, name) => { if (typeof id !== "string" || !MODULE_ID.test(id)) throw new Error(`${name} : identifiant invalide`); };
-const num = (v, name, min = -Infinity, max = Infinity) => {
-  if (v != null && (typeof v !== "number" || !Number.isFinite(v) || v < min || v > max)) throw new Error(`${name} invalide`);
-};
-const ids = (list, name) => { if (list.some(x => typeof x.id !== "string" || !x.id || x.id.length > 64)) throw new Error(`${name} : identifiant invalide`); };
-const dated = (list, name) => { if (list.some(x => typeof x.date !== "string" || !validDate(x.date))) throw new Error(`${name} : date invalide`); };
-function parseBackup(text) {
-  if (typeof text !== "string" || text.length > 5_000_000) throw new Error("Sauvegarde trop volumineuse");
-  const data = JSON.parse(text);
-  if (!record(data) || data.format !== "selene-v1" || !record(data.board) || !record(data.site)) throw new Error("Format de sauvegarde invalide");
-  const { board, site } = data;
-  if (site.schemaVersion != null && !(Number.isInteger(site.schemaVersion) && site.schemaVersion >= 1)) throw new Error("Version de format invalide");
-  if ((site.schemaVersion || 1) > SCHEMA_VERSION) throw new Error("Sauvegarde créée par une version plus récente de Selene : mets l'application à jour d'abord.");
-  collection(board.tasks, "Tâches");
-  if (board.tasks.some(t => typeof t.id !== "string" || typeof t.title !== "string" ||
-      (t.steps != null && (!Array.isArray(t.steps) || t.steps.some(s => !record(s) || typeof s.t !== "string"))))) throw new Error("Tâche invalide");
-  if (!record(site.config) || (site.config.modules != null &&
-      (!Array.isArray(site.config.modules) || site.config.modules.some(m => !record(m) || typeof m.id !== "string" || typeof m.on !== "boolean" ||
-        (m.group != null && (typeof m.group !== "string" || m.group.length > 40)) || // group : domaine de navigation, facultatif
-        (m.sigil != null && (typeof m.sigil !== "string" || !/^[a-z]{1,20}$/.test(m.sigil)))))) || // sigil : glyphe de l'espace, facultatif
-      (site.config.groups != null && !record(site.config.groups)) ||
-      (site.config.labels != null && !record(site.config.labels)) ||
-      (site.config.assistant != null && (!record(site.config.assistant) ||
-        (site.config.assistant.share != null && !record(site.config.assistant.share)))) ||
-      // sky : le lieu du ciel de l'accueil, facultatif ; ses coordonnées finissent dans une URL, son nom dans le HTML.
-      (site.config.sky != null && (!record(site.config.sky) || typeof site.config.sky.name !== "string" || site.config.sky.name.length > 80 ||
-        typeof site.config.sky.lat !== "number" || !(Math.abs(site.config.sky.lat) <= 90) || typeof site.config.sky.lon !== "number" || !(Math.abs(site.config.sky.lon) <= 180))) ||
-      // dehors : les flux suivis (adresse http(s), titre, projet, « vu jusqu'à »), cent au plus.
-      (site.config.dehors != null && (!record(site.config.dehors) || !Array.isArray(site.config.dehors.feeds) || site.config.dehors.feeds.length > 100 ||
-        site.config.dehors.feeds.some(f => !record(f) || typeof f.id !== "string" || !/^[\w-]{1,64}$/.test(f.id) || typeof f.url !== "string" || f.url.length > 2000 || !/^https?:\/\//i.test(f.url) ||
-          typeof f.title !== "string" || f.title.length > 200 || (f.mod != null && (typeof f.mod !== "string" || f.mod.length > 64)) ||
-          (f.seen != null && !(Number.isFinite(f.seen) && f.seen >= 0)) || (f.motifs != null && typeof f.motifs !== "boolean")) ||
-        (site.config.dehors.artists != null && typeof site.config.dehors.artists !== "boolean") ||
-        (site.config.dehors.artistsSeen != null && !(Number.isFinite(site.config.dehors.artistsSeen) && site.config.dehors.artistsSeen >= 0)) ||
-        (site.config.dehors.research != null && (!Array.isArray(site.config.dehors.research) || site.config.dehors.research.length > 30 ||
-          site.config.dehors.research.some(r => !record(r) || typeof r.id !== "string" || !/^[\w-]{1,64}$/.test(r.id) || !["q", "author"].includes(r.kind) ||
-            typeof r.q !== "string" || !r.q || r.q.length > 200 || (r.name != null && (typeof r.name !== "string" || !r.name || r.name.length > 200)) || (r.mod != null && (typeof r.mod !== "string" || r.mod.length > 64)) ||
-            (r.seen != null && !(Number.isFinite(r.seen) && r.seen >= 0))))))) ||
-      // radar : les mots du radar culturel, facultatifs.
-      (site.config.radar != null && (!record(site.config.radar) || typeof site.config.radar.words !== "string" || site.config.radar.words.length > 300))) throw new Error("Configuration invalide");
-  for (const m of site.config.modules || []) moduleId(m.id, "Module");
-  for (const map of [site.config.groups, site.config.labels, site.config.assistant && site.config.assistant.share])
-    if (map) for (const k of Object.keys(map)) moduleId(k, "Configuration");
-  const sections = {
-    budget: ["entries", "envelopes"], kundalini: ["sessions"],
-    ecriture: ["chapters", "sessions", "fragments"], moth: ["posts"],
-    phidippus: ["log"], musique: ["albums"], inbox: ["items"]
-  };
-  for (const [name, fields] of Object.entries(sections)) {
-    if (site[name] == null) continue; // Older v1 exports, or fields already moved under site.modules, are filled by S().
-    if (!record(site[name])) throw new Error(`${name} invalide`);
-    for (const field of fields) if (site[name][field] != null) collection(site[name][field], `${name}.${field}`);
-  }
-  // Anciennes sections, converties ensuite en modules : mêmes bornes que ci-dessous.
-  if (site.kundalini) { num(site.kundalini.weeks, "kundalini.weeks", 1, 520); num(site.kundalini.perWeek, "kundalini.perWeek", 1, 7); }
-  if (site.ecriture) num(site.ecriture.goal, "ecriture.goal", 0);
-  if (site.phidippus) { num(site.phidippus.feedEvery, "phidippus.feedEvery", 0, 3650); num(site.phidippus.mistEvery, "phidippus.mistEvery", 0, 3650); }
-  if (site.budget && site.budget.entries) for (const e of site.budget.entries) num(e.amount, "budget : montant");
-  if (site.modules != null) {
-    if (!record(site.modules)) throw new Error("modules invalide");
-    for (const [id, inst] of Object.entries(site.modules)) {
-      moduleId(id, "Module");
-      if (reservedId(id)) throw new Error(`module ${id} : identifiant réservé`);
-      if (!record(inst) || !Object.hasOwn(MODULE_TYPES, inst.type) || typeof inst.label !== "string" || !record(inst.config)) throw new Error(`module ${id} invalide`);
-      const where = `module ${id}`;
-      collection(inst.entries, `${where} entries`);
-      ids(inst.entries, where);
-      if (MODULE_TYPES[inst.type].datedEntries !== false) dated(inst.entries, where);
-      if (inst.scraps != null) { collection(inst.scraps, `${where} scraps`); ids(inst.scraps, where); }
-      const fail = name => { throw new Error(`${where} : ${name} invalide`); };
-      // Champs communs à tous les types : provenance d'une entrée rangée, pont de reprise du module.
-      for (const x of [...inst.entries, ...(inst.scraps || [])]) if (x.origin != null &&
-          (!record(x.origin) || typeof x.origin.text !== "string" || typeof x.origin.from !== "string" || (x.origin.date != null && !(typeof x.origin.date === "string" && validDate(x.origin.date))))) fail("provenance");
-      for (const x of [...inst.entries, ...(inst.scraps || [])]) if (x.links != null && (!Array.isArray(x.links) || x.links.some(l => !record(l) ||
-          typeof l.id !== "string" || !l.id || l.id.length > 64 || !Object.hasOwn(LINK_TYPES, l.type) || typeof l.to !== "string" || !LINK_REF.test(l.to) ||
-          (l.date != null && !(typeof l.date === "string" && validDate(l.date)))))) fail("liaison");
-      if (inst.resume != null && (!record(inst.resume) || typeof inst.resume.text !== "string" || typeof inst.resume.at !== "string" || !validDate(inst.resume.at))) fail("pont de reprise");
-      if (inst.resumeLog != null) collection(inst.resumeLog, `${where} ponts`);
-      // Palimpseste : les versions antérieures d'un fragment (cumul.scraps uniquement).
-      for (const f of inst.scraps || []) {
-        if (f.versions != null && (!Array.isArray(f.versions) || f.versions.some(x => !record(x) || typeof x.text !== "string" ||
-            (x.at != null && !(typeof x.at === "string" && validDate(x.at)))))) fail("version");
-        if (f.editedAt != null && !(typeof f.editedAt === "string" && validDate(f.editedAt))) fail("fragment");
-      }
-      // Règles propres au type : déclarées dans le registre (domain.js), appliquées ici.
-      MODULE_TYPES[inst.type].validate(inst, {
-        num: (v, name, min, max) => num(v, `${where} : ${name}`, min, max),
-        list: (l, name) => { collection(l, `${where} ${name}`); ids(l, where); return l; },
-        ep: x => { if ((x.ep != null && !Object.hasOwn(EP_STATUS, x.ep)) || (x.epLog != null && !Array.isArray(x.epLog))) fail("statut"); },
-        fail
-      });
-    }
-  }
-  for (const state of [board, site]) if (state.updatedAt != null &&
-      (typeof state.updatedAt !== "number" || !Number.isFinite(state.updatedAt) || state.updatedAt < 0)) throw new Error("Date de modification invalide");
-  return { board, site };
-}
-function createBackup(boardData, siteData, exportedAt = new Date().toISOString()) {
-  return JSON.stringify({ format: "selene-v1", exportedAt, board: boardData, site: siteData }, null, 2);
-}
-
-/* Business operations shared by the UI and assistant. No DOM or storage access. */
-const requireText = (value, label, max) => {
-  if (typeof value !== "string" || !value.trim()) throw new Error(`${label} manquant`);
-  return value.trim().slice(0, max);
-};
-const validDate = value => {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const d = new Date(value + "T12:00:00Z");
-  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === value;
-};
-function addTask(tasks, input, id, date) {
-  const t = {
-    id, title: requireText(input.title, "Tâche", 140), room: input.room || "",
-    cat: input.cat || "Bricolage", due: input.due && validDate(input.due) ? input.due : null,
-    effort: input.effort || 1, cost: input.cost ?? null, note: input.note || "",
-    today: false, done: false, doneAt: null, created: date,
-    steps: (input.steps || []).map(s => ({ t: s.t, d: !!s.d }))
-  };
-  tasks.push(t);
-  return t;
-}
-function setTaskDone(tasks, id, done, date) {
-  const t = tasks.find(x => x.id === id);
-  if (!t) throw new Error("Tâche introuvable");
-  t.done = !!done;
-  t.doneAt = done ? date : null;
-  if (done) t.today = false;
-  return t;
-}
-/* `elsewhere` : tâches du jour déjà choisies dans les autres modules de tâches (le plafond de trois est global). */
-function setTaskToday(tasks, id, value, elsewhere = 0) {
-  const t = tasks.find(x => x.id === id);
-  if (!t) throw new Error("Tâche introuvable");
-  if (value && !t.today && tasks.filter(x => !x.done && x.today).length + elsewhere >= 3) throw new Error("Trois tâches du jour maximum");
-  t.today = !!value;
-  return t;
-}
-function addCapture(items, text, id, date) {
-  const item = { id, text: requireText(text, "Note", 500), date };
-  items.push(item);
-  return item;
-}
-function addBudgetEntry(entries, input, id, defaultDate) {
-  const amount = Number(input.amount);
-  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Montant invalide");
-  const date = input.date || defaultDate;
-  if (!validDate(date)) throw new Error("Date invalide");
-  const entry = {
-    id, type: input.type === "revenu" ? "revenu" : "dépense",
-    amount, cat: input.cat || "", note: input.note || "", date
-  };
-  entries.push(entry);
-  return entry;
-}
-
-/* ---- modules génériques ---- */
-/* Version du format des données du site. 1 = sections en dur (kundalini, ecriture, phidippus à la racine),
-   2 = modules génériques sous `modules`, 3 = october.moth et Musique deviennent des collections,
-   4 = la Capture devient un module Notes, 5 = le Budget devient un module générique,
-   6 = le Chantier devient un module Tâches (ses tâches quittent le document « board »).
-   Une version de l'app qui lit un numéro plus grand que le sien ne doit ni fusionner ni écrire :
-   elle ne connaît pas la forme de ces données. */
-const SCHEMA_VERSION = 6;
-/* Anciennes sections à la racine du document → instances de module. Chaque conversion reçoit l'ancienne
-   section, le nom personnalisé et le réglage de regroupement éventuels. Sert aussi aux données de départ. */
-const SECTION_TO_MODULE = {
-  kundalini: (old, name) => ({
-    type: "programme", label: name || "Kundalini",
-    config: { unitLabel: "min", start: old.start ?? null, weeks: old.weeks ?? 12, perWeek: old.perWeek ?? 5 },
-    entries: (old.sessions || []).map(x => ({ id: x.id, date: x.date, value: x.min ?? null, note: x.note || "" }))
-  }),
-  ecriture: (old, name) => ({
-    type: "cumul", label: name || "Écriture",
-    config: { unitLabel: "mots", goal: old.goal ?? 40000, title: old.title || "", categories: (old.chapters || []).map(x => ({ id: x.id, name: x.name, goal: x.goal })), categoryLabel: "Chapitre", scraps: true, scrapsLabel: "Fragments" },
-    entries: (old.sessions || []).map(x => ({ id: x.id, date: x.date, value: x.words ?? null, category: x.chapter || "" })),
-    scraps: (old.fragments || []).map(f => ({ id: f.id, date: f.date, text: f.text }))
-  }),
-  phidippus: (old, name) => ({
-    type: "rappels", label: name || "Phidippus",
-    config: { subtitle: old.name || "", types: [{ id: "repas", label: "Repas", every: old.feedEvery ?? 6 }, { id: "brumisation", label: "Brumisation", every: old.mistEvery ?? 3 }, { id: "mue", label: "Mue", every: 0 }] },
-    entries: (old.log || []).map(x => ({ id: x.id, date: x.date, type: x.type, note: x.note || "" }))
-  }),
-  moth: (old, name, groups) => ({
-    type: "collection", label: name || "october.moth",
-    config: { display: "colonnes", description: "", statuses: ["Idée", "Brouillon", "Prêt", "Publié"], doneFrom: 3, statusLabel: "Étape", addLabel: "Nouvelle idée de post",
-      fields: { title: "Titre ou accroche", subtitle: "", tag: "Thème, archétype", due: "Publication prévue", text: "Légende" },
-      groups: { on: true, sort: "name", hideDone: false, title: "", ...(groups || {}), by: "tag" } },
-    entries: (old.posts || []).map(p => ({ id: p.id, title: p.title || "", subtitle: "", tag: p.theme || "", due: p.due || "", text: p.caption || "", status: p.status }))
-  }),
-  musique: (old, name, groups) => ({
-    type: "collection", label: name || "Musique",
-    config: { display: "liste", music: true, description: "Albums de l'éveil, et artistes dont la mue stylistique fait elle-même le récit d'une transformation.",
-      statuses: ["À écouter", "Écouté", "Retenu"], doneFrom: 1, statusLabel: "Statut", addLabel: "Ajouter un album",
-      fields: { title: "Artiste", subtitle: "Album", tag: "", due: "", text: "Note" },
-      groups: { on: true, sort: "name", hideDone: false, title: "", ...(groups || {}), by: "title" } },
-    entries: (old.albums || []).map(a => ({ id: a.id, title: a.artist || "", subtitle: a.album || "", tag: "", due: "", text: a.note || "", status: a.status }))
-  }),
-  inbox: (old, name) => ({
-    type: "notes", label: name || "Capture",
-    config: { inbox: true, description: "Tout ce qui traîne dans ta tête, en attendant d'avoir une place.", placeholder: "Une idée, une course, un rêve…" },
-    entries: (old.items || []).map(x => ({ id: x.id, text: x.text, date: x.date }))
-  }),
-  budget: (old, name, groups) => ({
-    type: "budget", label: name || "Budget",
-    config: { envelopes: old.envelopes || [], groups: { on: true, sort: "name", hideDone: false, title: "", ...(groups || {}), by: "cat" } },
-    entries: old.entries || []
-  })
-};
-/* Le Chantier était un module fixe dont les tâches vivaient dans un document à part (« board »).
-   Il devient une instance du type Tâches ; ses tâches y sont versées par absorbBoard (app.js). */
-const TASK_CATS = ["Bricolage", "Administratif", "Achat", "Artisan", "Rangement", "Ménage"];
-const boardToModule = (tasks, name, groups) => ({
-  type: "taches", label: name || "Chantier",
-  config: { groupLabel: "Pièce", catLabel: "Type", cats: TASK_CATS.slice(), costs: true,
-    groups: { on: true, by: "room", sort: "name", hideDone: false, title: "", ...(groups || {}) } },
-  entries: tasks || []
-});
-/* Ne recrée jamais un module manquant : un module absent chez un site existant a été supprimé exprès.
-   Si le module existe déjà alors que l'ancienne section réapparaît (une ancienne version de l'app, restée
-   ouverte sur un autre appareil, a pu y écrire entre-temps), ses entrées absentes sont absorbées, pas perdues. */
-function migrateModules(d) {
-  d.modules = d.modules || {};
-  const cfg = d.config || {}, labels = cfg.labels || {}, groups = cfg.groups || {};
-  // Format 6 : une seule fois (drapeau boardMerged), sinon un Chantier supprimé exprès reviendrait.
-  if (!d.boardMerged) {
-    if (!d.modules.chantier) d.modules.chantier = boardToModule([], labels.chantier, groups.chantier);
-    delete groups.chantier;
-    d.boardMerged = true;
-  }
-  for (const [key, convert] of Object.entries(SECTION_TO_MODULE)) {
-    if (!d[key]) continue;
-    const inst = convert(d[key], labels[key], groups[key]), cur = d.modules[key];
-    if (!cur) d.modules[key] = inst;
-    else if (cur.type === inst.type) for (const list of ["entries", "scraps"]) if (inst[list]) {
-      cur[list] = cur[list] || [];
-      for (const x of inst[list]) if (!cur[list].some(y => y.id === x.id)) cur[list].push(x);
-    }
-    delete d[key];
-    if (inst.config.groups) delete groups[key]; // le regroupement vit désormais dans l'instance
-  }
-  // Le nom d'une instance vit dans l'instance : un ancien nom personnalisé resté dans config.labels
-  // masquerait tout renommage ultérieur.
-  for (const [id, inst] of Object.entries(d.modules)) if (Object.hasOwn(labels, id)) { if (labels[id]) inst.label = labels[id]; delete labels[id]; }
-}
-/* ---- registre des types de module : la partie pure (sans DOM) ----
-   Chaque type déclare ses valeurs par défaut, la forme de ses entrées et ses règles de validation.
-   Sa partie affichage est dans TYPE_UI (types.js) : un test vérifie que les deux registres ont les mêmes clés. */
-const MODULE_TYPES = {
-  programme: {
-    label: "Programme (calendrier + objectif hebdomadaire)",
-    // paliers : des étapes qu'on rédige et qu'on coche soi-même. L'app affiche l'avancement, ne décide jamais
-    // du passage : `advancedAt` n'est écrit que par un geste explicite, jamais par un critère coché.
-    defaults: () => ({ config: { unitLabel: "min", start: null, weeks: 12, perWeek: 5, tiers: [] }, entries: [] }),
-    entry: (e, input) => { e.value = numericValue(input.value); },
-    normalize(inst) { if (!Array.isArray(inst.config.tiers)) inst.config.tiers = []; },
-    validate(inst, v) {
-      v.num(inst.config.weeks, "durée", 1, 520); v.num(inst.config.perWeek, "séances par semaine", 1, 7);
-      if (inst.config.start != null && !(typeof inst.config.start === "string" && validDate(inst.config.start))) v.fail("date de début");
-      for (const e of inst.entries) v.num(e.value, "valeur");
-      v.list(inst.config.tiers || [], "paliers").forEach(t => {
-        if (typeof t.name !== "string" || !t.name.trim() || t.name.length > 60) v.fail("palier");
-        if (t.advancedAt != null && !(typeof t.advancedAt === "string" && validDate(t.advancedAt))) v.fail("palier");
-        v.list(t.criteria || [], "critères").forEach(cr => {
-          if (typeof cr.text !== "string" || !cr.text.trim() || cr.text.length > 200 || typeof cr.done !== "boolean") v.fail("critère");
-        });
-      });
-    }
-  },
-  cumul: {
-    label: "Objectif cumulatif (compteur + catégories)",
-    defaults: () => ({ config: { unitLabel: "unités", goal: 100, title: "", categories: [], categoryLabel: "Catégorie", scraps: false, scrapsLabel: "Notes", entryMode: "delta" }, entries: [], scraps: [] }),
-    entry: (e, input) => { e.value = numericValue(input.value); if (input.category != null) e.category = input.category; },
-    validate(inst, v) {
-      v.num(inst.config.goal, "objectif", 0);
-      if (inst.config.entryMode != null && inst.config.entryMode !== "delta" && inst.config.entryMode !== "total") v.fail("mode de saisie");
-      if (inst.config.categories != null) v.list(inst.config.categories, "catégories").forEach(x => v.num(x.goal, "objectif de catégorie", 0));
-      for (const e of inst.entries) v.num(e.value, "valeur");
-      for (const f of inst.scraps || []) { if (f.category != null && typeof f.category !== "string") v.fail("fragment"); v.ep(f); }
-    }
-  },
-  rappels: {
-    label: "Rappels (types récurrents + journal)",
-    defaults: () => ({ config: { subtitle: "", types: [{ id: "fait", label: "Fait", every: 0 }] }, entries: [] }),
-    entry: (e, input) => { e.type = input.type || "note"; },
-    validate(inst, v) { if (inst.config.types != null) v.list(inst.config.types, "types").forEach(x => v.num(x.every, "fréquence", 0, 3650)); }
-  },
-  budget: {
-    label: "Budget (opérations, enveloppes à plafond mensuel)",
-    defaults: () => ({ config: { envelopes: [], groups: { on: true, by: "cat", sort: "name", hideDone: false, title: "" } }, entries: [] }),
-    normalize(inst) {
-      const def = MODULE_TYPES.budget.defaults().config;
-      if (!Array.isArray(inst.config.envelopes)) inst.config.envelopes = [];
-      inst.config.groups = { ...def.groups, ...inst.config.groups, by: "cat" };
-    },
-    validate(inst, v) {
-      v.list(inst.config.envelopes || [], "enveloppes").forEach(x => { if (typeof x.name !== "string") v.fail("enveloppe"); v.num(x.limit, "plafond", 0); });
-      for (const e of inst.entries) { v.num(e.amount, "montant", 0); if (e.type !== "dépense" && e.type !== "revenu") v.fail("type d'opération"); }
-    }
-  },
-  taches: {
-    label: "Tâches (échéances, lieux, étapes, coûts)",
-    datedEntries: false, // une tâche a une échéance facultative, pas une date de journal
-    // outdoor : mots qui désignent une tâche à ciel ouvert ; la pluie prévue s'y affiche (si un lieu est réglé).
-    defaults: () => ({ config: { groupLabel: "Lieu", catLabel: "Type", cats: ["Général"], costs: true, outdoor: "extérieur, dehors, balcon, jardin, terrasse, façade, toit",
-      groups: { on: true, by: "room", sort: "name", hideDone: false, title: "" } }, entries: [] }),
-    normalize(inst) {
-      const c = inst.config, def = MODULE_TYPES.taches.defaults().config;
-      for (const k of Object.keys(def)) if (c[k] == null) c[k] = def[k];
-      if (!Array.isArray(c.cats) || !c.cats.length) c.cats = def.cats.slice();
-      c.groups = { ...def.groups, ...c.groups };
-    },
-    validate(inst, v) {
-      const c = inst.config;
-      if (c.cats != null && (!Array.isArray(c.cats) || c.cats.some(x => typeof x !== "string"))) v.fail("types de tâche");
-      if (c.outdoor != null && (typeof c.outdoor !== "string" || c.outdoor.length > 300)) v.fail("tâches à ciel ouvert");
-      for (const t of inst.entries) {
-        if (typeof t.title !== "string") v.fail("titre");
-        if (t.steps != null && (!Array.isArray(t.steps) || t.steps.some(x => !x || typeof x.t !== "string"))) v.fail("étapes");
-        if (t.due && !(typeof t.due === "string" && validDate(t.due))) v.fail("échéance");
-        v.num(t.effort, "effort", 1, 3); v.num(t.cost, "coût", 0);
-      }
-    }
-  },
-  notes: {
-    label: "Notes (textes datés, à garder ou à trier)",
-    defaults: () => ({ config: { inbox: false, description: "", placeholder: "Une note…" }, entries: [] }),
-    entry: (e, input) => { e.text = requireText(input.text ?? input.note, "Note", 2000); delete e.note; },
-    normalize(inst) {
-      const def = MODULE_TYPES.notes.defaults().config;
-      for (const k of Object.keys(def)) if (inst.config[k] == null) inst.config[k] = def[k];
-    },
-    validate(inst, v) {
-      if (inst.config.inbox != null && typeof inst.config.inbox !== "boolean") v.fail("boîte de réception");
-      for (const e of inst.entries) { if (typeof e.text !== "string") v.fail("texte"); v.ep(e); }
-    }
-  },
-  collection: {
-    label: "Collection (éléments à statuts, en colonnes ou en liste)",
-    datedEntries: false, // un élément n'a pas de date de journal ; `due` est facultative
-    // review : la date d'un élément est un rendez-vous de révision (une décision à réexaminer), qui revient
-    // quel que soit son statut, sauf le dernier (abandonné, clos).
-    // concordance : chaque élément est un motif (variantes en sous-titre), cherché dans tous les autres modules ;
-    // un motif vivant absent depuis fallowDays jours est « en jachère ».
-    // sources : chaque élément est une source (un article, une page), avec son adresse et son DOI dans `src`.
-    // music : le titre est un artiste, le sous-titre un album, reliés à MusicBrainz dans `mb`.
-    defaults: () => ({ config: { display: "liste", description: "", review: false, concordance: false, sources: false, music: false, fallowDays: 90, statuses: ["À faire", "En cours", "Fait"], doneFrom: 2, statusLabel: "Statut", addLabel: "Ajouter",
-      fields: { title: "Titre", subtitle: "", tag: "Étiquette", due: "", text: "Note" },
-      groups: { on: true, by: "tag", sort: "name", hideDone: false, title: "" } }, entries: [] }),
-    normalize(inst) {
-      const c = inst.config, def = MODULE_TYPES.collection.defaults().config;
-      for (const k of Object.keys(def)) if (c[k] == null) c[k] = def[k];
-      c.fields = { ...def.fields, ...c.fields };
-      if (!c.fields.title) c.fields.title = def.fields.title;
-      c.groups = { ...def.groups, ...c.groups };
-      if (!Array.isArray(c.statuses) || c.statuses.length < 2) c.statuses = def.statuses;
-      c.doneFrom = Math.min(c.statuses.length - 1, Math.max(1, Math.round(+c.doneFrom) || 1));
-      for (const e of inst.entries) if (!c.statuses.includes(e.status)) e.status = c.statuses[0];
-    },
-    validate(inst, v) {
-      const c = inst.config;
-      if (c.statuses != null && (!Array.isArray(c.statuses) || c.statuses.length < 2 || c.statuses.length > 12 ||
-          c.statuses.some(x => typeof x !== "string" || !x.trim() || x.length > 40))) v.fail("statuts");
-      v.num(c.doneFrom, "statut « fait »", 0, 12);
-      if (c.display != null && !["liste", "colonnes"].includes(c.display)) v.fail("affichage");
-      if (c.review != null && typeof c.review !== "boolean") v.fail("révision");
-      if (c.concordance != null && typeof c.concordance !== "boolean") v.fail("concordance");
-      if (c.sources != null && typeof c.sources !== "boolean") v.fail("sources");
-      if (c.music != null && typeof c.music !== "boolean") v.fail("musique");
-      v.num(c.fallowDays, "jachère", 1, 3650);
-      if (c.fields != null && (typeof c.fields !== "object" || Object.values(c.fields).some(x => typeof x !== "string"))) v.fail("champs");
-      for (const e of inst.entries) {
-        if (typeof e.title !== "string") v.fail("titre");
-        if (e.due && !(typeof e.due === "string" && validDate(e.due))) v.fail("date");
-        if (e.reviews != null && (!Array.isArray(e.reviews) || e.reviews.some(r => !r || typeof r.date !== "string" || !validDate(r.date) || typeof r.verdict !== "string"))) v.fail("réexamens");
-        if (e.src != null && !srcValid(e.src)) v.fail("source");
-        if (e.mb != null && !mbValid(e.mb)) v.fail("MusicBrainz");
-        if (e.ig != null && !igValid(e.ig)) v.fail("Instagram");
-        if (e.zot != null && !zotValid(e.zot)) v.fail("Zotero");
-        if (e.kept != null && !(typeof e.kept === "string" && validDate(e.kept))) v.fail("date");
-      }
-    }
-  },
-  arc: {
-    label: "Arc (étapes, où l'on place des fragments et des éléments d'autres modules)",
-    datedEntries: false, // un placement n'a pas de date de journal ; `at` note juste quand il a été fait
-    defaults: () => ({ config: { stations: [] }, entries: [] }),
-    normalize(inst) { if (!Array.isArray(inst.config.stations)) inst.config.stations = []; },
-    validate(inst, v) {
-      v.list(inst.config.stations || [], "étapes").forEach(x => { if (typeof x.name !== "string" || !x.name.trim() || x.name.length > 60) v.fail("étape"); });
-      for (const p of inst.entries) {
-        if (typeof p.station !== "string") v.fail("placement");
-        if (typeof p.ref !== "string" || !LINK_REF.test(p.ref)) v.fail("placement");
-        if (p.at != null && !(typeof p.at === "string" && validDate(p.at))) v.fail("placement");
-      }
-    }
-  }
-};
-/* Une seule boîte de réception à la fois : c'est elle que remplit la capture rapide de l'accueil. */
-const inboxId = modules => Object.keys(modules).find(k => modules[k].type === "notes" && modules[k].config.inbox) || null;
-/* Crée ou met à jour un élément de collection. Un champ désactivé (absent du formulaire) garde sa valeur.
-   En mode révision, déplacer ou retirer un rendez-vous déjà échu (au jour `date`) compte comme un réexamen. */
-function saveCollectionItem(inst, input, id, date = null) {
-  const c = inst.config, item = inst.entries.find(x => x.id === id) || null, keep = f => input[f] ?? (item ? item[f] : "");
-  const v = {
-    title: requireText(input.title, c.fields.title, 300),
-    subtitle: String(keep("subtitle")).trim(), tag: String(keep("tag")).trim(), text: String(keep("text")),
-    due: input.due !== undefined ? (input.due && validDate(input.due) ? input.due : "") : (item ? item.due : ""),
-    status: c.statuses.includes(input.status) ? input.status : item ? item.status : c.statuses[0]
-  };
-  if (item) {
-    const was = item.due;
-    Object.assign(item, v);
-    if (date && c.review && was && was <= date && item.due !== was) item.reviews = [...(item.reviews || []), { date, verdict: "revue" }];
-    return item;
-  }
-  const e = { id, ...v };
-  inst.entries.push(e);
-  return e;
-}
-/* Les références d'une source : une adresse http(s) seulement (jamais « javascript: », qui deviendrait un lien
-   exécutable), un DOI, un site, une date de publication (année, mois ou jour). Tout est facultatif. */
-function srcValid(x) {
-  const str = (v, n) => v == null || v === "" || (typeof v === "string" && v.length <= n);
-  return !!x && typeof x === "object" && !Array.isArray(x) &&
-    str(x.url, 2000) && (!x.url || /^https?:\/\//i.test(x.url)) &&
-    str(x.doi, 200) && (!x.doi || /^10\.\d{4,9}\//.test(x.doi)) &&
-    str(x.site, 200) && str(x.date, 10) && (!x.date || /^\d{4}(-\d{2}(-\d{2})?)?$/.test(x.date));
-}
-/* Le lien d'un élément de musique à MusicBrainz : l'artiste (a), l'album (rg, un « release group »), son année. */
-function mbValid(x) {
-  const id = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-  return !!x && typeof x === "object" && !Array.isArray(x) && id.test(x.a || "") && (x.rg == null || id.test(x.rg)) && (x.y == null || /^\d{4}$/.test(x.y));
-}
-/* Le lien d'une source à sa fiche Zotero : la clé de l'élément (huit caractères), et l'adresse de la fiche sur zotero.org. */
-const zotValid = x => !!x && typeof x === "object" && !Array.isArray(x) && /^[A-Z0-9]{8}$/.test(x.k || "") &&
-  (x.l == null || (typeof x.l === "string" && /^https:\/\/www\.zotero\.org\/[\w.-]+\/items\/[A-Z0-9]{8}$/.test(x.l)));
-/* L'origine d'un élément importé de l'export Instagram : l'instant de publication (secondes) et la sorte. */
-const igValid = x => !!x && typeof x === "object" && !Array.isArray(x) && Number.isInteger(x.t) && x.t > 0 && x.t < 1e10 && (x.k === "post" || x.k === "reel");
-/* ---- statut épistémique : ce qu'une note ou un fragment revendique de savoir ----
-   Facultatif et vide par défaut. « Inexpliqué » est un statut à part entière, pas une corbeille. */
-const EP_STATUS = { obs: "observé", hyp: "hypothèse", int: "interprétation", inx: "inexpliqué" };
-/* « ? » en tête d'une saisie la marque comme hypothèse. Un seul préfixe, pour rester prévisible. */
-function epPrefix(raw) {
-  const m = String(raw).match(/^\s*\?\s*(\S[\s\S]*)$/);
-  return m ? { text: m[1], ep: "hyp" } : { text: String(raw), ep: null };
-}
-/* Chaque changement de statut est daté : on saura quand une hypothèse est devenue autre chose. */
-function setEpStatus(item, ep, date) {
-  const to = Object.hasOwn(EP_STATUS, ep) ? ep : null, from = item.ep || null;
-  if (to === from) return item;
-  if (to) item.ep = to; else delete item.ep;
-  item.epLog = [...(item.epLog || []), { from, to, date }].slice(-20);
-  return item;
-}
-/* ---- provenance : une note rangée ailleurs disparaît de la boîte ; ce qui en naît garde une copie figée
-   de son texte, de sa date et de son lieu d'origine. La plus ancienne origine l'emporte (une note déjà
-   rangée une fois garde sa naissance). */
-const entryIds = inst => new Set(["entries", "scraps"].flatMap(l => (inst[l] || []).map(e => e.id)));
-/* Renvoie les entrées nées du rangement. Statut et liaisons suivent la note là où ils se lisent (fragments, notes). */
-function stampOrigin(inst, before, note, from) {
-  const origin = note.origin || { from, text: note.text, date: note.date }, born = [];
-  for (const list of ["entries", "scraps"]) for (const e of inst[list] || []) if (!before.has(e.id)) {
-    e.origin = origin; born.push(e);
-    if (list === "scraps" || inst.type === "notes") {
-      if (note.ep && !e.ep) e.ep = note.ep;
-      if (note.links && note.links.length && !e.links) e.links = note.links;
-    }
-  }
-  return born;
-}
-/* ---- liaisons : des liens typés entre fragments et notes, portés par l'entrée d'où ils partent ----
-   Référence d'une entrée : « module/identifiant ». Chaque lien a son identifiant : deux liens ajoutés à la même
-   entrée sur deux appareils fusionnent un par un au lieu de s'écraser. Une tension (« contredit ») reste
-   ouverte jusqu'à ce qu'une entrée dérive des deux. */
-const LINK_TYPES = { derive: "dérive de", contredit: "contredit", echo: "fait écho à", documente: "documente" };
-const LINK_REF = /^[a-z0-9][a-z0-9-]{0,63}\/[^/\s]{1,64}$/;
-function addLink(item, to, type, id, date) {
-  if (!Object.hasOwn(LINK_TYPES, type) || typeof to !== "string" || !LINK_REF.test(to)) throw new Error("Lien invalide");
-  if ((item.links || []).some(l => l.to === to && l.type === type)) return null; // déjà lié ainsi
-  const link = { id, to, type, date };
-  item.links = [...(item.links || []), link];
-  return link;
-}
-/* Une entrée qui disparaît au profit d'une autre (note rangée) : les liens qui la visaient la suivent. */
-function retargetLinks(modules, from, to) {
-  for (const inst of Object.values(modules)) for (const list of ["entries", "scraps"]) for (const e of inst[list] || [])
-    for (const l of e.links || []) if (l.to === from) l.to = to;
-}
-/* ---- pont de reprise : le prochain geste, noté en quittant un module ----
-   Un pont remplacé ou levé part dans un historique court : ce qu'on comptait faire, et ce qu'il en est advenu. */
-function setResume(inst, text, date) {
-  const t = String(text || "").trim().slice(0, 200), old = inst.resume;
-  if (old && old.text === t) return;
-  if (old) inst.resumeLog = [...(inst.resumeLog || []), { text: old.text, at: old.at, end: date, how: t ? "remplacé" : "repris" }].slice(-30);
-  if (t) inst.resume = { text: t, at: date }; else delete inst.resume;
-}
-/* ---- palimpseste : un fragment réécrit garde ses versions précédentes, la plus ancienne perdue la première ----
-   Dix versions suffisent à retracer une dérive de formulation ; ce n'est pas un contrôle de version complet. */
-function editFragmentText(f, text, date) {
-  const t = String(text || "").trim();
-  if (!t || t === f.text) return false;
-  f.versions = [...(f.versions || []), { text: f.text, at: date }].slice(-10);
-  f.text = t; f.editedAt = date;
-  return true;
-}
-function numericValue(raw) {
-  const value = raw != null && raw !== "" ? Number(raw) : null;
-  if (value !== null && !Number.isFinite(value)) throw new Error("Valeur invalide"); // un NaN contaminerait tous les totaux
-  return value;
-}
-function addJournalEntry(instance, input, id, defaultDate) {
-  const date = input.date && validDate(input.date) ? input.date : defaultDate;
-  const type = MODULE_TYPES[instance.type];
-  if (!type.entry) throw new Error("Ce module ne tient pas de journal");
-  const entry = { id, date, note: input.note || "" };
-  type.entry(entry, input);
-  instance.entries.push(entry);
-  return entry;
-}
-/* L'identifiant d'un module sert aussi de route (#id) : il ne doit jamais masquer une vue fixe
-   ni un nom hérité d'Object.prototype (« constructor », « toString »…), que `obj[id]` trouverait.
-   Les noms de types ne sont pas réservés : un type n'est pas une route (le module « budget » est
-   une instance du type « budget »). */
-const RESERVED_IDS = ["accueil", "reglages", "recherche", "bilan"];
-const reservedId = id => RESERVED_IDS.includes(id) || id in Object.prototype;
-/* Forme qu'un identifiant de module peut avoir, quelle que soit sa provenance (slugId, sauvegarde, serveur). */
-const MODULE_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
-function slugId(name, existing) {
-  const base = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "module";
-  let id = base, n = 2;
-  while (existing.includes(id) || reservedId(id)) { id = `${base}-${n}`; n++; }
-  return id;
-}
-function createModuleInstance(modules, type, name, id) {
-  const label = requireText(name, "Nom du module", 60);
-  if (reservedId(id)) throw new Error("Identifiant réservé");
-  if (Object.hasOwn(modules, id)) throw new Error("Identifiant déjà utilisé");
-  if (!Object.hasOwn(MODULE_TYPES, type)) throw new Error("Type de module inconnu");
-  return (modules[id] = { type, label, ...MODULE_TYPES[type].defaults() });
-}
-/* Modèles proposés au premier lancement et à la création : un type et quelques réglages de départ.
-   Génériques par principe (aucun contenu personnel) ; `hint` dit à quoi il sert. */
-const MODULE_TEMPLATES = [
-  { id: "taches", name: "Tâches", type: "taches", hint: "Échéances, étapes, et trois tâches du jour au plus" },
-  { id: "protocole", name: "Protocole", type: "programme", hint: "Une pratique sur N semaines, un calendrier, un objectif hebdomadaire" },
-  { id: "ecriture", name: "Écriture", type: "cumul", hint: "Un compteur de mots, des chapitres, un carnet de fragments",
-    config: { unitLabel: "mots", goal: 50000, categoryLabel: "Chapitre", scraps: true, scrapsLabel: "Fragments", entryMode: "total" } },
-  { id: "budget", name: "Budget", type: "budget", hint: "Dépenses et revenus du mois, des enveloppes à plafond",
-    config: { envelopes: [{ id: "courses", name: "Courses", limit: 300 }, { id: "loisirs", name: "Loisirs", limit: 100 }] } },
-  { id: "tableau", name: "Tableau de production", type: "collection", hint: "Des idées qui avancent de colonne en colonne jusqu'à publication",
-    config: { display: "colonnes", statuses: ["Idée", "En cours", "Prêt", "Publié"], doneFrom: 3, statusLabel: "Étape", addLabel: "Nouvelle idée",
-      fields: { title: "Titre", subtitle: "", tag: "Thème", due: "Date prévue", text: "Texte" } } },
-  { id: "decouvertes", name: "À découvrir", type: "collection", hint: "Livres, albums, films : une liste à statuts",
-    config: { display: "liste", statuses: ["À découvrir", "Découvert", "Retenu"], doneFrom: 1, addLabel: "Ajouter",
-      fields: { title: "Titre", subtitle: "Auteur", tag: "Genre", due: "", text: "Note" } } },
-  { id: "decisions", name: "Décisions", type: "collection", hint: "Ce que tu as décidé, pourquoi, et quand le réexaminer",
-    config: { display: "liste", review: true, description: "La raison écrite au moment de décider, relue au moment de réexaminer.",
-      statuses: ["À décider", "Prise", "Abandonnée"], doneFrom: 1, statusLabel: "État", addLabel: "Noter une décision",
-      fields: { title: "Décision", subtitle: "", tag: "Domaine", due: "À réexaminer le", text: "Contexte, options écartées, raison, et ce qui te ferait changer d'avis" } } },
-  { id: "motifs", name: "Motifs", type: "collection", hint: "Tes motifs récurrents, comptés partout : dernière apparition, voisins, jachère",
-    config: { display: "liste", concordance: true, fallowDays: 90, description: "Chaque motif est cherché dans tous tes autres modules, en mot entier, pluriel et variantes compris.",
-      statuses: ["Vivant", "Épuisé"], doneFrom: 1, statusLabel: "État", addLabel: "Ajouter un motif",
-      fields: { title: "Motif", subtitle: "Variantes (séparées par des virgules)", tag: "Famille", due: "", text: "Note" } } },
-  { id: "musique", name: "Musique", type: "collection", hint: "Des artistes et leurs albums, précisés par MusicBrainz, pochettes et nouvelles sorties comprises",
-    config: { display: "liste", music: true, statuses: ["À écouter", "Écouté", "Retenu"], doneFrom: 1, addLabel: "Ajouter un artiste",
-      fields: { title: "Artiste", subtitle: "Album", tag: "Genre", due: "", text: "Note" } } },
-  { id: "sources", name: "Sources", type: "collection", hint: "Articles, livres, pages : un lien ou un DOI suffit, le reste se complète",
-    config: { display: "liste", sources: true, description: "Colle un lien ou un DOI : titre, auteurs, revue et date se complètent. Relie ensuite une source au fragment qu'elle documente.",
-      statuses: ["À lire", "Lue", "Utilisée"], doneFrom: 1, statusLabel: "Lecture", addLabel: "Ajouter à la main",
-      fields: { title: "Titre", subtitle: "Auteurs", tag: "Type", due: "", text: "Résumé et notes" } } },
-  { id: "arc", name: "Arc", type: "arc", hint: "Une séquence d'étapes où loger des fragments et des éléments d'autres modules",
-    config: { stations: [{ id: "1", name: "Étape 1" }, { id: "2", name: "Étape 2" }, { id: "3", name: "Étape 3" }] } },
-  { id: "rappels", name: "Soins", type: "rappels", hint: "Des gestes récurrents et depuis quand ils attendent",
-    config: { types: [{ id: "arrosage", label: "Arrosage", every: 3 }] } },
-  { id: "carnet", name: "Carnet", type: "notes", hint: "Des notes datées, gardées ou rangées ailleurs ensuite" }
-];
-/* Crée un module depuis un modèle : les réglages du modèle complètent ceux du type (un niveau de profondeur). */
-function createFromTemplate(modules, tpl, name, id) {
-  const inst = createModuleInstance(modules, tpl.type, name, id);
-  for (const [k, v] of Object.entries(JSON.parse(JSON.stringify(tpl.config || {}))))
-    inst.config[k] = v && typeof v === "object" && !Array.isArray(v) && inst.config[k] && typeof inst.config[k] === "object" ? { ...inst.config[k], ...v } : v;
-  return inst;
-}
-function deleteModuleInstance(modules, moduleList, id) {
-  if (!Object.hasOwn(modules, id)) throw new Error("Module introuvable");
-  delete modules[id];
-  const i = moduleList.findIndex(m => m.id === id);
-  if (i >= 0) moduleList.splice(i, 1);
-}
-
-/* ================= ciel : soleil, lune, météo (pur, sans DOM) =================
-   La Fenêtre : la scène de l'accueil montre le dehors réel. Les positions sont calculées ici, localement, par les
-   formules abrégées de l'Astronomical Almanac (à un degré près environ : un décor n'en demande pas plus) ; la météo
-   est lue ailleurs (app.js), ce fichier ne fait que la traduire. Aucune dépendance : il se teste seul
-   (tests/sky.test.js). Règle : seuls les jetons de scène varient avec le temps, jamais ceux de l'interface. */
-const RAD = Math.PI / 180;
-const daysJ2000 = t => t / 86400000 - 10957.5; // jours depuis J2000.0 (1er janvier 2000, 12 h TU)
-const clamp01 = x => Math.max(0, Math.min(1, x));
-/* Coordonnées équatoriales → hauteur et azimut (depuis le nord, vers l'est), en degrés. */
-function toHorizon(ra, dec, d, lat, lon) {
-  const H = (280.46061837 + 360.98564736629 * d + lon) * RAD - ra, phi = lat * RAD; // angle horaire, via le temps sidéral local
-  const alt = Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H));
-  const azS = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi)); // depuis le sud, vers l'ouest
-  return { alt: alt / RAD, az: ((azS / RAD + 180) % 360 + 360) % 360 };
-}
-function sunPosition(t, lat, lon) {
-  const d = daysJ2000(t), g = (357.529 + 0.98560028 * d) * RAD, q = 280.459 + 0.98564736 * d;
-  const L = (q + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * RAD, e = (23.439 - 0.00000036 * d) * RAD;
-  return toHorizon(Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L)), Math.asin(Math.sin(e) * Math.sin(L)), d, lat, lon);
-}
-function moonPosition(t, lat, lon) {
-  const d = daysJ2000(t), L = (218.316 + 13.176396 * d) * RAD, M = (134.963 + 13.064993 * d) * RAD, F = (93.272 + 13.229350 * d) * RAD;
-  const l = L + 6.289 * RAD * Math.sin(M), b = 5.128 * RAD * Math.sin(F), e = 23.4397 * RAD;
-  const ra = Math.atan2(Math.sin(l) * Math.cos(e) - Math.tan(b) * Math.sin(e), Math.cos(l));
-  const dec = Math.asin(Math.sin(b) * Math.cos(e) + Math.cos(b) * Math.sin(e) * Math.sin(l));
-  const p = toHorizon(ra, dec, d, lat, lon);
-  p.alt -= 0.95 * Math.cos(p.alt * RAD); // parallaxe : la lune est proche, on la voit un peu plus bas qu'on ne la calcule
-  return p;
-}
-/* Prochain passage d'un astre à une hauteur donnée (lever si montant, coucher sinon), dans les heures qui viennent. */
-function nextCrossing(pos, t, lat, lon, h, hours = 26, step = 5) {
-  let prev = pos(t, lat, lon).alt - h;
-  for (let m = step; m <= hours * 60; m += step) {
-    const tt = t + m * 60000, cur = pos(tt, lat, lon).alt - h;
-    if ((prev < 0) !== (cur < 0)) return { at: tt - step * 60000 * (cur / (cur - prev)), rising: cur > prev };
-    prev = cur;
-  }
-  return null;
-}
-/* Sans lieu réglé : une longitude déduite du fuseau horaire d'hiver (l'heure d'été fausserait de 15°), une latitude
-   moyenne. L'heure solaire est alors juste à trois quarts d'heure près : assez pour la couleur du ciel, pas pour
-   afficher une heure de coucher. */
-function approxPlace(now = new Date()) { return { lat: 45, lon: -new Date(now.getFullYear(), 0, 1).getTimezoneOffset() / 4, approx: true }; }
-/* Où dessiner la lune dans la fenêtre, face au sud (au nord dans l'hémisphère austral) : l'est à gauche, l'ouest à
-   droite (l'inverse au sud de l'équateur), plus haut qu'elle est haute. Sous l'horizon : nulle part. */
-function moonPlacement(p, lat) {
-  if (p.alt < -1) return null;
-  const rel = lat >= 0 ? p.az - 180 : ((p.az + 180) % 360) - 180;
-  return { x: 50 + Math.max(-1, Math.min(1, rel / 90)) * 38, y: 62 - clamp01(p.alt / 60) * 52 };
-}
-
-/* ---- météo : les codes WMO (Open-Meteo) ramenés à sept états, chacun dessiné en gravure ---- */
-const WEATHER = { clear: "dégagé", veiled: "voilé", overcast: "couvert", fog: "brume", rain: "pluie", snow: "neige", storm: "orage" };
-function weatherState(code) {
-  if (code == null || code === "" || !Number.isFinite(+code)) return null;
-  const c = +code;
-  if (c === 0) return "clear";
-  if (c <= 2) return "veiled";
-  if (c === 45 || c === 48) return "fog";
-  if ((c >= 51 && c <= 67) || (c >= 80 && c <= 82)) return "rain";
-  if ((c >= 71 && c <= 77) || c === 85 || c === 86) return "snow";
-  if (c >= 95) return "storm";
-  return "overcast";
-}
-
-/* ---- couleurs ---- */
-const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-const rgbHex = c => "#" + c.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, "0")).join("");
-const mixHex = (a, b, f) => { const x = hexRgb(a), y = hexRgb(b); return rgbHex(x.map((v, i) => v + (y[i] - v) * f)); };
-const lin = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
-const luminance = h => { const [r, g, b] = hexRgb(h); return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b); };
-const contrast = (a, b) => { const x = luminance(a), y = luminance(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
-const desaturate = (h, f) => { const l = luminance(h) ** (1 / 2.2) * 255; return mixHex(h, rgbHex([l, l, l]), f); };
-
-/* Le ciel selon la hauteur du soleil, pour une interface sombre (un jour vu depuis une pièce sombre : désaturé,
-   plafonné) ou claire (une nuit un peu relevée). Entre deux repères, on interpole : jamais de saut à 18 h 00. */
-const SKY_KEYS = {
-  dark: [
-    [-18, "#070b10", "#132019", "#1d2b23", "#0a0f0c"], // nuit
-    [-12, "#0a1220", "#1a2a2e", "#1f2e2a", "#0a100d"], // crépuscule nautique
-    [-6, "#142033", "#3a4a55", "#26363a", "#0c1210"],  // heure bleue
-    [-1, "#1d2a3d", "#6a5a4e", "#2d3a36", "#0d1411"],  // horizon cuivré
-    [4, "#2a3a4a", "#86684a", "#3a4a40", "#111a14"],   // heure dorée
-    [12, "#3a4c58", "#6f7d78", "#45584e", "#16201a"],  // jour bas
-    [35, "#445866", "#7c8a86", "#4c5f55", "#18231c"]   // jour
-  ],
-  light: [
-    [-18, "#3a4656", "#7d8a8c", "#5d6d66", "#2f3d35"],
-    [-12, "#4d5b6c", "#98a3a2", "#66766e", "#314038"],
-    [-6, "#6d7c8e", "#b4b8b0", "#72827a", "#34443a"],
-    [-1, "#8a97a4", "#d9c7aa", "#7d8d84", "#37473d"],
-    [4, "#9fb0b8", "#e3d2b4", "#869a8d", "#394a3f"],
-    [12, "#b0c2c4", "#dfe5dc", "#8b9e91", "#3a4c40"],
-    [35, "#b9c7c0", "#dfe5dc", "#8fa294", "#3b4d40"]
-  ]
-};
-function skyAt(alt, dark) {
-  const keys = SKY_KEYS[dark ? "dark" : "light"];
-  if (alt <= keys[0][0]) return keys[0].slice(1);
-  if (alt >= keys.at(-1)[0]) return keys.at(-1).slice(1);
-  const i = keys.findIndex(k => k[0] > alt), a = keys[i - 1], b = keys[i], f = (alt - a[0]) / (b[0] - a[0]);
-  return a.slice(1).map((c, j) => mixHex(c, b[j + 1], f));
-}
-/* Ce que chaque temps fait au ciel : désaturer, assombrir, voiler la lune, éteindre les étoiles, ajouter des couches. */
-const WEATHER_FX = {
-  clear: { desat: 0, dark: 1, veil: 0, stars: 1, clouds: 0 },
-  veiled: { desat: 0.25, dark: 0.97, veil: 0.25, stars: 0.5, clouds: 0.35 },
-  overcast: { desat: 0.7, dark: 0.9, veil: 0.75, stars: 0, clouds: 0.7 },
-  fog: { desat: 0.5, dark: 0.95, veil: 0.6, stars: 0, clouds: 0.3, fog: 1 },
-  rain: { desat: 0.6, dark: 0.82, veil: 0.8, stars: 0, clouds: 0.75, rain: 0.35 },
-  snow: { desat: 0.6, dark: 1, veil: 0.7, stars: 0, clouds: 0.6, snow: 0.8 },
-  storm: { desat: 0.5, dark: 0.65, veil: 0.9, stars: 0, clouds: 0.85, rain: 0.45, warm: 0.25 }
-};
-const INK_LIGHT = "#eceee6", INK_DARK = "#1a211b";
-
-/* ---- saisons : la phénologie des feuillus de la lisière ----
-   Les sapins sont sempervirents : une forêt de sapins purs est la même en décembre et en octobre. La saison se lit donc
-   dans les feuillus mêlés à la lisière (hêtres, bouleaux), d'après le jour de l'année, pour une forêt tempérée : le
-   débourrement vers la mi-avril, le feuillage plein de mai à septembre, l'or puis la rouille en octobre, la chute en
-   novembre, les branches nues jusqu'au printemps. Au sud de l'équateur, une demi-année plus tard. Continue, comme le
-   ciel : entre deux repères on interpole, jamais de saut au 21 septembre. [jour de l'année, densité, couleur] */
-const LEAF_KEYS = [[0, 0, "#6f5a3e"], [100, 0, "#6f5a3e"], [118, 0.55, "#9db36c"], [140, 1, "#5d7a48"], [250, 1, "#56703f"],
-  [278, 1, "#b08a3e"], [298, 0.75, "#9c5b30"], [318, 0.2, "#7d4c2c"], [330, 0, "#6f5a3e"], [367, 0, "#6f5a3e"]];
-function seasonAt(t, lat = 45) {
-  const y = new Date(t).getUTCFullYear(), doy = (t - Date.UTC(y, 0, 1)) / 86400000;
-  const d = lat < 0 ? (doy + 182.5) % 365.25 : doy;
-  const i = LEAF_KEYS.findIndex(k => k[0] > d), a = LEAF_KEYS[i - 1], b = LEAF_KEYS[i], f = (d - a[0]) / (b[0] - a[0]);
-  const leaf = Math.round((a[1] + (b[1] - a[1]) * f) * 1000) / 1000;
-  const phase = leaf < 0.05 ? "nu" : d < 140 ? "debourrement" : d < 262 ? "feuille" : d < 300 ? "rouille" : "chute";
-  return { leaf, color: mixHex(a[2], b[2], f), phase };
-}
-/* La scène complète : couleurs, étoiles, halo, voile de la lune, couches météo, et l'encre du texte posé sur le ciel
-   avec son voile de lecture (le moins opaque qui garantit 4,5:1, calculé ici plutôt qu'espéré). */
-function skyScene({ sunAlt, illum = 0.5, weather = null, dark = true, season = null, frost = false }) {
-  const fx = WEATHER_FX[weather] || WEATHER_FX.clear;
-  let [top, bot, far, near] = skyAt(sunAlt, dark);
-  const shade = c => { const d = desaturate(c, fx.desat); return fx.dark < 1 ? mixHex(d, "#000000", 1 - fx.dark) : d; };
-  top = shade(top); bot = shade(bot);
-  if (fx.warm) bot = mixHex(bot, "#6b4a2e", fx.warm); // l'orage : une lueur chaude au loin
-  if (fx.fog) far = mixHex(far, bot, 0.6);           // la brume efface le lointain
-  if (weather === "snow") { top = mixHex(top, "#dde3e0", dark ? 0.08 : 0.15); bot = mixHex(bot, "#e6ebe8", dark ? 0.12 : 0.2); }
-  const night = clamp01((-4 - sunAlt) / 11);           // 1 à la nuit noire, 0 dès le jour
-  const star = night * (1 - 0.7 * illum) * fx.stars * (dark ? 0.85 : 0.45); // la lune pleine efface les étoiles faibles
-  const glow = (dark ? 0.16 : 0.1) * clamp01((2 - sunAlt) / 10) * (1 - fx.veil * 0.5);
-  const moonOpacity = (1 - 0.85 * fx.veil) * (sunAlt > 0 ? 0.55 : 1); // la lune de jour est pâle
-  const earthshine = illum < 0.4 ? 0.1 * (1 - illum / 0.4) * (sunAlt < -4 ? 1 : 0.3) : 0; // lumière cendrée des croissants
-  // Les feuillus : la nuit, les couleurs s'éteignent (vision scotopique, celle des bâtonnets, qui ne voient pas les
-  // couleurs) ; le temps gris les désature comme le reste. Le bois reste, nu ou non ; le bouleau garde son écorce claire.
-  const se = season || { leaf: 1, color: "#56703f", phase: "feuille" }, vivid = 0.2 + 0.45 * (1 - night);
-  const leafColor = desaturate(mixHex(far, se.color, vivid), fx.desat * 0.5), wood = mixHex(far, near, 0.6);
-  const birch = mixHex(far, dark ? "#d8d8cf" : "#f1efe8", 0.2 + 0.35 * (1 - night));
-  const frostColor = frost ? mixHex(far, "#eef3f2", dark ? 0.55 : 0.75) : null; // givre mesuré, jamais supposé
-  const mistA = fx.fog ? 0.9 : dark ? 0.55 : 0.75, mistRgb = hexRgb(mixHex(bot, dark ? "#28392f" : "#e2e6de", 0.5));
-  const sample = mixHex(top, bot, 0.3);                 // là où le texte se pose, en haut à gauche
-  const ink = contrast(INK_LIGHT, sample) >= contrast(INK_DARK, sample) ? INK_LIGHT : INK_DARK;
-  const scrimColor = ink === INK_LIGHT ? "#060907" : "#f2f3ee";
-  let scrim = 0;
-  while (scrim < 0.9 && contrast(ink, mixHex(sample, scrimColor, scrim)) < 4.8) scrim += 0.05;
-  return {
-    top, bot, far, near, star, glow, moonOpacity, earthshine, weather,
-    mist: `rgba(${mistRgb.join(",")},${mistA})`, fog: !!fx.fog,
-    clouds: fx.clouds, cloud: mixHex(bot, dark ? "#9aa3a3" : "#ffffff", 0.18),
-    rain: fx.rain || 0, snow: fx.snow || 0,
-    leaf: leafColor, leafO: se.leaf, leaves: se.phase, wood, birch, frost: frostColor,
-    ink, scrim: Math.round(scrim * 100) / 100, scrimColor, sample
-  };
-}
-
-/* ---- ciel vivant : le mouvement d'après le vent réel ----
-   Open-Meteo donne la direction d'où le vent vient (270 : d'ouest). La fenêtre regarde le sud au nord de l'équateur :
-   l'est y est à gauche, donc un vent d'ouest pousse les nuages vers la gauche (l'inverse au sud de l'équateur).
-   Le vent qui souffle vers nous ou de nous ne se voit presque pas en travers : la dérive ralentit, sans s'arrêter.
-   Durées en secondes : une traversée complète pour les nuages, une période de motif pour la pluie et la neige. */
-const WIND_NAMES = ["du nord", "du nord-est", "d'est", "du sud-est", "du sud", "du sud-ouest", "d'ouest", "du nord-ouest"];
-const windName = dir => WIND_NAMES[Math.round((((+dir % 360) + 360) % 360) / 45) % 8];
-function skyMotion({ wind = 8, dir = 270, precip = 0, lat = 45 } = {}) {
-  const w = Number.isFinite(+wind) ? Math.max(0, +wind) : 8, from = Number.isFinite(+dir) ? +dir : 270;
-  const east = Math.sin((from + 180) * RAD), dx = (lat >= 0 ? -1 : 1) * east; // > 0 : vers la droite de l'écran
-  const eff = Math.max(3, w * Math.max(0.35, Math.abs(dx)));
-  const clouds = Math.round(Math.max(45, Math.min(600, 2400 / eff)));
-  const p = Number.isFinite(+precip) ? Math.max(0, +precip) : 0;
-  const fall = Math.max(70, Math.min(220, 70 + 25 * p)); // px/s : la bruine descend lentement, l'averse moins
-  return {
-    toRight: dx > 0, clouds, mist: Math.round(clouds * 1.8),
-    slant: Math.round(Math.max(-30, Math.min(30, dx * w * 0.9))), // degrés : la pluie penche avec le vent
-    rain: +(24 / fall).toFixed(3), snow: +(60 / Math.max(10, Math.min(30, 10 + w * 0.4))).toFixed(2)
-  };
-}
-
-/* ---- le ciel des jours qui viennent : étoiles filantes, éclipses (tables fixes, aucun réseau) ----
-   Astronomie seulement : des dates et des chiffres, jamais d'interprétation. Pluies majeures visibles de nos latitudes,
-   selon le calendrier de l'IMO (Organisation internationale des météores) : jour du maximum et taux horaire zénithal
-   (ZHR), un maximum théorique sous un ciel parfaitement noir, radiant au zénith ; on en voit toujours moins. */
-const SHOWERS = [["Quadrantides", 1, 4, 110], ["Lyrides", 4, 22, 18], ["Perséides", 8, 12, 100], ["Orionides", 10, 21, 20], ["Léonides", 11, 17, 15], ["Géminides", 12, 14, 150]];
-/* Éclipses visibles depuis Lille jusqu'en 2030 (visibilité locale recoupée : icalendrier.fr, lunettes-eclipse.fr,
-   eclipse.previplus.fr ; à prolonger au-delà). Valables pour le Nord de la France et la Belgique seulement. */
-const ECLIPSES = [
-  ["2026-08-12", "soleil", "partielle", "90 % du Soleil masqué, maximum vers 20 h 14"], ["2026-08-28", "lune", "partielle", ""],
-  ["2027-02-20", "lune", "pénombre", ""], ["2027-08-02", "soleil", "partielle", ""], ["2028-01-12", "lune", "partielle", ""],
-  ["2028-01-26", "soleil", "partielle", ""], ["2028-07-06", "lune", "pénombre", ""], ["2028-12-31", "lune", "totale", ""],
-  ["2029-06-26", "lune", "totale", ""], ["2029-12-20", "lune", "totale", ""], ["2030-06-01", "soleil", "partielle", ""],
-  ["2030-06-15", "lune", "pénombre", ""], ["2030-12-09", "lune", "pénombre", ""]];
-const nearLille = (lat, lon) => lat >= 48.5 && lat <= 52.5 && lon >= 0.5 && lon <= 6.5;
-const dayDiff = (a, b) => Math.round((Date.parse(b + "T12:00:00Z") - Date.parse(a + "T12:00:00Z")) / 86400000);
-/* Ce qui mérite une ligne sous le ciel, d'aujourd'hui (AAAA-MM-JJ) : une pluie d'étoiles filantes la veille ou le
-   jour de son maximum ; une éclipse visible d'ici dans les sept jours (seulement près de Lille, là où la table vaut). */
-function skyEvents(today, place) {
-  const out = [], y = +today.slice(0, 4);
-  for (const [name, m, d, zhr] of SHOWERS) {
-    for (const yy of [y, y + 1]) { const peak = `${yy}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`, n = dayDiff(today, peak); if (n === 0 || n === 1) out.push({ kind: "shower", name, zhr, inDays: n, date: peak }); }
-  }
-  if (place && nearLille(place.lat, place.lon)) for (const [date, body, type, note] of ECLIPSES) {
-    const n = dayDiff(today, date); if (n >= 0 && n <= 7) out.push({ kind: "eclipse", body, type, note, inDays: n, date });
-  }
-  return out;
-}
-/* Les jours de pluie à venir d'une prévision quotidienne [{ d, mm, pp }] : 1 mm au moins, ou 60 % de probabilité. */
-const rainDays = (days, from, n = 5) => (days || []).filter(x => x && x.d >= from && dayDiff(from, x.d) < n && ((+x.mm || 0) >= 1 || (+x.pp || 0) >= 60)).map(x => x.d);
-
-/* ================= carte céleste des liaisons (pur, sans DOM) =================
-   Une lentille secondaire, jamais une vue d'ensemble : le voisinage d'une entrée, ou les entrées d'un motif. Le
-   placement est déterministe, comme une carte du ciel et contrairement aux graphes « à ressorts » (force-directed) qui
-   se réarrangent à chaque ouverture et ruinent la mémoire spatiale : le temps en abscisse (comme l'écliptique), une
-   bande horizontale par espace, et la même entrée toujours au même endroit. La taille d'une étoile dit son nombre de
-   liens (sa magnitude, à l'envers de l'astronomie où la plus brillante a le plus petit chiffre). Ce fichier ne fait
-   que la géométrie ; le choix des étoiles et le dessin sont dans types.js. Il se teste seul (tests/carte.test.js). */
-const CARTE_MAX = 80; // au-delà, c'est une nébuleuse, pas une carte
-/* Un nombre stable dans [0, 1[ tiré d'une chaîne (FNV-1a) : le « hasard » d'une étoile ne change jamais. */
-function hash01(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
-/* nodes : [{ ref, mod, date?, links }] ; edges : [{ from, to, type, open? }] ; bands : ordre des espaces (navigation).
-   → { width, height, bands: [{ mod, y }], stars: [{ ref, mod, x, y, r }], lines: [{ from, to, type, open, d }], span } */
-function carteLayout(nodes, edges, bands, { W = 720, bandH = 64, top = 18, left = 96, right = 18 } = {}) {
-  const used = bands.filter(m => nodes.some(n => n.mod === m));
-  const extra = [...new Set(nodes.map(n => n.mod).filter(m => !used.includes(m)))].sort();
-  const order = [...used, ...extra], bandOf = new Map(order.map((m, i) => [m, i]));
-  const dated = nodes.filter(n => n.date).map(n => Date.parse(n.date + "T12:00:00Z")).filter(Number.isFinite);
-  const t0 = dated.length ? Math.min(...dated) : 0, t1 = dated.length ? Math.max(...dated) : 0;
-  const undated = nodes.some(n => !n.date), x0 = left + (undated ? 34 : 0), x1 = W - right;
-  const xOf = n => {
-    if (!n.date) return left + 10; // sans date : une colonne à part, au bord
-    const t = Date.parse(n.date + "T12:00:00Z");
-    return t1 > t0 ? x0 + (x1 - x0) * (t - t0) / (t1 - t0) : (x0 + x1) / 2;
-  };
-  // Les étoiles d'une même bande trop proches en abscisse s'étagent verticalement, dans l'ordre de leur référence.
-  const stars = [], buckets = new Map();
-  for (const n of [...nodes].sort((a, b) => (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0))) {
-    const b = bandOf.get(n.mod), x = Math.round(xOf(n) * 10) / 10, key = `${b}:${Math.round(x / 10)}`;
-    const i = (buckets.get(key) || 0); buckets.set(key, i + 1);
-    const cy = top + b * bandH + bandH / 2, jitter = (hash01(n.ref) - .5) * bandH * .3;
-    const step = i ? Math.ceil(i / 2) * (i % 2 ? 1 : -1) * 11 : 0; // 0, +11, −11, +22…
-    const y = Math.max(top + b * bandH + 7, Math.min(top + (b + 1) * bandH - 7, cy + (i ? step : jitter)));
-    stars.push({ ref: n.ref, mod: n.mod, x, y: Math.round(y * 10) / 10, r: Math.round(Math.min(8, 3.2 + 1.3 * Math.sqrt(n.links || 0)) * 10) / 10 });
-  }
-  const at = new Map(stars.map(s => [s.ref, s]));
-  // Les liens en arcs légers : deux liens entre des étoiles alignées ne se confondent pas avec la bande.
-  const lines = edges.filter(e => at.has(e.from) && at.has(e.to) && e.from !== e.to).map(e => {
-    const a = at.get(e.from), b = at.get(e.to), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, dx = b.x - a.x, dy = b.y - a.y, k = .18;
-    const d = `M${a.x},${a.y}Q${Math.round((mx - dy * k) * 10) / 10},${Math.round((my + dx * k) * 10) / 10} ${b.x},${b.y}`;
-    return { from: e.from, to: e.to, type: e.type, open: !!e.open, d };
-  });
-  return { width: W, height: top * 2 + order.length * bandH, bands: order.map((mod, i) => ({ mod, y: top + i * bandH })), stars, lines,
-    span: dated.length ? { from: new Date(t0).toISOString().slice(0, 10), to: new Date(t1).toISOString().slice(0, 10), x0, x1 } : null };
-}
-/* Le voisinage d'une entrée, en largeur d'abord (les plus proches gardées quand il faut couper) : adjacency est une
-   Map ref → [refs voisines], dans les deux sens. → { refs, capped } */
-function carteNeighbourhood(start, adjacency, depth = 2, max = CARTE_MAX) {
-  const seen = new Set([start]); let frontier = [start];
-  for (let d = 0; d < depth && frontier.length; d++) {
-    const next = [];
-    for (const r of frontier) for (const n of [...(adjacency.get(r) || [])].sort()) if (!seen.has(n)) { seen.add(n); next.push(n); }
-    frontier = next;
-  }
-  const refs = [...seen];
-  return { refs: refs.slice(0, max), capped: refs.length > max };
-}
-
-/* ================= sources : liens et DOI (pur, sans DOM ni réseau) =================
-   Une Source est un élément de collection qui porte `src = { url, doi, site, date }`. Ce fichier ne fait que
-   reconnaître, normaliser et traduire : l'appel réseau est dans types.js, la validation dans domain.js (srcValid).
-   Il se teste seul (tests/sources.test.js). */
-/* Paramètres qui ne servent qu'à suivre le lecteur : les retirer rend deux liens vers la même page identiques. */
-const TRACKERS = /^(utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|yclid|mc_cid|mc_eid|igshid|igsh|ref_src|ref_url|_hsenc|_hsmi|mkt_tok|spm)$/i;
-const clip = (s, n) => { const t = String(s ?? "").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t; };
-/* Une adresse http(s) débarrassée des traceurs et du fragment ; null si ce n'en est pas une. */
-function normalizeUrl(raw) {
-  let u;
-  try { u = new URL(String(raw).trim()); } catch { return null; }
-  if (u.protocol !== "http:" && u.protocol !== "https:") return null;
-  u.hash = ""; u.hostname = u.hostname.toLowerCase();
-  for (const k of [...u.searchParams.keys()]) if (TRACKERS.test(k)) u.searchParams.delete(k);
-  let s = u.toString();
-  if (u.pathname !== "/" && !u.search && s.endsWith("/")) s = s.slice(0, -1);
-  return s;
-}
-/* Le premier DOI d'un texte ou d'une adresse (doi.org/…, …/doi/10.…), sans la ponctuation qui le suit. */
-function findDoi(text) {
-  let t = String(text || "");
-  try { t = decodeURIComponent(t); } catch {}
-  const m = t.match(/\b(10\.\d{4,9}\/[^\s"'<>]+)/i);
-  return m ? m[1].replace(/[.,;:)\]}>»]+$/, "").toLowerCase() : null;
-}
-/* La première adresse http(s) d'un texte. */
-function findUrl(text) {
-  const m = String(text || "").match(/https?:\/\/[^\s"'<>]+/i);
-  return m ? normalizeUrl(m[0].replace(/[.,;:)\]}>»]+$/, "")) : null;
-}
-/* Ce qui identifie une source : son DOI, sinon son adresse sans protocole ni « www. ». */
-function sourceKey(src) {
-  if (!src) return null;
-  if (src.doi) return "doi:" + String(src.doi).toLowerCase();
-  const u = src.url && normalizeUrl(src.url);
-  return u ? "url:" + u.replace(/^https?:\/\/(www\.)?/, "") : null;
-}
-const CROSSREF_KIND = { "journal-article": "article", "book": "livre", "monograph": "livre", "edited-book": "livre", "book-chapter": "chapitre",
-  "posted-content": "prépublication", "proceedings-article": "actes", "dissertation": "thèse", "report": "rapport", "reference-entry": "notice" };
-const partsDate = p => { const d = p && p["date-parts"] && p["date-parts"][0]; if (!d || !d[0]) return ""; return [String(d[0]).padStart(4, "0"), ...d.slice(1, 3).map(x => String(x).padStart(2, "0"))].join("-"); };
-const people = list => { const n = (list || []).map(a => clip(a.name || [a.given, a.family].filter(Boolean).join(" "), 80)).filter(Boolean); return n.length > 3 ? n.slice(0, 3).join(", ") + " et al." : n.join(", "); };
-/* La réponse de Crossref (message d'un /works/{doi}) → les champs d'une source. Le résumé arrive en JATS (XML) :
-   on n'en garde que le texte. L'adresse est celle du résolveur officiel, en https (pas l'ancien dx.doi.org). */
-function crossrefToSource(msg, doi) {
-  const m = msg || {}, d = String(m.DOI || doi || "").toLowerCase();
-  return {
-    title: clip((m.title || [])[0] || d, 300), authors: people(m.author), site: clip((m["container-title"] || [])[0] || m.publisher || "", 200),
-    date: partsDate(m.issued) || partsDate(m.published) || partsDate(m["published-print"]) || partsDate(m["published-online"]),
-    kind: CROSSREF_KIND[m.type] || clip(m.type || "", 40), doi: d || null,
-    url: d ? "https://doi.org/" + d : normalizeUrl(m.URL || ""), abstract: clip(String(m.abstract || "").replace(/<\/?(?:jats:)?(?:p|sec|title)\b[^>]*>/g, " ").replace(/<[^>]*>/g, ""), 1200)
-  };
-}
-/* La réponse de Microlink (data d'un aperçu de page) → les champs d'une source. */
-function microlinkToSource(data, url) {
-  const d = data || {}, u = normalizeUrl(d.url || url) || normalizeUrl(url);
-  let host = ""; try { host = new URL(u).hostname.replace(/^www\./, ""); } catch {}
-  return { title: clip(d.title || u || "", 300), authors: clip(d.author || "", 200), site: clip(d.publisher || host, 200),
-    date: /^\d{4}-\d{2}-\d{2}/.test(d.date || "") ? d.date.slice(0, 10) : "", kind: "page", doi: findDoi(u) || null, url: u, abstract: clip(d.description || "", 600) };
-}
-/* Sans réseau (ou quota épuisé) : l'adresse seule, et son site. */
-function bareSource(url, doi) {
-  const u = normalizeUrl(url || (doi ? "https://doi.org/" + doi : ""));
-  let host = ""; try { host = new URL(u).hostname.replace(/^www\./, ""); } catch {}
-  return { title: doi || clip(u || "", 300), authors: "", site: host, date: "", kind: doi ? "article" : "page", doi: doi || null, url: u, abstract: "" };
-}
-
-/* ================= musique : MusicBrainz (pur, sans DOM ni réseau) =================
-   La base libre MusicBrainz (fondation MetaBrainz) relie un artiste à ses parutions ; Cover Art Archive en donne
-   les pochettes. Ce fichier ne fait que traduire leurs réponses ; les appels (une requête par seconde au plus, sans
-   clé) sont dans types.js, la validation de `mb = { a, rg, y }` dans domain.js (mbValid). Se teste seul
-   (tests/musique.test.js). */
-const MBID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-/* Une requête de recherche d'artiste : le nom entre guillemets, ses caractères spéciaux neutralisés (syntaxe Lucene). */
-const mbArtistQuery = name => `artist:"${String(name).trim().replace(/[\\"]/g, "\\$&")}"`;
-/* Les candidats d'une recherche d'artiste : nom, précision (« groupe norvégien »), pays, année de début. */
-function mbArtists(json) {
-  return ((json && json.artists) || []).filter(a => MBID.test(a.id || "")).slice(0, 6).map(a => ({
-    id: a.id, name: String(a.name || ""), note: String(a.disambiguation || ""), country: String(a.country || ""),
-    begin: String((a["life-span"] && a["life-span"].begin) || "").slice(0, 4)
-  }));
-}
-/* Les albums et EP studio d'un artiste (sans compilations, enregistrements publics ni remixes), du plus ancien au plus
-   récent ; ceux sans date à la fin. */
-function mbAlbums(json) {
-  const seen = new Set(), out = [];
-  for (const g of (json && json["release-groups"]) || []) {
-    if (!MBID.test(g.id || "") || seen.has(g.id)) continue;
-    if (!["Album", "EP"].includes(g["primary-type"]) || (g["secondary-types"] || []).length) continue;
-    seen.add(g.id);
-    out.push({ id: g.id, title: String(g.title || ""), date: String(g["first-release-date"] || ""), type: g["primary-type"] === "EP" ? "EP" : "album" });
-  }
-  return out.sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999"));
-}
-/* Parus après une date (AAAA-MM-JJ) : une date partielle (« 2024 », « 2024-05 ») compte comme le premier jour possible. */
-const mbSince = (albums, since) => albums.filter(x => x.date && (x.date + "-01-01").slice(0, 10) > since);
-const coverUrl = rg => MBID.test(rg || "") ? `https://coverartarchive.org/release-group/${rg}/front-250` : "";
-
-/* ================= radar : événements culturels de la Métropole de Lille (pur, sans DOM ni réseau) =================
-   Source : le jeu « evenements-publics-openagenda » du portail open data de la MEL (Opendatasoft, API Explore v2.1,
-   sans clé, CORS ouvert). On demande une zone et une période, jamais les mots : le filtre par centres d'intérêt se
-   fait ici, sur l'appareil. Tirer, jamais pousser : cinq au plus, pas de « voir plus ». Se teste seul (tests/radar.test.js). */
-const RADAR_HOST = "https://opendata.lillemetropole.fr";
-const RADAR_FIELDS = "uid,title_fr,description_fr,keywords_fr,firstdate_begin,lastdate_end,location_name,location_city,canonicalurl";
-const radarFold = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-const addDaysISO = (iso, n) => new Date(Date.parse(iso + "T12:00:00Z") + n * 86400000).toISOString().slice(0, 10);
-/* L'adresse de la requête : ce qui se tient entre `from` et `from + days`, à `km` du lieu (arrondi au dixième de degré
-   par Réglages → Ciel), du plus proche au plus lointain. `select` allège la réponse ; sans lui (lean = false), on
-   reçoit tout, au cas où le portail aurait renommé un champ. */
-function radarUrl(place, from, { days = 14, km = 20, lean = true } = {}) {
-  const lat = Math.round(+place.lat * 10) / 10, lon = Math.round(+place.lon * 10) / 10;
-  const where = `lastdate_end >= date'${from}' and firstdate_begin < date'${addDaysISO(from, days)}' and within_distance(location_coordinates, geom'POINT(${lon} ${lat})', ${km}km)`;
-  const q = Object.entries({ where, order_by: "firstdate_begin", limit: "100", ...(lean ? { select: RADAR_FIELDS } : {}) }).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
-  return `${RADAR_HOST}/api/explore/v2.1/catalog/datasets/evenements-publics-openagenda/records?${q}`;
-}
-const radarText = (v, n) => { const t = String(Array.isArray(v) ? v.join(", ") : v ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t; };
-const radarDay = v => /^\d{4}-\d{2}-\d{2}/.test(String(v || "")) ? String(v).slice(0, 10) : "";
-/* La réponse (results) → des événements propres. Tolérant : un champ `_fr` ou sans suffixe, des mots-clés en liste ou
-   en texte ; une adresse qui n'est pas en https n'est pas gardée (elle finit dans un href). */
-function radarEvents(json) {
-  const seen = new Set(), out = [];
-  for (const r of (json && Array.isArray(json.results) ? json.results : [])) {
-    if (!r || typeof r !== "object") continue;
-    const title = radarText(r.title_fr ?? r.title, 200); if (!title) continue;
-    const from = radarDay(r.firstdate_begin), to = radarDay(r.lastdate_end) || from;
-    let url = ""; try { const u = new URL(String(r.canonicalurl || "")); if (u.protocol === "https:") url = u.toString(); } catch {}
-    const id = String(r.uid ?? url ?? title).slice(0, 80); if (seen.has(id)) continue; seen.add(id);
-    const kw = (Array.isArray(r.keywords_fr) ? r.keywords_fr : String(r.keywords_fr ?? r.keywords ?? "").split(/[,;]/)).map(k => radarText(k, 40)).filter(Boolean).slice(0, 8);
-    out.push({ id, title, from, to, place: radarText(r.location_name, 120), city: radarText(r.location_city, 80), url, kw, text: radarText(r.description_fr ?? r.description, 300) });
-  }
-  return out;
-}
-/* Les mots réglés (séparés par des virgules), sans accents ni casse ; deux lettres au moins. */
-const radarWords = s => [...new Set(String(s || "").split(",").map(w => radarFold(w.trim())).filter(w => w.length > 1))];
-/* Ce qui parle d'un des mots (titre, mots-clés, description, lieu), du plus tôt au plus tard ; `n` au plus.
-   total dit combien correspondaient : de quoi suggérer de préciser ses mots, sans rien dérouler de plus. */
-function radarMatch(events, words, n = 5) {
-  const hits = [];
-  for (const e of events || []) {
-    const f = radarFold(`${e.title} ${e.kw.join(" ")} ${e.text} ${e.place}`), on = words.filter(w => f.includes(w));
-    if (on.length) hits.push({ ...e, on });
-  }
-  hits.sort((a, b) => (a.from || "9999").localeCompare(b.from || "9999") || a.title.localeCompare(b.title));
-  return { items: hits.slice(0, n), total: hits.length };
-}
-
-/* ================= instagram : l'export « Télécharger tes informations » (pur, sans DOM ni réseau) =================
-   Meta ne donne plus d'API aux comptes personnels : l'archive JSON est le seul chemin, et il reste chez toi (aucun
-   appel). Fichiers lus : posts_1.json (posts_2… au-delà) et reels.json, dans your_instagram_activity/media/ (ou
-   content/ dans les exports plus anciens). L'export ne contient pas l'adresse des publications : la légende et la
-   date seulement. Se teste seul (tests/instagram.test.js). */
-/* Meta écrit ses JSON en UTF-8 relu comme du Latin-1 : « Ã© » pour « é », « ð\u009f\u008c\u0099 » pour 🌙.
-   On rend les octets à leur sens ; un texte déjà juste (un caractère au-delà de U+00FF) ou indécodable est laissé tel quel. */
-function igFix(s) {
-  s = String(s ?? "");
-  if (!/[Â-ô][\u0080-¿]/.test(s) || /[^\u0000-ÿ]/.test(s)) return s;
-  try { return decodeURIComponent(s.replace(/%/g, "%25").replace(/[\u0080-ÿ]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase())); } catch { return s; }
-}
-const igTime = v => Number.isInteger(+v) && +v > 946684800 && +v < 1e10 ? +v : 0; // après l'an 2000, en secondes
-/* Un fichier lu → [{ t, k, caption, n }] : l'instant (secondes Unix), la sorte (post ou reel), la légende réparée,
-   le nombre de médias. Une publication à un seul média porte sa légende et sa date sur le média ; un carrousel, en tête. */
-function igPosts(json) {
-  const lists = Array.isArray(json) ? [["post", json]]
-    : json && typeof json === "object" ? Object.entries(json).filter(([k, v]) => Array.isArray(v) && /reel|post|media/i.test(k) && !/stor/i.test(k)).map(([k, v]) => [/reel/i.test(k) ? "reel" : "post", v]) : [];
-  const out = [];
-  for (const [k, list] of lists) for (const p of list) {
-    if (!p || typeof p !== "object") continue;
-    const media = Array.isArray(p.media) ? p.media.filter(m => m && typeof m === "object") : [];
-    const t = igTime(p.creation_timestamp) || igTime(media[0] && media[0].creation_timestamp); if (!t) continue;
-    out.push({ t, k, caption: igFix(p.title || (media[0] && media[0].title) || "").trim(), n: media.length || 1 });
-  }
-  return out;
-}
-/* Le jour local d'un instant (AAAA-MM-JJ). */
-const igDay = t => { const d = new Date(t * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
-/* Une publication → les champs d'un élément de collection : la première ligne de la légende en titre (sinon la date),
-   la légende entière en texte (telle que publiée : c'est elle, l'archive), le jour de publication en date. */
-function igEntry(p) {
-  const first = p.caption.split("\n").map(x => x.trim()).find(Boolean) || "", day = igDay(p.t);
-  const title = first ? (first.length > 120 ? first.slice(0, 119).trimEnd() + "…" : first) : `${p.k === "reel" ? "Reel" : "Publication"} du ${day}`;
-  return { title, text: p.caption === title ? "" : p.caption, due: day, ig: { t: p.t, k: p.k } }; // une ligne qui tient dans le titre : pas de doublon
-}
-
 /* ================= passeur : ce que le navigateur ne peut pas lire seul (version hébergée, connectée) =================
    Les flux RSS, la plupart des pages et les calendriers n'envoient pas d'en-tête CORS : la page ne peut pas lire leur
    réponse. Le passeur (supabase/functions/passeur, docs/passeur.md) va les chercher pour toi seule, avec ta session.
@@ -2132,252 +2695,6 @@ function dehorsNew(feeds, cache, hidden, now, { test = null, key = null, why = n
   all.sort((a, b) => b.why.length - a.why.length || b.t - a.t);
   return { items: all.slice(0, max), total: all.length };
 }
-
-/* ================= veille : Research Watch, par OpenAlex (pur, sans DOM ni réseau) =================
-   Des recherches enregistrées (« depersonalization ») et des auteurs suivis (identifiant OpenAlex ou ORCID), relus une
-   fois par semaine : les nouveaux articles depuis la dernière fois. OpenAlex accepte CORS ; la clé (gratuite,
-   facultative : elle décuple le quota du jour) reste sur l'appareil. Ce que la veille ne fait pas : classer les
-   articles selon qu'ils « confirment » quoi que ce soit. Le lien « documente », c'est toi qui le poses.
-   Se teste seul (tests/veille.test.js). */
-const OA_API = "https://api.openalex.org/works";
-const OA_SELECT = "id,doi,title,publication_date,type,primary_location,authorships,abstract_inverted_index,referenced_works";
-/* Ce que l'on suit : un auteur (identifiant OpenAlex A…, son adresse, ou un ORCID), sinon une recherche. */
-function oaWatch(raw) {
-  const t = String(raw || "").trim().replace(/\s+/g, " ");
-  if (!t || t.length > 200) return null;
-  const orcid = t.match(/(\d{4}-\d{4}-\d{4}-\d{3}[\dX])/i);
-  if (orcid) return { kind: "author", q: orcid[1].toUpperCase(), filter: `author.orcid:${orcid[1].toUpperCase()}` };
-  const a = t.match(/^(?:https?:\/\/(?:api\.)?openalex\.org\/(?:authors\/)?)?(A\d{4,12})$/i);
-  if (a) return { kind: "author", q: a[1].toUpperCase(), filter: `author.id:${a[1].toUpperCase()}` };
-  return { kind: "q", q: t };
-}
-/* L'adresse d'une relecture : ce qui est paru depuis `since` (AAAA-MM-JJ), le plus récent d'abord, dix au plus. */
-function oaUrl(w, since, key) {
-  const x = w.kind === "author" ? oaWatch(w.q) : w;
-  const filter = [x.filter, `from_publication_date:${since}`].filter(Boolean).join(",");
-  const p = { ...(x.kind === "q" ? { search: x.q } : {}), filter, sort: "publication_date:desc", per_page: "10", select: OA_SELECT, ...(key ? { api_key: key } : {}) };
-  return `${OA_API}?${Object.entries(p).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`;
-}
-/* Le résumé, qu'OpenAlex donne en index inversé (mot → positions), remis dans l'ordre. */
-function oaAbstract(idx) {
-  if (!idx || typeof idx !== "object") return "";
-  const words = [];
-  for (const [w, pos] of Object.entries(idx)) if (Array.isArray(pos)) for (const i of pos) if (Number.isInteger(i) && i >= 0 && i < 5000) words[i] = w;
-  return words.filter(Boolean).join(" ");
-}
-const oaText = (v, n) => { const t = String(v ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t; };
-/* La réponse → des éléments pour Dehors : titre, lien (le DOI, sinon la notice OpenAlex), revue et auteurs, résumé. */
-function oaWorks(json) {
-  const out = [];
-  for (const r of (json && Array.isArray(json.results) ? json.results : [])) {
-    if (!r || typeof r !== "object") continue;
-    const id = String(r.id || "").replace(/^https:\/\/openalex\.org\//, "");
-    if (!/^W\d+$/.test(id)) continue;
-    const doi = String(r.doi || "").replace(/^https?:\/\/(dx\.)?doi\.org\//i, "").toLowerCase();
-    const src = r.primary_location && r.primary_location.source && r.primary_location.source.display_name;
-    const names = (Array.isArray(r.authorships) ? r.authorships : []).map(a => a && a.author && a.author.display_name).filter(x => typeof x === "string");
-    const who = names.length > 3 ? names.slice(0, 3).join(", ") + " et al." : names.join(", ");
-    out.push({ id, title: oaText(r.title, 300) || id, link: /^10\.\d{4,9}\//.test(doi) ? `https://doi.org/${doi}` : `https://openalex.org/${id}`, date: "",
-      text: oaText([src, who].filter(Boolean).join(" · ") + (r.abstract_inverted_index ? " — " + oaAbstract(r.abstract_inverted_index) : ""), 420),
-      oa: { doi: /^10\.\d{4,9}\//.test(doi) ? doi : "", day: /^\d{4}-\d{2}-\d{2}$/.test(r.publication_date || "") ? r.publication_date : "", site: oaText(src, 200), authors: oaText(who, 200), kind: oaText(r.type, 40) },
-      // ses références (W…), le temps de les croiser avec tes sources : l'appelant n'en garde que l'intersection
-      ...(Array.isArray(r.referenced_works) ? { refs: r.referenced_works.map(x => String(x || "").replace(/^https:\/\/openalex\.org\//, "")).filter(x => /^W\d+$/.test(x)).slice(0, 2000) } : {}) });
-  }
-  return out;
-}
-/* ---- « cité par tes sources » : ce que tes Sources ont en commun, d'après leurs bibliographies (OpenAlex) ----
-   OpenAlex ne reçoit que des DOI (ceux de tes sources), jamais tes notes. Deux mesures classiques de bibliométrie :
-   la référence commune (un texte cité par plusieurs de tes sources, que tu n'as peut-être pas) et le couplage
-   bibliographique (Kessler, 1963 : deux de tes sources qui citent les mêmes textes parlent de la même chose). */
-const OA_DOI = /^10\.\d{4,9}\/[^\s|,]+$/;
-const oaId = v => { const m = String(v || "").match(/(?:^|\/)([WA]\d{1,14})$/); return m ? m[1] : ""; };
-/* Des lots de cinquante (le plafond d'un filtre « ou » d'OpenAlex) : les DOI, ou les identifiants W…. */
-function oaBatchUrls(field, values, select, key) {
-  const out = [];
-  for (let i = 0; i < values.length; i += 50) {
-    const p = { filter: `${field}:${values.slice(i, i + 50).join("|")}`, per_page: "50", select, ...(key ? { api_key: key } : {}) };
-    out.push(`${OA_API}?${Object.entries(p).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`);
-  }
-  return out;
-}
-const oaRefsUrls = (dois, key) => oaBatchUrls("doi", dois.filter(d => OA_DOI.test(d)), "id,doi,referenced_works,authorships", key);
-const oaTitlesUrls = (ids, key) => oaBatchUrls("openalex", ids.filter(x => /^W\d+$/.test(x)), "id,doi,title,publication_date,type,primary_location,authorships", key);
-/* Une notice → ce qui sert au calcul : son identifiant, ses références (W…), ses auteurs (A…, nom). */
-function oaRefs(json) {
-  const out = {};
-  for (const r of (json && Array.isArray(json.results) ? json.results : [])) {
-    if (!r || typeof r !== "object") continue;
-    const id = oaId(r.id), doi = String(r.doi || "").replace(/^https?:\/\/(dx\.)?doi\.org\//i, "").toLowerCase();
-    if (!/^W\d+$/.test(id) || !OA_DOI.test(doi)) continue;
-    const refs = [...new Set((Array.isArray(r.referenced_works) ? r.referenced_works : []).map(oaId).filter(x => /^W\d+$/.test(x)))].slice(0, 2000);
-    const authors = (Array.isArray(r.authorships) ? r.authorships : []).map(a => a && a.author && { id: oaId(a.author.id), name: oaText(a.author.display_name, 120) })
-      .filter(a => a && /^A\d+$/.test(a.id) && a.name).slice(0, 100);
-    out[doi] = { id, refs, authors };
-  }
-  return out;
-}
-/* Le calcul, pur. `works` : DOI → { id, refs, authors } (ce qu'OpenAlex connaît de tes sources).
-   - common : les références citées par au moins deux de tes sources, hors tes sources elles-mêmes, les plus citées d'abord ;
-   - pairs : les couples de sources qui partagent au moins deux références, les plus liés d'abord ;
-   - authors : les auteurs présents dans au moins deux de tes sources. */
-function oaCoupling(works, max = 12) {
-  const entries = Object.entries(works || {}).filter(([, w]) => w && /^W\d+$/.test(w.id));
-  const own = new Set(entries.map(([, w]) => w.id)), cite = new Map(), who = new Map();
-  for (const [doi, w] of entries) {
-    for (const r of new Set(w.refs || [])) if (!own.has(r)) { if (!cite.has(r)) cite.set(r, []); cite.get(r).push(doi); }
-    for (const a of new Map((w.authors || []).map(a => [a.id, a])).values()) { if (!who.has(a.id)) who.set(a.id, { id: a.id, name: a.name, by: [] }); who.get(a.id).by.push(doi); }
-  }
-  const common = [...cite].filter(([, by]) => by.length >= 2).map(([id, by]) => ({ id, by })).sort((a, b) => b.by.length - a.by.length || a.id.localeCompare(b.id)).slice(0, max);
-  const pairs = [];
-  for (let i = 0; i < entries.length; i++) {
-    const a = new Set(entries[i][1].refs || []);
-    for (let j = i + 1; j < entries.length; j++) {
-      let n = 0; for (const r of new Set(entries[j][1].refs || [])) if (a.has(r)) n++;
-      if (n >= 2) pairs.push({ a: entries[i][0], b: entries[j][0], n });
-    }
-  }
-  pairs.sort((x, y) => y.n - x.n || x.a.localeCompare(y.a));
-  const authors = [...who.values()].filter(a => a.by.length >= 2).sort((a, b) => b.by.length - a.by.length || a.name.localeCompare(b.name)).slice(0, max);
-  return { common, pairs: pairs.slice(0, 6), authors, known: entries.length };
-}
-
-/* ================= agenda : un calendrier iCal dédié (pur, sans DOM ni réseau) =================
-   Selene lit un seul calendrier (« Selene »), par son adresse iCal secrète, et n'en montre qu'aujourd'hui et demain.
-   Ici : lire le format iCalendar (RFC 5545) juste assez — lignes repliées, journées entières, fuseaux (TZID), récurrences
-   simples (RRULE quotidienne, hebdomadaire, mensuelle, annuelle ; INTERVAL, COUNT, UNTIL, BYDAY ; EXDATE).
-   Le réseau (le passeur) et l'affichage sont dans types.js. Se teste seul (tests/agenda.test.js). */
-const ICS_DAYS = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
-/* L'instant (UTC) d'une heure murale dans un fuseau : on devine, on mesure l'écart du fuseau, on corrige. */
-function zoned(y, mo, d, h, mi, s, tz) {
-  let t = Date.UTC(y, mo - 1, d, h, mi, s);
-  if (!tz) return t;
-  try {
-    const f = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
-    for (let i = 0; i < 2; i++) {
-      const p = Object.fromEntries(f.formatToParts(new Date(t)).map(x => [x.type, +x.value]));
-      t -= Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Date.UTC(y, mo - 1, d, h, mi, s);
-    }
-  } catch {} // fuseau inconnu : l'heure murale, prise pour UTC
-  return t;
-}
-/* Une valeur DTSTART/DTEND/EXDATE → { t, allDay } ; `local` : la date d'une journée entière, en heure locale. */
-function icsTime(v, params) {
-  const m = String(v || "").trim().match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z?))?$/);
-  if (!m) return null;
-  const [, y, mo, d, h, mi, s, z] = m;
-  if (h == null) return { t: new Date(+y, +mo - 1, +d).getTime(), allDay: true };
-  if (z) return { t: Date.UTC(+y, +mo - 1, +d, +h, +mi, +s), allDay: false };
-  const tz = (params.match(/TZID=("?)([^;:"]+)\1/) || [])[2];
-  return { t: tz ? zoned(+y, +mo, +d, +h, +mi, +s, tz) : new Date(+y, +mo - 1, +d, +h, +mi, +s).getTime(), allDay: false };
-}
-const icsUnescape = s => String(s || "").replace(/\\n/gi, " ").replace(/\\([,;\\])/g, "$1").replace(/\s+/g, " ").trim();
-/* Le texte d'un calendrier → ses événements : { uid, summary, location, start, end, allDay, rrule, exdates }. */
-function icsParse(text) {
-  const lines = String(text || "").replace(/\r\n?/g, "\n").replace(/\n[ \t]/g, "").split("\n"), out = [];
-  let ev = null;
-  for (const line of lines) {
-    if (line === "BEGIN:VEVENT") { ev = { exdates: [] }; continue; }
-    if (line === "END:VEVENT") {
-      if (ev && ev.start && ev.status !== "CANCELLED") {
-        const end = ev.end ? ev.end.t : ev.start.t + (ev.start.allDay ? 86400000 : 3600000);
-        out.push({ uid: ev.uid || "", summary: ev.summary || "(sans titre)", location: ev.location || "", start: ev.start.t, end: Math.max(end, ev.start.t), allDay: ev.start.allDay, rrule: ev.rrule || "", exdates: ev.exdates, recurrenceId: ev.recurrenceId || null });
-      }
-      ev = null; continue;
-    }
-    if (!ev) continue;
-    const i = line.indexOf(":"); if (i < 0) continue;
-    const head = line.slice(0, i), val = line.slice(i + 1), name = head.split(";")[0].toUpperCase(), params = head.slice(name.length);
-    if (name === "SUMMARY") ev.summary = icsUnescape(val).slice(0, 200);
-    else if (name === "LOCATION") ev.location = icsUnescape(val).slice(0, 200);
-    else if (name === "UID") ev.uid = val.trim().slice(0, 300);
-    else if (name === "STATUS") ev.status = val.trim().toUpperCase();
-    else if (name === "DTSTART") ev.start = icsTime(val, params);
-    else if (name === "DTEND") ev.end = icsTime(val, params);
-    else if (name === "RRULE") ev.rrule = val.trim();
-    else if (name === "RECURRENCE-ID") { const r = icsTime(val, params); if (r) ev.recurrenceId = r.t; }
-    else if (name === "EXDATE") for (const x of val.split(",")) { const r = icsTime(x, params); if (r) ev.exdates.push(r.t); }
-  }
-  return out;
-}
-/* Les occurrences d'un événement dans [from, to[ (millisecondes). Une récurrence est dépliée jour après jour, en heure
-   murale (un rendez-vous de 14 h reste à 14 h après le changement d'heure). 800 pas au plus : un garde-fou. */
-function icsExpand(e, from, to) {
-  const len = e.end - e.start, out = [];
-  if (!e.rrule) return e.end > from && e.start < to ? [{ ...e }] : [];
-  const r = Object.fromEntries(e.rrule.split(";").map(x => x.split("=")).map(([k, v]) => [String(k).toUpperCase(), v || ""]));
-  const freq = r.FREQ, every = Math.max(1, +r.INTERVAL || 1), count = +r.COUNT || 0, until = r.UNTIL ? (icsTime(r.UNTIL, "") || {}).t : null;
-  const byday = (r.BYDAY || "").split(",").map(x => ICS_DAYS[x.replace(/^[+-]?\d+/, "")]).filter(x => x != null);
-  if (!["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].includes(freq)) return e.end > from && e.start < to ? [{ ...e }] : [];
-  const s0 = new Date(e.start), wall = (y, m, d) => new Date(y, m, d, s0.getHours(), s0.getMinutes(), s0.getSeconds()).getTime();
-  const ex = new Set(e.exdates);
-  let n = 0;
-  for (let i = 0; i < 800; i++) {
-    let cands;
-    if (freq === "DAILY") cands = [wall(s0.getFullYear(), s0.getMonth(), s0.getDate() + i * every)];
-    else if (freq === "WEEKLY") {
-      const monday = s0.getDate() - ((s0.getDay() + 6) % 7) + i * 7 * every, days = byday.length ? byday : [s0.getDay()];
-      cands = days.map(d => wall(s0.getFullYear(), s0.getMonth(), monday + ((d + 6) % 7))).sort((a, b) => a - b);
-    } else if (freq === "MONTHLY") { const t = new Date(s0.getFullYear(), s0.getMonth() + i * every, 1); cands = t.getMonth() === new Date(s0.getFullYear(), s0.getMonth() + i * every, s0.getDate()).getMonth() ? [wall(t.getFullYear(), t.getMonth(), s0.getDate())] : []; }
-    else { const y = s0.getFullYear() + i * every; cands = new Date(y, s0.getMonth(), s0.getDate()).getMonth() === s0.getMonth() ? [wall(y, s0.getMonth(), s0.getDate())] : []; }
-    for (const t of cands) {
-      if (t < e.start) continue;
-      if ((until != null && t > until) || (count && n >= count) || t >= to) return out;
-      n++;
-      if (!ex.has(t) && t + len > from) out.push({ ...e, start: t, end: t + len });
-    }
-  }
-  return out;
-}
-/* Ce qui se tient entre `from` et `to` : récurrences dépliées, exceptions (RECURRENCE-ID) à la place de l'occurrence
-   qu'elles remplacent, dans l'ordre (les journées entières d'abord). */
-function icsBetween(events, from, to) {
-  const moved = new Set(events.filter(e => e.recurrenceId != null).map(e => `${e.uid}|${e.recurrenceId}`));
-  const all = [];
-  for (const e of events) {
-    if (e.recurrenceId != null) { if (e.end > from && e.start < to) all.push({ ...e }); continue; }
-    for (const o of icsExpand(e, from, to)) if (!moved.has(`${e.uid}|${o.start}`)) all.push(o);
-  }
-  return all.sort((a, b) => (b.allDay - a.allDay) || a.start - b.start);
-}
-
-/* ================= zotero : ta bibliothèque Zotero, en lecture seule (pur, sans DOM ni réseau) =================
-   Zotero garde l'archive (fiches, PDF, annotations) ; Selene s'en sert pour penser. Une Source peut pointer vers une
-   fiche Zotero au lieu de la recopier à la main. La clé API (lecture seule conseillée) reste sur l'appareil.
-   Ici : lire ce que dit une clé, traduire une fiche en Source. L'appel réseau est dans types.js ; la validation de
-   `zot`, dans domain.js (zotValid). Se teste seul (tests/zotero.test.js). */
-const ZOT_API = "https://api.zotero.org";
-/* Ce que permet une clé (réponse de /keys/…) : à qui elle est, et si elle peut écrire (on préfère que non). */
-function zotKeyInfo(j) {
-  if (!j || typeof j !== "object" || !Number.isInteger(j.userID) || j.userID <= 0) return null;
-  const u = (j.access && j.access.user) || {};
-  return { userID: j.userID, username: String(j.username || "").slice(0, 100), library: !!u.library, write: !!u.write };
-}
-const ZOT_KIND = { journalArticle: "article", magazineArticle: "article", newspaperArticle: "article", book: "livre", bookSection: "chapitre",
-  thesis: "thèse", report: "rapport", preprint: "prépublication", conferencePaper: "actes", webpage: "page", blogPost: "page",
-  videoRecording: "vidéo", podcast: "podcast", encyclopediaArticle: "notice", dictionaryEntry: "notice" };
-const zotText = (v, n) => { const t = String(v ?? "").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t; };
-/* Une fiche (élément de /items) → les champs d'une Source, ou null pour une pièce jointe, une note, une annotation. */
-function zotSource(item) {
-  const d = item && item.data;
-  if (!d || typeof d !== "object" || ["attachment", "note", "annotation"].includes(d.itemType)) return null;
-  const k = String(item.key || d.key || "");
-  if (!/^[A-Z0-9]{8}$/.test(k)) return null;
-  const names = (Array.isArray(d.creators) ? d.creators : []).filter(c => c && (!c.creatorType || /author|editor|director|podcaster|presenter/.test(c.creatorType)))
-    .map(c => zotText(c.name || [c.firstName, c.lastName].filter(Boolean).join(" "), 80)).filter(Boolean);
-  const doi = (String(d.DOI || "").match(/10\.\d{4,9}\/\S+/) || [""])[0].toLowerCase().replace(/[.,;]+$/, "");
-  let url = ""; try { const u = new URL(String(d.url || "")); if (/^https?:$/.test(u.protocol)) url = u.toString(); } catch {}
-  const pd = String((item.meta && item.meta.parsedDate) || "").match(/^\d{4}(-\d{2}(-\d{2})?)?/);
-  const alt = item.links && item.links.alternate && String(item.links.alternate.href || "");
-  return {
-    title: zotText(d.title, 300) || "(sans titre)",
-    authors: zotText(names.length > 3 ? names.slice(0, 3).join(", ") + " et al." : names.join(", "), 200),
-    site: zotText(d.publicationTitle || d.bookTitle || d.websiteTitle || d.blogTitle || d.proceedingsTitle || d.university || d.publisher || "", 200),
-    date: pd ? pd[0] : "", kind: ZOT_KIND[d.itemType] || zotText(d.itemType, 40), doi: doi || null,
-    url: doi ? "https://doi.org/" + doi : url, abstract: zotText(d.abstractNote, 1200),
-    zot: { k, ...(/^https:\/\/www\.zotero\.org\/[\w.-]+\/items\/[A-Z0-9]{8}$/.test(alt) ? { l: alt } : {}) }
-  };
-}
-const zotItems = json => (Array.isArray(json) ? json : []).map(zotSource).filter(Boolean);
 
 /* ================= utils ================= */
 const $ = s => document.querySelector(s);

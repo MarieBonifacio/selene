@@ -1,13 +1,8 @@
-/* Instagram (src/instagram.js) : réparer l'encodage de Meta, lire posts et reels, en faire des éléments de collection. */
+/* Instagram (src/core/instagram.js) : réparer l'encodage de Meta, lire posts et reels, en faire des éléments de collection. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
 
-const ctx = {};
-vm.runInNewContext(fs.readFileSync('src/instagram.js', 'utf8') + fs.readFileSync('src/domain.js', 'utf8') +
-  '\n;globalThis.__i = { igFix, igPosts, igEntry, igDay, igValid };', ctx);
-const I = ctx.__i;
+const I = { ...require('../src/core/instagram.js'), igValid: require('../src/core/domain.js').igValid };
 // Ce que Meta écrit : les octets UTF-8 d'un texte, chacun pris pour un caractère Latin-1.
 const moji = s => [...Buffer.from(s, 'utf8')].map(b => String.fromCharCode(b)).join('');
 

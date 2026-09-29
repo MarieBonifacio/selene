@@ -7,7 +7,7 @@
 const OA_API = "https://api.openalex.org/works";
 const OA_SELECT = "id,doi,title,publication_date,type,primary_location,authorships,abstract_inverted_index,referenced_works";
 /* Ce que l'on suit : un auteur (identifiant OpenAlex A…, son adresse, ou un ORCID), sinon une recherche. */
-function oaWatch(raw) {
+export function oaWatch(raw) {
   const t = String(raw || "").trim().replace(/\s+/g, " ");
   if (!t || t.length > 200) return null;
   const orcid = t.match(/(\d{4}-\d{4}-\d{4}-\d{3}[\dX])/i);
@@ -17,14 +17,14 @@ function oaWatch(raw) {
   return { kind: "q", q: t };
 }
 /* L'adresse d'une relecture : ce qui est paru depuis `since` (AAAA-MM-JJ), le plus récent d'abord, dix au plus. */
-function oaUrl(w, since, key) {
+export function oaUrl(w, since, key) {
   const x = w.kind === "author" ? oaWatch(w.q) : w;
   const filter = [x.filter, `from_publication_date:${since}`].filter(Boolean).join(",");
   const p = { ...(x.kind === "q" ? { search: x.q } : {}), filter, sort: "publication_date:desc", per_page: "10", select: OA_SELECT, ...(key ? { api_key: key } : {}) };
   return `${OA_API}?${Object.entries(p).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`;
 }
 /* Le résumé, qu'OpenAlex donne en index inversé (mot → positions), remis dans l'ordre. */
-function oaAbstract(idx) {
+export function oaAbstract(idx) {
   if (!idx || typeof idx !== "object") return "";
   const words = [];
   for (const [w, pos] of Object.entries(idx)) if (Array.isArray(pos)) for (const i of pos) if (Number.isInteger(i) && i >= 0 && i < 5000) words[i] = w;
@@ -32,7 +32,7 @@ function oaAbstract(idx) {
 }
 const oaText = (v, n) => { const t = String(v ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t; };
 /* La réponse → des éléments pour Dehors : titre, lien (le DOI, sinon la notice OpenAlex), revue et auteurs, résumé. */
-function oaWorks(json) {
+export function oaWorks(json) {
   const out = [];
   for (const r of (json && Array.isArray(json.results) ? json.results : [])) {
     if (!r || typeof r !== "object") continue;
@@ -54,7 +54,7 @@ function oaWorks(json) {
    OpenAlex ne reçoit que des DOI (ceux de tes sources), jamais tes notes. Deux mesures classiques de bibliométrie :
    la référence commune (un texte cité par plusieurs de tes sources, que tu n'as peut-être pas) et le couplage
    bibliographique (Kessler, 1963 : deux de tes sources qui citent les mêmes textes parlent de la même chose). */
-const OA_DOI = /^10\.\d{4,9}\/[^\s|,]+$/;
+export const OA_DOI = /^10\.\d{4,9}\/[^\s|,]+$/;
 const oaId = v => { const m = String(v || "").match(/(?:^|\/)([WA]\d{1,14})$/); return m ? m[1] : ""; };
 /* Des lots de cinquante (le plafond d'un filtre « ou » d'OpenAlex) : les DOI, ou les identifiants W…. */
 function oaBatchUrls(field, values, select, key) {
@@ -65,10 +65,10 @@ function oaBatchUrls(field, values, select, key) {
   }
   return out;
 }
-const oaRefsUrls = (dois, key) => oaBatchUrls("doi", dois.filter(d => OA_DOI.test(d)), "id,doi,referenced_works,authorships", key);
-const oaTitlesUrls = (ids, key) => oaBatchUrls("openalex", ids.filter(x => /^W\d+$/.test(x)), "id,doi,title,publication_date,type,primary_location,authorships", key);
+export const oaRefsUrls = (dois, key) => oaBatchUrls("doi", dois.filter(d => OA_DOI.test(d)), "id,doi,referenced_works,authorships", key);
+export const oaTitlesUrls = (ids, key) => oaBatchUrls("openalex", ids.filter(x => /^W\d+$/.test(x)), "id,doi,title,publication_date,type,primary_location,authorships", key);
 /* Une notice → ce qui sert au calcul : son identifiant, ses références (W…), ses auteurs (A…, nom). */
-function oaRefs(json) {
+export function oaRefs(json) {
   const out = {};
   for (const r of (json && Array.isArray(json.results) ? json.results : [])) {
     if (!r || typeof r !== "object") continue;
@@ -85,7 +85,7 @@ function oaRefs(json) {
    - common : les références citées par au moins deux de tes sources, hors tes sources elles-mêmes, les plus citées d'abord ;
    - pairs : les couples de sources qui partagent au moins deux références, les plus liés d'abord ;
    - authors : les auteurs présents dans au moins deux de tes sources. */
-function oaCoupling(works, max = 12) {
+export function oaCoupling(works, max = 12) {
   const entries = Object.entries(works || {}).filter(([, w]) => w && /^W\d+$/.test(w.id));
   const own = new Set(entries.map(([, w]) => w.id)), cite = new Map(), who = new Map();
   for (const [doi, w] of entries) {

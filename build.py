@@ -11,14 +11,15 @@ SOURCE = ROOT / "src"
 shell = (SOURCE / "shell.html").read_text(encoding="utf-8")
 assert shell.count("<!-- SELENE_SCRIPT -->") == 1
 # Le noyau (src/core, modules ES) d'abord, assemblé par esbuild (scripts/bundle-core.mjs) : il pose `__core`, dont
-# chaque exportation devient une constante de la portée commune.
+# chaque exportation devient une constante de la portée commune. Certaines ne servent qu'aux modules entre eux ou aux
+# tests : eslint ne les signale pas comme inutilisées.
 bundled = subprocess.run(["node", str(ROOT / "scripts" / "bundle-core.mjs")], cwd=ROOT, capture_output=True, encoding="utf-8")
 if bundled.returncode:
     sys.exit(bundled.stderr + "\nAssemblage du noyau impossible (esbuild s'installe par `npm ci`)")
 core = json.loads(bundled.stdout)
-bridge = "const { " + ", ".join(core["exports"]) + " } = __core;\n"
+bridge = "// eslint-disable-next-line no-unused-vars\nconst { " + ", ".join(core["exports"]) + " } = __core;\n"
 # Puis les fichiers historiques, dans cet ordre : chacun ne peut utiliser au chargement que le noyau et ceux qui le précèdent.
-scripts = ["store.js", "auth.js", "backup.js", "domain.js", "sky.js", "carte.js", "sources.js", "musique.js", "radar.js", "instagram.js", "passeur.js", "dehors.js", "veille.js", "agenda.js", "zotero.js", "app.js", "types.js", "assistant.js", "boot.js"]
+scripts = ["store.js", "auth.js", "passeur.js", "dehors.js", "app.js", "types.js", "assistant.js", "boot.js"]
 js = core["code"] + bridge + "\n".join((SOURCE / name).read_text(encoding="utf-8") for name in scripts)
 # Le script est posé tel quel dans une balise <script> : « </script » dans une chaîne le fermerait avant sa fin.
 assert "</script" not in js.lower(), "« </script » dans le JavaScript : l'écrire en deux morceaux"

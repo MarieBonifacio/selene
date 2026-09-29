@@ -41,16 +41,7 @@ Un module n'y voit que ce qu'il importe (eslint le vérifie module par module) ;
 | Module (`src/core/`) | Rôle | Importe |
 |---|---|---|
 | `sync.js` | fusion à trois voies, pure | — |
-
-Les **fichiers historiques** partagent une même portée. Au **chargement**, un fichier ne peut utiliser que le noyau
-et ce que les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne) ; à l'**exécution**
-(dans une fonction appelée plus tard), tout est visible.
-
-| Fichier | Rôle | Dépend au chargement de |
-|---|---|---|
-| `store.js` | un document JSON : localStorage + synchro | — |
-| `auth.js` | comptes et adaptateur Supabase (hébergé seulement) | — |
-| `backup.js` | export / validation d'import | — |
+| `backup.js` | export / validation d'import | `domain.js` |
 | `domain.js` | règles métier, registre pur `MODULE_TYPES`, `SCHEMA_VERSION` | — |
 | `sky.js` | ciel de l'accueil, pur : soleil, lune, levers et couchers, météo → scène, saisons, mouvement du vent, contraste du texte | — |
 | `carte.js` | carte céleste des liaisons, pure : placement déterministe (temps, bandes), voisinage borné | — |
@@ -58,12 +49,22 @@ et ce que les précédents ont déclaré (les `const` sont inaccessibles avant l
 | `musique.js` | musique, pur : traduction des réponses MusicBrainz, albums studio, parutions récentes, pochettes | — |
 | `radar.js` | radar culturel, pur : requête OpenAgenda (zone et dates), traduction tolérante, tri par tes mots | — |
 | `instagram.js` | mémoire éditoriale, pur : lecture de l'export Instagram (posts, reels), encodage de Meta réparé, éléments de collection | — |
-| `passeur.js` | appel du passeur (Supabase Edge, version hébergée connectée) et lecture d'une page : métadonnées, flux annoncés | — |
-| `dehors.js` | Dehors, lecture des flux (RSS, Atom, JSON Feed) par DOMParser, fusion du cache, « nouveau depuis », croisé avec ce que tu gardes (raisons dites, doublons entre flux fusionnés) | — |
 | `veille.js` | Research Watch, pur : ce que l'on suit (recherche, ORCID, OpenAlex), requête, traduction des résultats ; « cité par tes sources » (références communes, couplage bibliographique, auteurs qui reviennent) | — |
 | `agenda.js` | calendrier dédié, pur : lecture iCalendar (fuseaux, journées entières), récurrences dépliées sur une fenêtre | — |
 | `zotero.js` | Zotero, pur : ce que permet une clé, une fiche traduite en Source (DOI, revue, auteurs, lien vers la fiche) | — |
-| `app.js` | utilitaires, modules fixes, normalisation, stores, vues, rendu, actions | `store.js`, `domain.js`, `sky.js` |
+
+Les **fichiers historiques** partagent une même portée. Au **chargement**, un fichier ne peut utiliser que le noyau
+et ce que les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne) ; à l'**exécution**
+(dans une fonction appelée plus tard), tout est visible. Un nom exporté par le noyau n'y est jamais redéclaré : le
+script ne se chargerait plus (eslint et les tests le signalent).
+
+| Fichier | Rôle | Dépend au chargement de |
+|---|---|---|
+| `store.js` | un document JSON : localStorage + synchro | — |
+| `auth.js` | comptes et adaptateur Supabase (hébergé seulement) | — |
+| `passeur.js` | appel du passeur (Supabase Edge, version hébergée connectée) et lecture d'une page : métadonnées, flux annoncés | — |
+| `dehors.js` | Dehors, lecture des flux (RSS, Atom, JSON Feed) par DOMParser, fusion du cache, « nouveau depuis », croisé avec ce que tu gardes (raisons dites, doublons entre flux fusionnés) | — |
+| `app.js` | utilitaires, modules fixes, normalisation, stores, vues, rendu, actions | `store.js` (et le noyau) |
 | `types.js` | registre d'affichage `TYPE_UI`, branché dans `CLICK` / `CHANGE` ; fiche, Vasculum, carte (`SHEETS`) | `app.js` |
 | `assistant.js` | contexte, outils, appels à Claude | — |
 | `boot.js` | cycle de vie (flush, onglets), démarrage | tout |
@@ -283,6 +284,8 @@ installe par `npm ci`, et les scripts npm sont les seules commandes, en local co
   plusieurs « appareils » ; `auth.test.js` et `sync.test.js` s'en servent.
 - `modules.test.js`, `app.test.js`, `backup.test.js`, `domain.test.js` : règles métier, registres,
   routage, sauvegardes hostiles.
+- Les tests d'un module du noyau l'importent (`require` d'un module ES, Node 22) ; ceux d'un fichier historique
+  (`dehors.test.js`) l'exécutent encore brut dans une VM.
 
 - `tests/browser/` : parcours dans un vrai Chromium (Playwright), un fichier par sujet, lancés par
   `run.js` contre un petit serveur de fichiers statique ; chaque vérification affiche ✓ / ✗ et un seul ✗
@@ -401,4 +404,11 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
 - **Conséquences** : les deux sorties gardent un seul script inline, dont `build.py` calcule l'empreinte CSP sur le
   texte final, comme avant (ADR 8) ; le build demande Node et `npm ci` en plus de Python ; dans les HTML, le noyau est
   tel qu'esbuild l'écrit (sans commentaires : on le lit dans `src/core/`) ; un module se teste en l'important.
-  Un fichier historique n'entre au noyau que lorsqu'il ne lit plus rien de la portée commune.
+  La ligne `const { … } = __core;` porte `eslint-disable-next-line no-unused-vars` (une exportation peut ne servir
+  qu'aux modules entre eux ou aux tests) ; `no-undef` sur le script assemblé signale, lui, tout nom qu'un fichier
+  historique utilise sans qu'un module l'exporte. Un fichier historique n'entre au noyau que lorsqu'il ne lit plus
+  rien de la portée commune.
+- **Restent historiques** : `store.js` (`render`, `setSaving`, `clone` d'`app.js`), `auth.js` et `passeur.js`
+  (`hosted`, `esc`, l'état et la session), `app.js`, `types.js`, `assistant.js` et `boot.js` (l'interface, qui
+  dépend d'elle-même dans tous les sens), `dehors.js` (lit les flux par `window.DOMParser` ; du noyau, il n'emprunte
+  que `clip`).

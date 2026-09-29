@@ -1,13 +1,9 @@
-/* Research Watch (src/veille.js) : ce que l'on suit, la requête OpenAlex, la traduction des résultats. */
+/* Research Watch (src/core/veille.js) : ce que l'on suit, la requête OpenAlex, la traduction des résultats. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
 
-const ctx = { URL };
-vm.runInNewContext(fs.readFileSync('src/veille.js', 'utf8') + '\n;globalThis.__v = { oaWatch, oaUrl, oaAbstract, oaWorks, oaRefsUrls, oaTitlesUrls, oaRefs, oaCoupling };', ctx);
-const V = ctx.__v;
-const plain = x => JSON.parse(JSON.stringify(x)); // les valeurs nées dans le contexte vm ont d'autres prototypes
+const V = require('../src/core/veille.js');
+const plain = x => JSON.parse(JSON.stringify(x)); // compare la forme JSON des valeurs
 
 test('ce que l’on suit : un ORCID, un identifiant OpenAlex, sinon une recherche', () => {
   assert.deepEqual({ ...V.oaWatch('https://orcid.org/0000-0002-1825-009x') }, { kind: 'author', q: '0000-0002-1825-009X', filter: 'author.orcid:0000-0002-1825-009X' });

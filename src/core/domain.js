@@ -3,12 +3,12 @@ const requireText = (value, label, max) => {
   if (typeof value !== "string" || !value.trim()) throw new Error(`${label} manquant`);
   return value.trim().slice(0, max);
 };
-const validDate = value => {
+export const validDate = value => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const d = new Date(value + "T12:00:00Z");
   return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === value;
 };
-function addTask(tasks, input, id, date) {
+export function addTask(tasks, input, id, date) {
   const t = {
     id, title: requireText(input.title, "Tâche", 140), room: input.room || "",
     cat: input.cat || "Bricolage", due: input.due && validDate(input.due) ? input.due : null,
@@ -19,7 +19,7 @@ function addTask(tasks, input, id, date) {
   tasks.push(t);
   return t;
 }
-function setTaskDone(tasks, id, done, date) {
+export function setTaskDone(tasks, id, done, date) {
   const t = tasks.find(x => x.id === id);
   if (!t) throw new Error("Tâche introuvable");
   t.done = !!done;
@@ -28,19 +28,19 @@ function setTaskDone(tasks, id, done, date) {
   return t;
 }
 /* `elsewhere` : tâches du jour déjà choisies dans les autres modules de tâches (le plafond de trois est global). */
-function setTaskToday(tasks, id, value, elsewhere = 0) {
+export function setTaskToday(tasks, id, value, elsewhere = 0) {
   const t = tasks.find(x => x.id === id);
   if (!t) throw new Error("Tâche introuvable");
   if (value && !t.today && tasks.filter(x => !x.done && x.today).length + elsewhere >= 3) throw new Error("Trois tâches du jour maximum");
   t.today = !!value;
   return t;
 }
-function addCapture(items, text, id, date) {
+export function addCapture(items, text, id, date) {
   const item = { id, text: requireText(text, "Note", 500), date };
   items.push(item);
   return item;
 }
-function addBudgetEntry(entries, input, id, defaultDate) {
+export function addBudgetEntry(entries, input, id, defaultDate) {
   const amount = Number(input.amount);
   if (!Number.isFinite(amount) || amount <= 0) throw new Error("Montant invalide");
   const date = input.date || defaultDate;
@@ -60,10 +60,10 @@ function addBudgetEntry(entries, input, id, defaultDate) {
    6 = le Chantier devient un module Tâches (ses tâches quittent le document « board »).
    Une version de l'app qui lit un numéro plus grand que le sien ne doit ni fusionner ni écrire :
    elle ne connaît pas la forme de ces données. */
-const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 6;
 /* Anciennes sections à la racine du document → instances de module. Chaque conversion reçoit l'ancienne
    section, le nom personnalisé et le réglage de regroupement éventuels. Sert aussi aux données de départ. */
-const SECTION_TO_MODULE = {
+export const SECTION_TO_MODULE = {
   kundalini: (old, name) => ({
     type: "programme", label: name || "Kundalini",
     config: { unitLabel: "min", start: old.start ?? null, weeks: old.weeks ?? 12, perWeek: old.perWeek ?? 5 },
@@ -118,7 +118,7 @@ const boardToModule = (tasks, name, groups) => ({
 /* Ne recrée jamais un module manquant : un module absent chez un site existant a été supprimé exprès.
    Si le module existe déjà alors que l'ancienne section réapparaît (une ancienne version de l'app, restée
    ouverte sur un autre appareil, a pu y écrire entre-temps), ses entrées absentes sont absorbées, pas perdues. */
-function migrateModules(d) {
+export function migrateModules(d) {
   d.modules = d.modules || {};
   const cfg = d.config || {}, labels = cfg.labels || {}, groups = cfg.groups || {};
   // Format 6 : une seule fois (drapeau boardMerged), sinon un Chantier supprimé exprès reviendrait.
@@ -145,7 +145,7 @@ function migrateModules(d) {
 /* ---- registre des types de module : la partie pure (sans DOM) ----
    Chaque type déclare ses valeurs par défaut, la forme de ses entrées et ses règles de validation.
    Sa partie affichage est dans TYPE_UI (types.js) : un test vérifie que les deux registres ont les mêmes clés. */
-const MODULE_TYPES = {
+export const MODULE_TYPES = {
   programme: {
     label: "Programme (calendrier + objectif hebdomadaire)",
     // paliers : des étapes qu'on rédige et qu'on coche soi-même. L'app affiche l'avancement, ne décide jamais
@@ -296,10 +296,10 @@ const MODULE_TYPES = {
   }
 };
 /* Une seule boîte de réception à la fois : c'est elle que remplit la capture rapide de l'accueil. */
-const inboxId = modules => Object.keys(modules).find(k => modules[k].type === "notes" && modules[k].config.inbox) || null;
+export const inboxId = modules => Object.keys(modules).find(k => modules[k].type === "notes" && modules[k].config.inbox) || null;
 /* Crée ou met à jour un élément de collection. Un champ désactivé (absent du formulaire) garde sa valeur.
    En mode révision, déplacer ou retirer un rendez-vous déjà échu (au jour `date`) compte comme un réexamen. */
-function saveCollectionItem(inst, input, id, date = null) {
+export function saveCollectionItem(inst, input, id, date = null) {
   const c = inst.config, item = inst.entries.find(x => x.id === id) || null, keep = f => input[f] ?? (item ? item[f] : "");
   const v = {
     title: requireText(input.title, c.fields.title, 300),
@@ -319,7 +319,7 @@ function saveCollectionItem(inst, input, id, date = null) {
 }
 /* Les références d'une source : une adresse http(s) seulement (jamais « javascript: », qui deviendrait un lien
    exécutable), un DOI, un site, une date de publication (année, mois ou jour). Tout est facultatif. */
-function srcValid(x) {
+export function srcValid(x) {
   const str = (v, n) => v == null || v === "" || (typeof v === "string" && v.length <= n);
   return !!x && typeof x === "object" && !Array.isArray(x) &&
     str(x.url, 2000) && (!x.url || /^https?:\/\//i.test(x.url)) &&
@@ -327,25 +327,25 @@ function srcValid(x) {
     str(x.site, 200) && str(x.date, 10) && (!x.date || /^\d{4}(-\d{2}(-\d{2})?)?$/.test(x.date));
 }
 /* Le lien d'un élément de musique à MusicBrainz : l'artiste (a), l'album (rg, un « release group »), son année. */
-function mbValid(x) {
+export function mbValid(x) {
   const id = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
   return !!x && typeof x === "object" && !Array.isArray(x) && id.test(x.a || "") && (x.rg == null || id.test(x.rg)) && (x.y == null || /^\d{4}$/.test(x.y));
 }
 /* Le lien d'une source à sa fiche Zotero : la clé de l'élément (huit caractères), et l'adresse de la fiche sur zotero.org. */
-const zotValid = x => !!x && typeof x === "object" && !Array.isArray(x) && /^[A-Z0-9]{8}$/.test(x.k || "") &&
+export const zotValid = x => !!x && typeof x === "object" && !Array.isArray(x) && /^[A-Z0-9]{8}$/.test(x.k || "") &&
   (x.l == null || (typeof x.l === "string" && /^https:\/\/www\.zotero\.org\/[\w.-]+\/items\/[A-Z0-9]{8}$/.test(x.l)));
 /* L'origine d'un élément importé de l'export Instagram : l'instant de publication (secondes) et la sorte. */
-const igValid = x => !!x && typeof x === "object" && !Array.isArray(x) && Number.isInteger(x.t) && x.t > 0 && x.t < 1e10 && (x.k === "post" || x.k === "reel");
+export const igValid = x => !!x && typeof x === "object" && !Array.isArray(x) && Number.isInteger(x.t) && x.t > 0 && x.t < 1e10 && (x.k === "post" || x.k === "reel");
 /* ---- statut épistémique : ce qu'une note ou un fragment revendique de savoir ----
    Facultatif et vide par défaut. « Inexpliqué » est un statut à part entière, pas une corbeille. */
-const EP_STATUS = { obs: "observé", hyp: "hypothèse", int: "interprétation", inx: "inexpliqué" };
+export const EP_STATUS = { obs: "observé", hyp: "hypothèse", int: "interprétation", inx: "inexpliqué" };
 /* « ? » en tête d'une saisie la marque comme hypothèse. Un seul préfixe, pour rester prévisible. */
-function epPrefix(raw) {
+export function epPrefix(raw) {
   const m = String(raw).match(/^\s*\?\s*(\S[\s\S]*)$/);
   return m ? { text: m[1], ep: "hyp" } : { text: String(raw), ep: null };
 }
 /* Chaque changement de statut est daté : on saura quand une hypothèse est devenue autre chose. */
-function setEpStatus(item, ep, date) {
+export function setEpStatus(item, ep, date) {
   const to = Object.hasOwn(EP_STATUS, ep) ? ep : null, from = item.ep || null;
   if (to === from) return item;
   if (to) item.ep = to; else delete item.ep;
@@ -355,9 +355,9 @@ function setEpStatus(item, ep, date) {
 /* ---- provenance : une note rangée ailleurs disparaît de la boîte ; ce qui en naît garde une copie figée
    de son texte, de sa date et de son lieu d'origine. La plus ancienne origine l'emporte (une note déjà
    rangée une fois garde sa naissance). */
-const entryIds = inst => new Set(["entries", "scraps"].flatMap(l => (inst[l] || []).map(e => e.id)));
+export const entryIds = inst => new Set(["entries", "scraps"].flatMap(l => (inst[l] || []).map(e => e.id)));
 /* Renvoie les entrées nées du rangement. Statut et liaisons suivent la note là où ils se lisent (fragments, notes). */
-function stampOrigin(inst, before, note, from) {
+export function stampOrigin(inst, before, note, from) {
   const origin = note.origin || { from, text: note.text, date: note.date }, born = [];
   for (const list of ["entries", "scraps"]) for (const e of inst[list] || []) if (!before.has(e.id)) {
     e.origin = origin; born.push(e);
@@ -372,9 +372,9 @@ function stampOrigin(inst, before, note, from) {
    Référence d'une entrée : « module/identifiant ». Chaque lien a son identifiant : deux liens ajoutés à la même
    entrée sur deux appareils fusionnent un par un au lieu de s'écraser. Une tension (« contredit ») reste
    ouverte jusqu'à ce qu'une entrée dérive des deux. */
-const LINK_TYPES = { derive: "dérive de", contredit: "contredit", echo: "fait écho à", documente: "documente" };
-const LINK_REF = /^[a-z0-9][a-z0-9-]{0,63}\/[^/\s]{1,64}$/;
-function addLink(item, to, type, id, date) {
+export const LINK_TYPES = { derive: "dérive de", contredit: "contredit", echo: "fait écho à", documente: "documente" };
+export const LINK_REF = /^[a-z0-9][a-z0-9-]{0,63}\/[^/\s]{1,64}$/;
+export function addLink(item, to, type, id, date) {
   if (!Object.hasOwn(LINK_TYPES, type) || typeof to !== "string" || !LINK_REF.test(to)) throw new Error("Lien invalide");
   if ((item.links || []).some(l => l.to === to && l.type === type)) return null; // déjà lié ainsi
   const link = { id, to, type, date };
@@ -382,13 +382,13 @@ function addLink(item, to, type, id, date) {
   return link;
 }
 /* Une entrée qui disparaît au profit d'une autre (note rangée) : les liens qui la visaient la suivent. */
-function retargetLinks(modules, from, to) {
+export function retargetLinks(modules, from, to) {
   for (const inst of Object.values(modules)) for (const list of ["entries", "scraps"]) for (const e of inst[list] || [])
     for (const l of e.links || []) if (l.to === from) l.to = to;
 }
 /* ---- pont de reprise : le prochain geste, noté en quittant un module ----
    Un pont remplacé ou levé part dans un historique court : ce qu'on comptait faire, et ce qu'il en est advenu. */
-function setResume(inst, text, date) {
+export function setResume(inst, text, date) {
   const t = String(text || "").trim().slice(0, 200), old = inst.resume;
   if (old && old.text === t) return;
   if (old) inst.resumeLog = [...(inst.resumeLog || []), { text: old.text, at: old.at, end: date, how: t ? "remplacé" : "repris" }].slice(-30);
@@ -396,7 +396,7 @@ function setResume(inst, text, date) {
 }
 /* ---- palimpseste : un fragment réécrit garde ses versions précédentes, la plus ancienne perdue la première ----
    Dix versions suffisent à retracer une dérive de formulation ; ce n'est pas un contrôle de version complet. */
-function editFragmentText(f, text, date) {
+export function editFragmentText(f, text, date) {
   const t = String(text || "").trim();
   if (!t || t === f.text) return false;
   f.versions = [...(f.versions || []), { text: f.text, at: date }].slice(-10);
@@ -408,7 +408,7 @@ function numericValue(raw) {
   if (value !== null && !Number.isFinite(value)) throw new Error("Valeur invalide"); // un NaN contaminerait tous les totaux
   return value;
 }
-function addJournalEntry(instance, input, id, defaultDate) {
+export function addJournalEntry(instance, input, id, defaultDate) {
   const date = input.date && validDate(input.date) ? input.date : defaultDate;
   const type = MODULE_TYPES[instance.type];
   if (!type.entry) throw new Error("Ce module ne tient pas de journal");
@@ -422,16 +422,16 @@ function addJournalEntry(instance, input, id, defaultDate) {
    Les noms de types ne sont pas réservés : un type n'est pas une route (le module « budget » est
    une instance du type « budget »). */
 const RESERVED_IDS = ["accueil", "reglages", "recherche", "bilan"];
-const reservedId = id => RESERVED_IDS.includes(id) || id in Object.prototype;
+export const reservedId = id => RESERVED_IDS.includes(id) || id in Object.prototype;
 /* Forme qu'un identifiant de module peut avoir, quelle que soit sa provenance (slugId, sauvegarde, serveur). */
-const MODULE_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
-function slugId(name, existing) {
+export const MODULE_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
+export function slugId(name, existing) {
   const base = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "module";
   let id = base, n = 2;
   while (existing.includes(id) || reservedId(id)) { id = `${base}-${n}`; n++; }
   return id;
 }
-function createModuleInstance(modules, type, name, id) {
+export function createModuleInstance(modules, type, name, id) {
   const label = requireText(name, "Nom du module", 60);
   if (reservedId(id)) throw new Error("Identifiant réservé");
   if (Object.hasOwn(modules, id)) throw new Error("Identifiant déjà utilisé");
@@ -440,7 +440,7 @@ function createModuleInstance(modules, type, name, id) {
 }
 /* Modèles proposés au premier lancement et à la création : un type et quelques réglages de départ.
    Génériques par principe (aucun contenu personnel) ; `hint` dit à quoi il sert. */
-const MODULE_TEMPLATES = [
+export const MODULE_TEMPLATES = [
   { id: "taches", name: "Tâches", type: "taches", hint: "Échéances, étapes, et trois tâches du jour au plus" },
   { id: "protocole", name: "Protocole", type: "programme", hint: "Une pratique sur N semaines, un calendrier, un objectif hebdomadaire" },
   { id: "ecriture", name: "Écriture", type: "cumul", hint: "Un compteur de mots, des chapitres, un carnet de fragments",
@@ -475,13 +475,13 @@ const MODULE_TEMPLATES = [
   { id: "carnet", name: "Carnet", type: "notes", hint: "Des notes datées, gardées ou rangées ailleurs ensuite" }
 ];
 /* Crée un module depuis un modèle : les réglages du modèle complètent ceux du type (un niveau de profondeur). */
-function createFromTemplate(modules, tpl, name, id) {
+export function createFromTemplate(modules, tpl, name, id) {
   const inst = createModuleInstance(modules, tpl.type, name, id);
   for (const [k, v] of Object.entries(JSON.parse(JSON.stringify(tpl.config || {}))))
     inst.config[k] = v && typeof v === "object" && !Array.isArray(v) && inst.config[k] && typeof inst.config[k] === "object" ? { ...inst.config[k], ...v } : v;
   return inst;
 }
-function deleteModuleInstance(modules, moduleList, id) {
+export function deleteModuleInstance(modules, moduleList, id) {
   if (!Object.hasOwn(modules, id)) throw new Error("Module introuvable");
   delete modules[id];
   const i = moduleList.findIndex(m => m.id === id);

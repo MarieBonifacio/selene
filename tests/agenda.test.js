@@ -1,13 +1,9 @@
-/* Agenda (src/agenda.js) : lire un calendrier iCal, déplier ses récurrences, ne garder qu'une fenêtre. */
+/* Agenda (src/core/agenda.js) : lire un calendrier iCal, déplier ses récurrences, ne garder qu'une fenêtre. */
 process.env.TZ = 'Europe/Paris'; // les heures murales et les journées entières se lisent en heure de Paris
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
 
-const ctx = { Intl, Date };
-vm.runInNewContext(fs.readFileSync('src/agenda.js', 'utf8') + '\n;globalThis.__a = { icsParse, icsBetween, zoned };', ctx);
-const A = ctx.__a;
+const A = require('../src/core/agenda.js');
 const cal = (...evs) => ['BEGIN:VCALENDAR', 'VERSION:2.0', ...evs.flatMap(e => ['BEGIN:VEVENT', ...e, 'END:VEVENT']), 'END:VCALENDAR'].join('\r\n');
 const P = (d, h = 0, m = 0) => new Date(`${d}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00+02:00`).getTime();
 
