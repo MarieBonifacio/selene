@@ -462,8 +462,6 @@ button.room{cursor:pointer}button.room:hover{background:var(--surface)}
 @media (hover:none),(pointer:coarse){
   .item:not(.reveal) .ra,.card:not(.reveal) .ra{display:none}
   .item{position:relative}
-  /* Safari iOS n'envoie le « click » d'un toucher, délégué à document, qu'aux éléments qu'il juge cliquables. */
-  .item:has(.ra),.card:has(.ra){cursor:pointer}
   .item:has(.ra):not(.reveal)::after,.card:has(.ra):not(.reveal)::after{content:"⋯";position:absolute;right:2px;bottom:4px;color:var(--muted);line-height:1;pointer-events:none}
 }
 
@@ -3609,10 +3607,12 @@ window.addEventListener("hashchange", () => {
   else if (!(entry && focusEntry(entry))) window.scrollTo(0, scrollMemo[lastView] || 0);
 });
 /* Sur un écran tactile, les actions d'une ligne (.ra) apparaissent quand on touche la ligne ailleurs que sur un contrôle.
-   Une seule ligne à la fois ; retenue par son identifiant pour survivre aux rendus. */
+   Une seule ligne à la fois ; retenue par son identifiant pour survivre aux rendus. Écouté sur #main, pas sur
+   document : WebKit (Safari iOS) n'envoie le « click » d'un toucher sur une simple ligne que si elle, ou un ancêtre
+   sous <body>, a un écouteur de clic. */
 let revealed = null;
 const touchUI = () => { try { return window.matchMedia("(hover: none), (pointer: coarse)").matches; } catch { return false; } };
-document.addEventListener("click", e => {
+$("#main").addEventListener("click", e => {
   const row = e.target.closest && e.target.closest(".item[data-id], .card[data-id]");
   if (!row || !row.querySelector(".ra") || e.target.closest("a,button,input,select,textarea,label,summary") || !touchUI()) return;
   revealed = revealed === row.dataset.id ? null : row.dataset.id;

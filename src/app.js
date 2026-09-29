@@ -1309,10 +1309,12 @@ window.addEventListener("hashchange", () => {
   else if (!(entry && focusEntry(entry))) window.scrollTo(0, scrollMemo[lastView] || 0);
 });
 /* Sur un écran tactile, les actions d'une ligne (.ra) apparaissent quand on touche la ligne ailleurs que sur un contrôle.
-   Une seule ligne à la fois ; retenue par son identifiant pour survivre aux rendus. */
+   Une seule ligne à la fois ; retenue par son identifiant pour survivre aux rendus. Écouté sur #main, pas sur
+   document : WebKit (Safari iOS) n'envoie le « click » d'un toucher sur une simple ligne que si elle, ou un ancêtre
+   sous <body>, a un écouteur de clic. */
 let revealed = null;
 const touchUI = () => { try { return window.matchMedia("(hover: none), (pointer: coarse)").matches; } catch { return false; } };
-document.addEventListener("click", e => {
+$("#main").addEventListener("click", e => {
   const row = e.target.closest && e.target.closest(".item[data-id], .card[data-id]");
   if (!row || !row.querySelector(".ra") || e.target.closest("a,button,input,select,textarea,label,summary") || !touchUI()) return;
   revealed = revealed === row.dataset.id ? null : row.dataset.id;
