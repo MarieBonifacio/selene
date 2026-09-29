@@ -1,7 +1,7 @@
 /* Scénario de navigateur : compte-neuf. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.addInitScript(() => { window.claude = { use: async () => null }; });
   await p.goto(BASE + '/index.html'); await p.waitForTimeout(300);

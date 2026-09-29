@@ -1,6 +1,6 @@
 /* Scénario de navigateur : « cité par tes sources » (phase 3, vague 7b : docs/connexions.md).
    Version hébergée simulée (faux Supabase), OpenAlex simulé. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 const src = (id, title, doi) => ({ id, title, subtitle: '', tag: 'article', due: '', text: '', status: 'À lire', kept: '2026-09-01', src: doi ? { url: `https://doi.org/${doi}`, doi } : { url: 'https://blog.example/billet' } });
 demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, sources: true, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1,
@@ -22,7 +22,7 @@ const TITLES = {
   W101: { id: 'https://openalex.org/W101', doi: null, title: 'Being no one', publication_date: '2003-01-01', type: 'book', primary_location: null, authorships: [A('A9', 'Thomas Metzinger')] }
 };
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
   const asked = [];
@@ -40,6 +40,7 @@ const TITLES = {
   const data = () => p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')));
   const text = async sel => (await p.textContent(sel)).replace(/\s+/g, ' ');
 
+  await p.waitForSelector('[data-act="cite-run"]', { timeout: 10000 }).catch(() => {});
   console.log('à la demande');
   ok(await p.isVisible('[data-act="cite-run"]') && !asked.length, 'un bouton ; rien n’est demandé à OpenAlex avant le clic');
   await p.click('[data-act="cite-run"]'); await p.waitForTimeout(500);

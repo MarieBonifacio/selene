@@ -1,10 +1,10 @@
 /* Scénario de navigateur : interface (évolution de l'interface, vague 1 : docs/evolution-ui.md). Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.phidippus.config.types.forEach(t => { t.every = t.every || 3; }); // plusieurs rappels dus : une seule ligne d'accueil
 demo.modules.ecriture.scraps = Array.from({ length: 30 }, (_, i) => ({ id: 's' + i, text: 'Fragment numéro ' + i, date: '2026-01-0' + (1 + i % 9) }));
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check;
   const errs = [];
   const open = async (opts) => {

@@ -1,5 +1,5 @@
 /* Scénario de navigateur : taches. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const today = new Date().toISOString().slice(0, 10);
 const T = (id, title, x = {}) => ({ id, title, room: 'Cuisine', cat: 'Bricolage', due: null, effort: 1, cost: null, note: '', today: false, done: false, doneAt: null, created: today, steps: [], ...x });
 const v5site = { updatedAt: 10, schemaVersion: 5,
@@ -9,7 +9,7 @@ const v5site = { updatedAt: 10, schemaVersion: 5,
     budget: { type: 'budget', label: 'Budget', config: { envelopes: [], groups: { on: true, by: 'cat', sort: 'name', hideDone: false, title: '' } }, entries: [] } } };
 const board = { updatedAt: 9, tasks: [T('t1', 'Poser le velux', { due: today, cost: 250, steps: [{ t: 'Devis', d: false }, { t: 'Achat', d: false }] }), T('t2', 'Plinthes', { room: 'Salon', today: true }), T('t3', 'Joints', { room: 'Salle de bain', today: true }), T('t4', 'Changer le robinet')] };
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => d.accept());
   await p.addInitScript(([s, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', JSON.stringify(s)); localStorage.setItem('selene-board-v1', JSON.stringify(bd)); } }, [v5site, board]);
   await p.goto(BASE + '/index.html'); await p.waitForTimeout(300);

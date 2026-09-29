@@ -1,10 +1,10 @@
 /* Scénario de navigateur : identité (évolution de l'interface, vague 3a : docs/evolution-ui.md). Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.config.modules.find(m => m.id === 'moth').group = 'Création';
 demo.config.modules.find(m => m.id === 'ecriture').group = 'Création';
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const open = async opts => {
     const ctx = await b.newContext(opts); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));

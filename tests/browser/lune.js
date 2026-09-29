@@ -1,6 +1,6 @@
 /* Scénario de navigateur : test lunaire (statistique de Rayleigh, dans le bilan). Lancé par tests/browser/run.js.
    SELENE_SHOTS=dossier y dépose une capture d'écran (téléphone). */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const SHOTS = process.env.SELENE_SHOTS;
 const demo = JSON.parse(fixture());
 // Cinquante notes concentrées autour d'une même phase (donné dans le fichier, recalculé ici pour rester lisible :
@@ -9,7 +9,7 @@ const SYNODIC = 29.530588853, NEW_MOON_REF = Date.UTC(2000, 0, 6, 18, 14);
 const dateAt = (k, phase) => new Date(NEW_MOON_REF + (k + phase) * SYNODIC * 86400000).toISOString().slice(0, 10);
 demo.modules.inbox.entries = Array.from({ length: 50 }, (_, k) => ({ id: 'l' + k, text: 'note', date: dateAt(k, 0.5) }));
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.addInitScript(d => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, JSON.stringify(demo));
   await p.goto(BASE + '/index.html'); await p.waitForTimeout(300);

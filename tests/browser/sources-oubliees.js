@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Sources oubliées et Sources qui documentent (phase 3, vague 7a : docs/connexions.md).
    Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const days = n => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
 const demo = JSON.parse(fixture());
 for (const m of Object.values(demo.modules)) { if (m.type === 'notes') m.entries = []; if (m.type === 'cumul') m.scraps = []; } // le bassin des sortes : les sources seules
@@ -11,7 +11,7 @@ demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON
     src: { url: 'https://doi.org/10.1016/j.concog.2020.102946', doi: '10.1016/j.concog.2020.102946', site: 'Consciousness and Cognition', date: '2020' } }] };
 demo.config.modules.push({ id: 'sources', on: true });
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
   await ctx.addInitScript(d => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, JSON.stringify(demo));

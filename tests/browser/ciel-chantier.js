@@ -1,5 +1,5 @@
 /* Scénario de navigateur : Ciel et chantier (connexions externes, phase 1, vague 5c : docs/connexions.md). Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const LILLE = { name: 'Lille, Hauts-de-France, France', lat: 50.6, lon: 3.1, weather: true, realMoon: true };
 const MARSEILLE = { name: 'Marseille, Provence-Alpes-Côte d’Azur, France', lat: 43.3, lon: 5.4, weather: true, realMoon: true };
 const task = (id, title, room, extra = {}) => ({ id, title, room, cat: 'Bricolage', due: '', done: false, effort: 1, steps: [], cost: '', ...extra });
@@ -12,7 +12,7 @@ const site = sky => {
 const week = (wet = {}) => { const time = ['2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04'];
   return { time, precipitation_sum: time.map(t => (wet[t] || [0, 10])[0]), precipitation_probability_max: time.map(t => (wet[t] || [0, 10])[1]) }; };
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const open = async (iso, sky, daily = week(), hash = '') => {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, timezoneId: 'Europe/Paris' }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));

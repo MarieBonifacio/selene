@@ -24,7 +24,8 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version-file: .nvmrc
+          cache: npm
       - name: Réglages présents ?
         id: cfg
         env:
@@ -39,15 +40,16 @@ jobs:
           fi
           echo "$PASSEUR_USERS" | grep -Eq '^[0-9a-fA-F-]{36}(,[0-9a-fA-F-]{36})*$' || { echo "::error::Variable PASSEUR_USERS absente ou mal formée (identifiant de Réglages → Passeur)."; exit 1; }
           echo "ok=true" >> "$GITHUB_OUTPUT"
+      - name: Outils (versions de package-lock.json)
+        if: steps.cfg.outputs.ok == 'true'
+        run: npm ci
       - name: Tests du passeur (on ne déploie pas du rouge)
         if: steps.cfg.outputs.ok == 'true'
-        run: |
-          npx --yes deno@2.9.6 check supabase/functions/passeur/index.ts
-          npx --yes deno@2.9.6 test supabase/functions/passeur/
+        run: npm run test:passeur
       - uses: supabase/setup-cli@v3
         if: steps.cfg.outputs.ok == 'true'
         with:
-          version: latest
+          version: 2.118.0 # épinglée : un déploiement ne change pas d’outil selon le jour
       - name: Comptes autorisés
         if: steps.cfg.outputs.ok == 'true'
         run: supabase secrets set --project-ref "$PROJECT_REF" PASSEUR_USERS="$PASSEUR_USERS"

@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Artist Watch dans Dehors (connexions externes, phase 2, vague 6c : docs/connexions.md).
    Version hébergée simulée (faux Supabase), MusicBrainz simulé ; pas besoin du passeur. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const U = n => `0000000${n}-aaaa-bbbb-cccc-dddddddddddd`.slice(-36);
 const iso = d => new Date(d).toISOString().slice(0, 10);
 const demo = JSON.parse(fixture());
@@ -17,7 +17,7 @@ const GROUPS = {
 };
 const UID = '0b8f0c2e-1111-2222-3333-444455556666';
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [], mb = [];
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
   await ctx.route('https://*.supabase.co/**', r => { const req = r.request(); if (new URL(req.url()).pathname.startsWith('/functions/')) return r.fulfill({ status: 404, body: '' }); r.fulfill({ contentType: 'application/json', body: req.method() === 'GET' ? '[]' : '{}' }); });

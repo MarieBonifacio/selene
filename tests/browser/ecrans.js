@@ -1,5 +1,5 @@
 /* Scénario de navigateur : écrans (évolution de l'interface, vague 3d : docs/evolution-ui.md). Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const today = iso(new Date()), old = '2024-01-15';
 const demo = JSON.parse(fixture());
@@ -14,7 +14,7 @@ demo.modules.moth.entries = [
   { id: 'c2', title: 'La mue', status: 'Brouillon', tag: 'Albedo' }
 ];
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const open = async opts => {
     const ctx = await b.newContext(opts); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));

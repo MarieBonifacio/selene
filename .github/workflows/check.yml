@@ -17,14 +17,15 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: '22'
-      - run: python3 build.py --check
-      - run: node --test tests/*.test.js
-      - run: for f in src/*.js; do node --check "$f"; done
+          node-version-file: .nvmrc
+          cache: npm
+      # Outils aux versions de package-lock.json : la même chaîne en local et en CI.
+      - run: npm ci
+      - run: npm run build:check
+      - run: npm test
+      - run: npm run test:syntax
       - name: Analyse statique (script assemblé + service worker)
-        run: |
-          python3 build.py --bundle .lint/selene.js
-          npx --yes eslint@10.11.0 .lint/selene.js sw.js
+        run: npm run lint
   passeur:
     # La fonction Supabase Edge (supabase/functions/passeur, docs/passeur.md) : types et tests, avec Deno.
     runs-on: ubuntu-latest
@@ -33,31 +34,41 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: '22'
-      - run: npx --yes deno@2.9.6 check supabase/functions/passeur/index.ts
-      - run: npx --yes deno@2.9.6 test supabase/functions/passeur/
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run test:passeur
   browser:
-    # Parcours dans un vrai Chromium (tests/browser) : ce que le faux DOM des tests unitaires ne voit pas.
+    # Parcours dans un vrai navigateur (tests/browser) : ce que le faux DOM des tests unitaires ne voit pas.
+    # WebKit : le moteur de Safari, des WebView iOS et de Tauri sous macOS et Linux ; Chromium : celui de Chrome,
+    # d'Android et de Tauri sous Windows (WebView2).
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false # un moteur en échec n'interrompt pas l'autre : on veut les deux verdicts
+      matrix:
+        browser: [chromium, webkit]
+    name: browser (${{ matrix.browser }})
+    env:
+      SELENE_BROWSER: ${{ matrix.browser }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: '22'
-      - run: python3 build.py --check
-      - name: Playwright (version épinglée)
-        run: npm i --no-save --no-package-lock playwright@1.56.1
-      - name: Chromium (en cache tant que la version de Playwright ne change pas)
-        id: chromium
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build:check
+      - name: Navigateur (en cache tant que package-lock.json, donc la version de Playwright, ne change pas)
+        id: browser
         uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-1.56.1-chromium-${{ runner.os }}
-      - name: Télécharger Chromium
-        if: steps.chromium.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-      - name: Bibliothèques système de Chromium
-        if: steps.chromium.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
-      - run: node tests/browser/run.js
+          key: playwright-${{ hashFiles('package-lock.json') }}-${{ matrix.browser }}-${{ runner.os }}
+      - name: Télécharger le navigateur
+        if: steps.browser.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Bibliothèques système du navigateur
+        if: steps.browser.outputs.cache-hit == 'true'
+        run: npx playwright install-deps ${{ matrix.browser }}
+      - run: npm run test:browser

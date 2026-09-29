@@ -1,7 +1,7 @@
 /* Scénario de navigateur : motifs croisés dans Dehors (phase 3, vague 7c : docs/connexions.md).
    Version hébergée simulée : faux Supabase, faux passeur qui sert deux flux, OpenAlex simulé pour une veille.
    Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 const col = (label, extra) => ({ type: 'collection', label, config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1, addLabel: 'Ajouter',
   fields: { title: 'Titre', subtitle: 'Auteurs', tag: '', due: '', text: 'Notes' }, ...extra }, entries: [] });
@@ -27,7 +27,7 @@ const FEEDS = {
 const WORK = { id: 'https://openalex.org/W50', doi: 'https://doi.org/10.1000/z', title: 'The bodily self revisited', publication_date: '2026-09-20', type: 'article',
   primary_location: { source: { display_name: 'Mind' } }, authorships: [{ author: { display_name: 'Anna Ciaunica' } }], referenced_works: ['https://openalex.org/W1', 'https://openalex.org/W999'] };
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
   const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });

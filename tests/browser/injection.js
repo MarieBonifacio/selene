@@ -1,8 +1,8 @@
 /* Scénario de navigateur : un identifiant de module et des nombres piégés (données corrompues, venues d'un
    serveur ou d'une vieille sauvegarde) ne doivent jamais exécuter de script. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   const d = JSON.parse(fixture()), bad = 'x"><img src=z onerror="window.__pwned=1">';
   d.modules[bad] = { type: 'rappels', label: 'Piège', config: { subtitle: '', types: [{ id: 'fait', label: 'Fait', every: '<img src=z onerror="window.__pwned=2">' }] }, entries: [] };

@@ -1,11 +1,11 @@
 /* Scénario de navigateur : paliers d'un programme (critères rédigés et cochés à la main). Lancé par tests/browser/run.js.
    SELENE_SHOTS=dossier y dépose une capture d'écran (téléphone). */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const SHOTS = process.env.SELENE_SHOTS;
 const demo = JSON.parse(fixture());
 demo.modules.kundalini.config.start = '2026-01-05';
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.addInitScript(d => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, JSON.stringify(demo));
   await p.goto(BASE + '/index.html'); await p.waitForTimeout(300);

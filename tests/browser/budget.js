@@ -1,5 +1,5 @@
 /* Scénario de navigateur : budget. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const now = new Date(); const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 const v4 = { updatedAt: 10, schemaVersion: 4,
   config: { name: 'Selene', palette: 'nigredo', mode: 'auto', labels: {}, groups: { budget: { on: true, by: 'cat', sort: 'name', hideDone: false, title: '' } },
@@ -8,7 +8,7 @@ const v4 = { updatedAt: 10, schemaVersion: 4,
   budget: { entries: [{ id: 'b1', type: 'dépense', amount: 120, cat: 'Courses', note: 'marché', date: `${ym}-03` }, { id: 'b2', type: 'revenu', amount: 2000, cat: '', note: 'salaire', date: `${ym}-01` }],
     envelopes: [{ id: 'v1', name: 'Courses', limit: 300 }] } };
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => d.accept());
   await p.addInitScript(l => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', JSON.stringify(l)); }, v4);
   await p.goto(BASE + '/index.html#budget'); await p.waitForTimeout(300);

@@ -1,10 +1,10 @@
 /* Scénario de navigateur : navigation (évolution de l'interface, vague 2 : docs/evolution-ui.md). Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 // 150 fragments : le plus ancien est au-delà de la première page de cent.
 demo.modules.ecriture.scraps = Array.from({ length: 150 }, (_, i) => ({ id: 'f' + i, text: i === 0 ? 'La lisière des aulnes' : 'Fragment ordinaire ' + i, date: '2026-0' + (1 + (i % 8)) + '-1' + (i % 9) }));
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const ctxD = await b.newContext({ viewport: { width: 1280, height: 800 } });
   await ctxD.addInitScript(d => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, JSON.stringify(demo));

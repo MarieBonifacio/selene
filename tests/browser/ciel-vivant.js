@@ -1,9 +1,9 @@
 /* Scénario de navigateur : le ciel vivant (évolution de l'interface, vague 3b : docs/evolution-ui.md). Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.config.sky = { name: 'Lille, Hauts-de-France, France', lat: 50.6, lon: 3.1, weather: true, realMoon: true };
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const open = async (current, opts = {}) => {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 800 }, ...opts }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));

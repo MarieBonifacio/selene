@@ -1,5 +1,5 @@
 /* Scénario de navigateur : carte céleste des liaisons (évolution de l'interface, vague 4d : docs/evolution-ui.md). Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.ecriture.config.scraps = true;
 const L = (to, type, id) => ({ id, to, type, date: '2026-09-20' });
@@ -21,7 +21,7 @@ demo.modules.motifs = { type: 'collection', label: 'Motifs', config: { ...JSON.p
   entries: [{ id: 'm1', title: 'lune', status: 'Vivant' }, { id: 'm2', title: 'brume', status: 'Vivant' }] };
 demo.config.modules.push({ id: 'motifs', on: true });
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const open = async (opts, hash) => {
     const ctx = await b.newContext(opts); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));

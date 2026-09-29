@@ -1,5 +1,5 @@
 /* Scénario de navigateur : notes. Lancé par tests/browser/run.js. */
-const { chromium, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const v3 = { updatedAt: 10, schemaVersion: 3,
   config: { name: 'Selene', palette: 'nigredo', mode: 'auto', labels: {}, groups: {},
     modules: ['chantier', 'ecriture', 'moth', 'phidippus', 'budget', 'inbox'].map(id => ({ id, on: true })), assistant: { model: 'claude-sonnet-5', actions: true, share: {} } },
@@ -9,7 +9,7 @@ const v3 = { updatedAt: 10, schemaVersion: 3,
     moth: { type: 'collection', label: 'october.moth', config: { display: 'colonnes', statuses: ['Idée', 'Publié'], doneFrom: 1, fields: { title: 'Titre', tag: 'Thème' } }, entries: [] } },
   budget: { entries: [], envelopes: [] }, inbox: { items: [{ id: 'i1', text: 'une phrase', date: '2026-09-26' }, { id: 'i2', text: 'poster la mousse', date: '2026-09-26' }] } };
 (async () => {
-  const b = await chromium.launch(launchOptions);
+  const b = await engine.launch(launchOptions);
   const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.addInitScript(l => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', JSON.stringify(l)); }, v3);
   await p.goto(BASE + '/index.html'); await p.waitForTimeout(300);
