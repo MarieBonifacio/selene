@@ -1,0 +1,40 @@
+name: Passeur
+# Déploie la fonction Supabase Edge « passeur » (docs/passeur.md) : à la demande, ou quand elle change sur main.
+# Le jeton Supabase vit dans les secrets chiffrés du dépôt (jamais dans le code, jamais dans un journal) ;
+# les comptes autorisés, dans une variable du dépôt. Sans l'un ou l'autre, rien ne part.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['supabase/functions/passeur/**']
+concurrency: passeur # deux déploiements à la fois : non
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PASSEUR_USERS: ${{ vars.PASSEUR_USERS }}
+      PROJECT_REF: pxnrzrmzritezftefdlj
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Réglages présents ?
+        run: |
+          [ -n "$SUPABASE_ACCESS_TOKEN" ] || { echo "::error::Secret SUPABASE_ACCESS_TOKEN absent (Settings → Secrets and variables → Actions)."; exit 1; }
+          echo "$PASSEUR_USERS" | grep -Eq '^[0-9a-fA-F-]{36}(,[0-9a-fA-F-]{36})*$' || { echo "::error::Variable PASSEUR_USERS absente ou mal formée (identifiant de Réglages → Passeur)."; exit 1; }
+      - name: Tests du passeur (on ne déploie pas du rouge)
+        run: |
+          npx --yes deno@2.9.6 check supabase/functions/passeur/index.ts
+          npx --yes deno@2.9.6 test supabase/functions/passeur/
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Comptes autorisés
+        run: supabase secrets set --project-ref "$PROJECT_REF" PASSEUR_USERS="$PASSEUR_USERS"
+      - name: Déployer
+        # --no-verify-jwt : la fonction vérifie elle-même la session auprès de Supabase Auth (nouvelles clés sb_…).
+        run: supabase functions deploy passeur --project-ref "$PROJECT_REF" --no-verify-jwt

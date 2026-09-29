@@ -29,7 +29,25 @@ Risque résiduel, assumé : entre la vérification DNS et l'appel, un nom pourra
 Les fonctions tournent dans le nuage de Supabase, hors du réseau privé de ta base ; la fenêtre est de quelques
 millisecondes, et l'adresse des métadonnées est de toute façon refusée à chaque saut.
 
-## Déployer (une fois, dix minutes)
+## Déployer par GitHub Actions (recommandé)
+
+Le workflow `.github/workflows/passeur.yml` déploie depuis les serveurs de GitHub : ton jeton ne passe ni par ton
+terminal ni par une conversation. Il tourne à la demande (onglet Actions → Passeur → *Run workflow*) et à chaque
+changement de la fonction sur `main`, après ses tests Deno.
+
+1. **Un jeton Supabase** : [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) →
+   *Generate new token* (nom : « selene-github »). Attention : un jeton personnel n'est **pas restreint**, il donne accès
+   à tous tes projets Supabase. Il ne doit vivre qu'ici, et peut être révoqué juste après le déploiement (il faudra
+   alors en recréer un pour redéployer).
+2. **Dans le dépôt GitHub** : *Settings → Secrets and variables → Actions*.
+   - onglet *Secrets* → *New repository secret* : `SUPABASE_ACCESS_TOKEN` = le jeton ;
+   - onglet *Variables* → *New repository variable* : `PASSEUR_USERS` = ton identifiant (Réglages → Passeur → copier).
+3. **Lancer** : onglet *Actions* → *Passeur* → *Run workflow* (ou demande à Claude de le déclencher).
+4. **Vérifier** : Réglages → Passeur → « Vérifier ».
+
+Les secrets d'un dépôt ne sont jamais montrés dans les journaux (GitHub les masque) ni transmis aux PR venues de forks.
+
+## Déployer à la main (une fois, dix minutes)
 
 Il faut Node.js (pour `npx`) et ton projet Supabase, celui de `SUPABASE_URL` dans `src/auth.js`.
 
