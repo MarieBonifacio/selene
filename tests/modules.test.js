@@ -964,6 +964,31 @@ test('dossier: dated, labelled entries with status, provenance and links as inte
   assert.doesNotMatch(md, /\n\n\n/, 'no blank-line pile-ups');
 });
 
+test('dossier de passation : les sources qui documentent une entrée, en références avec leur DOI', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const S = app.S(), e = S.modules.ecriture;
+  S.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(S.modules.musique.config)), music: false, sources: true }, entries: [
+    { id: 's1', title: 'Depersonalization and the self', subtitle: 'Anna Ciaunica', status: 'À lire', src: { doi: '10.1016/j.concog.2020.102946', url: 'https://doi.org/10.1016/j.concog.2020.102946', site: 'Consciousness and Cognition', date: '2020-05-12' },
+      links: [{ id: 'l1', to: 'ecriture/a', type: 'documente', date: '2026-09-01' }] },
+    { id: 's2', title: 'Un billet', subtitle: '', status: 'À lire', src: { url: 'https://blog.example/billet' }, links: [{ id: 'l2', to: 'ecriture/a', type: 'documente', date: '2026-09-01' }, { id: 'l3', to: 'ecriture/b', type: 'documente', date: '2026-09-01' }] },
+    { id: 's3', title: 'Hors sujet', subtitle: 'X Y', status: 'À lire', src: { url: 'https://x.example/' }, links: [{ id: 'l4', to: 'ecriture/zz', type: 'documente', date: '2026-09-01' }] }] };
+  S.config.modules.push({ id: 'sources', on: true });
+  e.scraps.push({ id: 'a', text: 'Le soi se regarde vivre', date: '2026-09-01', ep: 'hyp' }, { id: 'b', text: 'Une autre pensée', date: '2026-09-02' });
+  const md = app.dossierMarkdown('Dossier', 'Test', [
+    { mod: 'ecriture', text: 'Le soi se regarde vivre', date: '2026-09-01', e: e.scraps.find(x => x.id === 'a') },
+    { mod: 'ecriture', text: 'Une autre pensée', date: '2026-09-02', e: e.scraps.find(x => x.id === 'b') },
+    { mod: 'sources', text: 'Un billet', date: null, e: S.modules.sources.entries[1] }]);
+  assert.match(md, /perimetre: "Test"\nreferences: 2\nentrees: 3\n---/, 'the front matter counts the references');
+  assert.match(md, /les renvois \[Sn\], les références en fin de dossier .* Qu'une source documente une entrée ne la prouve pas\./);
+  assert.match(md, /Le soi se regarde vivre\n\n\*Documenté par : \[S1\], \[S2\]\*/, 'numbered in order of first citation');
+  assert.match(md, /Une autre pensée\n\n\*Documenté par : \[S2\]\*/, 'a source cited twice keeps its number');
+  assert.match(md, /Un billet\n\n\*Référence : \[S2\]\*/, 'a source in the dossier points to its reference');
+  assert.match(md, /## Références\n\n\[S1\] Anna Ciaunica \(2020\)\. \*Depersonalization and the self\*\. Consciousness and Cognition\. https:\/\/doi\.org\/10\.1016\/j\.concog\.2020\.102946\n\n\[S2\] Anonyme \(s\. d\.\)\. \*Un billet\*\. https:\/\/blog\.example\/billet\n$/, 'APA-like references, DOI first, unknown author and date said');
+  assert.doesNotMatch(md, /Hors sujet/, 'a source documenting nothing in the dossier stays out');
+  const bare = app.dossierMarkdown('Sans', 'Rien', [{ mod: 'budget', text: 'une ligne', date: null }]);
+  assert.doesNotMatch(bare, /references:|Références|\[Sn\]/, 'no sources, no reference section');
+});
+
 test('long lists show a hundred items, then « voir les suivants »', () => {
   const app = launch(new Map(), { claude: { use: async () => null } });
   const inbox = app.S().modules.inbox.entries;

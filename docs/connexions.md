@@ -175,4 +175,17 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
       partout. Déjà dans tes sources : « déjà gardée » au lieu de « garder ».
 - [x] Des références d'un article de veille, le cache de l'appareil ne garde que celles qui sont tes sources (cinq au plus).
 
-À venir : Dehors dans la planche de lunaison, dossier de passation enrichi des DOI.
+**7d : Dehors dans la planche de lunaison**
+- [x] Une section « Venu du dehors » : les sources gardées pendant le cycle (`kept`), comptées par provenance (Dehors,
+      Veille, Cité par tes sources, Zotero, depuis une note, à la main), et les cinq premières nommées. Ce qui a été lu
+      puis laissé n'y figure pas : Dehors ne date pas ses « vu », et une planche n'a pas à tenir le registre de ce qu'on
+      a eu raison d'ignorer. À l'impression, la règle se resserre pour que la planche tienne toujours sur une page A4.
+
+**7e : dossier de passation enrichi des DOI**
+- [x] Dans le dossier (fragments, recherche, tension), une entrée dit quelles sources la documentent (`*Documenté par :
+      [S1], [S2]*`) ; une source qui figure elle-même dans le dossier renvoie à sa référence. En fin de dossier, une
+      section « Références » : auteurs (année). *Titre*. Revue. `https://doi.org/…`, sinon l'adresse ; « Anonyme » et
+      « s. d. » quand on ne sait pas. Numérotées dans l'ordre de première citation ; l'en-tête YAML les compte
+      (`references`). Le préambule rappelle qu'une source qui documente une entrée ne la prouve pas.
+
+La phase 3 est terminée.
