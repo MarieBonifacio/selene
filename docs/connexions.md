@@ -175,4 +175,10 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
       partout. Déjà dans tes sources : « déjà gardée » au lieu de « garder ».
 - [x] Des références d'un article de veille, le cache de l'appareil ne garde que celles qui sont tes sources (cinq au plus).
 
-À venir : Dehors dans la planche de lunaison, dossier de passation enrichi des DOI.
+**7d : Dehors dans la planche de lunaison**
+- [x] Une section « Venu du dehors » : les sources gardées pendant le cycle (`kept`), comptées par provenance (Dehors,
+      Veille, Cité par tes sources, Zotero, depuis une note, à la main), et les cinq premières nommées. Ce qui a été lu
+      puis laissé n'y figure pas : Dehors ne date pas ses « vu », et une planche n'a pas à tenir le registre de ce qu'on
+      a eu raison d'ignorer. À l'impression, la règle se resserre pour que la planche tienne toujours sur une page A4.
+
+À venir : dossier de passation enrichi des DOI.
