@@ -60,8 +60,9 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
       jamais déroulé. « voir » ouvre l'événement à part ; « garder » le dépose dans la boîte (titre, date, lieu, lien).
 - [x] Cache de six heures sur l'appareil ; si le portail refuse la sélection de champs (400 : un champ renommé),
       second essai sans elle ; muet : dit, et « Réessayer ». Adresse d'événement gardée seulement si elle est en https.
-- [ ] À vérifier en conditions réelles : les noms de champs viennent des facettes publiques du jeu, l'environnement
-      de développement n'atteignant pas le portail.
+- [x] Vérifié en conditions réelles le 29 septembre 2026 : le jeu et ses champs sont bien ceux attendus, mais le portail
+      **n'envoie pas d'en-tête CORS** (la requête marche ouverte à la main, pas depuis une page). Le radar passe donc
+      par le passeur (genre `json`) quand la lecture directe est refusée, et le retient pour la session.
 
 **5e : Mémoire éditoriale**
 - [x] Dans les réglages de toute collection : « Importer un export Instagram » (un ou plusieurs fichiers JSON :

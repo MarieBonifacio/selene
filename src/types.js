@@ -1517,14 +1517,27 @@ const RADAR_KEY = "selene-radar"; // cache de l'appareil : { at, key, events }, 
 const radarConf = () => { const r = S().config.radar; return { words: r && typeof r.words === "string" ? r.words : "" }; };
 const radarPlace = () => { const c = skyConf(); return c && nearLille(+c.lat, +c.lon) ? c : null; };
 let radarState = null; // { busy, err, items, total, words, kept } : la feuille en cours
+/* Une lecture de l'agenda : directe d'abord ; si le navigateur n'a pas le droit d'en lire la réponse (le portail de
+   la MEL n'envoie pas d'en-tête CORS : constaté le 29 septembre 2026), par le passeur, qui lit du JSON pour toi. L'échec
+   direct est retenu pour la session : on ne refrappe pas à une porte qu'on sait fermée. */
+let radarDirect = true;
+async function radarGet(url) {
+  if (radarDirect) {
+    const ac = new AbortController(), t = setTimeout(() => ac.abort(), 10000);
+    try { const r = await fetch(url, { signal: ac.signal }); return { status: r.status, json: r.ok ? await r.json() : null }; }
+    catch { radarDirect = false; } finally { clearTimeout(t); }
+  }
+  if (!passeurPret()) throw new Error("Le portail de la Métropole ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).");
+  const q = await passeurFetch(url, "json");
+  return { status: q.status || 0, json: q.status === 200 && typeof q.texte === "string" ? JSON.parse(q.texte) : null };
+}
 async function radarFetch(c, from) {
   const key = `${+c.lat},${+c.lon},${from}`;
   try { const x = JSON.parse(localStorage.getItem(RADAR_KEY) || "null"), age = x ? Date.now() - x.at : NaN; if (x && x.key === key && age > -300000 && age < 6 * 3600000 && Array.isArray(x.events)) return x.events; } catch {}
-  const get = async lean => { const ac = new AbortController(), t = setTimeout(() => ac.abort(), 10000); try { return await fetch(radarUrl(c, from, { lean }), { signal: ac.signal }); } finally { clearTimeout(t); } };
-  let r = await get(true);
-  if (r.status === 400) r = await get(false); // un champ renommé par le portail : tout recevoir plutôt que rien
-  if (!r.ok) return null;
-  const events = radarEvents(await r.json());
+  let r = await radarGet(radarUrl(c, from, { lean: true }));
+  if (r.status === 400) r = await radarGet(radarUrl(c, from, { lean: false })); // un champ renommé par le portail : tout recevoir plutôt que rien
+  if (!r.json) throw new Error(`L'agenda de la Métropole répond ${r.status || "par une erreur"} (le portail a peut-être changé). Réessaie plus tard.`);
+  const events = radarEvents(r.json);
   try { localStorage.setItem(RADAR_KEY, JSON.stringify({ at: Date.now(), key, events })); } catch {}
   return events;
 }
@@ -1554,9 +1567,10 @@ CLICK["radar-open"] = async () => {
   const said = Object.create(null); for (const w of radarConf().words.split(",")) { const t = w.trim(); if (t.length > 1 && !said[radarFold(t)]) said[radarFold(t)] = t; } // pour l'affichage : tes mots tels que tu les écris
   radarState = { busy: true, err: "", items: [], total: 0, words, said, kept: new Set() };
   if ($("#sheet").open && sheetKind === "radar") $("#sheetBody").innerHTML = SHEETS.radar(); else openSheet("radar");
-  const events = await radarFetch(c, todayISO()).catch(() => null), st = radarState;
-  if (!st) return;
-  Object.assign(st, { busy: false, err: events ? "" : "L'agenda de la Métropole ne répond pas (hors ligne, ou le portail a changé). Réessaie plus tard." }, events ? radarMatch(events, words, 5) : {});
+  let events = null, err = "";
+  try { events = await radarFetch(c, todayISO()); } catch (e) { err = e.message || "L'agenda de la Métropole ne répond pas. Réessaie plus tard."; }
+  const st = radarState; if (!st) return;
+  Object.assign(st, { busy: false, err }, events ? radarMatch(events, words, 5) : {});
   if ($("#sheet").open && sheetKind === "radar") $("#sheetBody").innerHTML = SHEETS.radar();
 };
 CLICK["radar-keep"] = el => {

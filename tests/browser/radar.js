@@ -14,16 +14,23 @@ const RESULTS = [
 (async () => {
   const b = await chromium.launch(launchOptions);
   const ok = check, errs = [];
-  const open = async (sky, words, mode = 'ok', hash = '') => {
-    const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, timezoneId: 'Europe/Paris' }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
-    p.asked = [];
+  const open = async (sky, words, mode = 'ok', hash = '', hosted = false) => {
+    const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, timezoneId: 'Europe/Paris', serviceWorkers: 'block' }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
+    p.asked = []; p.passeur = [];
     await ctx.route('https://opendata.lillemetropole.fr/**', r => {
       const u = new URL(r.request().url()); p.asked.push(u);
+      if (mode === 'cors') return r.abort('failed'); // ce que voit le navigateur quand le portail n'envoie pas d'en-tête CORS
       if (mode === 'down') return r.fulfill({ status: 503, body: '' });
       if (mode === 'renamed' && u.searchParams.get('select')) return r.fulfill({ status: 400, contentType: 'application/json', body: '{"error_code":"ODSQLError"}' });
       r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ total_count: RESULTS.length, results: RESULTS }) });
     });
-    await ctx.addInitScript(d => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, site(sky, words));
+    await ctx.route('https://*.supabase.co/**', r => {
+      const req = r.request();
+      if (new URL(req.url()).pathname === '/functions/v1/passeur') { const q = req.postDataJSON(); p.passeur.push(q); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ status: 200, url: q.url, type: 'application/json; charset=utf-8', texte: JSON.stringify({ total_count: RESULTS.length, results: RESULTS }) }) }); }
+      r.fulfill({ contentType: 'application/json', body: req.method() === 'GET' ? '[]' : '{}' });
+    });
+    const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.parse('2026-09-28T08:00:00Z') / 1000) + 3600, user: { id: '0b8f0c2e-1111-2222-3333-444455556666', email: 'a@b.c' } });
+    await ctx.addInitScript(([d, h, s]) => { if (!h) window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); if (h) { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', '0b8f0c2e-1111-2222-3333-444455556666'); } } }, [site(sky, words), hosted, session]);
     await p.clock.setFixedTime(new Date('2026-09-28T10:00:00+02:00')); await p.goto(BASE + '/index.html' + hash); await p.waitForTimeout(500);
     return p;
   };
@@ -58,7 +65,17 @@ const RESULTS = [
   ok(r.asked.length === 2 && !r.asked[1].searchParams.get('select') && (await r.$$('#sheet .radar li')).length === 5, 'un champ inconnu (400) : second essai sans sélection, et ça passe');
   const d = await open(LILLE, 'jazz', 'down');
   await d.click('[data-act="radar-open"]'); await d.waitForTimeout(400);
-  ok((await sheet(d)).includes('ne répond pas') && await d.isVisible('#sheet [data-act="radar-open"]'), 'portail muet : dit, et « Réessayer »');
+  ok((await sheet(d)).includes('répond 503') && await d.isVisible('#sheet [data-act="radar-open"]'), 'portail en panne : dit, et « Réessayer »');
+
+  console.log('CORS fermé (constaté sur le vrai portail) : le passeur prend le relais');
+  const c = await open(LILLE, 'jazz', 'cors', '', true);
+  await c.click('[data-act="radar-open"]'); await c.waitForTimeout(500);
+  ok(c.asked.length === 1 && c.passeur.length === 1 && c.passeur[0].genre === 'json' && c.passeur[0].url.startsWith('https://opendata.lillemetropole.fr/') && (await c.$$('#sheet .radar li')).length === 5, 'lecture directe refusée : le passeur lit l’agenda (genre json), les événements s’affichent');
+  await c.keyboard.press('Escape'); await c.evaluate(() => localStorage.removeItem('selene-radar')); await c.click('[data-act="radar-open"]'); await c.waitForTimeout(500);
+  ok(c.asked.length === 1 && c.passeur.length === 2, 'la porte fermée est retenue : ensuite, directement par le passeur');
+  const a = await open(LILLE, 'jazz', 'cors');
+  await a.click('[data-act="radar-open"]'); await a.waitForTimeout(400);
+  ok((await sheet(a)).includes('il faut ton passeur'), 'sans passeur (artefact claude.ai) : dit ce qui manque');
 
   console.log('réglages');
   const n = await open(LILLE, '', 'ok', '#reglages');
