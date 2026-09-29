@@ -211,7 +211,7 @@ function uiDark() {
 const WEATHER_KEY = "selene-weather";
 function freshWeather(c) {
   // Fraîche : moins de trois heures, et pas « du futur » (une horloge d'appareil changée ne ressuscite pas une vieille pluie).
-  try { const w = JSON.parse(localStorage.getItem(WEATHER_KEY)), age = w ? Date.now() - w.at : NaN; return w && w.lat === +c.lat && w.lon === +c.lon && age > -300000 && age < 3 * 3600000 ? w : null; } catch { return null; }
+  try { const w = JSON.parse(platform.storage.get(WEATHER_KEY)), age = w ? Date.now() - w.at : NaN; return w && w.lat === +c.lat && w.lon === +c.lon && age > -300000 && age < 3 * 3600000 ? w : null; } catch { return null; }
 }
 let weatherBusy = false;
 async function refreshWeather(force = false) {
@@ -224,12 +224,12 @@ async function refreshWeather(force = false) {
     const j = r.ok ? await r.json() : null, cur = j && j.current, dl = j && j.daily;
     if (!cur || !Number.isFinite(+cur.weather_code)) return;
     const days = dl && Array.isArray(dl.time) ? dl.time.slice(0, 7).map((d, i) => ({ d: String(d).slice(0, 10), mm: +((dl.precipitation_sum || [])[i]) || 0, pp: +((dl.precipitation_probability_max || [])[i]) || 0 })) : [];
-    localStorage.setItem(WEATHER_KEY, JSON.stringify({ at: Date.now(), lat: +c.lat, lon: +c.lon, code: +cur.weather_code, temp: +cur.temperature_2m, cloud: +cur.cloud_cover, wind: +cur.wind_speed_10m, dir: +cur.wind_direction_10m, precip: +cur.precipitation, days }));
+    platform.storage.set(WEATHER_KEY, JSON.stringify({ at: Date.now(), lat: +c.lat, lon: +c.lon, code: +cur.weather_code, temp: +cur.temperature_2m, cloud: +cur.cloud_cover, wind: +cur.wind_speed_10m, dir: +cur.wind_direction_10m, precip: +cur.precipitation, days }));
     render();
   } catch {} finally { weatherBusy = false; } // hors ligne, ou l'artefact claude.ai qui ne sort pas : le ciel reste sans météo
 }
 /* Le ciel vivant se règle par appareil : c'est l'appareil qui paie l'animation, pas le compte. */
-const skyLive = () => { try { return localStorage.getItem("selene-sky-live") !== "off"; } catch { return true; } };
+const skyLive = () => { try { return platform.storage.get("selene-sky-live") !== "off"; } catch { return true; } };
 /* Hors de vue (la page défilée plus bas), la scène s'immobilise : aucune image calculée pour personne. */
 let heroObs = null;
 function skyWatch() {
@@ -428,7 +428,7 @@ const VIEWS = {};
 
 /* Sur téléphone, le paysage se réduit à un bandeau à partir de la deuxième ouverture du jour ; décidé une fois
    par chargement, pour qu'il ne se replie pas sous les yeux en cours d'utilisation. */
-const HERO_COMPACT = (() => { try { const seen = localStorage.getItem("selene-hero-day") === todayISO(); localStorage.setItem("selene-hero-day", todayISO()); return seen; } catch { return false; } })();
+const HERO_COMPACT = (() => { try { const seen = platform.storage.get("selene-hero-day") === todayISO(); platform.storage.set("selene-hero-day", todayISO()); return seen; } catch { return false; } })();
 VIEWS.accueil = () => {
   const m = moon(), s = S(), now = todayISO(), win = sceneNow(m);
   const tod = todayTasks().slice(0, 3);
@@ -508,7 +508,7 @@ function summaryFor(id) {
    ligne de bilan que fournit son type (TYPE_UI[type].review), à côté de celle de la période précédente.
    Une information pour prendre du recul, pas un score. */
 let bilanOffset = 0;
-const bilanMode = () => { try { return localStorage.getItem("selene-bilan") === "mois" ? "mois" : "lune"; } catch { return "lune"; } };
+const bilanMode = () => { try { return platform.storage.get("selene-bilan") === "mois" ? "mois" : "lune"; } catch { return "lune"; } };
 /* [from, to[ en dates ISO ; offset 0 = la période en cours, 1 = la précédente… */
 function periodOf(mode, offset, now = Date.now()) {
   if (mode === "mois") {
@@ -1038,8 +1038,8 @@ function barHTML(view) {
 }
 /* Les derniers espaces ouverts sur cet appareil (jamais synchronisés), le plus récent d'abord. */
 const RECENT_KEY = "selene-recent";
-function recents() { try { const r = JSON.parse(localStorage.getItem(RECENT_KEY)); return Array.isArray(r) ? r.filter(x => x && typeof x.id === "string") : []; } catch { return []; } }
-function noteVisit(id) { try { localStorage.setItem(RECENT_KEY, JSON.stringify([{ id, at: new Date().toISOString() }, ...recents().filter(x => x.id !== id)].slice(0, 5))); } catch {} }
+function recents() { try { const r = JSON.parse(platform.storage.get(RECENT_KEY)); return Array.isArray(r) ? r.filter(x => x && typeof x.id === "string") : []; } catch { return []; } }
+function noteVisit(id) { try { platform.storage.set(RECENT_KEY, JSON.stringify([{ id, at: new Date().toISOString() }, ...recents().filter(x => x.id !== id)].slice(0, 5))); } catch {} }
 const liveRecents = () => recents().filter(r => Object.hasOwn(S().modules, r.id) && enabled(r.id));
 const agoTime = t => { const m = Math.round((Date.now() - Date.parse(t)) / 60000); return !(m >= 0) ? "" : m < 2 ? "à l'instant" : m < 60 ? `il y a ${m} min` : m < 1440 ? `il y a ${Math.round(m / 60)} h` : ago(iso(new Date(t))); };
 
@@ -1099,7 +1099,7 @@ function paletteItems(q) {
   for (const [t, run] of [[tick ? "Mettre le minuteur en pause" : "Lancer le minuteur (15 min)", () => { closeOverlays(); $("#timerBtn").click(); }],
     ["Capturer…", () => openSheet("capture")],
     ["Trier la boîte, une note à la fois", () => { vascSkip = 0; openSheet("vasculum"); }],
-    [`Bilan par ${other === "lune" ? "cycle lunaire" : "mois"}`, () => { try { localStorage.setItem("selene-bilan", other); } catch {} bilanOffset = 0; goTo("bilan")(); }]])
+    [`Bilan par ${other === "lune" ? "cycle lunaire" : "mois"}`, () => { platform.storage.set("selene-bilan", other); bilanOffset = 0; goTo("bilan")(); }]])
     if (match(t)) out.push({ k: "Action", t, run });
   if (f) {
     const inbox = inboxId(s.modules), text = q.trim();
@@ -1151,8 +1151,8 @@ function focusEntry(id) {
 const DRAFT_WHAT = { scrapIn: "un fragment", noteIn: "une note", rapNote: "une observation", chatIn: "un message", capSheetIn: "une capture" };
 function pendingDrafts() {
   const out = [];
-  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!k || !k.startsWith(DRAFT_PREFIX)) continue;
-    const [view, field] = k.slice(DRAFT_PREFIX.length).split(":"); if (view !== "accueil") out.push({ view, what: DRAFT_WHAT[field] || "un texte" }); } } catch {}
+  for (const k of platform.storage.keys()) { if (!k.startsWith(DRAFT_PREFIX)) continue;
+    const [view, field] = k.slice(DRAFT_PREFIX.length).split(":"); if (view !== "accueil") out.push({ view, what: DRAFT_WHAT[field] || "un texte" }); }
   return out;
 }
 function resumeSection() {
@@ -1169,7 +1169,7 @@ function resumeSection() {
   return lines.length ? `<section class="resume-box" aria-label="Reprendre"><h3>Reprendre</h3><ul>${lines.join("")}</ul></section>` : "";
 }
 /* Ouvrir sur l'accueil ou là où l'on en était : propre à l'appareil. */
-const openOn = () => { try { return localStorage.getItem("selene-open") === "last" ? "last" : "accueil"; } catch { return "accueil"; } };
+const openOn = () => { try { return platform.storage.get("selene-open") === "last" ? "last" : "accueil"; } catch { return "accueil"; } };
 
 /* Les réglages propres d'un module (son sigil, ceux de son type, son regroupement en pourcentage) : dans la page
    Réglages, et dans la feuille qu'ouvre « régler » depuis le module lui-même. */
@@ -1202,8 +1202,8 @@ let lastView = null;
    en arrière-plan). Propres à l'appareil ; effacés quand le champ est envoyé, et à la déconnexion. */
 const DRAFT_PREFIX = "selene-draft:";
 const draftKey = (view, el) => `${DRAFT_PREFIX}${view}:${el.id}`;
-function saveDraft(view, el) { if (!view || !el.id) return; try { if (el.value.trim()) localStorage.setItem(draftKey(view, el), el.value); else localStorage.removeItem(draftKey(view, el)); } catch {} }
-function loadDraft(view, el) { try { return localStorage.getItem(draftKey(view, el)) || ""; } catch { return ""; } }
+function saveDraft(view, el) { if (!view || !el.id) return; try { if (el.value.trim()) platform.storage.set(draftKey(view, el), el.value); else platform.storage.remove(draftKey(view, el)); } catch {} }
+function loadDraft(view, el) { try { return platform.storage.get(draftKey(view, el)) || ""; } catch { return ""; } }
 // Le brouillon d'une feuille (la capture de la barre basse) ne dépend pas de la vue ouverte derrière elle.
 document.addEventListener("input", e => { if (e.target.dataset && e.target.dataset.draft !== undefined) saveDraft(e.target.closest && e.target.closest("dialog") ? "sheet" : lastView, e.target); });
 /* Calculs coûteux partagés par plusieurs parties d'un même rendu (la concordance sert la vue, l'accueil et
@@ -1228,16 +1228,16 @@ function render() {
 let sharePending = false;
 function takeShare() {
   try {
-    if (sessionStorage.getItem("selene-share")) sharePending = true; // reçu avant une connexion ou un rechargement
+    if (platform.session.get("selene-share")) sharePending = true; // reçu avant une connexion ou un rechargement
     const q = new window.URLSearchParams(location.search), p = { url: q.get("url") || "", title: q.get("title") || "", text: q.get("text") || "" };
     if (!p.url && !p.text && !p.title) return;
-    sessionStorage.setItem("selene-share", JSON.stringify(p)); sharePending = true;
+    platform.session.set("selene-share", JSON.stringify(p)); sharePending = true;
     window.history.replaceState(null, "", location.pathname + (location.hash || "#accueil"));
   } catch {}
 }
 function applyShare() {
   if (hosted() && authReady() && !authSession) return; // pas encore connectée : on attend
-  let p = null; try { p = JSON.parse(sessionStorage.getItem("selene-share") || "null"); sessionStorage.removeItem("selene-share"); } catch {}
+  let p = null; try { p = JSON.parse(platform.session.get("selene-share") || "null"); platform.session.remove("selene-share"); } catch {}
   sharePending = false;
   if (!p) return;
   const box = inboxId(S().modules);
@@ -1297,11 +1297,11 @@ function renderNow() {
   lastView = view;
 }
 /* Position de défilement de chaque vue, pour la session : revenir quelque part, c'est retrouver où l'on en était. */
-const scrollMemo = (() => { try { return JSON.parse(sessionStorage.getItem("selene-scrolls")) || {}; } catch { return {}; } })();
+const scrollMemo = (() => { try { return JSON.parse(platform.session.get("selene-scrolls")) || {}; } catch { return {}; } })();
 function rememberScroll() {
   if (!lastView) return;
   scrollMemo[lastView] = Math.round(window.scrollY || 0);
-  try { sessionStorage.setItem("selene-scrolls", JSON.stringify(scrollMemo)); } catch {}
+  try { platform.session.set("selene-scrolls", JSON.stringify(scrollMemo)); } catch {}
 }
 window.addEventListener("hashchange", () => {
   const { view, entry } = routeOf();
@@ -1313,7 +1313,7 @@ window.addEventListener("hashchange", () => {
   openId = null; bridgeOpen = null; for (const k of Object.keys(pageSize)) delete pageSize[k];
   if (entry && Object.hasOwn(S().modules, view) && S().modules[view].type === "taches") openId = entry; // une tâche visée s'ouvre
   render();
-  const t = sessionStorage.getItem("selene-scroll"); sessionStorage.removeItem("selene-scroll"); const el = t && document.getElementById(t);
+  const t = platform.session.get("selene-scroll"); platform.session.remove("selene-scroll"); const el = t && document.getElementById(t);
   if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); }
   else if (!(entry && focusEntry(entry))) window.scrollTo(0, scrollMemo[lastView] || 0);
 });
@@ -1369,7 +1369,7 @@ const CLICK = {
     navigator.geolocation.getCurrentPosition(p => setSky("Ma position", p.coords.latitude, p.coords.longitude),
       () => toast("Position refusée ou indisponible. Une ville fera l'affaire."), { maximumAge: 3600000, timeout: 15000 });
   },
-  "sky-clear": () => { delete S().config.sky; try { localStorage.removeItem(WEATHER_KEY); } catch {} site.save(); render(); toast("Lieu retiré : l'heure redevient estimée, sans météo."); },
+  "sky-clear": () => { delete S().config.sky; platform.storage.remove(WEATHER_KEY); site.save(); render(); toast("Lieu retiré : l'heure redevient estimée, sans météo."); },
   "bridge-edit": el => { bridgeOpen = el.dataset.mod; render(); const i = $("#bridgeIn"); if (i) i.focus(); },
   "bridge-save": el => bridgeSave(el.dataset.mod),
   "bridge-close": () => { bridgeOpen = null; render(); },
@@ -1406,7 +1406,7 @@ const CLICK = {
   "planche-nav": el => { plancheOffset = Math.max(0, plancheOffset + +el.dataset.d); render(); },
   "planche-print": () => { try { window.print(); } catch { plancheFile(); } },
   "planche-dl": () => plancheFile(),
-  "bilan-mode": el => { try { localStorage.setItem("selene-bilan", el.dataset.m); } catch {} bilanOffset = 0; render(); },
+  "bilan-mode": el => { platform.storage.set("selene-bilan", el.dataset.m); bilanOffset = 0; render(); },
   "bilan-nav": el => { bilanOffset = Math.max(0, bilanOffset + +el.dataset.d); render(); },
   "undo": () => { const f = undoFn; undoFn = null; $("#toast").classList.remove("show", "act"); if (f) f(); },
   "mod-add": () => {
@@ -1430,7 +1430,7 @@ const CLICK = {
   "chat-send": () => { const t = $("#chatIn").value; sendChat(t); },
   "chat-chip": el => sendChat(el.textContent),
   "chat-clear": async () => { if (await ask("Effacer la conversation ?")) { chatLog.set([]); render(); } },
-  "as-forget": () => { try { localStorage.removeItem("selene-api-key"); } catch {} render(); toast("Clé oubliée sur cet appareil."); },
+  "as-forget": () => { platform.secrets.remove("selene-api-key"); render(); toast("Clé oubliée sur cet appareil."); },
   "exp": () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, site.data), "application/json", "Sauvegarde Selene"),
   "pal": el => { S().config.palette = el.dataset.p; site.save(); render(); },
   "mod-up": el => moveMod(el, -1), "mod-down": el => moveMod(el, 1),
@@ -1491,7 +1491,7 @@ document.addEventListener("change", e => {
     }
     site.save(); el.blur(); render();
   }
-  else if (act === "as-key") { const v = el.value.trim(); if (v && !v.startsWith("•")) { try { localStorage.setItem("selene-api-key", v); } catch {} toast(hosted() ? "Clé enregistrée dans ce navigateur." : "Clé enregistrée. Elle servira une fois le site hébergé."); } el.blur(); render(); }
+  else if (act === "as-key") { const v = el.value.trim(); if (v && !v.startsWith("•")) { platform.secrets.set("selene-api-key", v); toast(hosted() ? "Clé enregistrée dans ce navigateur." : "Clé enregistrée. Elle servira une fois le site hébergé."); } el.blur(); render(); }
   else if (act === "as-model") { S().config.assistant.model = el.value; site.save(); render(); }
   else if (act === "as-actions") { S().config.assistant.actions = el.checked; site.save(); render(); }
   else if (act === "as-share") { S().config.assistant.share[el.dataset.k] = el.checked; site.save(); render(); }
@@ -1512,10 +1512,10 @@ document.addEventListener("change", e => {
   else if (act === "radar-words") {
     const v = el.value.replace(/\s+/g, " ").trim().slice(0, 300);
     if (v) S().config.radar = { words: v }; else delete S().config.radar;
-    try { localStorage.removeItem(RADAR_KEY); } catch {} site.save(); el.blur(); render();
+    platform.storage.remove(RADAR_KEY); site.save(); el.blur(); render();
   }
-  else if (act === "sky-live") { try { localStorage.setItem("selene-sky-live", el.checked ? "on" : "off"); } catch {} render(); }
-  else if (act === "open-on") { try { localStorage.setItem("selene-open", el.value); } catch {} toast(el.value === "last" ? "L'app rouvrira le dernier espace où tu étais." : "L'app s'ouvrira sur l'accueil."); }
+  else if (act === "sky-live") { platform.storage.set("selene-sky-live", el.checked ? "on" : "off"); render(); }
+  else if (act === "open-on") { platform.storage.set("selene-open", el.value); toast(el.value === "last" ? "L'app rouvrira le dernier espace où tu étais." : "L'app s'ouvrira sur l'accueil."); }
   else if (act === "mod-on") { S().config.modules[+el.closest("[data-i]").dataset.i].on = el.checked; site.save(); render(); }
   else if (act === "mod-label") {
     const s = S(), m = s.config.modules[+el.closest("[data-i]").dataset.i], v = el.value.trim();

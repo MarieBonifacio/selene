@@ -1502,7 +1502,7 @@ SHEETS["mb-new"] = mod => {
 CLICK["mb-new"] = async el => {
   const mod = modOf(el), inst = S().modules[mod], artists = new Map();
   for (const e of inst.entries) if (e.mb && e.mb.a && !artists.has(e.mb.a)) artists.set(e.mb.a, e.title);
-  let seen = {}; try { seen = JSON.parse(localStorage.getItem(MB_SEEN) || "{}") || {}; } catch {}
+  let seen = {}; try { seen = JSON.parse(platform.storage.get(MB_SEEN) || "{}") || {}; } catch {}
   const today = todayISO(), yearAgo = addDaysTo(today, -365);
   mbNews = { mod, done: 0, total: artists.size, items: [], failed: 0 };
   openSheet("mb-new", mod);
@@ -1515,7 +1515,7 @@ CLICK["mb-new"] = async el => {
     if ($("#sheet").open) $("#sheetBody").innerHTML = SHEETS["mb-new"](mod);
   }
   mbNews.items.sort((a, b) => b.album.date.localeCompare(a.album.date));
-  try { localStorage.setItem(MB_SEEN, JSON.stringify(seen)); } catch {}
+  try { platform.storage.set(MB_SEEN, JSON.stringify(seen)); } catch {}
   if ($("#sheet").open) $("#sheetBody").innerHTML = SHEETS["mb-new"](mod);
 };
 CLICK["mb-new-add"] = el => {
@@ -1547,12 +1547,12 @@ async function radarGet(url) {
 }
 async function radarFetch(c, from) {
   const key = `${+c.lat},${+c.lon},${from}`;
-  try { const x = JSON.parse(localStorage.getItem(RADAR_KEY) || "null"), age = x ? Date.now() - x.at : NaN; if (x && x.key === key && age > -300000 && age < 6 * 3600000 && Array.isArray(x.events)) return x.events; } catch {}
+  try { const x = JSON.parse(platform.storage.get(RADAR_KEY) || "null"), age = x ? Date.now() - x.at : NaN; if (x && x.key === key && age > -300000 && age < 6 * 3600000 && Array.isArray(x.events)) return x.events; } catch {}
   let r = await radarGet(radarUrl(c, from, { lean: true }));
   if (r.status === 400) r = await radarGet(radarUrl(c, from, { lean: false })); // un champ renommé par le portail : tout recevoir plutôt que rien
   if (!r.json) throw new Error(`L'agenda de la Métropole répond ${r.status || "par une erreur"} (le portail a peut-être changé). Réessaie plus tard.`);
   const events = radarEvents(r.json);
-  try { localStorage.setItem(RADAR_KEY, JSON.stringify({ at: Date.now(), key, events })); } catch {}
+  try { platform.storage.set(RADAR_KEY, JSON.stringify({ at: Date.now(), key, events })); } catch {}
   return events;
 }
 function radarWhen(x, today) {
@@ -1630,7 +1630,7 @@ function dehorsSet(patch) {
 /* Research Watch (veille.js) : des recherches et des auteurs, relus une fois par semaine ; la clé OpenAlex, facultative,
    reste sur l'appareil (jamais synchronisée, effacée à la déconnexion). */
 const OA_KEY = "selene-openalex-key";
-const oaKey = () => { try { return localStorage.getItem(OA_KEY) || ""; } catch { return ""; } };
+const oaKey = () => platform.secrets.get(OA_KEY) || "";
 const dehorsResearch = () => (Array.isArray(dehorsConf().research) ? dehorsConf().research : []);
 /* Artist Watch : un flux de plus, fabriqué ici (MusicBrainz, sans passeur), rangé sous le premier module de musique. */
 const MB_WATCH = "mb-artists";
@@ -1644,14 +1644,14 @@ const dehorsAll = () => [...dehorsFeeds(), ...(dehorsConf().artists ? [{ id: MB_
   ...dehorsResearch().map(r => ({ id: "oa-" + r.id, title: `Veille : ${r.name || r.q}`, mod: r.mod || "", seen: r.seen || 0, research: r }))];
 const dehorsOn = () => hosted() && authReady() && !!authSession;
 function dehorsCache() {
-  try { const c = JSON.parse(localStorage.getItem(DEHORS_KEY) || "null"); if (c && typeof c === "object" && c.feeds && typeof c.feeds === "object") return { at: +c.at || 0, feeds: c.feeds, hidden: Array.isArray(c.hidden) ? c.hidden : [] }; } catch {}
+  try { const c = JSON.parse(platform.storage.get(DEHORS_KEY) || "null"); if (c && typeof c === "object" && c.feeds && typeof c.feeds === "object") return { at: +c.at || 0, feeds: c.feeds, hidden: Array.isArray(c.hidden) ? c.hidden : [] }; } catch {}
   return { at: 0, feeds: {}, hidden: [] };
 }
 function dehorsStore(c) {
   const ids = new Set(dehorsAll().map(f => f.id));
   for (const k of Object.keys(c.feeds)) if (!ids.has(k)) delete c.feeds[k]; // un flux retiré emporte son cache
   c.hidden = c.hidden.slice(-500);
-  try { localStorage.setItem(DEHORS_KEY, JSON.stringify(c)); } catch {}
+  try { platform.storage.set(DEHORS_KEY, JSON.stringify(c)); } catch {}
 }
 const dehorsTest = () => memoInRender("dehorsTest", () => text => motifsOf(text).map(({ e }) => e.title));
 /* Motifs croisés : ce qui, dans le nouveau, rejoint ce que tu gardes déjà, dit en toutes lettres (dehorsNew). */
@@ -1729,7 +1729,7 @@ async function researchWatch(r) {
    on les découvre, pas de leur date de parution : MusicBrainz enregistre souvent une sortie après coup. */
 async function artistWatch() {
   const artists = watchedArtists(); if (!artists.length) return;
-  let seen = {}; try { seen = JSON.parse(localStorage.getItem(MB_SEEN) || "{}") || {}; } catch {}
+  let seen = {}; try { seen = JSON.parse(platform.storage.get(MB_SEEN) || "{}") || {}; } catch {}
   const today = todayISO(), got = []; let failed = 0;
   for (const [aid, a] of artists) {
     const j = await mbFetch(`/release-group?artist=${aid}&type=album|ep&limit=100`).catch(() => null);
@@ -1739,7 +1739,7 @@ async function artistWatch() {
         mb: { a: aid, rg: al.id, ...(al.date ? { y: al.date.slice(0, 4) } : {}), artist: a.name, album: al.title, mod: a.mod } });
     seen[aid] = today;
   }
-  try { localStorage.setItem(MB_SEEN, JSON.stringify(seen)); } catch {}
+  try { platform.storage.set(MB_SEEN, JSON.stringify(seen)); } catch {}
   const c = dehorsCache(), fc = c.feeds[MB_WATCH] || { items: [] };
   fc.items = feedMerge(fc.items, got, Date.now()); fc.at = Date.now(); fc.err = failed ? `${failed} artiste${failed > 1 ? "s" : ""} sans réponse de MusicBrainz` : "";
   c.feeds[MB_WATCH] = fc; dehorsStore(c);
@@ -1873,7 +1873,7 @@ CLICK["oa-del"] = async el => {
 CHANGE["oa-mod"] = el => { const id = el.closest("[data-oa]").dataset.oa; dehorsSet({ research: dehorsResearch().map(r => r.id === id ? { ...r, mod: el.value } : r) }); render(); };
 CHANGE["oa-key"] = el => {
   const v = el.value.trim(); if (v.startsWith("•")) return;
-  try { if (v) localStorage.setItem(OA_KEY, v); else localStorage.removeItem(OA_KEY); } catch {}
+  try { if (v) platform.secrets.set(OA_KEY, v); else platform.secrets.remove(OA_KEY); } catch {}
   el.blur(); render(); toast(v ? "Clé OpenAlex gardée dans ce navigateur." : "Clé OpenAlex oubliée.");
 };
 CLICK["dehors-mb-add"] = el => {
@@ -1888,8 +1888,8 @@ CLICK["dehors-mb-add"] = el => {
    (jamais synchronisée, effacée à la déconnexion) et ne voyage que vers ton passeur, qui ne garde rien. Lue au plus
    une fois par heure, onglet visible. Un préfixe « Chantier : » range l'événement sous l'espace de ce nom. */
 const ICS_URL = "selene-ics-url", ICS_CACHE = "selene-ics";
-const icsUrl = () => { try { return localStorage.getItem(ICS_URL) || ""; } catch { return ""; } };
-function icsCache() { try { const c = JSON.parse(localStorage.getItem(ICS_CACHE) || "null"); if (c && Array.isArray(c.events)) return c; } catch {} return { at: 0, events: [], err: "" }; }
+const icsUrl = () => platform.secrets.get(ICS_URL) || "";
+function icsCache() { try { const c = JSON.parse(platform.storage.get(ICS_CACHE) || "null"); if (c && Array.isArray(c.events)) return c; } catch {} return { at: 0, events: [], err: "" }; }
 let agendaBusy = false;
 async function agendaRefresh(force = false) {
   const url = icsUrl();
@@ -1906,7 +1906,7 @@ async function agendaRefresh(force = false) {
     } else c.err = r.erreur || `le calendrier répond ${r.status}`;
   } catch (e) { c.err = e.message; }
   c.at = Date.now();
-  try { localStorage.setItem(ICS_CACHE, JSON.stringify(c)); } catch {}
+  try { platform.storage.set(ICS_CACHE, JSON.stringify(c)); } catch {}
   agendaBusy = false; render();
 }
 /* « Chantier : plombier » → l'espace Chantier, et « plombier ». */
@@ -1939,20 +1939,20 @@ CHANGE["ics-url"] = el => {
   let v = el.value.trim(); if (v.startsWith("•")) return;
   v = v.replace(/^webcal:\/\//i, "https://");
   if (v && !/^https:\/\//i.test(v)) { el.value = ""; return toast("Une adresse https:// (ou webcal://) est attendue."); }
-  try { if (v) localStorage.setItem(ICS_URL, v); else localStorage.removeItem(ICS_URL); localStorage.removeItem(ICS_CACHE); } catch {}
+  try { if (v) platform.secrets.set(ICS_URL, v); else platform.secrets.remove(ICS_URL); platform.storage.remove(ICS_CACHE); } catch {}
   el.blur(); render();
   if (v) { toast("Adresse gardée dans ce navigateur. Lecture…"); agendaRefresh(true); }
 };
 CLICK["ics-check"] = () => agendaRefresh(true);
-CLICK["ics-forget"] = () => { try { localStorage.removeItem(ICS_URL); localStorage.removeItem(ICS_CACHE); } catch {} render(); toast("Calendrier oublié sur cet appareil."); };
+CLICK["ics-forget"] = () => { platform.secrets.remove(ICS_URL); platform.storage.remove(ICS_CACHE); render(); toast("Calendrier oublié sur cet appareil."); };
 
 /* ================= Zotero : ta bibliothèque, en lecture seule (zotero.js pour la traduction des fiches) =================
    La clé reste dans ce navigateur (jamais synchronisée, effacée à la déconnexion). Un appel part directement vers
    api.zotero.org ; si le navigateur n'a pas le droit d'en lire la réponse (CORS), il passe par ton passeur. Tirer,
    jamais pousser : rien n'est importé en masse, on garde une fiche à la fois. */
 const ZOT_KEY = "selene-zotero-key", ZOT_INFO = "selene-zotero";
-const zotKey = () => { try { return localStorage.getItem(ZOT_KEY) || ""; } catch { return ""; } };
-const zotInfo = () => { try { const x = JSON.parse(localStorage.getItem(ZOT_INFO) || "null"); return x && Number.isInteger(x.userID) ? x : null; } catch { return null; } };
+const zotKey = () => platform.secrets.get(ZOT_KEY) || "";
+const zotInfo = () => { try { const x = JSON.parse(platform.storage.get(ZOT_INFO) || "null"); return x && Number.isInteger(x.userID) ? x : null; } catch { return null; } };
 async function zotGet(path, viaPasseur = path) {
   const key = zotKey(); if (!key) throw new Error("Pas de clé Zotero (Réglages → Zotero).");
   const refuse = s => new Error(s === 403 ? "Zotero refuse cette clé (révoquée, ou sans accès à ta bibliothèque)." : `Zotero répond ${s}.`);
@@ -1971,7 +1971,7 @@ async function zotCheck() {
   const info = zotKeyInfo(await zotGet("/keys/current", `/keys/${encodeURIComponent(key)}`));
   if (!info) throw new Error("Réponse inattendue de Zotero.");
   if (!info.library) throw new Error("Cette clé n'a pas accès à ta bibliothèque personnelle (coche « Allow library access »).");
-  try { localStorage.setItem(ZOT_INFO, JSON.stringify(info)); } catch {}
+  try { platform.storage.set(ZOT_INFO, JSON.stringify(info)); } catch {}
   return info;
 }
 const zotState = {}; // par module de sources : { busy, err, items, label } (propre à l'appareil, oublié au rechargement)
@@ -2013,17 +2013,17 @@ function zotSettingsHTML() {
 }
 CHANGE["zot-key"] = async el => {
   const v = el.value.trim(); if (v.startsWith("•")) return;
-  try { if (v) localStorage.setItem(ZOT_KEY, v); else localStorage.removeItem(ZOT_KEY); localStorage.removeItem(ZOT_INFO); } catch {}
+  try { if (v) platform.secrets.set(ZOT_KEY, v); else platform.secrets.remove(ZOT_KEY); platform.storage.remove(ZOT_INFO); } catch {}
   el.blur(); render();
   if (v) CLICK["zot-check"]();
 };
 CLICK["zot-check"] = async () => {
-  try { localStorage.removeItem(ZOT_INFO); } catch {}
+  platform.storage.remove(ZOT_INFO);
   try { const i = await zotCheck(); toast(`Zotero : bibliothèque de ${i.username || "#" + i.userID}${i.write ? " (clé en écriture : préfère une clé en lecture seule)" : ", lecture seule"}.`); }
   catch (e) { toast(e.message); }
   render();
 };
-CLICK["zot-forget"] = () => { try { localStorage.removeItem(ZOT_KEY); localStorage.removeItem(ZOT_INFO); } catch {} for (const k of Object.keys(zotState)) delete zotState[k]; render(); toast("Clé Zotero oubliée sur cet appareil."); };
+CLICK["zot-forget"] = () => { platform.secrets.remove(ZOT_KEY); platform.storage.remove(ZOT_INFO); for (const k of Object.keys(zotState)) delete zotState[k]; render(); toast("Clé Zotero oubliée sur cet appareil."); };
 
 /* ---- une Source documente une note ou un fragment ---- */
 function sourceLinkForm(mod, id) {
@@ -2047,12 +2047,12 @@ CLICK["src-link"] = el => { const ref = el.dataset.ref; if (ref) { const [m, i] 
 const CITE_KEY = "selene-cites", CITE_TTL = 30 * 86400000;
 let citeState = null; // { busy, err, res } (propre à l'appareil, oublié au rechargement)
 function citeCache() {
-  try { const c = JSON.parse(localStorage.getItem(CITE_KEY) || "null"); if (c && typeof c === "object" && c.works && c.titles) return c; } catch {}
+  try { const c = JSON.parse(platform.storage.get(CITE_KEY) || "null"); if (c && typeof c === "object" && c.works && c.titles) return c; } catch {}
   return { works: {}, titles: {} };
 }
 /* Tes sources telles qu'OpenAlex les connaît : W… → DOI (pour reconnaître, dans la veille, un article qui les cite). */
 const citeOwn = () => new Map(Object.entries(citeCache().works).filter(([, w]) => w && /^W\d+$/.test(w.id || "")).map(([d, w]) => [w.id, d]));
-function citeStore(c) { try { localStorage.setItem(CITE_KEY, JSON.stringify(c)); } catch {} }
+function citeStore(c) { try { platform.storage.set(CITE_KEY, JSON.stringify(c)); } catch {} }
 /* Les sources à DOI de tous les modules de Sources, par DOI (la plus ancienne l'emporte), deux cents au plus. */
 function citeSources() {
   const m = new Map();

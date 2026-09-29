@@ -33,8 +33,9 @@ les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne)
 
 | Fichier | Rôle | Dépend au chargement de |
 |---|---|---|
+| `platform.js` | seul accès aux API de l'hôte : `platform.storage`, `secrets`, `session`, `claude`, `runtime()`, `hosted()` | — |
 | `sync.js` | fusion à trois voies, pure | — |
-| `store.js` | un document JSON : localStorage + synchro | — |
+| `store.js` | un document JSON : `platform.storage` + synchro | — |
 | `auth.js` | comptes et adaptateur Supabase (hébergé seulement) | — |
 | `backup.js` | export / validation d'import | — |
 | `domain.js` | règles métier, registre pur `MODULE_TYPES`, `SCHEMA_VERSION` | — |
@@ -233,6 +234,11 @@ la conversation avec l'assistant et la clé API.
 
 ## Sécurité
 
+- **Frontière de plateforme** : seul `platform.js` touche à `localStorage`, `sessionStorage`, `window.claude`
+  et `navigator.storage` (vérifié par `tests/platform.test.js`). Les secrets (session Supabase, clés
+  Anthropic, OpenAlex et Zotero, adresse privée d'agenda) passent par `platform.secrets` : sur le web, le même
+  `localStorage` que le reste, donc lisibles par un script qui s'exécuterait dans la page (d'où la CSP
+  ci-dessous) ; une coquille native les rangera dans le trousseau du système.
 - **Isolation entre comptes** : RLS sur `app_state` (`auth.uid() = user_id`). La clé publique Supabase
   est faite pour être exposée ; la clé `service_role` ne doit jamais entrer dans ce dépôt.
 - **Injection** : toute donnée insérée dans le HTML passe par `esc()` ; les identifiants de module sont
@@ -369,3 +375,20 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   `'unsafe-hashes'` ; une injection de style peut défigurer ou exfiltrer par sélecteurs, pas exécuter de code).
 - **Conséquences** : tout nouveau script inline passe par `build.py` (sinon il est bloqué, et le scénario
   `csp` échoue) ; ne jamais écrire de gestionnaire `onclick=` dans un gabarit : `data-act` et délégation.
+
+### ADR 9 — Une couche `platform`, seul accès aux API de l'hôte
+
+- **Contexte** : `localStorage`, `sessionStorage` et `window.claude` étaient lus en direct dans six fichiers
+  (environ 70 endroits). Les coquilles natives prévues (Capacitor sur mobile, Tauri sur ordinateur) n'offrent
+  pas les mêmes API : stockage asynchrone, trousseau du système pour les secrets, pas de service worker.
+- **Décision** : `src/platform.js`, premier fichier du script, expose `platform.storage` (données de
+  l'appareil), `platform.secrets` (session, clés d'API, adresse d'agenda), `platform.session` (durée de
+  l'onglet), `platform.claude` (espaces de noms de l'artefact), `platform.runtime()` et `platform.persist()` ;
+  `hosted()` y est défini. Toutes les opérations sont sûres (null ou false, jamais d'exception). Un test
+  refuse tout accès direct ailleurs.
+- **Écarté** : attendre la coquille native pour découper (on découperait sous la pression d'une plateforme) ;
+  une API asynchrone dès maintenant (tout le code de rendu lit le stockage de façon synchrone : ce sera
+  l'objet d'une façade en mémoire, hydratée au démarrage, avant tout backend natif).
+- **Conséquences** : comportement inchangé sur le web et dans l'artefact (mêmes clés, même stockage) ;
+  une coquille native n'a qu'un fichier à remplacer ; `authResetLocal` efface les secrets par
+  `platform.secrets`, pour qu'aucun ne survive à une déconnexion quel que soit leur coffre.
