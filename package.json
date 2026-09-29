@@ -10,8 +10,8 @@
     "build": "python3 build.py",
     "build:check": "python3 build.py --check",
     "test": "node --test tests/*.test.js",
-    "test:syntax": "for f in src/*.js; do node --check \"$f\" || exit 1; done",
-    "lint": "python3 build.py --bundle .lint/selene.js && eslint .lint/selene.js sw.js",
+    "test:syntax": "for f in src/*.js src/core/*.js scripts/*.mjs; do node --check \"$f\" || exit 1; done",
+    "lint": "python3 build.py --bundle .lint/selene.js && eslint .lint/selene.js src/core scripts sw.js",
     "test:passeur": "deno check supabase/functions/passeur/index.ts && deno test supabase/functions/passeur/",
     "test:browser": "node tests/browser/run.js",
     "bench": "node tests/bench.js",
@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "deno": "2.9.6",
+    "esbuild": "0.28.2",
     "eslint": "10.11.0",
     "playwright": "1.56.1"
   }

@@ -4,12 +4,12 @@
    fait ici, sur l'appareil. Tirer, jamais pousser : cinq au plus, pas de « voir plus ». Se teste seul (tests/radar.test.js). */
 const RADAR_HOST = "https://opendata.lillemetropole.fr";
 const RADAR_FIELDS = "uid,title_fr,description_fr,keywords_fr,firstdate_begin,lastdate_end,location_name,location_city,canonicalurl";
-const radarFold = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+export const radarFold = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const addDaysISO = (iso, n) => new Date(Date.parse(iso + "T12:00:00Z") + n * 86400000).toISOString().slice(0, 10);
 /* L'adresse de la requête : ce qui se tient entre `from` et `from + days`, à `km` du lieu (arrondi au dixième de degré
    par Réglages → Ciel), du plus proche au plus lointain. `select` allège la réponse ; sans lui (lean = false), on
    reçoit tout, au cas où le portail aurait renommé un champ. */
-function radarUrl(place, from, { days = 14, km = 20, lean = true } = {}) {
+export function radarUrl(place, from, { days = 14, km = 20, lean = true } = {}) {
   const lat = Math.round(+place.lat * 10) / 10, lon = Math.round(+place.lon * 10) / 10;
   const where = `lastdate_end >= date'${from}' and firstdate_begin < date'${addDaysISO(from, days)}' and within_distance(location_coordinates, geom'POINT(${lon} ${lat})', ${km}km)`;
   const q = Object.entries({ where, order_by: "firstdate_begin", limit: "100", ...(lean ? { select: RADAR_FIELDS } : {}) }).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
@@ -19,7 +19,7 @@ const radarText = (v, n) => { const t = String(Array.isArray(v) ? v.join(", ") :
 const radarDay = v => /^\d{4}-\d{2}-\d{2}/.test(String(v || "")) ? String(v).slice(0, 10) : "";
 /* La réponse (results) → des événements propres. Tolérant : un champ `_fr` ou sans suffixe, des mots-clés en liste ou
    en texte ; une adresse qui n'est pas en https n'est pas gardée (elle finit dans un href). */
-function radarEvents(json) {
+export function radarEvents(json) {
   const seen = new Set(), out = [];
   for (const r of (json && Array.isArray(json.results) ? json.results : [])) {
     if (!r || typeof r !== "object") continue;
@@ -33,10 +33,10 @@ function radarEvents(json) {
   return out;
 }
 /* Les mots réglés (séparés par des virgules), sans accents ni casse ; deux lettres au moins. */
-const radarWords = s => [...new Set(String(s || "").split(",").map(w => radarFold(w.trim())).filter(w => w.length > 1))];
+export const radarWords = s => [...new Set(String(s || "").split(",").map(w => radarFold(w.trim())).filter(w => w.length > 1))];
 /* Ce qui parle d'un des mots (titre, mots-clés, description, lieu), du plus tôt au plus tard ; `n` au plus.
    total dit combien correspondaient : de quoi suggérer de préciser ses mots, sans rien dérouler de plus. */
-function radarMatch(events, words, n = 5) {
+export function radarMatch(events, words, n = 5) {
   const hits = [];
   for (const e of events || []) {
     const f = radarFold(`${e.title} ${e.kw.join(" ")} ${e.text} ${e.place}`), on = words.filter(w => f.includes(w));

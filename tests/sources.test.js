@@ -1,13 +1,9 @@
-/* Sources (src/sources.js) : normaliser une adresse, reconnaître un DOI, traduire Crossref et Microlink. */
+/* Sources (src/core/sources.js) : normaliser une adresse, reconnaître un DOI, traduire Crossref et Microlink. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
 
-const ctx = { URL };
-vm.runInNewContext(fs.readFileSync('src/sources.js', 'utf8') + fs.readFileSync('src/domain.js', 'utf8') +
-  '\n;globalThis.__s = { normalizeUrl, findDoi, findUrl, sourceKey, crossrefToSource, microlinkToSource, bareSource, srcValid, MODULE_TEMPLATES };', ctx);
-const S = ctx.__s;
+const { srcValid, MODULE_TEMPLATES } = require('../src/core/domain.js');
+const S = { ...require('../src/core/sources.js'), srcValid, MODULE_TEMPLATES };
 
 test('adresses : traceurs retirés, fragment oublié, deux liens vers la même page reconnus', () => {
   assert.equal(S.normalizeUrl('https://WWW.Exemple.org/article/?utm_source=x&id=4&fbclid=abc#section'), 'https://www.exemple.org/article/?id=4');

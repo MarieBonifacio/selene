@@ -1,11 +1,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
 
-// backup.js s'appuie sur les règles de domain.js (forme des identifiants, dates) : même ordre que build.py.
-const source = ['src/backup.js', 'src/domain.js'].map(f => fs.readFileSync(f, 'utf8')).join('\n');
-const api = vm.runInNewContext(source + '\n({ parseBackup, createBackup })');
+// backup.js importe les règles de domain.js (forme des identifiants, dates).
+const api = require('../src/core/backup.js');
 const valid = () => ({ format: 'selene-v1', board: { updatedAt: 1, tasks: [
   { id: 'a', title: 'Velux', steps: [{ t: 'Devis', d: false }] }
 ] }, site: { updatedAt: 1, config: { modules: [{ id: 'chantier', on: true }] },

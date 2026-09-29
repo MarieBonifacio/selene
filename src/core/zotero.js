@@ -3,9 +3,9 @@
    fiche Zotero au lieu de la recopier à la main. La clé API (lecture seule conseillée) reste sur l'appareil.
    Ici : lire ce que dit une clé, traduire une fiche en Source. L'appel réseau est dans types.js ; la validation de
    `zot`, dans domain.js (zotValid). Se teste seul (tests/zotero.test.js). */
-const ZOT_API = "https://api.zotero.org";
+export const ZOT_API = "https://api.zotero.org";
 /* Ce que permet une clé (réponse de /keys/…) : à qui elle est, et si elle peut écrire (on préfère que non). */
-function zotKeyInfo(j) {
+export function zotKeyInfo(j) {
   if (!j || typeof j !== "object" || !Number.isInteger(j.userID) || j.userID <= 0) return null;
   const u = (j.access && j.access.user) || {};
   return { userID: j.userID, username: String(j.username || "").slice(0, 100), library: !!u.library, write: !!u.write };
@@ -15,7 +15,7 @@ const ZOT_KIND = { journalArticle: "article", magazineArticle: "article", newspa
   videoRecording: "vidéo", podcast: "podcast", encyclopediaArticle: "notice", dictionaryEntry: "notice" };
 const zotText = (v, n) => { const t = String(v ?? "").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t; };
 /* Une fiche (élément de /items) → les champs d'une Source, ou null pour une pièce jointe, une note, une annotation. */
-function zotSource(item) {
+export function zotSource(item) {
   const d = item && item.data;
   if (!d || typeof d !== "object" || ["attachment", "note", "annotation"].includes(d.itemType)) return null;
   const k = String(item.key || d.key || "");
@@ -35,4 +35,4 @@ function zotSource(item) {
     zot: { k, ...(/^https:\/\/www\.zotero\.org\/[\w.-]+\/items\/[A-Z0-9]{8}$/.test(alt) ? { l: alt } : {}) }
   };
 }
-const zotItems = json => (Array.isArray(json) ? json : []).map(zotSource).filter(Boolean);
+export const zotItems = json => (Array.isArray(json) ? json : []).map(zotSource).filter(Boolean);

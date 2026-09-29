@@ -1,12 +1,9 @@
-/* Ciel (src/sky.js) : positions du soleil et de la lune, météo, et contraste du texte posé sur la scène. */
+/* Ciel (src/core/sky.js) : positions du soleil et de la lune, météo, et contraste du texte posé sur la scène. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const vm = require('node:vm');
 
-const ctx = {};
-vm.runInNewContext(fs.readFileSync('src/sky.js', 'utf8') + '\n;globalThis.__sky = { sunPosition, moonPosition, nextCrossing, approxPlace, moonPlacement, weatherState, skyScene, skyMotion, windName, seasonAt, skyEvents, rainDays, contrast, mixHex, WEATHER };', ctx);
-const S = ctx.__sky;
+const S = require('../src/core/sky.js');
 const PARIS = [48.85, 2.35];
 const at = s => Date.parse(s);
 const near = (a, b, tol, msg) => assert.ok(Math.abs(a - b) <= tol, `${msg} : ${a} au lieu de ${b} ± ${tol}`);

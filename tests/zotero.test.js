@@ -1,12 +1,8 @@
-/* Zotero (src/zotero.js) : ce que dit une clé, une fiche Zotero traduite en Source, la validation de `zot`. */
+/* Zotero (src/core/zotero.js) : ce que dit une clé, une fiche Zotero traduite en Source, la validation de `zot`. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
 
-const ctx = { URL };
-vm.runInNewContext(fs.readFileSync('src/zotero.js', 'utf8') + fs.readFileSync('src/domain.js', 'utf8') + '\n;globalThis.__z = { zotKeyInfo, zotSource, zotItems, zotValid };', ctx);
-const Z = ctx.__z;
+const Z = { ...require('../src/core/zotero.js'), zotValid: require('../src/core/domain.js').zotValid };
 
 test('clé : à qui, et si elle peut écrire', () => {
   assert.deepEqual({ ...Z.zotKeyInfo({ key: 'x', userID: 475425, username: 'marie', access: { user: { library: true, notes: true } } }) }, { userID: 475425, username: 'marie', library: true, write: false });

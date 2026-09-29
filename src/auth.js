@@ -11,21 +11,23 @@ const AUTH_KEY = "selene-auth-session";
 let authSession = null, authMode = "signin", authBusy = false, authRefreshTimer = null;
 
 function authLoad() {
-  try { const v = localStorage.getItem(AUTH_KEY); return v ? JSON.parse(v) : null; } catch { return null; }
+  try { const v = platform.secrets.get(AUTH_KEY); return v ? JSON.parse(v) : null; } catch { return null; }
 }
 function authPersist(s) {
   authSession = s;
-  try { if (s) localStorage.setItem(AUTH_KEY, JSON.stringify(s)); else localStorage.removeItem(AUTH_KEY); } catch {}
+  try { if (s) platform.secrets.set(AUTH_KEY, JSON.stringify(s)); else platform.secrets.remove(AUTH_KEY); } catch {}
 }
 const LAST_UID_KEY = "selene-auth-last-uid";
 /* Déconnexion ou changement de compte : rien de la personne précédente ne doit rester sur l'appareil —
    ni ses données, ni sa conversation avec l'assistant, ni sa clé API (facturée à elle). */
-const PERSONAL_KEYS = ["selene-chat", "selene-api-key", "selene-recent", "selene-openalex-key", "selene-dehors", "selene-mb-seen", "selene-radar", "selene-ics-url", "selene-ics", "selene-zotero-key", "selene-zotero", "selene-cites"]; // selene-recent : les derniers espaces ouverts ; puis ce que le dehors a apporté
+const PERSONAL_KEYS = ["selene-chat", "selene-recent", "selene-dehors", "selene-mb-seen", "selene-radar", "selene-ics", "selene-zotero", "selene-cites"]; // selene-recent : les derniers espaces ouverts ; puis ce que le dehors a apporté
+const PERSONAL_SECRETS = ["selene-api-key", "selene-openalex-key", "selene-ics-url", "selene-zotero-key"]; // platform.secrets
 function authResetLocal() {
   board.reset({ updatedAt: 0, tasks: [] });
   site.reset(siteSeed());
-  try { for (const k of PERSONAL_KEYS) localStorage.removeItem(k); } catch {}
-  try { for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith(DRAFT_PREFIX)) localStorage.removeItem(k); } } catch {} // brouillons
+  for (const k of PERSONAL_KEYS) platform.storage.remove(k);
+  for (const k of PERSONAL_SECRETS) platform.secrets.remove(k);
+  for (const k of platform.storage.keys()) if (k.startsWith(DRAFT_PREFIX)) platform.storage.remove(k); // brouillons
 }
 function authTimeout(ms = 10000) { const c = new AbortController(); setTimeout(() => c.abort(), ms); return c.signal; }
 async function authApi(path, opts = {}) {
@@ -118,9 +120,9 @@ const supabaseDb = {
 async function authConnectStores() {
   const uid = authSession.user.id;
   let last = null;
-  try { last = localStorage.getItem(LAST_UID_KEY); } catch {}
+  try { last = platform.storage.get(LAST_UID_KEY); } catch {}
   if (last && last !== uid) authResetLocal();
-  try { localStorage.setItem(LAST_UID_KEY, uid); } catch {}
+  platform.storage.set(LAST_UID_KEY, uid);
   // Ne (re)connecte que les stores déconnectés : un store déjà branché a son propre poller, pas de doublon.
   // L'un après l'autre, le site d'abord : le board verse ses tâches dans un site déjà synchronisé (voir absorbBoard).
   for (const st of [site, board]) if (!st.db) await st.connect(supabaseDb);
