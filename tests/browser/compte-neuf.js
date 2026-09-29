@@ -14,6 +14,18 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   for (const tpl of ['taches', 'ecriture', 'decouvertes']) { await p.click(`[data-act="tpl-add"][data-tpl="${tpl}"]`); await p.waitForTimeout(150); }
   const n3 = await nav(); ok(['Tâches', 'Écriture', 'À découvrir'].every(x => n3.includes(x)), 'trois modules ajoutés, visibles dans la navigation');
   ok((await main()).includes('Tirer une petite tâche au sort'), 'avec un module de tâches, le tirage au sort apparaît');
+  await p.click('[data-act="tpl-add"][data-tpl="protocole"]');
+  await p.fill('#form [name="name"]', 'Natation');
+  await p.fill('#form [name="weeks"]', '8');
+  await p.fill('#form [name="perWeek"]', '2');
+  await p.fill('#form [name="unitLabel"]', 'longueurs');
+  await p.click('#form button[value="save"]');
+  await p.waitForFunction(() => !!JSON.parse(localStorage.getItem('selene-site-v1')).modules.natation);
+  ok((await nav()).includes('Natation'), 'le programme porte la pratique choisie');
+  for (const tpl of ['budget', 'rappels']) await p.click(`[data-act="tpl-add"][data-tpl="${tpl}"]`);
+  const saved = await p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')));
+  ok(saved.modules.natation.config.weeks === 8 && saved.modules.natation.config.perWeek === 2 && saved.modules.natation.config.unitLabel === 'longueurs', 'les réglages choisis sont enregistrés');
+  ok(saved.modules.budget.config.envelopes.length === 0 && saved.modules.soins.config.types.length === 0, 'aucun budget ni soin imposé');
   await p.click('[data-act="welcome-done"]'); await p.waitForTimeout(150);
   ok(!(await main()).includes('Composer ton espace'), '« C’est bon » referme le bloc');
   await p.evaluate(() => location.hash = 'reglages'); await p.waitForTimeout(200);
