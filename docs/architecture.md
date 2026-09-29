@@ -6,8 +6,16 @@ refactorisation, dont toutes les étapes sont livrées ou abandonnées au profit
 
 ## Deux cibles, une source
 
-`python3 build.py` concatène les fichiers de `src/` dans **un seul script**, enveloppé dans une
-fonction immédiatement exécutée, et l'insère dans `src/shell.html` :
+`python3 build.py` (`npm run build`) assemble **un seul script**, enveloppé dans une fonction immédiatement
+exécutée, et l'insère dans `src/shell.html`. Dans l'ordre :
+
+1. le **noyau** : les modules ES de `src/core/`, qu'esbuild assemble depuis `src/core/index.js` en une fonction qui
+   pose `__core` (`scripts/bundle-core.mjs`, appelé par `build.py`) ;
+2. `const { … } = __core;` : chaque nom exporté devient une constante de la portée commune. Les noms sont lus dans
+   le métafichier d'esbuild : aucune liste n'est tenue à la main ;
+3. les fichiers historiques de `src/`, concaténés dans l'ordre de `scripts` (`build.py`).
+
+Le build demande donc Python, Node et `npm ci` (esbuild). Pourquoi ce découpage : ADR 9.
 
 | Sortie | Pour | Particularités |
 |---|---|---|
@@ -27,13 +35,19 @@ Connexions externes (Crossref, Microlink, Open-Meteo…) : chaque hôte est nomm
 
 ### Ordre de chargement
 
-Tous les fichiers partagent la même portée. Au **chargement**, un fichier ne peut utiliser que ce que
-les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne) ; à l'**exécution**
+Le **noyau** passe en premier : ce qu'il exporte est visible de tous les fichiers historiques dès le chargement.
+Un module n'y voit que ce qu'il importe (eslint le vérifie module par module) ; esbuild les ordonne d'après leurs imports.
+
+| Module (`src/core/`) | Rôle | Importe |
+|---|---|---|
+| `sync.js` | fusion à trois voies, pure | — |
+
+Les **fichiers historiques** partagent une même portée. Au **chargement**, un fichier ne peut utiliser que le noyau
+et ce que les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne) ; à l'**exécution**
 (dans une fonction appelée plus tard), tout est visible.
 
 | Fichier | Rôle | Dépend au chargement de |
 |---|---|---|
-| `sync.js` | fusion à trois voies, pure | — |
 | `store.js` | un document JSON : localStorage + synchro | — |
 | `auth.js` | comptes et adaptateur Supabase (hébergé seulement) | — |
 | `backup.js` | export / validation d'import | — |
@@ -249,16 +263,16 @@ la conversation avec l'assistant et la clé API.
 
 ## Vérification
 
-Les outils (eslint, Playwright, Deno) sont épinglés dans `package.json` et `package-lock.json` ; la CI les
+Les outils (esbuild, eslint, Playwright, Deno) sont épinglés dans `package.json` et `package-lock.json` ; la CI les
 installe par `npm ci`, et les scripts npm sont les seules commandes, en local comme en CI :
 
 | Script | Ce qu'il fait |
 |---|---|
-| `npm run build` | `python3 build.py` : génère `selene.html` et `index.html` |
+| `npm run build` | `python3 build.py` : assemble le noyau (esbuild), génère `selene.html` et `index.html` |
 | `npm run build:check` | refuse des HTML générés qui ne correspondent pas aux sources |
 | `npm test` | tests unitaires Node (`tests/*.test.js`) |
-| `npm run test:syntax` | `node --check` sur chaque source, arrêt au premier fichier invalide |
-| `npm run lint` | eslint sur le script assemblé (`build.py --bundle .lint/selene.js`) et sur `sw.js` |
+| `npm run test:syntax` | `node --check` sur chaque source (`src/`, `src/core/`, `scripts/`), arrêt au premier fichier invalide |
+| `npm run lint` | eslint sur le script assemblé (`build.py --bundle .lint/selene.js`), sur chaque module du noyau (`sourceType: "module"`), sur `scripts/` et `sw.js` |
 | `npm run test:passeur` | types et tests Deno du passeur |
 | `npm run test:browser` | parcours Playwright dans Chromium (`npx playwright install chromium` une fois) ; `SELENE_BROWSER=webkit` pour WebKit |
 | `npm run check` / `check:all` | tout sauf le navigateur / tout |
@@ -369,3 +383,22 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   `'unsafe-hashes'` ; une injection de style peut défigurer ou exfiltrer par sélecteurs, pas exécuter de code).
 - **Conséquences** : tout nouveau script inline passe par `build.py` (sinon il est bloqué, et le scénario
   `csp` échoue) ; ne jamais écrire de gestionnaire `onclick=` dans un gabarit : `data-act` et délégation.
+
+### ADR 9 — Le noyau en modules ES, assemblé par esbuild
+
+- **Contexte** : les fichiers de `src/` partageaient une seule portée, concaténés par `build.py` : leurs dépendances
+  n'étaient écrites nulle part (l'ordre de chargement seul les trahissait), un fichier pur ne se testait qu'exécuté
+  brut dans une VM, et `no-undef` n'avait de sens que sur le script entier.
+- **Décision** : les fichiers purs deviennent des modules ES (`src/core/`, `import` / `export` explicites), qu'esbuild
+  (version exacte, `package.json`) assemble au format IIFE **en tête** du script unique ; `build.py` y ajoute
+  `const { … } = __core;`, avec les noms que liste le métafichier d'esbuild, pour les fichiers historiques. La
+  migration part des feuilles : un fichier n'entre au noyau que s'il ne dépend que du noyau.
+- **Écarté** : Vite (fait pour un framework et un serveur de développement, dont Selene n'a pas l'usage ; il
+  s'appuie lui-même sur esbuild et Rollup) ; une sortie ESM ou des `<script type="module">` (un module ne partage pas
+  sa portée avec les fichiers historiques ; plusieurs scripts, ou un fichier externe, cassent l'artefact en un seul
+  fichier) ; tout convertir d'un coup (l'interface dépend d'elle-même dans tous les sens et de l'état global : en
+  tirer des modules serait y traîner ce code) ; réécrire `build.py` en Node dans le même mouvement.
+- **Conséquences** : les deux sorties gardent un seul script inline, dont `build.py` calcule l'empreinte CSP sur le
+  texte final, comme avant (ADR 8) ; le build demande Node et `npm ci` en plus de Python ; dans les HTML, le noyau est
+  tel qu'esbuild l'écrit (sans commentaires : on le lit dans `src/core/`) ; un module se teste en l'important.
+  Un fichier historique n'entre au noyau que lorsqu'il ne lit plus rien de la portée commune.

@@ -19,6 +19,7 @@
     "packageJson": {
       "dependencies": [
         "npm:deno@2.9.6",
+        "npm:esbuild@0.28.2",
         "npm:eslint@10.11.0",
         "npm:playwright@1.56.1"
       ]
