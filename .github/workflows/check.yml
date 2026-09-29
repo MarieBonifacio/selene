@@ -10,14 +10,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-      - run: python3 build.py --check
-      - run: node --test tests/*.test.js
-      - run: for f in src/*.js; do node --check "$f"; done
+          node-version-file: .nvmrc
+          cache: npm
+      # Outils aux versions de package-lock.json : la même chaîne en local et en CI.
+      - run: npm ci
+      - run: npm run build:check
+      - run: npm test
+      - run: npm run test:syntax
       - name: Analyse statique (script assemblé + service worker)
-        run: |
-          python3 build.py --bundle .lint/selene.js
-          npx --yes eslint@10.11.0 .lint/selene.js sw.js
+        run: npm run lint
   passeur:
     # La fonction Supabase Edge (supabase/functions/passeur, docs/passeur.md) : types et tests, avec Deno.
     runs-on: ubuntu-latest
@@ -25,9 +26,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-      - run: npx --yes deno@2.9.6 check supabase/functions/passeur/index.ts
-      - run: npx --yes deno@2.9.6 test supabase/functions/passeur/
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run test:passeur
   browser:
     # Parcours dans un vrai Chromium (tests/browser) : ce que le faux DOM des tests unitaires ne voit pas.
     runs-on: ubuntu-latest
@@ -35,10 +37,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-      - run: python3 build.py --check
-      - name: Playwright (version épinglée) et Chromium
-        run: |
-          npm i --no-save --no-package-lock playwright@1.56.1
-          npx playwright install --with-deps chromium
-      - run: node tests/browser/run.js
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build:check
+      - name: Chromium (version liée à Playwright, épinglé dans package-lock.json)
+        run: npx playwright install --with-deps chromium
+      - run: npm run test:browser

@@ -246,9 +246,21 @@ la conversation avec l'assistant et la clé API.
 
 ## Vérification
 
-`python3 build.py --check`, `node --test tests/*.test.js`, `node --check` sur chaque source et eslint
-sur le script assemblé (`python3 build.py --bundle .lint/selene.js`, puis
-`npx eslint@10.11.0 .lint/selene.js sw.js`) tournent en CI ; `pages.yml` ne publie que si tout est vert.
+Les outils (eslint, Playwright, Deno) sont épinglés dans `package.json` et `package-lock.json` ; la CI les
+installe par `npm ci`, et les scripts npm sont les seules commandes, en local comme en CI :
+
+| Script | Ce qu'il fait |
+|---|---|
+| `npm run build` | `python3 build.py` : génère `selene.html` et `index.html` |
+| `npm run build:check` | refuse des HTML générés qui ne correspondent pas aux sources |
+| `npm test` | tests unitaires Node (`tests/*.test.js`) |
+| `npm run test:syntax` | `node --check` sur chaque source, arrêt au premier fichier invalide |
+| `npm run lint` | eslint sur le script assemblé (`build.py --bundle .lint/selene.js`) et sur `sw.js` |
+| `npm run test:passeur` | types et tests Deno du passeur |
+| `npm run test:browser` | parcours Playwright (Chromium : `npx playwright install chromium` une fois) |
+| `npm run check` / `check:all` | tout sauf le navigateur / tout |
+
+`pages.yml` ne publie que si tout est vert.
 
 - `tests/hosted-harness.js` : le build hébergé dans une VM Node, avec un faux PostgREST partagé entre
   plusieurs « appareils » ; `auth.test.js` et `sync.test.js` s'en servent.
@@ -325,3 +337,16 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   seule.
 - **Conséquences** : une seule forme de données en mémoire ; toute nouvelle voie d'entrée doit passer
   par le store.
+
+### ADR 7 — Outils épinglés par package.json, sans dépendance de production
+
+- **Contexte** : la CI installait ses outils à la volée (`npx --yes eslint@…`, `npm i --no-save playwright@…`,
+  CLI Supabase `latest`) : versions épinglées une à une, ou pas du tout, et rien de commun avec le poste
+  local. Les coquilles natives prévues (Capacitor, Tauri) ajouteront des dizaines de paquets.
+- **Décision** : un `package.json` privé, uniquement des `devDependencies` en version exacte, un
+  `package-lock.json` versionné, `npm ci` en CI ; `.nvmrc` fixe Node 22 pour la CI et le poste local ;
+  la CLI Supabase du déploiement est épinglée.
+- **Écarté** : réécrire `build.py` en Node dès maintenant (ce sera le rôle du bundler, plus tard) ;
+  `"type": "module"` (les tests sont en CommonJS).
+- **Conséquences** : l'application publiée reste sans dépendance ; Python reste requis pour le build tant
+  que `build.py` existe ; monter un outil = changer `package.json` et régénérer le lockfile.

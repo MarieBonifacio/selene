@@ -1,0 +1,26 @@
+{
+  "name": "selene",
+  "private": true,
+  "description": "Selene : carnet personnel local-first (artefact claude.ai, PWA).",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "python3 build.py",
+    "build:check": "python3 build.py --check",
+    "test": "node --test tests/*.test.js",
+    "test:syntax": "for f in src/*.js; do node --check \"$f\" || exit 1; done",
+    "lint": "python3 build.py --bundle .lint/selene.js && eslint .lint/selene.js sw.js",
+    "test:passeur": "deno check supabase/functions/passeur/index.ts && deno test supabase/functions/passeur/",
+    "test:browser": "node tests/browser/run.js",
+    "bench": "node tests/bench.js",
+    "check": "npm run build:check && npm test && npm run test:syntax && npm run lint && npm run test:passeur",
+    "check:all": "npm run check && npm run test:browser"
+  },
+  "devDependencies": {
+    "deno": "2.9.6",
+    "eslint": "10.11.0",
+    "playwright": "1.56.1"
+  }
+}
