@@ -85,7 +85,14 @@ const PAGES = {
   await p.goto(BASE + '/index.html'); await p.waitForTimeout(500);
   ok((await p.textContent('.dehors-go')).includes('Dehors : 15 nouveautés'), 'sur l’accueil : une ligne de texte, pas de pastille');
   await p.goto(BASE + '/index.html#dehors'); await p.waitForTimeout(400);
-  await p.click('details.dehors-feeds summary'); await p.check('[data-feed] [data-act="dehors-motifs"] >> nth=1'); await p.waitForTimeout(300); // le Carnet (Atom)
+  // Le Carnet (Atom). Le rafraîchissement de Dehors, lancé en arrière-plan après le chargement, refait le rendu et
+  // referme la liste : s'il tombe entre l'ouverture et le clic (WebKit, plus lent), la case est cachée. Rouvrir et
+  // cocher jusqu'à ce que le réglage soit pris ; l'effet est vérifié juste après.
+  const motifs = '[data-feed] [data-act="dehors-motifs"] >> nth=1';
+  for (let i = 0; i < 5 && !(await p.$eval(motifs, el => el.checked).catch(() => false)); i++) {
+    await p.evaluate(() => { const d = document.querySelector('details.dehors-feeds'); if (d) d.open = true; });
+    await p.click(motifs, { timeout: 3000 }).catch(() => {}); await p.waitForTimeout(300);
+  }
   ok(!(await p.$('[data-item="a1"]')) && (await p.textContent('[data-item="a2"]')).includes('phalène'), 'seulement ce qui touche mes motifs : le motif est nommé');
 
   console.log('vu jusqu’à, relecture conditionnelle');
