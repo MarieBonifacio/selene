@@ -165,4 +165,14 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
       source retirée emporte le sien ; un DOI inconnu d'OpenAlex n'est pas redemandé avant un mois ; un lot refusé
       (400) passe pour inconnu au lieu de tout bloquer.
 
-À venir : motifs croisés dans Dehors, Dehors dans la planche de lunaison, dossier de passation enrichi des DOI.
+**7c : motifs croisés dans Dehors (pertinence explicable)**
+- [x] Ce qui croise ce que tu gardes passe devant, avec la raison en toutes lettres (« parce que : … ») : un **motif**
+      (tous les flux, plus seulement ceux filtrés), un **auteur de tes sources** (veille OpenAlex ; les trois premiers
+      auteurs, deux mots au moins ; pas pour la veille d'un auteur, qui l'est par construction), **une de tes sources
+      citée** (veille OpenAlex, d'après le cache de 7b), un **lien paru dans deux flux** (« aussi dans… »). Le plus de
+      raisons d'abord ; à égalité, et pour tout le reste, le plus récent. Aucun score caché, aucune raison inventée.
+- [x] Le même lien (DOI, sinon adresse sans traceurs) paru dans deux flux n'apparaît qu'une fois ; « vu » l'écarte
+      partout. Déjà dans tes sources : « déjà gardée » au lieu de « garder ».
+- [x] Des références d'un article de veille, le cache de l'appareil ne garde que celles qui sont tes sources (cinq au plus).
+
+À venir : Dehors dans la planche de lunaison, dossier de passation enrichi des DOI.
