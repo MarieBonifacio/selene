@@ -1202,3 +1202,22 @@ test('lunar test: the Rayleigh statistic tells concentrated activity from spread
   for (let k = 0; k < app.LUNAR_MIN_N + 10; k++) app.saveCollectionItem(m, { title: 'm' + k }, 'mm' + k);
   assert.equal(app.lunarTest().enough, false, 'collection items without dates, and a concordance module anyway, add nothing');
 });
+
+test('sortes : une source gardée et reliée à rien entre au bassin ; reliée, elle en sort', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), days = n => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+  const src = 'sources', inst = app.createFromTemplate(d.modules, app.MODULE_TEMPLATES.find(x => x.id === 'sources'), 'Sources', src);
+  if (!d.config.modules.some(m => m.id === src)) d.config.modules.push({ id: src, on: true });
+  const s = inst.entries;
+  s.push({ id: 's1', title: 'Depersonalization and the self', subtitle: '', tag: 'article', due: '', text: '', status: 'À lire', kept: days(60) },
+    { id: 's2', title: 'Gardée avant-hier', subtitle: '', tag: '', due: '', text: '', status: 'À lire', kept: days(2) },
+    { id: 's3', title: 'Venue de Dehors', subtitle: '', tag: '', due: '', text: '', status: 'Lue', origin: { from: 'Dehors', text: 'Revue', date: days(40) } },
+    { id: 's4', title: 'Sans date connue', subtitle: '', tag: '', due: '', text: '', status: 'À lire' });
+  const pool = app.sortesPool().filter(x => x.kind === 'source');
+  assert.deepEqual([...pool.map(x => `${x.e.id}:${x.days}`)].sort(), ['s1:60', 's3:40', 's4:14'], 'deux jours ne sont pas un oubli ; sans date, au seuil');
+  d.modules.ecriture.scraps.push({ id: 'f1', text: 'Le soi qui se regarde', date: days(30) });
+  app.addLink(s[0], 'ecriture/f1', 'documente', 'l1', days(1));
+  assert.ok(!app.sortesPool().some(x => x.kind === 'source' && x.e.id === 's1'), 'reliée : elle documente, elle n’est plus oubliée');
+  const bad = JSON.parse(app.createBackup(app.board.data, app.S())); bad.site.modules[src].entries[0].kept = 'hier';
+  assert.throws(() => app.parseBackup(JSON.stringify(bad)), /date/);
+});

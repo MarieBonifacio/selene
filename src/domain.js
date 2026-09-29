@@ -276,6 +276,7 @@ const MODULE_TYPES = {
         if (e.mb != null && !mbValid(e.mb)) v.fail("MusicBrainz");
         if (e.ig != null && !igValid(e.ig)) v.fail("Instagram");
         if (e.zot != null && !zotValid(e.zot)) v.fail("Zotero");
+        if (e.kept != null && !(typeof e.kept === "string" && validDate(e.kept))) v.fail("date");
       }
     }
   },

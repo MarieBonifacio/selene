@@ -50,9 +50,16 @@ const excerpt = (e, n = 60) => { const t = String(e.text || e.title || e.note ||
 /* Liens entrants : pour chaque entrée, qui la vise et comment. Calculé une fois par rendu. */
 const backlinks = () => memoInRender("backlinks", () => {
   const by = new Map();
-  for (const it of thoughtItems()) for (const l of it.e.links || []) { if (!by.has(l.to)) by.set(l.to, []); by.get(l.to).push({ from: it.ref, type: l.type }); }
+  for (const it of [...thoughtItems(), ...sourceItems()]) for (const l of it.e.links || []) { if (!by.has(l.to)) by.set(l.to, []); by.get(l.to).push({ from: it.ref, type: l.type }); }
   return by;
 });
+/* Les Sources (éléments des collections de sources) : elles ne pensent pas, elles documentent. Leurs liens partent
+   vers les notes et fragments qu'elles appuient (« documente »), et reviennent en marge de ceux-ci (« documenté par »). */
+function sourceItems() {
+  const out = [];
+  for (const [mod, m] of Object.entries(S().modules)) if (m.type === "collection" && m.config.sources && enabled(mod)) for (const e of m.entries) out.push({ ref: `${mod}/${e.id}`, mod, e });
+  return out;
+}
 const LINK_BACK = { derive: "a donné", contredit: "contredit par", echo: "écho de", documente: "documenté par" };
 function refHTML(ref) {
   const hit = refFind(ref);
@@ -550,8 +557,8 @@ TYPE_UI.collection = {
     const filter = colFilter[id] || "", shown = items.filter(e => !filter || e.status === filter);
     return `<div data-mod="${esc(id)}">${head}
   <div class="row" style="margin-bottom:10px"><select data-act="col-f" aria-label="Filtrer"><option value="">Tous</option>${c.statuses.map(st => `<option ${st === filter ? "selected" : ""}>${esc(st)}</option>`).join("")}</select></div>
-  <div class="two"><div><ul class="plain col-list">${(pg => pg.items.map(e => `<li class="item" data-id="${esc(e.id)}"><span>${c.music && e.mb && e.mb.rg ? coverImg(e.mb.rg) : ""}</span><div><b>${esc(e.title)}</b>${f.subtitle ? (e.subtitle ? `, <i>${esc(e.subtitle)}</i>${c.music && e.mb && e.mb.y ? ` <span class="hint">(${esc(e.mb.y)})</span>` : ""}` : c.music ? ` <button class="btn ghost sm" data-act="mb-open">préciser ${esc(f.subtitle.toLowerCase())}</button>` : ` <span class="hint">${esc(f.subtitle.toLowerCase())} à préciser</span>`) : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${c.review ? "à réexaminer le " : ""}${fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}${reviewedHTML(e) || e.origin || e.src ? `<div class="meta">${srcMeta(e)}${reviewedHTML(e)}${originHTML(e, e.title)}</div>` : ""}</div>
-    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm ra" data-act="specimen">fiche</button>${c.music ? `<button class="btn ghost sm ra" data-act="mb-open">discographie</button>` : ""}<button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">Rien dans ce filtre.</li>`}</ul></div><div>${panel}</div></div></div>`;
+  <div class="two"><div><ul class="plain col-list">${(pg => pg.items.map(e => `<li class="item" data-id="${esc(e.id)}"><span>${c.music && e.mb && e.mb.rg ? coverImg(e.mb.rg) : ""}</span><div><b>${esc(e.title)}</b>${f.subtitle ? (e.subtitle ? `, <i>${esc(e.subtitle)}</i>${c.music && e.mb && e.mb.y ? ` <span class="hint">(${esc(e.mb.y)})</span>` : ""}` : c.music ? ` <button class="btn ghost sm" data-act="mb-open">préciser ${esc(f.subtitle.toLowerCase())}</button>` : ` <span class="hint">${esc(f.subtitle.toLowerCase())} à préciser</span>`) : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${c.review ? "à réexaminer le " : ""}${fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}${reviewedHTML(e) || e.origin || e.src ? `<div class="meta">${srcMeta(e)}${reviewedHTML(e)}${originHTML(e, e.title)}</div>` : ""}${c.sources && (e.links || []).length ? `<div class="meta src-docs">${e.links.map(l => `<span>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</span>`).join("")}</div>` : ""}</div>
+    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm ra" data-act="specimen">fiche</button>${c.music ? `<button class="btn ghost sm ra" data-act="mb-open">discographie</button>` : ""}${c.sources ? `<button class="btn ghost sm ra" data-act="src-link">documente…</button>` : ""}<button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">Rien dans ce filtre.</li>`}</ul></div><div>${panel}</div></div></div>`;
   },
   settings: (id, { config: c }) => {
     const f = c.fields, fid = esc(id);
@@ -1173,7 +1180,8 @@ SHEETS.specimen = ref => {
     ${e.title ? `<h2 id="sheetTitle">${esc(e.title)}</h2>${e.subtitle ? `<p class="hint">${esc(e.subtitle)}</p>` : ""}` : `<h2 id="sheetTitle" class="sr">Fiche de l'entrée</h2>`}
     ${text ? `<blockquote class="spec-text">${esc(text)}</blockquote>` : ""}
     <p class="spec-label">${[when ? long(when) : "", chapter, e.tag, e.status].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("")}${e.ep ? `<span>${epGlyph(e.ep)}${esc(EP_STATUS[e.ep])}</span>` : ""}</p>
-    ${thought ? `<div class="row">${epSelect(mod, e)}<span class="spacer"></span>${links.length ? `<button class="btn ghost sm" data-act="carte" data-k="ref" data-v="${esc(mod)}/${esc(e.id)}">carte du voisinage</button>` : ""}<button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></div>` : ""}
+    ${thought ? `<div class="row">${epSelect(mod, e)}<span class="spacer"></span>${links.length ? `<button class="btn ghost sm" data-act="carte" data-k="ref" data-v="${esc(mod)}/${esc(e.id)}">carte du voisinage</button>` : ""}<button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></div>`
+      : inst.type === "collection" && inst.config.sources ? `<div class="row"><span class="spacer"></span><button class="btn ghost sm" data-act="src-link" data-ref="${esc(mod)}/${esc(e.id)}">documente…</button></div>` : ""}
     ${e.src ? `<p class="meta">${srcMeta(e)}</p>` : ""}
     ${e.origin ? `<h3>Provenance</h3><p class="meta">${originHTML(e, text || e.title)}</p>` : ""}
     ${links.length ? `<h3>Liens</h3><ul>${links.join("")}</ul>` : ""}
@@ -1348,6 +1356,7 @@ function keepSource(mod, x, origin) {
   const e = saveCollectionItem(S().modules[mod], { title: x.title || x.url || x.doi, subtitle: x.authors || "", tag: x.kind || "", text: x.abstract || "" }, uid());
   e.src = Object.fromEntries(Object.entries({ url: x.url, doi: x.doi, site: x.site, date: x.date }).filter(([, v]) => v));
   if (x.zot) e.zot = { ...x.zot }; // reliée à sa fiche Zotero
+  e.kept = todayISO(); // le jour où elle a été gardée : les Sortes savent ainsi depuis quand elle attend
   if (origin) e.origin = origin;
   return e;
 }
@@ -1964,4 +1973,19 @@ CLICK["zot-check"] = async () => {
   render();
 };
 CLICK["zot-forget"] = () => { try { localStorage.removeItem(ZOT_KEY); localStorage.removeItem(ZOT_INFO); } catch {} for (const k of Object.keys(zotState)) delete zotState[k]; render(); toast("Clé Zotero oubliée sur cet appareil."); };
+
+/* ---- une Source documente une note ou un fragment ---- */
+function sourceLinkForm(mod, id) {
+  const choices = thoughtItems().sort((a, b) => (b.e.date || "").localeCompare(a.e.date || "")).slice(0, 300);
+  if (!choices.length) return toast("Aucune note ni aucun fragment à documenter pour l'instant.");
+  openForm("Cette source documente…", [
+    { n: "to", l: "…quelle note ou quel fragment", t: "select", o: choices.map(x => [x.ref, `${label(x.mod)} · ${x.e.date ? fmt(x.e.date) + " · " : ""}${excerpt(x.e, 70)}`]) }
+  ], {}, v => {
+    const hit = refFind(`${mod}/${id}`); if (!hit) return toast("Cette source a disparu entre-temps.");
+    if (!addLink(hit.e, v.to, "documente", uid(), todayISO())) return toast("Déjà reliée ainsi.");
+    if (sortesLast && sortesLast.e === hit.e) sortesLast = null; // elle n'est plus oubliée
+    site.save(); render(); toast("Reliée. Elle apparaît en marge de ce qu'elle documente.");
+  });
+}
+CLICK["src-link"] = el => { const ref = el.dataset.ref; if (ref) { const [m, i] = ref.split("/"); return sourceLinkForm(m, i); } sourceLinkForm(modOf(el), idOf(el)); };
 
