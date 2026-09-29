@@ -5,8 +5,9 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const ctx = { URL };
-vm.runInNewContext(fs.readFileSync('src/veille.js', 'utf8') + '\n;globalThis.__v = { oaWatch, oaUrl, oaAbstract, oaWorks };', ctx);
+vm.runInNewContext(fs.readFileSync('src/veille.js', 'utf8') + '\n;globalThis.__v = { oaWatch, oaUrl, oaAbstract, oaWorks, oaRefsUrls, oaTitlesUrls, oaRefs, oaCoupling };', ctx);
 const V = ctx.__v;
+const plain = x => JSON.parse(JSON.stringify(x)); // les valeurs nées dans le contexte vm ont d'autres prototypes
 
 test('ce que l’on suit : un ORCID, un identifiant OpenAlex, sinon une recherche', () => {
   assert.deepEqual({ ...V.oaWatch('https://orcid.org/0000-0002-1825-009x') }, { kind: 'author', q: '0000-0002-1825-009X', filter: 'author.orcid:0000-0002-1825-009X' });
@@ -42,4 +43,45 @@ test('résultats : résumé remis en ordre, DOI, revue et auteurs ; le reste éc
   assert.deepEqual({ ...w[0].oa }, { doi: '10.1016/j.concog.2020.102946', day: '2026-09-20', site: 'Consciousness and Cognition', authors: 'A1, A2, A3 et al.', kind: 'article' });
   assert.equal(w[1].link, 'https://openalex.org/W9'); assert.equal(w[1].oa.day, '');
   assert.deepEqual([...V.oaWorks({ results: 'x' })], []);
+});
+
+test('cité par tes sources : les requêtes, par lots de cinquante, sans DOI douteux', () => {
+  const dois = Array.from({ length: 60 }, (_, i) => `10.1000/x${i}`).concat(['10.1000/a|b', 'pas un doi']);
+  const urls = V.oaRefsUrls(dois, 'k');
+  assert.equal(urls.length, 2);
+  const u = new URL(urls[0]);
+  assert.equal(u.searchParams.get('filter').split('|').length, 50);
+  assert.ok(u.searchParams.get('filter').startsWith('doi:10.1000/x0|'));
+  assert.equal(u.searchParams.get('select'), 'id,doi,referenced_works,authorships');
+  assert.equal(u.searchParams.get('api_key'), 'k');
+  assert.ok(!urls.join().includes('a%7Cb'));
+  assert.deepEqual(plain(V.oaTitlesUrls(['W1', 'javascript:x', 'W22']).map(x => new URL(x).searchParams.get('filter'))), ['openalex:W1|W22']);
+});
+
+test('cité par tes sources : une notice → identifiant, références, auteurs', () => {
+  const r = V.oaRefs({ results: [
+    { id: 'https://openalex.org/W10', doi: 'https://doi.org/10.1000/A', referenced_works: ['https://openalex.org/W1', 'https://openalex.org/W1', 'https://openalex.org/W2', 'bad'],
+      authorships: [{ author: { id: 'https://openalex.org/A7', display_name: 'Anna <b>Ciaunica</b>' } }, { author: { id: 'x', display_name: 'Sans id' } }] },
+    { id: 'https://openalex.org/W11', doi: null }, null, 'x'] });
+  assert.deepEqual(plain(Object.keys(r)), ['10.1000/a']);
+  assert.deepEqual(plain(r['10.1000/a']), { id: 'W10', refs: ['W1', 'W2'], authors: [{ id: 'A7', name: 'Anna Ciaunica' }] });
+  assert.deepEqual(plain(V.oaRefs(null)), {});
+});
+
+test('cité par tes sources : références communes, couplage bibliographique, auteurs qui reviennent', () => {
+  const works = {
+    a: { id: 'W1', refs: ['W100', 'W101', 'W102', 'W2'], authors: [{ id: 'A1', name: 'Anna' }, { id: 'A1', name: 'Anna' }] },
+    b: { id: 'W2', refs: ['W100', 'W101', 'W103'], authors: [{ id: 'A1', name: 'Anna' }, { id: 'A2', name: 'Bruno' }] },
+    c: { id: 'W3', refs: ['W100', 'W1'], authors: [{ id: 'A2', name: 'Bruno' }, { id: 'A1', name: 'Anna' }] },
+    d: { id: 'W4', refs: ['W1'], authors: [] }
+  };
+  const r = V.oaCoupling(works);
+  assert.equal(r.known, 4);
+  // W100 : cité par trois ; W101 : par deux ; W1 et W2 sont tes propres sources, pas des suggestions.
+  assert.deepEqual(plain(r.common.map(x => [x.id, x.by.length])), [['W100', 3], ['W101', 2]]);
+  assert.deepEqual(plain(r.pairs), [{ a: 'a', b: 'b', n: 2 }]);
+  assert.deepEqual(plain(r.authors.map(a => [a.name, a.by.length])), [['Anna', 3], ['Bruno', 2]]);
+  const none = V.oaCoupling({ a: { id: 'W1', refs: ['W9'], authors: [] }, b: { id: 'W2', refs: ['W8'], authors: [] } });
+  assert.equal(none.common.length + none.pairs.length + none.authors.length, 0);
+  assert.equal(V.oaCoupling(null).known, 0);
 });

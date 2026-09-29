@@ -151,5 +151,18 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
       gardée (`kept`, validé ; sinon la date de sa provenance ; sans date, au seuil de quatorze jours) : « gardée il y a
       2 lunaisons, jamais relue ». Reliée, elle quitte le bassin.
 
-À venir : « cité par tes sources » (couplage bibliographique par OpenAlex), motifs croisés dans Dehors, Dehors dans la
-planche de lunaison, dossier de passation enrichi des DOI.
+**7b : ce que tes sources ont en commun (OpenAlex)**
+- [x] À la demande, dans un module de Sources (dès deux sources à DOI) : « Ce que tes sources ont en commun ». OpenAlex
+      reçoit les DOI, par lots de cinquante, rien d'autre (ni titres, ni notes, ni adresses).
+- [x] **Cité par plusieurs de tes sources** : les références communes (citées par au moins deux de tes sources, hors tes
+      sources elles-mêmes), la plus citée d'abord, avec qui les cite ; « garder » en fait une Source (provenance
+      « Cité par tes sources »). Gardée, elle rejoint le corpus et cesse d'être une suggestion.
+- [x] **Tes sources qui se parlent** : le couplage bibliographique (Kessler, 1963), deux sources qui partagent au moins
+      deux références.
+- [x] **Ces auteurs reviennent** : un auteur présent dans au moins deux de tes sources ; « suivre dans la veille » l'ajoute
+      à Research Watch (version hébergée), sous son nom (`name`, facultatif, validé).
+- [x] Cache de l'appareil (`selene-cites`, effacé à la déconnexion) : bibliographies et titres gardés trente jours ; une
+      source retirée emporte le sien ; un DOI inconnu d'OpenAlex n'est pas redemandé avant un mois ; un lot refusé
+      (400) passe pour inconnu au lieu de tout bloquer.
+
+À venir : motifs croisés dans Dehors, Dehors dans la planche de lunaison, dossier de passation enrichi des DOI.

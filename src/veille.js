@@ -48,3 +48,58 @@ function oaWorks(json) {
   }
   return out;
 }
+/* ---- « cité par tes sources » : ce que tes Sources ont en commun, d'après leurs bibliographies (OpenAlex) ----
+   OpenAlex ne reçoit que des DOI (ceux de tes sources), jamais tes notes. Deux mesures classiques de bibliométrie :
+   la référence commune (un texte cité par plusieurs de tes sources, que tu n'as peut-être pas) et le couplage
+   bibliographique (Kessler, 1963 : deux de tes sources qui citent les mêmes textes parlent de la même chose). */
+const OA_DOI = /^10\.\d{4,9}\/[^\s|,]+$/;
+const oaId = v => { const m = String(v || "").match(/(?:^|\/)([WA]\d{1,14})$/); return m ? m[1] : ""; };
+/* Des lots de cinquante (le plafond d'un filtre « ou » d'OpenAlex) : les DOI, ou les identifiants W…. */
+function oaBatchUrls(field, values, select, key) {
+  const out = [];
+  for (let i = 0; i < values.length; i += 50) {
+    const p = { filter: `${field}:${values.slice(i, i + 50).join("|")}`, per_page: "50", select, ...(key ? { api_key: key } : {}) };
+    out.push(`${OA_API}?${Object.entries(p).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`);
+  }
+  return out;
+}
+const oaRefsUrls = (dois, key) => oaBatchUrls("doi", dois.filter(d => OA_DOI.test(d)), "id,doi,referenced_works,authorships", key);
+const oaTitlesUrls = (ids, key) => oaBatchUrls("openalex", ids.filter(x => /^W\d+$/.test(x)), "id,doi,title,publication_date,type,primary_location,authorships", key);
+/* Une notice → ce qui sert au calcul : son identifiant, ses références (W…), ses auteurs (A…, nom). */
+function oaRefs(json) {
+  const out = {};
+  for (const r of (json && Array.isArray(json.results) ? json.results : [])) {
+    if (!r || typeof r !== "object") continue;
+    const id = oaId(r.id), doi = String(r.doi || "").replace(/^https?:\/\/(dx\.)?doi\.org\//i, "").toLowerCase();
+    if (!/^W\d+$/.test(id) || !OA_DOI.test(doi)) continue;
+    const refs = [...new Set((Array.isArray(r.referenced_works) ? r.referenced_works : []).map(oaId).filter(x => /^W\d+$/.test(x)))].slice(0, 2000);
+    const authors = (Array.isArray(r.authorships) ? r.authorships : []).map(a => a && a.author && { id: oaId(a.author.id), name: oaText(a.author.display_name, 120) })
+      .filter(a => a && /^A\d+$/.test(a.id) && a.name).slice(0, 100);
+    out[doi] = { id, refs, authors };
+  }
+  return out;
+}
+/* Le calcul, pur. `works` : DOI → { id, refs, authors } (ce qu'OpenAlex connaît de tes sources).
+   - common : les références citées par au moins deux de tes sources, hors tes sources elles-mêmes, les plus citées d'abord ;
+   - pairs : les couples de sources qui partagent au moins deux références, les plus liés d'abord ;
+   - authors : les auteurs présents dans au moins deux de tes sources. */
+function oaCoupling(works, max = 12) {
+  const entries = Object.entries(works || {}).filter(([, w]) => w && /^W\d+$/.test(w.id));
+  const own = new Set(entries.map(([, w]) => w.id)), cite = new Map(), who = new Map();
+  for (const [doi, w] of entries) {
+    for (const r of new Set(w.refs || [])) if (!own.has(r)) { if (!cite.has(r)) cite.set(r, []); cite.get(r).push(doi); }
+    for (const a of new Map((w.authors || []).map(a => [a.id, a])).values()) { if (!who.has(a.id)) who.set(a.id, { id: a.id, name: a.name, by: [] }); who.get(a.id).by.push(doi); }
+  }
+  const common = [...cite].filter(([, by]) => by.length >= 2).map(([id, by]) => ({ id, by })).sort((a, b) => b.by.length - a.by.length || a.id.localeCompare(b.id)).slice(0, max);
+  const pairs = [];
+  for (let i = 0; i < entries.length; i++) {
+    const a = new Set(entries[i][1].refs || []);
+    for (let j = i + 1; j < entries.length; j++) {
+      let n = 0; for (const r of new Set(entries[j][1].refs || [])) if (a.has(r)) n++;
+      if (n >= 2) pairs.push({ a: entries[i][0], b: entries[j][0], n });
+    }
+  }
+  pairs.sort((x, y) => y.n - x.n || x.a.localeCompare(y.a));
+  const authors = [...who.values()].filter(a => a.by.length >= 2).sort((a, b) => b.by.length - a.by.length || a.name.localeCompare(b.name)).slice(0, max);
+  return { common, pairs: pairs.slice(0, 6), authors, known: entries.length };
+}

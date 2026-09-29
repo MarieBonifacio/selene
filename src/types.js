@@ -1371,7 +1371,7 @@ function sourceBar(id) {
     ${p.dup ? `<p class="hint">Déjà gardée${p.dup.mod !== id ? ` dans ${esc(label(p.dup.mod))}` : ""} : <a href="#${esc(p.dup.mod)}/${esc(p.dup.e.id)}">« ${esc(excerpt(p.dup.e, 60))} »</a>.</p>` : ""}
     <div class="row"><button class="btn acc sm" data-act="src-keep" ${p.dup ? "disabled" : ""}>Garder</button><button class="btn ghost sm" data-act="src-cancel">Annuler</button></div></div>`;
   return `<div class="capture src-bar"><input id="srcIn" inputmode="url" autocomplete="off" placeholder="Un lien ou un DOI…" aria-label="Lien ou DOI"><button class="btn" data-act="src-fetch">Chercher</button></div>
-  <p class="hint" style="margin:4px 0 12px">Un DOI est complété par Crossref ; une page, ${passeurPret() ? "par ton passeur (sinon Microlink, qui voit l'adresse demandée, 25 par jour)" : "par Microlink, qui voit l'adresse demandée (25 par jour)"}.</p>${prev}${zotBar(id)}`;
+  <p class="hint" style="margin:4px 0 12px">Un DOI est complété par Crossref ; une page, ${passeurPret() ? "par ton passeur (sinon Microlink, qui voit l'adresse demandée, 25 par jour)" : "par Microlink, qui voit l'adresse demandée (25 par jour)"}.</p>${prev}${zotBar(id)}${citeBar()}`;
 }
 CLICK["src-fetch"] = async el => {
   const id = modOf(el), inp = $("#srcIn"), raw = inp ? inp.value.trim() : "";
@@ -1627,7 +1627,7 @@ function watchedArtists() {
   return [...m].slice(-30); // trente au plus, les plus récemment ajoutés : trente secondes de MusicBrainz, une fois par semaine
 }
 const dehorsAll = () => [...dehorsFeeds(), ...(dehorsConf().artists ? [{ id: MB_WATCH, title: "Sorties de tes artistes", mod: musicMods()[0] || "", seen: dehorsConf().artistsSeen || 0, watch: true }] : []),
-  ...dehorsResearch().map(r => ({ id: "oa-" + r.id, title: `Veille : ${r.q}`, mod: r.mod || "", seen: r.seen || 0, research: r }))];
+  ...dehorsResearch().map(r => ({ id: "oa-" + r.id, title: `Veille : ${r.name || r.q}`, mod: r.mod || "", seen: r.seen || 0, research: r }))];
 const dehorsOn = () => hosted() && authReady() && !!authSession;
 function dehorsCache() {
   try { const c = JSON.parse(localStorage.getItem(DEHORS_KEY) || "null"); if (c && typeof c === "object" && c.feeds && typeof c.feeds === "object") return { at: +c.at || 0, feeds: c.feeds, hidden: Array.isArray(c.hidden) ? c.hidden : [] }; } catch {}
@@ -1766,7 +1766,7 @@ VIEWS.dehors = () => {
     <h3 style="margin-top:28px">Veille de recherche</h3>
     <p class="hint" style="margin:0 0 8px">Une recherche (« depersonalization », « default mode network self ») ou un auteur (identifiant OpenAlex ou ORCID) : chaque semaine, ce qui vient de paraître, selon OpenAlex. Elle ne trie pas selon ce qui te donnerait raison ; les liens, c'est toi qui les poses.</p>
     <div class="capture capture-wrap"><input id="oaIn" autocomplete="off" placeholder="Une recherche, un ORCID, un identifiant OpenAlex…" aria-label="Recherche ou auteur à suivre"><select id="oaMod" aria-label="Projet">${opts("")}</select><button class="btn" data-act="oa-add">Veiller</button></div>
-    ${dehorsResearch().length ? `<ul class="plain dehors-cfg">${dehorsResearch().map(r => { const fc = cache.feeds["oa-" + r.id]; return `<li class="item" data-oa="${esc(r.id)}"><span></span><div><b>${esc(r.q)}</b><div class="meta"><span>${r.kind === "author" ? "auteur" : "recherche"}</span><span>${esc(!fc ? "pas encore lue" : fc.err ? `ne répond pas : ${fc.err}` : `lue ${dehorsWhen(fc.at)}`)}</span></div></div>
+    ${dehorsResearch().length ? `<ul class="plain dehors-cfg">${dehorsResearch().map(r => { const fc = cache.feeds["oa-" + r.id]; return `<li class="item" data-oa="${esc(r.id)}"><span></span><div><b>${esc(r.name || r.q)}</b><div class="meta"><span>${r.kind === "author" ? "auteur" : "recherche"}</span><span>${esc(!fc ? "pas encore lue" : fc.err ? `ne répond pas : ${fc.err}` : `lue ${dehorsWhen(fc.at)}`)}</span></div></div>
       <div class="row"><select data-act="oa-mod" aria-label="Projet de cette veille">${opts(r.mod || "")}</select><button class="btn ghost sm" data-act="oa-del">retirer</button></div></li>`; }).join("")}</ul>` : ""}
     <details style="margin-top:8px"><summary class="hint">Clé OpenAlex (facultative)</summary>
       <p class="hint" style="margin:6px 0">Sans clé, OpenAlex répond dans une petite limite quotidienne ; une clé gratuite (<a href="https://openalex.org/settings/api" target="_blank" rel="noopener noreferrer">openalex.org</a>) la décuple. Elle reste dans ce navigateur, n'est jamais synchronisée, et s'efface à la déconnexion.</p>
@@ -1802,7 +1802,7 @@ CLICK["dehors-keep"] = el => {
     : { title: x.title, url: normalizeUrl(x.link), doi: findDoi(x.link), site: f.title, date: x.date.slice(0, 10), kind: "page", abstract: x.text };
   const dup = findSourceDup(src);
   if (dup) { dehorsHideItem(f, x); render(); return toast(`Déjà gardée dans ${label(dup.mod)}.`); }
-  const e = keepSource(to, src, { from: f.research ? "Veille" : "Dehors", text: f.research ? f.research.q : f.title, date: todayISO() }); dehorsHideItem(f, x); site.save(); render(); toast(`Gardée dans ${label(to)} : « ${excerpt(e, 50)} ».`);
+  const e = keepSource(to, src, { from: f.research ? "Veille" : "Dehors", text: f.research ? f.research.name || f.research.q : f.title, date: todayISO() }); dehorsHideItem(f, x); site.save(); render(); toast(`Gardée dans ${label(to)} : « ${excerpt(e, 50)} ».`);
 };
 CLICK["dehors-del"] = async el => {
   const { f } = dehorsHit(el); if (!f || !await ask(`Ne plus suivre « ${f.title} » ?`)) return;
@@ -1830,7 +1830,7 @@ CLICK["oa-add"] = () => {
   if (inp) inp.value = ""; render(); toast(`En veille : ${w.q}. Première lecture…`); dehorsRefresh();
 };
 CLICK["oa-del"] = async el => {
-  const id = el.closest("[data-oa]").dataset.oa, r = dehorsResearch().find(x => x.id === id); if (!r || !await ask(`Arrêter la veille « ${r.q} » ?`)) return;
+  const id = el.closest("[data-oa]").dataset.oa, r = dehorsResearch().find(x => x.id === id); if (!r || !await ask(`Arrêter la veille « ${r.name || r.q} » ?`)) return;
   dehorsSet({ research: dehorsResearch().filter(x => x.id !== id) }); dehorsStore(dehorsCache()); render();
 };
 CHANGE["oa-mod"] = el => { const id = el.closest("[data-oa]").dataset.oa; dehorsSet({ research: dehorsResearch().map(r => r.id === id ? { ...r, mod: el.value } : r) }); render(); };
@@ -2003,3 +2003,86 @@ function sourceLinkForm(mod, id) {
 }
 CLICK["src-link"] = el => { const ref = el.dataset.ref; if (ref) { const [m, i] = ref.split("/"); return sourceLinkForm(m, i); } sourceLinkForm(modOf(el), idOf(el)); };
 
+
+/* ---- « cité par tes sources » (veille.js : oaCoupling) : à la demande, depuis un module de Sources ----
+   OpenAlex reçoit les DOI de tes sources, rien d'autre. Ce qu'il en dit reste sur l'appareil (selene-cites), trente
+   jours : une bibliographie publiée ne change guère. Rien ne s'affiche tant que tu ne l'as pas demandé. */
+const CITE_KEY = "selene-cites", CITE_TTL = 30 * 86400000;
+let citeState = null; // { busy, err, res } (propre à l'appareil, oublié au rechargement)
+function citeCache() {
+  try { const c = JSON.parse(localStorage.getItem(CITE_KEY) || "null"); if (c && typeof c === "object" && c.works && c.titles) return c; } catch {}
+  return { works: {}, titles: {} };
+}
+function citeStore(c) { try { localStorage.setItem(CITE_KEY, JSON.stringify(c)); } catch {} }
+/* Les sources à DOI de tous les modules de Sources, par DOI (la plus ancienne l'emporte), deux cents au plus. */
+function citeSources() {
+  const m = new Map();
+  for (const x of sourceItems()) { const d = x.e.src && x.e.src.doi; if (d && OA_DOI.test(d) && !m.has(d)) m.set(d, x); }
+  return new Map([...m].slice(0, 200));
+}
+async function citeGet(url) {
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), 12000);
+  let r;
+  try { r = await fetch(url, { signal: ac.signal }); } catch { throw new Error("OpenAlex injoignable (hors ligne ?)."); } finally { clearTimeout(t); }
+  if (r.status === 429) throw new Error("OpenAlex : quota du jour atteint (une clé gratuite, dans Réglages → Dehors, le décuple).");
+  if (!r.ok) throw Object.assign(new Error(`OpenAlex répond ${r.status}.`), { status: r.status });
+  return r.json();
+}
+async function citeRun() {
+  const srcs = citeSources(), c = citeCache(), now = Date.now(), key = oaKey();
+  const stale = [...srcs.keys()].filter(d => !c.works[d] || now - (c.works[d].at || 0) > CITE_TTL);
+  for (const url of oaRefsUrls(stale, key)) {
+    let j; try { j = await citeGet(url); } catch (e) { if (e.status === 400) continue; throw e; } // un DOI qu'OpenAlex refuse : ce lot passe pour inconnu
+    const got = oaRefs(j);
+    for (const [d, w] of Object.entries(got)) c.works[d] = { ...w, at: now };
+  }
+  for (const d of stale) if (!c.works[d] || c.works[d].at !== now) c.works[d] = { none: true, at: now }; // inconnue d'OpenAlex : on ne redemande pas avant un mois
+  for (const d of Object.keys(c.works)) if (!srcs.has(d)) delete c.works[d]; // une source retirée emporte son cache
+  const res = oaCoupling(Object.fromEntries([...srcs.keys()].map(d => [d, c.works[d]]).filter(([, w]) => w && !w.none)));
+  const need = res.common.map(x => x.id).filter(id => !c.titles[id] || now - (c.titles[id].at || 0) > CITE_TTL);
+  for (const url of oaTitlesUrls(need, key)) for (const x of oaWorks(await citeGet(url))) c.titles[x.id] = { ...x, at: now };
+  const keep = new Set(res.common.map(x => x.id)); for (const id of Object.keys(c.titles)) if (!keep.has(id)) delete c.titles[id];
+  citeStore(c);
+  return { ...res, titles: c.titles, total: srcs.size };
+}
+function citeBar() {
+  const srcs = citeSources(); if (srcs.size < 2) return "";
+  const st = citeState, name = d => { const x = srcs.get(d); return x ? `<a href="#${esc(x.mod)}/${esc(x.e.id)}">« ${esc(excerpt(x.e, 50))} »</a>` : ""; };
+  let body = "";
+  if (st && st.busy) body = `<p class="hint" role="status">Lecture des bibliographies de tes sources…</p>`;
+  else if (st && st.err) body = `<p class="hint" role="status">${esc(st.err)}</p>`;
+  else if (st && st.res) {
+    const r = st.res, followed = new Set(dehorsResearch().filter(x => x.kind === "author").map(x => x.q));
+    const common = r.common.filter(x => r.titles[x.id]);
+    body = `<p class="hint" style="margin:6px 0 0">OpenAlex connaît ${r.known} de tes ${r.total} sources à DOI.</p>`;
+    if (!common.length && !r.pairs.length && !r.authors.length) body += `<p class="empty">Rien en commun pour l'instant : tes sources ne citent pas les mêmes textes (ou OpenAlex ignore leurs bibliographies).</p>`;
+    if (common.length) body += `<h4>Cité par plusieurs de tes sources</h4><ul class="plain cite-list">${common.map(x => { const w = r.titles[x.id], dup = findSourceDup({ doi: w.oa.doi, url: w.link });
+      return `<li class="item" data-w="${esc(x.id)}"><span></span><div><b>${esc(w.title)}</b><div class="meta">${[w.oa.authors, w.oa.site, w.oa.day.slice(0, 4)].filter(Boolean).map(v => `<span>${esc(v)}</span>`).join("")}</div>
+        <div class="hint">cité par ${x.by.length} de tes sources : ${x.by.map(name).filter(Boolean).join(", ")}</div></div>
+        <div class="row"><a class="src-link" href="${esc(w.link)}" target="_blank" rel="noopener noreferrer">ouvrir ↗</a>${dup ? `<a class="hint" href="#${esc(dup.mod)}/${esc(dup.e.id)}">déjà gardée</a>` : `<button class="btn sm" data-act="cite-keep">garder</button>`}</div></li>`; }).join("")}</ul>`;
+    if (r.pairs.length) body += `<h4>Tes sources qui se parlent</h4><ul class="plain cite-pairs">${r.pairs.map(p => `<li>${name(p.a)} et ${name(p.b)} : ${p.n} références en commun</li>`).join("")}</ul>`;
+    if (r.authors.length) body += `<h4>Ces auteurs reviennent</h4><ul class="plain cite-authors">${r.authors.map(a => `<li data-a="${esc(a.id)}"><b>${esc(a.name)}</b>, dans ${a.by.length} de tes sources
+      ${dehorsOn() ? followed.has(a.id) ? `<span class="hint">en veille</span>` : `<button class="btn ghost sm" data-act="cite-follow">suivre dans la veille</button>` : ""}</li>`).join("")}</ul>`;
+  }
+  return `<div class="cite-bar" style="margin:0 0 14px"><div class="row"><button class="btn ghost sm" data-act="cite-run" ${st && st.busy ? "disabled" : ""}>Ce que tes sources ont en commun</button>
+    <span class="hint">OpenAlex reçoit les DOI de tes sources, rien d'autre.</span></div>${body}</div>`;
+}
+CLICK["cite-run"] = async () => {
+  citeState = { busy: true }; render();
+  try { citeState = { res: await citeRun() }; } catch (e) { citeState = { err: e.message }; }
+  render();
+};
+CLICK["cite-keep"] = el => {
+  const r = citeState && citeState.res, id = el.closest("[data-w]").dataset.w, w = r && r.titles[id], hit = r && r.common.find(x => x.id === id); if (!w || !hit) return;
+  const src = { title: w.title, url: w.link, doi: w.oa.doi || null, site: w.oa.site, date: w.oa.day, kind: w.oa.kind === "article" ? "article" : w.oa.kind || "article", authors: w.oa.authors, abstract: "" };
+  if (findSourceDup(src)) return render();
+  const e = keepSource(modOf(el), src, { from: "Cité par tes sources", text: `cité par ${hit.by.length} de tes sources`, date: todayISO() });
+  site.save(); render(); toast(`Gardée : « ${excerpt(e, 50)} ».`);
+};
+CLICK["cite-follow"] = el => {
+  const r = citeState && citeState.res, a = r && r.authors.find(x => x.id === el.closest("[data-a]").dataset.a), list = dehorsResearch(); if (!a) return;
+  if (list.some(x => x.kind === "author" && x.q === a.id)) return render();
+  if (list.length >= 30) return toast("Trente veilles, c'est une thèse. Retires-en avant d'en ajouter.");
+  dehorsSet({ research: [...list, { id: uid(), kind: "author", q: a.id, name: a.name, seen: Date.now() - 7 * 86400000 }] });
+  render(); toast(`En veille dans Dehors : ${a.name}. Première lecture…`); dehorsRefresh();
+};
