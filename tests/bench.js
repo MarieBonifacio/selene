@@ -10,7 +10,7 @@ const nodes = new Map(), element = id => { if (!nodes.has(id)) nodes.set(id, { i
 const context = { document: { title: '', activeElement: null, documentElement: { dataset: {} }, querySelector: element, getElementById: element, addEventListener() {} },
   window: { addEventListener() {}, claude: { use: async () => null } }, localStorage: { getItem: k => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, v), removeItem: k => storage.delete(k), key: i => [...storage.keys()][i] ?? null, get length() { return storage.size; } },
   location: { hash: '' }, navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-vm.runInNewContext(script.replace(/\}\)\(\);\s*$/, 'globalThis.__t = { S, render, createFromTemplate, MODULE_TEMPLATES, saveCollectionItem, searchAll, VIEWS, sortesDraw, sortesPool, SHEETS };\n})();'), context);
+vm.runInNewContext(script.replace(/\}\);\s*\}\)\(\);\s*$/, 'globalThis.__t = { S, render, createFromTemplate, MODULE_TEMPLATES, saveCollectionItem, searchAll, VIEWS, sortesDraw, sortesPool, SHEETS };\n});\n})();'), context); // dans platform.ready
 const t = context.__t, d = t.S();
 const words = 'la lune le seuil une porte basse sorcière forêt nuit récit phalène dissociation soi symbole alchimie mercure spectre liminal transformation brouillard lichen mousse cendre miroir'.split(' ');
 let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
@@ -27,6 +27,10 @@ const m = t.createFromTemplate(d.modules, t.MODULE_TEMPLATES.find(x => x.id === 
 for (let i = 0; i < 60; i++) t.saveCollectionItem(m, { title: words[i % words.length] + (i >= words.length ? i : ''), subtitle: i % 3 ? '' : 'miroir, mercure' }, 'm' + i);
 const chars = [...d.modules.ecriture.scraps, ...d.modules.inbox.entries].reduce((a, x) => a + x.text.length, 0);
 console.log('corpus', (chars / 1e6).toFixed(2), 'M caractères,', d.modules.ecriture.scraps.length + d.modules.inbox.entries.length, 'textes, 60 motifs');
+// Taille du document site tel qu'il est écrit dans le stockage (UTF-16 dans localStorage : deux octets par unité).
+// Repère : localStorage plafonne vers 5 Mo par origine ; au-delà de la moitié, passer à IndexedDB ou SQLite (phase 13).
+const doc = JSON.stringify(d);
+console.log('document site'.padEnd(28), (Buffer.byteLength(doc) / 1e6).toFixed(2), 'Mo en UTF-8,', (doc.length * 2 / 1e6).toFixed(2), 'Mo en UTF-16');
 const time = (name, fn, n = 3) => { fn(); const s = process.hrtime.bigint(); for (let i = 0; i < n; i++) fn(); console.log(name.padEnd(28), (Number(process.hrtime.bigint() - s) / 1e6 / n).toFixed(1), 'ms'); };
 time('accueil (render)', () => { context.location.hash = '#accueil'; t.render(); });
 time('motifs (render)', () => { context.location.hash = '#motifs'; t.render(); });

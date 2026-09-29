@@ -60,7 +60,7 @@ script ne se chargerait plus (eslint et les tests le signalent).
 
 | Fichier | Rôle | Dépend au chargement de |
 |---|---|---|
-| `platform.js` | seul accès aux API de l'hôte : `platform.storage`, `secrets`, `session`, `claude`, `runtime()`, `hosted()` | — |
+| `platform.js` | seul accès aux API de l'hôte : `platform.storage`, `secrets`, `session`, `claude`, `runtime()`, `hosted()` ; `platform.ready` démarre tous les fichiers suivants (ADR 11) | — |
 | `store.js` | un document JSON : `platform.storage` + synchro | — |
 | `auth.js` | comptes et adaptateur Supabase (hébergé seulement) | — |
 | `passeur.js` | appel du passeur (Supabase Edge, version hébergée connectée) et lecture d'une page : métadonnées, flux annoncés | — |
@@ -435,3 +435,27 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
 - **Conséquences** : comportement inchangé sur le web et dans l'artefact (mêmes clés, même stockage) ;
   une coquille native n'a qu'un fichier à remplacer ; `authResetLocal` efface les secrets par
   `platform.secrets`, pour qu'aucun ne survive à une déconnexion quel que soit leur coffre.
+
+### ADR 11 — Coffres natifs asynchrones derrière une façade synchrone, démarrage par `platform.ready`
+
+- **Contexte** : tout le code lit le stockage de façon synchrone, et dès son chargement (`makeStore`, la
+  session, les préférences). Les coffres d'une coquille native sont asynchrones (Preferences ou SQLite sous
+  Capacitor, fichiers ou trousseau sous Tauri) ; et sous iOS, le `localStorage` d'une WebView peut être évincé
+  quand l'espace manque : pour une app locale d'abord, c'est la perte de la source de vérité.
+- **Décision** : la coquille pose `window.seleneNative = { runtime, storage, secrets }` avant le script, deux
+  coffres `{ load, write, remove }` asynchrones. `platform.storage` et `platform.secrets` en tiennent alors une
+  copie en mémoire, hydratée une fois ; les lectures restent synchrones, chaque écriture part vers le coffre
+  sans être attendue, en file par clé (deux écritures ne s'inversent jamais), et `platform.flush()` attend
+  celles en cours (appelé avec `flushAll`, à la mise en arrière-plan). `build.py` place tous les fichiers
+  historiques après `platform.js` dans `platform.ready(() => { … })` : sur le web et dans l'artefact, ready
+  démarre aussitôt, de façon synchrone (comportement et ordre inchangés) ; en natif, après l'hydratation. Si
+  celle-ci échoue, rien ne démarre et un message le dit.
+- **Écarté** : une copie en mémoire sur le web aussi (localStorage est déjà synchrone ; une copie serait
+  périmée par un autre onglet ou les outils du navigateur, et n'apporterait rien) ; une injection synchrone
+  des données par la coquille avant le script (possible sous Tauri et iOS, mais lie le format du stockage au
+  code natif, et un document de plusieurs Mo passerait par un script d'initialisation) ; démarrer sur un
+  stockage vide quand le coffre est illisible (le premier enregistrement écraserait les vraies données).
+- **Conséquences** : une coquille native n'écrit qu'un adaptateur de coffre ; les harnais de test injectent
+  leurs accès dans `platform.ready` (avant `});\n})();`) ; `tests/platform.test.js` couvre l'hydratation,
+  l'ordre des écritures, `flush`, un coffre qui refuse d'écrire et un coffre illisible. Seuil de sortie de
+  `localStorage` (phase 13) : `npm run bench` affiche la taille du document `site`.

@@ -19,8 +19,11 @@ if bundled.returncode:
 core = json.loads(bundled.stdout)
 bridge = "// eslint-disable-next-line no-unused-vars\nconst { " + ", ".join(core["exports"]) + " } = __core;\n"
 # Puis les fichiers historiques, dans cet ordre : chacun ne peut utiliser au chargement que le noyau et ceux qui le précèdent.
-scripts = ["platform.js", "store.js", "auth.js", "passeur.js", "dehors.js", "app.js", "types.js", "assistant.js", "boot.js"]
-js = core["code"] + bridge + "\n".join((SOURCE / name).read_text(encoding="utf-8") for name in scripts)
+# platform.js d'abord ; les suivants lisent le stockage dès leur chargement, donc démarrent dans platform.ready :
+# aussitôt sur le web, après l'hydratation des coffres dans une coquille native.
+scripts = ["store.js", "auth.js", "passeur.js", "dehors.js", "app.js", "types.js", "assistant.js", "boot.js"]
+js = (core["code"] + bridge + (SOURCE / "platform.js").read_text(encoding="utf-8")
+      + "platform.ready(() => {\n" + "\n".join((SOURCE / name).read_text(encoding="utf-8") for name in scripts) + "});\n")
 # Le script est posé tel quel dans une balise <script> : « </script » dans une chaîne le fermerait avant sa fin.
 assert "</script" not in js.lower(), "« </script » dans le JavaScript : l'écrire en deux morceaux"
 code = "\n(() => {\n" + js + "})();\n"

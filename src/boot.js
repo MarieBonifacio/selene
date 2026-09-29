@@ -1,6 +1,6 @@
 /* Démarrage : chargé en dernier par build.py, quand toutes les vues et tous les registres existent. */
 /* ================= cycle de vie ================= */
-const flushAll = () => { board.flush(); site.flush(); };
+const flushAll = () => { board.flush(); site.flush(); platform.flush(); }; // serveur, puis coffre natif (s'il y en a un)
 window.addEventListener("pagehide", flushAll);
 document.addEventListener("visibilitychange", () => { if (document.hidden) flushAll(); });
 platform.storage.watch(k => { if ((k === board.key && board.reload()) | (k === site.key && site.reload())) render(); }); // un autre onglet
