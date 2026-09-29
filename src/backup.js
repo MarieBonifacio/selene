@@ -41,7 +41,7 @@ function parseBackup(text) {
         (site.config.dehors.artistsSeen != null && !(Number.isFinite(site.config.dehors.artistsSeen) && site.config.dehors.artistsSeen >= 0)) ||
         (site.config.dehors.research != null && (!Array.isArray(site.config.dehors.research) || site.config.dehors.research.length > 30 ||
           site.config.dehors.research.some(r => !record(r) || typeof r.id !== "string" || !/^[\w-]{1,64}$/.test(r.id) || !["q", "author"].includes(r.kind) ||
-            typeof r.q !== "string" || !r.q || r.q.length > 200 || (r.mod != null && (typeof r.mod !== "string" || r.mod.length > 64)) ||
+            typeof r.q !== "string" || !r.q || r.q.length > 200 || (r.name != null && (typeof r.name !== "string" || !r.name || r.name.length > 200)) || (r.mod != null && (typeof r.mod !== "string" || r.mod.length > 64)) ||
             (r.seen != null && !(Number.isFinite(r.seen) && r.seen >= 0))))))) ||
       // radar : les mots du radar culturel, facultatifs.
       (site.config.radar != null && (!record(site.config.radar) || typeof site.config.radar.words !== "string" || site.config.radar.words.length > 300))) throw new Error("Configuration invalide");

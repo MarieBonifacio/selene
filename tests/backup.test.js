@@ -77,7 +77,7 @@ test('a backup from a newer schema is refused with an explicit message', () => {
 
 test('connexions externes : Dehors et le radar, validés comme le reste', () => {
   const ok = d => api.parseBackup(JSON.stringify(d)), feed = extra => ({ id: 'f1', url: 'https://revue.example/feed.xml', title: 'Revue', mod: 'ecriture', seen: 1, ...extra });
-  const d = valid(); d.site.config.dehors = { feeds: [feed()], artists: true, artistsSeen: 5, research: [{ id: 'r1', kind: 'q', q: 'depersonalization', mod: 'ecriture', seen: 3 }, { id: 'r2', kind: 'author', q: 'A5023888391' }] }; d.site.config.radar = { words: 'poésie, jazz' };
+  const d = valid(); d.site.config.dehors = { feeds: [feed()], artists: true, artistsSeen: 5, research: [{ id: 'r1', kind: 'q', q: 'depersonalization', mod: 'ecriture', seen: 3 }, { id: 'r2', kind: 'author', q: 'A5023888391', name: 'Anna Ciaunica' }] }; d.site.config.radar = { words: 'poésie, jazz' };
   assert.doesNotThrow(() => ok(d));
   for (const mutate of [
     x => { x.site.config.dehors = { feeds: 'non' }; },
@@ -89,6 +89,7 @@ test('connexions externes : Dehors et le radar, validés comme le reste', () => 
     x => { x.site.config.radar = { words: 'x'.repeat(301) }; },
     x => { x.site.config.dehors = { feeds: [], research: [{ id: 'r1', kind: 'rumeur', q: 'x' }] }; },
     x => { x.site.config.dehors = { feeds: [], research: [{ id: 'r1', kind: 'q', q: '' }] }; },
+    x => { x.site.config.dehors = { feeds: [], research: [{ id: 'r1', kind: 'author', q: 'A1', name: { toString: 1 } }] }; },
     x => { x.site.config.dehors = { feeds: [], research: Array.from({ length: 31 }, (_, i) => ({ id: 'r' + i, kind: 'q', q: 'x' })) }; }
   ]) { const x = valid(); mutate(x); assert.throws(() => ok(x), /Configuration invalide/); }
 });
