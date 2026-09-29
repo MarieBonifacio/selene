@@ -442,11 +442,11 @@ function createModuleInstance(modules, type, name, id) {
    Génériques par principe (aucun contenu personnel) ; `hint` dit à quoi il sert. */
 const MODULE_TEMPLATES = [
   { id: "taches", name: "Tâches", type: "taches", hint: "Échéances, étapes, et trois tâches du jour au plus" },
-  { id: "protocole", name: "Protocole", type: "programme", hint: "Une pratique sur N semaines, un calendrier, un objectif hebdomadaire" },
+  { id: "protocole", name: "Protocole", type: "programme", hint: "Choisis ton sport ou ta pratique, sa durée et ton rythme à l'ajout" },
   { id: "ecriture", name: "Écriture", type: "cumul", hint: "Un compteur de mots, des chapitres, un carnet de fragments",
     config: { unitLabel: "mots", goal: 50000, categoryLabel: "Chapitre", scraps: true, scrapsLabel: "Fragments", entryMode: "total" } },
   { id: "budget", name: "Budget", type: "budget", hint: "Dépenses et revenus du mois, des enveloppes à plafond",
-    config: { envelopes: [{ id: "courses", name: "Courses", limit: 300 }, { id: "loisirs", name: "Loisirs", limit: 100 }] } },
+    config: { envelopes: [] } },
   { id: "tableau", name: "Tableau de production", type: "collection", hint: "Des idées qui avancent de colonne en colonne jusqu'à publication",
     config: { display: "colonnes", statuses: ["Idée", "En cours", "Prêt", "Publié"], doneFrom: 3, statusLabel: "Étape", addLabel: "Nouvelle idée",
       fields: { title: "Titre", subtitle: "", tag: "Thème", due: "Date prévue", text: "Texte" } } },
@@ -471,7 +471,7 @@ const MODULE_TEMPLATES = [
   { id: "arc", name: "Arc", type: "arc", hint: "Une séquence d'étapes où loger des fragments et des éléments d'autres modules",
     config: { stations: [{ id: "1", name: "Étape 1" }, { id: "2", name: "Étape 2" }, { id: "3", name: "Étape 3" }] } },
   { id: "rappels", name: "Soins", type: "rappels", hint: "Des gestes récurrents et depuis quand ils attendent",
-    config: { types: [{ id: "arrosage", label: "Arrosage", every: 3 }] } },
+    config: { types: [] } },
   { id: "carnet", name: "Carnet", type: "notes", hint: "Des notes datées, gardées ou rangées ailleurs ensuite" }
 ];
 /* Crée un module depuis un modèle : les réglages du modèle complètent ceux du type (un niveau de profondeur). */

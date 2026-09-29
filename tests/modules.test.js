@@ -34,7 +34,7 @@ function launch(storage, { claude = null, bare = false } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn, lexicalDrift, driftWords, addLink, openTensions, mergeDocs, dossierMarkdown, arcCandidates, tierCurrent, firstDecisions, collectionForm, editFragmentText, sortesPool, sortesDraw, lunarTest, lunarPhase, NEW_MOON_REF, SYNODIC, LUNAR_MIN_N };\n})();');
+  const instrumented = script.replace(/\}\)\(\);\s*$/, 'globalThis.__test = { submitModuleForm: values => formCb(values), S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn, lexicalDrift, driftWords, addLink, openTensions, mergeDocs, dossierMarkdown, arcCandidates, tierCurrent, firstDecisions, collectionForm, editFragmentText, sortesPool, sortesDraw, lunarTest, lunarPhase, NEW_MOON_REF, SYNODIC, LUNAR_MIN_N };\n})();');
   vm.runInNewContext(instrumented, context);
   const fire = (name, target) => (handlers[name] || []).forEach(fn => fn({ target, preventDefault() {} }));
   return { ...context.__test, nodes, location, document, fire };
@@ -1220,4 +1220,38 @@ test('sortes : une source gardée et reliée à rien entre au bassin ; reliée, 
   assert.ok(!app.sortesPool().some(x => x.kind === 'source' && x.e.id === 's1'), 'reliée : elle documente, elle n’est plus oubliée');
   const bad = JSON.parse(app.createBackup(app.board.data, app.S())); bad.site.modules[src].entries[0].kept = 'hier';
   assert.throws(() => app.parseBackup(JSON.stringify(bad)), /date/);
+});
+
+
+
+test('new templates contain no personal data or imposed budget and care presets', () => {
+  const app = launch(new Map(), { bare: true });
+  const modules = {};
+  for (const tpl of app.MODULE_TEMPLATES) {
+    const inst = app.createFromTemplate(modules, tpl, tpl.name, tpl.id);
+    assert.equal(inst.entries.length, 0, tpl.id);
+    assert.doesNotMatch(JSON.stringify(inst), /october\.moth|kundalini|phidippus|ulver/i);
+  }
+  assert.equal(modules.budget.config.envelopes.length, 0);
+  assert.equal(modules.rappels.config.types.length, 0);
+  app.render();
+  assert.doesNotMatch(app.nodes.get('#main').innerHTML, /kundalini/i);
+});
+
+test('programme installation waits for a chosen practice and validates its settings', () => {
+  const app = launch(new Map(), { bare: true });
+  app.CLICK['tpl-add']({ dataset: { tpl: 'protocole' } });
+  assert.deepEqual(Object.keys(app.S().modules), ['inbox'], 'opening or cancelling creates nothing');
+  assert.match(app.nodes.get('#form').innerHTML, /Nom du sport ou de la pratique/);
+  assert.throws(() => app.submitModuleForm({ name: 'Natation', weeks: '8', perWeek: '9', unitLabel: 'longueurs' }));
+  assert.deepEqual(Object.keys(app.S().modules), ['inbox'], 'invalid input creates nothing');
+  app.submitModuleForm({ name: 'Natation', weeks: '8', perWeek: '2', unitLabel: 'longueurs' });
+  const inst = app.S().modules.natation;
+  assert.equal(inst.label, 'Natation');
+  assert.equal(inst.config.weeks, 8);
+  assert.equal(inst.config.perWeek, 2);
+  assert.equal(inst.config.unitLabel, 'longueurs');
+  assert.equal(inst.config.start, null);
+  assert.equal(inst.entries.length, 0);
+  app.parseBackup(app.createBackup(app.board.data, app.site.data));
 });
