@@ -53,6 +53,15 @@ html,body{margin:0;min-height:100%}
 body::before{content:"";position:fixed;z-index:6;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg)}
 .sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-text);font-variant-numeric:oldstyle-nums;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
+/* Barres de défilement : fines et dans la palette, jamais le gris clair du système — surtout sur fond sombre,
+   où une barre par défaut tranche comme un phare. Un liseré couleur du fond autour du pouce (background-clip)
+   l'isole du bord de la fenêtre, pour qu'il flotte plutôt qu'il ne colle. */
+*{scrollbar-width:thin;scrollbar-color:var(--rule-strong) transparent}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background-color:var(--rule-strong);border-radius:6px;border:2px solid var(--bg);background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background-color:var(--muted)}
+*::-webkit-scrollbar-corner{background:transparent}
 .wrap{--g:20px;max-width:1040px;margin:0 auto;padding:22px var(--g) 90px}
 button,input,select,textarea{font:inherit;color:inherit}
 /* La voix fonctionnelle : ce qui se touche et ce qui se compte. */
@@ -135,6 +144,9 @@ nav.tabbar .pip{position:absolute;top:5px;left:calc(50% + 7px);min-width:16px;pa
   #nav a:hover{color:var(--ink);background:var(--surface)}
   #nav a.on{color:var(--ink);background:var(--surface);border-left-color:var(--accent)}
   #nav .grp{margin:18px 12px 4px}
+  /* Plus d'un domaine : un simple espacement suffit rarement à les distinguer une fois la liste chargée.
+     Un filet fin, seulement à partir du deuxième groupe (jamais avant « Espaces » lui-même). */
+  #nav p.grp:not(:first-of-type){margin-top:20px;padding-top:16px;border-top:1px solid var(--rule)}
   #nav .sys{margin-top:auto;padding-top:18px;display:flex;flex-direction:column;gap:1px}
 }
 .pal-hint{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;margin:0 0 8px;padding:7px 10px;border:1px solid var(--rule);border-radius:3px;background:transparent;color:var(--muted);font-size:.9rem;text-align:left}
@@ -194,8 +206,10 @@ dialog.palette input:focus-visible{outline:none;border-bottom-color:var(--accent
 /* ================= identité des espaces : sigils, planches, teintes ================= */
 .t0{--tint:var(--accent)}.t1{--tint:var(--tint-1)}.t2{--tint:var(--tint-2)}.t3{--tint:var(--tint-3)}.t4{--tint:var(--tint-4)}.t5{--tint:var(--tint-5)}.t6{--tint:var(--tint-6)}.t7{--tint:var(--tint-7)}
 .sig{width:1.05em;height:1.05em;flex:none;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.14em;margin-right:.5em}
-#nav a .sig{color:var(--muted)}
-#nav a:hover .sig,#nav a.on .sig{color:var(--tint,var(--accent))}
+/* Au repos déjà teinté, mais discret (opacité) : la liste se lit comme une nappe de couleurs sourdes plutôt
+   qu'un aplat de gris ; le survol ou l'espace actif l'amène à pleine teinte, sans jamais changer sa couleur. */
+#nav a .sig{color:var(--tint,var(--muted));opacity:.55;transition:opacity var(--t-1) var(--ease)}
+#nav a:hover .sig,#nav a.on .sig{opacity:1}
 @media (min-width:900px){#nav a.on{border-left-color:var(--tint,var(--accent))}}
 .view .tag::before{background:var(--tint)}
 .plate{display:flex;align-items:center;gap:8px;margin:0 0 8px;color:var(--muted)}
