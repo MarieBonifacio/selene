@@ -472,6 +472,8 @@ button.room{cursor:pointer}button.room:hover{background:var(--surface)}
 @media (hover:none),(pointer:coarse){
   .item:not(.reveal) .ra,.card:not(.reveal) .ra{display:none}
   .item{position:relative}
+  /* Safari iOS n'envoie le « click » d'un toucher, délégué à document, qu'aux éléments qu'il juge cliquables. */
+  .item:has(.ra),.card:has(.ra){cursor:pointer}
   .item:has(.ra):not(.reveal)::after,.card:has(.ra):not(.reveal)::after{content:"⋯";position:absolute;right:2px;bottom:4px;color:var(--muted);line-height:1;pointer-events:none}
 }
 

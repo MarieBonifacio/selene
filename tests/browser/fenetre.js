@@ -11,8 +11,11 @@ const demo = fixture();
   await ctx.route('https://api.open-meteo.com/**', r => { weatherCalls++; r.fulfill({ contentType: 'application/json', body: JSON.stringify({ current: { weather_code: 61, temperature_2m: 9.4, cloud_cover: 95, wind_speed_10m: 14 } }) }); });
   await ctx.route('https://geocoding-api.open-meteo.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ results: [{ name: 'Paris', admin1: 'Île-de-France', country: 'France', latitude: 48.85341, longitude: 2.3488 }] }) }));
   const pageAt = async (iso, hash = 'accueil') => {
+    // L'horloge simulée est celle du contexte : la régler avant d'ouvrir la page. Sous WebKit, la page vierge
+    // d'un nouvel onglet ne reçoit pas les scripts d'initialisation, et l'horloge ne peut pas s'y régler.
+    await ctx.clock.setFixedTime(new Date(iso));
     const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
-    await p.clock.setFixedTime(new Date(iso)); await p.goto(BASE + '/index.html#' + hash); await p.waitForTimeout(400); return p;
+    await p.goto(BASE + '/index.html#' + hash); await p.waitForTimeout(400); return p;
   };
   const hero = p => p.$eval('.hero', h => ({ sun: +h.dataset.sun, weather: h.dataset.weather, top: h.style.getPropertyValue('--sky-top'), star: +h.style.getPropertyValue('--star'),
     moon: !!h.querySelector('.moon'), placed: !!(h.querySelector('.moon') && h.querySelector('.moon').style.left), rain: !!h.querySelector('.rain'), line: (h.querySelector('.sky-line') || {}).textContent || '' }));

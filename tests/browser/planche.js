@@ -1,5 +1,5 @@
 /* Scénario de navigateur : planche de lunaison (évolution de l'interface, vague 4c : docs/evolution-ui.md). Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, ENGINE, BASE, launchOptions, fixture, check } = require('./helpers');
 const fs = require('fs');
 const iso = d => { const z = new Date(d); z.setMinutes(z.getMinutes() - z.getTimezoneOffset()); return z.toISOString().slice(0, 10); };
 const today = iso(Date.now()), old = iso(Date.now() - 200 * 86400000);
@@ -51,9 +51,11 @@ demo.config.modules.push({ id: 'motifs', on: true });
   ok(dl.suggestedFilename() === `planche-${k}.html` && file.startsWith('<!doctype html>') && file.includes(`Planche ${k}`) && file.includes('@page') && !/<script/i.test(file), 'le fichier téléchargé est une planche autonome, sans script');
   await p.emulateMedia({ media: 'print' });
   ok(!(await p.isVisible('.pl-tools')) && !(await p.isVisible('.app > .side')), 'à l’impression : ni barre latérale ni boutons');
-  const pdf = await p.pdf({ format: 'A4' });
-  const pages = (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length;
-  ok(pages === 1, `une seule page A4 (${pages})`);
+  if (ENGINE === 'chromium') { // page.pdf n'existe que dans Chromium : WebKit s'arrête à l'aperçu d'impression ci-dessus
+    const pdf = await p.pdf({ format: 'A4' });
+    const pages = (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length;
+    ok(pages === 1, `une seule page A4 (${pages})`);
+  }
 
   console.log('téléphone');
   const m = await open({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
