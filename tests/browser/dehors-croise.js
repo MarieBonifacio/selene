@@ -1,7 +1,7 @@
 /* Scénario de navigateur : motifs croisés dans Dehors (phase 3, vague 7c : docs/connexions.md).
    Version hébergée simulée : faux Supabase, faux passeur qui sert deux flux, OpenAlex simulé pour une veille.
    Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeJSON, storeSet, storeGet, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 const col = (label, extra) => ({ type: 'collection', label, config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1, addLabel: 'Ajouter',
   fields: { title: 'Titre', subtitle: 'Auteurs', tag: '', due: '', text: 'Notes' }, ...extra }, entries: [] });
@@ -52,7 +52,7 @@ const WORK = { id: 'https://openalex.org/W50', doi: 'https://doi.org/10.1000/z',
   ok(r[1].t === 'Le même article' && r[1].why === 'parce que : aussi dans Blog B' && r[2].t === 'Relevé des phalènes' && r[2].why === 'parce que : motif : phalène', 'puis une raison chacun, du plus récent au plus ancien : un lien paru dans deux flux, un motif');
   ok(r.slice(3).map(x => x.t).join() === 'Sans rapport,Un billet déjà gardé,Autre chose' && r.slice(3).every(x => !x.why), 'puis le reste, sans raison inventée, du plus récent au plus ancien');
   ok(r.find(x => x.t === 'Un billet déjà gardé').row.includes('déjà gardée') && !r.find(x => x.t === 'Un billet déjà gardé').row.includes('garder'), 'ce qui est déjà dans tes sources le dit, au lieu d’un « garder »');
-  ok(!(await p.evaluate(() => localStorage.getItem('selene-dehors'))).includes('W999'), 'des références de la veille, le cache ne garde que ce qui croise tes sources');
+  ok(!(await storeGet(p, 'selene-dehors')).includes('W999'), 'des références de la veille, le cache ne garde que ce qui croise tes sources');
 
   console.log('écarté une fois');
   await p.click('.dehors .item:nth-child(2) [data-act="dehors-hide"]'); await p.waitForTimeout(200);
@@ -60,7 +60,7 @@ const WORK = { id: 'https://openalex.org/W50', doi: 'https://doi.org/10.1000/z',
   ok(!r.some(x => x.t.startsWith('Le même article')), '« vu » sur un lien paru dans deux flux : il ne revient pas par l’autre');
 
   console.log('un auteur suivi n’est pas une raison de plus');
-  await p.evaluate(() => { const d = JSON.parse(localStorage.getItem('selene-site-v1')); d.config.dehors.research[0].kind = 'author'; d.config.dehors.research[0].q = 'A5023888391'; localStorage.setItem('selene-site-v1', d && JSON.stringify(d)); });
+  { const d = await storeJSON(p, 'selene-site-v1'); d.config.dehors.research[0].kind = 'author'; d.config.dehors.research[0].q = 'A5023888391'; await storeSet(p, 'selene-site-v1', JSON.stringify(d)); }
   await p.reload(); await p.waitForTimeout(600);
   r = await rows();
   ok(r[0].t === 'The bodily self revisited' && r[0].why === 'parce que : cite « Depersonalization and the self », de tes sources', `la veille d'un auteur : son nom ne compte pas comme raison (${r[0].why})`);

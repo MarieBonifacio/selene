@@ -61,7 +61,7 @@ script ne se chargerait plus (eslint et les tests le signalent).
 | Fichier | Rôle | Dépend au chargement de |
 |---|---|---|
 | `platform.js` | seul accès aux API de l'hôte : `platform.storage`, `secrets`, `session`, `claude`, `runtime()`, `hosted()` ; `platform.ready` démarre tous les fichiers suivants (ADR 11) | — |
-| `store.js` | un document JSON : `platform.storage` + synchro | — |
+| `store.js` | un document JSON : `platform.storage` (IndexedDB en version web, ADR 13) + synchro | — |
 | `auth.js` | comptes et adaptateur Supabase (hébergé seulement) | — |
 | `passeur.js` | appel du passeur (Supabase Edge, version hébergée connectée) et lecture d'une page : métadonnées, flux annoncés | — |
 | `dehors.js` | Dehors, lecture des flux (RSS, Atom, JSON Feed) par DOMParser, fusion du cache, « nouveau depuis », croisé avec ce que tu gardes (raisons dites, doublons entre flux fusionnés) | — |
@@ -483,3 +483,28 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
 - **Conséquences** : `api.anthropic.com` sort de la CSP ; l'assistant hébergé demande un compte connecté et la
   fonction déployée (docs/assistant.md : table, secret, déploiement) ; la déconnexion ne supprime plus la clé,
   « Oublier la clé » l'efface du serveur. Réponses non diffusées en continu (comme avant), 60 s au plus.
+
+### ADR 13 — Les données de la version web dans IndexedDB
+
+- **Contexte** : `localStorage` plafonne vers 5 millions de caractères par site, toutes clés comprises, et chaque
+  store y garde deux copies du document (lui et sa base de synchronisation). Un historique réaliste de plusieurs
+  années (`npm run bench` : ~2,3 M caractères) en occupait déjà près de 90 %. Au-delà, l'écriture locale échoue
+  sans bruit : l'appareil cesse de garder ce qu'on écrit.
+- **Décision** : dans la version web, `platform.storage` passe par un coffre IndexedDB (base `selene`, magasin
+  `kv`), lu par la même copie en mémoire que les coffres natifs (ADR 11) : lectures synchrones, écritures en file
+  par clé. Au démarrage, chaque clé ordinaire de `localStorage` absente d'IndexedDB y est copiée en une
+  transaction ; ce n'est qu'ensuite qu'elle quitte `localStorage` (IndexedDB l'emporte quand elle a déjà la clé).
+  Les secrets restent dans `localStorage`. Les onglets se préviennent par `BroadcastChannel` (`selene-storage`)
+  après chaque écriture validée, puisque IndexedDB n'a pas d'événement `storage`. L'artefact claude.ai reste sur
+  `localStorage`.
+- **Replis** : IndexedDB absente, ou qui échoue à l'ouverture ou pendant la migration, avant que `localStorage` ait
+  été vidé : démarrage sur `localStorage`, rien n'a quitté l'appareil. Échec de lecture après la migration : rien ne
+  démarre (ADR 11).
+- **Écarté** : ne déplacer que les documents (deux mécanismes à tenir, pour un gain nul) ; une bibliothèque
+  (idb-keyval, localForage : une dépendance de production pour vingt lignes) ; alléger la base de synchronisation
+  (elle est ce qui permet la fusion à trois voies).
+- **Conséquences** : le premier affichage attend l'ouverture d'IndexedDB (quelques millisecondes) ; une écriture
+  n'est plus synchrone : une page fermée dans la milliseconde qui suit peut la perdre localement (le serveur, lui,
+  reçoit la synchronisation). Les scénarios lisent le stockage par `storeGet` / `storeJSON` et l'écrivent par
+  `storeSet` (tests/browser/helpers.js), qui prévient Selene comme un autre onglet ; `tests/browser/indexeddb.js`
+  couvre la migration, la relance, deux onglets et un document de plus de 6 M caractères.

@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Artist Watch dans Dehors (connexions externes, phase 2, vague 6c : docs/connexions.md).
    Version hébergée simulée (faux Supabase), MusicBrainz simulé ; pas besoin du passeur. Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeSet, storeJSON, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const U = n => `0000000${n}-aaaa-bbbb-cccc-dddddddddddd`.slice(-36);
 const iso = d => new Date(d).toISOString().slice(0, 10);
 const demo = JSON.parse(fixture());
@@ -27,7 +27,7 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
   await ctx.addInitScript(([d, s, uid]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); } }, [JSON.stringify(demo), session, UID]);
   const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + '/index.html#dehors'); await p.waitForTimeout(2000);
-  const data = () => p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')));
+  const data = () => storeJSON(p, 'selene-site-v1');
 
   console.log('activer, première vérification');
   ok(!mb.length, 'rien n’est demandé tant qu’Artist Watch n’est pas coché');
@@ -51,14 +51,14 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
   mb.length = 0;
   await p.reload(); await p.waitForTimeout(2500);
   ok(!mb.length, 'rouvert dans la semaine : MusicBrainz n’est pas redemandé');
-  await p.evaluate(() => { const c = JSON.parse(localStorage.getItem('selene-dehors')); c.feeds['mb-artists'].at = Date.now() - 8 * 86400000; localStorage.setItem('selene-dehors', JSON.stringify(c)); });
+  { const c = await storeJSON(p, 'selene-dehors'); c.feeds['mb-artists'].at = await p.evaluate(() => Date.now()) - 8 * 86400000; await storeSet(p, 'selene-dehors', JSON.stringify(c)); }
   await p.reload(); await p.waitForTimeout(4000);
   ok(mb.length === 2, 'une semaine plus tard : revérifié');
   ok(!(await p.$('.dehors [data-item]')), 'déjà vu, déjà ajouté : rien ne revient');
 
   console.log('désactiver');
   await p.uncheck('[data-act="dehors-artists"]'); await p.waitForTimeout(300);
-  ok(!(await data()).config.dehors && !(await p.evaluate(() => JSON.parse(localStorage.getItem('selene-dehors')).feeds['mb-artists'])), 'décoché : réglage et cache retirés');
+  ok(!(await data()).config.dehors && !(await storeJSON(p, 'selene-dehors')).feeds['mb-artists'], 'décoché : réglage et cache retirés');
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

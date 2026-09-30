@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Research Watch dans Dehors (connexions externes, phase 2, vague 6d : docs/connexions.md).
    Version hébergée simulée (faux Supabase), OpenAlex simulé ; pas besoin du passeur. Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeGet, storeJSON, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, sources: true, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1,
   fields: { title: 'Titre', subtitle: 'Auteurs', tag: 'Type', due: '', text: 'Résumé' } }, entries: [] };
@@ -24,7 +24,7 @@ const WORK = (n, extra = {}) => ({ id: `https://openalex.org/W${n}`, doi: `https
   await ctx.addInitScript(([d, s, uid]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); } }, [JSON.stringify(demo), session, UID]);
   const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + '/index.html#dehors'); await p.waitForTimeout(800);
-  const data = () => p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')));
+  const data = () => storeJSON(p, 'selene-site-v1');
   const watch = async (q, mod = '') => { await p.fill('#oaIn', q); await p.selectOption('#oaMod', mod); await p.click('[data-act="oa-add"]'); await p.waitForTimeout(700); };
 
   console.log('une recherche, sans clé');
@@ -61,7 +61,7 @@ const WORK = (n, extra = {}) => ({ id: `https://openalex.org/W${n}`, doi: `https
   await p.goto(BASE + '/index.html#reglages'); await p.waitForTimeout(300);
   await p.click('[data-act="auth-out"]'); await p.waitForTimeout(600);
   if (await p.isVisible('#cdlg')) { await p.click('#cdlg button[value=ok]'); await p.waitForTimeout(500); } // le faux Supabase n'accuse pas réception : Selene prévient d'abord
-  ok(await p.evaluate(() => !localStorage.getItem('selene-openalex-key') && !localStorage.getItem('selene-dehors')), 'se déconnecter efface la clé et ce que le dehors a apporté');
+  ok(!(await storeGet(p, 'selene-openalex-key')) && !(await storeGet(p, 'selene-dehors')), 'se déconnecter efface la clé et ce que le dehors a apporté');
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

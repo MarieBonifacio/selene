@@ -1,6 +1,6 @@
 /* Scénario de navigateur : le passeur côté Selene (connexions externes, phase 2, vague 6a : docs/connexions.md).
    Version hébergée simulée : un faux Supabase (compte, table) et un faux passeur. Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeJSON, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources',
   config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, display: 'liste', sources: true, statuses: ['À lire', 'Lue', 'Utilisée'], doneFrom: 1, addLabel: 'Ajouter à la main',
@@ -58,10 +58,10 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   ok(prev.includes('Ce site publie un flux') && prev.includes('Carnet des lisières (RSS)'), 'le flux annoncé est repéré');
   ok(!(await p.evaluate(() => window.__pwn || window.__ran)), 'rien de la page ne s’exécute');
   await p.click('.src-prev [data-act="dehors-follow"]'); await p.waitForTimeout(400);
-  const fl = await p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).config.dehors.feeds);
+  const fl = await storeJSON(p, 'selene-site-v1').then(d => d.config.dehors.feeds);
   ok(fl.length === 1 && fl[0].url === 'https://www.lisieres.fr/feed.xml' && fl[0].title === 'Carnet des lisières' && (await p.textContent('#toast')).includes('Suivi dans Dehors'), '« le suivre dans Dehors » : le flux annoncé est suivi');
   await p.click('[data-act="src-keep"]'); await p.waitForTimeout(250);
-  let e = (await p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.sources.entries))[0];
+  let e = (await storeJSON(p, 'selene-site-v1').then(d => d.modules.sources.entries))[0];
   ok(e && e.src.url === 'https://lisieres.fr/phalenes' && e.src.date === '2026-09-20' && e.subtitle === 'Iris Nuit', 'gardée : l’og:url d’un autre site est ignorée, l’adresse canonique du même site retenue ; date, autrice');
   await search(p, 'https://revue.example/article/42');
   ok(p.crossref === 1 && (await p.textContent('.src-prev')).includes('(Crossref)') && (await p.textContent('.src-prev')).includes('doi:10.1016/j.concog.2020.102946'), 'une page d’article qui porte son DOI : complétée par Crossref');

@@ -3,7 +3,7 @@
 // Aucune dépendance : seulement les règles intégrées d'eslint, globals déclarés à la main.
 const browser = Object.fromEntries(["window", "document", "localStorage", "sessionStorage", "location", "navigator",
   "fetch", "setTimeout", "clearTimeout", "setInterval", "clearInterval", "AbortController", "URL", "Blob", "File",
-  "FormData", "console"].map(name => [name, "readonly"]));
+  "FormData", "console", "indexedDB", "BroadcastChannel"].map(name => [name, "readonly"]));
 const rules = {
   "no-undef": "error", "no-unused-vars": ["error", { args: "none", caughtErrors: "none" }],
   "no-redeclare": "error", "no-dupe-keys": "error", "no-unreachable": "error", "no-const-assign": "error",

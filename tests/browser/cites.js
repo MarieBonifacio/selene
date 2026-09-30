@@ -1,6 +1,6 @@
 /* Scénario de navigateur : « cité par tes sources » (phase 3, vague 7b : docs/connexions.md).
    Version hébergée simulée (faux Supabase), OpenAlex simulé. Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeGet, storeJSON, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 const src = (id, title, doi) => ({ id, title, subtitle: '', tag: 'article', due: '', text: '', status: 'À lire', kept: '2026-09-01', src: doi ? { url: `https://doi.org/${doi}`, doi } : { url: 'https://blog.example/billet' } });
 demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, sources: true, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1,
@@ -37,7 +37,7 @@ const TITLES = {
   const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
   await ctx.addInitScript(([d, s, uid]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); } }, [JSON.stringify(demo), session, UID]);
   await p.goto(BASE + '/index.html#sources'); await p.waitForTimeout(600);
-  const data = () => p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')));
+  const data = () => storeJSON(p, 'selene-site-v1');
   const text = async sel => (await p.textContent(sel)).replace(/\s+/g, ' ');
 
   await p.waitForSelector('[data-act="cite-run"]', { timeout: 10000 }).catch(() => {});
@@ -58,7 +58,7 @@ const TITLES = {
   ok((await text('.cite-list [data-w="W100"]')).includes('cité par 3 de tes sources : « Depersonalization and the self », « The feeling of being », « Self and other »'), 'par qui elle est citée, en liens');
   ok(t.includes('« Depersonalization and the self » et « The feeling of being » : 2 références en commun') && !t.includes('et « Self and other » :'), 'le couplage : deux sources qui citent les mêmes textes (une seule référence ne suffit pas)');
   ok(t.includes('Anna Ciaunica, dans 3 de tes sources') && t.includes('Bruno X, dans 2 de tes sources') && !(await p.$('.cite-authors i')), 'les auteurs qui reviennent (sans balises)');
-  ok(!(await p.evaluate(() => localStorage.getItem('selene-site-v1'))).includes('W100') && (await p.evaluate(() => localStorage.getItem('selene-cites'))).includes('W100'), 'le résultat reste sur l’appareil, hors des données synchronisées');
+  ok(!(await storeGet(p, 'selene-site-v1')).includes('W100') && (await storeGet(p, 'selene-cites')).includes('W100'), 'le résultat reste sur l’appareil, hors des données synchronisées');
 
   console.log('garder, suivre');
   await p.click('.cite-list [data-w="W100"] [data-act="cite-keep"]'); await p.waitForTimeout(250);
