@@ -63,9 +63,23 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   await q.goto(BASE + '/index.html#reglages'); await q.waitForTimeout(400);
   await q.evaluate(() => document.querySelectorAll('details').forEach(d => d.open = true)); await q.waitForTimeout(100);
   // Émulation mobile : un contenu qui déborde élargit la zone d'affichage (innerWidth le suit) ; on compare à l'écran.
-  ok(await q.evaluate(() => document.documentElement.scrollWidth <= 390), 'tout déplié, rien ne déborde en largeur');
+  // Ce qui dépasse l'écran : les éléments les plus profonds dont le bord droit sort, pour que l'échec dise où chercher.
+  const overflow = W => q.evaluate(W => {
+    const out = [];
+    for (const el of document.body.querySelectorAll('*')) {
+      const r = el.getBoundingClientRect(); if (!r.width || r.right <= W + 0.5) continue;
+      if ([...el.children].some(c => c.getBoundingClientRect().right > W + 0.5)) continue;
+      const at = el.closest('[id]'), cls = typeof el.className === 'string' ? el.className.trim().replace(/\s+/g, '.') : '';
+      out.push(`${el.tagName.toLowerCase()}${cls ? '.' + cls : ''}${el.dataset.act ? '[' + el.dataset.act + ']' : ''} dans #${at ? at.id : '?'} (${Math.round(r.left)}→${Math.round(r.right)})`);
+    }
+    return { sw: document.documentElement.scrollWidth, out: out.slice(0, 8) };
+  }, W);
+  const fits = async W => { const o = await overflow(W); return [o.sw <= W, o.sw <= W ? '' : ` : ${o.sw} px, ${o.out.join(' ; ') || 'rien de visible'}`]; };
+  let [fit, why] = await fits(390);
+  ok(fit, 'tout déplié, rien ne déborde en largeur' + why);
   await q.setViewportSize({ width: 320, height: 640 }); await q.waitForTimeout(150); // le plus étroit des iPhone
-  ok(await q.evaluate(() => document.documentElement.scrollWidth <= 320), 'à 320 px non plus : champs, menus et chemins suivent leur colonne');
+  [fit, why] = await fits(320);
+  ok(fit, 'à 320 px non plus : champs, menus et chemins suivent leur colonne' + why);
   await q.tap('.reg-keys .tip >> nth=1'); await q.waitForTimeout(150);
   ok(await q.evaluate(() => { const o = document.querySelector('.tipb:popover-open'); if (!o) return false; const r = o.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }), 'une bulle tient dans un écran de téléphone');
 
