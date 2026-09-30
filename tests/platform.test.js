@@ -163,7 +163,7 @@ test('migration : si IndexedDB refuse l’écriture, rien ne quitte localStorage
 test('les secrets déclarés par platform sont ceux que la déconnexion efface', () => {
   const { SECRET_KEYS } = loadMigrate();
   assert.ok(SECRET_KEYS.includes('selene-auth-session') && SECRET_KEYS.includes('selene-api-key'));
-  assert.match(fs.readFileSync('src/app/auth.js', 'utf8'), /PERSONAL_SECRETS = platform\.secretKeys\.filter/);
+  assert.match(fs.readFileSync('src/app/services/auth.js', 'utf8'), /PERSONAL_SECRETS = platform\.secretKeys\.filter/);
 });
 
 test('notifications et haptique : absentes sur le web, relayées vers la coquille native', async () => {

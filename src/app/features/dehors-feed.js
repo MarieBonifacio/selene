@@ -1,7 +1,10 @@
-/* ================= dehors : lire un flux, dire ce qui est nouveau (sans réseau) =================
+/* Dehors, la lecture : un flux (RSS, Atom, JSON Feed) lu sans rien exécuter, le cache fusionné, « nouveau depuis »,
+   croisé avec ce que tu gardes. */
+import { clip } from "../../core/sources.js";
+
+/* Dehors : lire un flux, dire ce qui est nouveau (sans réseau).
    RSS 2.0, RSS 1.0 (RDF), Atom et JSON Feed, lus par DOMParser en XML (rien ne s'exécute) ou JSON.parse.
-   Le réseau (le passeur), le cache de l'appareil et l'interface sont dans types.js ; la validation, dans backup.js. */
-import { clip } from "../core/sources.js";
+   Le réseau (le passeur), le cache de l'appareil et l'interface sont dans features/dehors.js ; la validation, dans backup.js. */
 const DEHORS_MAX = 12; // éléments montrés au plus : au-delà, ils attendent
 const DEHORS_DAYS = 30; // un élément non gardé s'efface du cache de l'appareil au bout d'un mois
 /* Du HTML (résumé d'un flux) → du texte : parsé comme document inerte, jamais inséré. */

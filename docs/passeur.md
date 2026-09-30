@@ -49,7 +49,7 @@ Les secrets d'un dépôt ne sont jamais montrés dans les journaux (GitHub les m
 
 ## Déployer à la main (une fois, dix minutes)
 
-Il faut Node.js (pour `npx`) et ton projet Supabase, celui de `SUPABASE_URL` dans `src/app/auth.js`.
+Il faut Node.js (pour `npx`) et ton projet Supabase, celui de `SUPABASE_URL` dans `src/app/services/auth.js`.
 
 1. **Se connecter et lier le projet** (la référence est le sous-domaine de `SUPABASE_URL`) :
    ```sh

@@ -8,9 +8,10 @@
    serveur a changé entre-temps), soit à défaut set(value) (écriture inconditionnelle).
    `normalize(doc)` remet un document dans la forme attendue ; il est appliqué à tout ce qui entre
    dans le store (lecture locale, synchro, import, réinitialisation), jamais à la lecture. */
-import { platform } from "../platform.js";
-import { SCHEMA_VERSION } from "../core/domain.js";
-import { deepEqual, mergeDocs } from "../core/sync.js";
+import { platform } from "../../platform.js";
+import { SCHEMA_VERSION } from "../../core/domain.js";
+import { deepEqual, mergeDocs } from "../../core/sync.js";
+
 // Une copie profonde d'un document JSON (ce que le stockage et le serveur échangent).
 export const clone = o => JSON.parse(JSON.stringify(o));
 /* `onRemoteChange` : une synchronisation a changé le document (la page se redessine) ; `onStatus(message)` : l'état de

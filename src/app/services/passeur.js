@@ -1,11 +1,14 @@
-/* ================= passeur : ce que le navigateur ne peut pas lire seul (version hébergée, connectée) =================
+/* Passeur : ce que le navigateur ne peut pas lire seul (version hébergée, connectée).
    Les flux RSS, la plupart des pages et les calendriers n'envoient pas d'en-tête CORS : la page ne peut pas lire leur
    réponse. Le passeur (supabase/functions/passeur, docs/passeur.md) va les chercher pour toi seule, avec ta session.
    Ici : l'appel, et la lecture d'une page (métadonnées, flux annoncés), faite par DOMParser, qui n'exécute rien. */
-import { hosted } from "../platform.js";
-import { clip, findDoi, normalizeUrl } from "../core/sources.js";
-import { esc } from "./app.js";
+import { hosted } from "../../platform.js";
+import { clip, findDoi, normalizeUrl } from "../../core/sources.js";
+import { CLICK } from "../registry.js";
+import { esc, toast } from "../lib/dom.js";
 import { SUPABASE_ANON_KEY, SUPABASE_URL, authReady, authRefreshIfNeeded, authSession } from "./auth.js";
+import { render } from "../shell/render.js";
+
 export let passeurEtat = "";
 export const passeurReset = () => { passeurEtat = ""; }; // redemander, après un refus ou une absence // "" inconnu, "ok", "absent" (non déployé ou non configuré : on n'insiste pas), ou un message
 export const passeurPret = () => hosted() && authReady() && !!authSession && passeurEtat !== "absent";
@@ -72,3 +75,13 @@ export function passeurSettingsHTML() {
     <p class="row" style="margin:0 0 8px"><span data-passeur-etat>${esc(st)}</span><button class="btn sm" data-act="passeur-check">Vérifier</button></p>
     <p class="hint">Ton identifiant, à mettre dans le secret <code>PASSEUR_USERS</code> : <code style="word-break:break-all">${esc(authSession.user.id)}</code> <button class="btn ghost sm" data-act="passeur-copy">copier</button>. Mode d'emploi : <a href="https://github.com/MarieBonifacio/selene/blob/main/docs/passeur.md" target="_blank" rel="noopener noreferrer">docs/passeur.md</a>.</p></section>`;
 }
+/* Réglages → Passeur (passeur.js) : vérifier en lisant la page de Selene elle-même, copier l'identifiant. */
+CLICK["passeur-check"] = async el => {
+  el.disabled = true; passeurReset();
+  try { await passeurFetch(location.origin + location.pathname, "page"); toast("Passeur : il répond, et il te reconnaît."); }
+  catch (e) { toast(e.message); }
+  render();
+};
+CLICK["passeur-copy"] = async () => {
+  try { await navigator.clipboard.writeText(authSession.user.id); toast("Identifiant copié."); } catch { toast("Copie impossible ici : sélectionne-le à la main."); }
+};

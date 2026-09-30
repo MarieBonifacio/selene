@@ -1,21 +1,22 @@
-/* ================= assistant =================
+/* Assistant.
    Deux branchements : claude.ai (platform.claude.use("sample"), sans clé) ou, dans la version hébergée connectée, la
    fonction « assistant » (supabase/functions/assistant, docs/assistant.md), qui garde la clé Anthropic du compte,
    chiffrée, et appelle Claude pour lui : la clé ne revient jamais dans la page. Le contexte ne contient que les
    modules que la personne a choisi de partager. */
-import { hosted, platform } from "../platform.js";
-import { addBudgetEntry, addCapture, addTask, inboxId, setTaskDone } from "../core/domain.js";
-import { VIEWS } from "./registry.js";
-import { $, S, enabled, esc, fmt, label, money, moon, render, site, toast, todayISO, uid } from "./app.js";
-import { SUPABASE_ANON_KEY, SUPABASE_URL, authReady, authRefreshIfNeeded, authSession } from "./auth.js";
-import { TYPE_UI, allTasks } from "./types.js";
-export let sampleNS = null, downloadsNS = null, chatBusy = false;
-/* Sur claude.ai : les espaces de noms de l'hôte (le modèle sans clé, les téléchargements). */
-export async function assistantUseHost() {
-  if (!platform.claude.available()) return false;
-  sampleNS = await platform.claude.use("sample"); downloadsNS = await platform.claude.use("downloads");
-  return true;
-}
+import { hosted, platform } from "../../platform.js";
+import { addBudgetEntry, addCapture, addTask, inboxId, setTaskDone } from "../../core/domain.js";
+import { CLICK, TYPE_UI, VIEWS } from "../registry.js";
+import { $, esc, toast } from "../lib/dom.js";
+import { fmt, money, todayISO, uid } from "../lib/format.js";
+import { allTasks } from "../modules/taches.js";
+import { moon } from "../scene/moon.js";
+import { SUPABASE_ANON_KEY, SUPABASE_URL, authReady, authRefreshIfNeeded, authSession } from "../services/auth.js";
+import { sampleNS } from "../services/host.js";
+import { render } from "../shell/render.js";
+import { S, enabled, label, site } from "../state/site.js";
+import { ask } from "../ui/dialogs.js";
+
+export let chatBusy = false;
 /* Ce que dit le serveur de la clé du compte : null tant qu'on ne sait pas, { cle, indice? } ensuite ; « absent »
    si la fonction n'est pas déployée (on n'insiste pas). */
 let assistantCle = null, assistantEtat = "", assistantDemande = null;
@@ -146,4 +147,11 @@ VIEWS.assistant = () => {
   <div class="chat">${log.map(m => `<div class="msg ${m.role === "user" ? "user" : "claude"}">${m.role === "user" ? esc(m.content) : mdLite(m.content)}</div>`).join("")}${chatBusy ? `<div class="msg claude" id="pending">…</div>` : ""}</div>
   ${!log.length ? `<div class="chips">${["Qu'est-ce que je fais aujourd'hui ?", ...(firstOfType("taches") ? [`Fais le point sur ${label(firstOfType("taches"))}`] : []), "Où en est mon budget ce mois-ci ?", ...ideaChip()].map(q => `<button class="btn sm" data-act="chat-chip">${esc(q)}</button>`).join("")}</div>` : ""}
   <div class="capture"><textarea id="chatIn" data-draft rows="2" placeholder="Écris à Claude…" aria-label="Message" ${b === "sample" || b === "api" ? "" : "disabled"}></textarea><button class="btn acc" data-act="chat-send" ${chatBusy ? "disabled" : ""}>Envoyer</button></div>`;
+};
+CLICK["chat-send"] = () => { const t = $("#chatIn").value; sendChat(t); };
+CLICK["chat-chip"] = el => sendChat(el.textContent);
+CLICK["chat-clear"] = async () => { if (await ask("Effacer la conversation ?")) { chatLog.set([]); render(); } };
+CLICK["as-forget"] = async () => {
+  try { assistantSetCle(await assistantCall({ action: "oublier" })); toast("Clé effacée du serveur."); } catch (e) { toast("Clé non effacée : " + e.message); }
+  render();
 };

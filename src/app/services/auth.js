@@ -1,10 +1,16 @@
-/* ================= comptes (Supabase, build hébergé uniquement) =================
+/* Comptes (Supabase, build hébergé uniquement).
    Parle directement aux API REST de Supabase (Auth + PostgREST) via fetch,
    sans client JS vendorisé — plus simple à vérifier ligne par ligne qu'un
    gros bundle recopié à la main. Inactif tant que SUPABASE_URL/SUPABASE_ANON_KEY
    ne sont pas renseignées, donc jamais actif dans l'artefact claude.ai. */
-import { hosted, platform } from "../platform.js";
-import { $, DRAFT_PREFIX, ask, board, render, setSaving, site, siteSeed } from "./app.js";
+import { hosted, platform } from "../../platform.js";
+import { CLICK } from "../registry.js";
+import { $, setSaving, toast } from "../lib/dom.js";
+import { render } from "../shell/render.js";
+import { DRAFT_PREFIX } from "../state/drafts.js";
+import { board, site, siteSeed } from "../state/site.js";
+import { ask } from "../ui/dialogs.js";
+
 export const SUPABASE_URL = "https://pxnrzrmzritezftefdlj.supabase.co";
 export const SUPABASE_ANON_KEY = "sb_publishable_vC_zBX0TN4jZqi1GRIvo2A_nD2WFW9T";
 export const authReady = () => hosted() && !SUPABASE_URL.includes("YOUR-PROJECT-REF");
@@ -225,3 +231,13 @@ export function authView() {
     </form></div>`;
 }
 document.addEventListener("submit", e => { if (e.target.id === "authForm") { e.preventDefault(); authSubmit(); } });
+CLICK["auth-switch"] = () => { authToggleMode(); render(); };
+CLICK["auth-out"] = () => authSignOut();
+CLICK["auth-delete"] = async el => {
+  const inp = $("#authDelIn");
+  if (!inp || inp.value.trim().toLowerCase() !== "supprimer") { toast("Tape « supprimer » pour confirmer."); if (inp) inp.focus(); return; }
+  if (!await ask("Supprimer ton compte et toutes ses données, sur le serveur et sur cet appareil ? C'est définitif.")) return;
+  el.disabled = true;
+  try { await authDeleteAccount(); toast("Compte supprimé. Il ne reste rien de toi ici, ce qui est plus que la plupart des services peuvent dire."); }
+  catch (e) { el.disabled = false; toast("Compte non supprimé : " + e.message); }
+};
