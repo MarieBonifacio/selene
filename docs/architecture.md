@@ -545,3 +545,21 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
 - **Conséquences** : Android ne demande que trois fichiers propres ; la dépendance de build `uuid` que tire la CLI de
   Capacitor (via `xcode`) porte un avis de sécurité modéré sans portée ici (API non utilisée, outil de build) ;
   l'essai sur un vrai téléphone reste manuel (docs/android.md).
+
+### ADR 16 — Windows par Tauri 2, avec un cœur Rust à six commandes
+
+- **Contexte** : sur ordinateur, Selene vit dans un onglet parmi d'autres ; ses secrets sont dans `localStorage`.
+- **Décision** : Tauri 2 (`native/tauri`) sert `dist/native` dans la WebView du système. L'amorçage natif reconnaît
+  `window.__TAURI__` (`withGlobalTauri`) et pose les coffres sur six commandes Rust : `store_*` (un fichier par clé,
+  nom en hexadécimal, écriture par temporaire renommé) et `secret_*` (crate `keyring` : Gestionnaire d'identification
+  de Windows ; la liste des noms dans un fichier, ces coffres ne sachant pas énumérer). Aucun plugin Tauri ni
+  JavaScript de plugin : `core:default` seulement. La CSP de la page native autorise `ipc:` et
+  `http://ipc.localhost` ; les fonctions Supabase acceptent `http://tauri.localhost` et `tauri://localhost`. Le
+  workflow *Desktop* lance `cargo test` puis construit l'installateur NSIS sous Windows. Les icônes de l'app, et
+  celles d'Android, sont tirées de `icon-512.png` (`tauri icon`).
+- **Écarté** : Electron (un Chromium par app, cent Mo de plus) ; les plugins `fs` et `stronghold` de Tauri (leur
+  JavaScript dans la page, des permissions à régler, pour ce que six fonctions font) ; Tauri pour le mobile
+  (Capacitor, ADR 15).
+- **Conséquences** : l'installateur n'est pas signé (avertissement SmartScreen) jusqu'à la publication ; le code Rust
+  ne se compile qu'en CI (la WebView de Linux manque ici) ; le cœur est volontairement petit, pour être relu d'un
+  coup d'œil.

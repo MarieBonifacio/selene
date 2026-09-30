@@ -70,3 +70,16 @@ test('bouton retour : l’historique, sinon quitter ; mise en pause : pagehide',
   c.listeners.pause();
   assert.deepEqual(c.events, ['pagehide']);
 });
+
+test('Tauri : les coffres passent par les six commandes de l’app, avec leurs arguments', async () => {
+  const calls = [], window = { __TAURI__: { core: { invoke: async (cmd, args) => { calls.push([cmd, args]); return cmd.endsWith('_load') ? [['k', 'v']] : null; } } } };
+  vm.runInNewContext(fs.readFileSync('src/native/boot.js', 'utf8'), { window, history: {}, Event: class {} });
+  const n = window.seleneNative;
+  assert.equal(n.runtime, 'tauri');
+  assert.deepEqual([...await n.storage.load()].map(x => [...x]), [['k', 'v']]);
+  await n.storage.write('selene-site-v1', '{}'); await n.storage.remove('selene-bilan');
+  await n.secrets.load(); await n.secrets.write('selene-auth-session', 's'); await n.secrets.remove('selene-auth-session');
+  assert.deepEqual(calls.map(([c, a]) => [c, a && { ...a }]), [
+    ['store_load', undefined], ['store_write', { key: 'selene-site-v1', value: '{}' }], ['store_remove', { key: 'selene-bilan' }],
+    ['secret_load', undefined], ['secret_write', { key: 'selene-auth-session', value: 's' }], ['secret_remove', { key: 'selene-auth-session' }]]);
+});
