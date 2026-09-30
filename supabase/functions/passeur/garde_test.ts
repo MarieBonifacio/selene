@@ -45,7 +45,7 @@ Deno.test("encodage : en-tête, déclaration XML, balise meta, sinon UTF-8", () 
 });
 
 Deno.test("configuration : origines par défaut, comptes fermés par défaut", () => {
-  assertEquals(origines(undefined), ["https://mariebonifacio.github.io", "https://localhost", "capacitor://localhost"]);
+  assertEquals(origines(undefined), ["https://mariebonifacio.github.io", "https://localhost", "capacitor://localhost", "http://tauri.localhost", "tauri://localhost"]);
   assertEquals(origines("https://a.org/, https://b.org"), ["https://a.org", "https://b.org"]);
   assertEquals(comptes(undefined).size, 0);
   assertEquals([...comptes(" 0B8F0C2E-1111-2222-3333-444455556666 ,pas-un-id")], ["0b8f0c2e-1111-2222-3333-444455556666"]);

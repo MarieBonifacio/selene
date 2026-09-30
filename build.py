@@ -40,11 +40,13 @@ def csp_hash(text):
 CONNECT = ("'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com "
            "https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org "
            "https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org")
+# Les coquilles de bureau (Tauri) parlent à leur cœur par le protocole ipc (http://ipc.localhost sous Windows).
+IPC = " ipc: http://ipc.localhost"
 def csp(scripts, pwa):
     # Les styles gardent 'unsafe-inline' : l'interface pose des attributs style="…", qu'une empreinte ne couvre pas.
     return ("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'self'; script-src " + " ".join(["'self'"] + [csp_hash(x) for x in scripts])
             + "; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; "
-            + "img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src " + CONNECT + "; "
+            + "img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src " + CONNECT + ("" if pwa else IPC) + "; "
             + ("worker-src 'self'; manifest-src 'self'; " if pwa else "") + "base-uri 'none'; form-action 'none'\">\n")
 THEME = """<meta name="theme-color" content="#0e1310" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#e2e6de" media="(prefers-color-scheme: light)">

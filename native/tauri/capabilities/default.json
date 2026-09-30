@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "La fenêtre de Selene : les fonctions de base de Tauri ; les six commandes des coffres sont celles de l'app.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

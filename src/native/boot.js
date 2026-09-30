@@ -5,8 +5,21 @@
    - secrets : le trousseau du système (plugin SecureStorage : clé AES-GCM gardée dans l'Android Keystore ou le
      Trousseau iOS), sous le préfixe « selene: ».
    Il relie aussi le bouton retour d'Android à l'historique de la page, et la mise en arrière-plan à « pagehide »
-   (Selene y pousse ce qui attend). Hors d'une coquille native, il ne fait rien. */
+   (Selene y pousse ce qui attend).
+   Sous Tauri (ordinateur, ADR 16), les mêmes coffres passent par six commandes de l'app (native/tauri/src/main.rs) :
+   fichiers du dossier de données, et coffre du système pour les secrets. Hors d'une coquille native, il ne fait rien. */
 (() => {
+  const T = window.__TAURI__;
+  if (T && T.core && typeof T.core.invoke === "function") {
+    const call = T.core.invoke;
+    const vault = kind => ({
+      load: () => call(`${kind}_load`),
+      write: (key, value) => call(`${kind}_write`, { key, value }),
+      remove: key => call(`${kind}_remove`, { key })
+    });
+    window.seleneNative = { runtime: "tauri", storage: vault("store"), secrets: vault("secret") };
+    return;
+  }
   const C = window.Capacitor;
   if (!C || typeof C.isNativePlatform !== "function" || !C.isNativePlatform()) return;
   const { Filesystem, SecureStorage, App } = C.Plugins;

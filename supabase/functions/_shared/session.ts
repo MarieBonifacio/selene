@@ -2,10 +2,11 @@
 
 export type Base = { fetch: typeof fetch; env: (nom: string) => string | undefined };
 
-/* Les origines autorisées à appeler (liste séparée par des virgules). Par défaut : le site publié et les apps
-   Capacitor (https://localhost sous Android, capacitor://localhost sous iOS : docs/android.md). L'origine n'est
+/* Les origines autorisées à appeler (liste séparée par des virgules). Par défaut : le site publié, les apps
+   Capacitor (https://localhost sous Android, capacitor://localhost sous iOS : docs/android.md) et l'app de bureau
+   Tauri (http://tauri.localhost sous Windows, tauri://localhost sous macOS et Linux : docs/desktop.md). L'origine n'est
    qu'une première barrière : chaque appel demande de toute façon une session valide. */
-export const ORIGINES_PAR_DEFAUT = "https://mariebonifacio.github.io,https://localhost,capacitor://localhost";
+export const ORIGINES_PAR_DEFAUT = "https://mariebonifacio.github.io,https://localhost,capacitor://localhost,http://tauri.localhost,tauri://localhost";
 export function origines(env: string | undefined): string[] {
   return (env || ORIGINES_PAR_DEFAUT).split(",").map(s => s.trim().replace(/\/$/, "")).filter(Boolean);
 }
