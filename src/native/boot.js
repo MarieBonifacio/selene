@@ -9,6 +9,23 @@
    Sous Tauri (ordinateur, ADR 16), les mêmes coffres passent par six commandes de l'app (native/tauri/src/main.rs) :
    fichiers du dossier de données, et coffre du système pour les secrets. Hors d'une coquille native, il ne fait rien. */
 (() => {
+  // Un partage (lien selene://share, ADR 17-18) : rangé dans la file que Selene lit à son démarrage (celle du Web Share
+  // Target), et qu'elle prend aussitôt si elle tourne déjà. Premier script de la page : rien n'est perdu pendant
+  // l'amorçage.
+  const keepShares = () => document.addEventListener("selene:share", e => {
+    const d = (e && e.detail) || {}, s = v => String(v || "").slice(0, 4000);
+    try { sessionStorage.setItem("selene-share", JSON.stringify({ url: s(d.url), title: s(d.title), text: s(d.text) })); } catch {}
+  });
+  // Un lien selene:// reçu par l'app (Capacitor : iOS, Android) devient l'événement que Selene attend.
+  const openLink = href => {
+    let u; try { u = new URL(href); } catch { return; }
+    if (u.protocol !== "selene:") return;
+    if (u.hostname === "capture") document.dispatchEvent(new CustomEvent("selene:capture"));
+    else if (u.hostname === "share") {
+      const q = k => u.searchParams.get(k) || "";
+      document.dispatchEvent(new CustomEvent("selene:share", { detail: { url: q("url"), title: q("title"), text: q("text") } }));
+    }
+  };
   const T = window.__TAURI__;
   if (T && T.core && typeof T.core.invoke === "function") {
     const call = T.core.invoke;
@@ -18,12 +35,7 @@
       remove: key => call(`${kind}_remove`, { key })
     });
     window.seleneNative = { runtime: "tauri", storage: vault("store"), secrets: vault("secret") };
-    // Un partage venu du cœur (lien selene://share, ADR 17) : rangé dans la file que Selene lit à son démarrage, et
-    // qu'elle prend aussitôt si elle tourne déjà. Premier script de la page : rien n'est perdu pendant l'amorçage.
-    document.addEventListener("selene:share", e => {
-      const d = (e && e.detail) || {}, s = v => String(v || "").slice(0, 4000);
-      try { sessionStorage.setItem("selene-share", JSON.stringify({ url: s(d.url), title: s(d.title), text: s(d.text) })); } catch {}
-    });
+    keepShares(); // le cœur Rust envoie lui-même les événements (native/tauri/src/main.rs)
     return;
   }
   const C = window.Capacitor;
@@ -62,7 +74,10 @@
     remove: k => SecureStorage.internalRemoveItem({ prefixedKey: PREFIX + k })
   };
   window.seleneNative = { runtime: "capacitor", storage, secrets };
+  keepShares();
   if (App) {
+    App.addListener("appUrlOpen", e => openLink(e && e.url));
+    if (App.getLaunchUrl) App.getLaunchUrl().then(r => { if (r && r.url) openLink(r.url); }, () => {});
     App.addListener("backButton", e => { if (e && e.canGoBack) history.back(); else App.exitApp(); });
     App.addListener("pause", () => window.dispatchEvent(new Event("pagehide")));
   }

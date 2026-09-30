@@ -580,3 +580,17 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   synchroniser) ; le lancement au démarrage de la session (à la demande, plus tard) ; les API JavaScript des plugins.
 - **Conséquences** : `tests/browser/bureau.js` fait tourner la page native sur un faux cœur Tauri (coffres,
   capture, partage) ; le test Rust vérifie qu'un texte partagé ne peut pas sortir de sa chaîne JSON.
+
+### ADR 18 — iOS par la même coquille Capacitor ; les liens selene:// partout
+
+- **Contexte** : sous iOS, la PWA dépend d'une WebView dont le stockage peut être évincé, et ne reçoit pas le
+  partage. Une extension de partage native demande un App Group, donc un compte Apple Developer.
+- **Décision** : `npx cap add ios` (`native/ios`, plugins par Swift Package Manager), les mêmes plugins et le même
+  amorçage qu'Android : fichiers privés, Trousseau. Le schéma `selene` est déclaré sous iOS (`CFBundleURLTypes`) et
+  Android (filtre `VIEW`) ; l'amorçage change `appUrlOpen` et `getLaunchUrl` en événements `selene:share` et
+  `selene:capture`, les mêmes que ceux du cœur Tauri, avec la même file de partage. « Partager → Selene » passe, sous
+  iOS, par un Raccourci qui ouvre `selene://share?…` (docs/ios.md). Le workflow *iOS* compile pour le simulateur,
+  sans signature. L'icône vient de `icon-512.png`, sur le fond sombre de Selene.
+- **Écarté** : une extension de partage tout de suite (App Group et signature, rien d'essayable ici) ; Tauri mobile.
+- **Conséquences** : un seul chemin pour les liens sur les trois coquilles ; l'installation sur un iPhone attend la
+  publication (compte, signature, TestFlight) ; l'icône 1024 garde un canal alpha, à aplatir pour l'App Store.

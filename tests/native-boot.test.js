@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-function fakeCapacitor({ native = true } = {}) {
+function fakeCapacitor({ native = true, launchUrl = null } = {}) {
   const files = new Map(), secure = new Map(), listeners = {}, log = [];
   const Filesystem = {
     async readdir({ path }) { const pre = path + '/'; const l = [...files.keys()].filter(k => k.startsWith(pre)).map(k => ({ name: k.slice(pre.length) })); if (!l.length && !files.has(path + '/.dir')) throw new Error('absent'); return { files: l.filter(f => f.name !== '.dir') }; },
@@ -21,11 +21,14 @@ function fakeCapacitor({ native = true } = {}) {
     async internalSetItem({ prefixedKey, data }) { secure.set(prefixedKey, data); },
     async internalRemoveItem({ prefixedKey }) { secure.delete(prefixedKey); return { success: true }; }
   };
-  const App = { addListener(n, f) { listeners[n] = f; }, exitApp() { log.push('exit'); } };
+  const App = { addListener(n, f) { listeners[n] = f; }, exitApp() { log.push('exit'); }, getLaunchUrl: async () => (launchUrl ? { url: launchUrl } : undefined) };
   const events = [], history = { back() { log.push('back'); } };
   const window = { Capacitor: { isNativePlatform: () => native, Plugins: { Filesystem, SecureStorage, App } }, dispatchEvent(e) { events.push(e.type); } };
-  vm.runInNewContext(fs.readFileSync('src/native/boot.js', 'utf8'), { window, history, Event: class { constructor(t) { this.type = t; } } });
-  return { window, files, secure, listeners, log, events };
+  const docEvents = [], docHandlers = {}, session = new Map();
+  const document = { addEventListener(n, f) { docHandlers[n] = f; }, dispatchEvent(e) { docEvents.push(e); if (docHandlers[e.type]) docHandlers[e.type](e); } };
+  const CustomEvent = class { constructor(type, init = {}) { this.type = type; this.detail = init.detail; } };
+  vm.runInNewContext(fs.readFileSync('src/native/boot.js', 'utf8'), { window, history, document, CustomEvent, URL, sessionStorage: { setItem: (k, v) => session.set(k, v) }, Event: class { constructor(t) { this.type = t; } } });
+  return { window, files, secure, listeners, log, events, docEvents, session };
 }
 
 test('hors d’une coquille native : rien', () => {
@@ -88,4 +91,14 @@ test('Tauri : les coffres passent par les six commandes de l’app, avec leurs a
   assert.deepEqual(calls.map(([c, a]) => [c, a && { ...a }]), [
     ['store_load', undefined], ['store_write', { key: 'selene-site-v1', value: '{}' }], ['store_remove', { key: 'selene-bilan' }],
     ['secret_load', undefined], ['secret_write', { key: 'selene-auth-session', value: 's' }], ['secret_remove', { key: 'selene-auth-session' }]]);
+});
+
+test('liens selene:// (iOS, Android) : partage rangé dans la file, capture relayée, autres ignorés', async () => {
+  const c = fakeCapacitor({ launchUrl: 'selene://share?url=https%3A%2F%2Fexemple.org&title=Un%20titre' });
+  await new Promise(r => setImmediate(r));
+  assert.deepEqual(JSON.parse(c.session.get('selene-share')), { url: 'https://exemple.org', title: 'Un titre', text: '' }, 'lien qui a lancé l’app');
+  c.listeners.appUrlOpen({ url: 'selene://capture' });
+  c.listeners.appUrlOpen({ url: 'https://ailleurs.example/share?text=x' });
+  c.listeners.appUrlOpen({ url: 'pas une adresse' });
+  assert.deepEqual(c.docEvents.map(e => e.type), ['selene:share', 'selene:capture'], 'seul le schéma selene: compte');
 });

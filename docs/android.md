@@ -13,6 +13,7 @@ Selene, avec ce qu'un téléphone offre en plus.
   réseau, des préférences privées à l'app). La clé Anthropic, elle, reste au serveur (docs/assistant.md).
 - **« Partager » → Selene.** Un lien ou un texte partagé depuis n'importe quelle app arrive dans la boîte de
   réception, par le même chemin que le partage de la PWA (`?title=&text=`).
+- **Les liens `selene://`** (`selene://share?…`, `selene://capture`), comme sous iOS et Windows.
 - **Le bouton retour** remonte l'historique de Selene ; au bout, il ferme l'app.
 - **La mise en arrière-plan** pousse ce qui attend (comme la fermeture d'un onglet).
 
