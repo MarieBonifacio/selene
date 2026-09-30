@@ -162,3 +162,19 @@ test('les secrets déclarés par platform sont ceux que la déconnexion efface',
   assert.ok(SECRET_KEYS.includes('selene-auth-session') && SECRET_KEYS.includes('selene-api-key'));
   assert.match(fs.readFileSync('src/auth.js', 'utf8'), /PERSONAL_SECRETS = platform\.secretKeys\.filter/);
 });
+
+test('notifications et haptique : absentes sur le web, relayées vers la coquille native', async () => {
+  const web = load({ window: { claude: null } }).platform;
+  assert.equal(web.notifications.supported(), false);
+  assert.equal(await web.notifications.permission(), 'denied');
+  await assert.doesNotReject(web.notifications.replace([{ id: 1 }]));
+  assert.doesNotThrow(() => web.haptic());
+  const got = [], ctx = nativeCtx(vault(), vault());
+  Object.assign(ctx.window.seleneNative, { notifications: { permission: async () => 'granted', replace: async l => got.push(l) }, haptic() { throw new Error('moteur absent'); } });
+  const nat = load(ctx).platform;
+  assert.equal(nat.notifications.supported(), true);
+  assert.equal(await nat.notifications.permission(), 'granted');
+  await nat.notifications.replace(['x']);
+  assert.equal(got.length, 1);
+  assert.doesNotThrow(() => nat.haptic(), 'un retour haptique qui échoue ne casse pas une capture');
+});

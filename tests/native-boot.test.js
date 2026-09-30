@@ -22,13 +22,21 @@ function fakeCapacitor({ native = true, launchUrl = null } = {}) {
     async internalRemoveItem({ prefixedKey }) { secure.delete(prefixedKey); return { success: true }; }
   };
   const App = { addListener(n, f) { listeners[n] = f; }, exitApp() { log.push('exit'); }, getLaunchUrl: async () => (launchUrl ? { url: launchUrl } : undefined) };
+  const pending = [{ id: 101 }, { id: 102 }];
+  const LocalNotifications = {
+    requestPermissions: async () => ({ display: 'granted' }),
+    getPending: async () => ({ notifications: pending.slice() }),
+    async cancel({ notifications }) { log.push('cancel ' + notifications.map(n => n.id).join(',')); pending.length = 0; },
+    async schedule({ notifications }) { log.push('schedule'); pending.push(...notifications); }
+  };
+  const Haptics = { impact: async ({ style }) => { log.push('haptic ' + style); } };
   const events = [], history = { back() { log.push('back'); } };
-  const window = { Capacitor: { isNativePlatform: () => native, Plugins: { Filesystem, SecureStorage, App } }, dispatchEvent(e) { events.push(e.type); } };
+  const window = { Capacitor: { isNativePlatform: () => native, Plugins: { Filesystem, SecureStorage, App, LocalNotifications, Haptics } }, dispatchEvent(e) { events.push(e.type); } };
   const docEvents = [], docHandlers = {}, session = new Map();
   const document = { addEventListener(n, f) { docHandlers[n] = f; }, dispatchEvent(e) { docEvents.push(e); if (docHandlers[e.type]) docHandlers[e.type](e); } };
   const CustomEvent = class { constructor(type, init = {}) { this.type = type; this.detail = init.detail; } };
   vm.runInNewContext(fs.readFileSync('src/native/boot.js', 'utf8'), { window, history, document, CustomEvent, URL, sessionStorage: { setItem: (k, v) => session.set(k, v) }, Event: class { constructor(t) { this.type = t; } } });
-  return { window, files, secure, listeners, log, events, docEvents, session };
+  return { window, files, secure, listeners, log, events, docEvents, session, pending };
 }
 
 test('hors d’une coquille native : rien', () => {
@@ -101,4 +109,23 @@ test('liens selene:// (iOS, Android) : partage rangé dans la file, capture rela
   c.listeners.appUrlOpen({ url: 'https://ailleurs.example/share?text=x' });
   c.listeners.appUrlOpen({ url: 'pas une adresse' });
   assert.deepEqual(c.docEvents.map(e => e.type), ['selene:share', 'selene:capture'], 'seul le schéma selene: compte');
+});
+
+test('notifications : la liste donnée remplace tout ce qui était programmé, avec de vraies dates ; haptique légère', async () => {
+  const c = fakeCapacitor(), n = c.window.seleneNative.notifications;
+  assert.equal(await n.permission(), 'granted');
+  await n.replace([{ id: 103, at: '2030-01-02T07:45:00.000Z', title: 'Selene : 2 choses ce jour', body: 'a · b' }]);
+  assert.deepEqual(c.log, ['cancel 101,102', 'schedule']);
+  assert.equal(c.pending.length, 1);
+  const x = c.pending[0];
+  assert.equal(x.id, 103); assert.equal(x.title, 'Selene : 2 choses ce jour'); assert.equal(x.body, 'a · b');
+  assert.equal(Object.prototype.toString.call(x.schedule.at), '[object Date]', 'une Date, pas une chaîne (iOS lit un NSDate)');
+  assert.equal(x.schedule.at.toISOString(), '2030-01-02T07:45:00.000Z'); assert.equal(x.schedule.allowWhileIdle, true);
+  c.log.length = 0;
+  await n.replace([]);
+  assert.deepEqual(c.log, ['cancel 103'], 'une liste vide annule, sans rien programmer');
+  c.log.length = 0;
+  c.window.seleneNative.haptic();
+  await new Promise(r => setImmediate(r));
+  assert.deepEqual(c.log, ['haptic LIGHT']);
 });

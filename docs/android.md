@@ -16,6 +16,11 @@ Selene, avec ce qu'un téléphone offre en plus.
 - **Les liens `selene://`** (`selene://share?…`, `selene://capture`), comme sous iOS et Windows.
 - **Le bouton retour** remonte l'historique de Selene ; au bout, il ferme l'app.
 - **La mise en arrière-plan** pousse ce qui attend (comme la fermeture d'un onglet).
+- **Le résumé du matin** (Réglages → Notifications, à activer) : une notification par jour, à l'heure choisie, avec
+  ce qui demande un geste (rappels dus, échéances). Programmée par le téléphone pour la semaine qui vient, elle sonne
+  app fermée, sans serveur. Pas d'alarme exacte (permission que Google Play réserve aux réveils) : à quelques
+  minutes près.
+- **Un léger retour haptique** quand une capture est gardée.
 
 Le code propre à Android tient en trois fichiers : `src/native/boot.js` (les coffres, le bouton retour),
 `native/android/app/src/main/java/.../MainActivity.java` (le partage) et le filtre `SEND` de l'`AndroidManifest.xml`.

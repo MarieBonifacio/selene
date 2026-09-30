@@ -5,7 +5,8 @@
    - secrets : le trousseau du système (plugin SecureStorage : clé AES-GCM gardée dans l'Android Keystore ou le
      Trousseau iOS), sous le préfixe « selene: ».
    Il relie aussi le bouton retour d'Android à l'historique de la page, et la mise en arrière-plan à « pagehide »
-   (Selene y pousse ce qui attend).
+   (Selene y pousse ce qui attend). Enfin (ADR 19), les notifications locales (le résumé du matin, programmé par le
+   système : il sonne app fermée, sans serveur) et un léger retour haptique à la capture.
    Sous Tauri (ordinateur, ADR 16), les mêmes coffres passent par six commandes de l'app (native/tauri/src/main.rs) :
    fichiers du dossier de données, et coffre du système pour les secrets. Hors d'une coquille native, il ne fait rien. */
 (() => {
@@ -40,7 +41,7 @@
   }
   const C = window.Capacitor;
   if (!C || typeof C.isNativePlatform !== "function" || !C.isNativePlatform()) return;
-  const { Filesystem, SecureStorage, App } = C.Plugins;
+  const { Filesystem, SecureStorage, App, LocalNotifications, Haptics } = C.Plugins;
   const DIR = "DATA", ROOT = "selene", TMP = ".tmp";
   const file = k => `${ROOT}/${encodeURIComponent(k)}`;
   const storage = {
@@ -73,7 +74,18 @@
     write: (k, v) => SecureStorage.internalSetItem({ prefixedKey: PREFIX + k, data: v }),
     remove: k => SecureStorage.internalRemoveItem({ prefixedKey: PREFIX + k })
   };
-  window.seleneNative = { runtime: "capacitor", storage, secrets };
+  // Notifications : Selene donne la liste complète de ce qui doit sonner ; tout ce qui était programmé est remplacé.
+  // Une vraie Date (le pont d'iOS la transmet telle quelle, celui d'Android en ISO, le format que lit le plugin).
+  const notifications = LocalNotifications && {
+    permission: async () => (await LocalNotifications.requestPermissions()).display,
+    async replace(list) {
+      const { notifications: old = [] } = await LocalNotifications.getPending();
+      if (old.length) await LocalNotifications.cancel({ notifications: old.map(n => ({ id: n.id })) });
+      if (list.length) await LocalNotifications.schedule({ notifications: list.map(n => ({ id: n.id, title: n.title, body: n.body, schedule: { at: new Date(n.at), allowWhileIdle: true } })) });
+    }
+  };
+  const haptic = () => { if (Haptics) Haptics.impact({ style: "LIGHT" }).catch(() => {}); };
+  window.seleneNative = { runtime: "capacitor", storage, secrets, notifications, haptic };
   keepShares();
   if (App) {
     App.addListener("appUrlOpen", e => openLink(e && e.url));

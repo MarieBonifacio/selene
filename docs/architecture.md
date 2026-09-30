@@ -594,3 +594,22 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
 - **Écarté** : une extension de partage tout de suite (App Group et signature, rien d'essayable ici) ; Tauri mobile.
 - **Conséquences** : un seul chemin pour les liens sur les trois coquilles ; l'installation sur un iPhone attend la
   publication (compte, signature, TestFlight) ; l'icône 1024 garde un canal alpha, à aplatir pour l'App Store.
+
+### ADR 19 — Notifications locales et retour haptique, dans les coquilles mobiles
+
+- **Contexte** : ce qui rend une app mobile utile quand elle est fermée, c'est de pouvoir se rappeler à soi. Des
+  notifications poussées demandent un serveur, des jetons d'appareil (APNs, FCM) et un calendrier côté serveur ;
+  Selene n'a qu'un stockage et deux fonctions.
+- **Décision** : des notifications **locales** (plugin `@capacitor/local-notifications`), programmées par l'appareil.
+  À chaque rendu, Selene calcule le résumé des sept jours qui viennent (rappels de l'accueil qui proposent un geste,
+  tâches qui arrivent à échéance ; un jour vide ne sonne pas) et, s'il a changé, remplace toute la liste programmée.
+  Le réglage (activé, heure) est propre à l'appareil (`selene-notify`), désactivé par défaut ; la permission est
+  demandée au moment où on l'active. `platform.notifications` et `platform.haptic()` n'existent que dans une coquille
+  native ; l'amorçage appelle les plugins par `Capacitor.Plugins`, sans leur JavaScript. Android : pas de
+  `SCHEDULE_EXACT_ALARM` (retirée du manifeste), une icône de barre d'état monochrome. Retour haptique léger
+  (`@capacitor/haptics`) à la capture.
+- **Écarté** : les notifications poussées (serveur, jetons, et le contenu des rappels hors de l'appareil) ; les
+  notifications Web (il faut que la page tourne, ou un push) ; Windows pour l'instant (la zone de notification suffit).
+- **Conséquences** : un rappel prévu dans six jours n'est connu du téléphone que si Selene a été ouverte depuis ; les
+  textes sont ceux de l'accueil, en texte brut. Testé par `tests/app.test.js` (le plan), `tests/native-boot.test.js`
+  (les appels aux plugins, une vraie `Date`) et `tests/browser/natif.js` (réglage, programmation, haptique).
