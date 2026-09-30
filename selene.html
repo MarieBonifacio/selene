@@ -764,6 +764,13 @@ var __platform = (() => {
         if (native && native.notifications) await native.notifications.replace(list);
       }
     },
+    // Le widget d'écran d'accueil (ADR 24) : ce qu'il affiche, envoyé par la page ; seulement là où la coquille en a un.
+    widget: {
+      supported: () => !!(native && native.widget),
+      update: async (data) => {
+        if (native && native.widget) await native.widget.update(data);
+      }
+    },
     // Un léger retour haptique (une capture enregistrée) ; rien là où l'hôte n'en a pas.
     haptic() {
       try {
@@ -1156,6 +1163,8 @@ var __selene = (() => {
     uid: () => uid,
     validDate: () => validDate,
     weatherState: () => weatherState,
+    widgetData: () => widgetData,
+    widgetSoon: () => widgetSoon,
     windName: () => windName,
     within: () => within,
     zoned: () => zoned,
@@ -8265,6 +8274,29 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     toast(`Ajouté à ${label(x.mb.mod)} : ${x.mb.artist}, « ${x.mb.album} ».`);
   };
 
+  // src/app/features/widget.js
+  var WIDGET_LINES = 3;
+  function widgetData() {
+    const m = moon(), lines = [];
+    for (const [, t] of todayTasks()) if (!lines.includes(t.title)) lines.push(t.title);
+    for (const x of dayDigest(todayISO())) if (!lines.includes(x) && !lines.some((l) => x === `Échéance : ${l}`)) lines.push(x);
+    return { moon: `${m.name} · ${Math.round(m.illum * 100)} %`, lines: lines.slice(0, WIDGET_LINES) };
+  }
+  var widgetTimer = null;
+  var widgetSent = null;
+  function widgetSoon() {
+    if (!platform.widget.supported()) return;
+    clearTimeout(widgetTimer);
+    widgetTimer = setTimeout(() => {
+      const data = widgetData(), sig = JSON.stringify(data);
+      if (sig === widgetSent) return;
+      widgetSent = sig;
+      platform.widget.update(data).catch(() => {
+        widgetSent = null;
+      });
+    }, 1e3);
+  }
+
   // src/app/shell/render.js
   function applyTheme() {
     const c = S().config, r = document.documentElement;
@@ -8291,6 +8323,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     }
     skyWatch();
     notifySoon();
+    widgetSoon();
     if (sharePending) applyShare();
   }
   function renderNow() {

@@ -6,6 +6,7 @@ import { $, esc, pageSize } from "../lib/dom.js";
 import { bridgeBar, bridgeOpen, setBridgeOpen } from "../features/bridge.js";
 import { dehorsOn } from "../features/dehors.js";
 import { notifySoon } from "../features/digest.js";
+import { widgetSoon } from "../features/widget.js";
 import { applyShare, sharePending } from "../features/share.js";
 import { setOpenId } from "../modules/taches.js";
 import { moon, moonSVG } from "../scene/moon.js";
@@ -39,6 +40,7 @@ export function render() {
   try { renderNow(); } finally { renderMemo = null; }
   skyWatch();
   notifySoon();
+  widgetSoon();
   if (sharePending) applyShare();
 }
 function renderNow() {
