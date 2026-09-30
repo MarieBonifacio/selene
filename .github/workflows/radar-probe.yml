@@ -1,0 +1,24 @@
+name: Sonde radar (temporaire)
+on:
+  push:
+    branches: [claude/affectionate-carson-3ax1gp]
+    paths: ['.github/workflows/radar-probe.yml']
+permissions:
+  contents: read
+jobs:
+  sonde:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Requête du radar (select)
+        run: |
+          curl -sS -m 30 -D - -H "Origin: https://mariebonifacio.github.io" "https://opendata.lillemetropole.fr/api/explore/v2.1/catalog/datasets/evenements-publics-openagenda/records?where=lastdate_end%20%3E%3D%20date'2026-09-30'%20and%20firstdate_begin%20%3C%20date'2026-10-14'%20and%20within_distance(location_coordinates%2C%20geom'POINT(3.1%2050.6)'%2C%2020km)&order_by=firstdate_begin&limit=100&select=uid%2Ctitle_fr%2Cdescription_fr%2Ckeywords_fr%2Cfirstdate_begin%2Clastdate_end%2Clocation_name%2Clocation_city%2Ccanonicalurl" -o r1.json -w "\nHTTP %{http_code}\n" | head -30
+          head -c 3000 r1.json; echo
+      - name: Requête du radar (sans select)
+        run: |
+          curl -sS -m 30 -o r2.json -w "HTTP %{http_code} taille %{size_download}\n" "https://opendata.lillemetropole.fr/api/explore/v2.1/catalog/datasets/evenements-publics-openagenda/records?where=lastdate_end%20%3E%3D%20date'2026-09-30'%20and%20firstdate_begin%20%3C%20date'2026-10-14'%20and%20within_distance(location_coordinates%2C%20geom'POINT(3.1%2050.6)'%2C%2020km)&order_by=firstdate_begin&limit=100"
+          head -c 3000 r2.json; echo
+      - name: Le jeu de données existe-t-il ?
+        run: |
+          curl -sS -m 30 -w "\nHTTP %{http_code}\n" "https://opendata.lillemetropole.fr/api/explore/v2.1/catalog/datasets/evenements-publics-openagenda" | head -c 2500; echo
+          curl -sS -m 30 -w "\nHTTP %{http_code}\n" "https://opendata.lillemetropole.fr/api/explore/v2.1/catalog/datasets?where=search(%22openagenda%22)&select=dataset_id&limit=20" | head -c 2500; echo
+          curl -sS -m 30 -w "\nHTTP %{http_code}\n" "https://opendata.lillemetropole.fr/api/explore/v2.1/catalog/datasets?where=search(%22agenda%22)&select=dataset_id&limit=20" | head -c 2500; echo
