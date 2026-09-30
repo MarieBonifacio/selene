@@ -1,6 +1,7 @@
 /* Les boîtes de dialogue : confirmation (ask) et formulaire générique (openForm), construits à partir d'une
    description de champs. */
 import { $, esc, toast } from "../lib/dom.js";
+import { tr, trp } from "../i18n/index.js";
 
 export function ask(msg) { return new Promise(res => { const d = $("#cdlg"); $("#cmsg").textContent = msg; d.returnValue = ""; d.onclose = () => res(d.returnValue === "ok"); d.showModal(); }); }
 export let formCb = null;
@@ -16,7 +17,7 @@ function fieldHTML(f, v) {
 export function openForm(title, fields, values, cb) {
   formCb = cb;
   $("#form").innerHTML = `<h2>${esc(title)}</h2>` + fields.map(f => f.row ? `<div class="field-row">${f.row.map(x => fieldHTML(x, values)).join("")}</div>` : fieldHTML(f, values)).join("") +
-    `<div class="row"><button class="btn solid" value="save">Enregistrer</button><button class="btn" value="cancel" formnovalidate>Annuler</button></div>`;
+    `<div class="row"><button class="btn solid" value="save">${tr`Enregistrer`}</button><button class="btn" value="cancel" formnovalidate>${trp("formulaire", "Annuler")}</button></div>`;
   $("#dlg").showModal();
 }
 $("#dlg").addEventListener("close", () => {

@@ -4,6 +4,7 @@ import { WEATHER, approxPlace, moonPlacement, moonPosition, nextCrossing, season
 import { CLICK } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { fmt, todayISO } from "../lib/format.js";
+import { uiLocale } from "../i18n/index.js";
 import { render } from "../shell/render.js";
 import { S, site } from "../state/site.js";
 
@@ -57,7 +58,8 @@ function skyEventText(ev, illum) {
   const what = ev.type === "pénombre" ? `Éclipse de Lune par la pénombre ${when} : un voile léger, à peine perceptible` : `Éclipse ${ev.type} de ${ev.body === "soleil" ? "Soleil" : "Lune"} ${when}${ev.note ? ` : ${ev.note}` : ""}`;
   return `${what}${ev.body === "soleil" ? ". Jamais sans lunettes d'éclipse." : "."}`;
 }
-export const hm = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
+// « 14 h 05 » : la typographie française de l'heure ; les autres langues gardent la leur (« 14:05 »).
+export const hm = t => { const loc = uiLocale(), s = new Date(t).toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" }); return loc.startsWith("fr") ? s.replace(":", " h ") : s; };
 /* La scène du moment : couleurs (skyScene), place de la lune, et ce qu'on peut en dire en une ligne. */
 export function sceneNow(m) {
   const c = skyConf(), place = c ? { lat: +c.lat, lon: +c.lon } : approxPlace(), t = Date.now(), dark = uiDark();
@@ -94,7 +96,7 @@ export function sceneNow(m) {
 let skyResults = [];
  // résultats de la dernière recherche de ville (propres à l'appareil, oubliés au rechargement)
 export function skySettingsHTML() {
-  const c = skyConf(), f = v => (+v).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const c = skyConf(), f = v => (+v).toLocaleString(uiLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   return `<section id="ciel"><h3>Ciel</h3><p class="hint">La scène de l'accueil montre le dehors réel : l'heure par le soleil, la lune à sa place, le temps qu'il fait. Sans lieu, l'heure est estimée d'après le fuseau horaire (à trois quarts d'heure près), et il n'y a pas de météo.</p>
     ${c ? `<p class="row" style="margin:0 0 10px">Lieu : <b>${esc(c.name)}</b> <span class="hint" style="margin:0">(${f(c.lat)} ; ${f(c.lon)}, arrondis à une dizaine de kilomètres)</span><button class="btn ghost sm" data-act="sky-clear">retirer</button></p>` : ""}
     <div class="row"><input id="skyCity" placeholder="${c ? "Changer de ville…" : "Une ville…"}" aria-label="Ville" autocomplete="off" style="max-width:260px"><button class="btn sm" data-act="sky-search">Chercher</button><button class="btn ghost sm" data-act="sky-locate">Utiliser ma position</button></div>
@@ -114,7 +116,7 @@ export async function skySearch() {
   const q = ($("#skyCity") || {}).value;
   if (!q || !q.trim()) return;
   try {
-    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q.trim())}&count=5&language=fr&format=json`);
+    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q.trim())}&count=5&language=${uiLocale().split("-")[0]}&format=json`); // les noms de lieux dans la langue de l'interface
     const j = r.ok ? await r.json() : {};
     skyResults = (j.results || []).filter(x => Number.isFinite(+x.latitude) && Number.isFinite(+x.longitude)).slice(0, 5)
       .map(x => ({ name: [x.name, x.admin1, x.country].filter(Boolean).join(", ").slice(0, 80), lat: +x.latitude, lon: +x.longitude }));

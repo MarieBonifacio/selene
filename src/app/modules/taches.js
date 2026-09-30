@@ -5,6 +5,7 @@ import { rainDays } from "../../core/sky.js";
 import { registerType } from "../registry.js";
 import { $, esc, toast, toastAction } from "../lib/dom.js";
 import { addDaysTo, diffDays, fmt, money, plural, todayISO, uid } from "../lib/format.js";
+import { collate } from "../i18n/index.js";
 import { firstOfType } from "../features/assistant.js";
 import { modOf } from "./collection.js";
 import { instOf, originHTML, removeWithUndo, within } from "./entries.js";
@@ -24,7 +25,7 @@ const byDue = (a, b) => (a.due || "9999").localeCompare(b.due || "9999");
 export const taskFilters = {};
  // filtres par module : { room, cat } (propres à l'appareil, non enregistrés)
 const tf = id => taskFilters[id] || (taskFilters[id] = { room: "", cat: "" });
-const roomsOf = id => [...new Set(S().modules[id].entries.map(t => t.room).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
+const roomsOf = id => [...new Set(S().modules[id].entries.map(t => t.room).filter(Boolean))].sort(collate);
 const doneLines = ["Fait. Le monde s'effondre un peu moins vite.", "Un de moins. L'entropie note ta résistance.", "Coché. Personne n'applaudit, alors je le fais.", "Terminé. Ton futur toi te déteste un peu moins.", "Réglé. Le chaos recule d'un centimètre."];
 let openId = null;
 export const setOpenId = id => { openId = id; };

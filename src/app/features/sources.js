@@ -5,6 +5,7 @@ import { bareSource, crossrefToSource, findDoi, findUrl, microlinkToSource, sour
 import { CLICK } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { fmt, todayISO, uid } from "../lib/format.js";
+import { uiLocale } from "../i18n/index.js";
 import { citeBar } from "./cites.js";
 import { dehorsFeeds } from "./dehors.js";
 import { excerpt, refFind, thoughtItems } from "./links.js";
@@ -28,7 +29,7 @@ export const sourcesModule = () => S().config.modules.map(m => m.id).find(k => e
 export function pubDate(d) {
   if (!d) return "";
   if (d.length === 10) return fmt(d, { day: "numeric", month: "short", year: "numeric" });
-  if (d.length === 7) return new Date(d + "-15T12:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  if (d.length === 7) return new Date(d + "-15T12:00").toLocaleDateString(uiLocale(), { month: "long", year: "numeric" });
   return d;
 }
 /* Sous une source : son site, sa date, son DOI, et le lien vers elle (seul lien externe de l'app, jamais « javascript: »). */

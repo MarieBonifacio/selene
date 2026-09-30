@@ -2,6 +2,7 @@
    réglage. */
 import { CLICK, TYPE_UI } from "../registry.js";
 import { esc } from "../lib/dom.js";
+import { collate } from "../i18n/index.js";
 import { render } from "../shell/render.js";
 import { openSheet } from "../shell/sheets.js";
 import { S } from "../state/site.js";
@@ -26,7 +27,7 @@ export function groupPanel(mod, hint) {
   const by = groupBy(mod);
   let gs = G.groups(by);
   if (c.hideDone) gs = gs.filter(g => g.pct !== 100);
-  const sorters = { name: (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name, "fr"), pct: (a, b) => (b.pct ?? -1) - (a.pct ?? -1), left: (a, b) => ((a.pct ?? 101)) - ((b.pct ?? 101)) };
+  const sorters = { name: (a, b) => (a.order ?? 0) - (b.order ?? 0) || collate(a.name, b.name), pct: (a, b) => (b.pct ?? -1) - (a.pct ?? -1), left: (a, b) => ((a.pct ?? 101)) - ((b.pct ?? 101)) };
   gs.sort(sorters[c.sort] || sorters.name);
   const active = gFilter[mod];
   const title = c.title || `Par ${G.fields[by].toLowerCase()}`;

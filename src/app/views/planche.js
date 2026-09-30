@@ -4,6 +4,7 @@ import { CLICK, TYPE_UI } from "../registry.js";
 import { esc } from "../lib/dom.js";
 import { downloadFile } from "../lib/download.js";
 import { addDaysTo, fmt, iso, todayISO } from "../lib/format.js";
+import { LANGS, uiLang } from "../i18n/index.js";
 import { concordance, isConcordance } from "../features/concordance.js";
 import { lexicalDrift } from "../features/derive.js";
 import { epCounts, excerpt, sourceItems } from "../features/links.js";
@@ -128,7 +129,7 @@ export function plancheView() {
 /* La planche téléchargée : un .html autonome, en clair, qui s'imprime tel quel (utile là où window.print est bloqué). */
 function plancheFile() {
   const p = plancheData(plancheOffset);
-  const doc = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Planche ${p.k}</title>
+  const doc = `<!doctype html><html lang="${LANGS[uiLang()].tag}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Planche ${p.k}</title>
 <style>:root{--ink:#141a16;--muted:#4a524d;--rule:#a9b0aa}body{margin:0;padding:24px 12px;background:#fbfaf6;color:var(--ink);font-family:Georgia,"Times New Roman",serif}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .sig{width:1.05em;height:1.05em;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.14em;margin-right:.5em}

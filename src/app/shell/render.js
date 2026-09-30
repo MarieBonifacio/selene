@@ -3,6 +3,7 @@ import { hosted, platform } from "../../platform.js";
 import { approxPlace, sunPosition } from "../../core/sky.js";
 import { SHEETS, TYPE_UI, VIEWS } from "../registry.js";
 import { $, esc, pageSize } from "../lib/dom.js";
+import { applyLang, uiLocale } from "../i18n/index.js";
 import { bridgeBar, bridgeOpen, setBridgeOpen } from "../features/bridge.js";
 import { dehorsOn } from "../features/dehors.js";
 import { notifySoon } from "../features/digest.js";
@@ -43,6 +44,7 @@ export function render() {
 }
 function renderNow() {
   applyTheme();
+  applyLang(S().config.lang); // avant tout texte, écran de connexion compris (la langue de l'appareil, tant qu'aucun compte n'est lu)
   if (hosted() && authReady() && !authSession) { $("#nav").innerHTML = ""; $("#bar").innerHTML = ""; $("#main").innerHTML = authView(); return; }
   const s = S(), m = moon();
   let view = routeOf().view;
@@ -53,7 +55,7 @@ function renderNow() {
   $("#brandName").textContent = s.config.name || "Selene";
   document.title = s.config.name || "Selene";
   $("#miniMoon").innerHTML = moonSVG(m.p, 40);
-  $("#dateline").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
+  $("#dateline").textContent = new Date().toLocaleDateString(uiLocale(), { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
   $("#nav").innerHTML = navHTML(view);
   $("#bar").innerHTML = barHTML(view);
   if (inst && view !== lastView) noteVisit(view);

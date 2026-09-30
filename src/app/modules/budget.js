@@ -3,6 +3,7 @@ import { addBudgetEntry } from "../../core/domain.js";
 import { TYPE_UI, registerType } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { fmt, iso, money, todayISO, uid } from "../lib/format.js";
+import { uiLocale } from "../i18n/index.js";
 import { modOf } from "./collection.js";
 import { instOf, recentBy, removeWithUndo, within } from "./entries.js";
 import { gFilter, gMatch, groupPanel } from "./groups.js";
@@ -22,7 +23,7 @@ registerType("budget", {
   view(id) {
     const inst = S().modules[id], m = monthOf(id), es = inMonth(inst, m), out = sumOf(es, "dépense"), inn = sumOf(es, "revenu");
     const shown = es.filter(e => gMatch(id, e)).sort((a, x) => x.date.localeCompare(a.date));
-    const mLabel = new Date(m + "-15").toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+    const mLabel = new Date(m + "-15").toLocaleDateString(uiLocale(), { month: "long", year: "numeric" });
     const tasksLeft = allTasks().filter(([m, t]) => !t.done && t.cost && S().modules[m].config.costs).reduce((a, [, t]) => a + +t.cost, 0);
     const defDate = m === todayISO().slice(0, 7) ? todayISO() : m + "-01";
     return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span>

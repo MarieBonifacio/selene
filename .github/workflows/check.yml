@@ -26,6 +26,8 @@ jobs:
       - run: npm run test:syntax
       - name: Analyse statique (script assemblé + service worker)
         run: npm run lint
+      - name: Traductions (textes marqués, dictionnaires)
+        run: npm run i18n
   passeur:
     # Les fonctions Supabase Edge (passeur, assistant : docs/passeur.md, docs/assistant.md) : types et tests, avec Deno.
     runs-on: ubuntu-latest

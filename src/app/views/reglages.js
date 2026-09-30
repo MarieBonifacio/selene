@@ -6,6 +6,7 @@ import { CLICK, TYPE_UI, VIEWS } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { downloadFile } from "../lib/download.js";
 import { todayISO } from "../lib/format.js";
+import { collate, langChoices, tr } from "../i18n/index.js";
 import { agendaSettingsHTML } from "../features/agenda.js";
 import { assistantKnown } from "../features/assistant.js";
 import { notifySettingsHTML } from "../features/digest.js";
@@ -23,6 +24,10 @@ import { sigilPicker } from "../shell/sigils.js";
 import { S, board, enabled, label, site } from "../state/site.js";
 import { openForm } from "../ui/dialogs.js";
 
+/* La langue de l'interface, suivie par le compte (synchronisée) ; vide : celle de l'appareil. Chaque langue sous son
+   propre nom (on cherche « English », pas « Anglais »). Absent tant qu'une seule langue est proposée (i18n). */
+const langSelectHTML = c => langChoices().length < 2 ? "<span></span>"
+  : `<label>${tr`Langue`}<select data-set="config.lang"><option value="" ${!c.lang ? "selected" : ""}>${tr`Langue de l'appareil`}</option>${langChoices().map(([k, n]) => `<option value="${k}" lang="${k}" ${c.lang === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></label>`;
 const PALETTES = [["nigredo", "Nigredo, mousse", "#6f9a68"], ["albedo", "Albedo, lichen", "#aab7a6"], ["citrinitas", "Citrinitas, résine", "#c99a3c"], ["rubedo", "Rubedo, amanite", "#c0554a"]];
 VIEWS.reglages = () => {
   const s = S(), c = s.config;
@@ -31,7 +36,7 @@ VIEWS.reglages = () => {
     <div class="swatches">${PALETTES.map(([id, n, col]) => `<button class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}"><i style="background:${col}"></i>${n}</button>`).join("")}</div>
     <div class="field-row" style="margin-top:14px"><label>Mode<select data-set="config.mode"><option value="auto" ${c.mode === "auto" ? "selected" : ""}>Suivre l'appareil</option><option value="dark" ${c.mode === "dark" ? "selected" : ""}>Toujours sombre</option><option value="light" ${c.mode === "light" ? "selected" : ""}>Toujours clair</option><option value="sun" ${c.mode === "sun" ? "selected" : ""}>Suivre le soleil</option></select></label>
     <label>Nom affiché<input data-set="config.name" value="${esc(c.name)}"></label></div>
-    <div class="field-row" style="margin-top:12px"><label>Ouvrir sur (cet appareil)<select data-act="open-on"><option value="accueil" ${openOn() === "accueil" ? "selected" : ""}>L'accueil</option><option value="last" ${openOn() === "last" ? "selected" : ""}>Là où j'en étais</option></select></label><span></span></div></section>
+    <div class="field-row" style="margin-top:12px"><label>Ouvrir sur (cet appareil)<select data-act="open-on"><option value="accueil" ${openOn() === "accueil" ? "selected" : ""}>L'accueil</option><option value="last" ${openOn() === "last" ? "selected" : ""}>Là où j'en étais</option></select></label>${langSelectHTML(c)}</div></section>
   ${notifySettingsHTML()}
   ${skySettingsHTML()}
   ${radarSettingsHTML()}
@@ -73,7 +78,7 @@ VIEWS.reglages = () => {
    Réglages, et dans la feuille qu'ouvre « régler » depuis le module lui-même. */
 export function moduleSettingsHTML(mod) {
   const s = S(), inst = s.modules[mod], G = grouperFor(mod), g = G ? gcfg(mod) : null, by = G ? groupBy(mod) : null;
-  const names = G && G.renamable.includes(by) ? [...new Set(G.items().map(it => it[by]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr")) : [];
+  const names = G && G.renamable.includes(by) ? [...new Set(G.items().map(it => it[by]).filter(Boolean))].sort(collate) : [];
   return `${sigilPicker(mod)}
         ${inst ? TYPE_UI[inst.type].settings(mod, inst) : ""}
         ${G ? `<div class="row" style="margin-top:0"><label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="grp-on" ${g.on ? "checked" : ""}>Regrouper en pourcentage</label></div>

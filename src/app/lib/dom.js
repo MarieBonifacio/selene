@@ -1,6 +1,7 @@
 /* Le DOM au plus simple : sélecteur, échappement HTML, messages éphémères (avec « Annuler »), pagination des listes
    longues, état d'enregistrement. */
 import { CLICK } from "../registry.js";
+import { tr, trp } from "../i18n/index.js";
 
 export const $ = s => document.querySelector(s);
 export const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -21,13 +22,13 @@ export function toastAction(msg, button, fn, ms = 6000) {
   clearTimeout(toast.t); toast.t = setTimeout(() => { el.classList.remove("show", "act"); undoFn = null; }, ms);
 }
 /* « Annuler » pendant quelques secondes, au lieu d'une confirmation avant d'agir. */
-export const toastUndo = (msg, undo) => toastAction(msg, "Annuler", undo);
+export const toastUndo = (msg, undo) => toastAction(msg, trp("toast", "Annuler"), undo);
 /* Longues listes : les PAGE premiers éléments, puis « Voir les suivants ». Propre à l'appareil, remis à zéro
    quand on change de vue : une liste de milliers de fragments se calcule vite mais se parcourt mal au pouce. */
 export const PAGE = 100, pageSize = {};
 export function paged(key, list) {
   const n = pageSize[key] || PAGE, rest = list.length - n;
-  return { items: list.slice(0, n), more: rest > 0 ? `<li class="more-row"><button class="btn ghost sm" data-act="page-more" data-k="${esc(key)}">Voir les ${Math.min(PAGE, rest)} suivants (${rest} de plus)</button></li>` : "" };
+  return { items: list.slice(0, n), more: rest > 0 ? `<li class="more-row"><button class="btn ghost sm" data-act="page-more" data-k="${esc(key)}">${tr`Voir les ${Math.min(PAGE, rest)} suivants (${rest} de plus)`}</button></li>` : "" };
 }
 export function setSaving(t) { $("#saving").textContent = t; }
 CLICK["undo"] = () => { const f = undoFn; undoFn = null; $("#toast").classList.remove("show", "act"); if (f) f(); };

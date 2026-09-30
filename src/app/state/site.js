@@ -16,7 +16,9 @@ const OFF_BY_DEFAULT = ["assistant"];
 export function siteSeed() {
   return {
     updatedAt: 0, schemaVersion: SCHEMA_VERSION, boardMerged: true,
-    config: { name: "Selene", palette: "nigredo", mode: "auto", labels: {}, groups: {}, welcome: true,
+    // lang : la langue de l'interface, suivie par le compte ; vide, celle de l'appareil (même valeur partout : le
+    // départ reste vierge et identique d'un appareil à l'autre).
+    config: { name: "Selene", palette: "nigredo", mode: "auto", lang: "", labels: {}, groups: {}, welcome: true,
       modules: [{ id: "inbox", on: true }, { id: "assistant", on: !OFF_BY_DEFAULT.includes("assistant") }],
       assistant: { model: "claude-sonnet-5", actions: true, share: { inbox: true } } },
     modules: { inbox: SECTION_TO_MODULE.inbox({ items: [] }) }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-FHFkROa5z+4zekbbVLxfOcajbrWi6ayT+2nDLqKwUpo=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-UZPsW2dV0tr+iHZdTmHiMQ04FoLcuDWSKKNq66nrpjw=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -1191,6 +1191,88 @@ var __selene = (() => {
     }
   }
 
+  // src/app/i18n/en.js
+  var en_default = {
+    // lib/dom.js
+    "toastAnnuler": "Undo",
+    "Voir les {0} suivants ({1} de plus)": "Show the next {0} ({1} more)",
+    // ui/dialogs.js
+    "Enregistrer": "Save",
+    "formulaireAnnuler": "Cancel",
+    // scene/moon.js
+    "Nouvelle lune": "New moon",
+    "Premier croissant": "Waxing crescent",
+    "Premier quartier": "First quarter",
+    "Gibbeuse croissante": "Waxing gibbous",
+    "Pleine lune": "Full moon",
+    "Gibbeuse décroissante": "Waning gibbous",
+    "Dernier quartier": "Last quarter",
+    "Dernier croissant": "Waning crescent",
+    "Phase de la lune": "Moon phase",
+    // views/reglages.js
+    "Langue": "Language",
+    "Langue de l'appareil": "Device language"
+  };
+
+  // src/app/i18n/index.js
+  var LANGS = {
+    fr: { name: "Français", frName: "français", tag: "fr", locale: "fr-FR", dict: null },
+    en: { name: "English", frName: "anglais", tag: "en", locale: "en-GB", dict: en_default },
+    /* Pseudo-langue de contrôle (qps : la plage « usage privé » de BCP 47, comme qps-ploc chez Microsoft). Chaque texte
+       passé par tr() s'y affiche accentué, allongé d'un tiers et entre ⟦ ⟧ : un texte resté nu à l'écran a échappé à la
+       traduction, un texte coupé manquera de place dans une langue plus longue. Jamais proposée dans les Réglages. */
+    qps: { name: "Pseudo", frName: "français", tag: "qps-ploc", locale: "fr-FR", dict: null, pseudo: true }
+  };
+  var READY_LANGS = ["fr"];
+  function resolveLang(pref, device = [], ready = READY_LANGS) {
+    if (pref === "qps" || ready.includes(pref)) return pref;
+    for (const tag of device) {
+      const base = String(tag || "").toLowerCase().split("-")[0];
+      if (ready.includes(base)) return base;
+    }
+    return "fr";
+  }
+  var lang = "fr";
+  var collator = null;
+  var rules = null;
+  var uiLang = () => lang;
+  var uiLocale = () => LANGS[lang].locale;
+  function applyLang(pref, ready = READY_LANGS) {
+    let device = [];
+    try {
+      device = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
+    } catch {
+    }
+    const next = resolveLang(pref, device, ready);
+    if (next === lang) return false;
+    lang = next;
+    collator = null;
+    rules = null;
+    try {
+      document.documentElement.lang = LANGS[lang].tag;
+    } catch {
+    }
+    return true;
+  }
+  var ACCENTS = { a: "à", c: "ç", e: "é", i: "ï", n: "ñ", o: "ô", u: "ü", y: "ÿ", A: "Å", C: "Ç", E: "É", I: "Ï", N: "Ñ", O: "Ö", U: "Û", Y: "Ý" };
+  var pseudo = (s) => "⟦" + s.replace(/[a-zA-Z]/g, (c) => ACCENTS[c] || c) + "·".repeat(Math.ceil(s.length / 3)) + "⟧";
+  var fill = (tpl, vals) => tpl.replace(/\{(\d+)\}/g, (m, i) => i < vals.length ? String(vals[i]) : m);
+  function translate(key, source, vals) {
+    const L = LANGS[lang], d = L.dict, v = d && Object.hasOwn(d, key) && typeof d[key] === "string" ? d[key] : source;
+    return fill(L.pseudo ? pseudo(v) : v, vals);
+  }
+  function tr(parts, ...vals) {
+    const key = typeof parts === "string" ? parts : parts.reduce((k, p, i) => k + "{" + (i - 1) + "}" + p);
+    return translate(key, key, vals);
+  }
+  var trp = (ctx, text, ...vals) => translate(ctx + "" + text, text, vals);
+  var N_ = (s) => s;
+  function collate(a, b) {
+    if (!collator) collator = new Intl.Collator(uiLocale());
+    return collator.compare(a, b);
+  }
+  var langChoices = () => READY_LANGS.map((k) => [k, LANGS[k].name]);
+
   // src/app/lib/dom.js
   var $ = (s) => document.querySelector(s);
   var esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -1224,12 +1306,12 @@ var __selene = (() => {
       undoFn = null;
     }, ms);
   }
-  var toastUndo = (msg, undo) => toastAction(msg, "Annuler", undo);
+  var toastUndo = (msg, undo) => toastAction(msg, trp("toast", "Annuler"), undo);
   var PAGE = 100;
   var pageSize = {};
   function paged(key, list) {
     const n = pageSize[key] || PAGE, rest = list.length - n;
-    return { items: list.slice(0, n), more: rest > 0 ? `<li class="more-row"><button class="btn ghost sm" data-act="page-more" data-k="${esc(key)}">Voir les ${Math.min(PAGE, rest)} suivants (${rest} de plus)</button></li>` : "" };
+    return { items: list.slice(0, n), more: rest > 0 ? `<li class="more-row"><button class="btn ghost sm" data-act="page-more" data-k="${esc(key)}">${tr`Voir les ${Math.min(PAGE, rest)} suivants (${rest} de plus)`}</button></li>` : "" };
   }
   function setSaving(t) {
     $("#saving").textContent = t;
@@ -1298,10 +1380,10 @@ var __selene = (() => {
   var fmtCache = /* @__PURE__ */ new Map();
   var fmt = (s, o = { day: "numeric", month: "short" }) => {
     if (!s) return "";
-    const k = s + JSON.stringify(o);
+    const loc = uiLocale(), k = loc + s + JSON.stringify(o);
     let v = fmtCache.get(k);
     if (v === void 0) {
-      v = (/* @__PURE__ */ new Date(s + "T12:00")).toLocaleDateString("fr-FR", o);
+      v = (/* @__PURE__ */ new Date(s + "T12:00")).toLocaleDateString(loc, o);
       if (fmtCache.size >= 5e3) fmtCache.clear();
       fmtCache.set(k, v);
     }
@@ -1312,7 +1394,7 @@ var __selene = (() => {
     const n = diffDays(todayISO(), s);
     return n === 0 ? "aujourd'hui" : n === 1 ? "hier" : `il y a ${n} j`;
   };
-  var money = (n) => (+n || 0).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+  var money = (n) => (+n || 0).toLocaleString(uiLocale(), { style: "currency", currency: "EUR" });
   function streakOf(dates) {
     const set = new Set(dates);
     let n = 0;
@@ -2418,10 +2500,13 @@ var __selene = (() => {
       updatedAt: 0,
       schemaVersion: SCHEMA_VERSION,
       boardMerged: true,
+      // lang : la langue de l'interface, suivie par le compte ; vide, celle de l'appareil (même valeur partout : le
+      // départ reste vierge et identique d'un appareil à l'autre).
       config: {
         name: "Selene",
         palette: "nigredo",
         mode: "auto",
+        lang: "",
         labels: {},
         groups: {},
         welcome: true,
@@ -2758,8 +2843,8 @@ var __selene = (() => {
   // src/app/scene/moon.js
   var SYNODIC = 29.530588853;
   var NEW_MOON_REF = Date.UTC(2e3, 0, 6, 18, 14);
-  var MOON_NAMES = ["Nouvelle lune", "Premier croissant", "Premier quartier", "Gibbeuse croissante", "Pleine lune", "Gibbeuse décroissante", "Dernier quartier", "Dernier croissant"];
-  var moonName = (p) => MOON_NAMES[Math.floor((p + 1 / 16) % 1 * 8)];
+  var MOON_NAMES = [N_("Nouvelle lune"), N_("Premier croissant"), N_("Premier quartier"), N_("Gibbeuse croissante"), N_("Pleine lune"), N_("Gibbeuse décroissante"), N_("Dernier quartier"), N_("Dernier croissant")];
+  var moonName = (p) => tr(MOON_NAMES[Math.floor((p + 1 / 16) % 1 * 8)]);
   function moon() {
     const syn = SYNODIC, ref = NEW_MOON_REF;
     const age = ((Date.now() - ref) / 864e5 % syn + syn) % syn;
@@ -2774,7 +2859,7 @@ var __selene = (() => {
     let d;
     if (p < 0.5) d = `M${c},${c - r} A${r},${r} 0 0 1 ${c},${c + r} A${rx},${r} 0 0 ${p < 0.25 ? 0 : 1} ${c},${c - r}Z`;
     else d = `M${c},${c - r} A${r},${r} 0 0 0 ${c},${c + r} A${rx},${r} 0 0 ${p < 0.75 ? 0 : 1} ${c},${c - r}Z`;
-    return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" role="img" aria-label="Phase de la lune"><circle cx="50" cy="50" r="${r}" fill="var(--moon-shadow)" stroke="var(--rule)" stroke-width=".8"/><path d="${d}" fill="var(--moon)"/></svg>`;
+    return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" role="img" aria-label="${tr`Phase de la lune`}"><circle cx="50" cy="50" r="${r}" fill="var(--moon-shadow)" stroke="var(--rule)" stroke-width=".8"/><path d="${d}" fill="var(--moon)"/></svg>`;
   }
 
   // src/app/features/dossier.js
@@ -2889,7 +2974,8 @@ var __selene = (() => {
     m.sigil != null && (typeof m.sigil !== "string" || !/^[a-z]{1,20}$/.test(m.sigil)))) || // sigil : glyphe de l'espace, facultatif
     site2.config.groups != null && !record(site2.config.groups) || site2.config.labels != null && !record(site2.config.labels) || site2.config.assistant != null && (!record(site2.config.assistant) || site2.config.assistant.share != null && !record(site2.config.assistant.share)) || // sky : le lieu du ciel de l'accueil, facultatif ; ses coordonnées finissent dans une URL, son nom dans le HTML.
     site2.config.sky != null && (!record(site2.config.sky) || typeof site2.config.sky.name !== "string" || site2.config.sky.name.length > 80 || typeof site2.config.sky.lat !== "number" || !(Math.abs(site2.config.sky.lat) <= 90) || typeof site2.config.sky.lon !== "number" || !(Math.abs(site2.config.sky.lon) <= 180)) || // dehors : les flux suivis (adresse http(s), titre, projet, « vu jusqu'à »), cent au plus.
-    site2.config.dehors != null && (!record(site2.config.dehors) || !Array.isArray(site2.config.dehors.feeds) || site2.config.dehors.feeds.length > 100 || site2.config.dehors.feeds.some((f) => !record(f) || typeof f.id !== "string" || !/^[\w-]{1,64}$/.test(f.id) || typeof f.url !== "string" || f.url.length > 2e3 || !/^https?:\/\//i.test(f.url) || typeof f.title !== "string" || f.title.length > 200 || f.mod != null && (typeof f.mod !== "string" || f.mod.length > 64) || f.seen != null && !(Number.isFinite(f.seen) && f.seen >= 0) || f.motifs != null && typeof f.motifs !== "boolean") || site2.config.dehors.artists != null && typeof site2.config.dehors.artists !== "boolean" || site2.config.dehors.artistsSeen != null && !(Number.isFinite(site2.config.dehors.artistsSeen) && site2.config.dehors.artistsSeen >= 0) || site2.config.dehors.research != null && (!Array.isArray(site2.config.dehors.research) || site2.config.dehors.research.length > 30 || site2.config.dehors.research.some((r) => !record(r) || typeof r.id !== "string" || !/^[\w-]{1,64}$/.test(r.id) || !["q", "author"].includes(r.kind) || typeof r.q !== "string" || !r.q || r.q.length > 200 || r.name != null && (typeof r.name !== "string" || !r.name || r.name.length > 200) || r.mod != null && (typeof r.mod !== "string" || r.mod.length > 64) || r.seen != null && !(Number.isFinite(r.seen) && r.seen >= 0)))) || // radar : les mots du radar culturel, facultatifs.
+    site2.config.dehors != null && (!record(site2.config.dehors) || !Array.isArray(site2.config.dehors.feeds) || site2.config.dehors.feeds.length > 100 || site2.config.dehors.feeds.some((f) => !record(f) || typeof f.id !== "string" || !/^[\w-]{1,64}$/.test(f.id) || typeof f.url !== "string" || f.url.length > 2e3 || !/^https?:\/\//i.test(f.url) || typeof f.title !== "string" || f.title.length > 200 || f.mod != null && (typeof f.mod !== "string" || f.mod.length > 64) || f.seen != null && !(Number.isFinite(f.seen) && f.seen >= 0) || f.motifs != null && typeof f.motifs !== "boolean") || site2.config.dehors.artists != null && typeof site2.config.dehors.artists !== "boolean" || site2.config.dehors.artistsSeen != null && !(Number.isFinite(site2.config.dehors.artistsSeen) && site2.config.dehors.artistsSeen >= 0) || site2.config.dehors.research != null && (!Array.isArray(site2.config.dehors.research) || site2.config.dehors.research.length > 30 || site2.config.dehors.research.some((r) => !record(r) || typeof r.id !== "string" || !/^[\w-]{1,64}$/.test(r.id) || !["q", "author"].includes(r.kind) || typeof r.q !== "string" || !r.q || r.q.length > 200 || r.name != null && (typeof r.name !== "string" || !r.name || r.name.length > 200) || r.mod != null && (typeof r.mod !== "string" || r.mod.length > 64) || r.seen != null && !(Number.isFinite(r.seen) && r.seen >= 0)))) || // lang : la langue de l'interface, facultative (vide : celle de l'appareil ; une langue inconnue compte pour vide).
+    site2.config.lang != null && (typeof site2.config.lang !== "string" || !/^[a-z]{0,8}$/.test(site2.config.lang)) || // radar : les mots du radar culturel, facultatifs.
     site2.config.radar != null && (!record(site2.config.radar) || typeof site2.config.radar.words !== "string" || site2.config.radar.words.length > 300)) throw new Error("Configuration invalide");
     for (const m of site2.config.modules || []) moduleId(m.id, "Module");
     for (const map of [site2.config.groups, site2.config.labels, site2.config.assistant && site2.config.assistant.share])
@@ -3219,7 +3305,10 @@ var __selene = (() => {
     const what = ev.type === "pénombre" ? `Éclipse de Lune par la pénombre ${when} : un voile léger, à peine perceptible` : `Éclipse ${ev.type} de ${ev.body === "soleil" ? "Soleil" : "Lune"} ${when}${ev.note ? ` : ${ev.note}` : ""}`;
     return `${what}${ev.body === "soleil" ? ". Jamais sans lunettes d'éclipse." : "."}`;
   }
-  var hm = (t) => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
+  var hm = (t) => {
+    const loc = uiLocale(), s = new Date(t).toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" });
+    return loc.startsWith("fr") ? s.replace(":", " h ") : s;
+  };
   function sceneNow(m) {
     const c = skyConf(), place = c ? { lat: +c.lat, lon: +c.lon } : approxPlace(), t = Date.now(), dark = uiDark();
     const sun = sunPosition(t, place.lat, place.lon), w = c && c.weather !== false ? freshWeather(c) : null, weather = w ? weatherState(w.code) : null;
@@ -3250,7 +3339,7 @@ var __selene = (() => {
   }
   var skyResults = [];
   function skySettingsHTML() {
-    const c = skyConf(), f = (v) => (+v).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    const c = skyConf(), f = (v) => (+v).toLocaleString(uiLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
     return `<section id="ciel"><h3>Ciel</h3><p class="hint">La scène de l'accueil montre le dehors réel : l'heure par le soleil, la lune à sa place, le temps qu'il fait. Sans lieu, l'heure est estimée d'après le fuseau horaire (à trois quarts d'heure près), et il n'y a pas de météo.</p>
     ${c ? `<p class="row" style="margin:0 0 10px">Lieu : <b>${esc(c.name)}</b> <span class="hint" style="margin:0">(${f(c.lat)} ; ${f(c.lon)}, arrondis à une dizaine de kilomètres)</span><button class="btn ghost sm" data-act="sky-clear">retirer</button></p>` : ""}
     <div class="row"><input id="skyCity" placeholder="${c ? "Changer de ville…" : "Une ville…"}" aria-label="Ville" autocomplete="off" style="max-width:260px"><button class="btn sm" data-act="sky-search">Chercher</button><button class="btn ghost sm" data-act="sky-locate">Utiliser ma position</button></div>
@@ -3273,7 +3362,7 @@ var __selene = (() => {
     const q = ($("#skyCity") || {}).value;
     if (!q || !q.trim()) return;
     try {
-      const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q.trim())}&count=5&language=fr&format=json`);
+      const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q.trim())}&count=5&language=${uiLocale().split("-")[0]}&format=json`);
       const j = r.ok ? await r.json() : {};
       skyResults = (j.results || []).filter((x) => Number.isFinite(+x.latitude) && Number.isFinite(+x.longitude)).slice(0, 5).map((x) => ({ name: [x.name, x.admin1, x.country].filter(Boolean).join(", ").slice(0, 80), lat: +x.latitude, lon: +x.longitude }));
       if (!skyResults.length) toast("Aucun lieu de ce nom. Une ville plus grande, à côté, fera l'affaire.");
@@ -3350,7 +3439,7 @@ var __selene = (() => {
   }
   function openForm(title, fields, values, cb) {
     formCb = cb;
-    $("#form").innerHTML = `<h2>${esc(title)}</h2>` + fields.map((f) => f.row ? `<div class="field-row">${f.row.map((x) => fieldHTML(x, values)).join("")}</div>` : fieldHTML(f, values)).join("") + `<div class="row"><button class="btn solid" value="save">Enregistrer</button><button class="btn" value="cancel" formnovalidate>Annuler</button></div>`;
+    $("#form").innerHTML = `<h2>${esc(title)}</h2>` + fields.map((f) => f.row ? `<div class="field-row">${f.row.map((x) => fieldHTML(x, values)).join("")}</div>` : fieldHTML(f, values)).join("") + `<div class="row"><button class="btn solid" value="save">${tr`Enregistrer`}</button><button class="btn" value="cancel" formnovalidate>${trp("formulaire", "Annuler")}</button></div>`;
     $("#dlg").showModal();
   }
   $("#dlg").addEventListener("close", () => {
@@ -4169,7 +4258,7 @@ var __selene = (() => {
   function pubDate(d) {
     if (!d) return "";
     if (d.length === 10) return fmt(d, { day: "numeric", month: "short", year: "numeric" });
-    if (d.length === 7) return (/* @__PURE__ */ new Date(d + "-15T12:00")).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+    if (d.length === 7) return (/* @__PURE__ */ new Date(d + "-15T12:00")).toLocaleDateString(uiLocale(), { month: "long", year: "numeric" });
     return d;
   }
   function srcMeta(e) {
@@ -4888,7 +4977,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
   }
   function plancheFile() {
     const p = plancheData(plancheOffset);
-    const doc = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Planche ${p.k}</title>
+    const doc = `<!doctype html><html lang="${LANGS[uiLang()].tag}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Planche ${p.k}</title>
 <style>:root{--ink:#141a16;--muted:#4a524d;--rule:#a9b0aa}body{margin:0;padding:24px 12px;background:#fbfaf6;color:var(--ink);font-family:Georgia,"Times New Roman",serif}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .sig{width:1.05em;height:1.05em;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.14em;margin-right:.5em}
@@ -4927,7 +5016,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   function periodOf(mode, offset, now = Date.now()) {
     if (mode === "mois") {
       const d = new Date(now), start2 = new Date(d.getFullYear(), d.getMonth() - offset, 1), end2 = new Date(d.getFullYear(), d.getMonth() - offset + 1, 1);
-      return { from: iso(start2), to: iso(end2), name: start2.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) };
+      return { from: iso(start2), to: iso(end2), name: start2.toLocaleDateString(uiLocale(), { month: "long", year: "numeric" }) };
     }
     const len = SYNODIC * 864e5, k = Math.floor((now - NEW_MOON_REF) / len) - offset, start = NEW_MOON_REF + k * len, end = start + len;
     return { k, start, from: iso(new Date(start)), to: iso(new Date(end)), name: `Cycle du ${fmt(iso(new Date(start)), { day: "numeric", month: "long" })} au ${fmt(iso(new Date(end - 864e5)), { day: "numeric", month: "long" })}` };
@@ -5154,6 +5243,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   };
 
   // src/app/views/reglages.js
+  var langSelectHTML = (c) => langChoices().length < 2 ? "<span></span>" : `<label>${tr`Langue`}<select data-set="config.lang"><option value="" ${!c.lang ? "selected" : ""}>${tr`Langue de l'appareil`}</option>${langChoices().map(([k, n]) => `<option value="${k}" lang="${k}" ${c.lang === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></label>`;
   var PALETTES = [["nigredo", "Nigredo, mousse", "#6f9a68"], ["albedo", "Albedo, lichen", "#aab7a6"], ["citrinitas", "Citrinitas, résine", "#c99a3c"], ["rubedo", "Rubedo, amanite", "#c0554a"]];
   VIEWS.reglages = () => {
     const s = S(), c = s.config;
@@ -5162,7 +5252,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     <div class="swatches">${PALETTES.map(([id, n, col]) => `<button class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}"><i style="background:${col}"></i>${n}</button>`).join("")}</div>
     <div class="field-row" style="margin-top:14px"><label>Mode<select data-set="config.mode"><option value="auto" ${c.mode === "auto" ? "selected" : ""}>Suivre l'appareil</option><option value="dark" ${c.mode === "dark" ? "selected" : ""}>Toujours sombre</option><option value="light" ${c.mode === "light" ? "selected" : ""}>Toujours clair</option><option value="sun" ${c.mode === "sun" ? "selected" : ""}>Suivre le soleil</option></select></label>
     <label>Nom affiché<input data-set="config.name" value="${esc(c.name)}"></label></div>
-    <div class="field-row" style="margin-top:12px"><label>Ouvrir sur (cet appareil)<select data-act="open-on"><option value="accueil" ${openOn() === "accueil" ? "selected" : ""}>L'accueil</option><option value="last" ${openOn() === "last" ? "selected" : ""}>Là où j'en étais</option></select></label><span></span></div></section>
+    <div class="field-row" style="margin-top:12px"><label>Ouvrir sur (cet appareil)<select data-act="open-on"><option value="accueil" ${openOn() === "accueil" ? "selected" : ""}>L'accueil</option><option value="last" ${openOn() === "last" ? "selected" : ""}>Là où j'en étais</option></select></label>${langSelectHTML(c)}</div></section>
   ${notifySettingsHTML()}
   ${skySettingsHTML()}
   ${radarSettingsHTML()}
@@ -5202,7 +5292,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   };
   function moduleSettingsHTML(mod) {
     const s = S(), inst = s.modules[mod], G = grouperFor(mod), g = G ? gcfg(mod) : null, by = G ? groupBy(mod) : null;
-    const names = G && G.renamable.includes(by) ? [...new Set(G.items().map((it) => it[by]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr")) : [];
+    const names = G && G.renamable.includes(by) ? [...new Set(G.items().map((it) => it[by]).filter(Boolean))].sort(collate) : [];
     return `${sigilPicker(mod)}
         ${inst ? TYPE_UI[inst.type].settings(mod, inst) : ""}
         ${G ? `<div class="row" style="margin-top:0"><label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="grp-on" ${g.on ? "checked" : ""}>Regrouper en pourcentage</label></div>
@@ -5332,7 +5422,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     const by = groupBy(mod);
     let gs = G.groups(by);
     if (c.hideDone) gs = gs.filter((g) => g.pct !== 100);
-    const sorters = { name: (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name, "fr"), pct: (a, b) => (b.pct ?? -1) - (a.pct ?? -1), left: (a, b) => (a.pct ?? 101) - (b.pct ?? 101) };
+    const sorters = { name: (a, b) => (a.order ?? 0) - (b.order ?? 0) || collate(a.name, b.name), pct: (a, b) => (b.pct ?? -1) - (a.pct ?? -1), left: (a, b) => (a.pct ?? 101) - (b.pct ?? 101) };
     gs.sort(sorters[c.sort] || sorters.name);
     const active = gFilter[mod];
     const title = c.title || `Par ${G.fields[by].toLowerCase()}`;
@@ -5372,7 +5462,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   var byDue = (a, b) => (a.due || "9999").localeCompare(b.due || "9999");
   var taskFilters = {};
   var tf = (id) => taskFilters[id] || (taskFilters[id] = { room: "", cat: "" });
-  var roomsOf = (id) => [...new Set(S().modules[id].entries.map((t) => t.room).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
+  var roomsOf = (id) => [...new Set(S().modules[id].entries.map((t) => t.room).filter(Boolean))].sort(collate);
   var doneLines = ["Fait. Le monde s'effondre un peu moins vite.", "Un de moins. L'entropie note ta résistance.", "Coché. Personne n'applaudit, alors je le fais.", "Terminé. Ton futur toi te déteste un peu moins.", "Réglé. Le chaos recule d'un centimètre."];
   var openId = null;
   var setOpenId = (id) => {
@@ -5691,7 +5781,7 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
   }
   function instructions() {
     const name = S().config.name || "Selene", permitted = availableTools();
-    return `Tu es Claude, intégré au tableau de bord personnel de ${name}. Réponds en français, en prose, sans listes à puces sauf demande. Ton : lucide, cynique, humour noir glissé naturellement ; jamais de morale non demandée ni de justifications répétées. Chaque fois que tu emploies un terme technique ou savant, définis-le brièvement dans la phrase. Sois concis. Tu ne connais que les données ci-dessous, qu'elle a choisi de partager ; tu n'as aucun souvenir d'autres conversations.
+    return `Tu es Claude, intégré au tableau de bord personnel de ${name}. Réponds en ${LANGS[uiLang()].frName}, en prose, sans listes à puces sauf demande. Ton : lucide, cynique, humour noir glissé naturellement ; jamais de morale non demandée ni de justifications répétées. Chaque fois que tu emploies un terme technique ou savant, définis-le brièvement dans la phrase. Sois concis. Tu ne connais que les données ci-dessous, qu'elle a choisi de partager ; tu n'as aucun souvenir d'autres conversations.
 ${permitted.length ? "Tu peux agir uniquement avec les outils fournis. Ne les utilise que si c'est demandé ou clairement voulu, et dis ce que tu as fait." : "Tu ne peux rien modifier : conseille seulement."}
 
 DONNÉES DU TABLEAU DE BORD
@@ -6761,7 +6851,7 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
     view(id) {
       const inst = S().modules[id], m = monthOf(id), es = inMonth(inst, m), out = sumOf(es, "dépense"), inn = sumOf(es, "revenu");
       const shown = es.filter((e) => gMatch(id, e)).sort((a, x) => x.date.localeCompare(a.date));
-      const mLabel = (/* @__PURE__ */ new Date(m + "-15")).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+      const mLabel = (/* @__PURE__ */ new Date(m + "-15")).toLocaleDateString(uiLocale(), { month: "long", year: "numeric" });
       const tasksLeft = allTasks().filter(([m2, t]) => !t.done && t.cost && S().modules[m2].config.costs).reduce((a, [, t]) => a + +t.cost, 0);
       const defDate = m === todayISO().slice(0, 7) ? todayISO() : m + "-01";
       return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span>
@@ -6887,7 +6977,7 @@ ${nm} (${mo}) : dépenses ${sumOf(es, "dépense")} €, revenus ${sumOf(es, "rev
     const recent = inst.entries.filter((x) => x.date >= addDaysTo(todayISO(), -29)).reduce((a, x) => a + (+x.value || 0), 0);
     if (recent <= 0) return "Pas assez d'élan ces 30 derniers jours pour prédire une fin. La prophétie attendra.";
     const perDay = recent / 30, end = addDaysTo(todayISO(), Math.ceil((goal - tot) / perDay));
-    return `Au rythme des 30 derniers jours (${Math.round(perDay).toLocaleString("fr-FR")} ${c.unitLabel} par jour), objectif atteint vers le ${fmt(end, { day: "numeric", month: "long", year: "numeric" })}.`;
+    return `Au rythme des 30 derniers jours (${Math.round(perDay).toLocaleString(uiLocale())} ${c.unitLabel} par jour), objectif atteint vers le ${fmt(end, { day: "numeric", month: "long", year: "numeric" })}.`;
   }
   var fragFilter = {};
   function versionsHTML(f) {
@@ -6911,7 +7001,7 @@ ${nm} (${mo}) : dépenses ${sumOf(es, "dépense")} €, revenus ${sumOf(es, "rev
     const sum = (catId) => inst.entries.filter((x) => (x.category || "") === catId).reduce((a, x) => a + (+x.value || 0), 0);
     const out = c.categories.map((cat) => {
       const v = sum(cat.id), g = +cat.goal || 0;
-      return { name: cat.name || "Sans titre", pct: g ? Math.min(100, Math.round(100 * v / g)) : null, sub: g ? `${v.toLocaleString("fr-FR")} / ${g.toLocaleString("fr-FR")} ${c.unitLabel}` : `${v.toLocaleString("fr-FR")} ${c.unitLabel}` };
+      return { name: cat.name || "Sans titre", pct: g ? Math.min(100, Math.round(100 * v / g)) : null, sub: g ? `${v.toLocaleString(uiLocale())} / ${g.toLocaleString(uiLocale())} ${c.unitLabel}` : `${v.toLocaleString(uiLocale())} ${c.unitLabel}` };
     });
     const frags = (catId) => c.scraps ? (inst.scraps || []).filter((f) => (f.category || "") === catId).length : 0;
     out.forEach((g, i) => {
@@ -6919,7 +7009,7 @@ ${nm} (${mo}) : dépenses ${sumOf(es, "dépense")} €, revenus ${sumOf(es, "rev
       if (n) g.sub += ` · ${plural(n, c.scrapsLabel.toLowerCase().replace(/s$/, ""))}`;
     });
     const loose = sum("");
-    if (loose && c.categories.length) out.push({ name: `Hors ${c.categoryLabel.toLowerCase()}`, pct: null, sub: `${loose.toLocaleString("fr-FR")} ${c.unitLabel}` });
+    if (loose && c.categories.length) out.push({ name: `Hors ${c.categoryLabel.toLowerCase()}`, pct: null, sub: `${loose.toLocaleString(uiLocale())} ${c.unitLabel}` });
     return `<section><h3 style="margin:0 0 4px">Par ${esc(c.categoryLabel).toLowerCase()}</h3><p class="hint">Chaque ${esc(c.categoryLabel).toLowerCase()} a son propre objectif.</p>
     <div class="rooms">${out.map((g) => `<div class="room"><div class="fill" style="width:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></div>`).join("")}</div></section>`;
   }
@@ -6933,7 +7023,7 @@ ${nm} (${mo}) : dépenses ${sumOf(es, "dépense")} €, revenus ${sumOf(es, "rev
       const catSelect = (domId, value, fallback, attrs = "") => c.categories.length ? `<select ${domId ? `id="${domId}"` : ""} ${attrs} aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">Hors ${esc(c.categoryLabel).toLowerCase()}</option>${c.categories.map((x) => `<option value="${esc(x.id)}" ${x.id === (value || fallback) ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>` : "";
       return `<h2>${esc(label(id))}</h2>${c.title ? `<p class="hint">${esc(c.title)}</p>` : ""}
   <div class="two"><section>
-    <div class="big">${tot.toLocaleString("fr-FR")} <span class="hint" style="font-size:1.1rem">${esc(c.unitLabel)} sur ${(+c.goal).toLocaleString("fr-FR")}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
+    <div class="big">${tot.toLocaleString(uiLocale())} <span class="hint" style="font-size:1.1rem">${esc(c.unitLabel)} sur ${(+c.goal).toLocaleString(uiLocale())}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
     <p class="hint">Dernière session ${ago(last)}. Série de ${streakOf(inst.entries.map((x) => x.date))} jour(s). ${esc(projection(inst))}</p>
     <div class="row"><input type="number" id="cumIn" min="${total ? 0 : 1}" placeholder="${total ? `Total atteint (${esc(c.unitLabel)})` : `${esc(c.unitLabel)} aujourd'hui`}" style="max-width:200px" inputmode="numeric" aria-label="${total ? "Total atteint" : "Ajout du jour"}">${c.categories.length ? `<select id="cumCat" aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">Hors ${esc(c.categoryLabel).toLowerCase()}</option>${c.categories.map((x) => `<option value="${esc(x.id)}" ${x.id === lastCat ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>` : ""}<button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">Ajouter</button></div>
     <div style="margin-top:28px">${c.categories.length ? cumulGroupPanel(id) : `<p class="hint">Ajoute des ${esc(c.categoryLabel).toLowerCase()}s dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a> pour suivre chacune en pourcentage.</p>`}</div>
@@ -6949,7 +7039,7 @@ ${nm} (${mo}) : dépenses ${sumOf(es, "dépense")} €, revenus ${sumOf(es, "rev
     <div style="margin-top:10px"><span class="hint" style="margin:0">${esc(c.categoryLabel)}s</span>${c.categories.map((cat, i) => `<div class="set" data-ci="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="cat-name" data-mod="${esc(id)}" value="${esc(cat.name)}" aria-label="Nom"><input type="number" min="0" data-act="cat-goal" data-mod="${esc(id)}" value="${esc(cat.goal || "")}" placeholder="Objectif" aria-label="Objectif"><div class="row"><button class="btn ghost sm" data-act="cat-up" data-mod="${esc(id)}" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="cat-del" data-mod="${esc(id)}">suppr.</button></div></div>`).join("")}<button class="btn sm" data-act="cat-add" data-mod="${esc(id)}" style="margin-top:8px">Ajouter</button></div>`,
     summary(id, inst) {
       const c = inst.config;
-      return `${totalOf(inst).toLocaleString("fr-FR")} ${esc(c.unitLabel)} sur ${(+c.goal).toLocaleString("fr-FR")}${c.scraps ? `, ${inst.scraps.length} ${esc(c.scrapsLabel).toLowerCase()}` : ""}`;
+      return `${totalOf(inst).toLocaleString(uiLocale())} ${esc(c.unitLabel)} sur ${(+c.goal).toLocaleString(uiLocale())}${c.scraps ? `, ${inst.scraps.length} ${esc(c.scrapsLabel).toLowerCase()}` : ""}`;
     },
     context(inst, nm) {
       const c = inst.config;
@@ -6959,7 +7049,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     recent: (inst) => recentBy(inst.entries).map((x) => `${fmt(x.date)} · ${x.value > 0 ? "+" : ""}${x.value ?? "?"} ${inst.config.unitLabel}`),
     review: (inst, from, to) => {
       const n = within(inst.entries, from, to).reduce((a, x) => a + (+x.value || 0), 0), f = within(inst.scraps || [], from, to).length;
-      return `${n > 0 ? "+" : ""}${n.toLocaleString("fr-FR")} ${inst.config.unitLabel}${inst.config.scraps ? `, ${plural(f, inst.config.scrapsLabel.toLowerCase().replace(/s$/, ""))}` : ""}`;
+      return `${n > 0 ? "+" : ""}${n.toLocaleString(uiLocale())} ${inst.config.unitLabel}${inst.config.scraps ? `, ${plural(f, inst.config.scrapsLabel.toLowerCase().replace(/s$/, ""))}` : ""}`;
     },
     texts: (inst) => [...(inst.scraps || []).map((f) => ({ text: f.text, date: f.date, ep: f.ep, eid: f.id })), ...inst.config.categories.map((c) => ({ text: c.name }))],
     timerDone(id, inst) {
@@ -6983,7 +7073,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       $("#cumIn").value = "";
       site.save();
       render();
-      toast(v > 0 ? `+${v.toLocaleString("fr-FR")} ${unit}. Ça avance, que tu y croies ou non.` : `${v.toLocaleString("fr-FR")} ${unit}. Couper, c'est aussi écrire.`);
+      toast(v > 0 ? `+${v.toLocaleString(uiLocale())} ${unit}. Ça avance, que tu y croies ou non.` : `${v.toLocaleString(uiLocale())} ${unit}. Couper, c'est aussi écrire.`);
     },
     click: {
       "scrap-add": (el) => {
@@ -7444,7 +7534,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   var moons = (days) => Math.max(1, Math.floor(days / SYNODIC));
   function concordanceView(id, inst, head) {
     const c = inst.config, rows = concordance(inst), sleeping = rows.filter((r) => fallow(inst, r));
-    const order = (a, b) => alive(inst, b.e) - alive(inst, a.e) || b.hits.length - a.hits.length || a.e.title.localeCompare(b.e.title, "fr");
+    const order = (a, b) => alive(inst, b.e) - alive(inst, a.e) || b.hits.length - a.hits.length || collate(a.e.title, b.e.title);
     const line = (r) => {
       const e = r.e, n = r.hits.length;
       const where = r.last ? ` · dernière ${ago(r.last.date)} (${esc(label(r.last.mod))})` : n ? " · jamais daté" : "";
@@ -8060,7 +8150,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   }
   var dehorsWhen = (t) => {
     const d = new Date(t), days = Math.round((Date.now() - t) / 864e5);
-    return days < 1 ? `aujourd'hui, ${hm(t)}` : days < 7 ? d.toLocaleDateString("fr-FR", { weekday: "long" }) : fmt(d.toISOString().slice(0, 10));
+    return days < 1 ? `aujourd'hui, ${hm(t)}` : days < 7 ? d.toLocaleDateString(uiLocale(), { weekday: "long" }) : fmt(d.toISOString().slice(0, 10));
   };
   VIEWS.dehors = () => {
     const feeds = dehorsFeeds(), mods = S().config.modules.filter((m) => m.on && Object.hasOwn(S().modules, m.id) && !SYSTEM.includes(m.id)).map((m) => m.id);
@@ -8295,6 +8385,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   }
   function renderNow() {
     applyTheme();
+    applyLang(S().config.lang);
     if (hosted() && authReady() && !authSession) {
       $("#nav").innerHTML = "";
       $("#bar").innerHTML = "";
@@ -8309,7 +8400,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     $("#brandName").textContent = s.config.name || "Selene";
     document.title = s.config.name || "Selene";
     $("#miniMoon").innerHTML = moonSVG(m.p, 40);
-    $("#dateline").textContent = (/* @__PURE__ */ new Date()).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
+    $("#dateline").textContent = (/* @__PURE__ */ new Date()).toLocaleDateString(uiLocale(), { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
     $("#nav").innerHTML = navHTML(view);
     $("#bar").innerHTML = barHTML(view);
     if (inst && view !== lastView) noteVisit(view);

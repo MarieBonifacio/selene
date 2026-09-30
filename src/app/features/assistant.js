@@ -8,6 +8,7 @@ import { addBudgetEntry, addCapture, addTask, inboxId, setTaskDone } from "../..
 import { CLICK, TYPE_UI, VIEWS } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { fmt, money, todayISO, uid } from "../lib/format.js";
+import { LANGS, uiLang } from "../i18n/index.js";
 import { allTasks } from "../modules/taches.js";
 import { moon } from "../scene/moon.js";
 import { SUPABASE_ANON_KEY, SUPABASE_URL, authReady, authRefreshIfNeeded, authSession } from "../services/auth.js";
@@ -68,7 +69,7 @@ export function contextText() {
 }
 function instructions() {
   const name = S().config.name || "Selene", permitted = availableTools();
-  return `Tu es Claude, intégré au tableau de bord personnel de ${name}. Réponds en français, en prose, sans listes à puces sauf demande. Ton : lucide, cynique, humour noir glissé naturellement ; jamais de morale non demandée ni de justifications répétées. Chaque fois que tu emploies un terme technique ou savant, définis-le brièvement dans la phrase. Sois concis. Tu ne connais que les données ci-dessous, qu'elle a choisi de partager ; tu n'as aucun souvenir d'autres conversations.
+  return `Tu es Claude, intégré au tableau de bord personnel de ${name}. Réponds en ${LANGS[uiLang()].frName}, en prose, sans listes à puces sauf demande. Ton : lucide, cynique, humour noir glissé naturellement ; jamais de morale non demandée ni de justifications répétées. Chaque fois que tu emploies un terme technique ou savant, définis-le brièvement dans la phrase. Sois concis. Tu ne connais que les données ci-dessous, qu'elle a choisi de partager ; tu n'as aucun souvenir d'autres conversations.
 ${permitted.length ? "Tu peux agir uniquement avec les outils fournis. Ne les utilise que si c'est demandé ou clairement voulu, et dis ce que tu as fait." : "Tu ne peux rien modifier : conseille seulement."}
 
 DONNÉES DU TABLEAU DE BORD

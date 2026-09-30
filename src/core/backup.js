@@ -44,6 +44,8 @@ export function parseBackup(text) {
           site.config.dehors.research.some(r => !record(r) || typeof r.id !== "string" || !/^[\w-]{1,64}$/.test(r.id) || !["q", "author"].includes(r.kind) ||
             typeof r.q !== "string" || !r.q || r.q.length > 200 || (r.name != null && (typeof r.name !== "string" || !r.name || r.name.length > 200)) || (r.mod != null && (typeof r.mod !== "string" || r.mod.length > 64)) ||
             (r.seen != null && !(Number.isFinite(r.seen) && r.seen >= 0))))))) ||
+      // lang : la langue de l'interface, facultative (vide : celle de l'appareil ; une langue inconnue compte pour vide).
+      (site.config.lang != null && (typeof site.config.lang !== "string" || !/^[a-z]{0,8}$/.test(site.config.lang))) ||
       // radar : les mots du radar culturel, facultatifs.
       (site.config.radar != null && (!record(site.config.radar) || typeof site.config.radar.words !== "string" || site.config.radar.words.length > 300))) throw new Error("Configuration invalide");
   for (const m of site.config.modules || []) moduleId(m.id, "Module");

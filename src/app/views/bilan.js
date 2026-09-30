@@ -4,6 +4,7 @@ import { EP_STATUS } from "../../core/domain.js";
 import { CLICK, TYPE_UI, VIEWS } from "../registry.js";
 import { esc } from "../lib/dom.js";
 import { fmt, iso, plural } from "../lib/format.js";
+import { uiLocale } from "../i18n/index.js";
 import { driftSection } from "../features/derive.js";
 import { epCounts } from "../features/links.js";
 import { lunarSection } from "../features/lunar.js";
@@ -25,7 +26,7 @@ export const bilanMode = () => { try { return platform.storage.get("selene-bilan
 export function periodOf(mode, offset, now = Date.now()) {
   if (mode === "mois") {
     const d = new Date(now), start = new Date(d.getFullYear(), d.getMonth() - offset, 1), end = new Date(d.getFullYear(), d.getMonth() - offset + 1, 1);
-    return { from: iso(start), to: iso(end), name: start.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) };
+    return { from: iso(start), to: iso(end), name: start.toLocaleDateString(uiLocale(), { month: "long", year: "numeric" }) };
   }
   const len = SYNODIC * 86400000, k = Math.floor((now - NEW_MOON_REF) / len) - offset, start = NEW_MOON_REF + k * len, end = start + len;
   return { k, start, from: iso(new Date(start)), to: iso(new Date(end)), name: `Cycle du ${fmt(iso(new Date(start)), { day: "numeric", month: "long" })} au ${fmt(iso(new Date(end - 86400000)), { day: "numeric", month: "long" })}` };

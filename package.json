@@ -13,10 +13,11 @@
     "test": "node --test tests/*.test.js",
     "test:syntax": "for f in src/*.js src/app/*.js src/native/*.js src/core/*.js scripts/*.mjs; do node --check \"$f\" || exit 1; done",
     "lint": "eslint src scripts sw.js",
+    "i18n": "node scripts/i18n.mjs",
     "test:functions": "deno check --config supabase/functions/deno.json supabase/functions/*/index.ts && deno test --allow-env --config supabase/functions/deno.json supabase/functions/",
     "test:browser": "npm run build:dist && node tests/browser/run.js",
     "bench": "node tests/bench.js",
-    "check": "npm run build:check && npm test && npm run test:syntax && npm run lint && npm run test:functions",
+    "check": "npm run build:check && npm test && npm run test:syntax && npm run lint && npm run i18n && npm run test:functions",
     "check:all": "npm run check && npm run test:browser"
   },
   "devDependencies": {

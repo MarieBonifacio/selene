@@ -8,6 +8,7 @@ import { oaUrl, oaWatch, oaWorks } from "../../core/veille.js";
 import { CHANGE, CLICK, VIEWS } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { addDaysTo, fmt, todayISO, uid } from "../lib/format.js";
+import { uiLocale } from "../i18n/index.js";
 import { citeOwn, citeSources } from "./cites.js";
 import { motifsOf } from "./concordance.js";
 import { dehorsNew, feedMerge, parseFeed } from "./dehors-feed.js";
@@ -187,7 +188,7 @@ export function dehorsLine() {
   const n = dehorsNow().total;
   return n ? `<p class="hint dehors-go"><a href="#dehors">Dehors : ${n} nouveauté${n > 1 ? "s" : ""}</a></p>` : "";
 }
-export const dehorsWhen = t => { const d = new Date(t), days = Math.round((Date.now() - t) / 86400000); return days < 1 ? `aujourd'hui, ${hm(t)}` : days < 7 ? d.toLocaleDateString("fr-FR", { weekday: "long" }) : fmt(d.toISOString().slice(0, 10)); };
+export const dehorsWhen = t => { const d = new Date(t), days = Math.round((Date.now() - t) / 86400000); return days < 1 ? `aujourd'hui, ${hm(t)}` : days < 7 ? d.toLocaleDateString(uiLocale(), { weekday: "long" }) : fmt(d.toISOString().slice(0, 10)); };
 VIEWS.dehors = () => {
   const feeds = dehorsFeeds(), mods = S().config.modules.filter(m => m.on && Object.hasOwn(S().modules, m.id) && !SYSTEM.includes(m.id)).map(m => m.id);
   const head = `<h2>Dehors</h2><p class="hint">Ce qui est paru depuis ta dernière visite, dans les flux que tu suis. Douze au plus : le reste attend, rien ne défile. Ce qui croise ce que tu gardes (un motif, un auteur de tes sources, une de tes sources citée, un lien paru dans deux flux) passe devant, et dit pourquoi. Garde ce qui compte, le reste s'efface en un mois.</p>`;

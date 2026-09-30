@@ -4,6 +4,7 @@ import { saveCollectionItem } from "../../core/domain.js";
 import { CLICK, TYPE_UI } from "../registry.js";
 import { esc, toast } from "../lib/dom.js";
 import { ago, diffDays, plural, todayISO, uid } from "../lib/format.js";
+import { collate } from "../i18n/index.js";
 import { SYNODIC } from "../scene/moon.js";
 import { memoInRender, render } from "../shell/render.js";
 import { S, enabled, label, site } from "../state/site.js";
@@ -71,7 +72,7 @@ export const fallow = (inst, r) => alive(inst, r.e) && r.last && diffDays(todayI
 const moons = days => Math.max(1, Math.floor(days / SYNODIC));
 export function concordanceView(id, inst, head) {
   const c = inst.config, rows = concordance(inst), sleeping = rows.filter(r => fallow(inst, r));
-  const order = (a, b) => alive(inst, b.e) - alive(inst, a.e) || b.hits.length - a.hits.length || a.e.title.localeCompare(b.e.title, "fr");
+  const order = (a, b) => alive(inst, b.e) - alive(inst, a.e) || b.hits.length - a.hits.length || collate(a.e.title, b.e.title);
   const line = r => {
     const e = r.e, n = r.hits.length;
     const where = r.last ? ` · dernière ${ago(r.last.date)} (${esc(label(r.last.mod))})` : n ? " · jamais daté" : "";
