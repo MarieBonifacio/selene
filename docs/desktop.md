@@ -11,8 +11,15 @@ dans la WebView du système (WebView2 sous Windows), avec un petit cœur Rust (`
 - **Les secrets dans le coffre du système** : le Gestionnaire d'identification de Windows (Trousseau sous macOS,
   Secret Service sous Linux), par la crate `keyring`. Seule la liste de leurs noms, qui n'est pas secrète, est gardée
   dans un fichier à côté. La clé Anthropic, elle, reste au serveur (docs/assistant.md).
-- **Une fenêtre à elle**, hors du navigateur. Le raccourci global de capture, l'icône de la zone de notification et
-  le glisser-déposer de fichiers viennent ensuite (phase 10).
+- **Une fenêtre à elle**, hors du navigateur, et **une seule** : relancer Selene, ou cliquer un lien `selene://`,
+  ramène la fenêtre existante.
+- **`Ctrl+Alt+S`, de n'importe où** : la fenêtre revient et la capture s'ouvre. Si une autre app a déjà pris ce
+  raccourci, Selene démarre quand même, sans lui.
+- **La zone de notification** : une icône et son menu (Capturer, Ouvrir Selene, Quitter). Fermer la fenêtre l'y
+  range, pour que le raccourci reste actif ; *Quitter* pousse d'abord ce qui attend.
+- **Les liens `selene://`** : `selene://capture` ouvre la capture ; `selene://share?url=…&title=…&text=…` dépose un
+  lien dans la boîte de réception, comme le partage d'Android ou de la PWA (même quand le lien lance l'app).
+- **Le glisser-déposer** est laissé à la page (Tauri ne l'intercepte pas).
 
 ## Installer (Windows)
 

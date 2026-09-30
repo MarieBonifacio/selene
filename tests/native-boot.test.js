@@ -73,9 +73,15 @@ test('bouton retour : l’historique, sinon quitter ; mise en pause : pagehide',
 
 test('Tauri : les coffres passent par les six commandes de l’app, avec leurs arguments', async () => {
   const calls = [], window = { __TAURI__: { core: { invoke: async (cmd, args) => { calls.push([cmd, args]); return cmd.endsWith('_load') ? [['k', 'v']] : null; } } } };
-  vm.runInNewContext(fs.readFileSync('src/native/boot.js', 'utf8'), { window, history: {}, Event: class {} });
+  const handlers = {}, session = new Map();
+  const document = { addEventListener(n, f) { handlers[n] = f; } }, sessionStorage = { setItem: (k, v) => session.set(k, v) };
+  vm.runInNewContext(fs.readFileSync('src/native/boot.js', 'utf8'), { window, document, sessionStorage, history: {}, Event: class {} });
   const n = window.seleneNative;
   assert.equal(n.runtime, 'tauri');
+  // Un lien selene://share arrive avant que Selene ait démarré : il attend dans la file qu'elle lit au démarrage.
+  handlers['selene:share']({ detail: { url: 'https://a.org', title: 'T', text: 'x'.repeat(5000), extra: 'ignoré' } });
+  const q = JSON.parse(session.get('selene-share'));
+  assert.deepEqual(Object.keys(q), ['url', 'title', 'text']); assert.equal(q.text.length, 4000);
   assert.deepEqual([...await n.storage.load()].map(x => [...x]), [['k', 'v']]);
   await n.storage.write('selene-site-v1', '{}'); await n.storage.remove('selene-bilan');
   await n.secrets.load(); await n.secrets.write('selene-auth-session', 's'); await n.secrets.remove('selene-auth-session');

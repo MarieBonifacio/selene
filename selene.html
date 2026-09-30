@@ -4093,6 +4093,10 @@ function takeShare() {
     window.history.replaceState(null, "", location.pathname + (location.hash || "#accueil"));
   } catch {}
 }
+/* L'app de bureau (ADR 17) : un lien selene://share, rangé dans la file par l'amorçage natif, est pris aussitôt ; le
+   raccourci Ctrl+Alt+S (ou le menu de la zone de notification) ouvre la capture. */
+document.addEventListener("selene:share", () => { sharePending = true; render(); });
+document.addEventListener("selene:capture", () => openSheet("capture"));
 function applyShare() {
   if (hosted() && authReady() && !authSession) return; // pas encore connectée : on attend
   let p = null; try { p = JSON.parse(platform.session.get("selene-share") || "null"); platform.session.remove("selene-share"); } catch {}
