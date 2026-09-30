@@ -34,7 +34,7 @@ async function citeGet(url) {
   const ac = new AbortController(), t = setTimeout(() => ac.abort(), 12000);
   let r;
   try { r = await fetch(url, { signal: ac.signal }); } catch { throw new Error("OpenAlex injoignable (hors ligne ?)."); } finally { clearTimeout(t); }
-  if (r.status === 429) throw new Error("OpenAlex : quota du jour atteint (une clé gratuite, dans Réglages → Dehors, le décuple).");
+  if (r.status === 429) throw new Error("OpenAlex : quota du jour atteint (une clé gratuite, dans Dehors, le décuple).");
   if (!r.ok) throw Object.assign(new Error(`OpenAlex répond ${r.status}.`), { status: r.status });
   return r.json();
 }

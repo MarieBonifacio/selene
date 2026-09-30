@@ -50,7 +50,7 @@ export function notifySoon() {
 export const notifySettingsHTML = () => {
   if (!platform.notifications.supported()) return "";
   const c = notifyConf();
-  return `<section id="notify-cfg"><h3>Notifications</h3><p class="hint">Sur cet appareil : chaque matin, ce qui t'attend (rappels, échéances), programmé par le téléphone lui-même, même app fermée. Rien ne part sur un serveur. Les jours sans rien, silence.</p>
+  return `<section id="notify-cfg"><h4>Notifications</h4><p class="hint">Sur cet appareil : chaque matin, ce qui t'attend (rappels, échéances), programmé par le téléphone lui-même, même app fermée. Rien ne part sur un serveur. Les jours sans rien, silence.</p>
     <div class="field-row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-act="notify-on" ${c.on ? "checked" : ""}>Résumé du matin</label>
     <label>Heure<input type="time" data-act="notify-at" value="${esc(c.at)}"></label></div></section>`;
 };

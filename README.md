@@ -25,27 +25,28 @@ Les données de l'app installée sont séparées de celles de Safari : exporter 
 
 Un compte neuf part presque vide (une boîte de réception) : l'accueil propose des **modèles** (tâches, protocole, écriture, budget, tableau de production, liste « à découvrir », soins, carnet), à ajouter autant de fois qu'on veut. Ces modèles restent disponibles dans « + Créer un module », à côté des types vides.
 
-Réglages → Modules : activer, renommer, réordonner, supprimer, et « + Créer un module ». Chaque module est une instance de l'un de ces types (l'exemple entre parenthèses est le module d'origine) ; seul l'Assistant est une fonction, activable, sans données propres.
+Réglages → Espaces (le vocabulaire de la navigation : un espace est un module) : activer, renommer, réordonner, supprimer, régler chacun (« régler », sous sa ligne), et « + Créer un espace », où les modèles s'affichent avec leur description. Chaque module est une instance de l'un de ces types (l'exemple entre parenthèses est le module d'origine) ; seul l'Assistant est une fonction, activable, sans données propres.
 
   - *Programme* : un protocole de N semaines, un calendrier et un objectif de séances par semaine (ex. Kundalini) ;
   - *Objectif cumulatif* : un compteur vers un objectif, avec des catégories et, en option, un carnet de notes libres (ex. Écriture et ses fragments) ;
   - *Rappels* : des types d'événements récurrents avec une fréquence, et un journal (ex. Phidippus) ;
-  - *Notes* : des textes datés. L'une des boîtes est la **boîte de réception** (Réglages → Réglages par module) : elle reçoit la capture rapide de l'accueil, et chaque note peut ensuite être rangée d'un geste dans tout module qui sait la recevoir (ex. la Capture) ;
+  - *Notes* : des textes datés. L'une des boîtes est la **boîte de réception** (Réglages → Espaces, « régler » sous le module) : elle reçoit la capture rapide de l'accueil, et chaque note peut ensuite être rangée d'un geste dans tout module qui sait la recevoir (ex. la Capture) ;
   - *Tâches* : échéances, étapes, effort, coûts facultatifs, regroupées par pièce ou par lieu (le nom se règle) ; l'étoile « Aujourd'hui » est plafonnée à trois tâches **tous modules confondus**, et l'accueil les réunit (ex. le Chantier) ;
   - *Budget* : des opérations (dépenses, revenus), des enveloppes à plafond mensuel et leurs jauges, mois par mois (ex. le Budget) ;
   - *Collection* : des éléments à statuts (titre, sous-titre, étiquette, date, texte : chaque champ se renomme ou se masque), affichés en colonnes ou en liste filtrable (ex. october.moth en colonnes, Musique en liste) ; en colonnes, sur téléphone une colonne à la fois par un sélecteur, sur ordinateur une carte se glisse d'une colonne à l'autre (ou `[` et `]` sur la carte qui a le focus).
 
-Un module se supprime définitivement (✕, puis retaper son nom) : ses données partent avec lui, sur tous les appareils. Ses réglages propres sont dans Réglages → Réglages par module. Un nouveau module est partagé par défaut avec l'assistant ; décocher dans Réglages → Assistant pour le garder privé.
+Un module se supprime définitivement (✕, puis retaper son nom) : ses données partent avec lui, sur tous les appareils. Ses réglages propres sont sous sa ligne, dans Réglages → Espaces (« régler »), ou depuis le module lui-même. Un nouveau module est partagé par défaut avec l'assistant ; décocher dans Réglages → Assistant pour le garder privé.
 
 Pour ajouter un *type* de module au code, voir [docs/architecture.md](docs/architecture.md#ajouter-un-type-de-module).
 
 ## Au quotidien
 
+- **Réglages** : six chapitres, du plus courant au plus rare (Apparence et rythme, Espaces, Ciel et alentours, Assistant, Connexions, Compte et données), avec un sommaire (dans la marge sur grand écran, il marque le chapitre lu). Un « ? » ouvre une courte explication ; « cet appareil » marque ce qui ne suit pas le compte. La première visite explique comment la page est rangée, avec le vocabulaire de Selene (« Guide et vocabulaire » la rouvre). Les textes d'aide sont réunis dans `src/app/views/reglages-aide.js`, pour la traduction.
 - **Brouillons** : le texte en cours d'un champ libre (capture, note, fragment, observation, message à l'assistant) survit à la fermeture de l'app, sur cet appareil.
 - **Annuler** : supprimer un élément affiche « Annuler » pendant quelques secondes, au lieu d'une confirmation.
 - **Accueil** : « fait » sur un rappel en retard (une ligne par module), « Noter N min » pour la séance du jour (dernière durée), éléments prévus ou en retard ; le chevron d'une ligne la déplie sur ses derniers éléments. Sur téléphone, le paysage se réduit à partir de la deuxième ouverture du jour.
 - **Actions de ligne** (supprimer, modifier, dériver, lier…) : au survol sur ordinateur ; sur téléphone, toucher la ligne (« ⋯ » signale qu'il y en a). Chaque vue retrouve sa position de défilement quand on y revient.
-- **Navigation** : sur téléphone, une barre en bas (Aujourd'hui, Espaces, ⊕ Capturer, Chercher, Bilan) ; sur ordinateur, une barre latérale. Réglages → Modules : un « Domaine » par module (Maison, Création…) regroupe la navigation et l'accueil. Réglages → Apparence : « Ouvrir sur » l'accueil ou là où tu en étais (propre à l'appareil).
+- **Navigation** : sur téléphone, une barre en bas (Aujourd'hui, Espaces, ⊕ Capturer, Chercher, Bilan) ; sur ordinateur, une barre latérale. Réglages → Espaces : un « Domaine » par module (Maison, Création…) regroupe la navigation et l'accueil. Réglages → Apparence : « Ouvrir sur » l'accueil ou là où tu en étais (propre à l'appareil).
 - **Fiche** (« fiche » dans les actions d'un fragment, d'une note ou d'un élément) : tout ce qu'on sait d'une entrée au même endroit : provenance, statut et son histoire, liens dans les deux sens, motifs présents.
 - **Trier une à une** (dans la boîte de réception) : une note à la fois, rangée d'un geste dans l'espace de son choix, ou laissée pour plus tard.
 - **Minuteur** : l'anneau autour de la petite lune se referme à mesure que les quinze minutes passent ; un appui long sur la petite lune le lance.
@@ -96,7 +97,7 @@ Pour ajouter un *type* de module au code, voir [docs/architecture.md](docs/archi
 
 ## Assistant (Claude)
 
-Le module Assistant est désactivé par défaut (Réglages → Modules).
+Le module Assistant est désactivé par défaut (Réglages → Espaces).
 
 - Sur claude.ai, il passe par ton compte : aucune clé à fournir.
 - Hébergé (GitHub Pages), il passe par la fonction Supabase `assistant` avec **ta propre clé**, saisie une fois dans Réglages → Assistant : vérifiée auprès d'Anthropic, elle est gardée chiffrée côté serveur, attachée à ton compte, et ne revient jamais dans la page (la page n'a d'ailleurs plus le droit d'appeler Anthropic). Donne-lui une limite de dépense dans la console Anthropic. Déploiement : [docs/assistant.md](docs/assistant.md).

@@ -237,6 +237,93 @@ dialog.palette input:focus-visible{outline:none;border-bottom-color:var(--accent
 }
 .set.mod{grid-template-columns:auto minmax(0,1fr) 9em auto}
 @media (max-width:560px){.set.mod{grid-template-columns:auto minmax(0,1fr) auto}.set.mod>:nth-child(3){grid-column:2;grid-row:2}}
+/* ================= Réglages : premier accueil, sommaire, chapitres =================
+   Une page longue, rangée en chapitres numérotés comme des planches, du plus courant au plus rare. Sur grand écran, le
+   sommaire tient la marge droite et marque le chapitre lu (le filet de marge) ; ailleurs, il ouvre la page. */
+.reg-guide{margin:4px 0 30px;padding:14px 18px 16px;border:1px solid var(--rule);border-radius:3px;background:var(--surface)}
+.reg-guide p{margin:0 0 8px;font-size:.95rem}
+.reg-guide .reg-guide-t{font-family:var(--f-display);font-size:1.35rem;font-weight:600;line-height:1.1;margin-bottom:8px}
+.reg-guide .hint{margin:10px 0 12px}
+.reg-guide summary{cursor:pointer;font-family:var(--f-ui);font-size:.88rem;color:var(--ink-2)}
+.lex{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 18px;margin:10px 0 4px;font-size:.92rem}
+.lex dt{font-family:var(--f-label);text-transform:lowercase;letter-spacing:.04em;color:var(--ink)}
+.lex dd{margin:0;color:var(--ink-2)}
+@media (max-width:560px){.lex{grid-template-columns:1fr;gap:0}.lex dd{margin-bottom:8px}}
+.reg-toc{margin:0 0 34px}
+.reg-toc .grp{margin:0 0 6px}
+.reg-toc ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.reg-toc ol button{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:5px 11px;border:1px solid var(--rule);border-radius:3px;background:transparent;color:var(--ink-2);font-size:.88rem;text-align:left}
+.reg-toc ol button:hover{color:var(--ink);border-color:var(--rule-strong)}
+.reg-toc .n,.chap-h .n{font-family:var(--f-label);text-transform:lowercase;letter-spacing:.08em;color:var(--muted)}
+.reg-toc>.btn{margin-top:10px;padding-left:0}
+@media (pointer:coarse){.reg-toc ol button{min-height:44px}}
+@media (min-width:1180px){
+  .reg{display:grid;grid-template-columns:minmax(0,1fr) 12.5rem;column-gap:48px;align-items:start}
+  .reg-body{grid-column:1;grid-row:1;min-width:0}
+  .reg-toc{grid-column:2;grid-row:1;position:sticky;top:28px;margin:0}
+  .reg-toc ol{flex-direction:column;flex-wrap:nowrap;gap:1px}
+  .reg-toc ol button{width:100%;border:0;border-left:2px solid transparent;border-radius:0 3px 3px 0;padding:6px 10px}
+  .reg-toc ol button:hover{background:var(--surface)}
+  .reg-toc ol button[aria-current]{border-left-color:var(--accent);color:var(--ink);background:var(--surface)}
+}
+.chap{margin:0 0 60px;scroll-margin-top:24px}
+.chap-h{display:flex;align-items:baseline;gap:10px;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--rule)}
+.chap-h .n{font-size:1.05rem}
+.chap-h h3{font-size:1.75rem;margin:0}
+.chap-h .tip{margin:0;align-self:center}
+.chap .swatch{font-size:.95rem}
+.chap section{margin:32px 0 0}
+.chap h4{font-family:var(--f-display);font-size:1.25rem;font-weight:600;line-height:1.1;margin:0 0 4px}
+.reg-head{display:flex;align-items:center;margin:0 0 4px}
+.reg-head h4{margin:0}
+.fld{display:grid;gap:4px;align-content:start}
+.fld-h{display:flex;align-items:center;flex-wrap:wrap;font-family:var(--f-ui);font-size:.88rem;font-weight:500}
+.check-l{display:flex;gap:8px;align-items:center;font-weight:400}
+/* « cet appareil » : ce réglage ne suit pas le compte. Un point creux, là où ce qui est partagé n'a pas de marque. */
+.dev{display:inline-flex;align-items:center;gap:.35em;margin-left:.6em;font-family:var(--f-label);font-size:.82rem;font-weight:500;letter-spacing:.04em;text-transform:lowercase;color:var(--muted)}
+.dev::before{content:"";width:.5em;height:.5em;border-radius:50%;border:1px solid currentColor}
+/* Espaces : une ligne par espace et, dessous, ses réglages propres, repliés ; ouverts, le filet de marge à sa teinte. */
+.reg-keys{display:flex;flex-wrap:wrap;gap:4px 20px;margin:-6px 0 10px;font-family:var(--f-ui);font-size:.84rem;color:var(--muted)}
+.reg-keys>span{display:inline-flex;align-items:center}
+.modlist{margin:6px 0 18px;border-bottom:1px solid var(--rule)}
+.modblock{border-top:1px solid var(--rule)}
+.modblock>.set.mod{border-top:0}
+.mod-name{display:flex;align-items:center;gap:8px;min-width:0}
+.mod-name .sig{width:20px;height:20px;margin:0;color:var(--tint,var(--muted))}
+.modblock.off .mod-name{opacity:.55}
+details.mreg,.mreg-note{margin:-6px 0 6px 23px}
+details.mreg>summary{display:inline-flex;align-items:baseline;gap:8px;min-height:32px;padding:4px 8px 4px 0;cursor:pointer;list-style:none;color:var(--muted);font-family:var(--f-ui);font-size:.84rem}
+details.mreg>summary::-webkit-details-marker{display:none}
+details.mreg>summary::before{content:"›";display:inline-block;width:.6em;transition:transform var(--t-2) var(--ease)}
+details.mreg[open]>summary::before{transform:rotate(90deg)}
+details.mreg>summary:hover{color:var(--ink)}
+.mreg-type{font-family:var(--f-label);text-transform:lowercase;letter-spacing:.04em}
+.mreg-type::before{content:"·";margin-right:8px}
+.mreg-body{margin:4px 0 14px;padding:10px 0 6px 16px;border-left:2px solid var(--tint,var(--accent))}
+.mreg-note .btn{padding-left:0}
+details.newmod>summary{display:inline-flex;list-style:none}
+details.newmod>summary::-webkit-details-marker{display:none}
+.newmod-body{margin:16px 0 0}
+.tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(16rem,1fr));column-gap:28px;margin:6px 0 26px}
+.tpl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--rule)}
+.tpl b{font-family:var(--f-display);font-size:1.15rem;font-weight:600}
+.tpl .hint{margin:2px 0 0;font-size:.86rem}
+/* L'irréversible, à part et en dernier : le mot et le filet cinabre le disent ensemble. */
+.danger{padding-top:16px;border-top:1px solid var(--alarm)}
+.danger h4{color:var(--alarm)}
+.danger summary{cursor:pointer;margin:0}
+/* Infobulles (ui/tips.js) : un « ? » discret à côté de ce qu'il explique ; la bulle, posée sous lui par le script.
+   Sans l'API popover, le texte s'affiche en clair, comme une indication. */
+.tip{display:inline-grid;place-items:center;flex:none;width:18px;height:18px;margin:0 0 0 6px;padding:0;border:1px solid var(--rule-strong);border-radius:50%;background:transparent;color:var(--muted);font:600 11px/1 var(--f-ui);font-style:normal;vertical-align:.12em;cursor:help}
+.tip:hover,.tip:focus-visible{color:var(--ink);border-color:var(--ink-2)}
+.tipb{position:fixed;inset:auto;margin:0;width:max-content;max-width:min(340px,calc(100vw - 24px));padding:10px 13px;border:1px solid var(--rule-strong);border-radius:3px;background:var(--surface-2);color:var(--ink);
+  font:400 .92rem/1.5 var(--f-text);font-style:normal;text-align:left;letter-spacing:0;text-transform:none;white-space:normal;overflow-wrap:break-word}
+/* Fermée, une bulle reste cachée, quelle que soit la règle qui atteint les <span> autour d'elle. */
+.tipb:not(:popover-open){display:none!important}
+.tipb:popover-open{animation:tip-in var(--t-2) var(--ease)}
+@keyframes tip-in{from{opacity:0;transform:translateY(-3px)}}
+@supports not selector(:popover-open){.tip{display:none}.tipb{position:static;display:block;width:auto;max-width:none;margin:4px 0;padding:0;border:0;background:none;color:var(--muted);font-size:.88rem;font-style:italic}}
+@media (pointer:coarse){.tip{position:relative}.tip::after{content:"";position:absolute;inset:-13px}}
 
 /* buttons */
 .btn{border:1px solid var(--ink);background:transparent;padding:7px 14px;border-radius:2px;font-weight:500;font-size:.92rem}
