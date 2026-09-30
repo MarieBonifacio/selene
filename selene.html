@@ -5601,6 +5601,8 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
   var assistantCle = null;
   var assistantEtat = "";
   var assistantDemande = null;
+  var assistantPause = 0;
+  var ASSISTANT_PAUSE = 5 * 6e4;
   var assistantSetCle = (r) => {
     assistantCle = r;
   };
@@ -5634,9 +5636,10 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
     return j;
   }
   function assistantRefresh() {
-    if (!assistantPret() || assistantDemande) return assistantDemande;
+    if (!assistantPret() || assistantDemande || Date.now() < assistantPause) return assistantDemande;
     const ancienne = platform.secrets.get("selene-api-key");
     assistantDemande = (async () => {
+      const avant = assistantCle;
       try {
         if (ancienne) {
           try {
@@ -5648,10 +5651,11 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
           }
         } else assistantCle = await assistantCall({ action: "etat" });
       } catch {
+        assistantPause = Date.now() + ASSISTANT_PAUSE;
       } finally {
         assistantDemande = null;
       }
-      render();
+      if (assistantCle !== avant) render();
     })();
     return assistantDemande;
   }
