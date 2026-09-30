@@ -158,6 +158,11 @@ export const platform = {
     permission: async () => (native && native.notifications ? native.notifications.permission() : "denied"),
     replace: async list => { if (native && native.notifications) await native.notifications.replace(list); }
   },
+  // Le widget d'écran d'accueil (ADR 24) : ce qu'il affiche, envoyé par la page ; seulement là où la coquille en a un.
+  widget: {
+    supported: () => !!(native && native.widget),
+    update: async data => { if (native && native.widget) await native.widget.update(data); }
+  },
   // Un léger retour haptique (une capture enregistrée) ; rien là où l'hôte n'en a pas.
   haptic() { try { if (native && native.haptic) native.haptic(); } catch {} },
   // Demande au navigateur de ne pas évincer les données locales sous la pression d'espace (PWA seulement).

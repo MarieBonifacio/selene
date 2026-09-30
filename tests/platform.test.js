@@ -181,3 +181,15 @@ test('notifications et haptique : absentes sur le web, relayées vers la coquill
   assert.equal(got.length, 1);
   assert.doesNotThrow(() => nat.haptic(), 'un retour haptique qui échoue ne casse pas une capture');
 });
+
+test('widget : absent sur le web, relayé vers la coquille native qui en a un', async () => {
+  const web = load({ window: { claude: null } }).platform;
+  assert.equal(web.widget.supported(), false);
+  await assert.doesNotReject(web.widget.update({ moon: 'x', lines: [] }));
+  const got = [], ctx = nativeCtx(vault(), vault());
+  ctx.window.seleneNative.widget = { update: async d => got.push(d) };
+  const nat = load(ctx).platform;
+  assert.equal(nat.widget.supported(), true);
+  await nat.widget.update({ moon: 'Pleine lune', lines: ['a'] });
+  assert.equal(got.length, 1);
+});

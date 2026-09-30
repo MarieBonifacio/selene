@@ -11,6 +11,7 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
   @Override
   public void onCreate(Bundle savedInstanceState) {
+    registerPlugin(WidgetPlugin.class); // le widget d'écran d'accueil ; avant super.onCreate, où le pont se construit
     super.onCreate(savedInstanceState);
     partage(getIntent());
   }

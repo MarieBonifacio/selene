@@ -41,7 +41,7 @@
   }
   const C = window.Capacitor;
   if (!C || typeof C.isNativePlatform !== "function" || !C.isNativePlatform()) return;
-  const { Filesystem, SecureStorage, App, LocalNotifications, Haptics } = C.Plugins;
+  const { Filesystem, SecureStorage, App, LocalNotifications, Haptics, SeleneWidget } = C.Plugins;
   const DIR = "DATA", ROOT = "selene", TMP = ".tmp";
   const file = k => `${ROOT}/${encodeURIComponent(k)}`;
   const storage = {
@@ -85,7 +85,9 @@
     }
   };
   const haptic = () => { if (Haptics) Haptics.impact({ style: "LIGHT" }).catch(() => {}); };
-  window.seleneNative = { runtime: "capacitor", storage, secrets, notifications, haptic };
+  // Le widget d'écran d'accueil (Android, ADR 24) : un plugin propre à l'app (native/android/…/WidgetPlugin.java).
+  const widget = SeleneWidget && { update: d => SeleneWidget.update({ moon: String(d.moon || ""), lines: (d.lines || []).map(String) }) };
+  window.seleneNative = { runtime: "capacitor", storage, secrets, notifications, haptic, widget };
   keepShares();
   if (App) {
     App.addListener("appUrlOpen", e => openLink(e && e.url));

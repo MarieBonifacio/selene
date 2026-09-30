@@ -4,4 +4,7 @@
     <string name="title_activity_main">Selene</string>
     <string name="package_name">io.github.mariebonifacio.selene</string>
     <string name="custom_url_scheme">io.github.mariebonifacio.selene</string>
+    <string name="widget_description">La lune du jour et les trois choses qui t\'attendent.</string>
+    <string name="widget_empty">Rien d\'urgent. La lune s\'en charge.</string>
+    <string name="widget_capture">Capturer</string>
 </resources>
