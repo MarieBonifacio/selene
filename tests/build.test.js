@@ -37,6 +37,10 @@ test('politique de confidentialité : publiée avec le site, sans script ni ress
   assert.match(fs.readFileSync('src/app/app.js', 'utf8'), /confidentialite\.html/);
 });
 
+test('le script produit ne dépend pas de la machine : aucun chemin absolu', () => {
+  for (const f of ['selene.html', 'index.html']) assert.doesNotMatch(fs.readFileSync(f, 'utf8'), new RegExp(process.cwd().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+});
+
 test('natif : l’amorçage puis le même script, sans service worker ni manifeste', () => {
   const n = read('native/index.html'), w = read('web/index.html');
   assert.equal(scripts(n).length, 2, 'l’amorçage natif, puis Selene');

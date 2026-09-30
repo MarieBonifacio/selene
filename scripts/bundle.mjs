@@ -25,7 +25,8 @@ const sharedPlatform = {
   setup(b) {
     b.onResolve({ filter: /platform\.js$/ }, args => {
       const p = path.resolve(args.resolveDir, args.path);
-      return p === PLATFORM ? { path: p, namespace: "plateforme" } : undefined;
+      // Un chemin relatif : esbuild l'écrit en commentaire dans le script, qui doit être le même sur toute machine.
+      return p === PLATFORM ? { path: "src/platform.js", namespace: "plateforme" } : undefined;
     });
     b.onLoad({ filter: /.*/, namespace: "plateforme" }, () => ({ contents: `export const { ${names.join(", ")} } = __platform;`, loader: "js" }));
   }
