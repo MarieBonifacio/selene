@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Selene — confidentialité</title>
+<style>
+:root { --bg: #f4f1ea; --ink: #1d231f; --muted: #5b655e; --rule: #d6d0c3; --acc: #4f7a49; }
+@media (prefers-color-scheme: dark) { :root { --bg: #0e1310; --ink: #e4e8e1; --muted: #9aa69c; --rule: #2a332d; --acc: #8fbf87; } }
+body { background: var(--bg); color: var(--ink); font: 17px/1.6 Georgia, "Iowan Old Style", serif; margin: 0; padding: 32px 16px 64px; }
+main { max-width: 42rem; margin: 0 auto; }
+h1 { font-weight: 400; font-size: 2rem; margin: 0 0 4px; }
+h2 { font-weight: 600; font-size: 1.1rem; margin: 32px 0 8px; border-top: 1px solid var(--rule); padding-top: 20px; }
+p, li { margin: 0 0 10px; }
+.meta { color: var(--muted); font-size: .9rem; }
+a { color: var(--acc); }
+code { font-size: .9em; }
+</style>
+</head>
+<body><main>
+<h1>Selene et tes données</h1>
+<p class="meta">Politique de confidentialité de Selene (site, apps Android, iOS et Windows). Dernière mise à jour : 30 septembre 2026.</p>
+
+<p>Version courte : Selene ne vend rien, ne mesure rien, ne montre aucune publicité et n'a aucun traceur. Ce que tu y écris
+reste sur ton appareil, et sur un serveur seulement si tu crées un compte, pour le retrouver sur tes autres appareils.</p>
+
+<h2>Sans compte</h2>
+<p>Tout reste sur ton appareil : dans le navigateur (IndexedDB) pour le site, dans le dossier privé de l'app pour les
+apps. Rien n'est envoyé à Selene. Les clés que tu saisis (OpenAlex, Zotero, adresse d'agenda) sont gardées sur l'appareil,
+dans le trousseau du système pour les apps.</p>
+
+<h2>Avec un compte</h2>
+<ul>
+<li><b>Ce qui est gardé</b> : ton adresse e-mail et ton mot de passe (haché, par Supabase Auth), et ton tableau de bord
+(tâches, notes, modules, réglages) pour la synchronisation. Rien d'autre.</li>
+<li><b>Où</b> : chez <a href="https://supabase.com/privacy">Supabase</a>, hébergeur de la base, dans une table où chaque
+compte ne peut lire que sa propre ligne.</li>
+<li><b>La clé d'API Anthropic</b>, si tu actives l'assistant : vérifiée, chiffrée (AES-GCM) et liée à ton compte sur le
+serveur ; elle ne revient jamais dans la page. Tes questions à l'assistant, avec ce que tu as choisi de lui laisser lire,
+partent chez <a href="https://www.anthropic.com/legal/privacy">Anthropic</a> au nom de ta clé ; le serveur de Selene ne
+garde ni les questions ni les réponses.</li>
+<li><b>Le passeur</b> (lecture de flux et de pages que le navigateur ne peut pas lire seul) va chercher les adresses que
+tu lui donnes et ne garde rien.</li>
+</ul>
+
+<h2>Les services que Selene appelle pour toi</h2>
+<p>Seulement quand tu utilises la fonction concernée, directement depuis ton appareil :</p>
+<ul>
+<li>Open-Meteo (météo et recherche de lieu : les coordonnées ou le nom du lieu choisi) ;</li>
+<li>Crossref, OpenAlex, Zotero (références bibliographiques : ce que tu cherches, et ta clé Zotero si tu en donnes une) ;</li>
+<li>MusicBrainz et Cover Art Archive (disques : ce que tu cherches) ;</li>
+<li>Microlink (aperçu d'un lien que tu enregistres : l'adresse du lien) ;</li>
+<li>Google Fonts (les polices d'écriture du site : ton adresse IP, comme pour toute page web) ;</li>
+<li>l'open data de la Métropole européenne de Lille (sorties culturelles, si tu actives ce module).</li>
+</ul>
+<p>La position de l'appareil n'est demandée que si tu appuies sur « Ma position » pour la météo ; elle ne sert qu'à
+Open-Meteo et n'est pas envoyée à Selene.</p>
+
+<h2>Notifications</h2>
+<p>Le résumé du matin des apps mobiles est programmé par le téléphone lui-même : aucune notification ne passe par un
+serveur.</p>
+
+<h2>Tes droits</h2>
+<ul>
+<li><b>Exporter</b> : Réglages → Sauvegarde → Exporter, tout ton état dans un fichier.</li>
+<li><b>Supprimer</b> : Réglages → Compte → Supprimer mon compte. Ton compte, ton tableau de bord sur le serveur et ta
+clé d'assistant sont effacés aussitôt, puis l'appareil est vidé.</li>
+<li><b>Sans compte</b> : désinstaller l'app, ou effacer les données du site dans le navigateur, efface tout.</li>
+</ul>
+
+<h2>Contact</h2>
+<p>Une question, une demande : <a href="https://github.com/MarieBonifacio/selene/issues">ouvrir un ticket</a> sur le dépôt
+du projet. Le code de Selene est public : tout ce qui est écrit ici peut y être vérifié.</p>
+</main></body>
+</html>

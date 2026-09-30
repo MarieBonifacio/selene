@@ -931,13 +931,18 @@ VIEWS.reglages = () => {
     <p class="hint" style="margin:12px 0 4px">Ce que Claude peut lire :</p><div class="row">${Object.keys(s.config.assistant.share).filter(enabled).map(k => `<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" data-act="as-share" data-k="${esc(k)}" ${s.config.assistant.share[k] ? "checked" : ""}>${esc(label(k))}</label>`).join("")}</div>
     ${hosted() && assistantKnown()?.cle ? `<button class="btn ghost sm" data-act="as-forget" style="margin-top:10px">Oublier la clé (sur tous tes appareils)</button>` : ""}</section>` : ""}
   ${hosted() && authReady() && authSession ? `<section><h3>Compte</h3><p class="hint">Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.</p>
-    <button class="btn ghost" data-act="auth-out">Se déconnecter</button></section>` : ""}
+    <button class="btn ghost" data-act="auth-out">Se déconnecter</button>
+    <details id="auth-delete" style="margin-top:16px"><summary class="hint" style="cursor:pointer;margin:0">Supprimer mon compte</summary>
+      <p class="hint" style="margin-top:8px">Définitif : ton compte, tout ton tableau de bord sur le serveur et ta clé d'assistant sont effacés, puis cet appareil est vidé. Tes autres appareils perdent l'accès. Exporte d'abord une sauvegarde (plus bas) si tu veux garder quelque chose. Politique de confidentialité : <a href="https://mariebonifacio.github.io/selene/confidentialite.html" target="_blank" rel="noopener">ce que Selene garde, et où</a>.</p>
+      <div class="field-row"><label>Tape « supprimer » pour confirmer<input id="authDelIn" autocomplete="off" autocapitalize="off" spellcheck="false"></label><span></span></div>
+      <button class="btn sm" data-act="auth-delete" style="margin-top:8px;color:var(--alarm)">Supprimer définitivement</button></details></section>` : ""}
   ${hosted() ? shareSettingsHTML() : ""}
   ${hosted() && authReady() && authSession ? passeurSettingsHTML() : ""}
   ${hosted() && authReady() && authSession ? agendaSettingsHTML() : ""}
   ${hosted() ? zotSettingsHTML() : ""}
   <section><h3>Sauvegarde</h3><p class="hint">Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.</p>
-    <div class="row"><button class="btn" data-act="exp">Exporter</button><label class="btn" style="display:inline-block;font-weight:500">Importer<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label></div></section>`;
+    <div class="row"><button class="btn" data-act="exp">Exporter</button><label class="btn" style="display:inline-block;font-weight:500">Importer<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label></div></section>
+  <p class="hint" style="margin-top:24px"><a href="https://mariebonifacio.github.io/selene/confidentialite.html" target="_blank" rel="noopener">Confidentialité</a> : aucun traceur, aucune publicité ; ce que Selene garde, où, et comment tout effacer.</p>`;
 };
 
 /* ================= navigation =================
@@ -1493,7 +1498,15 @@ const CLICK = {
   "pal": el => { S().config.palette = el.dataset.p; site.save(); render(); },
   "mod-up": el => moveMod(el, -1), "mod-down": el => moveMod(el, 1),
   "auth-switch": () => { authMode = authMode === "signup" ? "signin" : "signup"; render(); },
-  "auth-out": () => authSignOut()
+  "auth-out": () => authSignOut(),
+  "auth-delete": async el => {
+    const inp = $("#authDelIn");
+    if (!inp || inp.value.trim().toLowerCase() !== "supprimer") { toast("Tape « supprimer » pour confirmer."); if (inp) inp.focus(); return; }
+    if (!await ask("Supprimer ton compte et toutes ses données, sur le serveur et sur cet appareil ? C'est définitif.")) return;
+    el.disabled = true;
+    try { await authDeleteAccount(); toast("Compte supprimé. Il ne reste rien de toi ici, ce qui est plus que la plupart des services peuvent dire."); }
+    catch (e) { el.disabled = false; toast("Compte non supprimé : " + e.message); }
+  }
 };
 /* Donne un fichier à l'utilisatrice : via claude.ai, le partage natif (téléphone) ou un téléchargement. */
 async function downloadFile(filename, data, type, title) {
