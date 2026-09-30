@@ -42,7 +42,7 @@ CLICK["page-more"] = el => { const k = el.dataset.k; pageSize[k] = (pageSize[k] 
 CLICK["entry-add"] = el => entryAdd(el.dataset.mod);
 CLICK["entry-del"] = el => removeWithUndo(el.dataset.mod, "entries", idOf(el));
 CLICK["mod-down"] = el => moveMod(el, 1);
-/* Ajoute un module (depuis un modèle ou un type vide), actif et partagé avec l'assistant. */
+/* Ajoute un module actif ; le suivi sensible reste non partagé avec l'assistant. */
 export function addModule(tpl, name) {
   if (tpl.type === "programme") {
     const defaults = { ...MODULE_TYPES.programme.defaults().config, ...tpl.config };
@@ -65,7 +65,7 @@ function installModule(tpl, name) {
     const s = S(), id = slugId(name, [...s.config.modules.map(x => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
     createFromTemplate(s.modules, tpl, name, id);
     s.config.modules.push({ id, on: true });
-    s.config.assistant.share[id] = true;
+    s.config.assistant.share[id] = tpl.type !== "regulation";
     site.save(); render(); toast(`Module « ${name} » créé.`);
   } catch (e) { toast(e.message); }
 }

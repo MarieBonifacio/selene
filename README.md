@@ -35,9 +35,15 @@ Réglages → Modules : activer, renommer, réordonner, supprimer, et « + Crée
   - *Budget* : des opérations (dépenses, revenus), des enveloppes à plafond mensuel et leurs jauges, mois par mois (ex. le Budget) ;
   - *Collection* : des éléments à statuts (titre, sous-titre, étiquette, date, texte : chaque champ se renomme ou se masque), affichés en colonnes ou en liste filtrable (ex. october.moth en colonnes, Musique en liste) ; en colonnes, sur téléphone une colonne à la fois par un sélecteur, sur ordinateur une carte se glisse d'une colonne à l'autre (ou `[` et `]` sur la carte qui a le focus).
 
-Un module se supprime définitivement (✕, puis retaper son nom) : ses données partent avec lui, sur tous les appareils. Ses réglages propres sont dans Réglages → Réglages par module. Un nouveau module est partagé par défaut avec l'assistant ; décocher dans Réglages → Assistant pour le garder privé.
+Un module se supprime définitivement (✕, puis retaper son nom) : ses données partent avec lui, sur tous les appareils. Ses réglages propres sont dans Réglages → Réglages par module. Un nouveau module est partagé par défaut avec l'assistant, sauf « Reprendre la main » ; décocher dans Réglages → Assistant pour le garder privé.
 
 Pour ajouter un *type* de module au code, voir [docs/architecture.md](docs/architecture.md#ajouter-un-type-de-module).
+
+## Reprendre la main
+
+Un espace optionnel pour le **tabac, le cannabis, l'alcool et les réseaux sociaux**, en observation, réduction ou objectif d'arrêt. Ajouter le modèle « Reprendre la main », puis définir le sujet et l'objectif dans l'espace. Journal rapide, envies, pause facultative de cinq minutes, actions du plan et bilan sur sept jours. Une journée inconnue ne vaut jamais zéro. Les récompenses sont facultatives : une marque par journée avec une action réalisée, sans perte après un écart.
+
+Le module n'est **pas partagé avec l'assistant à sa création** et ses détails sont exclus des vues transversales. Ses données suivent toutefois le stockage, la synchronisation et les sauvegardes du compte. Il ne prescrit pas de sevrage ; l'alcool dispose d'une information spécifique avant le choix de l'objectif. Fonctionnement, unités, confidentialité et limites : [docs/regulation.md](docs/regulation.md).
 
 ## Au quotidien
 

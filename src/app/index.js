@@ -31,6 +31,7 @@ export * from "./modules/groups.js";
 export * from "./modules/notes.js";
 export * from "./modules/programme.js";
 export * from "./modules/rappels.js";
+export * from "./modules/regulation.js";
 export * from "./modules/taches.js";
 export * from "./features/agenda.js";
 export * from "./features/assistant.js";

@@ -835,6 +835,9 @@ var __selene = (() => {
     OA_DOI: () => OA_DOI,
     PAGE: () => PAGE,
     RADAR_KEY: () => RADAR_KEY,
+    REGULATION_MILESTONES: () => REGULATION_MILESTONES,
+    REGULATION_MODES: () => REGULATION_MODES,
+    REGULATION_SUBJECTS: () => REGULATION_SUBJECTS,
     S: () => S,
     SCHEMA_VERSION: () => SCHEMA_VERSION,
     SECTION_TO_MODULE: () => SECTION_TO_MODULE,
@@ -855,6 +858,7 @@ var __selene = (() => {
     addLink: () => addLink,
     addModule: () => addModule,
     addNote: () => addNote,
+    addRegulationGoal: () => addRegulationGoal,
     addTask: () => addTask,
     afterCapture: () => afterCapture,
     agendaHTML: () => agendaHTML,
@@ -907,6 +911,7 @@ var __selene = (() => {
     clip: () => clip,
     clone: () => clone,
     closeOverlays: () => closeOverlays,
+    closeRegulationDay: () => closeRegulationDay,
     closeSheet: () => closeSheet,
     colFilter: () => colFilter,
     collectionForm: () => collectionForm,
@@ -1088,6 +1093,13 @@ var __selene = (() => {
     refHTML: () => refHTML,
     refreshWeather: () => refreshWeather,
     registerType: () => registerType,
+    regulationDay: () => regulationDay,
+    regulationDefaults: () => regulationDefaults,
+    regulationGoal: () => regulationGoal,
+    regulationMarks: () => regulationMarks,
+    regulationPeriod: () => regulationPeriod,
+    regulationRemaining: () => regulationRemaining,
+    regulationSnapshot: () => regulationSnapshot,
     rememberScroll: () => rememberScroll,
     removeWithUndo: () => removeWithUndo,
     render: () => render,
@@ -1098,6 +1110,7 @@ var __selene = (() => {
     sampleNS: () => sampleNS,
     saveCollectionItem: () => saveCollectionItem,
     saveDraft: () => saveDraft,
+    saveRegulationEvent: () => saveRegulationEvent,
     sceneNow: () => sceneNow,
     scrapsMarkdown: () => scrapsMarkdown,
     searchAll: () => searchAll,
@@ -1162,6 +1175,7 @@ var __selene = (() => {
     trackBack: () => trackBack,
     uid: () => uid,
     validDate: () => validDate,
+    validateRegulation: () => validateRegulation,
     weatherState: () => weatherState,
     widgetData: () => widgetData,
     widgetSoon: () => widgetSoon,
@@ -1577,6 +1591,98 @@ var __selene = (() => {
   }
   var rainDays = (days, from, n = 5) => (days || []).filter((x) => x && x.d >= from && dayDiff(from, x.d) < n && ((+x.mm || 0) >= 1 || (+x.pp || 0) >= 60)).map((x) => x.d);
 
+  // src/core/regulation.js
+  var REGULATION_SUBJECTS = {
+    tabac: { label: "Tabac", unit: "cigarettes", step: 1 },
+    cannabis: { label: "Cannabis", unit: "g", step: 0.01 },
+    alcool: { label: "Alcool", unit: "verres standard", step: 0.1 },
+    reseaux: { label: "Réseaux sociaux", unit: "min", step: 1 }
+  };
+  var REGULATION_MODES = { observer: "Observer", reduire: "Réduire", arreter: "Viser l'arrêt" };
+  var REGULATION_MILESTONES = [1, 3, 7, 14, 30];
+  var regulationDefaults = () => ({ config: { subject: "tabac", strategies: "Marcher quelques minutes\nÉloigner un déclencheur\nContacter quelqu'un", rewards: false, reward: "", rewardAt: 7 }, entries: [], goals: [] });
+  var text = (s, max = 2e3) => typeof s === "string" && s.length <= max;
+  var identifier = (s) => typeof s === "string" && /^[\w-]{1,64}$/.test(s);
+  var amount = (n) => typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 1e5;
+  var dateCheck = (date, today) => {
+    if (!validDate(date) || !validDate(today) || date > today) throw new Error("Choisis une date valide, aujourd'hui ou dans le passé.");
+  };
+  function validateRegulation(inst, v) {
+    const c = inst.config;
+    if (!Object.hasOwn(REGULATION_SUBJECTS, c.subject) || !text(c.strategies) || typeof c.rewards !== "boolean" || !text(c.reward, 200) || !Number.isInteger(c.rewardAt) || c.rewardAt < 1 || c.rewardAt > 365) v.fail("réglages du suivi");
+    const goals = v.list(inst.goals, "objectifs");
+    for (const g of goals) if (!identifier(g.id) || !validDate(g.date) || !Number.isFinite(g.at) || g.at < 0 || !Object.hasOwn(REGULATION_MODES, g.mode) || !amount(g.limit) || g.mode === "arreter" && g.limit !== 0) v.fail("objectif");
+    if (new Set(goals.map((g) => g.id)).size !== goals.length || new Set(inst.entries.map((e) => e.id)).size !== inst.entries.length) v.fail("identifiant dupliqué");
+    for (const e of inst.entries) {
+      if (!identifier(e.id) || !validDate(e.date) || !Number.isFinite(e.at) || e.at < 0 || !text(e.zone, 80) || !text(e.note)) v.fail("entrée de suivi");
+      if (e.kind === "use") {
+        if (!amount(e.value) || e.value === 0 || REGULATION_SUBJECTS[c.subject].step === 1 && !Number.isInteger(e.value)) v.fail("quantité");
+      } else if (e.kind === "urge") {
+        if (e.intensity !== null && (!Number.isInteger(e.intensity) || e.intensity < 0 || e.intensity > 10)) v.fail("intensité");
+        if (!text(e.strategy, 200) || !["", "utile", "neutre", "difficile"].includes(e.outcome) || e.pauseEnd != null && (!Number.isFinite(e.pauseEnd) || e.pauseEnd < 0)) v.fail("envie");
+      } else if (e.kind === "action") {
+        if (!text(e.strategy, 200) || !e.strategy.trim()) v.fail("action");
+      } else if (e.kind === "day") {
+        if (e.id !== `day-${e.date}` || !text(e.snapshot, 5e5) || !goals.some((g) => g.id === e.goalId)) v.fail("bilan quotidien");
+      } else v.fail("type d'entrée");
+    }
+  }
+  function regulationGoal(inst, date) {
+    return [...inst.goals].filter((g) => g.date <= date).sort((a, b) => b.date.localeCompare(a.date) || b.at - a.at || b.id.localeCompare(a.id))[0] || null;
+  }
+  function addRegulationGoal(inst, input, id, today, now) {
+    dateCheck(input.date, today);
+    if (!identifier(id) || inst.goals.some((g2) => g2.id === id) || !Object.hasOwn(REGULATION_MODES, input.mode)) throw new Error("Objectif invalide.");
+    const limit = input.mode === "reduire" ? Number(input.limit) : 0;
+    if (input.mode === "reduire" && (input.limit === "" || input.limit == null || !amount(limit) || limit === 0)) throw new Error("Indique une limite positive ; pour zéro, choisis l'arrêt.");
+    if (REGULATION_SUBJECTS[inst.config.subject].step === 1 && !Number.isInteger(limit)) throw new Error("Indique un nombre entier dans cette unité.");
+    const g = { id, date: input.date, at: now, mode: input.mode, limit };
+    inst.goals.push(g);
+    return g;
+  }
+  function saveRegulationEvent(inst, input, id, today, now, zone2 = "") {
+    dateCheck(input.date, today);
+    if (!identifier(id) || !["use", "urge", "action"].includes(input.kind)) throw new Error("Entrée invalide.");
+    const previous = inst.entries.find((e2) => e2.id === id);
+    const e = { id, date: input.date, at: now, zone: zone2, kind: input.kind, note: String(input.note || "").slice(0, 2e3) };
+    if (e.kind === "use") e.value = Number(input.value);
+    if (e.kind === "urge") Object.assign(e, { intensity: input.intensity === "" || input.intensity == null ? null : Number(input.intensity), strategy: String(input.strategy || "").slice(0, 200), outcome: input.outcome || "", pauseEnd: previous?.pauseEnd ?? null });
+    if (e.kind === "action") e.strategy = String(input.strategy || "").trim().slice(0, 200);
+    const next = { ...inst, entries: [...inst.entries.filter((x) => x.id !== id), e] };
+    validateRegulation(next, { list: (x) => x, fail: (what) => {
+      throw new Error(`Saisie invalide : ${what}.`);
+    } });
+    inst.entries = next.entries;
+    return e;
+  }
+  var regulationSnapshot = (inst, date) => JSON.stringify(inst.entries.filter((e) => e.kind === "use" && e.date === date).map((e) => [e.id, e.value]).sort((a, b) => a[0].localeCompare(b[0])));
+  function closeRegulationDay(inst, date, today, now, zone2 = "") {
+    dateCheck(date, today);
+    const old = inst.entries.find((e2) => e2.id === `day-${date}`), goal = inst.goals.find((g) => g.id === old?.goalId) || regulationGoal(inst, date);
+    if (!goal) throw new Error("Définis d'abord un objectif couvrant cette date.");
+    const e = { id: `day-${date}`, kind: "day", date, at: now, zone: zone2, note: "", goalId: goal.id, snapshot: regulationSnapshot(inst, date) };
+    inst.entries = [...inst.entries.filter((x) => x.id !== e.id), e];
+    return e;
+  }
+  function regulationDay(inst, date) {
+    const uses = inst.entries.filter((e) => e.kind === "use" && e.date === date), check = inst.entries.find((e) => e.id === `day-${date}`);
+    const total = Math.round(uses.reduce((n, e) => n + e.value, 0) * 1e4) / 1e4;
+    const goal = inst.goals.find((g) => g.id === check?.goalId) || regulationGoal(inst, date);
+    const complete = !!check && !!goal && check.snapshot === regulationSnapshot(inst, date);
+    return { date, total, complete, goal, met: complete && goal.mode !== "observer" ? total <= goal.limit : null, reopened: !!check && !complete };
+  }
+  function regulationPeriod(inst, from, to) {
+    const first = [...inst.goals].map((g) => g.date).sort()[0];
+    const days = [];
+    if (!first || !validDate(from) || !validDate(to)) return { days, known: 0, unknown: 0, met: 0, assessed: 0, total: 0, mean: null };
+    const start = from < first ? first : from;
+    for (let d = start; d < to && days.length < 366; d = new Date(Date.parse(d + "T12:00:00Z") + 864e5).toISOString().slice(0, 10)) days.push(regulationDay(inst, d));
+    const known = days.filter((d) => d.complete), assessed = known.filter((d) => d.met !== null), total = known.reduce((n, d) => n + d.total, 0);
+    return { days, known: known.length, unknown: days.length - known.length, met: assessed.filter((d) => d.met).length, assessed: assessed.length, total, mean: known.length ? total / known.length : null };
+  }
+  var regulationMarks = (inst) => new Set(inst.entries.filter((e) => e.kind === "action").map((e) => e.date)).size;
+  var regulationRemaining = (end, now) => Math.max(0, Math.ceil((end - now) / 1e3));
+
   // src/core/domain.js
   var requireText = (value, label2, max) => {
     if (typeof value !== "string" || !value.trim()) throw new Error(`${label2} manquant`);
@@ -1621,20 +1727,20 @@ var __selene = (() => {
     t.today = !!value;
     return t;
   }
-  function addCapture(items, text, id, date) {
-    const item = { id, text: requireText(text, "Note", 500), date };
+  function addCapture(items, text2, id, date) {
+    const item = { id, text: requireText(text2, "Note", 500), date };
     items.push(item);
     return item;
   }
   function addBudgetEntry(entries, input, id, defaultDate) {
-    const amount = Number(input.amount);
-    if (!Number.isFinite(amount) || amount <= 0) throw new Error("Montant invalide");
+    const amount2 = Number(input.amount);
+    if (!Number.isFinite(amount2) || amount2 <= 0) throw new Error("Montant invalide");
     const date = input.date || defaultDate;
     if (!validDate(date)) throw new Error("Date invalide");
     const entry = {
       id,
       type: input.type === "revenu" ? "revenu" : "dépense",
-      amount,
+      amount: amount2,
       cat: input.cat || "",
       note: input.note || "",
       date
@@ -1642,7 +1748,7 @@ var __selene = (() => {
     entries.push(entry);
     return entry;
   }
-  var SCHEMA_VERSION = 6;
+  var SCHEMA_VERSION = 7;
   var SECTION_TO_MODULE = {
     kundalini: (old, name) => ({
       type: "programme",
@@ -1747,6 +1853,11 @@ var __selene = (() => {
     }
   }
   var MODULE_TYPES = {
+    regulation: {
+      label: "Reprendre la main (consommations et comportements)",
+      defaults: () => regulationDefaults(),
+      validate: (inst, v) => validateRegulation(inst, v)
+    },
     programme: {
       label: "Programme (calendrier + objectif hebdomadaire)",
       // paliers : des étapes qu'on rédige et qu'on coche soi-même. L'app affiche l'avancement, ne décide jamais
@@ -2018,15 +2129,15 @@ var __selene = (() => {
     for (const inst of Object.values(modules)) for (const list of ["entries", "scraps"]) for (const e of inst[list] || [])
       for (const l of e.links || []) if (l.to === from) l.to = to;
   }
-  function setResume(inst, text, date) {
-    const t = String(text || "").trim().slice(0, 200), old = inst.resume;
+  function setResume(inst, text2, date) {
+    const t = String(text2 || "").trim().slice(0, 200), old = inst.resume;
     if (old && old.text === t) return;
     if (old) inst.resumeLog = [...inst.resumeLog || [], { text: old.text, at: old.at, end: date, how: t ? "remplacé" : "repris" }].slice(-30);
     if (t) inst.resume = { text: t, at: date };
     else delete inst.resume;
   }
-  function editFragmentText(f, text, date) {
-    const t = String(text || "").trim();
+  function editFragmentText(f, text2, date) {
+    const t = String(text2 || "").trim();
     if (!t || t === f.text) return false;
     f.versions = [...f.versions || [], { text: f.text, at: date }].slice(-10);
     f.text = t;
@@ -2067,6 +2178,7 @@ var __selene = (() => {
     return modules[id] = { type, label: label2, ...MODULE_TYPES[type].defaults() };
   }
   var MODULE_TEMPLATES = [
+    { id: "regulation", name: "Reprendre la main", type: "regulation", hint: "Tabac, cannabis, alcool ou réseaux sociaux : observer, réduire, viser l’arrêt" },
     { id: "taches", name: "Tâches", type: "taches", hint: "Échéances, étapes, et trois tâches du jour au plus" },
     { id: "protocole", name: "Protocole", type: "programme", hint: "Choisis ton sport ou ta pratique, sa durée et ton rythme à l'ajout" },
     {
@@ -2566,8 +2678,8 @@ var __selene = (() => {
     if (u.pathname !== "/" && !u.search && s.endsWith("/")) s = s.slice(0, -1);
     return s;
   }
-  function findDoi(text) {
-    let t = String(text || "");
+  function findDoi(text2) {
+    let t = String(text2 || "");
     try {
       t = decodeURIComponent(t);
     } catch {
@@ -2575,8 +2687,8 @@ var __selene = (() => {
     const m = t.match(/\b(10\.\d{4,9}\/[^\s"'<>]+)/i);
     return m ? m[1].replace(/[.,;:)\]}>»]+$/, "").toLowerCase() : null;
   }
-  function findUrl(text) {
-    const m = String(text || "").match(/https?:\/\/[^\s"'<>]+/i);
+  function findUrl(text2) {
+    const m = String(text2 || "").match(/https?:\/\/[^\s"'<>]+/i);
     return m ? normalizeUrl(m[0].replace(/[.,;:)\]}>»]+$/, "")) : null;
   }
   function sourceKey(src) {
@@ -2876,9 +2988,9 @@ var __selene = (() => {
   var dated = (list, name) => {
     if (list.some((x) => typeof x.date !== "string" || !validDate(x.date))) throw new Error(`${name} : date invalide`);
   };
-  function parseBackup(text) {
-    if (typeof text !== "string" || text.length > 5e6) throw new Error("Sauvegarde trop volumineuse");
-    const data = JSON.parse(text);
+  function parseBackup(text2) {
+    if (typeof text2 !== "string" || text2.length > 5e6) throw new Error("Sauvegarde trop volumineuse");
+    const data = JSON.parse(text2);
     if (!record(data) || data.format !== "selene-v1" || !record(data.board) || !record(data.site)) throw new Error("Format de sauvegarde invalide");
     const { board: board2, site: site2 } = data;
     if (site2.schemaVersion != null && !(Number.isInteger(site2.schemaVersion) && site2.schemaVersion >= 1)) throw new Error("Version de format invalide");
@@ -3070,8 +3182,8 @@ var __selene = (() => {
     return { t: tz ? zoned(+y, +mo, +d, +h, +mi, +s, tz) : new Date(+y, +mo - 1, +d, +h, +mi, +s).getTime(), allDay: false };
   }
   var icsUnescape = (s) => String(s || "").replace(/\\n/gi, " ").replace(/\\([,;\\])/g, "$1").replace(/\s+/g, " ").trim();
-  function icsParse(text) {
-    const lines = String(text || "").replace(/\r\n?/g, "\n").replace(/\n[ \t]/g, "").split("\n"), out = [];
+  function icsParse(text2) {
+    const lines = String(text2 || "").replace(/\r\n?/g, "\n").replace(/\n[ \t]/g, "").split("\n"), out = [];
     let ev = null;
     for (const line of lines) {
       if (line === "BEGIN:VEVENT") {
@@ -3345,12 +3457,12 @@ var __selene = (() => {
       const [k, l] = Array.isArray(o) ? o : [o, o];
       return `<option value="${esc(k)}" ${String(val) === String(k) ? "selected" : ""}>${esc(l)}</option>`;
     }).join("")}</select>`;
-    else input = `<input type="${f.t || "text"}" ${common} value="${esc(val)}" ${f.list ? `list="${f.list}"` : ""} ${f.t === "number" ? 'min="0" step="1" inputmode="numeric"' : ""}>`;
+    else input = `<input type="${f.t || "text"}" ${common} value="${esc(val)}" ${f.list ? `list="${f.list}"` : ""} ${f.t === "number" ? `min="${esc(f.min ?? 0)}" step="${esc(f.step ?? 1)}" inputmode="${f.step && f.step < 1 ? "decimal" : "numeric"}"${f.max != null ? ` max="${esc(f.max)}"` : ""}` : ""}>`;
     return `<label>${esc(f.l)}${input}</label>`;
   }
-  function openForm(title, fields, values, cb) {
+  function openForm(title, fields, values, cb, description = "") {
     formCb = cb;
-    $("#form").innerHTML = `<h2>${esc(title)}</h2>` + fields.map((f) => f.row ? `<div class="field-row">${f.row.map((x) => fieldHTML(x, values)).join("")}</div>` : fieldHTML(f, values)).join("") + `<div class="row"><button class="btn solid" value="save">Enregistrer</button><button class="btn" value="cancel" formnovalidate>Annuler</button></div>`;
+    $("#form").innerHTML = `<h2>${esc(title)}</h2>${description ? `<p class="hint">${esc(description)}</p>` : ""}` + fields.map((f) => f.row ? `<div class="field-row">${f.row.map((x) => fieldHTML(x, values)).join("")}</div>` : fieldHTML(f, values)).join("") + `<div class="row"><button class="btn solid" value="save">Enregistrer</button><button class="btn" value="cancel" formnovalidate>Annuler</button></div>`;
     $("#dlg").showModal();
   }
   $("#dlg").addEventListener("close", () => {
@@ -3360,7 +3472,8 @@ var __selene = (() => {
     const cb = formCb;
     formCb = null;
     try {
-      cb(v);
+      const result = cb(v);
+      if (result && typeof result.catch === "function") result.catch((e) => toast(e.message || "Saisie invalide."));
     } catch (e) {
       toast(e.message || "Saisie invalide.");
     }
@@ -4324,14 +4437,14 @@ var __selene = (() => {
   };
 
   // src/app/modules/notes.js
-  function captureIntent(text) {
-    const s = S(), t = String(text).trim();
+  function captureIntent(text2) {
+    const s = S(), t = String(text2).trim();
     const mods = s.config.modules.filter((m2) => m2.on && Object.hasOwn(s.modules, m2.id)).map((m2) => ({ id: m2.id, inst: s.modules[m2.id], name: fold(label(m2.id)) }));
     let m = t.match(/^(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur(?:os?)?\b)\s*(.*)$/i);
     const bud = firstOfType("budget");
     if (m && bud && +m[1].replace(",", ".") > 0) {
-      const amount = +m[1].replace(",", "."), rest = m[2].trim(), env = rest && s.modules[bud].config.envelopes.find((v) => fold(rest).includes(fold(v.name)));
-      return { to: bud, kind: "budget", amount, note: rest, cat: env ? env.name : "", say: `${money(amount)} en dépense dans ${label(bud)}${env ? ` (${env.name})` : ""}` };
+      const amount2 = +m[1].replace(",", "."), rest = m[2].trim(), env = rest && s.modules[bud].config.envelopes.find((v) => fold(rest).includes(fold(v.name)));
+      return { to: bud, kind: "budget", amount: amount2, note: rest, cat: env ? env.name : "", say: `${money(amount2)} en dépense dans ${label(bud)}${env ? ` (${env.name})` : ""}` };
     }
     m = t.match(/^(\d+)\s*min(?:utes?)?\s+(.+)$/i);
     if (m) {
@@ -4359,9 +4472,9 @@ var __selene = (() => {
     if (typeof then === "function") then();
     else toast(`Rangé : ${intent.say}.`);
   }
-  function acceptNote(toId, fromId, note, text = note.text) {
+  function acceptNote(toId, fromId, note, text2 = note.text) {
     const target = S().modules[toId], before = entryIds(target);
-    const then = TYPE_UI[target.type].accept(toId, target, { ...note, text });
+    const then = TYPE_UI[target.type].accept(toId, target, { ...note, text: text2 });
     const born = stampOrigin(target, before, note, label(fromId));
     if (born.length) retargetLinks(S().modules, `${fromId}/${note.id}`, `${toId}/${born[0].id}`);
     return then;
@@ -4664,11 +4777,11 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
   var DRIFT_MIN_TEXTS = 5;
   var STOPWORDS = new Set("les des une est pas que qui quoi dont par pour sur sous dans avec sans entre vers chez mais donc car comme aussi alors ainsi encore deja bien tres trop plus moins tout toute tous toutes rien cette ces cet son ses mon mes ton tes notre nos votre vos leur leurs elle elles ils nous vous lui eux meme autre autres cela ceci celui celle ceux celles quand puis apres avant depuis pendant jusqu ici etre avoir fait faire faut peut peux sont etait etaient ete suis sommes etes avons avez ont avait avaient sera seront serait aurait chaque aucun aucune quelque quelques parce lorsque oui non fois jour jours aujourd hui demain hier chose choses the and for with this that from are was have not but".split(" "));
   var driftCache = /* @__PURE__ */ new Map();
-  function driftWords(text) {
-    let out = driftCache.get(text);
+  function driftWords(text2) {
+    let out = driftCache.get(text2);
     if (!out) {
       out = /* @__PURE__ */ new Map();
-      const sep = /[^\p{L}\p{N}]+/u, raws = String(text).toLowerCase().split(sep), keys = fold(text).split(sep);
+      const sep = /[^\p{L}\p{N}]+/u, raws = String(text2).toLowerCase().split(sep), keys = fold(text2).split(sep);
       for (let i = 0; i < raws.length; i++) {
         const raw = raws[i];
         let k = keys.length === raws.length ? keys[i] : fold(raw);
@@ -4677,7 +4790,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
         if (!out.has(k)) out.set(k, raw);
       }
       if (driftCache.size >= 2e4) driftCache.clear();
-      driftCache.set(text, out);
+      driftCache.set(text2, out);
     }
     return out;
   }
@@ -4759,7 +4872,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     const at = new Map(days.map((d, i) => [d, i])), total = days.map(() => 0);
     const rows = s.config.modules.filter((m) => m.on && Object.hasOwn(s.modules, m.id)).map((m) => {
       const inst = s.modules[m.id], ui = TYPE_UI[inst.type];
-      if (!ui || isConcordance(inst)) return null;
+      if (!ui || ui.sensitive || isConcordance(inst)) return null;
       const spark = days.map(() => 0);
       for (const x of datedItems(inst)) {
         const i = at.get(x.date);
@@ -4975,7 +5088,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     const inbox = inboxId(s.modules), pending = inbox ? s.modules[inbox].entries.length : 0;
     const row = (id) => {
       const inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null, more = inst && TYPE_UI[inst.type].recent ? TYPE_UI[inst.type].recent(inst) : [];
-      const r = inst && inst.resume, bridge = r ? `<small class="resume ${bridgeStale(r) ? "stale" : ""}">↳ ${esc(r.text)} · ${ago(r.at)}</small>` : "";
+      const r = inst && !TYPE_UI[inst.type].sensitive && inst.resume, bridge = r ? `<small class="resume ${bridgeStale(r) ? "stale" : ""}">↳ ${esc(r.text)} · ${ago(r.at)}</small>` : "";
       return `<div class="over-wrap${more.length ? " has-more" : ""} ${tintOf(id)}"><a class="over" href="#${esc(id)}"><b>${sigil(id)}${esc(label(id))}</b><span>${summaryFor(id)}${bridge}</span></a>${more.length ? `<details class="more"><summary><span class="sr">Derniers éléments de ${esc(label(id))}</span></summary><ul>${more.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
     };
     const ds = domains().map((d) => ({ ...d, ids: d.ids.filter((id) => id !== inbox) })).filter((d) => d.ids.length), named = ds.some((d) => d.name);
@@ -5020,7 +5133,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     return inst ? TYPE_UI[inst.type].summary(id, inst) : SUMMARY[id] ? SUMMARY[id]() : "";
   }
   function resumeSection() {
-    const s = S(), drafts = pendingDrafts(), last = liveRecents()[0], lines = [];
+    const s = S(), drafts = pendingDrafts().filter((d) => !TYPE_UI[s.modules[d.view]?.type]?.sensitive), last = liveRecents().find((r) => !TYPE_UI[s.modules[r.id]?.type]?.sensitive), lines = [];
     if (last) {
       const r = s.modules[last.id].resume, mine = drafts.filter((d) => d.view === last.id).map((d) => d.what);
       if (r || mine.length) lines.push(`<li><a href="#${esc(last.id)}"><b>${esc(label(last.id))}</b></a>${r ? ` — ↳ ${esc(r.text)}` : ""}${mine.length ? ` · ${esc(mine.join(", "))} en cours` : ""} <span class="hint">· ${agoTime(last.at)}</span></li>`);
@@ -5130,8 +5243,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     if (!p) return;
     const box = inboxId(S().modules);
     if (!box) return toast("Lien reçu, mais aucune boîte de réception où le garder. Crée un Carnet et fais-en ta boîte (Réglages).");
-    const url = String(p.url || "").trim(), text = String(p.text || "").trim(), title = String(p.title || "").trim();
-    const parts = [title, text && text !== title ? text : "", url && !text.includes(url) ? url : ""].filter(Boolean);
+    const url = String(p.url || "").trim(), text2 = String(p.text || "").trim(), title = String(p.title || "").trim();
+    const parts = [title, text2 && text2 !== title ? text2 : "", url && !text2.includes(url) ? url : ""].filter(Boolean);
     addNote(S().modules[box], parts.join(" — ").slice(0, 2e3));
     site.save();
     render();
@@ -5789,7 +5902,7 @@ ${contextText()}`;
   }
   async function askSample(history, onText) {
     const input = [{ role: "user", content: instructions() }, ...history];
-    const opts = { onText: ({ text }) => onText(text) };
+    const opts = { onText: ({ text: text2 }) => onText(text2) };
     if (availableTools().length) opts.tools = availableTools().map((t) => ({ name: t.name, description: t.description, inputSchema: t.inputSchema, execute: (i) => executeTool(t.name, i) }));
     try {
       return (await sampleNS(input, opts)).text;
@@ -5802,12 +5915,12 @@ ${contextText()}`;
     }
   }
   var mdLite = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*(?!\s)(.+?)\*/g, "$1<i>$2</i>");
-  async function sendChat(text) {
-    if (chatBusy || !text.trim()) return;
+  async function sendChat(text2) {
+    if (chatBusy || !text2.trim()) return;
     const b = backend();
     if (b !== "sample" && b !== "api") return toast("L'assistant n'est pas branché. Voir Réglages.");
     const log = chatLog.get();
-    log.push({ role: "user", content: text.trim().slice(0, 4e3) });
+    log.push({ role: "user", content: text2.trim().slice(0, 4e3) });
     chatLog.set(log);
     chatBusy = true;
     if ($("#chatIn")) $("#chatIn").value = "";
@@ -5982,17 +6095,17 @@ ${contextText()}`;
     ])
       if (match(t)) out.push({ k: "Action", t, run });
     if (f) {
-      const inbox = inboxId(s.modules), text = q.trim();
-      if (inbox) out.push({ k: "Garder", t: `« ${text} » dans ${label(inbox)}`, run: () => {
-        const item = addNote(S().modules[inbox], text);
+      const inbox = inboxId(s.modules), text2 = q.trim();
+      if (inbox) out.push({ k: "Garder", t: `« ${text2} » dans ${label(inbox)}`, run: () => {
+        const item = addNote(S().modules[inbox], text2);
         site.save();
         closeOverlays();
         render();
         afterCapture(inbox, item, "Gardé. Tu peux oublier, c'est écrit.");
       } });
-      for (const h of searchAll(text).slice(0, 6)) out.push({ k: label(h.id), t: h.text.replace(/\s+/g, " ").slice(0, 110), sub: h.date ? fmt(h.date) : "", run: goTo(h.id + (h.eid ? "/" + h.eid : "")) });
-      out.push({ k: "Chercher", t: `« ${text} » partout`, run: () => {
-        setSearchQuery(text);
+      for (const h of searchAll(text2).slice(0, 6)) out.push({ k: label(h.id), t: h.text.replace(/\s+/g, " ").slice(0, 110), sub: h.date ? fmt(h.date) : "", run: goTo(h.id + (h.eid ? "/" + h.eid : "")) });
+      out.push({ k: "Chercher", t: `« ${text2} » partout`, run: () => {
+        setSearchQuery(text2);
         goTo("recherche")();
       } });
     }
@@ -6090,7 +6203,7 @@ ${contextText()}`;
       const s = S(), id = slugId(name, [...s.config.modules.map((x) => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
       createFromTemplate(s.modules, tpl, name, id);
       s.config.modules.push({ id, on: true });
-      s.config.assistant.share[id] = true;
+      s.config.assistant.share[id] = tpl.type !== "regulation";
       site.save();
       render();
       toast(`Module « ${name} » créé.`);
@@ -6246,21 +6359,21 @@ ${contextText()}`;
       platform.storage.set("selene-sky-live", el.checked ? "on" : "off");
       render();
     } else if (act === "notify-on" || act === "notify-at") {
-      const c = notifyConf(), save = () => {
+      const c = notifyConf(), save2 = () => {
         platform.storage.set(NOTIFY_KEY, JSON.stringify(c));
         render();
       };
       if (act === "notify-at") {
         if (/^([01]\d|2[0-3]):[0-5]\d$/.test(el.value)) c.at = el.value;
-        return save();
+        return save2();
       }
       if (!el.checked) {
         c.on = false;
-        return save();
+        return save2();
       }
       platform.notifications.permission().then((p) => {
         c.on = p === "granted";
-        save();
+        save2();
         toast(c.on ? `Chaque matin à ${c.at}, s'il y a quelque chose. Sinon, la paix.` : "Notifications refusées : elles s'autorisent dans les réglages du téléphone.");
       }, () => {
         el.checked = false;
@@ -7120,7 +7233,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     return n || r ? `<span class="nx">${r ? `<i class="dot" title="Pont de reprise en attente"><span class="sr">reprise en attente</span></i>` : ""}${n ? `<span class="badge">${n}<span class="sr"> en attente</span></span>` : ""}</span>` : "";
   }
   function navHTML(view) {
-    const link = (id, text, extra = "", cls = "") => `<a href="#${esc(id)}" class="${id === view ? "on" : ""} ${cls}"${id === view ? ' aria-current="page"' : ""}>${text}${extra}</a>`;
+    const link = (id, text2, extra = "", cls = "") => `<a href="#${esc(id)}" class="${id === view ? "on" : ""} ${cls}"${id === view ? ' aria-current="page"' : ""}>${text2}${extra}</a>`;
     return `<button type="button" class="pal-hint" data-act="palette-open">Aller à… <kbd>⌘K</kbd></button>
     ${link("accueil", "Aujourd'hui")}${link("bilan", "Bilan")}${link("recherche", "Chercher")}${dehorsOn() ? link("dehors", "Dehors") : ""}
     ${domains().map((d) => `<p class="grp">${esc(d.name || "Espaces")}</p>${d.ids.map((id) => link(id, `${sigil(id)}${esc(label(id))}`, navMarks(id), tintOf(id))).join("")}`).join("")}
@@ -7129,7 +7242,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   function barHTML(view) {
     const inbox = inboxId(S().modules), pending = inbox ? S().modules[inbox].entries.length : 0;
     const inSpace = Object.hasOwn(S().modules, view) || view === "reglages" || view === "assistant";
-    const link = (id, text, icon) => `<a href="#${id}" class="${view === id ? "on" : ""}"${view === id ? ' aria-current="page"' : ""}>${ICONS[icon]}<span>${text}</span></a>`;
+    const link = (id, text2, icon) => `<a href="#${id}" class="${view === id ? "on" : ""}"${view === id ? ' aria-current="page"' : ""}>${ICONS[icon]}<span>${text2}</span></a>`;
     return `${link("accueil", "Aujourd'hui", "moon")}
     <button type="button" data-act="sheet-espaces" class="${inSpace ? "on" : ""}" aria-haspopup="dialog">${ICONS.cabinet}<span>Espaces</span>${pending ? `<i class="pip">${pending}<span class="sr"> à trier</span></i>` : ""}</button>
     <button type="button" data-act="sheet-capture" class="cap" aria-haspopup="dialog">${ICONS.plus}<span>Capturer</span></button>
@@ -7320,8 +7433,8 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     }
     return out;
   }
-  function highlight(text, q) {
-    const f = fold(text), marks = [];
+  function highlight(text2, q) {
+    const f = fold(text2), marks = [];
     for (const w of fold(q).split(/\s+/).filter((w2) => w2 && !w2.startsWith("statut:"))) {
       let i = f.indexOf(w);
       while (i >= 0) {
@@ -7333,10 +7446,10 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     let html = "", pos = 0;
     for (const [a, b] of marks) {
       if (a < pos) continue;
-      html += esc(text.slice(pos, a)) + `<mark>${esc(text.slice(a, b))}</mark>`;
+      html += esc(text2.slice(pos, a)) + `<mark>${esc(text2.slice(a, b))}</mark>`;
       pos = b;
     }
-    return html + esc(text.slice(pos));
+    return html + esc(text2.slice(pos));
   }
   var searchFacets = { mod: "", period: "", ep: "" };
   var facetPeriod = (k) => k ? periodOf(k, 0) : null;
@@ -7346,7 +7459,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   }
   VIEWS.recherche = () => {
     const all = searchAll(searchQuery), hits = facetFilter(all), f = searchFacets, s = S();
-    const chip = (k, v, text, n) => `<button type="button" class="chip-f ${f[k] === v ? "on" : ""}" data-act="facet" data-k="${k}" data-v="${esc(v)}" aria-pressed="${f[k] === v}">${text}${n != null ? ` <span>${n}</span>` : ""}</button>`;
+    const chip = (k, v, text2, n) => `<button type="button" class="chip-f ${f[k] === v ? "on" : ""}" data-act="facet" data-k="${k}" data-v="${esc(v)}" aria-pressed="${f[k] === v}">${text2}${n != null ? ` <span>${n}</span>` : ""}</button>`;
     const byMod = facetFilter(all, "mod"), byPer = facetFilter(all, "period"), byEp = facetFilter(all, "ep");
     const mods = s.config.modules.map((m) => m.id).filter((id) => byMod.some((h) => h.id === id));
     const facets = all.length ? `<div class="facets">
@@ -7483,12 +7596,12 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     for (const [id, inst] of Object.entries(S().modules)) if (isConcordance(inst) && enabled(id)) for (const e of inst.entries) out.push({ id, e, m: motifForms(e) });
     return out;
   });
-  function motifHit(m, text) {
-    const f = fold(text), w = wordsOf(f);
+  function motifHit(m, text2) {
+    const f = fold(text2), w = wordsOf(f);
     return m.single.some((v) => w.has(v) || w.has(v + "s") || w.has(v + "x")) || !!(m.re && m.re.test(f));
   }
-  function motifsOf(text) {
-    return motifIndex().filter(({ m }) => motifHit(m, text)).map(({ id, e }) => ({ id, e }));
+  function motifsOf(text2) {
+    return motifIndex().filter(({ m }) => motifHit(m, text2)).map(({ id, e }) => ({ id, e }));
   }
 
   // src/app/features/links.js
@@ -7512,7 +7625,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   }
   function refFind(ref) {
     const [mod, id] = String(ref).split("/"), m = Object.hasOwn(S().modules, mod) ? S().modules[mod] : null;
-    if (!m) return null;
+    if (!m || TYPE_UI[m.type]?.sensitive) return null;
     const e = memoInRender("refs:" + mod, () => new Map([...m.entries, ...m.scraps || []].map((x) => [x.id, x]))).get(id);
     return e ? { mod, e } : null;
   }
@@ -7541,13 +7654,13 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   function linksHTML(mod) {
     return `<span class="acts ra"><button class="btn ghost sm" data-act="specimen" data-mod="${esc(mod)}">fiche</button><button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></span>`;
   }
-  function margHTML(mod, e, text) {
+  function margHTML(mod, e, text2) {
     const out = (e.links || []).map((l) => `<span>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</span>`);
     const inc = (backlinks().get(`${mod}/${e.id}`) || []).map((b) => `<span>${esc(LINK_BACK[b.type])} ${refHTML(b.from)}</span>`);
-    const motifs = motifsOf(text);
+    const motifs = motifsOf(text2);
     const parts = [
       e.editedAt ? `<span class="hint">modifié ${ago(e.editedAt)}</span>` : "",
-      originHTML(e, text),
+      originHTML(e, text2),
       out.length || inc.length ? `<span class="links">${[...out, ...inc].join("")}</span>` : "",
       motifs.length ? `<span class="m-motifs"><span class="m-lab">motifs</span>${motifs.map((m) => `<button type="button" data-act="search-for" data-q="${esc(m.e.title)}">${esc(m.e.title)}</button>`).join("")}</span>` : ""
     ];
@@ -7774,8 +7887,8 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       return "";
     }
   };
-  function parseFeed(text, base) {
-    const t = String(text || "").replace(/^﻿/, "").trim();
+  function parseFeed(text2, base) {
+    const t = String(text2 || "").replace(/^﻿/, "").trim();
     const item = (id, title, link, date, body) => {
       const l = feedLink(link, base), ti = clip(feedText(title, 300) || l, 300);
       return ti ? { id: clip(String(id || l || ti), 300), title: ti, link: l, date: feedDate(date), text: feedText(body, 400) } : null;
@@ -7905,7 +8018,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     } catch {
     }
   }
-  var dehorsTest = () => memoInRender("dehorsTest", () => (text) => motifsOf(text).map(({ e }) => e.title));
+  var dehorsTest = () => memoInRender("dehorsTest", () => (text2) => motifsOf(text2).map(({ e }) => e.title));
   var dehorsKey = (x) => x.oa && x.oa.doi ? "doi:" + x.oa.doi : sourceKey({ url: x.link, doi: findDoi(x.link) });
   var sourceAuthors = () => memoInRender("sourceAuthors", () => {
     const m = /* @__PURE__ */ new Map();
@@ -8864,6 +8977,180 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
     }
   });
 
+  // src/app/modules/regulation.js
+  var subject = (inst) => REGULATION_SUBJECTS[inst.config.subject];
+  var number = (n) => n.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
+  var zone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+  var moduleId2 = (el) => el.dataset.mod || el.closest("[data-mod]").dataset.mod;
+  var entryId = (el) => el.closest("[data-id]")?.dataset.id;
+  var strategies = (inst) => inst.config.strategies.split("\n").map((s) => s.trim().slice(0, 200)).filter(Boolean);
+  var goalLabel = (inst, g) => !g ? "À définir" : g.mode === "observer" ? "Observer sans cible" : g.mode === "arreter" ? "Viser l'arrêt" : `Au plus ${number(g.limit)} ${subject(inst).unit} par jour`;
+  var safety = (inst) => inst.config.subject === "alcool" ? `<p class="hint">Un arrêt brutal ou une réduction rapide de l'alcool peuvent être dangereux en cas de dépendance. Parle-en à un médecin ou à un CSAPA avant de changer ta consommation si tu es dépendant·e ou as des symptômes de manque. Selene ne prescrit aucun sevrage. En cas de confusion, hallucinations ou convulsions, appelle le 15 ou le 112. <a href="https://www.alcool-info-service.fr/questions-reponses/conseils-pour-larret-brutal" target="_blank" rel="noopener noreferrer">Alcool Info Service</a>.</p>` : "";
+  var unitHint = (inst) => inst.config.subject === "alcool" ? `Un verre standard = 10 g d'alcool pur, pas nécessairement un verre servi. <a href="https://www.alcool-info-service.fr/sinformer-et-evaluer-sa-consommation/alcool-et-sante/les-reperes-de-consommation-quest-ce-que-cest" target="_blank" rel="noopener noreferrer">Comprendre l'unité</a>.` : inst.config.subject === "cannabis" ? "Quantités estimées en grammes de produit, pas une dose de THC. La puissance et les formes peuvent varier : ces chiffres ne mesurent pas le risque." : inst.config.subject === "reseaux" ? "Minutes saisies à la main, par exemple depuis le temps d'écran du téléphone. Selene ne lit ni ne bloque les autres applications." : "Nombre de cigarettes fumées ; les substituts nicotiniques ne sont pas comptés ici.";
+  var save = () => {
+    site.save();
+    render();
+  };
+  function goalForm(id) {
+    const inst = S().modules[id], g = regulationGoal(inst, todayISO());
+    openForm("Mon objectif — aucune diminution automatique", [
+      ...!inst.goals.length ? [{ n: "subject", l: "Ce que je suis", t: "select", o: Object.entries(REGULATION_SUBJECTS).map(([k, v]) => [k, v.label]) }] : [],
+      { n: "mode", l: "Intention", t: "select", o: Object.entries(REGULATION_MODES) },
+      { n: "limit", l: "Limite quotidienne en réduction (cigarettes / g / verres standard / min ; ignorée pour observer ou arrêter)", t: "number", step: 0.01 },
+      { n: "date", l: "À partir du (les journées déjà confirmées gardent leur objectif)", t: "date", req: true }
+    ], { subject: inst.config.subject, mode: g?.mode || "observer", limit: g?.mode === "reduire" ? g.limit : "", date: todayISO() }, (v) => {
+      const cur = S().modules[id];
+      if (!cur) return;
+      if (v.subject && cur.goals.length && v.subject !== cur.config.subject) throw new Error("Le suivi a changé sur un autre appareil. Rouvre le formulaire.");
+      const next = { ...cur, config: { ...cur.config, subject: cur.goals.length ? cur.config.subject : v.subject }, goals: [...cur.goals] };
+      addRegulationGoal(next, v, uid(), todayISO(), Date.now());
+      cur.config = next.config;
+      cur.goals = next.goals;
+      save();
+      toast("Objectif enregistré. Les bilans déjà confirmés restent inchangés.");
+    }, "Pour l’alcool : un arrêt brutal ou une réduction rapide peuvent être dangereux en cas de dépendance. Consulte un médecin ou un CSAPA pour préparer ce changement. Cette app ne prescrit pas de sevrage.");
+  }
+  function eventForm(id, kind, oldId = null) {
+    const inst = S().modules[id], old = oldId && inst.entries.find((e) => e.id === oldId), meta = subject(inst);
+    const fields = [{ n: "date", l: "Date", t: "date", req: true }];
+    if (kind === "use") fields.push({ n: "value", l: `Quantité à ajouter (${meta.unit}) — pas le total déjà saisi`, t: "number", step: meta.step, min: meta.step, max: 1e5, req: true });
+    if (kind === "urge") fields.push({ n: "intensity", l: "Intensité de l'envie, facultative (0 à 10)", t: "number", max: 10 }, { n: "strategy", l: "Ce que je peux essayer, facultatif", t: "select", o: [["", "Choisir plus tard"], ...strategies(inst).map((s) => [s, s]), ...old?.strategy && !strategies(inst).includes(old.strategy) ? [[old.strategy, old.strategy]] : []] }, { n: "outcome", l: "Retour sur cette tentative", t: "select", o: [["", "Pas encore évaluée"], ["utile", "Utile pour moi"], ["neutre", "Sans changement"], ["difficile", "Difficile"]] });
+    if (kind === "action") fields.push({ n: "strategy", l: "Action de mon plan que j'ai réalisée (une marque au plus par jour)", req: true });
+    fields.push({ n: "note", l: "Contexte ou note, facultatif", t: "textarea" });
+    openForm(kind === "use" ? "Noter une consommation ou une durée" : kind === "urge" ? "Une envie, pas un échec" : "Une action réalisée", fields, old || { date: todayISO(), strategy: kind === "action" ? strategies(inst)[0] || "" : "" }, (v) => {
+      const cur = S().modules[id];
+      if (!cur) return;
+      if (oldId && !cur.entries.some((e) => e.id === oldId)) throw new Error("Cette entrée a été supprimée ailleurs. Rouvre le journal.");
+      saveRegulationEvent(cur, { ...v, kind }, oldId || uid(), todayISO(), Date.now(), zone());
+      save();
+      toast(kind === "action" ? "Action gardée. Un écart ultérieur n'efface pas ce geste." : "Noté.");
+    });
+  }
+  function dayForm(id) {
+    const inst = S().modules[id], date = todayISO(), d = regulationDay(inst, date);
+    openForm("Confirmer une journée entièrement renseignée", [
+      { n: "date", l: `Date — aujourd'hui : ${number(d.total)} ${subject(inst).unit} notés. Ajoute d'abord toute consommation manquante.`, t: "date", req: true },
+      { n: "complete", l: "Toutes les consommations de cette journée sont saisies (aucune saisie = zéro seulement si tu confirmes)", t: "select", o: [["", "Je ne sais pas / laisser inconnue"], ["yes", "Oui, la journée est complète"]] }
+    ], { date, complete: "" }, async (v) => {
+      if (v.complete !== "yes") return;
+      const cur = S().modules[id];
+      if (!cur) return;
+      const state = regulationDay(cur, v.date), snapshot = regulationSnapshot(cur, v.date);
+      if (!await ask(`Confirmer ${fmt(v.date)} : ${number(state.total)} ${subject(cur).unit} au total ?`)) return;
+      const latest = S().modules[id];
+      if (!latest) return;
+      if (regulationSnapshot(latest, v.date) !== snapshot) return toast("Le total a changé ailleurs. Vérifie-le puis confirme à nouveau.");
+      closeRegulationDay(latest, v.date, todayISO(), Date.now(), zone());
+      save();
+    });
+  }
+  var pauseTick = null;
+  function tickPause() {
+    clearTimeout(pauseTick);
+    const el = $("#regPauseClock");
+    if (!el?.dataset?.end) return;
+    const left2 = regulationRemaining(Number(el.dataset.end), Date.now());
+    el.textContent = left2 ? `${Math.floor(left2 / 60)} min ${left2 % 60} s` : "Pause terminée. Tu peux noter ce qui t'a aidé, ou fermer cet écran.";
+    if (left2) pauseTick = setTimeout(tickPause, 1e3);
+  }
+  function progressHTML(inst) {
+    if (!inst.config.rewards) return "";
+    const marks = regulationMarks(inst), next = REGULATION_MILESTONES.find((n) => n > marks);
+    return `<section aria-label="Planche de progression"><h3>Les gestes restent</h3><p><b>${marks} marque${marks > 1 ? "s" : ""}</b> · une par journée avec une action réalisée.</p><ol class="plain">${REGULATION_MILESTONES.map((n) => `<li>${marks >= n ? "✓" : "○"} ${n} marque${n > 1 ? "s" : ""} · ${marks >= n ? "jalon atteint" : "à venir"}</li>`).join("")}</ol>
+    <p class="hint">${next ? `Prochain jalon : ${next} marques.` : "Tous les jalons sont atteints ; tes gestes continuent à compter."} Aucun jour consécutif exigé. Un écart ne retire rien. Corriger ou supprimer une action corrige aussi le compte.</p>
+    ${inst.config.reward ? `<p>À ${inst.config.rewardAt} marques : <b>${esc(inst.config.reward)}</b> · ${marks >= inst.config.rewardAt ? "objectif atteint" : `${Math.max(0, inst.config.rewardAt - marks)} encore`}</p>` : ""}</section>`;
+  }
+  function periodHTML(inst) {
+    const today = todayISO(), current = regulationPeriod(inst, addDaysTo(today, -6), addDaysTo(today, 1)), previous = regulationPeriod(inst, addDaysTo(today, -13), addDaysTo(today, -6));
+    const desc = (p) => `${p.known} journée(s) renseignée(s), ${p.unknown} inconnue(s)${p.mean == null ? "" : ` ; moyenne sur les jours renseignés : ${number(p.mean)} ${subject(inst).unit}`}`;
+    return `<section><h3>Mes sept derniers jours</h3><p>${desc(current)}.</p><p class="hint">Sept jours précédents : ${desc(previous)}. Les périodes commencent au premier objectif ; les jours inconnus ne valent jamais zéro. Des jours renseignés différents limitent la comparaison.</p>
+    <p>${current.met} objectif(s) atteint(s) sur ${current.assessed} journée(s) évaluables. Le mode observation n'est pas noté.</p>
+    <ul class="plain">${[...current.days].reverse().map((d) => `<li>${fmt(d.date)} · ${d.complete ? `${number(d.total)} ${subject(inst).unit} · ${d.met === null ? "observé" : d.met ? "objectif atteint" : "au-delà de l'objectif"}` : d.reopened ? "à reconfirmer après modification" : "inconnue"}</li>`).join("")}</ul></section>`;
+  }
+  function eventLabel(inst, e) {
+    if (e.kind === "use") return `${number(e.value)} ${subject(inst).unit}`;
+    if (e.kind === "action") return `Action réalisée : ${e.strategy}`;
+    if (e.kind === "day") return regulationDay(inst, e.date).complete ? "Journée confirmée" : "Journée à reconfirmer";
+    return `Envie${e.intensity !== null ? ` · ${e.intensity}/10` : ""}${e.strategy ? ` · ${e.strategy}` : ""}${e.outcome ? ` · ${e.outcome}` : ""}`;
+  }
+  registerType("regulation", {
+    sensitive: true,
+    view(id) {
+      const inst = S().modules[id], g = regulationGoal(inst, todayISO()), m = esc(id), d = regulationDay(inst, todayISO());
+      const pause = [...inst.entries].filter((e) => e.kind === "urge" && e.pauseEnd).sort((a, b) => b.pauseEnd - a.pauseEnd)[0];
+      if (pause) {
+        clearTimeout(pauseTick);
+        pauseTick = setTimeout(tickPause, 0);
+      }
+      return `<div data-mod="${m}"><h2>${esc(label(id))}</h2><p class="hint">Suivi personnel autodéclaratif, sans diagnostic ni programme de sevrage. Les détails restent dans cet espace ; son nom reste visible dans la navigation.</p>${safety(inst)}
+      <section><h3>${subject(inst).label} · ${goalLabel(inst, g)}</h3><p class="hint">${unitHint(inst)}</p><button class="btn sm" data-act="reg-goal">${inst.goals.length ? "Faire évoluer mon objectif" : "Définir mon suivi"}</button>
+      ${inst.goals.length ? `<p>Aujourd'hui : ${number(d.total)} ${subject(inst).unit} notés · ${d.complete ? "journée confirmée" : "total provisoire"}.</p><div class="row"><button class="btn acc" data-act="reg-urge">J'ai une envie</button><button class="btn" data-act="reg-use">Noter une consommation / durée</button><button class="btn" data-act="reg-action">J'ai réalisé une action</button><button class="btn" data-act="reg-day">Faire mon point du jour</button></div>` : ""}</section>
+      ${pause ? `<section><h3>Un temps de pause</h3><p id="regPauseClock" data-end="${pause.pauseEnd}" role="timer">${regulationRemaining(pause.pauseEnd, Date.now())} s</p><p class="hint">La pause est facultative, peut être interrompue et ne rapporte pas de marque automatique. Elle continue si tu fermes l'app.</p><button class="btn sm" data-act="reg-pause-stop" data-id="${esc(pause.id)}">Fermer la pause</button></section>` : ""}
+      ${inst.goals.length ? periodHTML(inst) : ""}${progressHTML(inst)}
+      <section><h3>Ce qui peut m'aider</h3><ul class="plain">${strategies(inst).map((s) => `<li>${esc(s)}</li>`).join("")}</ul><button class="btn sm" data-act="reg-settings">Personnaliser mes appuis et récompenses</button></section>
+      <section><h3>Journal</h3><ul class="plain">${((pg) => pg.items.map((e) => `<li class="item" data-id="${esc(e.id)}"><span class="jdate">${fmt(e.date)}</span><div>${esc(eventLabel(inst, e))}${e.note ? `<p>${esc(e.note)}</p>` : ""}<div class="row">${e.kind !== "day" ? `<button class="btn ghost sm" data-act="reg-edit">modifier</button>` : ""}${e.kind === "urge" ? `<button class="btn ghost sm" data-act="reg-pause">Pause de 5 min</button>` : ""}<button class="btn ghost sm" data-act="reg-del">supprimer</button></div></div></li>`).join("") + pg.more)(paged(`regulation:${id}`, [...inst.entries].sort((a, b) => b.date.localeCompare(a.date) || b.at - a.at))) || `<li class="empty">Rien de renseigné.</li>`}</ul></section>
+      <details><summary>Historique des objectifs</summary><ul class="plain">${[...inst.goals].sort((a, b) => b.at - a.at).map((goal) => `<li>${fmt(goal.date)} · ${goalLabel(inst, goal)}</li>`).join("")}</ul></details>
+      <p class="hint">Cet espace suit le stockage et la synchronisation de ton compte. Non partagé avec l'assistant à sa création ; tu peux partager un résumé dans Réglages. Les sauvegardes complètes contiennent aussi ce suivi.</p>
+      <div class="row"><button class="btn sm" data-act="reg-export">Exporter ce suivi</button><button class="btn ghost sm" data-act="mod-del" data-mod="${m}">Supprimer ce suivi</button></div></div>`;
+    },
+    settings: (id) => `<p class="hint">Détails exclus de l'accueil, du bilan global, des recherches, des motifs et du test lunaire. Le nom de l'espace reste visible. Les sauvegardes et la synchronisation incluent ces données.</p><button class="btn sm" data-act="reg-settings" data-mod="${esc(id)}">Appuis et récompenses</button>`,
+    summary: () => "Suivi personnel — ouvrir pour consulter",
+    context: (inst, name) => {
+      const p = regulationPeriod(inst, addDaysTo(todayISO(), -6), addDaysTo(todayISO(), 1));
+      return `
+${name} : suivi autodéclaratif de ${subject(inst).label}. ${p.known} jours renseignés, ${p.unknown} inconnus ; ${p.met}/${p.assessed} objectifs atteints. Sans notes ni déclencheurs. Ne pas proposer de protocole de sevrage.`;
+    },
+    recent: () => [],
+    review: () => null,
+    // Pas de hook texts : même une recherche explicite ne verse pas ces notes dans le corpus partagé.
+    click: {
+      "reg-goal": (el) => goalForm(moduleId2(el)),
+      "reg-use": (el) => eventForm(moduleId2(el), "use"),
+      "reg-urge": (el) => eventForm(moduleId2(el), "urge"),
+      "reg-action": (el) => eventForm(moduleId2(el), "action"),
+      "reg-day": (el) => dayForm(moduleId2(el)),
+      "reg-edit": (el) => {
+        const id = moduleId2(el), e = S().modules[id].entries.find((x) => x.id === entryId(el));
+        if (e) eventForm(id, e.kind, e.id);
+      },
+      "reg-del": (el) => removeWithUndo(moduleId2(el), "entries", entryId(el)),
+      "reg-pause": (el) => {
+        const e = S().modules[moduleId2(el)].entries.find((x) => x.id === entryId(el));
+        if (e) {
+          e.pauseEnd = Date.now() + 3e5;
+          save();
+        }
+      },
+      "reg-pause-stop": (el) => {
+        const e = S().modules[moduleId2(el)].entries.find((x) => x.id === el.dataset.id);
+        if (e) {
+          e.pauseEnd = null;
+          save();
+        }
+      },
+      "reg-settings": (el) => {
+        const id = moduleId2(el), c = S().modules[id].config;
+        openForm("Mes appuis et mes récompenses", [
+          { n: "strategies", l: "Mes appuis (une action par ligne)", t: "textarea" },
+          { n: "rewards", l: "Planche de progression (facultative)", t: "select", o: [["off", "Masquée"], ["on", "Afficher les marques des actions réalisées"]] },
+          { n: "reward", l: "Récompense personnelle facultative, gratuite ou dans mon budget" },
+          { n: "rewardAt", l: "À combien de marques ? (1 à 365)", t: "number", min: 1, max: 365, req: true }
+        ], { ...c, rewards: c.rewards ? "on" : "off" }, (v) => {
+          const inst = S().modules[id];
+          if (!inst) return;
+          const target = Number(v.rewardAt);
+          if (!Number.isInteger(target) || target < 1 || target > 365) throw new Error("Choisis de 1 à 365 marques.");
+          Object.assign(inst.config, { strategies: v.strategies.slice(0, 2e3), rewards: v.rewards === "on", reward: v.reward.slice(0, 200), rewardAt: target });
+          save();
+        });
+      },
+      "reg-export": async (el) => {
+        const inst = S().modules[moduleId2(el)];
+        if (await ask("Exporter les données sensibles de ce suivi dans un fichier lisible ?")) await downloadFile(`selene-suivi-${todayISO()}.json`, JSON.stringify({ format: "selene-regulation-v1", exportedAt: (/* @__PURE__ */ new Date()).toISOString(), module: inst }, null, 2), "application/json", "Suivi personnel");
+      }
+    }
+  });
+
   // src/core/carte.js
   var CARTE_MAX = 80;
   function hash01(s) {
@@ -9002,23 +9289,23 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
   SHEETS.specimen = (ref) => {
     const hit = refFind(ref);
     if (!hit) return `<p class="empty">Cette entrée n'existe plus.</p>`;
-    const { mod, e } = hit, inst = S().modules[mod], c = inst.config, text = String(e.text || e.note || "");
+    const { mod, e } = hit, inst = S().modules[mod], c = inst.config, text2 = String(e.text || e.note || "");
     const thought = inst.type === "notes" || inst.type === "cumul" && (inst.scraps || []).includes(e);
     const long = (d) => fmt(d, { day: "numeric", month: "long", year: "numeric" }), when = e.date || e.due || e.created;
     const chapter = inst.type === "cumul" && e.category ? (c.categories.find((x) => x.id === e.category) || {}).name : "";
     const links = [...(e.links || []).map((l) => `<li>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</li>`), ...(backlinks().get(`${mod}/${e.id}`) || []).map((b) => `<li>${esc(LINK_BACK[b.type])} ${refHTML(b.from)}</li>`)];
-    const motifs = motifsOf([e.title, e.subtitle, text].filter(Boolean).join(" "));
+    const motifs = motifsOf([e.title, e.subtitle, text2].filter(Boolean).join(" "));
     const statusOf = (k) => k ? EP_STATUS[k] : "sans statut";
     const log = [...e.epLog || []].reverse().map((x) => `<li>${x.date ? long(x.date) + " : " : ""}${esc(statusOf(x.from))} → ${epGlyph(x.to)}${esc(statusOf(x.to))}</li>`);
     const reviews = [...e.reviews || []].reverse().map((r) => `<li>${esc(r.verdict)}, le ${long(r.date)}</li>`);
     return `<div class="spec ${tintOf(mod)}" data-mod="${esc(mod)}" data-id="${esc(e.id)}">
     <div class="plate">${sigil(mod)}<span class="pl">${esc(label(mod))}</span></div>
     ${e.title ? `<h2 id="sheetTitle">${esc(e.title)}</h2>${e.subtitle ? `<p class="hint">${esc(e.subtitle)}</p>` : ""}` : `<h2 id="sheetTitle" class="sr">Fiche de l'entrée</h2>`}
-    ${text ? `<blockquote class="spec-text">${esc(text)}</blockquote>` : ""}
+    ${text2 ? `<blockquote class="spec-text">${esc(text2)}</blockquote>` : ""}
     <p class="spec-label">${[when ? long(when) : "", chapter, e.tag, e.status].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join("")}${e.ep ? `<span>${epGlyph(e.ep)}${esc(EP_STATUS[e.ep])}</span>` : ""}</p>
     ${thought ? `<div class="row">${epSelect(mod, e)}<span class="spacer"></span>${links.length ? `<button class="btn ghost sm" data-act="carte" data-k="ref" data-v="${esc(mod)}/${esc(e.id)}">carte du voisinage</button>` : ""}<button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></div>` : inst.type === "collection" && inst.config.sources ? `<div class="row"><span class="spacer"></span><button class="btn ghost sm" data-act="src-link" data-ref="${esc(mod)}/${esc(e.id)}">documente…</button></div>` : ""}
     ${e.src ? `<p class="meta">${srcMeta(e)}</p>` : ""}
-    ${e.origin ? `<h3>Provenance</h3><p class="meta">${originHTML(e, text || e.title)}</p>` : ""}
+    ${e.origin ? `<h3>Provenance</h3><p class="meta">${originHTML(e, text2 || e.title)}</p>` : ""}
     ${links.length ? `<h3>Liens</h3><ul>${links.join("")}</ul>` : ""}
     ${motifs.length ? `<h3>Motifs</h3><div class="row">${motifs.map((m) => `<button class="btn ghost sm" data-act="search-for" data-q="${esc(m.e.title)}">${esc(m.e.title)}</button>`).join("")}</div>` : ""}
     ${log.length ? `<h3>Statut, au fil du temps</h3><ul class="meta" style="display:block">${log.join("")}</ul>` : ""}

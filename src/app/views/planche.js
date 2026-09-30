@@ -30,7 +30,7 @@ function plancheData(offset, now = Date.now()) {
   const at = new Map(days.map((d, i) => [d, i])), total = days.map(() => 0);
   const rows = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id)).map(m => {
     const inst = s.modules[m.id], ui = TYPE_UI[inst.type];
-    if (!ui || isConcordance(inst)) return null;
+    if (!ui || ui.sensitive || isConcordance(inst)) return null;
     const spark = days.map(() => 0);
     for (const x of datedItems(inst)) { const i = at.get(x.date); if (i != null) { spark[i]++; total[i]++; } }
     const review = ui.review ? ui.review(inst, cur.from, cur.to) : "", before = ui.review ? ui.review(inst, prev.from, prev.to) : "";

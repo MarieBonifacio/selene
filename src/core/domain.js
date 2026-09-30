@@ -1,3 +1,5 @@
+import { regulationDefaults, validateRegulation } from "./regulation.js";
+
 /* Business operations shared by the UI and assistant. No DOM or storage access. */
 const requireText = (value, label, max) => {
   if (typeof value !== "string" || !value.trim()) throw new Error(`${label} manquant`);
@@ -57,10 +59,11 @@ export function addBudgetEntry(entries, input, id, defaultDate) {
 /* Version du format des données du site. 1 = sections en dur (kundalini, ecriture, phidippus à la racine),
    2 = modules génériques sous `modules`, 3 = october.moth et Musique deviennent des collections,
    4 = la Capture devient un module Notes, 5 = le Budget devient un module générique,
+   7 = suivi des consommations / comportements et objectifs versionnés.
    6 = le Chantier devient un module Tâches (ses tâches quittent le document « board »).
    Une version de l'app qui lit un numéro plus grand que le sien ne doit ni fusionner ni écrire :
    elle ne connaît pas la forme de ces données. */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 /* Anciennes sections à la racine du document → instances de module. Chaque conversion reçoit l'ancienne
    section, le nom personnalisé et le réglage de regroupement éventuels. Sert aussi aux données de départ. */
 export const SECTION_TO_MODULE = {
@@ -146,6 +149,11 @@ export function migrateModules(d) {
    Chaque type déclare ses valeurs par défaut, la forme de ses entrées et ses règles de validation.
    Sa partie affichage est dans TYPE_UI (types.js) : un test vérifie que les deux registres ont les mêmes clés. */
 export const MODULE_TYPES = {
+  regulation: {
+    label: "Reprendre la main (consommations et comportements)",
+    defaults: () => regulationDefaults(),
+    validate: (inst, v) => validateRegulation(inst, v)
+  },
   programme: {
     label: "Programme (calendrier + objectif hebdomadaire)",
     // paliers : des étapes qu'on rédige et qu'on coche soi-même. L'app affiche l'avancement, ne décide jamais
@@ -441,6 +449,7 @@ export function createModuleInstance(modules, type, name, id) {
 /* Modèles proposés au premier lancement et à la création : un type et quelques réglages de départ.
    Génériques par principe (aucun contenu personnel) ; `hint` dit à quoi il sert. */
 export const MODULE_TEMPLATES = [
+  { id: "regulation", name: "Reprendre la main", type: "regulation", hint: "Tabac, cannabis, alcool ou réseaux sociaux : observer, réduire, viser l’arrêt" },
   { id: "taches", name: "Tâches", type: "taches", hint: "Échéances, étapes, et trois tâches du jour au plus" },
   { id: "protocole", name: "Protocole", type: "programme", hint: "Choisis ton sport ou ta pratique, sa durée et ton rythme à l'ajout" },
   { id: "ecriture", name: "Écriture", type: "cumul", hint: "Un compteur de mots, des chapitres, un carnet de fragments",

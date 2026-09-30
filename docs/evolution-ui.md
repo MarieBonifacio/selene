@@ -358,3 +358,7 @@ Du moins risqué au plus risqué ; chaque étape se suffit à elle-même (on peu
       liaisons dit la même chose en texte, seule d'abord sur téléphone (« Voir la carte » la déplie). Feuille large
       sur ordinateur. 70 ms pour la carte d'un motif sur l'historique du banc d'essai (5 500 textes).
 - [ ] Critère d'abandon écrit d'avance : pas ouverte pendant un mois, retirée. (À juger à l'usage, fin octobre 2026.)
+
+## Espace optionnel « Reprendre la main »
+
+Exception locale au principe du bilan sans trophée, demandée pour le suivi des consommations et comportements : progression facultative dans le seul espace de suivi. Jalons fixes, aucune série obligatoire ni remise à zéro après un écart. Le bilan général reste descriptif et exclut ces données sensibles, de même que la planche de lunaison. Pas de nouvelle scène illustrée : encre, filets et marques dans l'espace. Voir [regulation.md](regulation.md).

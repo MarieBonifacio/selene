@@ -95,9 +95,9 @@ Deux documents JSON par personne, chacun géré par un store (`makeStore`) :
   toujours connecté **avant** le board : versées dans un site pas encore synchronisé, les tâches rendraient
   ses données de départ « non vierges » et la synchro les fusionnerait au lieu de les remplacer.
 
-`site.schemaVersion` vaut 6 (1 = anciennes sections `kundalini`, `ecriture`, `phidippus` à la racine ;
+`site.schemaVersion` vaut 7 (1 = anciennes sections `kundalini`, `ecriture`, `phidippus` à la racine ;
 2 = modules génériques ; 3 = october.moth et Musique deviennent des collections ; 4 = la Capture devient
-un module Notes ; 5 = le Budget devient générique ; 6 = le Chantier devient un module Tâches). Chaque ancienne section
+un module Notes ; 5 = le Budget devient générique ; 6 = le Chantier devient un module Tâches ; 7 = le suivi de régulation et ses objectifs versionnés). Chaque ancienne section
 est convertie par `SECTION_TO_MODULE` (`domain.js`) ; si une ancienne version de l'app la réécrit après
 coup, ses entrées absentes sont absorbées dans le module au lieu d'être perdues. Une version de l'app qui lit un numéro plus grand que le sien
 refuse de fusionner et d'écrire (« recharge la page ») ; un import plus récent est refusé.
@@ -723,3 +723,7 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   vérités possibles).
 - **Conséquences** : un widget à jour de la dernière ouverture, pas davantage ; le job *apk* compile le Java du widget
   à chaque PR ; `tests/native-boot.test.js`, `platform.test.js` et `app.test.js` vérifient le pont et le contenu.
+
+### Suivi sensible de régulation
+
+Le type `regulation` (format 7) utilise les registres et le store existants ; ses règles sont dans `src/core/regulation.js`, son interface dans `src/app/modules/regulation.js`. Intentions, quantités, journées connues, récompenses dédupliquées et exclusions des surfaces générales : [regulation.md](regulation.md).

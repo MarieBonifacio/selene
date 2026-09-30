@@ -196,7 +196,7 @@ test('every registered type works end to end through the registry alone', () => 
   const d = app.S();
   // Comment ajouter un élément à chaque type. Un nouveau type doit être ajouté ici, sinon le test échoue.
   const journal = (inst, id) => app.addJournalEntry(inst, { date: '2026-09-27', value: 3, type: 'fait', note: 'ok' }, id, '2026-09-27');
-  const addOne = { programme: journal, cumul: journal, rappels: journal, notes: journal,
+  const addOne = { regulation: (inst, id) => { app.addRegulationGoal(inst, {date: "2026-09-27", mode: "reduire", limit: 5}, "goal", "2026-09-27", 1); app.saveRegulationEvent(inst, {kind: "use", date: "2026-09-27", value: 2}, id, "2026-09-27", 2); }, programme: journal, cumul: journal, rappels: journal, notes: journal,
     collection: (inst, id) => app.saveCollectionItem(inst, { title: 'Premier élément', tag: 'essai' }, id),
     taches: (inst, id) => app.addTask(inst.entries, { title: 'Première tâche', cat: 'Général' }, id, '2026-09-27'),
     budget: (inst, id) => app.addBudgetEntry(inst.entries, { amount: 12, type: 'dépense', cat: 'essai', date: '2026-09-27' }, id, '2026-09-27'),
