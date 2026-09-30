@@ -1,14 +1,64 @@
-/* L'application, chargée par build.py dans platform.ready (quand le stockage est lisible). L'ordre des lignes est
-   l'ordre d'évaluation : app d'abord (il tire store, types, auth, assistant… dont les registres), boot en dernier,
-   qui démarre la page. Tout ce qui est exporté ici forme l'espace de noms `__selene`, que seuls les tests lisent
-   (tests/app.test.js) : la page elle-même ne l'expose pas. */
+/* L'application, chargée par build.py dans platform.ready (quand le stockage est lisible). Chaque fichier y est
+   nommé : ceux qui ne font que s'enregistrer (un type de module, une feuille, des actions) ne sont importés par
+   personne d'autre. Les registres et les bibliothèques d'abord, boot.js en dernier, qui démarre la page. Tout ce qui
+   est exporté ici forme l'espace de noms `__selene`, que seuls les tests lisent : la page elle-même ne l'expose pas. */
 export * from "./registry.js";
-export * from "./app.js";
-export * from "./store.js";
-export * from "./auth.js";
-export * from "./passeur.js";
-export * from "./dehors.js";
-export * from "./types.js";
-export * from "./assistant.js";
+export * from "./lib/dom.js";
+export * from "./lib/download.js";
+export * from "./lib/format.js";
+export * from "./state/drafts.js";
+export * from "./state/site.js";
+export * from "./state/store.js";
+export * from "./services/auth.js";
+export * from "./services/host.js";
+export * from "./services/passeur.js";
+export * from "./scene/forest.js";
+export * from "./scene/moon.js";
+export * from "./scene/sky.js";
+export * from "./ui/dialogs.js";
+export * from "./shell/actions.js";
+export * from "./shell/nav.js";
+export * from "./shell/palette.js";
+export * from "./shell/render.js";
+export * from "./shell/sheets.js";
+export * from "./shell/sigils.js";
+export * from "./modules/arc.js";
+export * from "./modules/budget.js";
+export * from "./modules/collection.js";
+export * from "./modules/cumul.js";
+export * from "./modules/entries.js";
+export * from "./modules/groups.js";
+export * from "./modules/notes.js";
+export * from "./modules/programme.js";
+export * from "./modules/rappels.js";
+export * from "./modules/taches.js";
+export * from "./features/agenda.js";
+export * from "./features/assistant.js";
+export * from "./features/bridge.js";
+export * from "./features/carte.js";
+export * from "./features/cites.js";
+export * from "./features/concordance.js";
+export * from "./features/dehors-feed.js";
+export * from "./features/dehors.js";
+export * from "./features/derive.js";
+export * from "./features/digest.js";
+export * from "./features/dossier.js";
+export * from "./features/links.js";
+export * from "./features/lunar.js";
+export * from "./features/musique.js";
+export * from "./features/radar.js";
+export * from "./features/share.js";
+export * from "./features/sortes.js";
+export * from "./features/sources.js";
+export * from "./features/specimen.js";
+export * from "./features/tensions.js";
+export * from "./features/timer.js";
+export * from "./features/vasculum.js";
+export * from "./features/zotero.js";
+export * from "./views/accueil.js";
+export * from "./views/bilan.js";
+export * from "./views/planche.js";
+export * from "./views/recherche.js";
+export * from "./views/reglages.js";
 export * from "./boot.js";
 export * from "../core/index.js";

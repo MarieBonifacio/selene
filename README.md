@@ -119,7 +119,7 @@ Pour l'activer :
 1. Créer un projet sur [supabase.com](https://supabase.com).
 2. Dans l'éditeur SQL du projet, exécuter `supabase/schema.sql` (crée la table `app_state` avec les règles de sécurité RLS : chacun·e ne voit que sa propre ligne).
 3. Dans Authentication → Providers → Email, décider si l'inscription reste ouverte à qui connaît l'URL du site (par défaut) ou si tu préfères la désactiver et inviter chaque personne toi-même (recommandé pour un cercle restreint) — le fichier `supabase/schema.sql` rappelle où ce réglage se trouve.
-4. Récupérer l'URL du projet et la clé publique (« anon » / « publishable », Settings → API) et les renseigner dans `src/app/auth.js` (`SUPABASE_URL`, `SUPABASE_ANON_KEY` — cette clé est prévue pour être exposée côté client, la sécurité vient des règles RLS, pas du secret de la clé).
+4. Récupérer l'URL du projet et la clé publique (« anon » / « publishable », Settings → API) et les renseigner dans `src/app/services/auth.js` (`SUPABASE_URL`, `SUPABASE_ANON_KEY` — cette clé est prévue pour être exposée côté client, la sécurité vient des règles RLS, pas du secret de la clé).
 5. `python3 build.py`, puis republier `index.html`.
 
 Une fois configuré, ouvrir `index.html` affiche un écran de connexion/inscription avant le tableau de bord.

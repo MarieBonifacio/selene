@@ -1,8 +1,8 @@
-/* Dehors (src/app/dehors.js) : le nouveau, croisé avec ce que tu gardes (motifs croisés, vague 7c). */
+/* Dehors (src/app/features/dehors-feed.js) : le nouveau, croisé avec ce que tu gardes (motifs croisés, vague 7c). */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { dehorsNew } = require('../src/app/dehors.js');
+const { dehorsNew } = require('../src/app/features/dehors-feed.js');
 const plain = x => JSON.parse(JSON.stringify(x));
 const NOW = Date.parse('2026-09-29T12:00:00Z'), H = 3600000;
 const item = (id, title, hoursAgo, extra = {}) => ({ id, title, text: '', link: `https://site.example/${id}`, date: new Date(NOW - hoursAgo * H).toISOString(), first: NOW, ...extra });

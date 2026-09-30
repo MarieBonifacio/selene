@@ -63,18 +63,26 @@ chargeant (`VIEWS`, `SHEETS`, `CLICK`, `CHANGE`) vivent dans `src/app/registry.j
 | `agenda.js` | calendrier dédié, pur : lecture iCalendar (fuseaux, journées entières), récurrences dépliées sur une fenêtre | — |
 | `zotero.js` | Zotero, pur : ce que permet une clé, une fiche traduite en Source (DOI, revue, auteurs, lien vers la fiche) | — |
 
-| Fichier (`src/app/`) | Rôle | Utilise au chargement |
-|---|---|---|
-| `registry.js` | les registres de l'interface : `VIEWS`, `SHEETS`, `CLICK`, `CHANGE` | — |
-| `store.js` | un document JSON : `platform.storage` (IndexedDB en version web, ADR 13) + synchro ; ne connaît pas l'interface (rappels `onRemoteChange`, `onStatus`) | — |
-| `auth.js` | comptes et adaptateur Supabase (hébergé seulement) ; suppression du compte | `platform` |
-| `passeur.js` | appel du passeur (Supabase Edge, version hébergée connectée) et lecture d'une page : métadonnées, flux annoncés | — |
-| `dehors.js` | Dehors, lecture des flux (RSS, Atom, JSON Feed) par DOMParser, fusion du cache, « nouveau depuis », croisé avec ce que tu gardes | — |
-| `app.js` | utilitaires, modules fixes, normalisation, stores, vues, rendu, actions | `store.js`, registres |
-| `types.js` | registre d'affichage `TYPE_UI`, branché dans `CLICK` / `CHANGE` ; fiche, Vasculum, carte (`SHEETS`) | registres |
-| `assistant.js` | contexte, outils, appels à Claude | registres |
-| `boot.js` | cycle de vie (flush, onglets), démarrage | `app.js`, `platform` |
-| `index.js` | le point d'entrée : l'ordre d'évaluation, et l'espace de noms des tests | — |
+L'interface est rangée par **fonctionnalité** : ce qui sert une même chose (sa vue, son état, ses actions) vit dans
+le même fichier, et chaque fichier commence par une phrase qui dit son rôle.
+
+| Dossier (`src/app/`) | Contenu |
+|---|---|
+| `registry.js` | les registres : `VIEWS`, `SHEETS`, `CLICK`, `CHANGE`, `TYPE_UI` et `registerType` ; ne dépend de rien |
+| `lib/` | sans état ni interface propre : `dom.js` (sélecteur, échappement, messages, pagination), `format.js` (dates, nombres, pluriels), `download.js` |
+| `state/` | `store.js` (un document JSON synchronisé, qui ne connaît pas l'interface), `site.js` (les deux documents, leur normalisation, `S()`), `drafts.js` |
+| `services/` | ce qui parle à un serveur ou à l'hôte : `auth.js` (Supabase, suppression du compte), `passeur.js`, `host.js` (espaces de noms de claude.ai) |
+| `scene/` | le paysage de l'accueil : `moon.js`, `forest.js`, `sky.js` (lieu, météo, scène) |
+| `ui/` | `dialogs.js` : confirmation et formulaire générique |
+| `shell/` | la charpente de la page : `nav.js`, `render.js`, `actions.js` (délégation des événements), `sheets.js`, `palette.js`, `sigils.js` |
+| `modules/` | un fichier par type de module (`programme`, `cumul`, `rappels`, `collection`, `taches`, `budget`, `notes`, `arc`), qui s'enregistre par `registerType` ; `entries.js` et `groups.js`, ce qu'ils partagent |
+| `features/` | ce qui traverse les modules : liaisons, concordance, fiche Spécimen, Vasculum, carte, sources, citations, musique, radar, Dehors (et sa lecture des flux), agenda, Zotero, assistant, résumé du matin, partage, pont de reprise, sortes, tensions, dérive lexicale, test lunaire, dossier, minuteur |
+| `views/` | les pages fixes : `accueil`, `bilan`, `planche`, `recherche`, `reglages` |
+| `boot.js`, `index.js` | le démarrage ; le point d'entrée, qui nomme chaque fichier (l'ordre d'évaluation) |
+
+Une action (`data-act`) vit avec ce qu'elle modifie : `CLICK["bilan-nav"]` dans `views/bilan.js`, les actions d'un
+type dans son `registerType`. Aucun fichier ne réaffecte la variable d'un autre : `setBilanOffset`, `setSearchQuery`,
+`setBridgeOpen`, `trackBack`… appartiennent à leur propriétaire.
 
 ## Données
 
@@ -148,11 +156,12 @@ d'`Object.prototype`). Les noms de types ne le sont pas : un type n'est pas une 
 
 1. Une entrée dans `MODULE_TYPES` (`domain.js`) : `label`, `defaults()`, `entry(e, input)`,
    `validate(inst, v)`.
-2. Une entrée dans `TYPE_UI` (`types.js`) : `view`, `settings`, `summary`, `context`, et selon le
-   besoin `alerts`, `add`, `click`, `change`.
+2. Un fichier `src/app/modules/<type>.js` qui appelle `registerType("<type>", { … })` : `view`, `settings`,
+   `summary`, `context`, et selon le besoin `alerts`, `add`, `click`, `change` ; puis une ligne dans
+   `src/app/index.js`.
 
 Rien d'autre : création, rendu, accueil, réglages, assistant, recherche et validation des sauvegardes
-passent par ces deux registres. Crochets facultatifs de `TYPE_UI` (liste complète en tête de `types.js`) :
+passent par ces deux registres. Crochets facultatifs de `TYPE_UI` (liste complète dans `src/app/registry.js`) :
 `alerts` (accueil), `recent` (lignes dépliables), `texts` (recherche), `accept` (ranger une note),
 `timerDone` (fin du minuteur), `review` (bilan d'une période), `grouper` (regroupement en pourcentage),
 `badge` (navigation). Un élément de `texts` peut porter `ep` (statut épistémique) : la recherche et le
@@ -173,7 +182,7 @@ Un lien
 un entre appareils. Les liens entrants ne sont jamais stockés : ils se recalculent (`backlinks`). Tous facultatifs et additifs : une
 version antérieure de l'app les ignore et la fusion les conserve, d'où l'absence de nouveau `SCHEMA_VERSION`.
 Une collection peut être en mode `review` (la date est un rendez-vous de révision) ou `concordance` (ses
-éléments sont des motifs comptés dans les `texts` des autres modules, voir `concordance()` dans `types.js`) :
+éléments sont des motifs comptés dans les `texts` des autres modules, voir `concordance()` dans `features/concordance.js`) :
 deux réglages de l'instance, pas deux types, pour que tout le reste (formulaire, statuts, sauvegarde) serve tel quel.
 
 ### Performances
@@ -186,18 +195,18 @@ les gardent rapides sans jamais servir un résultat périmé :
 - La concordance passe par un **index inversé** (forme d'un mot → motifs), construit une fois par calcul :
   un texte se parcourt mot à mot au lieu d'être confronté à chaque motif. Seules les variantes de plusieurs
   mots passent par une expression régulière.
-- La dérive lexicale du bilan (`lexicalDrift`, `app.js`) découpe chaque texte une fois (`driftWords`, même cache
+- La dérive lexicale du bilan (`lexicalDrift`, `features/derive.js`) découpe chaque texte une fois (`driftWords`, même cache
   borné) et compte chaque mot une fois par texte, sur sept périodes seulement.
 
 Trois fonctionnalités s'appuient directement sur ce qui précède, sans rien y ajouter de nouveau :
 - **Palimpseste** (`editFragmentText`, domain.js) : `f.versions` (plafonné à 10) et `f.editedAt` sur un fragment
   de `cumul.scraps` uniquement ; validé en générique dans backup.js (comme `origin`/`links`), pas dans le
   registre par type.
-- **Sortes** (`sortesPool`/`sortesDraw`, app.js) : un tirage pondéré (probabilité proportionnelle au nombre de
+- **Sortes** (`sortesPool`/`sortesDraw`, `features/sortes.js`) : un tirage pondéré (probabilité proportionnelle au nombre de
   jours de silence) sur trois bassins déjà calculés ailleurs — fragments/notes via `editedAt || date`, tensions
   via `openTensions()`, motifs via `concordance()` + `fallow()`. Rien n'est stocké ; l'état affiché (`sortesLast`)
   est une variable de module, oubliée à la fermeture de l'onglet.
-- **Test lunaire** (`lunarTest`, app.js) : un test de Rayleigh sur le même corpus que la dérive lexicale (`ui.texts()`
+- **Test lunaire** (`lunarTest`, `features/lunar.js`) : un test de Rayleigh sur le même corpus que la dérive lexicale (`ui.texts()`
   de chaque module non-concordance). Piège rencontré en écrivant `sortesPool` : un `if` sans accolades dans une
   boucle peut capturer le `else if` suivant (*dangling else*) et rendre une branche entière inatteignable sans la
   moindre erreur ; d'où la règle désormais suivie dans ces fonctions-là : chaque branche d'un if/else-if qui
@@ -322,7 +331,7 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
 - **Décision** : `fetch` direct vers GoTrue (`/auth/v1`) et PostgREST (`/rest/v1`).
 - **Écarté** : `@supabase/supabase-js` vendorisé (bundle volumineux, difficile à relire, une copie
   corrompue a déjà été rencontrée) ; un backend maison (un serveur à héberger et surveiller).
-- **Conséquences** : ~200 lignes lisibles dans `auth.js` ; le renouvellement de jeton et les erreurs
+- **Conséquences** : ~200 lignes lisibles dans `src/app/services/auth.js` ; le renouvellement de jeton et les erreurs
   sont à notre charge (et testés).
 
 ### ADR 2 — Une ligne par personne, deux colonnes JSON
@@ -359,7 +368,7 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
 ### ADR 5 — Deux registres de types de module, un par couche
 
 - **Contexte** : un type était décrit à une dizaine d'endroits (chirurgie au fusil de chasse).
-- **Décision** : `MODULE_TYPES` (pur, dans `domain.js`) et `TYPE_UI` (affichage, dans `types.js`),
+- **Décision** : `MODULE_TYPES` (pur, dans `domain.js`) et `TYPE_UI` (affichage, un fichier par type dans `src/app/modules/`),
   cohérence vérifiée par test.
 - **Écarté** : un registre unique (la validation des sauvegardes et les règles métier dépendraient du
   code d'affichage et ne seraient plus testables sans DOM) ; des classes par type (même découpage,
@@ -674,5 +683,26 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   stockage) ; l'interdiction de tout cycle d'import tout de suite (`app.js` et `types.js` s'appellent l'un l'autre :
   c'est le découpage suivant qui les défera).
 - **Conséquences** : un fichier dit ce qu'il utilise ; déplacer une fonction, c'est déplacer ses imports. Le script
-  produit est plus court (les commentaires ne sont plus copiés). Étape suivante : découper `app.js` et `types.js`
-  (un fichier par type de module, par vue), ce que ces frontières rendent sûr.
+  produit est plus court (les commentaires ne sont plus copiés). Étape suivante, faite : ADR 23.
+
+### ADR 23 — L'interface découpée par fonctionnalité
+
+- **Contexte** : une fois en modules (ADR 22), l'interface tenait encore dans deux fichiers de 150 et 210 Ko,
+  `app.js` (utilitaires, état, paysage, vues, navigation, rendu, actions) et `types.js` (tous les types de module et
+  toutes les fonctionnalités transversales), qui s'appelaient l'un l'autre. Toucher au budget voulait dire ouvrir
+  un fichier de 2 000 lignes, et une table d'actions unique modifiait l'état de dix fonctionnalités.
+- **Décision** : 58 fichiers, rangés par fonctionnalité (dossiers `lib`, `state`, `services`, `scene`, `ui`, `shell`,
+  `modules`, `features`, `views`), chacun annoncé par une phrase. Les coupes suivent les sections que le code avait
+  déjà ; chaque déclaration est déplacée telle quelle, avec son commentaire, et les imports sont recalculés par
+  analyse de portée. Un type de module s'enregistre par `registerType`, qui verse ses actions dans `CLICK` / `CHANGE`
+  et refuse un doublon au chargement (au lieu d'une boucle finale, qui imposait l'ordre). La grande table d'actions
+  est éclatée : chaque action rejoint la fonctionnalité qu'elle sert. Les bibliothèques (`lib/`) ne dépendent de rien
+  de l'interface : `removeWithUndo` va avec les entrées, les espaces de noms de claude.ai dans `services/host.js`.
+  Les écritures d'un fichier dans l'état d'un autre passent par une fonction de son propriétaire.
+- **Écarté** : un framework de composants (réécriture, et une dépendance de production pour une page qui n'en a
+  aucune) ; un découpage par couche technique seule (`views/`, `controllers/`…), qui disperse une fonctionnalité en
+  cinq endroits ; supprimer tous les cycles d'import d'un coup (les vues et le rendu s'appellent encore : ce n'est
+  sûr qu'au chargement, et c'est ce que le test d'architecture garde).
+- **Conséquences** : le plus gros fichier fait 27 Ko (`features/dehors.js`) ; le test d'architecture a refusé deux
+  dépendances au chargement pendant le découpage (`lib/dom.js` qui importait l'état) et elles ont été corrigées plutôt
+  que tolérées. Le comportement est inchangé : mêmes 173 tests, mêmes 52 scénarios de navigateur.
