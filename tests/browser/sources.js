@@ -1,5 +1,5 @@
 /* Scénario de navigateur : Sources (connexions externes, phase 1, vague 5a : docs/connexions.md). Lancé par tests/browser/run.js. */
-const { storeJSON, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { until, storeJSON, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources',
   config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), display: 'liste', sources: true, statuses: ['À lire', 'Lue', 'Utilisée'], doneFrom: 1, addLabel: 'Ajouter à la main',
@@ -87,6 +87,8 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   const box = await storeJSON(r, 'selene-site-v1').then(d => { const k = Object.keys(d.modules).find(x => d.modules[x].type === 'notes' && d.modules[x].config.inbox); return d.modules[k].entries.map(e => e.text); });
   ok(box.includes('Un texte trouvé — https://exemple.org/texte?utm_source=x'), 'connectée : le lien partagé devient une note de la boîte');
   ok((await r.evaluate(() => location.search)) === '' && !(await r.evaluate(() => sessionStorage.getItem('selene-share'))), 'l’adresse est nettoyée, la file vidée');
+  // Le dépôt synchronisé avant de recharger : sinon sa dernière écriture (keepalive) part pendant le rechargement.
+  await until(() => JSON.stringify(rows.get('u1') || {}).includes('Un texte trouvé'));
   await r.reload(); await r.waitForTimeout(700);
   const again = await storeJSON(r, 'selene-site-v1').then(d => Object.values(d.modules).filter(m => m.type === 'notes').flatMap(m => m.entries).length);
   ok(again === box.length, 'un rechargement ne le dépose pas deux fois');
