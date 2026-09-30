@@ -613,3 +613,18 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
 - **Conséquences** : un rappel prévu dans six jours n'est connu du téléphone que si Selene a été ouverte depuis ; les
   textes sont ceux de l'accueil, en texte brut. Testé par `tests/app.test.js` (le plan), `tests/native-boot.test.js`
   (les appels aux plugins, une vraie `Date`) et `tests/browser/natif.js` (réglage, programmation, haptique).
+
+### ADR 20 — Supprimer son compte depuis l'app ; une politique de confidentialité publiée
+
+- **Contexte** : la publication (App Store, Google Play) exige qu'un compte créé dans l'app puisse y être supprimé, et
+  une politique de confidentialité à une adresse publique. Effacer un utilisateur de Supabase Auth demande la clé
+  serveur du projet, qu'aucune page ne doit détenir.
+- **Décision** : une troisième fonction Edge, `compte`, sur le modèle des deux autres (`_shared/session.ts` : origines,
+  session vérifiée, débit). Une seule action, `supprimer`, avec une confirmation tapée ; elle efface les données avant
+  le compte, et chaque étape tolère ce qui est déjà parti (un nouvel essai termine). La clé serveur passe seulement
+  dans l'en-tête `apikey`. Côté page : un bloc replié dans Réglages → Compte, puis le même vidage de l'appareil qu'à
+  la déconnexion. La politique est une page statique, sans script, publiée avec le site.
+- **Écarté** : une suppression différée (un délai de grâce demande une tâche planifiée et un état « en suppression ») ;
+  une fonction SQL `security definer` appelée par la page (elle ne peut pas effacer `auth.users` proprement).
+- **Conséquences** : `compte_test.ts` vérifie l'ordre, l'isolement entre comptes et les pannes ; la politique de
+  confidentialité doit être mise à jour avec chaque nouveau service tiers (docs/compte.md).

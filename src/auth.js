@@ -176,6 +176,27 @@ async function authSignOut() {
   authResetLocal();
   render();
 }
+/* Supprimer le compte (docs/compte.md) : la fonction serveur « compte » efface les données du compte, sa clé
+   d'assistant, puis le compte lui-même ; ensuite, comme une déconnexion, l'appareil est vidé. Rien n'est poussé avant :
+   ce qui attend encore n'a plus nulle part où aller. */
+async function authDeleteAccount() {
+  const s = await authRefreshIfNeeded(); if (!s) throw new Error("Session expirée : reconnecte-toi, puis recommence.");
+  let r;
+  try {
+    r = await fetch(`${SUPABASE_URL}/functions/v1/compte`, { method: "POST", signal: authTimeout(20000),
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${s.access_token}` },
+      body: JSON.stringify({ action: "supprimer", confirmation: "supprimer" }) });
+  } catch { throw new Error("Impossible de joindre le serveur. Vérifie ta connexion."); }
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 404) throw new Error("La suppression n'est pas encore installée sur le serveur (docs/compte.md).");
+  if (!r.ok || !j.supprime) throw new Error(j.erreur || `erreur ${r.status}`);
+  clearInterval(authRefreshTimer);
+  for (const st of [board, site]) { clearTimeout(st.timer); st.timer = null; }
+  board.disconnect(); site.disconnect();
+  authPersist(null);
+  authResetLocal();
+  render();
+}
 async function authSubmit() {
   const email = $("#authEmail").value.trim(), pw = $("#authPw").value, err = $("#authErr");
   if (authBusy) return;

@@ -17,8 +17,24 @@ const hash = text => `'sha256-${crypto.createHash('sha256').update(text, 'utf8')
 test('web et artefact : exactement les fichiers versionnés (vérifiés par build.py --check)', () => {
   assert.equal(read('web/index.html'), fs.readFileSync('index.html', 'utf8'));
   assert.equal(read('artifact/selene.html'), fs.readFileSync('selene.html', 'utf8'));
-  assert.deepEqual(fs.readdirSync(path.join(dist, 'web')).sort(), ['apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'index.html', 'manifest.webmanifest', 'sw.js']);
+  assert.deepEqual(fs.readdirSync(path.join(dist, 'web')).sort(), ['apple-touch-icon.png', 'confidentialite.html', 'icon-192.png', 'icon-512.png', 'index.html', 'manifest.webmanifest', 'sw.js']);
   assert.ok(fs.readFileSync(path.join(dist, 'web/icon-512.png')).equals(fs.readFileSync('icon-512.png')), 'icônes copiées telles quelles');
+});
+
+test('politique de confidentialité : publiée avec le site, sans script ni ressource extérieure, et liée depuis les Réglages', () => {
+  const p = read('web/confidentialite.html');
+  assert.ok(!/<script|<link|@import|src=/i.test(p), 'une page statique');
+  assert.match(p, /default-src 'none'/);
+  assert.match(p, /Supprimer mon compte/);
+  // Chaque service appelé par la page (sa CSP) est nommé dans la politique : l'une ne change pas sans l'autre.
+  const csp = fs.readFileSync('build.py', 'utf8').match(/CONNECT = \(([\s\S]*?)\)\n/)[1];
+  const services = { 'open-meteo': 'Open-Meteo', crossref: 'Crossref', microlink: 'Microlink', musicbrainz: 'MusicBrainz', lillemetropole: 'Lille', openalex: 'OpenAlex', zotero: 'Zotero', supabase: 'Supabase', googleapis: 'Google Fonts', gstatic: 'Google Fonts' };
+  for (const host of csp.match(/https:\/\/[^\s"']+/g)) {
+    const k = Object.keys(services).find(x => host.includes(x));
+    assert.ok(k, `service sans nom dans la politique : ${host}`);
+    assert.ok(p.includes(services[k]), `${services[k]} manque dans confidentialite.html`);
+  }
+  assert.match(fs.readFileSync('src/app.js', 'utf8'), /confidentialite\.html/);
 });
 
 test('natif : l’amorçage puis le même script, sans service worker ni manifeste', () => {
