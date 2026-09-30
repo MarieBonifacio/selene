@@ -1,0 +1,25 @@
+name: Captures
+# Les captures d'écran des stores (scripts/store-screenshots.mjs, docs/publication.md) : à la demande, en artefact.
+# Ici, les polices de Selene (Google Fonts) se chargent, ce que certains environnements de travail bloquent.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  captures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run screenshots
+      - uses: actions/upload-artifact@v5
+        with:
+          name: selene-captures
+          path: dist/store/
+          retention-days: 30

@@ -22,7 +22,9 @@ export default [
   { files: ["src/app/**/*.js"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: browser }, rules },
   // Le noyau est pur (ni DOM, ni stockage, ni réseau) : un module n'y voit que ses imports et URL.
   { files: ["src/core/**/*.js"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { URL: "readonly" } }, rules },
-  { files: ["scripts/**/*.mjs"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { process: "readonly", URL: "readonly" } }, rules },
+  { files: ["scripts/**/*.mjs"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { process: "readonly", URL: "readonly", console: "readonly" } }, rules },
+  // Le script des captures pilote une page : ce qu'il fait évaluer dedans voit le DOM.
+  { files: ["scripts/store-screenshots.mjs"], languageOptions: { globals: { window: "readonly", document: "readonly", localStorage: "readonly" } } },
   // L'amorçage des coquilles natives (src/native/boot.js), posé seul avant Selene dans dist/native.
   { files: ["src/native/*.js"], languageOptions: { ecmaVersion: 2023, sourceType: "script",
     globals: { window: "readonly", history: "readonly", Event: "readonly", document: "readonly", sessionStorage: "readonly", URL: "readonly", CustomEvent: "readonly" } }, rules },
