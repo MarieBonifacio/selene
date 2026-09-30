@@ -93,6 +93,10 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   await q.setViewportSize({ width: 320, height: 640 }); await q.waitForTimeout(150); // le plus étroit des iPhone
   [fit, why] = await fits(320);
   ok(fit, 'à 320 px non plus : champs, menus et chemins suivent leur colonne' + why);
+  // WebKit laisse le texte de l'option choisie déborder d'un menu et élargir la page (Chromium le rogne) : la cause,
+  // mesurée dans n'importe quel moteur, c'est une option plus large que son menu.
+  const wide = await q.evaluate(() => { const s = document.getElementById('newModType'), c = document.createElement('canvas').getContext('2d'); c.font = getComputedStyle(s).font; return [...s.options].filter(o => c.measureText(o.text).width + 40 > s.clientWidth).map(o => o.text); });
+  ok(!wide.length, 'à 320 px, chaque option du menu « Modèle ou type » tient dans sa largeur' + (wide.length ? ' : ' + wide.slice(0, 3).join(' | ') : ''));
   await q.tap('.reg-keys .tip >> nth=1'); await q.waitForTimeout(150);
   ok(await q.evaluate(() => { const o = document.querySelector('.tipb:popover-open'); if (!o) return false; const r = o.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }), 'une bulle tient dans un écran de téléphone');
 

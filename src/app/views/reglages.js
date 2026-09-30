@@ -82,6 +82,8 @@ function modBlock(s, m, i) {
       : sys && m.on ? `<p class="mreg-note"><button type="button" class="btn ghost sm" data-act="reg-goto" data-to="reg-assistant">› ${esc(TEXTS.assistantHere)}</button></p>` : ""}
   </div>`;
 }
+/* « Sur mesure » : des noms courts dans le menu (la description des modèles est affichée juste au-dessus, le libellé
+   complet reste en title). WebKit laisse le texte de l'option choisie déborder du menu et élargir la page. */
 function espacesHTML(s, c) {
   return `<p class="hint">${esc(TEXTS.legend)}</p>
     <p class="reg-keys"><span>${esc(TEXTS.domaine)}${tip(TIPS.domaine, about(TEXTS.domaine))}</span><span>✕ ${esc(TEXTS.suppr)}${tip(TIPS.suppr, about(TEXTS.suppr))}</span><span>› ${esc(TEXTS.reglerShort)}${tip(TIPS.regler, about(TEXTS.reglerShort))}</span></p>
@@ -91,7 +93,7 @@ function espacesHTML(s, c) {
       ${sub(TEXTS.fromTemplate, TIPS.creer)}<p class="hint">${esc(TEXTS.fromTemplateHint)}</p>
       <div class="tpl-grid">${MODULE_TEMPLATES.map(t => `<div class="tpl"><div><b>${esc(t.name)}</b><p class="hint">${esc(t.hint)}</p></div><button type="button" class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}" aria-label="${esc(TEXTS.addAria(t.name))}">${esc(TEXTS.add)}</button></div>`).join("")}</div>
       ${sub(TEXTS.custom)}<p class="hint">${esc(TEXTS.customHint)}</p>
-      <div class="field-row"><label>Modèle ou type<select id="newModType"><optgroup label="Modèles">${MODULE_TEMPLATES.map(t => `<option value="tpl:${esc(t.id)}">${esc(t.name)} — ${esc(t.hint)}</option>`).join("")}</optgroup><optgroup label="Types vides">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}">${esc(t.label)}</option>`).join("")}</optgroup></select></label>
+      <div class="field-row"><label>Modèle ou type<select id="newModType"><optgroup label="Modèles">${MODULE_TEMPLATES.map(t => `<option value="tpl:${esc(t.id)}" title="${esc(t.hint)}">${esc(t.name)}</option>`).join("")}</optgroup><optgroup label="Types vides">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}" title="${esc(t.label)}">${esc(typeName(k))}</option>`).join("")}</optgroup></select></label>
       <label>Nom<input id="newModName" placeholder="Nom du modèle si vide"></label></div>
       <button class="btn sm" data-act="mod-add" style="margin-top:8px">${esc(TEXTS.add)}</button></div></details>`;
 }

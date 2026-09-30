@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-jZOsu3O7WTAguyxZk2JVGZqNZT4KwTxLAPomIcdKkqQ=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ZBYNGOWASnQu0fpHxnd361eJqrMxFHGs/sDN/BYJjsc=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -5417,7 +5417,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       ${sub(TEXTS.fromTemplate, TIPS.creer)}<p class="hint">${esc(TEXTS.fromTemplateHint)}</p>
       <div class="tpl-grid">${MODULE_TEMPLATES.map((t) => `<div class="tpl"><div><b>${esc(t.name)}</b><p class="hint">${esc(t.hint)}</p></div><button type="button" class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}" aria-label="${esc(TEXTS.addAria(t.name))}">${esc(TEXTS.add)}</button></div>`).join("")}</div>
       ${sub(TEXTS.custom)}<p class="hint">${esc(TEXTS.customHint)}</p>
-      <div class="field-row"><label>Modèle ou type<select id="newModType"><optgroup label="Modèles">${MODULE_TEMPLATES.map((t) => `<option value="tpl:${esc(t.id)}">${esc(t.name)} — ${esc(t.hint)}</option>`).join("")}</optgroup><optgroup label="Types vides">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}">${esc(t.label)}</option>`).join("")}</optgroup></select></label>
+      <div class="field-row"><label>Modèle ou type<select id="newModType"><optgroup label="Modèles">${MODULE_TEMPLATES.map((t) => `<option value="tpl:${esc(t.id)}" title="${esc(t.hint)}">${esc(t.name)}</option>`).join("")}</optgroup><optgroup label="Types vides">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}" title="${esc(t.label)}">${esc(typeName(k))}</option>`).join("")}</optgroup></select></label>
       <label>Nom<input id="newModName" placeholder="Nom du modèle si vide"></label></div>
       <button class="btn sm" data-act="mod-add" style="margin-top:8px">${esc(TEXTS.add)}</button></div></details>`;
   }
