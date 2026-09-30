@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bZKkWZWkB0qADUnn+H54x4suxGHrr2JRqGE5rpQvtEA=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ZBYNGOWASnQu0fpHxnd361eJqrMxFHGs/sDN/BYJjsc=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -247,6 +247,101 @@ dialog.palette input:focus-visible{outline:none;border-bottom-color:var(--accent
 }
 .set.mod{grid-template-columns:auto minmax(0,1fr) 9em auto}
 @media (max-width:560px){.set.mod{grid-template-columns:auto minmax(0,1fr) auto}.set.mod>:nth-child(3){grid-column:2;grid-row:2}}
+/* ================= Réglages : premier accueil, sommaire, chapitres =================
+   Une page longue, rangée en chapitres numérotés comme des planches, du plus courant au plus rare. Sur grand écran, le
+   sommaire tient la marge droite et marque le chapitre lu (le filet de marge) ; ailleurs, il ouvre la page. */
+.reg-guide{margin:4px 0 30px;padding:14px 18px 16px;border:1px solid var(--rule);border-radius:3px;background:var(--surface)}
+.reg-guide p{margin:0 0 8px;font-size:.95rem}
+.reg-guide .reg-guide-t{font-family:var(--f-display);font-size:1.35rem;font-weight:600;line-height:1.1;margin-bottom:8px}
+.reg-guide .hint{margin:10px 0 12px}
+.reg-guide summary{cursor:pointer;font-family:var(--f-ui);font-size:.88rem;color:var(--ink-2)}
+.lex{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 18px;margin:10px 0 4px;font-size:.92rem}
+.lex dt{font-family:var(--f-label);text-transform:lowercase;letter-spacing:.04em;color:var(--ink)}
+.lex dd{margin:0;color:var(--ink-2)}
+@media (max-width:560px){.lex{grid-template-columns:1fr;gap:0}.lex dd{margin-bottom:8px}}
+.reg-toc{margin:0 0 34px}
+.reg-toc .grp{margin:0 0 6px}
+.reg-toc ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.reg-toc ol button{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:5px 11px;border:1px solid var(--rule);border-radius:3px;background:transparent;color:var(--ink-2);font-size:.88rem;text-align:left}
+.reg-toc ol button:hover{color:var(--ink);border-color:var(--rule-strong)}
+.reg-toc .n,.chap-h .n{font-family:var(--f-label);text-transform:lowercase;letter-spacing:.08em;color:var(--muted)}
+.reg-toc>.btn{margin-top:10px;padding-left:0}
+@media (pointer:coarse){.reg-toc ol button{min-height:44px}}
+@media (min-width:1180px){
+  .reg{display:grid;grid-template-columns:minmax(0,1fr) 12.5rem;column-gap:48px;align-items:start}
+  .reg-body{grid-column:1;grid-row:1;min-width:0}
+  .reg-toc{grid-column:2;grid-row:1;position:sticky;top:28px;margin:0}
+  .reg-toc ol{flex-direction:column;flex-wrap:nowrap;gap:1px}
+  .reg-toc ol button{width:100%;border:0;border-left:2px solid transparent;border-radius:0 3px 3px 0;padding:6px 10px}
+  .reg-toc ol button:hover{background:var(--surface)}
+  .reg-toc ol button[aria-current]{border-left-color:var(--accent);color:var(--ink);background:var(--surface)}
+}
+.chap{margin:0 0 60px;scroll-margin-top:24px}
+.chap-h{display:flex;align-items:baseline;gap:10px;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--rule)}
+.chap-h .n{font-size:1.05rem}
+.chap-h h3{font-size:1.75rem;margin:0}
+.chap-h .tip{margin:0;align-self:center}
+.chap .swatch{font-size:.95rem}
+.chap section{margin:32px 0 0}
+.chap h4{font-family:var(--f-display);font-size:1.25rem;font-weight:600;line-height:1.1;margin:0 0 4px}
+.reg-head{display:flex;align-items:center;margin:0 0 4px}
+.reg-head h4{margin:0}
+.fld{display:grid;gap:4px;align-content:start}
+.fld-h{display:flex;align-items:center;flex-wrap:wrap;font-family:var(--f-ui);font-size:.88rem;font-weight:500}
+.check-l{display:flex;gap:8px;align-items:center;font-weight:400}
+/* « cet appareil » : ce réglage ne suit pas le compte. Un point creux, là où ce qui est partagé n'a pas de marque. */
+.dev{display:inline-flex;align-items:center;gap:.35em;margin-left:.6em;font-family:var(--f-label);font-size:.82rem;font-weight:500;letter-spacing:.04em;text-transform:lowercase;color:var(--muted)}
+.dev::before{content:"";width:.5em;height:.5em;border-radius:50%;border:1px solid currentColor}
+/* Espaces : une ligne par espace et, dessous, ses réglages propres, repliés ; ouverts, le filet de marge à sa teinte. */
+.reg-keys{display:flex;flex-wrap:wrap;gap:4px 20px;margin:-6px 0 10px;font-family:var(--f-ui);font-size:.84rem;color:var(--muted)}
+.reg-keys>span{display:inline-flex;align-items:center}
+.modlist{margin:6px 0 18px;border-bottom:1px solid var(--rule)}
+.modblock{border-top:1px solid var(--rule)}
+.modblock>.set.mod{border-top:0}
+.mod-name{display:flex;align-items:center;gap:8px;min-width:0}
+.mod-name .sig{width:20px;height:20px;margin:0;color:var(--tint,var(--muted))}
+.modblock.off .mod-name{opacity:.55}
+details.mreg,.mreg-note{margin:-6px 0 6px 23px}
+details.mreg>summary{display:inline-flex;align-items:baseline;gap:8px;min-height:32px;padding:4px 8px 4px 0;cursor:pointer;list-style:none;color:var(--muted);font-family:var(--f-ui);font-size:.84rem}
+details.mreg>summary::-webkit-details-marker{display:none}
+details.mreg>summary::before{content:"›";display:inline-block;width:.6em;transition:transform var(--t-2) var(--ease)}
+details.mreg[open]>summary::before{transform:rotate(90deg)}
+details.mreg>summary:hover{color:var(--ink)}
+.mreg-type{font-family:var(--f-label);text-transform:lowercase;letter-spacing:.04em}
+.mreg-type::before{content:"·";margin-right:8px}
+.mreg-body{margin:4px 0 14px;padding:10px 0 6px 16px;border-left:2px solid var(--tint,var(--accent))}
+.mreg-note .btn{padding-left:0}
+/* Téléphone : les réglages d'un espace prennent toute la largeur, le filet suffit à les rattacher à leur ligne. */
+@media (max-width:560px){details.mreg,.mreg-note{margin-left:0}.mreg-body{padding-left:12px}}
+/* Un champ ou un menu suit sa colonne au lieu d'imposer sa largeur naturelle : WebKit donne à un <select> celle de sa
+   plus longue option, et un élément de grille ou de flex ne descend pas, par défaut, sous la largeur de son contenu.
+   Sur téléphone, la page débordait. Un chemin de fichier (code) se coupe où il faut. */
+.reg input:not([type=checkbox]):not([type=radio]),.reg select,.reg textarea,.reg .field-row>*{min-width:0}
+.mod-name>input{flex:1 1 0}
+.reg code{overflow-wrap:anywhere}
+details.newmod>summary{display:inline-flex;list-style:none}
+details.newmod>summary::-webkit-details-marker{display:none}
+.newmod-body{margin:16px 0 0}
+.tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(16rem,1fr));column-gap:28px;margin:6px 0 26px}
+.tpl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--rule)}
+.tpl b{font-family:var(--f-display);font-size:1.15rem;font-weight:600}
+.tpl .hint{margin:2px 0 0;font-size:.86rem}
+/* L'irréversible, à part et en dernier : le mot et le filet cinabre le disent ensemble. */
+.danger{padding-top:16px;border-top:1px solid var(--alarm)}
+.danger h4{color:var(--alarm)}
+.danger summary{cursor:pointer;margin:0}
+/* Infobulles (ui/tips.js) : un « ? » discret à côté de ce qu'il explique ; la bulle, posée sous lui par le script.
+   Sans l'API popover, le texte s'affiche en clair, comme une indication. */
+.tip{display:inline-grid;place-items:center;flex:none;width:18px;height:18px;margin:0 0 0 6px;padding:0;border:1px solid var(--rule-strong);border-radius:50%;background:transparent;color:var(--muted);font:600 11px/1 var(--f-ui);font-style:normal;vertical-align:.12em;cursor:help}
+.tip:hover,.tip:focus-visible{color:var(--ink);border-color:var(--ink-2)}
+.tipb{position:fixed;inset:auto;margin:0;width:max-content;max-width:min(340px,calc(100vw - 24px));padding:10px 13px;border:1px solid var(--rule-strong);border-radius:3px;background:var(--surface-2);color:var(--ink);
+  font:400 .92rem/1.5 var(--f-text);font-style:normal;text-align:left;letter-spacing:0;text-transform:none;white-space:normal;overflow-wrap:break-word}
+/* Fermée, une bulle reste cachée, quelle que soit la règle qui atteint les <span> autour d'elle. */
+.tipb:not(:popover-open){display:none!important}
+.tipb:popover-open{animation:tip-in var(--t-2) var(--ease)}
+@keyframes tip-in{from{opacity:0;transform:translateY(-3px)}}
+@supports not selector(:popover-open){.tip{display:none}.tipb{position:static;display:block;width:auto;max-width:none;margin:4px 0;padding:0;border:0;background:none;color:var(--muted);font-size:.88rem;font-style:italic}}
+@media (pointer:coarse){.tip{position:relative}.tip::after{content:"";position:absolute;inset:-13px}}
 
 /* buttons */
 .btn{border:1px solid var(--ink);background:transparent;padding:7px 14px;border-radius:2px;font-weight:500;font-size:.92rem}
@@ -1103,6 +1198,7 @@ var __selene = (() => {
     render: () => render,
     reservedId: () => reservedId,
     retargetLinks: () => retargetLinks,
+    roman: () => roman,
     routeOf: () => routeOf,
     runAction: () => runAction,
     sampleNS: () => sampleNS,
@@ -1571,7 +1667,7 @@ var __selene = (() => {
   ];
   var nearLille = (lat, lon) => lat >= 48.5 && lat <= 52.5 && lon >= 0.5 && lon <= 6.5;
   var dayDiff = (a, b) => Math.round((Date.parse(b + "T12:00:00Z") - Date.parse(a + "T12:00:00Z")) / 864e5);
-  function skyEvents(today, place) {
+  function skyEvents(today, place2) {
     const out = [], y = +today.slice(0, 4);
     for (const [name, m, d, zhr] of SHOWERS) {
       for (const yy of [y, y + 1]) {
@@ -1579,7 +1675,7 @@ var __selene = (() => {
         if (n === 0 || n === 1) out.push({ kind: "shower", name, zhr, inDays: n, date: peak });
       }
     }
-    if (place && nearLille(place.lat, place.lon)) for (const [date, body, type, note] of ECLIPSES) {
+    if (place2 && nearLille(place2.lat, place2.lon)) for (const [date, body, type, note] of ECLIPSES) {
       const n = dayDiff(today, date);
       if (n >= 0 && n <= 7) out.push({ kind: "eclipse", body, type, note, inDays: n, date });
     }
@@ -2715,10 +2811,10 @@ var __selene = (() => {
     const m = String(v || "").match(/(?:^|\/)([WA]\d{1,14})$/);
     return m ? m[1] : "";
   };
-  function oaBatchUrls(field, values, select, key) {
+  function oaBatchUrls(field2, values, select, key) {
     const out = [];
     for (let i = 0; i < values.length; i += 50) {
-      const p = { filter: `${field}:${values.slice(i, i + 50).join("|")}`, per_page: "50", select, ...key ? { api_key: key } : {} };
+      const p = { filter: `${field2}:${values.slice(i, i + 50).join("|")}`, per_page: "50", select, ...key ? { api_key: key } : {} };
       out.push(`${OA_API}?${Object.entries(p).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`);
     }
     return out;
@@ -2916,7 +3012,7 @@ var __selene = (() => {
     for (const [name, fields] of Object.entries(sections)) {
       if (site2[name] == null) continue;
       if (!record(site2[name])) throw new Error(`${name} invalide`);
-      for (const field of fields) if (site2[name][field] != null) collection(site2[name][field], `${name}.${field}`);
+      for (const field2 of fields) if (site2[name][field2] != null) collection(site2[name][field2], `${name}.${field2}`);
     }
     if (site2.kundalini) {
       num(site2.kundalini.weeks, "kundalini.weeks", 1, 520);
@@ -3012,8 +3108,8 @@ var __selene = (() => {
   var RADAR_FIELDS = "uid,title_fr,description_fr,keywords_fr,firstdate_begin,lastdate_end,location_name,location_city,canonicalurl";
   var radarFold = (s) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   var addDaysISO = (iso2, n) => new Date(Date.parse(iso2 + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10);
-  function radarUrl(place, from, { days = 14, km = 20, lean = true } = {}) {
-    const lat = Math.round(+place.lat * 10) / 10, lon = Math.round(+place.lon * 10) / 10;
+  function radarUrl(place2, from, { days = 14, km = 20, lean = true } = {}) {
+    const lat = Math.round(+place2.lat * 10) / 10, lon = Math.round(+place2.lon * 10) / 10;
     const where = `lastdate_end >= date'${from}' and firstdate_begin < date'${addDaysISO(from, days)}' and within_distance(location_coordinates, geom'POINT(${lon} ${lat})', ${km}km)`;
     const q = Object.entries({ where, order_by: "firstdate_begin", limit: "-1", ...lean ? { select: RADAR_FIELDS } : {} }).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
     return `${RADAR_HOST}/api/explore/v2.1/catalog/datasets/evenements-publics-openagenda/exports/json?${q}`;
@@ -3231,28 +3327,28 @@ var __selene = (() => {
   }
   var hm = (t) => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
   function sceneNow(m) {
-    const c = skyConf(), place = c ? { lat: +c.lat, lon: +c.lon } : approxPlace(), t = Date.now(), dark = uiDark();
-    const sun = sunPosition(t, place.lat, place.lon), w = c && c.weather !== false ? freshWeather(c) : null, weather = w ? weatherState(w.code) : null;
-    const season = seasonAt(t, place.lat), frost = !!(w && Number.isFinite(w.temp) && w.temp <= 0);
+    const c = skyConf(), place2 = c ? { lat: +c.lat, lon: +c.lon } : approxPlace(), t = Date.now(), dark = uiDark();
+    const sun = sunPosition(t, place2.lat, place2.lon), w = c && c.weather !== false ? freshWeather(c) : null, weather = w ? weatherState(w.code) : null;
+    const season = seasonAt(t, place2.lat), frost = !!(w && Number.isFinite(w.temp) && w.temp <= 0);
     const sc = skyScene({ sunAlt: sun.alt, illum: m.illum, weather, dark, season, frost }), facts = [];
     let moonAt;
-    const mo = skyMotion(w ? { wind: w.wind, dir: w.dir, precip: w.precip, lat: place.lat } : { lat: place.lat });
+    const mo = skyMotion(w ? { wind: w.wind, dir: w.dir, precip: w.precip, lat: place2.lat } : { lat: place2.lat });
     if (weather) facts.push(`${Math.round(w.temp)} °C · ${WEATHER[weather]}`);
     const wind = w && weather && Number.isFinite(w.dir) && w.wind >= 1 ? `vent ${windName(w.dir)} ${Math.round(w.wind)} km/h` : "";
     if (c) {
-      const ev = nextCrossing(sunPosition, t, place.lat, place.lon, -0.833);
+      const ev = nextCrossing(sunPosition, t, place2.lat, place2.lon, -0.833);
       if (ev) facts.push(`${ev.rising ? "lever" : "coucher"} ${hm(ev.at)}`);
       if (c.realMoon !== false) {
-        moonAt = moonPlacement(moonPosition(t, place.lat, place.lon), place.lat) || false;
+        moonAt = moonPlacement(moonPosition(t, place2.lat, place2.lon), place2.lat) || false;
         if (moonAt === false) {
-          const r = nextCrossing(moonPosition, t, place.lat, place.lon, 0);
+          const r = nextCrossing(moonPosition, t, place2.lat, place2.lon, 0);
           facts.push(`la lune est sous l'horizon${r ? `, lever vers ${hm(r.at)}` : ""}`);
         }
       }
     }
     const line = facts.join(" · ");
     const right = !!(moonAt && moonAt.x < 50), clash = !!(moonAt && (right ? moonAt.x > 36 : moonAt.x < 64) && moonAt.y < 52);
-    const events = skyEvents(todayISO(), c ? place : null).map((ev) => skyEventText(ev, m.illum));
+    const events = skyEvents(todayISO(), c ? place2 : null).map((ev) => skyEventText(ev, m.illum));
     if (clash || events.length) sc.scrim = Math.max(sc.scrim, 0.6);
     const cap = (t2) => t2 && t2[0].toUpperCase() + t2.slice(1);
     const lineHTML = !line ? "" : wind ? `${esc(cap(facts[0]))}<span class="sky-wind"> · ${esc(wind)}</span>${esc(line.slice(facts[0].length))}` : esc(cap(line));
@@ -3261,7 +3357,7 @@ var __selene = (() => {
   var skyResults = [];
   function skySettingsHTML() {
     const c = skyConf(), f = (v) => (+v).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-    return `<section id="ciel"><h3>Ciel</h3><p class="hint">La scène de l'accueil montre le dehors réel : l'heure par le soleil, la lune à sa place, le temps qu'il fait. Sans lieu, l'heure est estimée d'après le fuseau horaire (à trois quarts d'heure près), et il n'y a pas de météo.</p>
+    return `<section id="ciel"><h4>Ciel</h4><p class="hint">La scène de l'accueil montre le dehors réel : l'heure par le soleil, la lune à sa place, le temps qu'il fait. Sans lieu, l'heure est estimée d'après le fuseau horaire (à trois quarts d'heure près), et il n'y a pas de météo.</p>
     ${c ? `<p class="row" style="margin:0 0 10px">Lieu : <b>${esc(c.name)}</b> <span class="hint" style="margin:0">(${f(c.lat)} ; ${f(c.lon)}, arrondis à une dizaine de kilomètres)</span><button class="btn ghost sm" data-act="sky-clear">retirer</button></p>` : ""}
     <div class="row"><input id="skyCity" placeholder="${c ? "Changer de ville…" : "Une ville…"}" aria-label="Ville" autocomplete="off" style="max-width:260px"><button class="btn sm" data-act="sky-search">Chercher</button><button class="btn ghost sm" data-act="sky-locate">Utiliser ma position</button></div>
     ${skyResults.length ? `<ul class="plain" style="margin-top:8px">${skyResults.map((r, i) => `<li class="item"><span></span><div>${esc(r.name)}</div><button class="btn sm" data-act="sky-pick" data-i="${i}">Choisir</button></li>`).join("")}</ul>` : ""}
@@ -3792,7 +3888,7 @@ var __selene = (() => {
   }
   function passeurSettingsHTML() {
     const st = passeurEtat === "ok" ? "Déployé et ouvert à ton compte." : passeurEtat === "absent" ? "Pas encore déployé, ou pas encore configuré." : passeurEtat ? `Refusé : ${passeurEtat}.` : "Pas encore vérifié sur cet appareil.";
-    return `<section id="passeur"><h3>Passeur</h3><p class="hint">Une petite fonction dans ton projet Supabase qui lit pour toi les pages, flux et calendriers que le navigateur ne peut pas lire seul. Elle ne sert que ton compte, refuse toute adresse privée et ne garde rien. Sans elle, les pages passent par Microlink.</p>
+    return `<section id="passeur"><h4>Passeur</h4><p class="hint">Une petite fonction dans ton projet Supabase qui lit pour toi les pages, flux et calendriers que le navigateur ne peut pas lire seul. Elle ne sert que ton compte, refuse toute adresse privée et ne garde rien. Sans elle, les pages passent par Microlink.</p>
     <p class="row" style="margin:0 0 8px"><span data-passeur-etat>${esc(st)}</span><button class="btn sm" data-act="passeur-check">Vérifier</button></p>
     <p class="hint">Ton identifiant, à mettre dans le secret <code>PASSEUR_USERS</code> : <code style="word-break:break-all">${esc(authSession.user.id)}</code> <button class="btn ghost sm" data-act="passeur-copy">copier</button>. Mode d'emploi : <a href="https://github.com/MarieBonifacio/selene/blob/main/docs/passeur.md" target="_blank" rel="noopener noreferrer">docs/passeur.md</a>.</p></section>`;
   }
@@ -3881,7 +3977,7 @@ var __selene = (() => {
   }
   function agendaSettingsHTML() {
     const c = icsCache(), has = !!icsUrl();
-    return `<section id="agenda"><h3>Calendrier</h3><p class="hint">Un seul calendrier, dédié (crée-en un « Selene ») : aujourd'hui et demain s'affichent sous « Aujourd'hui ». Un titre « Chantier : plombier » se range sous Chantier. Google : paramètres de l'agenda → Intégrer l'agenda → Adresse secrète au format iCal. Apple : partager en public, lien webcal.</p>
+    return `<section id="agenda"><h4>Calendrier</h4><p class="hint">Un seul calendrier, dédié (crée-en un « Selene ») : aujourd'hui et demain s'affichent sous « Aujourd'hui ». Un titre « Chantier : plombier » se range sous Chantier. Google : paramètres de l'agenda → Intégrer l'agenda → Adresse secrète au format iCal. Apple : partager en public, lien webcal.</p>
     <label>Adresse iCal secrète<input type="password" data-act="ics-url" value="${has ? "••••••••" : ""}" autocomplete="off" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"></label>
     <p class="hint" style="margin-top:6px">Qui possède cette adresse lit tout le calendrier : elle reste dans ce navigateur, n'est jamais synchronisée, ne passe que par ton passeur (qui ne garde rien), et s'efface à la déconnexion. Si elle fuit, réinitialise-la dans l'agenda.</p>
     ${has ? `<p class="row" style="margin:0"><span>${esc(agendaBusy ? "Lecture…" : c.err ? `Ne répond pas : ${c.err}` : c.at ? `Lu ${dehorsWhen(c.at)} : ${c.events.length} événement${c.events.length > 1 ? "s" : ""} à venir ou récurrent${c.events.length > 1 ? "s" : ""}.` : "Pas encore lu.")}</span><button class="btn sm" data-act="ics-check">Relire</button><button class="btn ghost sm" data-act="ics-forget">oublier</button></p>` : ""}</section>`;
@@ -4137,7 +4233,7 @@ var __selene = (() => {
   };
   function zotSettingsHTML() {
     const info = zotInfo(), has = !!zotKey();
-    return `<section id="zotero"><h3>Zotero</h3><p class="hint">Ta bibliothèque Zotero, en lecture seule : dans un module de Sources, cherche une fiche (ou les dernières ajoutées) et garde-la comme Source, reliée à sa fiche Zotero. Zotero reste l'archive ; Selene, l'endroit où tu t'en sers.</p>
+    return `<section id="zotero"><h4>Zotero</h4><p class="hint">Ta bibliothèque Zotero, en lecture seule : dans un module de Sources, cherche une fiche (ou les dernières ajoutées) et garde-la comme Source, reliée à sa fiche Zotero. Zotero reste l'archive ; Selene, l'endroit où tu t'en sers.</p>
     <p class="hint">Crée une clé sur <a href="https://www.zotero.org/settings/keys/new" target="_blank" rel="noopener noreferrer">zotero.org/settings/keys/new</a> : sous « Personal Library », coche <b>Allow library access</b> seulement (ni « Allow write access », ni les groupes). Elle reste dans ce navigateur, n'est jamais synchronisée et s'efface à la déconnexion.</p>
     <label>Clé API Zotero<input type="password" data-act="zot-key" value="${has ? "••••••••" : ""}" autocomplete="off" placeholder="colle ta clé"></label>
     ${has ? `<p class="row" style="margin:6px 0 0"><span>${esc(info ? `Bibliothèque de ${info.username || "#" + info.userID}${info.write ? " : attention, cette clé peut écrire ; une clé en lecture seule suffit." : ", en lecture seule."}` : "Pas encore vérifiée.")}</span><button class="btn sm" data-act="zot-check">Vérifier</button><button class="btn ghost sm" data-act="zot-forget">oublier</button></p>` : ""}</section>`;
@@ -4557,7 +4653,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
   };
   function radarSettingsHTML() {
     const c = radarPlace();
-    return `<section id="radar"><h3>Radar culturel</h3><p class="hint">Sur demande, depuis l'accueil : les événements à 20 km du lieu réglé dans Ciel (OpenAgenda, partout en France) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification. Changer de lieu, c'est changer de radar.</p>
+    return `<section id="radar"><h4>Radar culturel</h4><p class="hint">Sur demande, depuis l'accueil : les événements à 20 km du lieu réglé dans Ciel (OpenAgenda, partout en France) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification. Changer de lieu, c'est changer de radar.</p>
     <label>Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)<input data-act="radar-words" value="${esc(radarConf().words)}" placeholder="poésie, jazz, photographie, lecture…" maxlength="300" autocomplete="off"></label>
     ${c ? `<p class="hint" style="margin-top:6px">Autour de ${esc(c.name)}.</p>` : `<p class="hint" style="margin-top:6px">Il lui faut un lieu : règle-le dans Ciel, ci-dessus.</p>`}</section>`;
   }
@@ -4644,13 +4740,13 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     if (!TREES) buildTrees();
     const r = 46, c = 50, rx = Math.abs(Math.cos(2 * Math.PI * p)) * r;
     const lit = p < 0.5 ? `M${c},${c - r} A${r},${r} 0 0 1 ${c},${c + r} A${rx},${r} 0 0 ${p < 0.25 ? 0 : 1} ${c},${c - r}Z` : `M${c},${c - r} A${r},${r} 0 0 0 ${c},${c + r} A${rx},${r} 0 0 ${p < 0.75 ? 0 : 1} ${c},${c - r}Z`;
-    const place = at ? `left:${at.x.toFixed(1)}%;top:${at.y.toFixed(1)}%;` : "";
+    const place2 = at ? `left:${at.x.toFixed(1)}%;top:${at.y.toFixed(1)}%;` : "";
     return `<svg class="scene" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" role="img" aria-label="Lune au-dessus d'une lisière de sapins">
     <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--sky-top)"/><stop offset="1" stop-color="var(--sky-bot)"/></linearGradient></defs>
     <rect width="1000" height="300" fill="url(#sky)"/>
     <g fill="var(--moon)" opacity="var(--star)" style="opacity:var(--star)">${TREES.stars}</g>
   </svg>
-  ${at === false ? "" : `<div class="moon" aria-hidden="true" style="${place}opacity:var(--moon-o,1)"><svg viewBox="-150 -150 300 300">
+  ${at === false ? "" : `<div class="moon" aria-hidden="true" style="${place2}opacity:var(--moon-o,1)"><svg viewBox="-150 -150 300 300">
     <defs><radialGradient id="glow"><stop offset="0" stop-color="var(--glow)"/><stop offset="1" stop-color="var(--glow)" stop-opacity="0"/></radialGradient></defs>
     <circle r="${40 + 120 * (1 - Math.abs(1 - 2 * p)) * 0.9}" fill="url(#glow)"/>
     <g transform="scale(.84) translate(-50 -50)"><circle cx="50" cy="50" r="${r}" fill="var(--moon-shadow)" opacity=".85"/>${sc.earthshine ? `<circle class="earthshine" cx="50" cy="50" r="${r}" fill="var(--moon)" opacity="${sc.earthshine.toFixed(3)}"/>` : ""}<path d="${lit}" fill="var(--moon)"/></g>
@@ -5105,7 +5201,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   var notifySettingsHTML = () => {
     if (!platform.notifications.supported()) return "";
     const c = notifyConf();
-    return `<section id="notify-cfg"><h3>Notifications</h3><p class="hint">Sur cet appareil : chaque matin, ce qui t'attend (rappels, échéances), programmé par le téléphone lui-même, même app fermée. Rien ne part sur un serveur. Les jours sans rien, silence.</p>
+    return `<section id="notify-cfg"><h4>Notifications</h4><p class="hint">Sur cet appareil : chaque matin, ce qui t'attend (rappels, échéances), programmé par le téléphone lui-même, même app fermée. Rien ne part sur un serveur. Les jours sans rien, silence.</p>
     <div class="field-row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-act="notify-on" ${c.on ? "checked" : ""}>Résumé du matin</label>
     <label>Heure<input type="time" data-act="notify-at" value="${esc(c.at)}"></label></div></section>`;
   };
@@ -5151,7 +5247,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   function shareSettingsHTML() {
     const base = location.origin + location.pathname;
     const bm = `javascript:(()=>{window.open('${base}?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title),'_blank')})()`;
-    return `<section><h3>Envoyer à Selene</h3><p class="hint">Un lien lu ailleurs arrive dans ta boîte de réception, prêt à devenir une source. Rien ne part ailleurs que chez toi.</p>
+    return `<section><h4>Envoyer à Selene</h4><p class="hint">Un lien lu ailleurs arrive dans ta boîte de réception, prêt à devenir une source. Rien ne part ailleurs que chez toi.</p>
     <p class="row" style="margin:0 0 8px"><a class="btn sm" href="${esc(bm)}" data-act="bookmarklet">Envoyer à Selene</a><span class="hint" style="margin:0">Sur ordinateur : glisse ce bouton dans ta barre de favoris.</span></p>
     <p class="hint">Sur Android, une fois l'app installée : « Partager », puis Selene. Sur iPhone : app Raccourcis, un raccourci qui s'affiche dans la feuille de partage (URL), avec l'action « Ouvrir les URL » : <code>${esc(base)}?url=</code> suivi de l'entrée du raccourci.</p></section>`;
   }
@@ -5160,59 +5256,217 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     toast("Glisse ce bouton dans la barre de favoris : c'est là qu'il sert, sur la page à garder.");
   };
 
+  // src/app/ui/tips.js
+  var seq = 0;
+  function tip(text, about2) {
+    const id = `tip-${++seq}`;
+    return `<button type="button" class="tip" popovertarget="${id}" aria-label="${esc(about2)}">?</button><span class="tipb" id="${id}" popover role="note">${esc(text)}</span>`;
+  }
+  function place(pop) {
+    const btn = document.querySelector(`[popovertarget="${pop.id}"]`);
+    if (!btn) return;
+    const b = btn.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight, m = 12, W = window.innerWidth, H = window.innerHeight;
+    const left2 = Math.max(m, Math.min(b.left + b.width / 2 - w / 2, W - w - m));
+    const top = b.bottom + 6 + h > H - m && b.top - 6 - h > m ? b.top - 6 - h : b.bottom + 6;
+    pop.style.left = `${Math.round(left2)}px`;
+    pop.style.top = `${Math.round(top)}px`;
+  }
+  document.addEventListener("toggle", (e) => {
+    if (e.newState === "open" && e.target.classList && e.target.classList.contains("tipb")) place(e.target);
+  }, true);
+  var follow = () => {
+    try {
+      const o = document.querySelector(".tipb:popover-open");
+      if (o) place(o);
+    } catch {
+    }
+  };
+  window.addEventListener("scroll", follow, { passive: true });
+  window.addEventListener("resize", follow);
+
+  // src/app/views/reglages-aide.js
+  var CHAPTERS = [
+    { id: "reg-apparence", title: "Apparence et rythme", intro: "Ce que tu vois en ouvrant Selene, et quand elle te fait signe." },
+    { id: "reg-espaces", title: "Espaces", intro: "Les pages de ta navigation : les afficher, les nommer, les ranger, régler chacune, en créer d'autres." },
+    { id: "reg-ciel", title: "Ciel et alentours", intro: "Un lieu, et tout ce qui en découle : l'heure et la météo du ciel de l'accueil, la lune à sa place, le radar culturel." },
+    { id: "reg-assistant", title: "Assistant", intro: "Claude dans le tableau de bord : ce qu'il lit, ce qu'il peut faire, avec quel modèle." },
+    { id: "reg-connexions", title: "Connexions", intro: "Ce qui relie Selene au reste : un lien envoyé d'ailleurs, ta bibliothèque Zotero, et le passeur qui lit pour toi ce que le navigateur ne peut pas lire." },
+    { id: "reg-compte", title: "Compte et données", intro: "Emporter tes données, les ramener, et, en dernier recours, tout effacer." }
+  ];
+  var TIPS = {
+    palette: "Les quatre étapes du Grand Œuvre des alchimistes : nigredo, l'œuvre au noir (la mousse) ; albedo, au blanc (le lichen) ; citrinitas, au jaune (la résine) ; rubedo, au rouge (l'amanite). Seul l'accent change : les couleurs qui informent (retard, succès, alerte) restent les mêmes.",
+    mode: "« Suivre l'appareil » obéit au réglage clair ou sombre du système. « Suivre le soleil » passe en sombre au crépuscule et en clair à l'aube, au lieu réglé dans Ciel et alentours (à défaut, d'après ton fuseau horaire).",
+    name: "Le nom en tête de l'app et dans l'onglet du navigateur.",
+    openOn: "Propre à cet appareil : le téléphone peut rouvrir le dernier espace où tu étais, et l'ordinateur toujours l'accueil.",
+    espaces: "Un espace (un « module » dans la documentation) est une page de ta navigation, faite d'un type : tâches, collection, notes, budget… Deux espaces du même type ne partagent rien d'autre.",
+    domaine: "Un mot libre : Maison, Création… Les espaces d'un même domaine se regroupent dans la navigation et le sommaire de l'accueil, et prennent sa teinte. Laissé vide, l'espace se range sous « Espaces ».",
+    suppr: "✕ efface un espace et toutes ses données, sur tous tes appareils, une fois son nom retapé. L'Assistant n'a pas de données : il se décoche, c'est tout.",
+    regler: "Les réglages propres à l'espace : son sigil, ceux de son type (statuts, catégories, enveloppes…) et son regroupement. Ils s'ouvrent aussi depuis l'espace lui-même, par « régler ».",
+    sigil: "Le signe gravé de l'espace : dans la navigation, en tête de sa planche, et au tri de la boîte de réception. Sa teinte vient de son domaine.",
+    grouper: "Un registre au-dessus de la liste : une ligne par groupe (pièce, catégorie, étiquette…), avec son avancement en pourcentage.",
+    creer: "Un modèle arrive prêt à servir : statuts, catégories, sigil. Un type vide part de rien. Le nom est libre, et rien n'empêche d'avoir trois collections.",
+    lieu: "Un seul lieu sert à tout : le ciel et sa météo, « Suivre le soleil » et le radar culturel. Il est arrondi à une dizaine de kilomètres avant de quitter l'appareil.",
+    assistantKey: "Ta clé de la console Anthropic. Vérifiée, puis gardée chiffrée sur le serveur et attachée à ton compte : la page ne la revoit jamais. Chaque échange est facturé sur ton compte Anthropic : fixe-lui une limite de dépense dans la console.",
+    assistantModel: "Haiku répond vite et coûte le moins ; Opus raisonne le mieux et coûte le plus ; Sonnet se tient entre les deux.",
+    assistantActions: "Coché, Claude peut, quand tu le lui demandes, ajouter ou terminer une tâche (premier espace de tâches), déposer une note dans la boîte de réception et noter une opération (premier budget). Décoché, il lit et répond, rien de plus.",
+    assistantShare: "Claude ne voit que les espaces cochés. Un nouvel espace est coché d'office : décoche ce qui doit rester entre toi et toi.",
+    passeur: "Par sécurité, un navigateur refuse de lire la plupart des autres sites (la politique de même origine, que seul CORS assouplit). Le passeur, une petite fonction de ton projet Supabase, lit à ta place les pages, flux et calendriers, puis oublie tout.",
+    importer: "Importer remplace tout l'état actuel par celui du fichier, sur tous tes appareils : aucune fusion. Exporte d'abord, si tu tiens à ce que tu as."
+  };
+  var GUIDE = {
+    title: "Comment cette page est rangée",
+    body: "En chapitres, du plus courant au plus rare : l'apparence, tes espaces, le ciel, l'assistant, les connexions, puis ton compte et tes données. Un « ? » explique ce qui ne va pas de soi.",
+    device: "Un réglage suit ton compte sur tous tes appareils, sauf ceux marqués « cet appareil » : l'ouverture, le ciel vivant, les notifications, la clé Zotero et l'adresse du calendrier restent là où tu les as faits.",
+    wit: "Ce qui est irréversible le dit, et te fait retaper un nom : un peu de bureaucratie sauve des données.",
+    glossaryTitle: "Le vocabulaire de Selene",
+    dismiss: "Compris",
+    reopen: "Guide et vocabulaire"
+  };
+  var GLOSSARY = [
+    ["Espace", "Une page de ta navigation (un « module » dans la documentation), d'un type donné."],
+    ["Type", "La mécanique d'un espace : tâches, collection, notes, budget, programme, rappels, objectif cumulatif ou arc."],
+    ["Modèle", "Un type déjà garni (statuts, catégories, sigil), pour commencer sans rien régler."],
+    ["Domaine", "Un regroupement d'espaces (Maison, Création…) dans la navigation et l'accueil, avec sa teinte."],
+    ["Sigil, planche", "Le signe gravé d'un espace et son numéro (Pl. III), selon l'ordre de la navigation."],
+    ["Boîte de réception", "L'espace de notes qui reçoit la capture rapide ; ce qu'elle contient se range ensuite ailleurs."],
+    ["Passeur", "Ta fonction, sur le serveur, qui lit pour Selene ce que le navigateur n'a pas le droit de lire."],
+    ["Cet appareil", "Un réglage qui ne suit pas ton compte : il reste sur l'appareil où tu l'as fait."]
+  ];
+  var TEXTS = {
+    toc: "Sommaire",
+    tipAbout: (subject) => `En savoir plus : ${subject}`,
+    device: "cet appareil",
+    deviceTitle: "Ce réglage reste sur cet appareil : il ne suit pas ton compte.",
+    legend: "Coche pour afficher, renomme sur place, range par domaine, ordonne avec ↑ ↓, et ✕ pour supprimer.",
+    domaine: "Domaine",
+    suppr: "Supprimer",
+    reglerShort: "régler",
+    regler: (name) => `Régler « ${name} »`,
+    assistantHere: "réglé au chapitre Assistant",
+    create: "Créer un espace",
+    fromTemplate: "D'un modèle",
+    fromTemplateHint: "Prêts à servir, tout se renomme ensuite.",
+    add: "Créer",
+    addAria: (name) => `Créer un espace « ${name} »`,
+    custom: "Sur mesure",
+    customHint: "Un modèle sous un autre nom, ou un type vide.",
+    sigil: "Sigil",
+    assistantOff: "L'assistant est éteint. Coche « Assistant » parmi tes espaces : il lira ce que tu lui confies et, si tu l'y autorises, agira pour toi.",
+    toEspaces: "Aller aux espaces",
+    artifactOnly: "Les connexions (Envoyer à Selene, Zotero, le passeur, le calendrier) vivent dans la version web ou l'app installée. L'artefact claude.ai s'en passe.",
+    danger: "Zone sensible"
+  };
+
   // src/app/views/reglages.js
   var PALETTES = [["nigredo", "Nigredo, mousse", "#6f9a68"], ["albedo", "Albedo, lichen", "#aab7a6"], ["citrinitas", "Citrinitas, résine", "#c99a3c"], ["rubedo", "Rubedo, amanite", "#c0554a"]];
-  VIEWS.reglages = () => {
-    const s = S(), c = s.config;
-    return `<h2>Réglages</h2><p class="hint">Tout ici s'applique immédiatement.</p>
-  <section><h3>Apparence</h3><p class="hint">Quatre étapes de l'Œuvre, prises dans le sous-bois.</p>
+  var signedIn = () => hosted() && authReady() && authSession;
+  var about = (subject) => TEXTS.tipAbout(subject);
+  function chapter(id, body, tipText = "") {
+    const i = CHAPTERS.findIndex((c2) => c2.id === id), c = CHAPTERS[i];
+    return `<section class="chap" id="${c.id}" aria-labelledby="${c.id}-h"><div class="chap-h"><span class="n">${roman(i + 1)}</span><h3 id="${c.id}-h" tabindex="-1">${esc(c.title)}</h3>${tipText ? tip(tipText, about(c.title)) : ""}</div>
+    <p class="hint">${esc(c.intro)}</p>${body}</section>`;
+  }
+  var sub = (title, tipText = "") => `<div class="reg-head"><h4>${esc(title)}</h4>${tipText ? tip(tipText, about(title)) : ""}</div>`;
+  var device = () => `<span class="dev" title="${esc(TEXTS.deviceTitle)}">${esc(TEXTS.device)}</span>`;
+  var fieldSeq = 0;
+  function field(text, control, { tip: tipText = "", local = false } = {}) {
+    const id = `fld-${++fieldSeq}`;
+    return `<div class="fld"><span class="fld-h"><span id="${id}">${esc(text)}</span>${local ? device() : ""}${tipText ? tip(tipText, about(text)) : ""}</span>${control(id)}</div>`;
+  }
+  var opt = (value, text, cur) => `<option value="${esc(value)}" ${cur === value ? "selected" : ""}>${esc(text)}</option>`;
+  var GUIDE_KEY = "selene-reglages-guide";
+  var guideOpen = () => {
+    try {
+      return platform.storage.get(GUIDE_KEY) !== "vu";
+    } catch {
+      return true;
+    }
+  };
+  function guideHTML() {
+    return `<aside class="reg-guide" aria-label="${esc(GUIDE.title)}"><p class="reg-guide-t">${esc(GUIDE.title)}</p><p>${esc(GUIDE.body)}</p><p>${esc(GUIDE.device)}</p>
+    <details id="reg-lexique"><summary>${esc(GUIDE.glossaryTitle)}</summary><dl class="lex">${GLOSSARY.map(([t, d]) => `<dt>${esc(t)}</dt><dd>${esc(d)}</dd>`).join("")}</dl></details>
+    <p class="hint">${esc(GUIDE.wit)}</p><button type="button" class="btn sm" data-act="reg-guide" data-v="vu">${esc(GUIDE.dismiss)}</button></aside>`;
+  }
+  function tocHTML() {
+    return `<nav class="reg-toc" aria-label="${esc(TEXTS.toc)}"><p class="grp">${esc(TEXTS.toc)}</p><ol>${CHAPTERS.map((c, i) => `<li><button type="button" data-act="reg-goto" data-to="${c.id}"><span class="n">${roman(i + 1)}</span>${esc(c.title)}</button></li>`).join("")}</ol>
+    ${guideOpen() ? "" : `<button type="button" class="btn ghost sm" data-act="reg-guide" data-v="">${esc(GUIDE.reopen)}</button>`}</nav>`;
+  }
+  function apparenceHTML(c) {
+    return `${sub("Palette", TIPS.palette)}<p class="hint">Quatre étapes de l'Œuvre, prises dans le sous-bois.</p>
     <div class="swatches">${PALETTES.map(([id, n, col]) => `<button class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}"><i style="background:${col}"></i>${n}</button>`).join("")}</div>
-    <div class="field-row" style="margin-top:14px"><label>Mode<select data-set="config.mode"><option value="auto" ${c.mode === "auto" ? "selected" : ""}>Suivre l'appareil</option><option value="dark" ${c.mode === "dark" ? "selected" : ""}>Toujours sombre</option><option value="light" ${c.mode === "light" ? "selected" : ""}>Toujours clair</option><option value="sun" ${c.mode === "sun" ? "selected" : ""}>Suivre le soleil</option></select></label>
-    <label>Nom affiché<input data-set="config.name" value="${esc(c.name)}"></label></div>
-    <div class="field-row" style="margin-top:12px"><label>Ouvrir sur (cet appareil)<select data-act="open-on"><option value="accueil" ${openOn() === "accueil" ? "selected" : ""}>L'accueil</option><option value="last" ${openOn() === "last" ? "selected" : ""}>Là où j'en étais</option></select></label><span></span></div></section>
-  ${notifySettingsHTML()}
-  ${skySettingsHTML()}
-  ${radarSettingsHTML()}
-  <section><h3>Modules</h3><p class="hint">Active, renomme, réordonne, range par domaine (Maison, Création… : la navigation les regroupe). Les modules personnalisés (marqués ✕) peuvent être supprimés définitivement.</p>
+    <div class="field-row" style="margin-top:18px">${field("Mode", (id) => `<select aria-labelledby="${id}" data-set="config.mode">${opt("auto", "Suivre l'appareil", c.mode)}${opt("dark", "Toujours sombre", c.mode)}${opt("light", "Toujours clair", c.mode)}${opt("sun", "Suivre le soleil", c.mode)}</select>`, { tip: TIPS.mode })}
+    ${field("Nom affiché", (id) => `<input aria-labelledby="${id}" data-set="config.name" value="${esc(c.name)}">`, { tip: TIPS.name })}</div>
+    <div class="field-row" style="margin-top:12px">${field("Ouvrir sur", (id) => `<select aria-labelledby="${id}" data-act="open-on">${opt("accueil", "L'accueil", openOn())}${opt("last", "Là où j'en étais", openOn())}</select>`, { tip: TIPS.openOn, local: true })}<span></span></div>
+    ${notifySettingsHTML()}`;
+  }
+  var typeName = (type) => String(MODULE_TYPES[type]?.label || "").split(" (")[0];
+  function modBlock(s, m, i) {
+    const name = label(m.id), inst = s.modules[m.id], sys = SYSTEM.includes(m.id);
+    const settings = enabled(m.id) && (inst || grouperFor(m.id));
+    return `<div class="modblock ${tintOf(m.id)}${m.on ? "" : " off"}">
+    <div class="set mod" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="Activer ${esc(name)}"><div class="mod-name">${sigil(m.id)}<input data-act="mod-label" value="${esc(name)}" aria-label="Nom du module"></div>${sys ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="${esc(TEXTS.domaine)}" aria-label="Domaine de ${esc(name)}">`}<div class="row">${inst ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="Supprimer définitivement" title="Supprimer définitivement">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="Descendre">↓</button></div></div>
+    ${settings ? `<details id="mreg-${esc(m.id)}" data-mod="${esc(m.id)}" class="mreg"><summary aria-label="${esc(TEXTS.regler(name))}">${esc(TEXTS.reglerShort)}${inst ? `<span class="mreg-type">${esc(typeName(inst.type))}</span>` : ""}</summary><div class="mreg-body">${moduleSettingsHTML(m.id)}</div></details>` : sys && m.on ? `<p class="mreg-note"><button type="button" class="btn ghost sm" data-act="reg-goto" data-to="reg-assistant">› ${esc(TEXTS.assistantHere)}</button></p>` : ""}
+  </div>`;
+  }
+  function espacesHTML(s, c) {
+    return `<p class="hint">${esc(TEXTS.legend)}</p>
+    <p class="reg-keys"><span>${esc(TEXTS.domaine)}${tip(TIPS.domaine, about(TEXTS.domaine))}</span><span>✕ ${esc(TEXTS.suppr)}${tip(TIPS.suppr, about(TEXTS.suppr))}</span><span>› ${esc(TEXTS.reglerShort)}${tip(TIPS.regler, about(TEXTS.reglerShort))}</span></p>
     <datalist id="domainList">${[...new Set(c.modules.map((m) => String(m.group || "").trim()).filter(Boolean))].map((g) => `<option value="${esc(g)}">`).join("")}</datalist>
-    ${c.modules.map((m, i) => `<div class="set mod" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="Activer ${esc(label(m.id))}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="Nom du module">${SYSTEM.includes(m.id) ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="Domaine" aria-label="Domaine de ${esc(label(m.id))}">`}<div class="row">${s.modules[m.id] ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="Supprimer définitivement" title="Supprimer définitivement">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="Descendre">↓</button></div></div>`).join("")}
-    <details style="margin-top:14px"><summary class="hint" style="cursor:pointer;margin:0">+ Créer un module</summary>
-      <div class="field-row" style="margin-top:10px"><label>Modèle ou type<select id="newModType"><optgroup label="Modèles">${MODULE_TEMPLATES.map((t) => `<option value="tpl:${esc(t.id)}">${esc(t.name)} — ${esc(t.hint)}</option>`).join("")}</optgroup><optgroup label="Types vides">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}">${esc(t.label)}</option>`).join("")}</optgroup></select></label>
+    <div class="modlist">${c.modules.map((m, i) => modBlock(s, m, i)).join("")}</div>
+    <details id="mod-new" class="newmod"><summary class="btn sm">+ ${esc(TEXTS.create)}</summary><div class="newmod-body">
+      ${sub(TEXTS.fromTemplate, TIPS.creer)}<p class="hint">${esc(TEXTS.fromTemplateHint)}</p>
+      <div class="tpl-grid">${MODULE_TEMPLATES.map((t) => `<div class="tpl"><div><b>${esc(t.name)}</b><p class="hint">${esc(t.hint)}</p></div><button type="button" class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}" aria-label="${esc(TEXTS.addAria(t.name))}">${esc(TEXTS.add)}</button></div>`).join("")}</div>
+      ${sub(TEXTS.custom)}<p class="hint">${esc(TEXTS.customHint)}</p>
+      <div class="field-row"><label>Modèle ou type<select id="newModType"><optgroup label="Modèles">${MODULE_TEMPLATES.map((t) => `<option value="tpl:${esc(t.id)}" title="${esc(t.hint)}">${esc(t.name)}</option>`).join("")}</optgroup><optgroup label="Types vides">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}" title="${esc(t.label)}">${esc(typeName(k))}</option>`).join("")}</optgroup></select></label>
       <label>Nom<input id="newModName" placeholder="Nom du modèle si vide"></label></div>
-      <button class="btn sm" data-act="mod-add" style="margin-top:8px">Créer</button></details>
-  </section>
-  <section id="modreg"><h3>Réglages par module</h3><p class="hint">Un bloc par module actif, dans l'ordre de la navigation : ses réglages propres, et le regroupement en pourcentage quand il existe.</p>
-    ${c.modules.filter((m) => enabled(m.id) && (s.modules[m.id] || grouperFor(m.id))).map((m) => `<details id="mreg-${esc(m.id)}" data-mod="${esc(m.id)}" style="border-top:1px solid var(--rule);padding:12px 0">
-        <summary style="cursor:pointer;font-size:1.05rem;font-weight:600">${esc(label(m.id))}</summary>
-        <div style="margin-top:10px">${moduleSettingsHTML(m.id)}</div>
-      </details>`).join("")}
-  </section>
-  ${enabled("assistant") ? `<section id="assistant-cfg"><h3>Assistant</h3><p class="hint">Claude dans le tableau de bord. Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.</p>
-    <div class="field-row">${hosted() ? `<label>Clé API Anthropic${assistantKnown()?.cle ? ` (enregistrée : ${esc(assistantKnown().indice || "")})` : ""}<input type="password" data-act="as-key" value="" placeholder="${assistantKnown()?.cle ? "Coller une autre clé pour la remplacer" : "sk-ant-…"}" autocomplete="off"></label>` : ""}
-    <label>Modèle<select data-act="as-model">${[["claude-haiku-4-5-20251001", "Haiku 4.5, rapide et peu cher"], ["claude-sonnet-5", "Sonnet 5, équilibré"], ["claude-opus-5-5", "Opus 5.5, le plus capable"]].map(([k, l]) => `<option value="${k}" ${s.config.assistant.model === k ? "selected" : ""}>${l}</option>`).join("")}</select></label></div>
-    <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" data-act="as-actions" ${s.config.assistant.actions ? "checked" : ""}>Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)</label>
-    <p class="hint" style="margin:12px 0 4px">Ce que Claude peut lire :</p><div class="row">${Object.keys(s.config.assistant.share).filter(enabled).map((k) => `<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" data-act="as-share" data-k="${esc(k)}" ${s.config.assistant.share[k] ? "checked" : ""}>${esc(label(k))}</label>`).join("")}</div>
-    ${hosted() && assistantKnown()?.cle ? `<button class="btn ghost sm" data-act="as-forget" style="margin-top:10px">Oublier la clé (sur tous tes appareils)</button>` : ""}</section>` : ""}
-  ${hosted() && authReady() && authSession ? `<section><h3>Compte</h3><p class="hint">Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.</p>
-    <button class="btn ghost" data-act="auth-out">Se déconnecter</button>
-    <details id="auth-delete" style="margin-top:16px"><summary class="hint" style="cursor:pointer;margin:0">Supprimer mon compte</summary>
-      <p class="hint" style="margin-top:8px">Définitif : ton compte, tout ton tableau de bord sur le serveur et ta clé d'assistant sont effacés, puis cet appareil est vidé. Tes autres appareils perdent l'accès. Exporte d'abord une sauvegarde (plus bas) si tu veux garder quelque chose. Politique de confidentialité : <a href="https://mariebonifacio.github.io/selene/confidentialite.html" target="_blank" rel="noopener">ce que Selene garde, et où</a>.</p>
+      <button class="btn sm" data-act="mod-add" style="margin-top:8px">${esc(TEXTS.add)}</button></div></details>`;
+  }
+  function assistantHTML(s) {
+    if (!enabled("assistant")) return `<p class="empty">${esc(TEXTS.assistantOff)}</p><button type="button" class="btn sm" data-act="reg-goto" data-to="reg-espaces">${esc(TEXTS.toEspaces)}</button>`;
+    const a = s.config.assistant, known = assistantKnown();
+    return `<section id="assistant-cfg"><p class="hint">Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.</p>
+    <div class="field-row">${hosted() ? field(`Clé API Anthropic${known?.cle ? ` (enregistrée : ${known.indice || ""})` : ""}`, (id) => `<input type="password" aria-labelledby="${id}" data-act="as-key" value="" placeholder="${known?.cle ? "Coller une autre clé pour la remplacer" : "sk-ant-…"}" autocomplete="off">`, { tip: TIPS.assistantKey }) : ""}
+    ${field("Modèle", (id) => `<select aria-labelledby="${id}" data-act="as-model">${[["claude-haiku-4-5-20251001", "Haiku 4.5, rapide et peu cher"], ["claude-sonnet-5", "Sonnet 5, équilibré"], ["claude-opus-5-5", "Opus 5.5, le plus capable"]].map(([k, l]) => opt(k, l, a.model)).join("")}</select>`, { tip: TIPS.assistantModel })}</div>
+    <div class="row" style="margin-top:12px"><label class="check-l"><input type="checkbox" data-act="as-actions" ${a.actions ? "checked" : ""}>Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)</label>${tip(TIPS.assistantActions, about("Autoriser Claude à modifier le tableau de bord"))}</div>
+    <div class="fld-h" style="margin:16px 0 6px"><span>Ce que Claude peut lire</span>${tip(TIPS.assistantShare, about("Ce que Claude peut lire"))}</div><div class="row">${Object.keys(a.share).filter(enabled).map((k) => `<label class="check-l"><input type="checkbox" data-act="as-share" data-k="${esc(k)}" ${a.share[k] ? "checked" : ""}>${esc(label(k))}</label>`).join("")}</div>
+    ${hosted() && known?.cle ? `<button class="btn ghost sm" data-act="as-forget" style="margin-top:10px">Oublier la clé (sur tous tes appareils)</button>` : ""}</section>`;
+  }
+  function connexionsHTML() {
+    if (!hosted()) return `<p class="empty">${esc(TEXTS.artifactOnly)}</p>`;
+    return `${shareSettingsHTML()}${zotSettingsHTML()}${signedIn() ? passeurSettingsHTML() + agendaSettingsHTML() : ""}`;
+  }
+  function compteHTML() {
+    return `<section>${sub("Sauvegarde")}<p class="hint">Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.</p>
+    <div class="row"><button class="btn" data-act="exp">Exporter</button><label class="btn" style="display:inline-block;font-weight:500">Importer<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label>${tip(TIPS.importer, about("Importer"))}</div></section>
+  ${signedIn() ? `<section>${sub("Compte")}<p class="hint">Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.</p>
+    <button class="btn ghost" data-act="auth-out">Se déconnecter</button></section>
+  <section class="danger">${sub(TEXTS.danger)}
+    <details id="auth-delete"><summary class="hint">Supprimer mon compte</summary>
+      <p class="hint" style="margin-top:8px">Définitif : ton compte, tout ton tableau de bord sur le serveur et ta clé d'assistant sont effacés, puis cet appareil est vidé. Tes autres appareils perdent l'accès. Exporte d'abord une sauvegarde (plus haut) si tu veux garder quelque chose. Politique de confidentialité : <a href="https://mariebonifacio.github.io/selene/confidentialite.html" target="_blank" rel="noopener">ce que Selene garde, et où</a>.</p>
       <div class="field-row"><label>Tape « supprimer » pour confirmer<input id="authDelIn" autocomplete="off" autocapitalize="off" spellcheck="false"></label><span></span></div>
       <button class="btn sm" data-act="auth-delete" style="margin-top:8px;color:var(--alarm)">Supprimer définitivement</button></details></section>` : ""}
-  ${hosted() ? shareSettingsHTML() : ""}
-  ${hosted() && authReady() && authSession ? passeurSettingsHTML() : ""}
-  ${hosted() && authReady() && authSession ? agendaSettingsHTML() : ""}
-  ${hosted() ? zotSettingsHTML() : ""}
-  <section><h3>Sauvegarde</h3><p class="hint">Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.</p>
-    <div class="row"><button class="btn" data-act="exp">Exporter</button><label class="btn" style="display:inline-block;font-weight:500">Importer<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label></div></section>
   <p class="hint" style="margin-top:24px"><a href="https://mariebonifacio.github.io/selene/confidentialite.html" target="_blank" rel="noopener">Confidentialité</a> : aucun traceur, aucune publicité ; ce que Selene garde, où, et comment tout effacer.</p>`;
+  }
+  VIEWS.reglages = () => {
+    const s = S(), c = s.config;
+    setTimeout(markChapter, 0);
+    return `<h2>Réglages</h2><p class="hint">Tout ici s'applique immédiatement.</p>
+  ${guideOpen() ? guideHTML() : ""}
+  <div class="reg">${tocHTML()}<div class="reg-body">
+    ${chapter("reg-apparence", apparenceHTML(c))}
+    ${chapter("reg-espaces", espacesHTML(s, c), TIPS.espaces)}
+    ${chapter("reg-ciel", skySettingsHTML() + radarSettingsHTML(), TIPS.lieu)}
+    ${chapter("reg-assistant", assistantHTML(s))}
+    ${chapter("reg-connexions", connexionsHTML(), signedIn() ? TIPS.passeur : "")}
+    ${chapter("reg-compte", compteHTML())}
+  </div></div>`;
   };
   function moduleSettingsHTML(mod) {
     const s = S(), inst = s.modules[mod], G = grouperFor(mod), g = G ? gcfg(mod) : null, by = G ? groupBy(mod) : null;
     const names = G && G.renamable.includes(by) ? [...new Set(G.items().map((it) => it[by]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr")) : [];
-    return `${sigilPicker(mod)}
+    return `<div class="fld-h" style="margin:0 0 6px"><span>${esc(TEXTS.sigil)}</span>${tip(TIPS.sigil, about(TEXTS.sigil))}</div>${sigilPicker(mod)}
         ${inst ? TYPE_UI[inst.type].settings(mod, inst) : ""}
-        ${G ? `<div class="row" style="margin-top:0"><label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="grp-on" ${g.on ? "checked" : ""}>Regrouper en pourcentage</label></div>
+        ${G ? `<div class="row" style="margin-top:0"><label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="grp-on" ${g.on ? "checked" : ""}>Regrouper en pourcentage</label>${tip(TIPS.grouper, about("Regrouper en pourcentage"))}</div>
           ${g.on ? `<div class="field-row" style="margin-top:8px">
             <label>Regrouper par<select data-act="grp-by">${Object.entries(G.fields).map(([k, l]) => `<option value="${esc(k)}" ${by === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
             <label>Trier par<select data-act="grp-sort"><option value="name" ${g.sort === "name" ? "selected" : ""}>Ordre naturel</option><option value="pct" ${g.sort === "pct" ? "selected" : ""}>Le plus avancé d'abord</option><option value="left" ${g.sort === "left" ? "selected" : ""}>Le plus en retard d'abord</option></select></label></div>
@@ -5221,6 +5475,43 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
             ${names.length ? `<details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">Renommer ou fusionner des ${esc(G.fields[by].toLowerCase())}s</summary><p class="hint" style="margin:6px 0">Donne le même nom à deux groupes pour les fusionner.</p>${names.map((n) => `<div class="set" style="grid-template-columns:1fr"><input data-act="grp-rename" data-old="${esc(n)}" value="${esc(n)}" aria-label="Renommer ${esc(n)}"></div>`).join("")}</details>` : ""}
            ` : ""}` : ""}`;
   }
+  function markChapter() {
+    if (routeOf().view !== "reglages") return;
+    const chaps = [...$("#main").querySelectorAll(".chap")], toc = chaps.length && document.querySelector(".reg-toc");
+    if (!toc) return;
+    let cur = chaps[0].id;
+    for (const ch of chaps) if (ch.getBoundingClientRect().top < 160) cur = ch.id;
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) cur = chaps[chaps.length - 1].id;
+    toc.querySelectorAll("[data-to]").forEach((b) => {
+      if (b.dataset.to === cur) b.setAttribute("aria-current", "true");
+      else b.removeAttribute("aria-current");
+    });
+  }
+  var spyQueued = false;
+  window.addEventListener("scroll", () => {
+    if (spyQueued) return;
+    spyQueued = true;
+    requestAnimationFrame(() => {
+      spyQueued = false;
+      markChapter();
+    });
+  }, { passive: true });
+  CLICK["reg-goto"] = (el) => {
+    const ch = document.getElementById(el.dataset.to);
+    if (!ch) return;
+    ch.scrollIntoView({ block: "start" });
+    const h = ch.querySelector("h3");
+    if (h) h.focus({ preventScroll: true });
+  };
+  CLICK["reg-guide"] = (el) => {
+    if (el.dataset.v) platform.storage.set(GUIDE_KEY, el.dataset.v);
+    else platform.storage.remove(GUIDE_KEY);
+    render();
+    if (!el.dataset.v) {
+      const g = document.querySelector(".reg-guide");
+      if (g) g.scrollIntoView({ block: "nearest" });
+    }
+  };
   CLICK["mod-add"] = () => {
     const choice = $("#newModType").value, tpl = MODULE_TEMPLATES.find((t) => "tpl:" + t.id === choice);
     const name = $("#newModName").value.trim() || (tpl ? tpl.name : "");
@@ -5406,9 +5697,9 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     const sc = skyConf(), w = sc && sc.weather !== false ? freshWeather(sc) : null;
     if (!w || !Array.isArray(w.days) || !w.days.length) return "";
     const today = todayISO(), rain = rainDays(w.days, today, 5), day = (d) => fmt(d, { weekday: "short", day: "numeric" });
-    const tip = `title="Prévision Open-Meteo pour ${esc(sc.name)}, cinq jours"`;
-    if (!rain.length) return `<span class="wx" ${tip}>sec jusqu'à ${esc(day(addDaysTo(today, 4)))}</span>`;
-    return `<span class="wx rain" ${tip}>pluie prévue ${esc(rain.map(day).join(", "))}${t.due && rain.includes(t.due) ? ", le jour prévu" : ""}</span>`;
+    const tip2 = `title="Prévision Open-Meteo pour ${esc(sc.name)}, cinq jours"`;
+    if (!rain.length) return `<span class="wx" ${tip2}>sec jusqu'à ${esc(day(addDaysTo(today, 4)))}</span>`;
+    return `<span class="wx rain" ${tip2}>pluie prévue ${esc(rain.map(day).join(", "))}${t.due && rain.includes(t.due) ? ", le jour prévu" : ""}</span>`;
   }
   function taskHTML(id, t) {
     const c = S().modules[id].config, d = dueLabel(t), sd = (t.steps || []).filter((x) => x.d).length, ef = Math.min(3, Math.max(1, Math.round(+t.effort) || 1));
@@ -6520,13 +6811,13 @@ ${contextText()}`;
     },
     settings: (id, { config: c }) => {
       const f = c.fields, fid = esc(id);
-      const field = (k, l, hint) => `<label>${l}<input data-set-mod="${fid}.fields.${k}" value="${esc(f[k])}" placeholder="${hint}" ${k === "title" ? "required" : ""}></label>`;
+      const field2 = (k, l, hint) => `<label>${l}<input data-set-mod="${fid}.fields.${k}" value="${esc(f[k])}" placeholder="${hint}" ${k === "title" ? "required" : ""}></label>`;
       return `<div class="field-row"><label>Affichage<select data-set-mod="${fid}.display"><option value="liste" ${c.display === "liste" ? "selected" : ""}>Liste filtrable</option><option value="colonnes" ${c.display === "colonnes" ? "selected" : ""}>Colonnes (une par statut)</option></select></label><label>Bouton d'ajout<input data-set-mod="${fid}.addLabel" value="${esc(c.addLabel)}" required></label></div>
     <div class="field-row" style="margin-top:8px"><label>Description<input data-set-mod="${fid}.description" value="${esc(c.description)}" placeholder="Une phrase sous le titre"></label><label>Nom des statuts<input data-set-mod="${fid}.statusLabel" value="${esc(c.statusLabel)}" required></label></div>
     <p class="hint" style="margin:12px 0 4px">Champs d'un élément. Laisser un nom vide masque le champ.</p>
-    <div class="field-row">${field("title", "Titre", "Titre")}${field("subtitle", "Sous-titre", "(masqué)")}</div>
-    <div class="field-row" style="margin-top:8px">${field("tag", "Étiquette (sert au regroupement)", "(masquée)")}${field("due", "Date", "(masquée)")}</div>
-    <div class="field-row" style="margin-top:8px">${field("text", "Texte long", "(masqué)")}<span></span></div>
+    <div class="field-row">${field2("title", "Titre", "Titre")}${field2("subtitle", "Sous-titre", "(masqué)")}</div>
+    <div class="field-row" style="margin-top:8px">${field2("tag", "Étiquette (sert au regroupement)", "(masquée)")}${field2("due", "Date", "(masquée)")}</div>
+    <div class="field-row" style="margin-top:8px">${field2("text", "Texte long", "(masqué)")}<span></span></div>
     <div style="margin-top:10px"><span class="hint" style="margin:0">${esc(c.statusLabel)}s, dans l'ordre</span>${c.statuses.map((st, i) => `<div class="set" data-si="${i}" style="grid-template-columns:1fr auto"><input data-act="st-name" data-mod="${fid}" value="${esc(st)}" aria-label="Nom du statut"><div class="row"><button class="btn ghost sm" data-act="st-up" data-mod="${fid}" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="st-del" data-mod="${fid}">suppr.</button></div></div>`).join("")}<button class="btn sm" data-act="st-add" data-mod="${fid}" style="margin-top:8px">Ajouter un statut</button></div>
     <div class="field-row" style="margin-top:10px"><label>Compte comme fait à partir de<select data-act="col-done" data-mod="${fid}">${c.statuses.map((st, i) => i ? `<option value="${i}" ${c.doneFrom === i ? "selected" : ""}>${esc(st)}</option>` : "").join("")}</select></label><span></span></div>
     <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-concordance" data-mod="${fid}" ${c.concordance ? "checked" : ""}>Concordance : chaque élément est un motif, compté dans les textes de tous les autres modules (variantes dans le sous-titre)</label>
@@ -7678,7 +7969,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     } finally {
       clearTimeout(t);
     }
-    if (r.status === 429) throw new Error("OpenAlex : quota du jour atteint (une clé gratuite, dans Réglages → Dehors, le décuple).");
+    if (r.status === 429) throw new Error("OpenAlex : quota du jour atteint (une clé gratuite, dans Dehors, le décuple).");
     if (!r.ok) throw Object.assign(new Error(`OpenAlex répond ${r.status}.`), { status: r.status });
     return r.json();
   }
@@ -8368,6 +8659,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     if (view === lastView) $("#main").querySelectorAll("input[id],textarea[id],select[id]").forEach((el) => {
       if (el.type !== "file" && el.type !== "checkbox") keep[el.id] = el.value;
     });
+    const opened = view === lastView ? [...$("#main").querySelectorAll("details[id][open]")].map((d) => d.id) : [];
     if (document.activeElement && document.activeElement.id && keep[document.activeElement.id] != null) {
       focusId = document.activeElement.id;
       try {
@@ -8383,6 +8675,10 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     for (const [id, v] of Object.entries(keep)) {
       const el = document.getElementById(id);
       if (el && v !== "" && el.value !== v) el.value = v;
+    }
+    for (const id of opened) {
+      const el = document.getElementById(id);
+      if (el && el.tagName === "DETAILS") el.open = true;
     }
     if (view !== lastView) $("#main").querySelectorAll("[data-draft]").forEach((el) => {
       const v = loadDraft(view, el);
@@ -8459,8 +8755,8 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     const out = [];
     for (const k of platform.storage.keys()) {
       if (!k.startsWith(DRAFT_PREFIX)) continue;
-      const [view, field] = k.slice(DRAFT_PREFIX.length).split(":");
-      if (view !== "accueil") out.push({ view, what: DRAFT_WHAT[field] || "un texte" });
+      const [view, field2] = k.slice(DRAFT_PREFIX.length).split(":");
+      if (view !== "accueil") out.push({ view, what: DRAFT_WHAT[field2] || "un texte" });
     }
     return out;
   }
@@ -9015,7 +9311,7 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
     const { mod, e } = hit, inst = S().modules[mod], c = inst.config, text = String(e.text || e.note || "");
     const thought = inst.type === "notes" || inst.type === "cumul" && (inst.scraps || []).includes(e);
     const long = (d) => fmt(d, { day: "numeric", month: "long", year: "numeric" }), when = e.date || e.due || e.created;
-    const chapter = inst.type === "cumul" && e.category ? (c.categories.find((x) => x.id === e.category) || {}).name : "";
+    const chapter2 = inst.type === "cumul" && e.category ? (c.categories.find((x) => x.id === e.category) || {}).name : "";
     const links = [...(e.links || []).map((l) => `<li>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</li>`), ...(backlinks().get(`${mod}/${e.id}`) || []).map((b) => `<li>${esc(LINK_BACK[b.type])} ${refHTML(b.from)}</li>`)];
     const motifs = motifsOf([e.title, e.subtitle, text].filter(Boolean).join(" "));
     const statusOf = (k) => k ? EP_STATUS[k] : "sans statut";
@@ -9025,7 +9321,7 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
     <div class="plate">${sigil(mod)}<span class="pl">${esc(label(mod))}</span></div>
     ${e.title ? `<h2 id="sheetTitle">${esc(e.title)}</h2>${e.subtitle ? `<p class="hint">${esc(e.subtitle)}</p>` : ""}` : `<h2 id="sheetTitle" class="sr">Fiche de l'entrée</h2>`}
     ${text ? `<blockquote class="spec-text">${esc(text)}</blockquote>` : ""}
-    <p class="spec-label">${[when ? long(when) : "", chapter, e.tag, e.status].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join("")}${e.ep ? `<span>${epGlyph(e.ep)}${esc(EP_STATUS[e.ep])}</span>` : ""}</p>
+    <p class="spec-label">${[when ? long(when) : "", chapter2, e.tag, e.status].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join("")}${e.ep ? `<span>${epGlyph(e.ep)}${esc(EP_STATUS[e.ep])}</span>` : ""}</p>
     ${thought ? `<div class="row">${epSelect(mod, e)}<span class="spacer"></span>${links.length ? `<button class="btn ghost sm" data-act="carte" data-k="ref" data-v="${esc(mod)}/${esc(e.id)}">carte du voisinage</button>` : ""}<button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></div>` : inst.type === "collection" && inst.config.sources ? `<div class="row"><span class="spacer"></span><button class="btn ghost sm" data-act="src-link" data-ref="${esc(mod)}/${esc(e.id)}">documente…</button></div>` : ""}
     ${e.src ? `<p class="meta">${srcMeta(e)}</p>` : ""}
     ${e.origin ? `<h3>Provenance</h3><p class="meta">${originHTML(e, text || e.title)}</p>` : ""}

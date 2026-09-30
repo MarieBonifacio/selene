@@ -71,7 +71,7 @@ export function pageToSource(html, base) {
 /* Réglages → Passeur : son état, ton identifiant (pour le secret PASSEUR_USERS), une vérification à la demande. */
 export function passeurSettingsHTML() {
   const st = passeurEtat === "ok" ? "Déployé et ouvert à ton compte." : passeurEtat === "absent" ? "Pas encore déployé, ou pas encore configuré." : passeurEtat ? `Refusé : ${passeurEtat}.` : "Pas encore vérifié sur cet appareil.";
-  return `<section id="passeur"><h3>Passeur</h3><p class="hint">Une petite fonction dans ton projet Supabase qui lit pour toi les pages, flux et calendriers que le navigateur ne peut pas lire seul. Elle ne sert que ton compte, refuse toute adresse privée et ne garde rien. Sans elle, les pages passent par Microlink.</p>
+  return `<section id="passeur"><h4>Passeur</h4><p class="hint">Une petite fonction dans ton projet Supabase qui lit pour toi les pages, flux et calendriers que le navigateur ne peut pas lire seul. Elle ne sert que ton compte, refuse toute adresse privée et ne garde rien. Sans elle, les pages passent par Microlink.</p>
     <p class="row" style="margin:0 0 8px"><span data-passeur-etat>${esc(st)}</span><button class="btn sm" data-act="passeur-check">Vérifier</button></p>
     <p class="hint">Ton identifiant, à mettre dans le secret <code>PASSEUR_USERS</code> : <code style="word-break:break-all">${esc(authSession.user.id)}</code> <button class="btn ghost sm" data-act="passeur-copy">copier</button>. Mode d'emploi : <a href="https://github.com/MarieBonifacio/selene/blob/main/docs/passeur.md" target="_blank" rel="noopener noreferrer">docs/passeur.md</a>.</p></section>`;
 }

@@ -83,7 +83,7 @@ CLICK["radar-keep"] = el => {
 };
 export function radarSettingsHTML() {
   const c = radarPlace();
-  return `<section id="radar"><h3>Radar culturel</h3><p class="hint">Sur demande, depuis l'accueil : les événements à 20 km du lieu réglé dans Ciel (OpenAgenda, partout en France) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification. Changer de lieu, c'est changer de radar.</p>
+  return `<section id="radar"><h4>Radar culturel</h4><p class="hint">Sur demande, depuis l'accueil : les événements à 20 km du lieu réglé dans Ciel (OpenAgenda, partout en France) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification. Changer de lieu, c'est changer de radar.</p>
     <label>Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)<input data-act="radar-words" value="${esc(radarConf().words)}" placeholder="poésie, jazz, photographie, lecture…" maxlength="300" autocomplete="off"></label>
     ${c ? `<p class="hint" style="margin-top:6px">Autour de ${esc(c.name)}.</p>` : `<p class="hint" style="margin-top:6px">Il lui faut un lieu : règle-le dans Ciel, ci-dessus.</p>`}</section>`;
 }

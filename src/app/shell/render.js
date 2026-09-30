@@ -67,6 +67,8 @@ function renderNow() {
   const keep = {}; let focusId = null, caret = null;
   $("#main").querySelectorAll("[data-draft]").forEach(el => saveDraft(lastView, el)); // un champ vidé par l'envoi efface son brouillon
   if (view === lastView) $("#main").querySelectorAll("input[id],textarea[id],select[id]").forEach(el => { if (el.type !== "file" && el.type !== "checkbox") keep[el.id] = el.value; });
+  // Un bloc déplié (details à identifiant : les réglages d'un espace) le reste après un changement fait dedans.
+  const opened = view === lastView ? [...$("#main").querySelectorAll("details[id][open]")].map(d => d.id) : [];
   if (document.activeElement && document.activeElement.id && keep[document.activeElement.id] != null) { focusId = document.activeElement.id; try { caret = document.activeElement.selectionStart; } catch {} }
   const back = backTo && backTo.to === view ? `<a class="back" href="#${esc(backTo.from)}">‹ ${esc(backTo.label)}</a>` : "";
   // Un espace : sa planche (sigil, numéro, « Je m'arrête ici… » tant qu'aucun pont n'est posé, « régler »), son pont, sa vue ;
@@ -77,6 +79,7 @@ function renderNow() {
   const fa = document.activeElement, typingSheet = fa && fa.closest && fa.closest("#sheet") && (fa.tagName === "TEXTAREA" || (fa.tagName === "INPUT" && !["checkbox", "radio"].includes(fa.type)));
   if (["module", "specimen", "vasculum"].includes(sheetKind) && $("#sheet").open && !typingSheet) $("#sheetBody").innerHTML = SHEETS[sheetKind](sheetArg);
   for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && v !== "" && el.value !== v) el.value = v; }
+  for (const id of opened) { const el = document.getElementById(id); if (el && el.tagName === "DETAILS") el.open = true; }
   if (view !== lastView) $("#main").querySelectorAll("[data-draft]").forEach(el => { const v = loadDraft(view, el); if (v) el.value = v; });
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
   if (view !== lastView) revealed = null;

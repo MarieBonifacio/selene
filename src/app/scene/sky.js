@@ -95,7 +95,7 @@ let skyResults = [];
  // résultats de la dernière recherche de ville (propres à l'appareil, oubliés au rechargement)
 export function skySettingsHTML() {
   const c = skyConf(), f = v => (+v).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  return `<section id="ciel"><h3>Ciel</h3><p class="hint">La scène de l'accueil montre le dehors réel : l'heure par le soleil, la lune à sa place, le temps qu'il fait. Sans lieu, l'heure est estimée d'après le fuseau horaire (à trois quarts d'heure près), et il n'y a pas de météo.</p>
+  return `<section id="ciel"><h4>Ciel</h4><p class="hint">La scène de l'accueil montre le dehors réel : l'heure par le soleil, la lune à sa place, le temps qu'il fait. Sans lieu, l'heure est estimée d'après le fuseau horaire (à trois quarts d'heure près), et il n'y a pas de météo.</p>
     ${c ? `<p class="row" style="margin:0 0 10px">Lieu : <b>${esc(c.name)}</b> <span class="hint" style="margin:0">(${f(c.lat)} ; ${f(c.lon)}, arrondis à une dizaine de kilomètres)</span><button class="btn ghost sm" data-act="sky-clear">retirer</button></p>` : ""}
     <div class="row"><input id="skyCity" placeholder="${c ? "Changer de ville…" : "Une ville…"}" aria-label="Ville" autocomplete="off" style="max-width:260px"><button class="btn sm" data-act="sky-search">Chercher</button><button class="btn ghost sm" data-act="sky-locate">Utiliser ma position</button></div>
     ${skyResults.length ? `<ul class="plain" style="margin-top:8px">${skyResults.map((r, i) => `<li class="item"><span></span><div>${esc(r.name)}</div><button class="btn sm" data-act="sky-pick" data-i="${i}">Choisir</button></li>`).join("")}</ul>` : ""}

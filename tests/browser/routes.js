@@ -13,7 +13,7 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   await text('reglages'); await p.evaluate(() => document.querySelectorAll('details').forEach(x => x.open = true));
   await p.fill('#newModName', 'Réglages'); await p.click('[data-act="mod-add"]'); await p.waitForTimeout(200);
   const ids = await p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).config.modules.map(m => m.id));
-  check(ids.includes('reglages-2') && (await text('reglages')).includes('Réglages par module'), 'un module « Réglages » ne masque pas les Réglages');
+  check(ids.includes('reglages-2') && (await text('reglages')).includes('Créer un espace'), 'un module « Réglages » ne masque pas les Réglages');
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

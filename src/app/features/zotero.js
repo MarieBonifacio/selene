@@ -72,7 +72,7 @@ CLICK["zot-keep"] = el => {
 };
 export function zotSettingsHTML() {
   const info = zotInfo(), has = !!zotKey();
-  return `<section id="zotero"><h3>Zotero</h3><p class="hint">Ta bibliothèque Zotero, en lecture seule : dans un module de Sources, cherche une fiche (ou les dernières ajoutées) et garde-la comme Source, reliée à sa fiche Zotero. Zotero reste l'archive ; Selene, l'endroit où tu t'en sers.</p>
+  return `<section id="zotero"><h4>Zotero</h4><p class="hint">Ta bibliothèque Zotero, en lecture seule : dans un module de Sources, cherche une fiche (ou les dernières ajoutées) et garde-la comme Source, reliée à sa fiche Zotero. Zotero reste l'archive ; Selene, l'endroit où tu t'en sers.</p>
     <p class="hint">Crée une clé sur <a href="https://www.zotero.org/settings/keys/new" target="_blank" rel="noopener noreferrer">zotero.org/settings/keys/new</a> : sous « Personal Library », coche <b>Allow library access</b> seulement (ni « Allow write access », ni les groupes). Elle reste dans ce navigateur, n'est jamais synchronisée et s'efface à la déconnexion.</p>
     <label>Clé API Zotero<input type="password" data-act="zot-key" value="${has ? "••••••••" : ""}" autocomplete="off" placeholder="colle ta clé"></label>
     ${has ? `<p class="row" style="margin:6px 0 0"><span>${esc(info ? `Bibliothèque de ${info.username || "#" + info.userID}${info.write ? " : attention, cette clé peut écrire ; une clé en lecture seule suffit." : ", en lecture seule."}` : "Pas encore vérifiée.")}</span><button class="btn sm" data-act="zot-check">Vérifier</button><button class="btn ghost sm" data-act="zot-forget">oublier</button></p>` : ""}</section>`;
