@@ -37,6 +37,24 @@ jobs:
       - name: APK de débogage
         working-directory: native/android
         run: ./gradlew assembleDebug --no-daemon --stacktrace
+      # Le chemin de signature de la publication (release.yml), éprouvé à chaque fois avec une clé jetable :
+      # une erreur dans build.gradle se voit ici, pas le jour d'une sortie.
+      - name: Version signée (clé jetable)
+        working-directory: native/android
+        env:
+          SELENE_KEYSTORE: ${{ runner.temp }}/jetable.jks
+          SELENE_KEYSTORE_PASSWORD: jetable-jetable
+          SELENE_KEY_ALIAS: selene
+          SELENE_KEY_PASSWORD: jetable-jetable
+          SELENE_VERSION_NAME: 0.0.1
+          SELENE_VERSION_CODE: '1'
+        run: |
+          keytool -genkeypair -keystore "$SELENE_KEYSTORE" -storepass "$SELENE_KEYSTORE_PASSWORD" -keypass "$SELENE_KEY_PASSWORD" \
+            -alias "$SELENE_KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 1 -dname "CN=Selene CI"
+          ./gradlew assembleRelease --no-daemon
+          apk=app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner" verify --print-certs "$apk" | grep -q "CN=Selene CI"
+          rm -f "$SELENE_KEYSTORE"
       - uses: actions/upload-artifact@v5
         with:
           name: selene-android-debug

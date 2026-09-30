@@ -1,0 +1,217 @@
+name: Publication
+# Une version publiée (docs/publication.md) : pousser une étiquette v1.2.3 construit, signe et publie.
+# - Android : APK signé (installation directe) et AAB signé (Google Play), avec la clé d'envoi gardée dans les secrets ;
+# - Windows : installateur NSIS, signé si un certificat de signature de code est fourni ;
+# - iOS : archive signée par la signature automatique d'Xcode (clé d'API App Store Connect), envoyée à TestFlight.
+# Chaque plateforme dont les secrets manquent est sautée avec un avis : rien de secret n'est jamais dans le dépôt.
+# Puis une Release GitHub rassemble l'APK et l'installateur Windows.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (1.2.3) : construit et signe, sans créer de Release'
+        required: true
+concurrency: publication
+permissions:
+  contents: read
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.v.outputs.name }}
+      code: ${{ steps.v.outputs.code }}
+    steps:
+      - id: v
+        env:
+          SAISIE: ${{ github.event.inputs.version || github.ref_name }}
+        run: |
+          v="${SAISIE#v}"
+          if ! [[ "$v" =~ ^(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]?)\.(0|[1-9][0-9]?)$ ]]; then
+            echo "::error::Version « $SAISIE » : attendu v1.2.3 (mineure et correctif sous 100)."; exit 1
+          fi
+          # Un numéro de build croissant, que Google Play et l'App Store exigent : 1.2.3 → 10203.
+          code=$(( 10#${BASH_REMATCH[1]} * 10000 + 10#${BASH_REMATCH[2]} * 100 + 10#${BASH_REMATCH[3]} ))
+          echo "name=$v" >> "$GITHUB_OUTPUT"; echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "Version $v (build $code)"
+
+  android:
+    needs: version
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      SELENE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      SELENE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      SELENE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      SELENE_VERSION_NAME: ${{ needs.version.outputs.name }}
+      SELENE_VERSION_CODE: ${{ needs.version.outputs.code }}
+    steps:
+      - name: Secrets présents ?
+        id: cfg
+        run: |
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$SELENE_KEYSTORE_PASSWORD" ] || [ -z "$SELENE_KEY_ALIAS" ] || [ -z "$SELENE_KEY_PASSWORD" ]; then
+            echo "::notice::Android sauté : secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD (docs/publication.md)."
+            echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v6
+        if: steps.cfg.outputs.ok == 'true'
+      - uses: actions/setup-node@v6
+        if: steps.cfg.outputs.ok == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-java@v5
+        if: steps.cfg.outputs.ok == 'true'
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Page native, projet synchronisé
+        if: steps.cfg.outputs.ok == 'true'
+        run: |
+          npm ci
+          npm run build:dist
+          npx cap sync android
+      - name: APK et AAB signés
+        if: steps.cfg.outputs.ok == 'true'
+        working-directory: native/android
+        run: |
+          export SELENE_KEYSTORE="$RUNNER_TEMP/selene.jks"
+          printf %s "$KEYSTORE_B64" | base64 -d > "$SELENE_KEYSTORE"
+          ./gradlew assembleRelease bundleRelease --no-daemon
+          rm -f "$SELENE_KEYSTORE"
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner" verify app/build/outputs/apk/release/app-release.apk
+          mkdir -p "$RUNNER_TEMP/out"
+          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/out/selene-$SELENE_VERSION_NAME.apk"
+          cp app/build/outputs/bundle/release/app-release.aab "$RUNNER_TEMP/out/selene-$SELENE_VERSION_NAME.aab"
+      - uses: actions/upload-artifact@v5
+        if: steps.cfg.outputs.ok == 'true'
+        with:
+          name: publication-android
+          path: ${{ runner.temp }}/out/*
+
+  windows:
+    needs: version
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      CERT_B64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+      CERT_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+      VERSION: ${{ needs.version.outputs.name }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build:dist
+      - name: Configuration de la version (et du certificat, s'il y en a un)
+        shell: pwsh
+        run: |
+          $cfg = @{ version = $env:VERSION }
+          if ($env:CERT_B64) {
+            $pfx = Join-Path $env:RUNNER_TEMP 'selene.pfx'
+            [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:CERT_B64))
+            $pw = ConvertTo-SecureString -String $env:CERT_PASSWORD -Force -AsPlainText
+            $cert = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $pw
+            Remove-Item $pfx
+            $cfg.bundle = @{ windows = @{ certificateThumbprint = $cert.Thumbprint; digestAlgorithm = 'sha256'; timestampUrl = 'http://timestamp.digicert.com' } }
+          } else {
+            Write-Output "::notice::Windows : installateur non signé (secrets WINDOWS_CERTIFICATE_BASE64 et WINDOWS_CERTIFICATE_PASSWORD absents ; docs/publication.md)."
+          }
+          $cfg | ConvertTo-Json -Depth 5 -Compress | Set-Content -Encoding utf8NoBOM (Join-Path $env:RUNNER_TEMP 'version.json')
+      - name: Installateur
+        working-directory: native/tauri
+        shell: pwsh
+        run: |
+          npx tauri build --ci --config (Join-Path $env:RUNNER_TEMP 'version.json')
+          New-Item -ItemType Directory -Force (Join-Path $env:RUNNER_TEMP 'out') | Out-Null
+          Get-ChildItem target/release/bundle/nsis/*.exe | Copy-Item -Destination (Join-Path $env:RUNNER_TEMP "out/selene-$env:VERSION-windows.exe")
+      - uses: actions/upload-artifact@v5
+        with:
+          name: publication-windows
+          path: ${{ runner.temp }}/out/*
+
+  ios:
+    needs: version
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.APPSTORE_KEY_P8 }}
+      VERSION: ${{ needs.version.outputs.name }}
+      BUILD: ${{ needs.version.outputs.code }}
+    steps:
+      - name: Secrets présents ?
+        id: cfg
+        run: |
+          if [ -z "$TEAM_ID" ] || [ -z "$ASC_KEY_ID" ] || [ -z "$ASC_ISSUER_ID" ] || [ -z "$ASC_KEY_P8" ]; then
+            echo "::notice::iOS sauté : secrets IOS_TEAM_ID, APPSTORE_KEY_ID, APPSTORE_ISSUER_ID, APPSTORE_KEY_P8 (docs/publication.md)."
+            echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v6
+        if: steps.cfg.outputs.ok == 'true'
+      - uses: actions/setup-node@v6
+        if: steps.cfg.outputs.ok == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Page native, projet synchronisé
+        if: steps.cfg.outputs.ok == 'true'
+        run: |
+          npm ci
+          npm run build:dist
+          npx cap sync ios
+      # Signature automatique : Xcode crée ou reprend lui-même le certificat de distribution et le profil, avec la clé
+      # d'API (rôle Admin). Pas de certificat ni de profil à entretenir dans les secrets.
+      - name: Archive signée, envoyée à TestFlight
+        if: steps.cfg.outputs.ok == 'true'
+        working-directory: native/ios/App
+        run: |
+          key="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+          printf %s "$ASC_KEY_P8" > "$key"
+          auth=(-allowProvisioningUpdates -authenticationKeyPath "$key" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Selene.xcarchive" DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" "${auth[@]}" archive
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Selene.xcarchive" -exportOptionsPlist "$RUNNER_TEMP/export.plist" \
+            -exportPath "$RUNNER_TEMP/export" "${auth[@]}"
+          rm -f "$key"
+
+  release:
+    needs: [version, android, windows, ios]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: publication-*
+          merge-multiple: true
+          path: out
+      - name: Release GitHub (APK et installateur Windows ; l'AAB va sur Google Play)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          ls -la out
+          files=$(ls out/*.apk out/*.exe 2>/dev/null || true)
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "Selene $TAG" --generate-notes $files
