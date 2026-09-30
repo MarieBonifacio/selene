@@ -18,7 +18,7 @@ export default [
   { files: ["scripts/**/*.mjs"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { process: "readonly", URL: "readonly" } }, rules },
   // L'amorçage des coquilles natives (src/native/boot.js), posé seul avant Selene dans dist/native.
   { files: ["src/native/*.js"], languageOptions: { ecmaVersion: 2023, sourceType: "script",
-    globals: { window: "readonly", history: "readonly", Event: "readonly", document: "readonly", sessionStorage: "readonly" } }, rules },
+    globals: { window: "readonly", history: "readonly", Event: "readonly", document: "readonly", sessionStorage: "readonly", URL: "readonly", CustomEvent: "readonly" } }, rules },
   { files: ["sw.js"], languageOptions: { ecmaVersion: 2023, sourceType: "script",
     globals: { self: "readonly", caches: "readonly", fetch: "readonly", location: "readonly", URL: "readonly" } }, rules }
 ];
