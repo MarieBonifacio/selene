@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-WnAbaTyvyOeiH4pxnPY46LwDamwqD0xA+SjamjdPho4=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-wihvc35LLY0xWbOgCnwTsvqPLHHf3t0Xd1D1sZFpCUY=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -4103,6 +4103,10 @@ function takeShare() {
     window.history.replaceState(null, "", location.pathname + (location.hash || "#accueil"));
   } catch {}
 }
+/* L'app de bureau (ADR 17) : un lien selene://share, rangé dans la file par l'amorçage natif, est pris aussitôt ; le
+   raccourci Ctrl+Alt+S (ou le menu de la zone de notification) ouvre la capture. */
+document.addEventListener("selene:share", () => { sharePending = true; render(); });
+document.addEventListener("selene:capture", () => openSheet("capture"));
 function applyShare() {
   if (hosted() && authReady() && !authSession) return; // pas encore connectée : on attend
   let p = null; try { p = JSON.parse(platform.session.get("selene-share") || "null"); platform.session.remove("selene-share"); } catch {}

@@ -563,3 +563,20 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
 - **Conséquences** : l'installateur n'est pas signé (avertissement SmartScreen) jusqu'à la publication ; le code Rust
   ne se compile qu'en CI (la WebView de Linux manque ici) ; le cœur est volontairement petit, pour être relu d'un
   coup d'œil.
+
+### ADR 17 — Ce que l'app de bureau fait de plus : instance unique, raccourci, zone de notification, liens selene://
+
+- **Contexte** : une app de bureau ne vaut que par ce qu'un onglet ne sait pas faire. Pour Selene, outil de capture,
+  c'est d'abord capturer sans chercher la fenêtre.
+- **Décision** : côté Rust seulement (aucun JavaScript de plugin, aucune permission de plus pour la page) : les
+  plugins `single-instance` (avec `deep-link`), `global-shortcut` et `deep-link` (schéma `selene`), l'icône de la
+  zone de notification de Tauri. Le cœur parle à la page par des événements du document (`selene:capture`,
+  `selene:share`) injectés dans la WebView ; avant la fin du chargement, ils attendent (un lien peut lancer l'app).
+  L'amorçage natif, premier script, range un partage dans la file que Selene lit à son démarrage (`selene-share`,
+  celle du Web Share Target) ; Selene, si elle tourne, le prend aussitôt. Les champs passent par JSON, jamais tels
+  quels dans le code injecté. Fermer la fenêtre la cache ; *Quitter* déclenche `pagehide` avant de sortir. Le
+  raccourci qui échoue (déjà pris) n'empêche pas le démarrage. Tauri n'intercepte plus le glisser-déposer.
+- **Écarté** : une seconde fenêtre de capture (une deuxième copie de Selene en mémoire, et deux fenêtres à
+  synchroniser) ; le lancement au démarrage de la session (à la demande, plus tard) ; les API JavaScript des plugins.
+- **Conséquences** : `tests/browser/bureau.js` fait tourner la page native sur un faux cœur Tauri (coffres,
+  capture, partage) ; le test Rust vérifie qu'un texte partagé ne peut pas sortir de sa chaîne JSON.

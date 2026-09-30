@@ -18,6 +18,12 @@
       remove: key => call(`${kind}_remove`, { key })
     });
     window.seleneNative = { runtime: "tauri", storage: vault("store"), secrets: vault("secret") };
+    // Un partage venu du cœur (lien selene://share, ADR 17) : rangé dans la file que Selene lit à son démarrage, et
+    // qu'elle prend aussitôt si elle tourne déjà. Premier script de la page : rien n'est perdu pendant l'amorçage.
+    document.addEventListener("selene:share", e => {
+      const d = (e && e.detail) || {}, s = v => String(v || "").slice(0, 4000);
+      try { sessionStorage.setItem("selene-share", JSON.stringify({ url: s(d.url), title: s(d.title), text: s(d.text) })); } catch {}
+    });
     return;
   }
   const C = window.Capacitor;

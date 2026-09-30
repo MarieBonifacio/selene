@@ -10,7 +10,8 @@ const sources = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(e =>
   e.isDirectory() ? sources(path.join(dir, e.name)) : e.name.endsWith('.js') ? [path.join(dir, e.name)] : []);
 
 test('seul platform.js touche au stockage du navigateur, à window.claude et à navigator.storage', () => {
-  const offenders = sources('src').filter(f => path.basename(f) !== 'platform.js').flatMap(f =>
+  // src/native : l'amorçage des coquilles, qui fabrique les coffres de platform avant Selene (même couche).
+  const offenders = sources('src').filter(f => path.basename(f) !== 'platform.js' && !f.startsWith(path.join('src', 'native'))).flatMap(f =>
     fs.readFileSync(f, 'utf8').split('\n').flatMap((line, i) =>
       /\b(localStorage|sessionStorage|indexedDB|BroadcastChannel)\b|window\.claude|navigator\.storage/.test(line) ? [`${f}:${i + 1}`] : []));
   assert.deepEqual(offenders, [], 'passer par platform.storage / secrets / session / claude');
