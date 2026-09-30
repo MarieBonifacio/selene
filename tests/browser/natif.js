@@ -24,7 +24,8 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
     window.seleneNative = { runtime: 'capacitor', storage: vault('storage'), secrets: vault('secrets') };
   });
   const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
-  await p.goto(BASE + '/index.html#accueil'); await p.waitForSelector('#nav a', { timeout: 10000 }).catch(() => {});
+  // La page des coquilles natives (npm run build:dist).
+  await p.goto(BASE + '/dist/native/index.html#accueil'); await p.waitForSelector('#nav a', { timeout: 10000 }).catch(() => {});
 
   console.log('démarrage sur les coffres');
   ok((await p.textContent('#nav')).includes('Phidippus'), 'les données viennent du coffre natif (compte connecté, espaces du jeu d’essai)');

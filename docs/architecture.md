@@ -280,6 +280,7 @@ installe par `npm ci`, et les scripts npm sont les seules commandes, en local co
 | Script | Ce qu'il fait |
 |---|---|
 | `npm run build` | `python3 build.py` : assemble le noyau (esbuild), génère `selene.html` et `index.html` |
+| `npm run build:dist` | les trois sorties dans `dist/` : web (Pages), artefact (claude.ai), natif (Capacitor, Tauri) ; ADR 14 |
 | `npm run build:check` | refuse des HTML générés qui ne correspondent pas aux sources |
 | `npm test` | tests unitaires Node (`tests/*.test.js`) |
 | `npm run test:syntax` | `node --check` sur chaque source (`src/`, `src/core/`, `scripts/`), arrêt au premier fichier invalide |
@@ -508,3 +509,20 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   reçoit la synchronisation). Les scénarios lisent le stockage par `storeGet` / `storeJSON` et l'écrivent par
   `storeSet` (tests/browser/helpers.js), qui prévient Selene comme un autre onglet ; `tests/browser/indexeddb.js`
   couvre la migration, la relance, deux onglets et un document de plus de 6 M caractères.
+
+### ADR 14 — Trois sorties de build : web, artefact, natif
+
+- **Contexte** : `build.py` produisait deux pages versionnées à la racine (`index.html`, `selene.html`) et Pages en
+  recopiait une partie à la main. Les coquilles natives demandent une troisième page : sans service worker (non pris
+  en charge dans une WebView iOS, inutile quand les fichiers sont déjà sur l'appareil) ni manifeste.
+- **Décision** : `python3 build.py --dist` (`npm run build:dist`) écrit `dist/web/` (la PWA et ses fichiers : page,
+  service worker, manifeste, icônes), `dist/artifact/selene.html` et `dist/native/index.html` (le même script, une
+  seule empreinte dans la CSP, ni `worker-src` ni `manifest-src`). `dist/` n'est pas versionné. Pages publie
+  `dist/web`, construit en CI depuis les sources ; `index.html` et `selene.html` restent versionnés à la racine
+  (`build.py --check`, les tests, l'artefact à coller dans claude.ai).
+- **Écarté** : une variable d'exécution qui ferait sauter le service worker en natif (même page pour tous : une
+  empreinte CSP de trop, et le manifeste chargé pour rien) ; retirer tout de suite les pages de la racine (les
+  scénarios et la documentation y renvoient ; plus tard).
+- **Conséquences** : `tests/build.test.js` vérifie que `dist/web` et `dist/artifact` sont exactement les pages
+  versionnées et que la page native n'autorise que son script ; `npm run test:browser` construit `dist/` d'abord, et
+  `tests/browser/natif.js` tourne sur `dist/native/index.html`.
