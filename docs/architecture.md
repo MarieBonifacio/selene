@@ -7,15 +7,15 @@ refactorisation, dont toutes les étapes sont livrées ou abandonnées au profit
 ## Deux cibles, une source
 
 `python3 build.py` (`npm run build`) assemble **un seul script**, enveloppé dans une fonction immédiatement
-exécutée, et l'insère dans `src/shell.html`. Dans l'ordre :
+exécutée, et l'insère dans `src/shell.html`. Tout le code est en **modules ES** (imports et exports explicites),
+assemblés par esbuild (`scripts/bundle.mjs`, appelé par `build.py`) en deux temps :
 
-1. le **noyau** : les modules ES de `src/core/`, qu'esbuild assemble depuis `src/core/index.js` en une fonction qui
-   pose `__core` (`scripts/bundle-core.mjs`, appelé par `build.py`) ;
-2. `const { … } = __core;` : chaque nom exporté devient une constante de la portée commune. Les noms sont lus dans
-   le métafichier d'esbuild : aucune liste n'est tenue à la main ;
-3. les fichiers historiques de `src/`, concaténés dans l'ordre de `scripts` (`build.py`).
+1. la **plateforme** (`src/platform.js`), qui pose `__platform` et ouvre le stockage ;
+2. l'**application** (`src/app/index.js` et tout ce qu'il importe, noyau `src/core/` compris), évaluée dans
+   `platform.ready`, qui pose `__selene` (lu par les tests seulement). Ses imports de `platform.js` sont servis par
+   `__platform` : une seule façade, un seul état.
 
-Le build demande donc Python, Node et `npm ci` (esbuild). Pourquoi ce découpage : ADR 9.
+Le build demande donc Python, Node et `npm ci` (esbuild). Pourquoi ce découpage : ADR 9 et ADR 22.
 
 | Sortie | Pour | Particularités |
 |---|---|---|
@@ -33,10 +33,20 @@ téléchargée en a), et un remplacement textuel ne doit jamais l'atteindre. Seu
 Connexions externes (Crossref, Microlink, Open-Meteo…) : chaque hôte est nommé dans la CSP de `build.py`
 (`connect-src`), et rien ne part sans un geste de l'utilisatrice. Principes et état : [connexions.md](connexions.md).
 
-### Ordre de chargement
+### Couches et ordre de chargement
 
-Le **noyau** passe en premier : ce qu'il exporte est visible de tous les fichiers historiques dès le chargement.
-Un module n'y voit que ce qu'il importe (eslint le vérifie module par module) ; esbuild les ordonne d'après leurs imports.
+Trois couches, vérifiées par `tests/architecture.test.js` :
+
+- **`src/core/`, le noyau** : pur (ni DOM, ni stockage, ni réseau), n'importe que lui-même ;
+- **`src/platform.js`** : le seul accès aux API de l'hôte (stockage, `window.claude`, coquilles natives) ;
+- **`src/app/`, l'interface** : n'importe que `src/app`, le noyau et la plateforme.
+
+Chaque fichier ne voit que ce qu'il importe : eslint (`no-undef`) le vérifie fichier par fichier, et l'interface n'a
+pas le stockage du navigateur dans ses globales. Un module n'écrit jamais dans la variable d'un autre (un import est
+en lecture seule) : il appelle une fonction de ce module. Au **chargement** (hors des fonctions), un module n'utilise
+un import que si ce dernier ne dépend pas, même de loin, de lui : l'ordre d'évaluation ne peut rien casser. Les cycles
+entre fonctions restent permis (un appel a lieu quand tout est chargé) ; les tables que les parties remplissent en se
+chargeant (`VIEWS`, `SHEETS`, `CLICK`, `CHANGE`) vivent dans `src/app/registry.js`, qui ne dépend de rien.
 
 | Module (`src/core/`) | Rôle | Importe |
 |---|---|---|
@@ -53,22 +63,18 @@ Un module n'y voit que ce qu'il importe (eslint le vérifie module par module) ;
 | `agenda.js` | calendrier dédié, pur : lecture iCalendar (fuseaux, journées entières), récurrences dépliées sur une fenêtre | — |
 | `zotero.js` | Zotero, pur : ce que permet une clé, une fiche traduite en Source (DOI, revue, auteurs, lien vers la fiche) | — |
 
-Les **fichiers historiques** partagent une même portée. Au **chargement**, un fichier ne peut utiliser que le noyau
-et ce que les précédents ont déclaré (les `const` sont inaccessibles avant leur ligne) ; à l'**exécution**
-(dans une fonction appelée plus tard), tout est visible. Un nom exporté par le noyau n'y est jamais redéclaré : le
-script ne se chargerait plus (eslint et les tests le signalent).
-
-| Fichier | Rôle | Dépend au chargement de |
+| Fichier (`src/app/`) | Rôle | Utilise au chargement |
 |---|---|---|
-| `platform.js` | seul accès aux API de l'hôte : `platform.storage`, `secrets`, `session`, `claude`, `runtime()`, `hosted()` ; `platform.ready` démarre tous les fichiers suivants (ADR 11) | — |
-| `store.js` | un document JSON : `platform.storage` (IndexedDB en version web, ADR 13) + synchro | — |
-| `auth.js` | comptes et adaptateur Supabase (hébergé seulement) | — |
+| `registry.js` | les registres de l'interface : `VIEWS`, `SHEETS`, `CLICK`, `CHANGE` | — |
+| `store.js` | un document JSON : `platform.storage` (IndexedDB en version web, ADR 13) + synchro ; ne connaît pas l'interface (rappels `onRemoteChange`, `onStatus`) | — |
+| `auth.js` | comptes et adaptateur Supabase (hébergé seulement) ; suppression du compte | `platform` |
 | `passeur.js` | appel du passeur (Supabase Edge, version hébergée connectée) et lecture d'une page : métadonnées, flux annoncés | — |
-| `dehors.js` | Dehors, lecture des flux (RSS, Atom, JSON Feed) par DOMParser, fusion du cache, « nouveau depuis », croisé avec ce que tu gardes (raisons dites, doublons entre flux fusionnés) | — |
-| `app.js` | utilitaires, modules fixes, normalisation, stores, vues, rendu, actions | `store.js` (et le noyau) |
-| `types.js` | registre d'affichage `TYPE_UI`, branché dans `CLICK` / `CHANGE` ; fiche, Vasculum, carte (`SHEETS`) | `app.js` |
-| `assistant.js` | contexte, outils, appels à Claude | — |
-| `boot.js` | cycle de vie (flush, onglets), démarrage | tout |
+| `dehors.js` | Dehors, lecture des flux (RSS, Atom, JSON Feed) par DOMParser, fusion du cache, « nouveau depuis », croisé avec ce que tu gardes | — |
+| `app.js` | utilitaires, modules fixes, normalisation, stores, vues, rendu, actions | `store.js`, registres |
+| `types.js` | registre d'affichage `TYPE_UI`, branché dans `CLICK` / `CHANGE` ; fiche, Vasculum, carte (`SHEETS`) | registres |
+| `assistant.js` | contexte, outils, appels à Claude | registres |
+| `boot.js` | cycle de vie (flush, onglets), démarrage | `app.js`, `platform` |
+| `index.js` | le point d'entrée : l'ordre d'évaluation, et l'espace de noms des tests | — |
 
 ## Données
 
@@ -279,12 +285,12 @@ installe par `npm ci`, et les scripts npm sont les seules commandes, en local co
 
 | Script | Ce qu'il fait |
 |---|---|
-| `npm run build` | `python3 build.py` : assemble le noyau (esbuild), génère `selene.html` et `index.html` |
+| `npm run build` | `python3 build.py` : assemble la plateforme et l'application (esbuild), génère `selene.html` et `index.html` |
 | `npm run build:dist` | les trois sorties dans `dist/` : web (Pages), artefact (claude.ai), natif (Capacitor, Tauri) ; ADR 14 |
 | `npm run build:check` | refuse des HTML générés qui ne correspondent pas aux sources |
 | `npm test` | tests unitaires Node (`tests/*.test.js`) |
-| `npm run test:syntax` | `node --check` sur chaque source (`src/`, `src/core/`, `scripts/`), arrêt au premier fichier invalide |
-| `npm run lint` | eslint sur le script assemblé (`build.py --bundle .lint/selene.js`), sur chaque module du noyau (`sourceType: "module"`), sur `scripts/` et `sw.js` |
+| `npm run test:syntax` | `node --check` sur chaque source (`src/`, `src/app/`, `src/core/`, `src/native/`, `scripts/`), arrêt au premier fichier invalide |
+| `npm run lint` | eslint sur chaque module (`src/`, `sourceType: "module"`), l'amorçage natif, `scripts/` et `sw.js` |
 | `npm run test:functions` | types et tests Deno des fonctions Supabase (passeur, assistant) |
 | `npm run test:browser` | parcours Playwright dans Chromium (`npx playwright install chromium` une fois) ; `SELENE_BROWSER=webkit` pour WebKit |
 | `npm run check` / `check:all` | tout sauf le navigateur / tout |
@@ -295,8 +301,10 @@ installe par `npm ci`, et les scripts npm sont les seules commandes, en local co
   plusieurs « appareils » ; `auth.test.js` et `sync.test.js` s'en servent.
 - `modules.test.js`, `app.test.js`, `backup.test.js`, `domain.test.js` : règles métier, registres,
   routage, sauvegardes hostiles.
-- Les tests d'un module du noyau l'importent (`require` d'un module ES, Node 22) ; ceux d'un fichier historique
-  (`dehors.test.js`) l'exécutent encore brut dans une VM.
+- Les tests d'un module pur l'importent (`require` d'un module ES, Node 22) ; ceux qui ont besoin de toute
+  l'application exécutent le script assemblé dans une VM et lisent l'espace de noms `__selene` ;
+  `platform.test.js` évalue `platform.js` (traduit en CommonJS par esbuild) avec les globales de chaque cas ;
+  `architecture.test.js` vérifie les couches et l'ordre de chargement.
 
 - `tests/browser/` : parcours dans un vrai Chromium (Playwright), un fichier par sujet, lancés par
   `run.js` contre un petit serveur de fichiers statique ; chaque vérification affiche ✓ / ✗ et un seul ✗
@@ -398,7 +406,7 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
 - **Conséquences** : tout nouveau script inline passe par `build.py` (sinon il est bloqué, et le scénario
   `csp` échoue) ; ne jamais écrire de gestionnaire `onclick=` dans un gabarit : `data-act` et délégation.
 
-### ADR 9 — Le noyau en modules ES, assemblé par esbuild
+### ADR 9 — Le noyau en modules ES, assemblé par esbuild (étendu à toute l’interface : ADR 22)
 
 - **Contexte** : les fichiers de `src/` partageaient une seule portée, concaténés par `build.py` : leurs dépendances
   n'étaient écrites nulle part (l'ordre de chargement seul les trahissait), un fichier pur ne se testait qu'exécuté
@@ -645,3 +653,26 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   de service de plus, et le premier envoi est manuel de toute façon).
 - **Conséquences** : docs/publication.md liste ce qui reste à faire à la main (comptes, clés, formulaires) ; le chemin
   iOS n'est éprouvé qu'à la première course avec un compte Apple.
+
+### ADR 22 — Tout en modules ES : fin de la portée partagée
+
+- **Contexte** : le noyau était en modules, mais l'interface (≈ 360 Ko en huit fichiers) était concaténée dans une
+  seule portée : n'importe quelle fonction voyait et pouvait réaffecter n'importe quelle variable de n'importe quel
+  fichier, et l'ordre de la liste de `build.py` décidait de ce qui marchait au chargement. Rien ne disait qui dépend
+  de qui, ce qui rendait tout découpage risqué.
+- **Décision** : chaque fichier de l'interface devient un module ES dans `src/app/`, avec ses imports et exports
+  explicites (générés une fois par analyse de portée, puis tenus à la main), assemblé par esbuild. La plateforme est
+  assemblée à part et évaluée d'abord ; l'application l'est dans `platform.ready`, et ses imports de la plateforme
+  sont servis par la même instance. Les neuf écritures d'un fichier dans la variable d'un autre passent par une
+  fonction de son propriétaire (`setOpenId`, `authToggleMode`, `passeurReset`…). Les registres partagés vont dans un
+  module sans dépendance ; le store reçoit ses rappels vers l'interface au lieu de l'importer. Un test d'architecture
+  vérifie les couches, l'absence d'écriture croisée et l'absence de cycle dans ce qui s'exécute au chargement ; eslint,
+  fichier par fichier, fait de chaque dépendance un import. Les tests qui lançaient l'application lisent un espace de
+  noms (`__selene`) au lieu de la portée.
+- **Écarté** : un chargement paresseux par `import()` (démarrage asynchrone, et plus de démarrage synchrone sur le
+  web) ; une seule passe esbuild avec la plateforme dedans (l'application s'évaluerait avant l'ouverture du
+  stockage) ; l'interdiction de tout cycle d'import tout de suite (`app.js` et `types.js` s'appellent l'un l'autre :
+  c'est le découpage suivant qui les défera).
+- **Conséquences** : un fichier dit ce qu'il utilise ; déplacer une fonction, c'est déplacer ses imports. Le script
+  produit est plus court (les commentaires ne sont plus copiés). Étape suivante : découper `app.js` et `types.js`
+  (un fichier par type de module, par vue), ce que ces frontières rendent sûr.

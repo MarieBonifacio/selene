@@ -34,7 +34,7 @@ test('politique de confidentialité : publiée avec le site, sans script ni ress
     assert.ok(k, `service sans nom dans la politique : ${host}`);
     assert.ok(p.includes(services[k]), `${services[k]} manque dans confidentialite.html`);
   }
-  assert.match(fs.readFileSync('src/app.js', 'utf8'), /confidentialite\.html/);
+  assert.match(fs.readFileSync('src/app/app.js', 'utf8'), /confidentialite\.html/);
 });
 
 test('natif : l’amorçage puis le même script, sans service worker ni manifeste', () => {

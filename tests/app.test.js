@@ -31,7 +31,7 @@ function launch(storage, { bare = false } = {}) {
   const context = { document, window, localStorage, location: { hash: '' },
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
   // Inspect the closure without changing production code.
-  const instrumented = script.replace(/\}\);\s*\}\)\(\);\s*$/, 'globalThis.__test = { board, site, TOOLS, availableTools, executeTool, parseBackup, createBackup, digestPlan, dayDigest };\n});\n})();'); // dans platform.ready
+  const instrumented = script.replace(/\}\);\s*\}\)\(\);\s*$/, 'globalThis.__test = { ...__selene };\n});\n})();'); // dans platform.ready
   vm.runInNewContext(instrumented, context);
   return { ...context.__test, nodes };
 }

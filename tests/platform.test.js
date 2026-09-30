@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const esbuild = require('esbuild');
 
 const sources = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(e =>
   e.isDirectory() ? sources(path.join(dir, e.name)) : e.name.endsWith('.js') ? [path.join(dir, e.name)] : []);
@@ -23,9 +24,13 @@ test('les secrets (session, clés d’API, adresse privée d’agenda) ne passen
   assert.deepEqual(offenders, [], 'passer par platform.secrets');
 });
 
+// src/platform.js est un module ES : traduit en CommonJS, il s'évalue dans un contexte dont on choisit les globales
+// (window, localStorage…), une fois par test.
+const platformCjs = esbuild.transformSync(fs.readFileSync('src/platform.js', 'utf8'), { format: 'cjs' }).code;
 function load(ctx) {
-  vm.runInNewContext(fs.readFileSync('src/platform.js', 'utf8') + '\n;globalThis.__p = { platform, hosted };', ctx);
-  return ctx.__p;
+  const module = { exports: {} };
+  vm.runInNewContext(platformCjs, Object.assign(ctx, { module, exports: module.exports }));
+  return module.exports;
 }
 const memory = () => {
   const m = new Map();
@@ -130,9 +135,7 @@ test('natif : un coffre qui refuse une écriture ne casse rien ; un coffre illis
 
 // La migration de localStorage vers IndexedDB (ADR 13), avec un coffre simulé : ce qui part, ce qui reste, et quand.
 const loadMigrate = () => {
-  const ctx = { window: { claude: null } };
-  vm.runInNewContext(fs.readFileSync('src/platform.js', 'utf8') + '\n;globalThis.__m = { migrateToIdb, webStore, SECRET_KEYS };', ctx);
-  return ctx.__m;
+  return load({ window: { claude: null } });
 };
 const fakeIdb = (initial = {}, { failWrite = false } = {}) => {
   const data = new Map(Object.entries(initial));
@@ -160,7 +163,7 @@ test('migration : si IndexedDB refuse l’écriture, rien ne quitte localStorage
 test('les secrets déclarés par platform sont ceux que la déconnexion efface', () => {
   const { SECRET_KEYS } = loadMigrate();
   assert.ok(SECRET_KEYS.includes('selene-auth-session') && SECRET_KEYS.includes('selene-api-key'));
-  assert.match(fs.readFileSync('src/auth.js', 'utf8'), /PERSONAL_SECRETS = platform\.secretKeys\.filter/);
+  assert.match(fs.readFileSync('src/app/auth.js', 'utf8'), /PERSONAL_SECRETS = platform\.secretKeys\.filter/);
 });
 
 test('notifications et haptique : absentes sur le web, relayées vers la coquille native', async () => {

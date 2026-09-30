@@ -3,12 +3,15 @@
    sans client JS vendorisé — plus simple à vérifier ligne par ligne qu'un
    gros bundle recopié à la main. Inactif tant que SUPABASE_URL/SUPABASE_ANON_KEY
    ne sont pas renseignées, donc jamais actif dans l'artefact claude.ai. */
-const SUPABASE_URL = "https://pxnrzrmzritezftefdlj.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_vC_zBX0TN4jZqi1GRIvo2A_nD2WFW9T";
-const authReady = () => hosted() && !SUPABASE_URL.includes("YOUR-PROJECT-REF");
+import { hosted, platform } from "../platform.js";
+import { $, DRAFT_PREFIX, ask, board, render, setSaving, site, siteSeed } from "./app.js";
+export const SUPABASE_URL = "https://pxnrzrmzritezftefdlj.supabase.co";
+export const SUPABASE_ANON_KEY = "sb_publishable_vC_zBX0TN4jZqi1GRIvo2A_nD2WFW9T";
+export const authReady = () => hosted() && !SUPABASE_URL.includes("YOUR-PROJECT-REF");
 
 const AUTH_KEY = "selene-auth-session";
-let authSession = null, authMode = "signin", authBusy = false, authRefreshTimer = null;
+export let authSession = null, authMode = "signin", authBusy = false, authRefreshTimer = null;
+export const authToggleMode = () => { authMode = authMode === "signup" ? "signin" : "signup"; };
 
 function authLoad() {
   try { const v = platform.secrets.get(AUTH_KEY); return v ? JSON.parse(v) : null; } catch { return null; }
@@ -49,7 +52,7 @@ function toSession(body) {
 /* Marge > intervalle du minuteur (5 min) : sinon le jeton peut expirer entre deux vérifications. */
 const REFRESH_MARGIN_S = 600;
 let authRefreshing = null;
-function authRefreshIfNeeded() {
+export function authRefreshIfNeeded() {
   if (!authSession) return Promise.resolve(null);
   if (authSession.expires_at - Math.floor(Date.now() / 1000) > REFRESH_MARGIN_S) return Promise.resolve(authSession);
   // Le refresh token est à usage unique (rotation) : deux appels simultanés = le second est refusé.
@@ -143,7 +146,7 @@ function authScheduleRefresh() {
 // Les minuteurs sont gelés quand un téléphone met l'onglet en veille : on rattrape au retour.
 window.addEventListener("online", () => { if (authReady()) authKeepAlive(); });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && authReady()) authKeepAlive(); });
-async function authBoot() {
+export async function authBoot() {
   if (!authReady()) return null;
   authSession = authLoad();
   if (authSession) {
@@ -164,7 +167,7 @@ async function authSignUp(email, password) {
   if (s) { authPersist(s); await authConnectStores(); authScheduleRefresh(); }
   return !s;
 }
-async function authSignOut() {
+export async function authSignOut() {
   // Pousser d'abord ce qui attend encore : la déconnexion efface le local. Hors ligne, prévenir avant de perdre.
   for (const st of [board, site]) { clearTimeout(st.timer); st.timer = null; if (st.db) await st.sync(); }
   if ([board, site].some(st => st.unsynced()) &&
@@ -179,7 +182,7 @@ async function authSignOut() {
 /* Supprimer le compte (docs/compte.md) : la fonction serveur « compte » efface les données du compte, sa clé
    d'assistant, puis le compte lui-même ; ensuite, comme une déconnexion, l'appareil est vidé. Rien n'est poussé avant :
    ce qui attend encore n'a plus nulle part où aller. */
-async function authDeleteAccount() {
+export async function authDeleteAccount() {
   const s = await authRefreshIfNeeded(); if (!s) throw new Error("Session expirée : reconnecte-toi, puis recommence.");
   let r;
   try {
@@ -210,7 +213,7 @@ async function authSubmit() {
   authBusy = false;
   render();
 }
-function authView() {
+export function authView() {
   return `<div class="wrap" style="max-width:420px;margin:60px auto 0"><h2>Selene</h2>
     <p class="hint">${authMode === "signup" ? "Crée ton compte pour retrouver tes données sur n'importe quel appareil." : "Connecte-toi pour retrouver tes données."}</p>
     <form id="authForm" style="display:grid;gap:12px">

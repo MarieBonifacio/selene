@@ -1,23 +1,34 @@
 /* ================= utils ================= */
-const $ = s => document.querySelector(s);
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const uid = () => Math.random().toString(36).slice(2, 10);
-const iso = d => { const z = new Date(d); z.setMinutes(z.getMinutes() - z.getTimezoneOffset()); return z.toISOString().slice(0, 10); };
-const todayISO = () => iso(new Date());
-const addDaysTo = (s, n) => { const d = new Date(s + "T12:00"); d.setDate(d.getDate() + n); return iso(d); };
-const diffDays = (a, b) => Math.round((new Date(a + "T12:00") - new Date(b + "T12:00")) / 86400000);
+import { hosted, platform } from "../platform.js";
+import { createBackup, parseBackup } from "../core/backup.js";
+import { EP_STATUS, MODULE_TEMPLATES, MODULE_TYPES, SCHEMA_VERSION, SECTION_TO_MODULE, createFromTemplate, deleteModuleInstance, inboxId, migrateModules, saveCollectionItem, setResume, slugId } from "../core/domain.js";
+import { radarWords } from "../core/radar.js";
+import { WEATHER, approxPlace, moonPlacement, moonPosition, nextCrossing, seasonAt, skyEvents, skyMotion, skyScene, sunPosition, weatherState, windName } from "../core/sky.js";
+import { findDoi, findUrl } from "../core/sources.js";
+import { CHANGE, CLICK, SHEETS, VIEWS } from "./registry.js";
+import { assistantCall, assistantKnown, assistantSetCle, backend, chatLog, downloadsNS, sendChat } from "./assistant.js";
+import { authDeleteAccount, authReady, authSession, authSignOut, authToggleMode, authView } from "./auth.js";
+import { passeurSettingsHTML } from "./passeur.js";
+import { makeStore } from "./store.js";
+import { RADAR_KEY, TYPE_UI, addNote, afterCapture, agendaHTML, agendaSettingsHTML, allTasks, budMonths, colFilter, concordance, dehorsLine, dehorsOn, dossierFile, epGlyph, excerpt, fallow, fragFilter, isConcordance, plural, radarConf, radarPlace, radarSettingsHTML, refFind, refHTML, setOpenId, sourceItems, taskFilters, taskHTML, taskModules, thoughtItems, todayTasks, zotSettingsHTML } from "./types.js";
+export const $ = s => document.querySelector(s);
+export const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+export const uid = () => Math.random().toString(36).slice(2, 10);
+export const iso = d => { const z = new Date(d); z.setMinutes(z.getMinutes() - z.getTimezoneOffset()); return z.toISOString().slice(0, 10); };
+export const todayISO = () => iso(new Date());
+export const addDaysTo = (s, n) => { const d = new Date(s + "T12:00"); d.setDate(d.getDate() + n); return iso(d); };
+export const diffDays = (a, b) => Math.round((new Date(a + "T12:00") - new Date(b + "T12:00")) / 86400000);
 // Formater une date coûte cher (un formateur Intl reconstruit à chaque appel) et une liste de fragments en affiche
 // des milliers : fonction pure, donc résultats gardés, dans une limite de taille.
 const fmtCache = new Map();
-const fmt = (s, o = { day: "numeric", month: "short" }) => {
+export const fmt = (s, o = { day: "numeric", month: "short" }) => {
   if (!s) return "";
   const k = s + JSON.stringify(o);
   let v = fmtCache.get(k);
   if (v === undefined) { v = new Date(s + "T12:00").toLocaleDateString("fr-FR", o); if (fmtCache.size >= 5000) fmtCache.clear(); fmtCache.set(k, v); }
   return v;
 };
-const clone = o => JSON.parse(JSON.stringify(o));
-const ago = s => { if (!s) return "jamais"; const n = diffDays(todayISO(), s); return n === 0 ? "aujourd'hui" : n === 1 ? "hier" : `il y a ${n} j`; };
+export const ago = s => { if (!s) return "jamais"; const n = diffDays(todayISO(), s); return n === 0 ? "aujourd'hui" : n === 1 ? "hier" : `il y a ${n} j`; };
 /* Le message loge dans la fenêtre modale ouverte (feuille, formulaire) s'il y en a une : sinon il passerait dessous,
    invisible, avec son « Annuler ». */
 function toastHost() {
@@ -25,19 +36,19 @@ function toastHost() {
   try { const open = [...document.querySelectorAll("dialog[open]")].pop(), host = open || document.body; if (el.parentNode !== host) host.appendChild(el); } catch {}
   return el;
 }
-function toast(msg) { undoFn = null; const el = toastHost(); el.textContent = msg; el.classList.remove("act"); el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 3400); }
+export function toast(msg) { undoFn = null; const el = toastHost(); el.textContent = msg; el.classList.remove("act"); el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 3400); }
 /* Un message avec une action proposée (« Annuler », « Ajouter »…), qui disparaît d'elle-même : jamais imposée. */
 let undoFn = null;
-function toastAction(msg, button, fn, ms = 6000) {
+export function toastAction(msg, button, fn, ms = 6000) {
   const el = toastHost();
   el.innerHTML = `${esc(msg)} <button class="btn sm" data-act="undo">${esc(button)}</button>`;
   el.classList.add("show", "act"); undoFn = fn;
   clearTimeout(toast.t); toast.t = setTimeout(() => { el.classList.remove("show", "act"); undoFn = null; }, ms);
 }
 /* « Annuler » pendant quelques secondes, au lieu d'une confirmation avant d'agir. */
-const toastUndo = (msg, undo) => toastAction(msg, "Annuler", undo);
+export const toastUndo = (msg, undo) => toastAction(msg, "Annuler", undo);
 /* Retire un élément d'une liste d'un module (entries, scraps…) ; « Annuler » le remet à sa place. */
-function removeWithUndo(id, list, itemId) {
+export function removeWithUndo(id, list, itemId) {
   const inst = S().modules[id], i = inst[list].findIndex(x => x.id === itemId);
   if (i < 0) return;
   const item = inst[list][i], name = String(item.title || item.text || item.note || item.type || "l'élément");
@@ -51,11 +62,11 @@ function removeWithUndo(id, list, itemId) {
 /* Longues listes : les PAGE premiers éléments, puis « Voir les suivants ». Propre à l'appareil, remis à zéro
    quand on change de vue : une liste de milliers de fragments se calcule vite mais se parcourt mal au pouce. */
 const PAGE = 100, pageSize = {};
-function paged(key, list) {
+export function paged(key, list) {
   const n = pageSize[key] || PAGE, rest = list.length - n;
   return { items: list.slice(0, n), more: rest > 0 ? `<li class="more-row"><button class="btn ghost sm" data-act="page-more" data-k="${esc(key)}">Voir les ${Math.min(PAGE, rest)} suivants (${rest} de plus)</button></li>` : "" };
 }
-function setSaving(t) { $("#saving").textContent = t; }
+export function setSaving(t) { $("#saving").textContent = t; }
 
 /* ================= stores ================= */
 
@@ -63,11 +74,11 @@ const MODULE_DEFS = {
   assistant: "Assistant"
 };
 const OFF_BY_DEFAULT = ["assistant"];
-const money = n => (+n || 0).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+export const money = n => (+n || 0).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
 /* Données de départ d'un compte neuf : presque rien, et rien de personnel. L'accueil propose ensuite des
    modèles (MODULE_TEMPLATES). Doivent rester « vierges » (updatedAt 0, pas d'identifiant aléatoire) :
    un appareil vierge adopte le serveur tel quel au lieu de fusionner. */
-function siteSeed() {
+export function siteSeed() {
   return {
     updatedAt: 0, schemaVersion: SCHEMA_VERSION, boardMerged: true,
     config: { name: "Selene", palette: "nigredo", mode: "auto", labels: {}, groups: {}, welcome: true,
@@ -78,10 +89,10 @@ function siteSeed() {
 }
 /* ================= moon ================= */
 /* Mois synodique moyen (d'une nouvelle lune à la suivante) et une nouvelle lune de référence. */
-const SYNODIC = 29.530588853, NEW_MOON_REF = Date.UTC(2000, 0, 6, 18, 14);
+export const SYNODIC = 29.530588853, NEW_MOON_REF = Date.UTC(2000, 0, 6, 18, 14);
 const MOON_NAMES = ["Nouvelle lune", "Premier croissant", "Premier quartier", "Gibbeuse croissante", "Pleine lune", "Gibbeuse décroissante", "Dernier quartier", "Dernier croissant"];
 const moonName = p => MOON_NAMES[Math.floor(((p + 1 / 16) % 1) * 8)];
-function moon() {
+export function moon() {
   const syn = SYNODIC, ref = NEW_MOON_REF;
   const age = (((Date.now() - ref) / 86400000) % syn + syn) % syn;
   const p = age / syn;
@@ -200,7 +211,7 @@ function forestSVG(p, sc = skyScene({ sunAlt: -30, illum: .5 }), at, mo = skyMot
    Le lieu (config.sky, synchronisé) est arrondi au dixième de degré (~10 km) avant tout envoi. La météo vient
    d'Open-Meteo, gardée sur l'appareil (selene-weather) ; plus vieille que trois heures, elle est ignorée : un ciel sans
    météo vaut mieux qu'une pluie périmée. Sans lieu : l'heure estimée d'après le fuseau, la lune à sa place d'origine. */
-const skyConf = () => { const c = S().config.sky; return c && Number.isFinite(+c.lat) && Number.isFinite(+c.lon) ? c : null; };
+export const skyConf = () => { const c = S().config.sky; return c && Number.isFinite(+c.lat) && Number.isFinite(+c.lon) ? c : null; };
 /* Le mode de l'interface, tel qu'il s'affiche : la scène se tonalise d'après lui. */
 function uiDark() {
   const r = document.documentElement.dataset;
@@ -209,12 +220,12 @@ function uiDark() {
   try { return window.matchMedia("(prefers-color-scheme: dark)").matches; } catch { return true; }
 }
 const WEATHER_KEY = "selene-weather";
-function freshWeather(c) {
+export function freshWeather(c) {
   // Fraîche : moins de trois heures, et pas « du futur » (une horloge d'appareil changée ne ressuscite pas une vieille pluie).
   try { const w = JSON.parse(platform.storage.get(WEATHER_KEY)), age = w ? Date.now() - w.at : NaN; return w && w.lat === +c.lat && w.lon === +c.lon && age > -300000 && age < 3 * 3600000 ? w : null; } catch { return null; }
 }
 let weatherBusy = false;
-async function refreshWeather(force = false) {
+export async function refreshWeather(force = false) {
   const c = skyConf(); if (!c || c.weather === false || weatherBusy) return;
   const w = freshWeather(c); if (!force && w && Date.now() - w.at < 30 * 60000) return;
   weatherBusy = true;
@@ -246,7 +257,7 @@ function skyEventText(ev, illum) {
   const what = ev.type === "pénombre" ? `Éclipse de Lune par la pénombre ${when} : un voile léger, à peine perceptible` : `Éclipse ${ev.type} de ${ev.body === "soleil" ? "Soleil" : "Lune"} ${when}${ev.note ? ` : ${ev.note}` : ""}`;
   return `${what}${ev.body === "soleil" ? ". Jamais sans lunettes d'éclipse." : "."}`;
 }
-const hm = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
+export const hm = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
 /* La scène du moment : couleurs (skyScene), place de la lune, et ce qu'on peut en dire en une ligne. */
 function sceneNow(m) {
   const c = skyConf(), place = c ? { lat: +c.lat, lon: +c.lon } : approxPlace(), t = Date.now(), dark = uiDark();
@@ -321,8 +332,8 @@ function heroStyle(sc, dark) {
 
 
 /* ================= groupes à pourcentage (génériques) ================= */
-const gFilter = {};
-const itemGroups = (items, keyFn, doneFn) => {
+export const gFilter = {};
+export const itemGroups = (items, keyFn, doneFn) => {
   const m = new Map();
   for (const it of items) { const k = keyFn(it) || "Sans groupe"; const g = m.get(k) || { name: k, num: 0, den: 0 }; g.den++; if (doneFn(it)) g.num++; m.set(k, g); }
   return [...m.values()].map(g => ({ ...g, pct: Math.round(100 * g.num / g.den), sub: `${g.num} sur ${g.den}` }));
@@ -345,7 +356,9 @@ function normalizeSite(d) {
   for (const [id, inst] of Object.entries(d.modules)) if (inst.type === "notes" && inst.config.inbox && id !== inbox) inst.config.inbox = false;
   return d;
 }
-const site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite);
+// Ce que les deux documents disent à la page : redessiner après une synchronisation, l'état de l'enregistrement.
+const storeHooks = { onRemoteChange: () => render(), onStatus: m => setSaving(m) };
+export const site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite, storeHooks);
 /* L'ancien document « board » (tâches du Chantier jusqu'au format 5) n'est plus qu'un point d'entrée :
    ce qu'il contient est versé dans le module Chantier du site, puis il est vidé, et le vidage part au
    serveur à la synchro suivante (sinon chaque nouvel appareil ressusciterait les tâches supprimées).
@@ -361,19 +374,19 @@ function absorbBoard(d) {
   site.save();
   return d;
 }
-const board = makeStore("selene-board-v1", "board/state", () => ({ updatedAt: 0, tasks: [] }), absorbBoard);
-const S = () => site.data; // lecture seule : la normalisation a lieu à l'entrée des données, pas ici
-const label = id => { const s = S(); return s.config.labels[id] || (s.modules[id] && s.modules[id].label) || MODULE_DEFS[id]; };
-const enabled = id => { const m = S().config.modules.find(m => m.id === id); return m ? m.on : false; };
+export const board = makeStore("selene-board-v1", "board/state", () => ({ updatedAt: 0, tasks: [] }), absorbBoard, storeHooks);
+export const S = () => site.data; // lecture seule : la normalisation a lieu à l'entrée des données, pas ici
+export const label = id => { const s = S(); return s.config.labels[id] || (s.modules[id] && s.modules[id].label) || MODULE_DEFS[id]; };
+export const enabled = id => { const m = S().config.modules.find(m => m.id === id); return m ? m.on : false; };
 
 /* Regroupement en pourcentage d'un module : fourni par son type (TYPE_UI[type].grouper), réglé dans inst.config.groups. */
-function grouperFor(mod) {
+export function grouperFor(mod) {
   const inst = Object.hasOwn(S().modules, mod) ? S().modules[mod] : null;
   return inst && TYPE_UI[inst.type].grouper ? TYPE_UI[inst.type].grouper(inst, mod) : null;
 }
-const gcfg = mod => S().modules[mod].config.groups;
+export const gcfg = mod => S().modules[mod].config.groups;
 const groupBy = mod => { const G = grouperFor(mod), by = gcfg(mod).by; return G.fields[by] ? by : Object.keys(G.fields)[0]; }; // un champ désactivé depuis ne casse rien
-function groupPanel(mod, hint) {
+export function groupPanel(mod, hint) {
   const G = grouperFor(mod), c = gcfg(mod);
   if (!G || !c || !c.on) return "";
   const by = groupBy(mod);
@@ -387,9 +400,9 @@ function groupPanel(mod, hint) {
     <p class="hint">${hint}</p>
     <div class="rooms">${gs.map(g => `<button class="room ${active === g.name ? "active" : ""} ${g.pct > 100 ? "over" : ""}" ${G.filterable ? `data-act="grp-filter" data-mod="${esc(mod)}" data-g="${esc(g.name)}"` : "disabled"}><div class="fill" style="width:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></button>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
 }
-const gMatch = (mod, it) => { const v = gFilter[mod]; if (!v) return true; return (grouperFor(mod).key(it, groupBy(mod)) || "Sans groupe") === v; };
+export const gMatch = (mod, it) => { const v = gFilter[mod]; if (!v) return true; return (grouperFor(mod).key(it, groupBy(mod)) || "Sans groupe") === v; };
 
-function streakOf(dates) {
+export function streakOf(dates) {
   const set = new Set(dates); let n = 0; const d = new Date();
   if (!set.has(iso(d))) d.setDate(d.getDate() - 1);
   while (set.has(iso(d))) { n++; d.setDate(d.getDate() - 1); }
@@ -397,10 +410,10 @@ function streakOf(dates) {
 }
 
 /* ================= confirmation ================= */
-function ask(msg) { return new Promise(res => { const d = $("#cdlg"); $("#cmsg").textContent = msg; d.returnValue = ""; d.onclose = () => res(d.returnValue === "ok"); d.showModal(); }); }
+export function ask(msg) { return new Promise(res => { const d = $("#cdlg"); $("#cmsg").textContent = msg; d.returnValue = ""; d.onclose = () => res(d.returnValue === "ok"); d.showModal(); }); }
 
 /* ================= generic form ================= */
-let formCb = null;
+export let formCb = null;
 function fieldHTML(f, v) {
   const val = v[f.n] ?? "";
   const common = `name="${f.n}" ${f.req ? "required" : ""}`;
@@ -410,7 +423,7 @@ function fieldHTML(f, v) {
   else input = `<input type="${f.t || "text"}" ${common} value="${esc(val)}" ${f.list ? `list="${f.list}"` : ""} ${f.t === "number" ? 'min="0" step="1" inputmode="numeric"' : ""}>`;
   return `<label>${esc(f.l)}${input}</label>`;
 }
-function openForm(title, fields, values, cb) {
+export function openForm(title, fields, values, cb) {
   formCb = cb;
   $("#form").innerHTML = `<h2>${esc(title)}</h2>` + fields.map(f => f.row ? `<div class="field-row">${f.row.map(x => fieldHTML(x, values)).join("")}</div>` : fieldHTML(f, values)).join("") +
     `<div class="row"><button class="btn solid" value="save">Enregistrer</button><button class="btn" value="cancel" formnovalidate>Annuler</button></div>`;
@@ -424,7 +437,6 @@ $("#dlg").addEventListener("close", () => {
 });
 
 /* ================= views ================= */
-const VIEWS = {};
 
 /* Sur téléphone, le paysage se réduit à un bandeau à partir de la deuxième ouverture du jour ; décidé une fois
    par chargement, pour qu'il ne se replie pas sous les yeux en cours d'utilisation. */
@@ -495,7 +507,7 @@ function bridgeSave(id) {
 const SUMMARY = {
   assistant: () => { const b = backend(); return b === "sample" ? "Branché via claude.ai" : b === "api" ? "Branché via ta clé API" : "Pas encore branché"; }
 };
-function summaryFor(id) {
+export function summaryFor(id) {
   const inst = Object.hasOwn(S().modules, id) ? S().modules[id] : null;
   return inst ? TYPE_UI[inst.type].summary(id, inst) : SUMMARY[id] ? SUMMARY[id]() : "";
 }
@@ -510,7 +522,7 @@ function summaryFor(id) {
 let bilanOffset = 0;
 const bilanMode = () => { try { return platform.storage.get("selene-bilan") === "mois" ? "mois" : "lune"; } catch { return "lune"; } };
 /* [from, to[ en dates ISO ; offset 0 = la période en cours, 1 = la précédente… */
-function periodOf(mode, offset, now = Date.now()) {
+export function periodOf(mode, offset, now = Date.now()) {
   if (mode === "mois") {
     const d = new Date(now), start = new Date(d.getFullYear(), d.getMonth() - offset, 1), end = new Date(d.getFullYear(), d.getMonth() - offset + 1, 1);
     return { from: iso(start), to: iso(end), name: start.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) };
@@ -525,9 +537,9 @@ function periodOf(mode, offset, now = Date.now()) {
    le cycle ? Un résultat nul a de la valeur : il dit que la lune n'y est pour rien. Un seul test, ici — le
    répéter ailleurs avec d'autres découpages ferait courir le risque classique des tests multiples : à force
    d'essayer, on finit par trouver un faux signal. */
-const LUNAR_MIN_N = 40;
-const lunarPhase = date => { const t = ((Date.parse(date + "T12:00:00Z") - NEW_MOON_REF) / 86400000 % SYNODIC + SYNODIC) % SYNODIC; return t / SYNODIC; };
-function lunarTest() {
+export const LUNAR_MIN_N = 40;
+export const lunarPhase = date => { const t = ((Date.parse(date + "T12:00:00Z") - NEW_MOON_REF) / 86400000 % SYNODIC + SYNODIC) % SYNODIC; return t / SYNODIC; };
+export function lunarTest() {
   const angles = [];
   for (const inst of Object.values(S().modules)) {
     const ui = TYPE_UI[inst.type];
@@ -695,7 +707,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
 /* ================= tensions =================
    Une tension (« contredit ») reste ouverte tant qu'aucune entrée ne dérive des deux à la fois. Ce n'est pas
    une période : une contradiction ne s'éteint pas avec le cycle lunaire. Les plus anciennes d'abord. */
-function openTensions() {
+export function openTensions() {
   const items = thoughtItems(), parents = [];
   for (const it of items) { const ps = new Set((it.e.links || []).filter(l => l.type === "derive").map(l => l.to)); if (ps.size > 1) parents.push(ps); }
   const resolved = (a, b) => parents.some(ps => ps.has(a) && ps.has(b));
@@ -709,7 +721,9 @@ function openTensions() {
    sortir. Rien n'est enregistré ; le dernier tirage vit dans une variable, oublié à la prochaine ouverture. */
 const SORTES_MIN_DAYS = 14; // en dessous, ce n'est pas de l'oubli, c'est hier
 let sortesLast = null;
-function sortesPool() {
+// Une entrée tirée au sort qui vient d'être reliée n'est plus oubliée : le tirage affiché s'efface.
+export function sortesForget(e) { if (sortesLast && sortesLast.e === e) sortesLast = null; }
+export function sortesPool() {
   const now = todayISO(), out = [];
   for (const [mod, m] of Object.entries(S().modules)) {
     if (!enabled(mod)) continue;
@@ -727,7 +741,7 @@ function sortesPool() {
 }
 /* Tirage pondéré : chaque candidat pèse son nombre de jours de silence, donc davantage de chances pour ce qui
    dort depuis longtemps, sans jamais exclure ce qui vient tout juste de passer le seuil. */
-function sortesDraw() {
+export function sortesDraw() {
   const pool = sortesPool(); if (!pool.length) return null;
   let r = Math.random() * pool.reduce((a, x) => a + x.days, 0);
   for (const x of pool) { r -= x.days; if (r <= 0) return x; }
@@ -770,7 +784,7 @@ const STOPWORDS = new Set(("les des une est pas que qui quoi dont par pour sur s
   "that from are was have not but").split(" "));
 /* Les mots d'un texte, sous leur forme repliée (clé) et telle qu'écrite (pour l'afficher), pluriel en s/x ramené au singulier. */
 const driftCache = new Map();
-function driftWords(text) {
+export function driftWords(text) {
   let out = driftCache.get(text);
   if (!out) {
     out = new Map();
@@ -789,7 +803,7 @@ function driftWords(text) {
   }
   return out;
 }
-function lexicalDrift(mode, offset) {
+export function lexicalDrift(mode, offset) {
   const cur = periodOf(mode, offset), oldest = periodOf(mode, offset + DRIFT_REF);
   const now = new Map(), before = new Map(), shown = new Map(); let nNow = 0, nBefore = 0;
   for (const inst of Object.values(S().modules)) {
@@ -821,7 +835,7 @@ function driftSection(mode, cur) {
     ${d.rising.length ? `<p class="hint" style="margin:0 0 4px">Émergent</p><div class="row">${d.rising.map(x => chip(x.k, ` · ${x.n}${x.before ? ` (avant ${x.before})` : ""}`)).join("")}</div>` : `<p class="empty">Aucun mot ne se détache. Constance, ou routine.</p>`}
     ${d.fading.length ? `<p class="hint" style="margin:12px 0 4px">Absent cette fois, fréquent avant</p><div class="row">${d.fading.map(x => chip(x.k, ` · ${x.n} avant`)).join("")}</div>` : ""}</section>`;
 }
-function epCounts(from, to) {
+export function epCounts(from, to) {
   const out = {};
   for (const inst of Object.values(S().modules)) { const ui = TYPE_UI[inst.type]; if (ui && ui.texts) for (const t of ui.texts(inst)) if (t.ep && t.date && t.date >= from && t.date < to) out[t.ep] = (out[t.ep] || 0) + 1; }
   return out;
@@ -836,7 +850,7 @@ let searchQuery = "";
 // Fonction pure et appelée sur tout l'historique à chaque recherche ou concordance : ses résultats sont gardés
 // (jamais périmés, puisque la même entrée donne toujours la même sortie), dans une limite de taille.
 const foldCache = new Map();
-const fold = s => {
+export const fold = s => {
   s = String(s);
   let f = foldCache.get(s);
   if (f === undefined) {
@@ -849,7 +863,7 @@ const fold = s => {
 /* « statut:hypothèse » (ou « statut:hyp ») ne garde que ce qui porte ce statut ; seul, il les liste tous.
    Un statut inconnu ou vide ne trouve rien, plutôt que d'être ignoré en silence. */
 const epQuery = w => { const q = w.slice("statut:".length); return (q && Object.keys(EP_STATUS).find(k => fold(EP_STATUS[k]).startsWith(q))) || null; };
-function searchAll(q) {
+export function searchAll(q) {
   const words = fold(q).split(/\s+/).filter(Boolean), st = words.find(w => w.startsWith("statut:")), want = st ? epQuery(st) : null;
   const terms = words.filter(w => !w.startsWith("statut:")), out = [];
   if ((st && !want) || (!terms.length && !want)) return out;
@@ -860,7 +874,7 @@ function searchAll(q) {
   }
   return out;
 }
-function highlight(text, q) {
+export function highlight(text, q) {
   const f = fold(text), marks = [];
   for (const w of fold(q).split(/\s+/).filter(w => w && !w.startsWith("statut:"))) { let i = f.indexOf(w); while (i >= 0) { marks.push([i, i + w.length]); i = f.indexOf(w, i + w.length); } }
   marks.sort((a, b) => a[0] - b[0]);
@@ -948,8 +962,8 @@ VIEWS.reglages = () => {
 /* ================= navigation =================
    Trois strates : lentilles (Aujourd'hui, Bilan, Chercher), espaces regroupés par domaine (config.modules[].group,
    facultatif), système (Assistant, Réglages). Une route peut viser une entrée : « #module/identifiant ». */
-const routeOf = () => { const [view, entry] = location.hash.slice(1).split("/"); return { view: view || "accueil", entry: /^[\w-]{1,64}$/.test(entry || "") ? entry : "" }; };
-const SYSTEM = ["assistant"];
+export const routeOf = () => { const [view, entry] = location.hash.slice(1).split("/"); return { view: view || "accueil", entry: /^[\w-]{1,64}$/.test(entry || "") ? entry : "" }; };
+export const SYSTEM = ["assistant"];
 /* Les espaces actifs, par domaine, dans l'ordre de la navigation ; un domaine apparaît là où apparaît son premier espace. */
 function domains() {
   const s = S(), out = new Map();
@@ -1014,9 +1028,9 @@ function sigilOf(id) {
   return { taches: "equerre", programme: "spirale", cumul: "plume", rappels: "sablier", budget: "trebuchet", arc: "compas" }[inst.type] || "feuille";
 }
 const sigilSVG = k => `<svg class="sig" viewBox="0 0 24 24" aria-hidden="true">${SIGILS[k][1]}</svg>`;
-const sigil = id => sigilSVG(sigilOf(id));
+export const sigil = id => sigilSVG(sigilOf(id));
 /* Teinte d'un domaine : l'ordre d'apparition des domaines nommés donne t1…t7 ; un espace sans domaine prend l'accent (t0). */
-function tintOf(id) {
+export function tintOf(id) {
   const m = S().config.modules.find(x => x.id === id), g = m && String(m.group || "").trim();
   if (!g) return "t0";
   const named = domains().map(d => d.name).filter(Boolean);
@@ -1046,11 +1060,11 @@ function barHTML(view) {
 const RECENT_KEY = "selene-recent";
 function recents() { try { const r = JSON.parse(platform.storage.get(RECENT_KEY)); return Array.isArray(r) ? r.filter(x => x && typeof x.id === "string") : []; } catch { return []; } }
 function noteVisit(id) { try { platform.storage.set(RECENT_KEY, JSON.stringify([{ id, at: new Date().toISOString() }, ...recents().filter(x => x.id !== id)].slice(0, 5))); } catch {} }
-const liveRecents = () => recents().filter(r => Object.hasOwn(S().modules, r.id) && enabled(r.id));
+export const liveRecents = () => recents().filter(r => Object.hasOwn(S().modules, r.id) && enabled(r.id));
 const agoTime = t => { const m = Math.round((Date.now() - Date.parse(t)) / 60000); return !(m >= 0) ? "" : m < 2 ? "à l'instant" : m < 60 ? `il y a ${m} min` : m < 1440 ? `il y a ${Math.round(m / 60)} h` : ago(iso(new Date(t))); };
 
 /* ---- feuilles (sheets) : Espaces et Capturer, depuis la barre basse ---- */
-const SHEETS = {
+Object.assign(SHEETS, {
   espaces() {
     const rec = liveRecents().filter(r => r.id !== lastView).slice(0, 3);
     const row = id => `<a class="srow ${tintOf(id)}" href="#${esc(id)}">${sigil(id)}<b>${esc(label(id))}</b><span class="sub">${summaryFor(id)}</span>${navMarks(id)}</a>`;
@@ -1070,9 +1084,9 @@ const SHEETS = {
       <p class="hint" style="margin:10px 0 0">« 12 € courses », « Mon module : une note » se rangent d'un geste.${n ? ` <a href="#${esc(inbox)}">${plural(n, "élément")} à trier</a>` : ""}</p>${n > 1 ? `<div class="row" style="margin-top:10px"><button class="btn sm" data-act="vasculum">Trier une à une</button></div>` : ""}`
       : `<p class="hint">Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans <a href="#reglages">Réglages</a>.</p>`}`;
   }
-};
-let sheetKind = null, sheetArg = null; // la feuille ouverte, pour la redessiner après un réglage
-function openSheet(kind, arg) {
+});
+export let sheetKind = null, sheetArg = null; // la feuille ouverte, pour la redessiner après un réglage
+export function openSheet(kind, arg) {
   const d = $("#sheet"); closePalette();
   sheetKind = kind; sheetArg = arg;
   $("#sheetBody").innerHTML = SHEETS[kind](arg);
@@ -1081,7 +1095,7 @@ function openSheet(kind, arg) {
   if (!d.open) d.showModal();
   const i = $("#capSheetIn"); if (kind === "capture" && i) { i.value = loadDraft("sheet", i); i.focus(); }
 }
-function closeSheet() { const d = $("#sheet"); if (d.open) d.close(); }
+export function closeSheet() { const d = $("#sheet"); if (d.open) d.close(); }
 function closePalette() { const d = $("#palette"); if (d.open) d.close(); }
 function closeOverlays() { closeSheet(); closePalette(); }
 /* Un clic sur le voile (hors du cadre) ferme ; un lien suivi depuis une feuille ou la palette la ferme aussi. */
@@ -1104,7 +1118,7 @@ function paletteItems(q) {
   const other = bilanMode() === "mois" ? "lune" : "mois";
   for (const [t, run] of [[tick ? "Mettre le minuteur en pause" : "Lancer le minuteur (15 min)", () => { closeOverlays(); $("#timerBtn").click(); }],
     ["Capturer…", () => openSheet("capture")],
-    ["Trier la boîte, une note à la fois", () => { vascSkip = 0; openSheet("vasculum"); }],
+    ["Trier la boîte, une note à la fois", () => CLICK["vasculum"]()],
     [`Bilan par ${other === "lune" ? "cycle lunaire" : "mois"}`, () => { platform.storage.set("selene-bilan", other); bilanOffset = 0; goTo("bilan")(); }]])
     if (match(t)) out.push({ k: "Action", t, run });
   if (f) {
@@ -1137,7 +1151,7 @@ $("#palList").addEventListener("click", e => { const li = e.target.closest && e.
 let backTo = null; // { from, to, label } : la puce « ‹ … » qui ramène d'où l'on vient
 const backLabel = v => v === "dehors" ? "Dehors" : v === "recherche" ? (searchQuery.trim() ? `Recherche « ${searchQuery.trim()} »` : "Recherche") : v === "accueil" ? "Aujourd'hui" : v === "bilan" ? "Bilan" : v === "reglages" ? "Réglages" : label(v) || v;
 function entryEl(id) { let hit = null; $("#main").querySelectorAll("[data-id], [data-task]").forEach(el => { if (!hit && (el.dataset.id === id || el.dataset.task === id)) hit = el; }); return hit; }
-function focusEntry(id) {
+export function focusEntry(id) {
   const view = routeOf().view;
   // Plus loin dans une liste paginée : on déplie ; masquée par un filtre de l'appareil : on le lève, puis on déplie encore.
   const unfold = () => { let el = entryEl(id); for (let i = 0; !el && i < 50; i++) { const more = [...$("#main").querySelectorAll('[data-act="page-more"]')]; if (!more.length) break; for (const b of more) pageSize[b.dataset.k] = (pageSize[b.dataset.k] || PAGE) + 10 * PAGE; render(); el = entryEl(id); } return el; };
@@ -1175,7 +1189,7 @@ function resumeSection() {
   return lines.length ? `<section class="resume-box" aria-label="Reprendre"><h3>Reprendre</h3><ul>${lines.join("")}</ul></section>` : "";
 }
 /* Ouvrir sur l'accueil ou là où l'on en était : propre à l'appareil. */
-const openOn = () => { try { return platform.storage.get("selene-open") === "last" ? "last" : "accueil"; } catch { return "accueil"; } };
+export const openOn = () => { try { return platform.storage.get("selene-open") === "last" ? "last" : "accueil"; } catch { return "accueil"; } };
 
 /* Les réglages propres d'un module (son sigil, ceux de son type, son regroupement en pourcentage) : dans la page
    Réglages, et dans la feuille qu'ouvre « régler » depuis le module lui-même. */
@@ -1206,21 +1220,21 @@ function applyTheme() {
 let lastView = null;
 /* Brouillons : le texte en cours d'un champ libre survit à la fermeture de l'app (iOS tue volontiers une PWA
    en arrière-plan). Propres à l'appareil ; effacés quand le champ est envoyé, et à la déconnexion. */
-const DRAFT_PREFIX = "selene-draft:";
+export const DRAFT_PREFIX = "selene-draft:";
 const draftKey = (view, el) => `${DRAFT_PREFIX}${view}:${el.id}`;
-function saveDraft(view, el) { if (!view || !el.id) return; try { if (el.value.trim()) platform.storage.set(draftKey(view, el), el.value); else platform.storage.remove(draftKey(view, el)); } catch {} }
-function loadDraft(view, el) { try { return platform.storage.get(draftKey(view, el)) || ""; } catch { return ""; } }
+export function saveDraft(view, el) { if (!view || !el.id) return; try { if (el.value.trim()) platform.storage.set(draftKey(view, el), el.value); else platform.storage.remove(draftKey(view, el)); } catch {} }
+export function loadDraft(view, el) { try { return platform.storage.get(draftKey(view, el)) || ""; } catch { return ""; } }
 // Le brouillon d'une feuille (la capture de la barre basse) ne dépend pas de la vue ouverte derrière elle.
 document.addEventListener("input", e => { if (e.target.dataset && e.target.dataset.draft !== undefined) saveDraft(e.target.closest && e.target.closest("dialog") ? "sheet" : lastView, e.target); });
 /* Calculs coûteux partagés par plusieurs parties d'un même rendu (la concordance sert la vue, l'accueil et
    le bilan) : gardés le temps d'un rendu seulement, pendant lequel les données ne bougent pas. */
 let renderMemo = null;
-function memoInRender(key, compute) {
+export function memoInRender(key, compute) {
   if (!renderMemo) return compute();
   if (!renderMemo.has(key)) renderMemo.set(key, compute());
   return renderMemo.get(key);
 }
-function render() {
+export function render() {
   renderMemo = new Map();
   try { renderNow(); } finally { renderMemo = null; }
   skyWatch();
@@ -1239,13 +1253,13 @@ const notifyConf = () => {
   return { on: !!(c && c.on), at: c && /^([01]\d|2[0-3]):[0-5]\d$/.test(c.at) ? c.at : NOTIFY_AT };
 };
 const plainText = html => String(html).replace(/<[^>]*>/g, "").replace(/&(amp|lt|gt|quot|#39);/g, (_, e) => ({ amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'" })[e]).replace(/\s+/g, " ").trim();
-function dayDigest(day) {
+export function dayDigest(day) {
   const s = S(), out = [];
   for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) for (const a of TYPE_UI[inst.type].alerts(id, inst, day)) if (a.actions) out.push(plainText(a.text));
   for (const [id, t] of allTasks()) if (enabled(id) && !t.done && t.due === day) out.push(`Échéance : ${t.title}`);
   return out;
 }
-function digestPlan(nowMs = Date.now(), days = 7) {
+export function digestPlan(nowMs = Date.now(), days = 7) {
   const { on, at } = notifyConf(); if (!on) return [];
   const [h, m] = at.split(":").map(Number), plan = [];
   for (let i = 0; i < days; i++) {
@@ -1369,8 +1383,8 @@ window.addEventListener("hashchange", () => {
   if (entry && lastView && lastView !== view) backTo = { from: lastView, to: view, label: backLabel(lastView) };
   else if (!backTo || view !== backTo.to) backTo = null;
   closeOverlays();
-  openId = null; bridgeOpen = null; for (const k of Object.keys(pageSize)) delete pageSize[k];
-  if (entry && Object.hasOwn(S().modules, view) && S().modules[view].type === "taches") openId = entry; // une tâche visée s'ouvre
+  setOpenId(null); bridgeOpen = null; for (const k of Object.keys(pageSize)) delete pageSize[k];
+  if (entry && Object.hasOwn(S().modules, view) && S().modules[view].type === "taches") setOpenId(entry); // une tâche visée s'ouvre
   render();
   const t = platform.session.get("selene-scroll"); platform.session.remove("selene-scroll"); const el = t && document.getElementById(t);
   if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); }
@@ -1391,7 +1405,7 @@ $("#main").addEventListener("click", e => {
 });
 
 /* ================= actions ================= */
-const idOf = el => el.closest("[data-id]")?.dataset.id;
+export const idOf = el => el.closest("[data-id]")?.dataset.id;
 /* Capture rapide, depuis l'accueil ou depuis la feuille « Capturer » (barre basse du téléphone). */
 function capture(inp = $("#capIn")) {
   if (!inp || !inp.value.trim()) return;
@@ -1406,7 +1420,7 @@ function entryAdd(id) {
   const inst = S().modules[id], ui = TYPE_UI[inst.type];
   if (ui.add) ui.add(id, inst);
 }
-const CLICK = {
+Object.assign(CLICK, {
   "grp-filter": el => { const m = el.dataset.mod, g = el.dataset.g; gFilter[m] = gFilter[m] === g ? "" : g; render(); },
   // « régler » : les réglages du module s'ouvrent sur place (une feuille), sans quitter ce qu'on regardait ;
   // depuis la page Réglages, le bloc du module se déplie.
@@ -1491,13 +1505,13 @@ const CLICK = {
   "chat-chip": el => sendChat(el.textContent),
   "chat-clear": async () => { if (await ask("Effacer la conversation ?")) { chatLog.set([]); render(); } },
   "as-forget": async () => {
-    try { assistantCle = await assistantCall({ action: "oublier" }); toast("Clé effacée du serveur."); } catch (e) { toast("Clé non effacée : " + e.message); }
+    try { assistantSetCle(await assistantCall({ action: "oublier" })); toast("Clé effacée du serveur."); } catch (e) { toast("Clé non effacée : " + e.message); }
     render();
   },
   "exp": () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, site.data), "application/json", "Sauvegarde Selene"),
   "pal": el => { S().config.palette = el.dataset.p; site.save(); render(); },
   "mod-up": el => moveMod(el, -1), "mod-down": el => moveMod(el, 1),
-  "auth-switch": () => { authMode = authMode === "signup" ? "signin" : "signup"; render(); },
+  "auth-switch": () => { authToggleMode(); render(); },
   "auth-out": () => authSignOut(),
   "auth-delete": async el => {
     const inp = $("#authDelIn");
@@ -1507,9 +1521,9 @@ const CLICK = {
     try { await authDeleteAccount(); toast("Compte supprimé. Il ne reste rien de toi ici, ce qui est plus que la plupart des services peuvent dire."); }
     catch (e) { el.disabled = false; toast("Compte non supprimé : " + e.message); }
   }
-};
+});
 /* Donne un fichier à l'utilisatrice : via claude.ai, le partage natif (téléphone) ou un téléchargement. */
-async function downloadFile(filename, data, type, title) {
+export async function downloadFile(filename, data, type, title) {
   if (downloadsNS) { try { await downloadsNS.save({ filename, data }); } catch (e) { toast("Export annulé."); } return; }
   try { const file = new File([data], filename, { type }); if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([data], { type })); a.download = filename; document.body.appendChild(a); a.click(); a.remove();
@@ -1558,7 +1572,6 @@ document.addEventListener("keydown", e => {
   if (e.key === "Enter" && e.target.id === "zotIn") { e.preventDefault(); CLICK["zot-search"](e.target); }
 });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "capSheetIn") capture(e.target); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && e.target.id === "bridgeIn") bridgeSave(e.target.dataset.mod); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
-const CHANGE = {}; // actions « change » des types de module (remplie par types.js)
 document.addEventListener("change", e => {
   const el = e.target, act = el.dataset.act;
   if (act && Object.hasOwn(CHANGE, act)) CHANGE[act](el);
@@ -1581,7 +1594,7 @@ document.addEventListener("change", e => {
   }
   else if (act === "as-key") { // la clé part au serveur, qui la vérifie et la chiffre ; elle ne reste pas dans la page
     const v = el.value.trim(); el.value = ""; el.blur();
-    if (v) assistantCall({ action: "cle", cle: v }).then(r => { assistantCle = r; toast("Clé vérifiée et enregistrée."); }, e => toast("Clé non enregistrée : " + e.message)).then(render);
+    if (v) assistantCall({ action: "cle", cle: v }).then(r => { assistantSetCle(r); toast("Clé vérifiée et enregistrée."); }, e => toast("Clé non enregistrée : " + e.message)).then(render);
   }
   else if (act === "as-model") { S().config.assistant.model = el.value; site.save(); render(); }
   else if (act === "as-actions") { S().config.assistant.actions = el.checked; site.save(); render(); }
@@ -1643,7 +1656,7 @@ document.addEventListener("change", e => {
 
 /* ================= timer ================= */
 /* Au bout des quinze minutes, le module ouvert peut proposer une suite (noter la séance, le nouveau total). */
-function timerDone() {
+export function timerDone() {
   const view = routeOf().view, inst = Object.hasOwn(S().modules, view) ? S().modules[view] : null, hook = inst && TYPE_UI[inst.type].timerDone;
   if (inst) { bridgeOpen = view; render(); } // et le prochain geste, pendant qu'on s'en souvient
   if (!(hook && hook(view, inst, 15))) toast("Quinze minutes. Tu as le droit d'arrêter. Et celui de continuer.");

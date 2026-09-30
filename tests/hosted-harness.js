@@ -81,7 +81,7 @@ function launchHosted({ storage = new Map(), fetch, session = 'valid', bare = fa
     navigator: {}, console, Date, Math, setTimeout: setTimeoutU, clearTimeout, AbortController, fetch,
     setInterval: fn => { intervals.set(++n, fn); return n; }, clearInterval: id => intervals.delete(id) };
   const instrumented = script.replace(/\}\);\s*\}\)\(\);\s*$/, // dans platform.ready
-    'globalThis.__test = { board, site, S, deleteModuleInstance, authRefreshIfNeeded, authSignOut, mergeDocs, session: () => authSession };\n});\n})();');
+    'globalThis.__test = { ...__selene, session: () => __selene.authSession };\n});\n})();');
   vm.runInNewContext(instrumented, context);
   const poll = () => Promise.all([...intervals.values()].map(fn => fn()));
   return { ...context.__test, nodes, storage, intervals, poll };

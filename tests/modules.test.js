@@ -34,7 +34,7 @@ function launch(storage, { claude = null, bare = false } = {}) {
   const location = { hash: '' };
   const context = { document, window, localStorage, location,
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
-  const instrumented = script.replace(/\}\);\s*\}\)\(\);\s*$/, 'globalThis.__test = { submitModuleForm: values => formCb(values), S, site, board, createModuleInstance, deleteModuleInstance, addJournalEntry, slugId, label, createBackup, parseBackup, render, MODULE_TYPES, TYPE_UI, CLICK, CHANGE, summaryFor, contextText, saveCollectionItem, grouperFor, groupPanel, SCHEMA_VERSION, inboxId, noteTargets, availableTools, addCapture, addBudgetEntry, TOOLS, addTask, board, pickTask, todayTasks, MODULE_TEMPLATES, createFromTemplate, siteSeed, removeWithUndo, projection, saveDraft, loadDraft, VIEWS, searchAll, highlight, fold, captureIntent, fileIntent, scrapsMarkdown, periodOf, epPrefix, setEpStatus, setResume, EP_STATUS, timerDone, epCounts, concordance, motifsIn, lexicalDrift, driftWords, addLink, openTensions, mergeDocs, dossierMarkdown, arcCandidates, tierCurrent, firstDecisions, collectionForm, editFragmentText, sortesPool, sortesDraw, lunarTest, lunarPhase, NEW_MOON_REF, SYNODIC, LUNAR_MIN_N };\n});\n})();'); // dans platform.ready
+  const instrumented = script.replace(/\}\);\s*\}\)\(\);\s*$/, 'globalThis.__test = { ...__selene, submitModuleForm: values => __selene.formCb(values) };\n});\n})();'); // dans platform.ready
   vm.runInNewContext(instrumented, context);
   const fire = (name, target) => (handlers[name] || []).forEach(fn => fn({ target, preventDefault() {} }));
   return { ...context.__test, nodes, location, document, fire };

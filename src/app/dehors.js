@@ -1,6 +1,7 @@
 /* ================= dehors : lire un flux, dire ce qui est nouveau (sans réseau) =================
    RSS 2.0, RSS 1.0 (RDF), Atom et JSON Feed, lus par DOMParser en XML (rien ne s'exécute) ou JSON.parse.
    Le réseau (le passeur), le cache de l'appareil et l'interface sont dans types.js ; la validation, dans backup.js. */
+import { clip } from "../core/sources.js";
 const DEHORS_MAX = 12; // éléments montrés au plus : au-delà, ils attendent
 const DEHORS_DAYS = 30; // un élément non gardé s'efface du cache de l'appareil au bout d'un mois
 /* Du HTML (résumé d'un flux) → du texte : parsé comme document inerte, jamais inséré. */
@@ -8,7 +9,7 @@ const feedText = (s, n) => { const d = new window.DOMParser().parseFromString(`<
 const feedDate = v => { const t = Date.parse(String(v || "").trim()); return Number.isFinite(t) ? new Date(t).toISOString() : ""; };
 const feedLink = (h, base) => { try { const u = new URL(String(h || "").trim(), base); return /^https?:$/.test(u.protocol) ? u.toString() : ""; } catch { return ""; } };
 /* Un flux (texte) → { title, items: [{ id, title, link, date, text }] } ; null si ce n'en est pas un. */
-function parseFeed(text, base) {
+export function parseFeed(text, base) {
   const t = String(text || "").replace(/^﻿/, "").trim();
   const item = (id, title, link, date, body) => { const l = feedLink(link, base), ti = clip(feedText(title, 300) || l, 300); return ti ? { id: clip(String(id || l || ti), 300), title: ti, link: l, date: feedDate(date), text: feedText(body, 400) } : null; };
   if (t.startsWith("{")) {
@@ -34,7 +35,7 @@ function parseFeed(text, base) {
   return null;
 }
 /* Fusionne une lecture dans le cache d'un flux : un élément déjà vu garde sa date de première vue (first). */
-function feedMerge(old, items, now) {
+export function feedMerge(old, items, now) {
   const seen = new Map((old || []).map(x => [x.id, x])), out = [];
   for (const x of items) out.push({ ...x, first: (seen.get(x.id) || {}).first || now });
   for (const x of old || []) if (!out.some(y => y.id === x.id)) out.push(x);
@@ -49,7 +50,7 @@ const feedTime = (x, now) => { const t = x.date ? Date.parse(x.date) : NaN; retu
    - `key` : élément → clé (DOI, adresse) ; le même lien paru dans deux flux n'apparaît qu'une fois, « aussi dans » l'autre ;
    - `why` : (élément, flux) → d'autres raisons, en toutes lettres (un auteur de tes sources, une de tes sources citée).
    Ce qui a au moins une raison passe devant, le plus de raisons d'abord ; à égalité, le plus récent. `max` au plus. */
-function dehorsNew(feeds, cache, hidden, now, { test = null, key = null, why = null, max = DEHORS_MAX } = {}) {
+export function dehorsNew(feeds, cache, hidden, now, { test = null, key = null, why = null, max = DEHORS_MAX } = {}) {
   const all = [], byKey = new Map();
   for (const f of feeds) {
     const c = cache[f.id]; if (!c || !Array.isArray(c.items)) continue;
