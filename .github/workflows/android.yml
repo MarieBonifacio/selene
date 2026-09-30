@@ -1,0 +1,44 @@
+name: Android
+# Construit l'APK de Selene (Capacitor, docs/android.md) : la page native (dist/native), synchronisée dans le projet
+# native/android, compilée par Gradle. L'APK de débogage est déposé en artefact, à installer à la main (sideload).
+# Les runners Ubuntu de GitHub ont déjà le SDK Android.
+on:
+  pull_request:
+    paths: ['src/**', 'native/**', 'capacitor.config.json', 'package.json', 'package-lock.json', 'build.py', '.github/workflows/android.yml']
+  push:
+    branches: [main]
+    paths: ['src/**', 'native/**', 'capacitor.config.json', 'package.json', 'package-lock.json', 'build.py', '.github/workflows/android.yml']
+  workflow_dispatch:
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21' # Capacitor 8 et le plugin Android de Gradle demandent Java 21
+          cache: gradle
+      - run: npm ci
+      - name: Page native, puis projet Android synchronisé (page et plugins)
+        run: |
+          npm run build:dist
+          npx cap sync android
+      - name: APK de débogage
+        working-directory: native/android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v5
+        with:
+          name: selene-android-debug
+          path: native/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14

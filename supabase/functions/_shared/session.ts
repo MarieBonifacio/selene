@@ -2,9 +2,12 @@
 
 export type Base = { fetch: typeof fetch; env: (nom: string) => string | undefined };
 
-/* Les origines autorisées à appeler (liste séparée par des virgules), par défaut le site publié. */
+/* Les origines autorisées à appeler (liste séparée par des virgules). Par défaut : le site publié et les apps
+   Capacitor (https://localhost sous Android, capacitor://localhost sous iOS : docs/android.md). L'origine n'est
+   qu'une première barrière : chaque appel demande de toute façon une session valide. */
+export const ORIGINES_PAR_DEFAUT = "https://mariebonifacio.github.io,https://localhost,capacitor://localhost";
 export function origines(env: string | undefined): string[] {
-  return (env || "https://mariebonifacio.github.io").split(",").map(s => s.trim().replace(/\/$/, "")).filter(Boolean);
+  return (env || ORIGINES_PAR_DEFAUT).split(",").map(s => s.trim().replace(/\/$/, "")).filter(Boolean);
 }
 
 /* Qui appelle : la session est vérifiée auprès de Supabase Auth (valable avec les nouvelles clés comme les

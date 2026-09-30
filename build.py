@@ -59,13 +59,16 @@ head = csp([code, sw_code], pwa=True) + """<link rel="manifest" href="manifest.w
 """ + THEME
 # La page des coquilles natives (Capacitor, Tauri) : la même, sans service worker ni manifeste (l'app est déjà installée,
 # ses fichiers déjà sur l'appareil), donc un seul script à autoriser.
-native_head = csp([code], pwa=False) + THEME
+# Son premier script est l'amorçage natif (src/native/boot.js) : il pose les coffres de l'appareil avant Selene.
+boot_code = "\n" + (SOURCE / "native" / "boot.js").read_text(encoding="utf-8")
+assert "</script" not in boot_code.lower()
+native_head = csp([boot_code, code], pwa=False) + THEME
 
 # Les ajouts de la version hébergée se font dans le squelette, avant d'y poser le script : le JavaScript peut contenir
 # « <title> » ou « </body> » dans ses chaînes (la planche téléchargée en a), et un remplacement ne doit jamais l'atteindre.
 assert shell.count("<title>") == 1 and shell.count("</body>") == 1
 hosted = shell.replace("<title>", head + "<title>", 1).replace("</body>", sw + "</body>", 1).replace("<!-- SELENE_SCRIPT -->", script)
-native = shell.replace("<title>", native_head + "<title>", 1).replace("<!-- SELENE_SCRIPT -->", script)
+native = shell.replace("<title>", native_head + "<title>", 1).replace("<!-- SELENE_SCRIPT -->", "<script>" + boot_code + "</script>\n" + script)
 
 outputs = {"selene.html": standalone, "index.html": hosted}
 if sys.argv[1:2] == ["--bundle"]:
