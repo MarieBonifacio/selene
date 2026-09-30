@@ -64,3 +64,65 @@ test('runtime : artefact claude.ai ou web, et ses espaces de noms', async () => 
   assert.equal(art.platform.runtime(), 'artifact'); assert.equal(art.hosted(), false);
   assert.equal(await art.platform.claude.use('sample'), 'ns:sample');
 });
+
+// Coffre asynchrone, comme celui d'une coquille native : chaque opération répond après `delay(clé)` ms.
+function vault(initial = {}, { delay = () => 1, fail = null } = {}) {
+  const data = new Map(Object.entries(initial)), log = [];
+  const later = (k, fn) => new Promise((ok, ko) => setTimeout(() => { try { ok(fn()); } catch (e) { ko(e); } }, delay(k)));
+  return { data, log,
+    load: () => (fail === 'load' ? Promise.reject(new Error('illisible')) : later('', () => [...data])),
+    write: (k, v) => later(k, () => { if (fail === 'write') throw new Error('plein'); data.set(k, v); log.push(`${k}=${v}`); }),
+    remove: k => later(k, () => { data.delete(k); log.push(`-${k}`); }) };
+}
+const nativeCtx = (storage, secrets) => ({
+  window: { claude: null, addEventListener() { throw new Error('pas d’événement « storage » en natif'); }, seleneNative: { runtime: 'capacitor', storage, secrets } },
+  localStorage: { getItem() { throw new Error('localStorage touché'); }, setItem() { throw new Error('localStorage touché'); } },
+  document: { body: { textContent: '' } } });
+
+test('web : platform.ready démarre aussitôt, de façon synchrone (comme avant la façade)', () => {
+  const { platform } = load({ window: { claude: null } });
+  let started = false;
+  platform.ready(() => { started = true; });
+  assert.equal(started, true);
+});
+
+test('natif : rien ne démarre avant l’hydratation des deux coffres ; ensuite, lectures synchrones', async () => {
+  const s = vault({ 'selene-site-v1': '{"v":1}' }), k = vault({ 'selene-api-key': 'sk' });
+  const { platform, hosted } = load(nativeCtx(s, k));
+  assert.equal(platform.runtime(), 'capacitor'); assert.equal(hosted(), true);
+  let seen = null;
+  platform.ready(() => { seen = [platform.storage.get('selene-site-v1'), platform.secrets.get('selene-api-key'), platform.storage.get('selene-api-key')]; });
+  assert.equal(seen, null, 'pas encore hydraté');
+  await new Promise(r => setTimeout(r, 20));
+  assert.deepEqual(seen, ['{"v":1}', 'sk', null], 'chaque coffre a ses clés');
+  assert.doesNotThrow(() => platform.storage.watch(() => {}), 'une seule fenêtre : pas d’écoute « storage »');
+});
+
+test('natif : écriture immédiate en mémoire, dans l’ordre vers le coffre, et flush attend la fin', async () => {
+  // La première écriture de « a » est la plus lente : sans file par clé, le coffre finirait sur « 1 ».
+  let n = 0; const s = vault({}, { delay: k => (k === 'a' && n++ === 0 ? 30 : 1) });
+  const { platform } = load(nativeCtx(s, vault()));
+  await new Promise(r => platform.ready(r));
+  platform.storage.set('a', '1'); platform.storage.set('a', '2'); platform.storage.set('b', 'x'); platform.storage.remove('b');
+  assert.equal(platform.storage.get('a'), '2', 'lu aussitôt, sans attendre le coffre');
+  assert.deepEqual([...platform.storage.keys()], ['a']);
+  await platform.flush();
+  assert.equal(s.data.get('a'), '2', 'dernière écriture gagnante');
+  assert.equal(s.data.has('b'), false);
+  assert.deepEqual(s.log.filter(x => x.startsWith('a')), ['a=1', 'a=2']);
+});
+
+test('natif : un coffre qui refuse une écriture ne casse rien ; un coffre illisible n’ouvre pas une app vide', async () => {
+  const { platform } = load(nativeCtx(vault({}, { fail: 'write' }), vault()));
+  await new Promise(r => platform.ready(r));
+  assert.equal(platform.storage.set('a', '1'), true);
+  await assert.doesNotReject(platform.flush());
+  assert.equal(platform.storage.get('a'), '1', 'la session garde la valeur');
+
+  const ctx = nativeCtx(vault({}, { fail: 'load' }), vault()), p2 = load(ctx).platform;
+  let started = false;
+  p2.ready(() => { started = true; });
+  await new Promise(r => setTimeout(r, 20));
+  assert.equal(started, false, 'sans ses données, Selene ne démarre pas (elle les écraserait)');
+  assert.match(ctx.document.body.textContent, /n'a pas pu lire/);
+});

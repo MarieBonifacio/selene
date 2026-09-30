@@ -27,3 +27,16 @@ create policy "own row update" on public.app_state
 -- Recommandé pour un cercle restreint (pas un produit public) :
 -- Authentication -> Providers -> Email -> désactiver "Allow new users to sign up",
 -- puis inviter chaque personne depuis Authentication -> Users -> Invite.
+
+-- L'assistant (supabase/functions/assistant, docs/assistant.md) : la clé Anthropic de chaque compte, chiffrée par
+-- la fonction (AES-GCM, secret ASSISTANT_KEY_SECRET, liée au compte). RLS activée sans aucune règle : aucun
+-- navigateur ne lit ni n'écrit cette table, seule la fonction y accède avec la clé serveur du projet.
+create table public.assistant_keys (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  chiffre text not null,
+  iv text not null,
+  indice text not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.assistant_keys enable row level security;

@@ -1,7 +1,7 @@
-name: Passeur
-# Déploie la fonction Supabase Edge « passeur » (docs/passeur.md) : à la demande, ou quand elle change sur main.
-# Le jeton Supabase vit dans les secrets chiffrés du dépôt (jamais dans le code, jamais dans un journal) ;
-# les comptes autorisés, dans une variable du dépôt. Sans l'un ou l'autre, rien ne part.
+name: Assistant
+# Déploie la fonction Supabase Edge « assistant » (docs/assistant.md) : à la demande, ou quand elle change sur main.
+# Le jeton Supabase et le secret de chiffrement des clés vivent dans les secrets chiffrés du dépôt (jamais dans le
+# code, jamais dans un journal). Sans l'un ou l'autre, rien ne part.
 # Un jeton personnel Supabase n'est pas restreint à un projet : le révoquer (et retirer le secret) entre deux
 # déploiements est permis. Le déploiement automatique est alors sauté, avec un avis (main reste vert) ;
 # un lancement à la main, lui, échoue en le disant.
@@ -9,8 +9,8 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['supabase/functions/passeur/**', 'supabase/functions/_shared/**']
-concurrency: passeur # deux déploiements à la fois : non
+    paths: ['supabase/functions/assistant/**', 'supabase/functions/_shared/**']
+concurrency: assistant # deux déploiements à la fois : non
 permissions:
   contents: read
 jobs:
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      PASSEUR_USERS: ${{ vars.PASSEUR_USERS }}
+      ASSISTANT_KEY_SECRET: ${{ secrets.ASSISTANT_KEY_SECRET }}
       PROJECT_REF: pxnrzrmzritezftefdlj
     steps:
       - uses: actions/checkout@v6
@@ -38,22 +38,29 @@ jobs:
             fi
             echo "::error::Secret SUPABASE_ACCESS_TOKEN absent (Settings → Secrets and variables → Actions)."; exit 1
           fi
-          echo "$PASSEUR_USERS" | grep -Eq '^[0-9a-fA-F-]{36}(,[0-9a-fA-F-]{36})*$' || { echo "::error::Variable PASSEUR_USERS absente ou mal formée (identifiant de Réglages → Passeur)."; exit 1; }
+          # 32 octets en base64 (openssl rand -base64 32). Le changer rend illisibles les clés déjà enregistrées.
+          if [ "$(printf %s "$ASSISTANT_KEY_SECRET" | base64 -d 2>/dev/null | wc -c)" != 32 ]; then
+            if [ "$EVENT" = "push" ]; then
+              echo "::notice::Secret ASSISTANT_KEY_SECRET absent ou mal formé : déploiement automatique sauté (docs/assistant.md)."
+              echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0
+            fi
+            echo "::error::Secret ASSISTANT_KEY_SECRET absent ou mal formé (32 octets en base64 : openssl rand -base64 32)."; exit 1
+          fi
           echo "ok=true" >> "$GITHUB_OUTPUT"
       - name: Outils (versions de package-lock.json)
         if: steps.cfg.outputs.ok == 'true'
         run: npm ci
-      - name: Tests du passeur (on ne déploie pas du rouge)
+      - name: Tests des fonctions (on ne déploie pas du rouge)
         if: steps.cfg.outputs.ok == 'true'
         run: npm run test:functions
       - uses: supabase/setup-cli@v3
         if: steps.cfg.outputs.ok == 'true'
         with:
           version: 2.118.0 # épinglée : un déploiement ne change pas d’outil selon le jour
-      - name: Comptes autorisés
+      - name: Secret de chiffrement des clés
         if: steps.cfg.outputs.ok == 'true'
-        run: supabase secrets set --project-ref "$PROJECT_REF" PASSEUR_USERS="$PASSEUR_USERS"
+        run: supabase secrets set --project-ref "$PROJECT_REF" ASSISTANT_KEY_SECRET="$ASSISTANT_KEY_SECRET"
       - name: Déployer
         if: steps.cfg.outputs.ok == 'true'
         # --no-verify-jwt : la fonction vérifie elle-même la session auprès de Supabase Auth (nouvelles clés sb_…).
-        run: supabase functions deploy passeur --project-ref "$PROJECT_REF" --no-verify-jwt
+        run: supabase functions deploy assistant --project-ref "$PROJECT_REF" --no-verify-jwt

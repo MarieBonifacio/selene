@@ -27,7 +27,7 @@ jobs:
       - name: Analyse statique (script assemblé + service worker)
         run: npm run lint
   passeur:
-    # La fonction Supabase Edge (supabase/functions/passeur, docs/passeur.md) : types et tests, avec Deno.
+    # Les fonctions Supabase Edge (passeur, assistant : docs/passeur.md, docs/assistant.md) : types et tests, avec Deno.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -37,7 +37,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npm run test:passeur
+      - run: npm run test:functions
   browser:
     # Parcours dans un vrai navigateur (tests/browser) : ce que le faux DOM des tests unitaires ne voit pas.
     # WebKit : le moteur de Safari, des WebView iOS et de Tauri sous macOS et Linux ; Chromium : celui de Chrome,

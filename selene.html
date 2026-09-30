@@ -2237,14 +2237,25 @@ const { CARTE_MAX, EP_STATUS, LINK_REF, LINK_TYPES, MODULE_ID, MODULE_TEMPLATES,
 /* ================= plateforme =================
    Le seul fichier qui touche aux API de l'hôte : stockage du navigateur, window.claude, persistance.
    Le reste de Selene passe par `platform`, pour qu'une coquille native (Capacitor, Tauri) remplace un
-   branchement sans toucher au domaine ni aux vues. Chargé en premier par build.py.
+   branchement sans toucher au domaine ni aux vues. Premier fichier historique (build.py) : tout ce qui suit
+   démarre par platform.ready.
    - storage : les données ordinaires de l'appareil (documents, caches, préférences, brouillons) ;
    - secrets : ce qui ouvre un compte ou engage une facture (session, clés d'API, adresse privée d'agenda) ;
      sur le web, le même localStorage (risque accepté, docs/architecture.md), sur mobile le trousseau du système ;
    - session : ce qui ne vit que le temps de l'onglet (défilement, partage reçu avant connexion) ;
    - claude : les espaces de noms de l'artefact claude.ai (db, sample, downloads), null ailleurs.
    Toutes les opérations sont sûres : un stockage refusé (navigation privée, quota) rend null ou false,
-   jamais une exception. */
+   jamais une exception.
+
+   Deux sortes de coffres derrière storage et secrets, une seule façade (get / set / remove / keys, synchrones) :
+   - web : localStorage, synchrone, lu et écrit en direct (une copie en mémoire n'y gagnerait rien, et un
+     autre onglet ou les outils du navigateur la rendraient périmée) ;
+   - natif : la coquille pose, avant le script, `window.seleneNative = { runtime, storage, secrets }`, deux
+     coffres asynchrones { load() → Promise<[clé, valeur][]>, write(clé, valeur) → Promise, remove(clé) → Promise }.
+     Selene lit alors une copie en mémoire, hydratée une fois avant le démarrage (platform.ready) ; chaque
+     écriture part vers le coffre sans être attendue, dans l'ordre pour une même clé, et platform.flush()
+     attend celles en cours (mise en arrière-plan, fermeture). */
+const native = window.seleneNative || null;
 const webStore = area => ({
   get(k) { try { return area().getItem(k); } catch { return null; } },
   set(k, v) { try { area().setItem(k, v); return true; } catch { return false; } },
@@ -2255,25 +2266,58 @@ const webStore = area => ({
     return out;
   }
 });
+const pendingWrites = new Set();
+function mirror(vault) {
+  const m = new Map(), last = new Map();
+  // Une écriture attend la précédente sur la même clé : un coffre asynchrone ne doit pas les inverser.
+  const send = (k, fn) => {
+    const q = (last.get(k) || Promise.resolve()).then(fn).then(() => {}, () => {});
+    last.set(k, q); pendingWrites.add(q);
+    q.then(() => { pendingWrites.delete(q); if (last.get(k) === q) last.delete(k); });
+  };
+  return {
+    async hydrate() {
+      m.clear();
+      for (const [k, v] of await vault.load()) if (typeof k === "string" && typeof v === "string") m.set(k, v);
+    },
+    get: k => (m.has(k) ? m.get(k) : null),
+    set(k, v) { v = String(v); m.set(k, v); send(k, () => vault.write(k, v)); return true; },
+    remove(k) { m.delete(k); send(k, () => vault.remove(k)); },
+    keys: () => [...m.keys()]
+  };
+}
+const vaultFor = (name, area) => (native && native[name] ? mirror(native[name]) : webStore(area));
 const platform = {
-  // "artifact" (claude.ai) ou "web" (PWA, navigateur) ; plus tard "capacitor" et "tauri".
-  runtime: () => window.claude ? "artifact" : "web",
+  // "artifact" (claude.ai), "web" (PWA, navigateur), ou ce que dit la coquille native ("capacitor", "tauri").
+  runtime: () => window.claude ? "artifact" : native ? String(native.runtime || "native") : "web",
   storage: {
-    ...webStore(() => localStorage),
-    // Une autre fenêtre du même appareil a changé une clé (événement « storage » du web).
-    watch(cb) { window.addEventListener("storage", e => { if (e.key) cb(e.key); }); }
+    ...vaultFor("storage", () => localStorage),
+    // Une autre fenêtre du même appareil a changé une clé (événement « storage » du web ; une coquille native
+    // n'a qu'une fenêtre).
+    watch(cb) { if (!native) window.addEventListener("storage", e => { if (e.key) cb(e.key); }); }
   },
-  secrets: webStore(() => localStorage),
+  secrets: vaultFor("secrets", () => localStorage),
   session: webStore(() => sessionStorage),
   claude: {
     available: () => !!(window.claude && window.claude.use),
     use: async ns => (window.claude && window.claude.use ? window.claude.use(ns) : null)
   },
+  /* Démarre Selene quand le stockage est lisible : aussitôt sur le web et dans l'artefact (synchrone, comme
+     avant), après l'hydratation des coffres en natif. Si elle échoue, rien ne démarre : une app vide
+     écraserait, au premier enregistrement, les données restées dans le coffre. */
+  ready(start) {
+    if (!native) return start();
+    Promise.all([platform.storage.hydrate, platform.secrets.hydrate].map(h => (h ? h() : null))).then(() => start(), () => {
+      document.body.textContent = "Selene n'a pas pu lire les données de cet appareil. Ferme l'application et rouvre-la.";
+    });
+  },
+  // Les écritures en cours vers un coffre natif (rien à attendre sur le web).
+  async flush() { while (pendingWrites.size) await Promise.all([...pendingWrites]); },
   // Demande au navigateur de ne pas évincer les données locales sous la pression d'espace (PWA seulement).
   persist() { if (platform.runtime() !== "web") return; try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {} }
 };
 const hosted = () => platform.runtime() !== "artifact";
-
+platform.ready(() => {
 /* Un store = un document JSON gardé dans le stockage de l'appareil (platform.storage, source de vérité locale) et,
    une fois connecté, synchronisé avec une base distante par lecture → fusion à trois
    voies → écriture conditionnelle. La « base » (dernier état commun connu avec le
@@ -3663,13 +3707,13 @@ VIEWS.reglages = () => {
         <div style="margin-top:10px">${moduleSettingsHTML(m.id)}</div>
       </details>`).join("")}
   </section>
-  ${enabled("assistant") ? `<section id="assistant-cfg"><h3>Assistant</h3><p class="hint">Claude dans le tableau de bord. Sur claude.ai, il passe par ton compte. Hébergé ailleurs (GitHub Pages), il faut ta propre clé API, gardée uniquement dans ce navigateur.</p>
-    <div class="field-row"><label>Clé API Anthropic (hébergé uniquement)<input type="password" data-act="as-key" value="${getKey() ? "••••••••" : ""}" placeholder="sk-ant-…" autocomplete="off"></label>
+  ${enabled("assistant") ? `<section id="assistant-cfg"><h3>Assistant</h3><p class="hint">Claude dans le tableau de bord. Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.</p>
+    <div class="field-row">${hosted() ? `<label>Clé API Anthropic${assistantKnown()?.cle ? ` (enregistrée : ${esc(assistantKnown().indice || "")})` : ""}<input type="password" data-act="as-key" value="" placeholder="${assistantKnown()?.cle ? "Coller une autre clé pour la remplacer" : "sk-ant-…"}" autocomplete="off"></label>` : ""}
     <label>Modèle<select data-act="as-model">${[["claude-haiku-4-5-20251001", "Haiku 4.5, rapide et peu cher"], ["claude-sonnet-5", "Sonnet 5, équilibré"], ["claude-opus-5-5", "Opus 5.5, le plus capable"]].map(([k, l]) => `<option value="${k}" ${s.config.assistant.model === k ? "selected" : ""}>${l}</option>`).join("")}</select></label></div>
     <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" data-act="as-actions" ${s.config.assistant.actions ? "checked" : ""}>Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)</label>
     <p class="hint" style="margin:12px 0 4px">Ce que Claude peut lire :</p><div class="row">${Object.keys(s.config.assistant.share).filter(enabled).map(k => `<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" data-act="as-share" data-k="${esc(k)}" ${s.config.assistant.share[k] ? "checked" : ""}>${esc(label(k))}</label>`).join("")}</div>
-    ${getKey() ? `<button class="btn ghost sm" data-act="as-forget" style="margin-top:10px">Oublier la clé sur cet appareil</button>` : ""}</section>` : ""}
-  ${hosted() && authReady() && authSession ? `<section><h3>Compte</h3><p class="hint">Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données, la conversation avec l'assistant et la clé API.</p>
+    ${hosted() && assistantKnown()?.cle ? `<button class="btn ghost sm" data-act="as-forget" style="margin-top:10px">Oublier la clé (sur tous tes appareils)</button>` : ""}</section>` : ""}
+  ${hosted() && authReady() && authSession ? `<section><h3>Compte</h3><p class="hint">Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.</p>
     <button class="btn ghost" data-act="auth-out">Se déconnecter</button></section>` : ""}
   ${hosted() ? shareSettingsHTML() : ""}
   ${hosted() && authReady() && authSession ? passeurSettingsHTML() : ""}
@@ -4170,7 +4214,10 @@ const CLICK = {
   "chat-send": () => { const t = $("#chatIn").value; sendChat(t); },
   "chat-chip": el => sendChat(el.textContent),
   "chat-clear": async () => { if (await ask("Effacer la conversation ?")) { chatLog.set([]); render(); } },
-  "as-forget": () => { platform.secrets.remove("selene-api-key"); render(); toast("Clé oubliée sur cet appareil."); },
+  "as-forget": async () => {
+    try { assistantCle = await assistantCall({ action: "oublier" }); toast("Clé effacée du serveur."); } catch (e) { toast("Clé non effacée : " + e.message); }
+    render();
+  },
   "exp": () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, site.data), "application/json", "Sauvegarde Selene"),
   "pal": el => { S().config.palette = el.dataset.p; site.save(); render(); },
   "mod-up": el => moveMod(el, -1), "mod-down": el => moveMod(el, 1),
@@ -4248,7 +4295,10 @@ document.addEventListener("change", e => {
     }
     site.save(); el.blur(); render();
   }
-  else if (act === "as-key") { const v = el.value.trim(); if (v && !v.startsWith("•")) { platform.secrets.set("selene-api-key", v); toast(hosted() ? "Clé enregistrée dans ce navigateur." : "Clé enregistrée. Elle servira une fois le site hébergé."); } el.blur(); render(); }
+  else if (act === "as-key") { // la clé part au serveur, qui la vérifie et la chiffre ; elle ne reste pas dans la page
+    const v = el.value.trim(); el.value = ""; el.blur();
+    if (v) assistantCall({ action: "cle", cle: v }).then(r => { assistantCle = r; toast("Clé vérifiée et enregistrée."); }, e => toast("Clé non enregistrée : " + e.message)).then(render);
+  }
   else if (act === "as-model") { S().config.assistant.model = el.value; site.save(); render(); }
   else if (act === "as-actions") { S().config.assistant.actions = el.checked; site.save(); render(); }
   else if (act === "as-share") { S().config.assistant.share[el.dataset.k] = el.checked; site.save(); render(); }
@@ -6465,11 +6515,49 @@ CLICK["cite-follow"] = el => {
 };
 
 /* ================= assistant =================
-   Deux branchements : claude.ai (platform.claude.use("sample"), sans clé) ou l'API Anthropic avec la clé
-   de l'utilisatrice (build hébergé). Le contexte ne contient que les modules qu'elle a choisi de partager. */
+   Deux branchements : claude.ai (platform.claude.use("sample"), sans clé) ou, dans la version hébergée connectée, la
+   fonction « assistant » (supabase/functions/assistant, docs/assistant.md), qui garde la clé Anthropic du compte,
+   chiffrée, et appelle Claude pour lui : la clé ne revient jamais dans la page. Le contexte ne contient que les
+   modules que la personne a choisi de partager. */
 let sampleNS = null, downloadsNS = null, chatBusy = false;
-const getKey = () => platform.secrets.get("selene-api-key") || "";
-function backend() { if (!enabled("assistant")) return "off"; if (sampleNS) return "sample"; if (hosted() && getKey()) return "api"; return "none"; }
+/* Ce que dit le serveur de la clé du compte : null tant qu'on ne sait pas, { cle, indice? } ensuite ; « absent »
+   si la fonction n'est pas déployée (on n'insiste pas). */
+let assistantCle = null, assistantEtat = "", assistantDemande = null;
+const assistantPret = () => hosted() && authReady() && !!authSession && assistantEtat !== "absent";
+async function assistantCall(corps, delai = 15000) {
+  if (!assistantPret()) throw new Error("L'assistant hébergé demande d'être connectée à ton compte.");
+  const s = await authRefreshIfNeeded(); if (!s) throw new Error("Session expirée : reconnecte-toi.");
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), delai);
+  let r;
+  try {
+    r = await fetch(`${SUPABASE_URL}/functions/v1/assistant`, { method: "POST", signal: ac.signal,
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${s.access_token}` }, body: JSON.stringify(corps) });
+  } catch { throw new Error(ac.signal.aborted ? "Claude met trop de temps à répondre." : "Assistant injoignable (hors ligne, ou pas encore déployé)."); } finally { clearTimeout(t); }
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 404 || r.status === 503) { assistantEtat = "absent"; throw new Error(r.status === 404 ? "Assistant non déployé (voir docs/assistant.md)." : j.erreur || "Assistant non configuré."); }
+  if (j && j.code === "sans-cle") assistantCle = { cle: false };
+  if (!r.ok) throw new Error(j.erreur || `erreur ${r.status}`);
+  assistantEtat = "ok";
+  return j;
+}
+/* L'état de la clé, demandé une fois ; une clé laissée dans cet appareil par une ancienne version est d'abord
+   confiée au serveur, puis effacée d'ici (même refusée : elle ne sert plus à rien ici). */
+function assistantRefresh() {
+  if (!assistantPret() || assistantDemande) return assistantDemande;
+  const ancienne = platform.secrets.get("selene-api-key");
+  assistantDemande = (async () => {
+    try {
+      if (ancienne) {
+        try { assistantCle = await assistantCall({ action: "cle", cle: ancienne }); platform.secrets.remove("selene-api-key"); }
+        catch (e) { if (/refuse|clé d'API/.test(e.message)) platform.secrets.remove("selene-api-key"); throw e; }
+      } else assistantCle = await assistantCall({ action: "etat" });
+    } catch {} finally { assistantDemande = null; }
+    render();
+  })();
+  return assistantDemande;
+}
+const assistantKnown = () => { if (!assistantCle) assistantRefresh(); return assistantCle; };
+function backend() { if (!enabled("assistant")) return "off"; if (sampleNS) return "sample"; if (hosted() && assistantKnown()?.cle) return "api"; return "none"; }
 const chatLog = { get() { try { return JSON.parse(platform.storage.get("selene-chat") || "[]"); } catch { return []; } }, set(v) { try { platform.storage.set("selene-chat", JSON.stringify(v.slice(-40))); } catch {} } };
 function contextText() {
   const s = S(), sh = s.config.assistant.share, now = todayISO(), m = moon(), L = [];
@@ -6515,10 +6603,7 @@ async function askAPI(history) {
   const a = S().config.assistant, tools = availableTools().map(t => ({ name: t.name, description: t.description, input_schema: t.inputSchema }));
   const msgs = history.map(m => ({ role: m.role, content: m.content })); let out = "";
   for (let round = 0; round < 5; round++) {
-    const res = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "content-type": "application/json", "x-api-key": getKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
-      body: JSON.stringify({ model: a.model, max_tokens: 1500, system: instructions(), messages: msgs, ...(tools.length ? { tools } : {}) }) });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
+    const data = await assistantCall({ action: "message", requete: { model: a.model, max_tokens: 1500, system: instructions(), messages: msgs, ...(tools.length ? { tools } : {}) } }, 70000);
     if (!Array.isArray(data.content)) throw new Error("réponse inattendue de l'API");
     const txt = data.content.filter(b => b.type === "text").map(b => b.text).join("\n"); if (txt) out += (out ? "\n\n" : "") + txt;
     if (data.stop_reason !== "tool_use") break;
@@ -6568,7 +6653,7 @@ VIEWS.assistant = () => {
 
 /* Démarrage : chargé en dernier par build.py, quand toutes les vues et tous les registres existent. */
 /* ================= cycle de vie ================= */
-const flushAll = () => { board.flush(); site.flush(); };
+const flushAll = () => { board.flush(); site.flush(); platform.flush(); }; // serveur, puis coffre natif (s'il y en a un)
 window.addEventListener("pagehide", flushAll);
 document.addEventListener("visibilitychange", () => { if (document.hidden) flushAll(); });
 platform.storage.watch(k => { if ((k === board.key && board.reload()) | (k === site.key && site.reload())) render(); }); // un autre onglet
@@ -6605,6 +6690,7 @@ setTimeout(() => { agendaRefresh(); dehorsRefresh(); }, 1500); // les flux de De
   } catch {}
   try { if (platform.claude.available()) { sampleNS = await platform.claude.use("sample"); downloadsNS = await platform.claude.use("downloads"); render(); } } catch {}
 })();
+});
 })();
 </script>
 </body>

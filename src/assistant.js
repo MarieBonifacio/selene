@@ -1,9 +1,47 @@
 /* ================= assistant =================
-   Deux branchements : claude.ai (platform.claude.use("sample"), sans clé) ou l'API Anthropic avec la clé
-   de l'utilisatrice (build hébergé). Le contexte ne contient que les modules qu'elle a choisi de partager. */
+   Deux branchements : claude.ai (platform.claude.use("sample"), sans clé) ou, dans la version hébergée connectée, la
+   fonction « assistant » (supabase/functions/assistant, docs/assistant.md), qui garde la clé Anthropic du compte,
+   chiffrée, et appelle Claude pour lui : la clé ne revient jamais dans la page. Le contexte ne contient que les
+   modules que la personne a choisi de partager. */
 let sampleNS = null, downloadsNS = null, chatBusy = false;
-const getKey = () => platform.secrets.get("selene-api-key") || "";
-function backend() { if (!enabled("assistant")) return "off"; if (sampleNS) return "sample"; if (hosted() && getKey()) return "api"; return "none"; }
+/* Ce que dit le serveur de la clé du compte : null tant qu'on ne sait pas, { cle, indice? } ensuite ; « absent »
+   si la fonction n'est pas déployée (on n'insiste pas). */
+let assistantCle = null, assistantEtat = "", assistantDemande = null;
+const assistantPret = () => hosted() && authReady() && !!authSession && assistantEtat !== "absent";
+async function assistantCall(corps, delai = 15000) {
+  if (!assistantPret()) throw new Error("L'assistant hébergé demande d'être connectée à ton compte.");
+  const s = await authRefreshIfNeeded(); if (!s) throw new Error("Session expirée : reconnecte-toi.");
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), delai);
+  let r;
+  try {
+    r = await fetch(`${SUPABASE_URL}/functions/v1/assistant`, { method: "POST", signal: ac.signal,
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${s.access_token}` }, body: JSON.stringify(corps) });
+  } catch { throw new Error(ac.signal.aborted ? "Claude met trop de temps à répondre." : "Assistant injoignable (hors ligne, ou pas encore déployé)."); } finally { clearTimeout(t); }
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 404 || r.status === 503) { assistantEtat = "absent"; throw new Error(r.status === 404 ? "Assistant non déployé (voir docs/assistant.md)." : j.erreur || "Assistant non configuré."); }
+  if (j && j.code === "sans-cle") assistantCle = { cle: false };
+  if (!r.ok) throw new Error(j.erreur || `erreur ${r.status}`);
+  assistantEtat = "ok";
+  return j;
+}
+/* L'état de la clé, demandé une fois ; une clé laissée dans cet appareil par une ancienne version est d'abord
+   confiée au serveur, puis effacée d'ici (même refusée : elle ne sert plus à rien ici). */
+function assistantRefresh() {
+  if (!assistantPret() || assistantDemande) return assistantDemande;
+  const ancienne = platform.secrets.get("selene-api-key");
+  assistantDemande = (async () => {
+    try {
+      if (ancienne) {
+        try { assistantCle = await assistantCall({ action: "cle", cle: ancienne }); platform.secrets.remove("selene-api-key"); }
+        catch (e) { if (/refuse|clé d'API/.test(e.message)) platform.secrets.remove("selene-api-key"); throw e; }
+      } else assistantCle = await assistantCall({ action: "etat" });
+    } catch {} finally { assistantDemande = null; }
+    render();
+  })();
+  return assistantDemande;
+}
+const assistantKnown = () => { if (!assistantCle) assistantRefresh(); return assistantCle; };
+function backend() { if (!enabled("assistant")) return "off"; if (sampleNS) return "sample"; if (hosted() && assistantKnown()?.cle) return "api"; return "none"; }
 const chatLog = { get() { try { return JSON.parse(platform.storage.get("selene-chat") || "[]"); } catch { return []; } }, set(v) { try { platform.storage.set("selene-chat", JSON.stringify(v.slice(-40))); } catch {} } };
 function contextText() {
   const s = S(), sh = s.config.assistant.share, now = todayISO(), m = moon(), L = [];
@@ -49,10 +87,7 @@ async function askAPI(history) {
   const a = S().config.assistant, tools = availableTools().map(t => ({ name: t.name, description: t.description, input_schema: t.inputSchema }));
   const msgs = history.map(m => ({ role: m.role, content: m.content })); let out = "";
   for (let round = 0; round < 5; round++) {
-    const res = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "content-type": "application/json", "x-api-key": getKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
-      body: JSON.stringify({ model: a.model, max_tokens: 1500, system: instructions(), messages: msgs, ...(tools.length ? { tools } : {}) }) });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
+    const data = await assistantCall({ action: "message", requete: { model: a.model, max_tokens: 1500, system: instructions(), messages: msgs, ...(tools.length ? { tools } : {}) } }, 70000);
     if (!Array.isArray(data.content)) throw new Error("réponse inattendue de l'API");
     const txt = data.content.filter(b => b.type === "text").map(b => b.text).join("\n"); if (txt) out += (out ? "\n\n" : "") + txt;
     if (data.stop_reason !== "tool_use") break;

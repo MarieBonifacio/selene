@@ -1,0 +1,68 @@
+/* Scénario de navigateur : l'assistant hébergé (ADR 12, docs/assistant.md). Faux Supabase, fausse fonction
+   « assistant » : la clé part une fois au serveur et ne revient jamais ; un échange passe par la fonction, jamais par
+   api.anthropic.com ; une clé laissée dans l'appareil par une ancienne version est confiée au serveur puis effacée.
+   Lancé par tests/browser/run.js. */
+const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const UID = '0b8f0c2e-1111-2222-3333-444455556666', CLE = 'sk-ant-api03-' + 'a'.repeat(40) + 'wxyz';
+const demo = JSON.parse(fixture());
+demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').concat({ id: 'assistant', on: true });
+(async () => {
+  const b = await engine.launch(launchOptions);
+  const ok = check, errs = [];
+  const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
+  const open = async (ancienne = '') => {
+    const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
+    const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
+    p.fn = []; p.anthropic = 0; p.serveur = { cle: null };
+    await ctx.route('https://api.anthropic.com/**', r => { p.anthropic++; r.abort(); });
+    await ctx.route('https://*.supabase.co/**', r => {
+      const req = r.request(), u = new URL(req.url());
+      if (u.pathname !== '/functions/v1/assistant') return r.fulfill({ contentType: 'application/json', body: req.method() === 'GET' ? '[]' : '{}' });
+      const q = req.postDataJSON(); p.fn.push(q);
+      const json = (o, status = 200) => r.fulfill({ status, contentType: 'application/json', body: JSON.stringify(o) });
+      if (q.action === 'etat') return json(p.serveur.cle ? { cle: true, indice: '…' + p.serveur.cle.slice(-4) } : { cle: false });
+      if (q.action === 'cle') { if (!/^sk-ant-/.test(q.cle)) return json({ erreur: "ce n'est pas une clé d'API Anthropic (sk-ant-…)" }, 400); p.serveur.cle = q.cle; return json({ cle: true, indice: '…' + q.cle.slice(-4) }); }
+      if (q.action === 'oublier') { p.serveur.cle = null; return json({ cle: false }); }
+      if (q.action === 'message') return json({ id: 'm', type: 'message', role: 'assistant', content: [{ type: 'text', text: 'Bonsoir, lucidement.' }], stop_reason: 'end_turn' });
+      return json({ erreur: 'action inconnue' }, 400);
+    });
+    await ctx.addInitScript(([d, s, uid, k]) => {
+      if (localStorage.getItem('selene-site-v1')) return;
+      localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid);
+      if (k) localStorage.setItem('selene-api-key', k);
+    }, [JSON.stringify(demo), session, UID, ancienne]);
+    await p.goto(BASE + '/index.html#reglages'); await p.waitForSelector('#assistant-cfg', { timeout: 10000 }).catch(() => {});
+    await p.waitForTimeout(300);
+    return p;
+  };
+
+  console.log('la clé, confiée au serveur');
+  const p = await open();
+  ok(p.fn.some(q => q.action === 'etat'), 'l’état de la clé est demandé au serveur');
+  await p.fill('[data-act="as-key"]', CLE); await p.press('[data-act="as-key"]', 'Tab'); await p.waitForTimeout(400);
+  const envoi = p.fn.find(q => q.action === 'cle');
+  ok(envoi && envoi.cle === CLE, 'la clé part une fois vers la fonction');
+  ok((await p.inputValue('[data-act="as-key"]')) === '' && (await p.textContent('#assistant-cfg')).includes('…wxyz'), 'la page n’en garde que l’indice');
+  ok(await p.evaluate(k => !Object.values(localStorage).some(v => v.includes(k)), CLE), 'rien dans localStorage');
+
+  console.log('un échange');
+  await p.evaluate(() => location.hash = 'assistant'); await p.waitForTimeout(300);
+  await p.fill('#chatIn', 'Bonsoir ?'); await p.click('[data-act="chat-send"]'); await p.waitForTimeout(600);
+  const m = p.fn.find(q => q.action === 'message');
+  ok(m && m.requete.messages.at(-1).content === 'Bonsoir ?' && m.requete.max_tokens === 1500 && !('x-api-key' in m), 'la question part vers la fonction, sans clé');
+  ok((await p.textContent('.chat')).includes('Bonsoir, lucidement.'), 'la réponse s’affiche');
+  ok(p.anthropic === 0, 'la page n’a jamais appelé api.anthropic.com');
+
+  console.log('oublier');
+  await p.evaluate(() => location.hash = 'reglages'); await p.waitForTimeout(300);
+  await p.click('[data-act="as-forget"]'); await p.waitForTimeout(400);
+  ok(p.serveur.cle === null && !(await p.isVisible('[data-act="as-forget"]')), 'la clé est effacée du serveur');
+
+  console.log('une ancienne clé locale');
+  const q = await open(CLE); await q.waitForTimeout(300);
+  ok(q.fn.some(x => x.action === 'cle' && x.cle === CLE) && !q.fn.some(x => x.action === 'etat'), 'confiée au serveur au lancement');
+  ok(await q.evaluate(() => localStorage.getItem('selene-api-key') === null), 'puis effacée de l’appareil');
+
+  check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
+  await b.close();
+})();

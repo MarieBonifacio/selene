@@ -88,8 +88,7 @@ Recommandé en plus (voir `supabase/schema.sql`) : fermer les inscriptions publi
 ## Tester
 
 ```sh
-npx --yes deno@2.9.6 check supabase/functions/passeur/index.ts
-npx --yes deno@2.9.6 test supabase/functions/passeur/
+npm run test:functions
 ```
 
 `garde_test.ts` éprouve les adresses qu'une SSRF essaierait ; `passeur_test.ts` rejoue le passeur de bout en bout avec

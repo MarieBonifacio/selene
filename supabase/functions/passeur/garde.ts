@@ -109,10 +109,7 @@ export function decoder(octets: Uint8Array, label: string): string {
   try { return new TextDecoder(label).decode(octets); } catch { return new TextDecoder("utf-8").decode(octets); }
 }
 
-/* Les origines autorisées à appeler le passeur (liste séparée par des virgules). */
-export function origines(env: string | undefined): string[] {
-  return (env || "https://mariebonifacio.github.io").split(",").map(s => s.trim().replace(/\/$/, "")).filter(Boolean);
-}
+export { origines } from "../_shared/session.ts"; // les origines autorisées, communes aux fonctions
 /* Les comptes autorisés : sans liste, personne (fermé par défaut). */
 export function comptes(env: string | undefined): Set<string> {
   return new Set((env || "").split(",").map(s => s.trim().toLowerCase()).filter(s => /^[0-9a-f-]{36}$/.test(s)));

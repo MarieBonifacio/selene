@@ -19,8 +19,11 @@ if bundled.returncode:
 core = json.loads(bundled.stdout)
 bridge = "// eslint-disable-next-line no-unused-vars\nconst { " + ", ".join(core["exports"]) + " } = __core;\n"
 # Puis les fichiers historiques, dans cet ordre : chacun ne peut utiliser au chargement que le noyau et ceux qui le précèdent.
-scripts = ["platform.js", "store.js", "auth.js", "passeur.js", "dehors.js", "app.js", "types.js", "assistant.js", "boot.js"]
-js = core["code"] + bridge + "\n".join((SOURCE / name).read_text(encoding="utf-8") for name in scripts)
+# platform.js d'abord ; les suivants lisent le stockage dès leur chargement, donc démarrent dans platform.ready :
+# aussitôt sur le web, après l'hydratation des coffres dans une coquille native.
+scripts = ["store.js", "auth.js", "passeur.js", "dehors.js", "app.js", "types.js", "assistant.js", "boot.js"]
+js = (core["code"] + bridge + (SOURCE / "platform.js").read_text(encoding="utf-8")
+      + "platform.ready(() => {\n" + "\n".join((SOURCE / name).read_text(encoding="utf-8") for name in scripts) + "});\n")
 # Le script est posé tel quel dans une balise <script> : « </script » dans une chaîne le fermerait avant sa fin.
 assert "</script" not in js.lower(), "« </script » dans le JavaScript : l'écrire en deux morceaux"
 code = "\n(() => {\n" + js + "})();\n"
@@ -35,7 +38,7 @@ def csp_hash(text):
     return "'sha256-" + base64.b64encode(hashlib.sha256(text.encode("utf-8")).digest()).decode("ascii") + "'"
 script_src = " ".join(["'self'", csp_hash(code), csp_hash(sw_code)])
 # Les styles gardent 'unsafe-inline' : l'interface pose des attributs style="…", qu'une empreinte ne couvre pas.
-head = """<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src """ + script_src + """; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://api.anthropic.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+head = """<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src """ + script_src + """; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
