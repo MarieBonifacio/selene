@@ -23,6 +23,7 @@ const LAST_UID_KEY = "selene-auth-last-uid";
 const PERSONAL_KEYS = ["selene-chat", "selene-recent", "selene-dehors", "selene-mb-seen", "selene-radar", "selene-ics", "selene-zotero", "selene-cites"]; // selene-recent : les derniers espaces ouverts ; puis ce que le dehors a apporté
 const PERSONAL_SECRETS = ["selene-api-key", "selene-openalex-key", "selene-ics-url", "selene-zotero-key"]; // platform.secrets
 function authResetLocal() {
+  radarReset();
   board.reset({ updatedAt: 0, tasks: [] });
   site.reset(siteSeed());
   for (const k of PERSONAL_KEYS) platform.storage.remove(k);

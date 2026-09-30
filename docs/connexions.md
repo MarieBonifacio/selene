@@ -51,18 +51,19 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
       tombe dessus, sinon « sec jusqu'à ». Aucun appel de plus : la prévision quotidienne vient avec la météo du ciel.
 
 **5d : Radar culturel**
-- [x] Réglages → Radar culturel : tes mots (`config.radar.words`, 300 caractères au plus, synchronisés).
-- [x] Sur l'accueil, un bouton « Radar culturel » (seulement avec des mots et un lieu près de Lille) : les
-      événements OpenAgenda du portail open data de la MEL (Opendatasoft, API Explore v2.1, sans clé) des deux
-      semaines à venir, à 20 km du lieu du ciel. **Le portail reçoit la zone et les dates, jamais les mots** : le tri
-      se fait sur l'appareil (titre, mots-clés, description, lieu ; sans accents ni casse).
-- [x] Cinq au plus, du plus tôt au plus tard ; le reste est compté (« des mots plus précis choisiraient mieux »),
-      jamais déroulé. « voir » ouvre l'événement à part ; « garder » le dépose dans la boîte (titre, date, lieu, lien).
-- [x] Cache de six heures sur l'appareil ; si le portail refuse la sélection de champs (400 : un champ renommé),
-      second essai sans elle ; muet : dit, et « Réessayer ». Adresse d'événement gardée seulement si elle est en https.
-- [x] Vérifié en conditions réelles le 29 septembre 2026 : le jeu et ses champs sont bien ceux attendus, mais le portail
-      **n'envoie pas d'en-tête CORS** (la requête marche ouverte à la main, pas depuis une page). Le radar passe donc
-      par le passeur (genre `json`) quand la lecture directe est refusée, et le retient pour la session.
+- [x] Réglages : mots synchronisés (`config.radar.words`), filtrés uniquement sur l'appareil.
+- [x] Source : catalogue public OpenAgenda sur `public.opendatasoft.com`, sans clé, CORS ouvert.
+      L'ancien portail MEL redirige vers une page HTML ; il n'est plus utilisé.
+- [x] Lille et environs : lieu à 35 km au plus du centre de Lille, recherche à 20 km du lieu arrondi,
+      sur les deux semaines à venir. Ce périmètre est un rayon produit, pas une frontière administrative.
+- [x] Pagination (20 pages de 100 au plus), limites de volume et de temps ; lecture partielle annoncée.
+      Les horaires détaillés sélectionnent la prochaine séance ; une plage sans horaires est signalée.
+- [x] Recherche de mots entiers / expressions, sans accents ni casse, dans les textes complets avant extrait.
+      Cinq résultats au plus, sans notification. « garder » utilise la boîte existante.
+- [x] Cache complet de six heures via `platform.storage`, versionné, effacé à la déconnexion.
+      « Actualiser » force la lecture ; erreur de format et agenda vide sont distincts.
+- [x] Vérification réelle du 30 septembre 2026 : réponse JSON, CORS `*`, événements mis à jour le
+      29 septembre 2026. Contrat, source, limites et procédure : [radar.md](radar.md).
 
 **5e : Mémoire éditoriale**
 - [x] Dans les réglages de toute collection : « Importer un export Instagram » (un ou plusieurs fichiers JSON :

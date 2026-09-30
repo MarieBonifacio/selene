@@ -3,7 +3,7 @@
 // Aucune dépendance : seulement les règles intégrées d'eslint, globals déclarés à la main.
 const browser = Object.fromEntries(["window", "document", "localStorage", "sessionStorage", "location", "navigator",
   "fetch", "setTimeout", "clearTimeout", "setInterval", "clearInterval", "AbortController", "URL", "Blob", "File",
-  "FormData", "console"].map(name => [name, "readonly"]));
+  "FormData", "console", "URLSearchParams", "TextEncoder", "TextDecoder"].map(name => [name, "readonly"]));
 const rules = {
   "no-undef": "error", "no-unused-vars": ["error", { args: "none", caughtErrors: "none" }],
   "no-redeclare": "error", "no-dupe-keys": "error", "no-unreachable": "error", "no-const-assign": "error",
@@ -13,8 +13,8 @@ const rules = {
 };
 export default [
   { files: [".lint/selene.js"], languageOptions: { ecmaVersion: 2023, sourceType: "script", globals: browser }, rules },
-  // Le noyau est pur (ni DOM, ni stockage, ni réseau) : un module n'y voit que ses imports et URL.
-  { files: ["src/core/**/*.js"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { URL: "readonly" } }, rules },
+  // Le noyau est pur (ni DOM, ni stockage, ni réseau) : un module n'y voit que ses imports, URL et URLSearchParams.
+  { files: ["src/core/**/*.js"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { URL: "readonly", URLSearchParams: "readonly" } }, rules },
   { files: ["scripts/**/*.mjs"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { process: "readonly", URL: "readonly" } }, rules },
   { files: ["sw.js"], languageOptions: { ecmaVersion: 2023, sourceType: "script",
     globals: { self: "readonly", caches: "readonly", fetch: "readonly", location: "readonly", URL: "readonly" } }, rules }

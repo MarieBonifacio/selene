@@ -1535,7 +1535,7 @@ document.addEventListener("change", e => {
   else if (act === "radar-words") {
     const v = el.value.replace(/\s+/g, " ").trim().slice(0, 300);
     if (v) S().config.radar = { words: v }; else delete S().config.radar;
-    platform.storage.remove(RADAR_KEY); site.save(); el.blur(); render();
+    radarReset(); site.save(); el.blur(); render();
   }
   else if (act === "sky-live") { platform.storage.set("selene-sky-live", el.checked ? "on" : "off"); render(); }
   else if (act === "open-on") { platform.storage.set("selene-open", el.value); toast(el.value === "last" ? "L'app rouvrira le dernier espace où tu étais." : "L'app s'ouvrira sur l'accueil."); }

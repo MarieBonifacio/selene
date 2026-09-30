@@ -1,8 +1,9 @@
 /* Scénario de navigateur : Radar culturel (connexions externes, phase 1, vague 5d : docs/connexions.md). Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, check, until } = require('./helpers');
 const LILLE = { name: 'Lille, Hauts-de-France, France', lat: 50.6, lon: 3.1, weather: false, realMoon: true };
 const site = (sky, words) => { const d = JSON.parse(fixture()); d.config.sky = sky; if (words) d.config.radar = { words }; return JSON.stringify(d); };
-const rec = (uid, title, from, to, extra = {}) => ({ uid, title_fr: title, firstdate_begin: from + 'T18:00:00+00:00', lastdate_end: (to || from) + 'T22:00:00+00:00',
+const rec = (uid, title, from, to, extra = {}) => ({ uid, title_fr: title, firstdate_begin: from + 'T18:00:00+02:00', lastdate_end: (to || from) + 'T22:00:00+02:00',
+  timings: JSON.stringify([{ begin: from + 'T18:00:00+02:00', end: (to || from) + 'T22:00:00+02:00' }]),
   location_name: 'La Condition publique', location_city: 'Roubaix', canonicalurl: `https://openagenda.com/lille/events/${uid}`, keywords_fr: [], description_fr: '', ...extra });
 const RESULTS = [
   rec(1, 'Marché aux puces', '2026-09-29'),
@@ -17,11 +18,24 @@ const RESULTS = [
   const open = async (sky, words, mode = 'ok', hash = '', hosted = false) => {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, timezoneId: 'Europe/Paris', serviceWorkers: 'block' }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
     p.asked = []; p.passeur = [];
-    await ctx.route('https://opendata.lillemetropole.fr/**', r => {
+    await ctx.route('https://public.opendatasoft.com/**', async r => {
       const u = new URL(r.request().url()); p.asked.push(u);
+      if (mode === 'slow' && p.asked.length === 1) {
+        await new Promise(resolve => { p.release = resolve; });
+        return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ total_count: 1, results: [rec(900, 'Jazz ancien', '2026-10-02')] }) }).catch(() => {});
+      }
       if (mode === 'cors') return r.abort('failed'); // ce que voit le navigateur quand le portail n'envoie pas d'en-tête CORS
       if (mode === 'down') return r.fulfill({ status: 503, body: '' });
-      if (mode === 'renamed' && u.searchParams.get('select')) return r.fulfill({ status: 400, contentType: 'application/json', body: '{"error_code":"ODSQLError"}' });
+      if (mode === 'renamed') return r.fulfill({ status: 400, contentType: 'application/json', body: '{"error_code":"ODSQLError"}' });
+      if (mode === 'html') return r.fulfill({ contentType: 'text/html', body: '<html>Portail déplacé</html>' });
+      if (mode === 'schema') return r.fulfill({ contentType: 'application/json', body: '{}' });
+      if (mode === 'empty') return r.fulfill({ contentType: 'application/json', body: '{"total_count":0,"results":[]}' });
+      if (mode === 'pages' || mode === 'partial') {
+        const offset = +u.searchParams.get('offset');
+        if (offset && mode === 'partial') return r.fulfill({ status: 503, body: '' });
+        const rows = offset ? [rec(101, 'Jazz après la première page', '2026-10-08')] : Array.from({ length: 100 }, (_, i) => rec(i, 'Autre événement', '2026-10-02'));
+        return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ total_count: 101, results: rows }) });
+      }
       r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ total_count: RESULTS.length, results: RESULTS }) });
     });
     await ctx.route('https://*.supabase.co/**', r => {
@@ -62,20 +76,52 @@ const RESULTS = [
   console.log('portail changé, portail muet');
   const r = await open(LILLE, 'jazz', 'renamed');
   await r.click('[data-act="radar-open"]'); await r.waitForTimeout(400);
-  ok(r.asked.length === 2 && !r.asked[1].searchParams.get('select') && (await r.$$('#sheet .radar li')).length === 5, 'un champ inconnu (400) : second essai sans sélection, et ça passe');
+  ok(r.asked.length === 1 && (await sheet(r)).includes('répond 400'), 'un contrat changé (400) est une erreur, sans seconde requête élargie');
   const d = await open(LILLE, 'jazz', 'down');
   await d.click('[data-act="radar-open"]'); await d.waitForTimeout(400);
   ok((await sheet(d)).includes('répond 503') && await d.isVisible('#sheet [data-act="radar-open"]'), 'portail en panne : dit, et « Réessayer »');
 
-  console.log('CORS fermé (constaté sur le vrai portail) : le passeur prend le relais');
+  console.log('échec réseau direct simulé : le passeur peut prendre le relais');
   const c = await open(LILLE, 'jazz', 'cors', '', true);
   await c.click('[data-act="radar-open"]'); await c.waitForTimeout(500);
-  ok(c.asked.length === 1 && c.passeur.length === 1 && c.passeur[0].genre === 'json' && c.passeur[0].url.startsWith('https://opendata.lillemetropole.fr/') && (await c.$$('#sheet .radar li')).length === 5, 'lecture directe refusée : le passeur lit l’agenda (genre json), les événements s’affichent');
+  ok(c.asked.length === 1 && c.passeur.length === 1 && c.passeur[0].genre === 'json' && c.passeur[0].url.startsWith('https://public.opendatasoft.com/') && (await c.$$('#sheet .radar li')).length === 5, 'lecture directe refusée : le passeur lit l’agenda (genre json), les événements s’affichent');
   await c.keyboard.press('Escape'); await c.evaluate(() => localStorage.removeItem('selene-radar')); await c.click('[data-act="radar-open"]'); await c.waitForTimeout(500);
-  ok(c.asked.length === 1 && c.passeur.length === 2, 'la porte fermée est retenue : ensuite, directement par le passeur');
+  ok(c.asked.length === 2 && c.passeur.length === 2, 'le direct est réessayé : une panne temporaire ne condamne pas toute la session');
   const a = await open(LILLE, 'jazz', 'cors');
   await a.click('[data-act="radar-open"]'); await a.waitForTimeout(400);
-  ok((await sheet(a)).includes('il faut ton passeur'), 'sans passeur (artefact claude.ai) : dit ce qui manque');
+  ok((await sheet(a)).includes('Agenda injoignable'), 'sans passeur (artefact claude.ai) : dit ce qui manque');
+
+  console.log('contrat, pagination et cache');
+  for (const mode of ['html', 'schema']) {
+    const q = await open(LILLE, 'jazz', mode);
+    await q.click('[data-act="radar-open"]');
+    await q.waitForFunction(() => document.querySelector('#sheetBody').textContent.includes('incompatible'));
+    ok(!(await q.evaluate(() => localStorage.getItem('selene-radar'))), mode + ' : erreur explicite, pas de cache vide');
+  }
+  const paged = await open(LILLE, 'jazz', 'pages');
+  await paged.click('[data-act="radar-open"]');
+  await paged.waitForSelector('#sheet .radar li');
+  ok(paged.asked.length === 2 && (await sheet(paged)).includes('Jazz après la première page'), 'correspondance trouvée sur la deuxième page');
+  await paged.click('[data-act="radar-refresh"]');
+  await paged.waitForSelector('#sheet .radar li');
+  ok(paged.asked.length === 4, 'actualiser ignore réellement le cache');
+  const partial = await open(LILLE, 'jazz', 'partial');
+  await partial.click('[data-act="radar-open"]');
+  await partial.waitForFunction(() => document.querySelector('#sheetBody').textContent.includes('Résultats partiels'));
+  ok((await sheet(partial)).includes("le reste n'a pas pu être vérifié") && !(await partial.evaluate(() => localStorage.getItem('selene-radar'))), 'lecture incomplète annoncée, pas de faux résultat vide en cache');
+  const empty = await open(LILLE, 'jazz', 'empty');
+  await empty.click('[data-act="radar-open"]');
+  await empty.waitForFunction(() => document.querySelector('#sheetBody').textContent.includes('La source ne renvoie aucun'));
+  ok(!!(await empty.evaluate(() => localStorage.getItem('selene-radar'))), 'vrai résultat vide valide conservé');
+
+  console.log('chargement abandonné');
+  const race = await open(LILLE, 'jazz', 'slow');
+  await race.click('[data-act="radar-open"]'); await until(() => !!race.release);
+  await race.keyboard.press('Escape');
+  await race.waitForFunction(() => !document.querySelector('#sheet').open);
+  await race.click('[data-act="radar-open"]'); await race.waitForSelector('#sheet .radar li');
+  race.release(); await race.waitForTimeout(150);
+  ok(!(await sheet(race)).includes('Jazz ancien') && !(await race.evaluate(() => localStorage.getItem('selene-radar'))).includes('Jazz ancien'), 'une ancienne réponse ne remplace ni la vue ni le cache de la nouvelle recherche');
 
   console.log('réglages');
   const n = await open(LILLE, '', 'ok', '#reglages');

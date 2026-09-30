@@ -47,7 +47,7 @@ Un module n'y voit que ce qu'il importe (eslint le vérifie module par module) ;
 | `carte.js` | carte céleste des liaisons, pure : placement déterministe (temps, bandes), voisinage borné | — |
 | `sources.js` | sources, pur : adresses normalisées, DOI, traduction des réponses Crossref et Microlink | — |
 | `musique.js` | musique, pur : traduction des réponses MusicBrainz, albums studio, parutions récentes, pochettes | — |
-| `radar.js` | radar culturel, pur : requête OpenAgenda (zone et dates), traduction tolérante, tri par tes mots | — |
+| `radar.js` | radar culturel, pur : requête OpenAgenda (zone et dates), validation, occurrences et mots entiers | — |
 | `instagram.js` | mémoire éditoriale, pur : lecture de l'export Instagram (posts, reels), encodage de Meta réparé, éléments de collection | — |
 | `veille.js` | Research Watch, pur : ce que l'on suit (recherche, ORCID, OpenAlex), requête, traduction des résultats ; « cité par tes sources » (références communes, couplage bibliographique, auteurs qui reviennent) | — |
 | `agenda.js` | calendrier dédié, pur : lecture iCalendar (fuseaux, journées entières), récurrences dépliées sur une fenêtre | — |
@@ -268,7 +268,7 @@ et la conversation avec l'assistant ; la clé API, gardée chiffrée par la fonc
   un script injecté ou un attribut `onerror=` est refusé par le navigateur même si l'échappement faillait
   (`tests/browser/csp.js`). Les styles gardent `'unsafe-inline'` (voir ADR 8). Connexions limitées à Google Fonts,
   `*.supabase.co` et aux services publics de la phase 1, chacun nommé (Open-Meteo, Crossref, Microlink,
-  MusicBrainz, open data de la MEL, OpenAlex, Zotero ; images de Cover Art Archive) : voir [connexions.md](connexions.md).
+  MusicBrainz, catalogue public Opendatasoft, OpenAlex, Zotero ; images de Cover Art Archive) : voir [connexions.md](connexions.md).
 - **Assistant** : ne lit que les modules cochés dans Réglages → Assistant ; ses actions sont revérifiées
   à l'exécution (module actif, écriture autorisée) et passent par les mêmes règles métier que l'interface.
 
