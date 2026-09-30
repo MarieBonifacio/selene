@@ -34,7 +34,11 @@ test('politique de confidentialité : publiée avec le site, sans script ni ress
     assert.ok(k, `service sans nom dans la politique : ${host}`);
     assert.ok(p.includes(services[k]), `${services[k]} manque dans confidentialite.html`);
   }
-  assert.match(fs.readFileSync('src/app.js', 'utf8'), /confidentialite\.html/);
+  assert.match(fs.readFileSync('src/app/app.js', 'utf8'), /confidentialite\.html/);
+});
+
+test('le script produit ne dépend pas de la machine : aucun chemin absolu', () => {
+  for (const f of ['selene.html', 'index.html']) assert.doesNotMatch(fs.readFileSync(f, 'utf8'), new RegExp(process.cwd().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
 
 test('natif : l’amorçage puis le même script, sans service worker ni manifeste', () => {

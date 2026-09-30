@@ -1,8 +1,8 @@
 /* ================= plateforme =================
    Le seul fichier qui touche aux API de l'hôte : stockage du navigateur, window.claude, persistance.
    Le reste de Selene passe par `platform`, pour qu'une coquille native (Capacitor, Tauri) remplace un
-   branchement sans toucher au domaine ni aux vues. Premier fichier historique (build.py) : tout ce qui suit
-   démarre par platform.ready.
+   branchement sans toucher au domaine ni aux vues. Assemblé à part et évalué avant l'application
+   (build.py, scripts/bundle.mjs) : l'application ne démarre que par platform.ready.
    - storage : les données ordinaires de l'appareil (documents, caches, préférences, brouillons) ;
    - secrets : ce qui ouvre un compte ou engage une facture (session, clés d'API, adresse privée d'agenda) ;
      sur le web, localStorage (risque accepté, docs/architecture.md), sur mobile le trousseau du système ;
@@ -23,8 +23,8 @@
    cours (mise en arrière-plan, fermeture). */
 const native = window.seleneNative || null;
 // Les clés de platform.secrets : sur le web, elles restent dans localStorage, jamais copiées dans IndexedDB.
-const SECRET_KEYS = ["selene-auth-session", "selene-api-key", "selene-openalex-key", "selene-zotero-key", "selene-ics-url"];
-const webStore = area => ({
+export const SECRET_KEYS = ["selene-auth-session", "selene-api-key", "selene-openalex-key", "selene-zotero-key", "selene-ics-url"];
+export const webStore = area => ({
   get(k) { try { return area().getItem(k); } catch { return null; } },
   set(k, v) { try { area().setItem(k, v); return true; } catch { return false; } },
   remove(k) { try { area().removeItem(k); } catch {} },
@@ -87,7 +87,7 @@ function idbVault() {
 /* Première ouverture après localStorage (et toute clé qu'une ancienne version y écrirait encore) : chaque clé
    ordinaire absente d'IndexedDB y est copiée, en une transaction ; ce n'est qu'après qu'elle quitte localStorage.
    IndexedDB l'emporte quand elle a déjà la clé : la copie de localStorage est alors une trace périmée. */
-async function migrateToIdb(vault, area) {
+export async function migrateToIdb(vault, area) {
   const present = new Set((await vault.load()).map(([k]) => k));
   const legacy = [];
   for (const k of area.keys()) if (!SECRET_KEYS.includes(k)) legacy.push([k, area.get(k)]);
@@ -100,7 +100,7 @@ async function migrateToIdb(vault, area) {
 let storageImpl = native && native.storage ? mirror(native.storage) : webStore(() => localStorage);
 let channel = null;
 const watchers = [];
-const platform = {
+export const platform = {
   // "artifact" (claude.ai), "web" (PWA, navigateur), ou ce que dit la coquille native ("capacitor", "tauri").
   runtime: () => window.claude ? "artifact" : native ? String(native.runtime || "native") : "web",
   secretKeys: SECRET_KEYS,
@@ -163,4 +163,4 @@ const platform = {
   // Demande au navigateur de ne pas évincer les données locales sous la pression d'espace (PWA seulement).
   persist() { if (platform.runtime() !== "web") return; try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {} }
 };
-const hosted = () => platform.runtime() !== "artifact";
+export const hosted = () => platform.runtime() !== "artifact";

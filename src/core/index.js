@@ -1,6 +1,5 @@
-/* Le noyau : les fichiers purs de Selene, en modules ES (imports et exports explicites). esbuild les assemble en tête
-   du script (scripts/bundle-core.mjs) ; chaque nom exporté ici devient une constante de la portée que partagent les
-   fichiers historiques de src/. Un module de plus = une ligne de plus, rien d'autre à tenir à jour. */
+/* Le noyau : les fichiers purs de Selene (ni DOM, ni stockage, ni réseau). L'interface importe chaque module
+   directement ; ce fichier les rassemble pour l'espace de noms des tests (src/app/index.js). */
 export * from "./sync.js";
 export * from "./backup.js";
 export * from "./domain.js";

@@ -8,7 +8,14 @@
    serveur a changé entre-temps), soit à défaut set(value) (écriture inconditionnelle).
    `normalize(doc)` remet un document dans la forme attendue ; il est appliqué à tout ce qui entre
    dans le store (lecture locale, synchro, import, réinitialisation), jamais à la lecture. */
-function makeStore(key, path, seed, normalize = d => d) {
+import { platform } from "../platform.js";
+import { SCHEMA_VERSION } from "../core/domain.js";
+import { deepEqual, mergeDocs } from "../core/sync.js";
+// Une copie profonde d'un document JSON (ce que le stockage et le serveur échangent).
+export const clone = o => JSON.parse(JSON.stringify(o));
+/* `onRemoteChange` : une synchronisation a changé le document (la page se redessine) ; `onStatus(message)` : l'état de
+   l'enregistrement à montrer ("" quand tout est parti). Le store ne connaît pas l'interface : elle s'y abonne. */
+export function makeStore(key, path, seed, normalize = d => d, { onRemoteChange = () => {}, onStatus = () => {} } = {}) {
   const BASE = key + "-base";
   const read = k => { try { const v = platform.storage.get(k); return v ? JSON.parse(v) : null; } catch { return null; } };
   const s = { db: null, timer: null, unsub: null, syncing: null, again: false, key };
@@ -44,7 +51,7 @@ function makeStore(key, path, seed, normalize = d => d) {
       if (!deepEqual(next, merged)) s.again = true;
       const changed = !deepEqual(next, s.data);
       s.data = next; saveLS();
-      if (changed) render();
+      if (changed) onRemoteChange();
       return;
     }
     throw new Error("Conflit d'écriture persistant");
@@ -58,10 +65,10 @@ function makeStore(key, path, seed, normalize = d => d) {
     s.syncing = (async () => {
       try {
         do { s.again = false; await syncOnce(db, prefetched); prefetched = null; } while (s.again && s.db === db);
-        setSaving("");
+        onStatus("");
         return true;
       } catch (e) {
-        setSaving(e.stale ? "Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser"
+        onStatus(e.stale ? "Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser"
           : "Non synchronisé — enregistré sur cet appareil seulement");
         return false;
       } finally { s.syncing = null; }
@@ -71,7 +78,7 @@ function makeStore(key, path, seed, normalize = d => d) {
   s.save = () => {
     s.data.updatedAt = Date.now(); saveLS();
     if (!s.db) return;
-    setSaving("Enregistrement…"); clearTimeout(s.timer);
+    onStatus("Enregistrement…"); clearTimeout(s.timer);
     s.timer = setTimeout(() => { s.timer = null; s.sync(); }, 900);
   };
   /* Fermeture ou mise en arrière-plan : pas le temps de relire, donc une seule écriture conditionnelle

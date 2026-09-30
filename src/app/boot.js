@@ -1,4 +1,9 @@
 /* Démarrage : chargé en dernier par build.py, quand toutes les vues et tous les registres existent. */
+import { platform } from "../platform.js";
+import { S, board, focusEntry, liveRecents, openOn, refreshWeather, render, routeOf, site } from "./app.js";
+import { assistantUseHost } from "./assistant.js";
+import { authBoot, authReady } from "./auth.js";
+import { agendaRefresh, dehorsRefresh } from "./types.js";
 /* ================= cycle de vie ================= */
 const flushAll = () => { board.flush(); site.flush(); platform.flush(); }; // serveur, puis coffre natif (s'il y en a un)
 window.addEventListener("pagehide", flushAll);
@@ -35,5 +40,5 @@ setTimeout(() => { agendaRefresh(); dehorsRefresh(); }, 1500); // les flux de De
     const db = await platform.claude.use("db");
     if (db) { await site.connect(db); await board.connect(db); } // le site d'abord (voir absorbBoard)
   } catch {}
-  try { if (platform.claude.available()) { sampleNS = await platform.claude.use("sample"); downloadsNS = await platform.claude.use("downloads"); render(); } } catch {}
+  try { if (await assistantUseHost()) render(); } catch {}
 })();

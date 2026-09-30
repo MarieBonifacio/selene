@@ -11,20 +11,14 @@ ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "src"
 shell = (SOURCE / "shell.html").read_text(encoding="utf-8")
 assert shell.count("<!-- SELENE_SCRIPT -->") == 1
-# Le noyau (src/core, modules ES) d'abord, assemblé par esbuild (scripts/bundle-core.mjs) : il pose `__core`, dont
-# chaque exportation devient une constante de la portée commune. Certaines ne servent qu'aux modules entre eux ou aux
-# tests : eslint ne les signale pas comme inutilisées.
-bundled = subprocess.run(["node", str(ROOT / "scripts" / "bundle-core.mjs")], cwd=ROOT, capture_output=True, encoding="utf-8")
+# Deux assemblages esbuild (scripts/bundle.mjs) : la plateforme (src/platform.js), évaluée d'abord, puis l'application
+# (src/app, modules ES, noyau compris), évaluée dans platform.ready : aussitôt sur le web, après l'ouverture
+# d'IndexedDB ou l'hydratation des coffres d'une coquille native.
+bundled = subprocess.run(["node", str(ROOT / "scripts" / "bundle.mjs")], cwd=ROOT, capture_output=True, encoding="utf-8")
 if bundled.returncode:
-    sys.exit(bundled.stderr + "\nAssemblage du noyau impossible (esbuild s'installe par `npm ci`)")
-core = json.loads(bundled.stdout)
-bridge = "// eslint-disable-next-line no-unused-vars\nconst { " + ", ".join(core["exports"]) + " } = __core;\n"
-# Puis les fichiers historiques, dans cet ordre : chacun ne peut utiliser au chargement que le noyau et ceux qui le précèdent.
-# platform.js d'abord ; les suivants lisent le stockage dès leur chargement, donc démarrent dans platform.ready :
-# aussitôt sur le web, après l'hydratation des coffres dans une coquille native.
-scripts = ["store.js", "auth.js", "passeur.js", "dehors.js", "app.js", "types.js", "assistant.js", "boot.js"]
-js = (core["code"] + bridge + (SOURCE / "platform.js").read_text(encoding="utf-8")
-      + "platform.ready(() => {\n" + "\n".join((SOURCE / name).read_text(encoding="utf-8") for name in scripts) + "});\n")
+    sys.exit(bundled.stderr + "\nAssemblage impossible (esbuild s'installe par `npm ci`)")
+parts = json.loads(bundled.stdout)
+js = parts["platform"] + "__platform.platform.ready(() => {\n" + parts["app"] + "});\n"
 # Le script est posé tel quel dans une balise <script> : « </script » dans une chaîne le fermerait avant sa fin.
 assert "</script" not in js.lower(), "« </script » dans le JavaScript : l'écrire en deux morceaux"
 code = "\n(() => {\n" + js + "})();\n"
@@ -73,13 +67,7 @@ hosted = shell.replace("<title>", head + "<title>", 1).replace("</body>", sw + "
 native = shell.replace("<title>", native_head + "<title>", 1).replace("<!-- SELENE_SCRIPT -->", "<script>" + boot_code + "</script>\n" + script)
 
 outputs = {"selene.html": standalone, "index.html": hosted}
-if sys.argv[1:2] == ["--bundle"]:
-    # Le script assemblé seul, pour l'analyse statique (eslint) : c'est lui, et non chaque fichier isolé, qui a une
-    # portée cohérente, puisque les fichiers historiques de src/ partagent la même (ceux de src/core, eux, s'analysent un à un).
-    out = ROOT / sys.argv[2]
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text("(() => {\n" + js + "})();\n", encoding="utf-8")
-elif sys.argv[1:2] == ["--dist"]:
+if sys.argv[1:2] == ["--dist"]:
     # Les trois sorties, chacune dans son dossier (non versionné) : dist/web pour GitHub Pages, dist/artifact pour
     # claude.ai, dist/native pour les coquilles natives (Capacitor, Tauri).
     dist = ROOT / (sys.argv[2] if len(sys.argv) > 2 else "dist")

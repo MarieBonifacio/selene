@@ -1,9 +1,15 @@
-// Analyse statique du script assemblé (python3 build.py --bundle .lint/selene.js), des modules du noyau un à un
-// (src/core), de l'outillage (scripts) et du service worker.
+// Analyse statique de chaque module un à un (src/platform.js, src/app, src/core), de l'outillage (scripts), de
+// l'amorçage natif et du service worker. Un module ne voit que ses imports et les globales déclarées ici : `no-undef`
+// fait de chaque dépendance un import explicite.
 // Aucune dépendance : seulement les règles intégrées d'eslint, globals déclarés à la main.
-const browser = Object.fromEntries(["window", "document", "localStorage", "sessionStorage", "location", "navigator",
-  "fetch", "setTimeout", "clearTimeout", "setInterval", "clearInterval", "AbortController", "URL", "Blob", "File",
-  "FormData", "console", "indexedDB", "BroadcastChannel"].map(name => [name, "readonly"]));
+const readonly = names => Object.fromEntries(names.map(name => [name, "readonly"]));
+// L'interface (src/app) : le DOM, le réseau, les minuteries. Pas le stockage de l'hôte : il passe par platform.
+const browser = readonly(["window", "document", "location", "navigator", "fetch", "setTimeout", "clearTimeout",
+  "setInterval", "clearInterval", "AbortController", "URL", "URLSearchParams", "Blob", "File", "FormData", "console",
+  "DOMParser", "CustomEvent", "Event", "history", "IntersectionObserver", "matchMedia", "requestAnimationFrame",
+  "cancelAnimationFrame", "getComputedStyle", "HTMLElement", "Node", "structuredClone", "queueMicrotask", "TextDecoder", "TextEncoder", "crypto"]);
+// La plateforme (src/platform.js) : en plus, le stockage du navigateur.
+const host = { ...browser, ...readonly(["localStorage", "sessionStorage", "indexedDB", "BroadcastChannel"]) };
 const rules = {
   "no-undef": "error", "no-unused-vars": ["error", { args: "none", caughtErrors: "none" }],
   "no-redeclare": "error", "no-dupe-keys": "error", "no-unreachable": "error", "no-const-assign": "error",
@@ -12,7 +18,8 @@ const rules = {
   "no-cond-assign": ["error", "except-parens"], "no-sparse-arrays": "error", "no-shadow-restricted-names": "error"
 };
 export default [
-  { files: [".lint/selene.js"], languageOptions: { ecmaVersion: 2023, sourceType: "script", globals: browser }, rules },
+  { files: ["src/platform.js"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: host }, rules },
+  { files: ["src/app/**/*.js"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: browser }, rules },
   // Le noyau est pur (ni DOM, ni stockage, ni réseau) : un module n'y voit que ses imports et URL.
   { files: ["src/core/**/*.js"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { URL: "readonly" } }, rules },
   { files: ["scripts/**/*.mjs"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { process: "readonly", URL: "readonly" } }, rules },

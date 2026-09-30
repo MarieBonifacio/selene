@@ -15,6 +15,23 @@
      timerDone(id, inst)   suite proposée à la fin du minuteur quand ce module est ouvert
      review(inst, from, to) une ligne de bilan pour la période [from, to[ (dates ISO), ou null
      click / change        actions propres au type, fusionnées dans CLICK / CHANGE */
+import { hosted, platform } from "../platform.js";
+import { icsBetween, icsParse } from "../core/agenda.js";
+import { CARTE_MAX, carteLayout, carteNeighbourhood } from "../core/carte.js";
+import { EP_STATUS, LINK_TYPES, addBudgetEntry, addCapture, addJournalEntry, addLink, addTask, editFragmentText, entryIds, epPrefix, inboxId, retargetLinks, saveCollectionItem, setEpStatus, setTaskDone, setTaskToday, slugId, stampOrigin } from "../core/domain.js";
+import { igDay, igEntry, igPosts } from "../core/instagram.js";
+import { coverUrl, mbAlbums, mbArtistQuery, mbArtists, mbSince } from "../core/musique.js";
+import { radarEvents, radarFold, radarMatch, radarUrl, radarWords } from "../core/radar.js";
+import { nearLille, rainDays } from "../core/sky.js";
+import { bareSource, clip, crossrefToSource, findDoi, findUrl, microlinkToSource, normalizeUrl, sourceKey } from "../core/sources.js";
+import { OA_DOI, oaCoupling, oaRefs, oaRefsUrls, oaTitlesUrls, oaUrl, oaWatch, oaWorks } from "../core/veille.js";
+import { ZOT_API, zotItems, zotKeyInfo } from "../core/zotero.js";
+import { CHANGE, CLICK, SHEETS, VIEWS } from "./registry.js";
+import { $, S, SYNODIC, SYSTEM, addDaysTo, ago, ask, closeSheet, diffDays, downloadFile, enabled, esc, fmt, fold, freshWeather, gFilter, gMatch, gcfg, groupPanel, hm, idOf, iso, itemGroups, label, memoInRender, money, openForm, openSheet, openTensions, paged, removeWithUndo, render, routeOf, sheetKind, sigil, site, skyConf, sortesForget, streakOf, tintOf, toast, toastAction, toastUndo, todayISO, uid } from "./app.js";
+import { firstOfType } from "./assistant.js";
+import { authReady, authSession } from "./auth.js";
+import { dehorsNew, feedMerge, parseFeed } from "./dehors.js";
+import { pageToSource, passeurEtat, passeurFetch, passeurPret, passeurReset } from "./passeur.js";
 
 const lastOf = (inst, type) => inst.entries.filter(x => x.type === type).map(x => x.date).sort().pop();
 const totalOf = inst => inst.entries.reduce((a, x) => a + (+x.value || 0), 0);
@@ -22,7 +39,7 @@ const instOf = el => S().modules[el.dataset.mod];
 const lastValue = inst => { const e = [...inst.entries].sort((a, b) => a.date.localeCompare(b.date)).reverse().find(x => x.value != null); return e ? e.value : null; };
 const recentBy = (list, n = 3) => [...list].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, n);
 const within = (list, from, to, key = "date") => list.filter(x => x[key] && x[key] >= from && x[key] < to);
-const plural = (n, word) => `${n} ${word}${n > 1 ? "s" : ""}`;
+export const plural = (n, word) => `${n} ${word}${n > 1 ? "s" : ""}`;
 /* D'où vient une entrée rangée depuis une boîte : le lieu et la date, et le texte d'origine s'il a changé. */
 function originHTML(e, current) {
   const o = e.origin; if (!o) return "";
@@ -30,7 +47,7 @@ function originHTML(e, current) {
   return `<span class="origin" title="${esc(o.text)}">↳ de ${esc(o.from)}${o.date ? `, ${fmt(o.date)}` : ""}${same ? "" : ` : « ${esc(short)} »`}</span>`;
 }
 /* ---- liaisons entre fragments et notes (ce qui se pense : fragments d'un cumul, notes) ---- */
-function thoughtItems() {
+export function thoughtItems() {
   const out = [];
   for (const [mod, m] of Object.entries(S().modules)) {
     const list = m.type === "notes" ? m.entries : m.type === "cumul" ? m.scraps || [] : null;
@@ -40,13 +57,13 @@ function thoughtItems() {
 }
 /* « module/id » → l'entrée, par un index des entrées du module construit une fois par rendu (une liste de
    fragments liés ferait sinon autant de parcours complets que de liens). */
-function refFind(ref) {
+export function refFind(ref) {
   const [mod, id] = String(ref).split("/"), m = Object.hasOwn(S().modules, mod) ? S().modules[mod] : null;
   if (!m) return null;
   const e = memoInRender("refs:" + mod, () => new Map([...m.entries, ...(m.scraps || [])].map(x => [x.id, x]))).get(id);
   return e ? { mod, e } : null;
 }
-const excerpt = (e, n = 60) => { const t = String(e.text || e.title || e.note || "").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n) + "…" : t; };
+export const excerpt = (e, n = 60) => { const t = String(e.text || e.title || e.note || "").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n) + "…" : t; };
 /* Liens entrants : pour chaque entrée, qui la vise et comment. Calculé une fois par rendu. */
 const backlinks = () => memoInRender("backlinks", () => {
   const by = new Map();
@@ -55,13 +72,13 @@ const backlinks = () => memoInRender("backlinks", () => {
 });
 /* Les Sources (éléments des collections de sources) : elles ne pensent pas, elles documentent. Leurs liens partent
    vers les notes et fragments qu'elles appuient (« documente »), et reviennent en marge de ceux-ci (« documenté par »). */
-function sourceItems() {
+export function sourceItems() {
   const out = [];
   for (const [mod, m] of Object.entries(S().modules)) if (m.type === "collection" && m.config.sources && enabled(mod)) for (const e of m.entries) out.push({ ref: `${mod}/${e.id}`, mod, e });
   return out;
 }
 const LINK_BACK = { derive: "a donné", contredit: "contredit par", echo: "écho de", documente: "documenté par" };
-function refHTML(ref) {
+export function refHTML(ref) {
   const hit = refFind(ref);
   return hit ? `<a href="#${esc(hit.mod)}/${esc(hit.e.id)}">« ${esc(excerpt(hit.e))} »</a>` : `<i>(supprimé)</i>`;
 }
@@ -117,7 +134,7 @@ function sourceCitation(e) {
   const where = x.doi ? `https://doi.org/${x.doi}` : x.url && /^https?:\/\//i.test(x.url) ? x.url : "";
   return [`${one(e.subtitle) || "Anonyme"} (${year}).`, `*${one(e.title) || "Sans titre"}*.`, x.site ? `${one(x.site)}.` : "", where].filter(Boolean).join(" ");
 }
-function dossierMarkdown(title, scope, items) {
+export function dossierMarkdown(title, scope, items) {
   const num = new Map(items.map((it, i) => [it.e ? `${it.mod}/${it.e.id}` : "", i + 1]).filter(([k]) => k));
   const refText = ref => { if (num.has(ref)) return `[${num.get(ref)}]`; const hit = refFind(ref); return hit ? `« ${excerpt(hit.e, 80)} » (hors dossier)` : "(supprimé)"; };
   // Les Sources : celles qui documentent une entrée du dossier (leur lien pointe vers elle), et celles qui y figurent elles-mêmes.
@@ -141,12 +158,12 @@ function dossierMarkdown(title, scope, items) {
   const biblio = refs.size ? ["## Références", "", ...[...refs.values()].map(r => `[S${r.n}] ${sourceCitation(r.e)}`).join("\n\n").split("\n")] : [];
   return [...head, ...body, ...biblio].join("\n").replace(/\n{3,}/g, "\n\n").trim() + "\n";
 }
-const dossierFile = (title, scope, items) => downloadFile(`dossier-${slugId(title, [])}-${todayISO()}.md`, dossierMarkdown(title, scope, items), "text/markdown", title);
+export const dossierFile = (title, scope, items) => downloadFile(`dossier-${slugId(title, [])}-${todayISO()}.md`, dossierMarkdown(title, scope, items), "text/markdown", title);
 /* Le statut épistémique d'un fragment ou d'une note, modifiable sur place ; vide par défaut. Vide, c'est une action
    (discrète, comme les autres actions de ligne) ; posé, c'est une information, toujours visible. */
 const epSelect = (id, e) => `<select class="ep ${e.ep ? "on" : "ra"}" data-act="ep-set" data-mod="${esc(id)}" aria-label="Statut">${[["", "statut…"], ...Object.entries(EP_STATUS)].map(([k, l]) => `<option value="${k}" ${(e.ep || "") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
 /* Fin estimée d'un cumul au rythme des 30 derniers jours : une phrase, ou rien sans objectif. */
-function projection(inst) {
+export function projection(inst) {
   const c = inst.config, goal = +c.goal || 0, tot = totalOf(inst);
   if (!goal) return "";
   if (tot >= goal) return "Objectif atteint. Le reste relève de l'orgueil, ou de la réécriture.";
@@ -163,14 +180,14 @@ function programmeGroupPanel(id) {
   return `<section><h3 style="margin:0 0 4px">Par semaine</h3><p class="hint">Objectif : ${esc(c.perWeek)} séances par semaine, réglable dans Réglages.</p>
     <div class="rooms">${out.map(g => `<div class="room ${g.pct > 100 ? "over" : ""}"><div class="fill" style="width:${Math.min(100, g.pct)}%"></div><small>${esc(g.name)}</small><b>${g.pct} %</b><small>${esc(g.sub)}</small></div>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
 }
-const fragFilter = {}; // filtre des fragments par chapitre, par module (propre à l'appareil)
+export const fragFilter = {}; // filtre des fragments par chapitre, par module (propre à l'appareil)
 /* Palimpseste : les versions antérieures d'un fragment, repliables, la plus récente d'abord. */
 function versionsHTML(f) {
   const n = (f.versions || []).length; if (!n) return "";
   return `<details class="versions"><summary class="hint" style="cursor:pointer;margin:4px 0">${n} version${n > 1 ? "s" : ""} antérieure${n > 1 ? "s" : ""}</summary>${[...f.versions].reverse().map(v => `<p class="note" style="white-space:pre-wrap">${fmt(v.at)} : ${esc(v.text)}</p>`).join("")}</details>`;
 }
 /* Les fragments d'un cumul, rangés sous leurs chapitres, en Markdown : pour les reprendre dans un outil d'écriture. */
-function scrapsMarkdown(id, inst) {
+export function scrapsMarkdown(id, inst) {
   const c = inst.config, block = list => list.map(f => f.text.trim()).join("\n\n");
   const parts = [`# ${label(id)}`, c.title ? `*${c.title}*` : ""];
   for (const cat of c.categories) { const fs = inst.scraps.filter(f => f.category === cat.id); if (fs.length) parts.push(`## ${cat.name}`, block(fs)); }
@@ -190,9 +207,9 @@ function cumulGroupPanel(id) {
 }
 
 /* ---- paliers d'un programme : des critères rédigés et cochés à la main, jamais un passage automatique ---- */
-const tierCurrent = c => (c.tiers || []).find(t => !t.advancedAt) || null;
+export const tierCurrent = c => (c.tiers || []).find(t => !t.advancedAt) || null;
 /* Premier module Décisions (une collection réglée en mode révision) actif, ou aucun. */
-const firstDecisions = () => (S().config.modules.find(m => m.on && Object.hasOwn(S().modules, m.id) && S().modules[m.id].type === "collection" && S().modules[m.id].config.review) || {}).id || null;
+export const firstDecisions = () => (S().config.modules.find(m => m.on && Object.hasOwn(S().modules, m.id) && S().modules[m.id].type === "collection" && S().modules[m.id].config.review) || {}).id || null;
 function tiersPanel(id) {
   const inst = S().modules[id], c = inst.config;
   if (!c.tiers.length) return "";
@@ -208,7 +225,7 @@ function tiersPanel(id) {
   </section>`;
 }
 
-const TYPE_UI = {
+export const TYPE_UI = {
   programme: {
     view(id) {
       const inst = S().modules[id], c = inst.config, now = todayISO();
@@ -440,7 +457,7 @@ const TYPE_UI = {
   }
 };
 /* ---- collection : éléments à statuts, en colonnes (tableau de production) ou en liste filtrable ---- */
-const colFilter = {}; // filtre de statut du mode liste, par module (propre à l'appareil, non enregistré)
+export const colFilter = {}; // filtre de statut du mode liste, par module (propre à l'appareil, non enregistré)
 const colTab = {}; // colonne montrée sur téléphone, par module (propre à l'appareil)
 /* Change le statut d'un élément (une colonne du tableau) : flèches, glisser-déposer, touches [ et ]. */
 function moveCardTo(mod, id, ci) {
@@ -458,7 +475,7 @@ const collectionDoneLines = ["« %t » est passé à « %s ». Le monde n'a rien
 const reviewedHTML = e => { const r = (e.reviews || []).at(-1); return r ? `<span>${esc(r.verdict)} le ${fmt(r.date)}</span>` : ""; };
 /* `item` sans `id` préremplit un nouvel élément (ex. une décision suggérée par un autre module) sans en faire
    une modification : à l'enregistrement, c'est un identifiant neuf qui est utilisé, jamais celui, absent, de `item`. */
-function collectionForm(id, item, title) {
+export function collectionForm(id, item, title) {
   const c = S().modules[id].config, f = c.fields;
   const extra = [f.subtitle && { n: "subtitle", l: f.subtitle }, f.tag && { n: "tag", l: f.tag }, f.due && { n: "due", l: f.due, t: "date" }].filter(Boolean);
   const fields = [{ n: "title", l: f.title, req: true }];
@@ -480,7 +497,7 @@ function collectionCard(id, e, ci, last) {
    Mot entier (« lune » ne trouve pas « lunettes »), sans accents ni casse, pluriel en s/x toléré ; les variantes
    (sous-titre, séparées par des virgules) comptent comme le motif. Tout est calculé à la lecture, sur l'historique
    existant : rien n'est enregistré, donc rien à migrer ni à synchroniser. */
-const isConcordance = inst => inst.type === "collection" && !!inst.config.concordance;
+export const isConcordance = inst => inst.type === "collection" && !!inst.config.concordance;
 const reEscape = v => v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 /* Les mots d'un texte déjà replié, découpé une fois pour toutes (même frontière de mot que motifMatcher). */
 const wordsCache = new Map();
@@ -497,7 +514,7 @@ function motifForms(e) {
   return { single, re: multi.length ? new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${multi.map(v => reEscape(v).replace(/\s+/g, "\\s+")).join("|")})(?:s|x)?(?=$|[^\\p{L}\\p{N}])`, "u") : null };
 }
 /* Pour chaque motif : les textes où il apparaît ({ mod, date }), et ses voisins (motifs présents dans les mêmes textes). */
-const concordance = inst => memoInRender(inst, () => computeConcordance(inst));
+export const concordance = inst => memoInRender(inst, () => computeConcordance(inst));
 function computeConcordance(inst) {
   const corpus = [];
   for (const [mid, m] of Object.entries(S().modules)) {
@@ -528,7 +545,7 @@ function computeConcordance(inst) {
 }
 const alive = (inst, e) => inst.config.statuses.indexOf(e.status) < inst.config.doneFrom;
 /* En jachère : un motif vivant déjà apparu, mais plus depuis fallowDays jours (en lunaisons pour le dire). */
-const fallow = (inst, r) => alive(inst, r.e) && r.last && diffDays(todayISO(), r.last.date) > (+inst.config.fallowDays || 90);
+export const fallow = (inst, r) => alive(inst, r.e) && r.last && diffDays(todayISO(), r.last.date) > (+inst.config.fallowDays || 90);
 const moons = days => Math.max(1, Math.floor(days / SYNODIC));
 function concordanceView(id, inst, head) {
   const c = inst.config, rows = concordance(inst), sleeping = rows.filter(r => fallow(inst, r));
@@ -551,7 +568,7 @@ function concordanceSummary(inst) {
   return `${plural(inst.entries.length, "motif")}${sleeping ? `, ${sleeping} en jachère` : ""}`;
 }
 /* Les motifs apparus dans une période, les plus fréquents d'abord : une ligne de bilan. */
-function motifsIn(inst, from, to) {
+export function motifsIn(inst, from, to) {
   return concordance(inst).map(r => ({ name: r.e.title, n: r.hits.filter(d => d.date && d.date >= from && d.date < to).length })).filter(x => x.n).sort((a, b) => b.n - a.n);
 }
 TYPE_UI.collection = {
@@ -691,16 +708,17 @@ TYPE_UI.collection = {
   }
 };
 /* ---- tâches : échéances, lieux, étapes, coûts ; « Aujourd'hui » plafonné à trois, tous modules confondus ---- */
-const taskModules = () => Object.keys(S().modules).filter(k => S().modules[k].type === "taches" && enabled(k));
-const allTasks = () => taskModules().flatMap(id => S().modules[id].entries.map(t => [id, t]));
-const todayTasks = () => allTasks().filter(([, t]) => !t.done && t.today);
+export const taskModules = () => Object.keys(S().modules).filter(k => S().modules[k].type === "taches" && enabled(k));
+export const allTasks = () => taskModules().flatMap(id => S().modules[id].entries.map(t => [id, t]));
+export const todayTasks = () => allTasks().filter(([, t]) => !t.done && t.today);
 const todayElsewhere = id => todayTasks().filter(([m]) => m !== id).length;
 const byDue = (a, b) => (a.due || "9999").localeCompare(b.due || "9999");
-const taskFilters = {}; // filtres par module : { room, cat } (propres à l'appareil, non enregistrés)
+export const taskFilters = {}; // filtres par module : { room, cat } (propres à l'appareil, non enregistrés)
 const tf = id => taskFilters[id] || (taskFilters[id] = { room: "", cat: "" });
 const roomsOf = id => [...new Set(S().modules[id].entries.map(t => t.room).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
 const doneLines = ["Fait. Le monde s'effondre un peu moins vite.", "Un de moins. L'entropie note ta résistance.", "Coché. Personne n'applaudit, alors je le fais.", "Terminé. Ton futur toi te déteste un peu moins.", "Réglé. Le chaos recule d'un centimètre."];
 let openId = null;
+export const setOpenId = id => { openId = id; }; // la tâche dépliée (une route « #module/tâche » la choisit aussi)
 const taskOf = el => { const li = el.closest("[data-task]"), inst = li && S().modules[li.dataset.mod]; return (inst && inst.entries.find(t => t.id === li.dataset.task)) || null; };
 const taskMod = el => el.closest("[data-task]").dataset.mod;
 function dueLabel(t) {
@@ -725,7 +743,7 @@ function outdoorRain(c, t) {
   if (!rain.length) return `<span class="wx" ${tip}>sec jusqu'à ${esc(day(addDaysTo(today, 4)))}</span>`;
   return `<span class="wx rain" ${tip}>pluie prévue ${esc(rain.map(day).join(", "))}${t.due && rain.includes(t.due) ? ", le jour prévu" : ""}</span>`;
 }
-function taskHTML(id, t) {
+export function taskHTML(id, t) {
   const c = S().modules[id].config, d = dueLabel(t), sd = (t.steps || []).filter(x => x.d).length, ef = Math.min(3, Math.max(1, Math.round(+t.effort) || 1));
   return `<li class="item ${t.done ? "done" : ""} ${openId === t.id ? "open" : ""}" data-task="${esc(t.id)}" data-mod="${esc(id)}">
     <input type="checkbox" class="check" data-act="task-done" ${t.done ? "checked" : ""} aria-label="Marquer comme fait">
@@ -765,7 +783,7 @@ function costEnvelope(id, bud) {
   return c.costEnvelope != null ? c.costEnvelope : ((envs.find(v => /travaux/i.test(v.name)) || {}).name || "");
 }
 /* Tirage au sort : dans un module (sa page) ou parmi tous (accueil), plafond de trois respecté. */
-function pickTask(only) {
+export function pickTask(only) {
   if (todayTasks().length >= 3) return toast("Aujourd'hui est plein. Le hasard respecte les plafonds.");
   const o = allTasks().filter(([m, t]) => !t.done && !t.today && (!only || m === only));
   if (!o.length) return toast("Rien à tirer.");
@@ -859,7 +877,7 @@ TYPE_UI.taches = {
 };
 
 /* ---- budget : opérations, enveloppes à plafond mensuel ---- */
-const budMonths = {}; // mois affiché, par module (propre à l'appareil, non enregistré)
+export const budMonths = {}; // mois affiché, par module (propre à l'appareil, non enregistré)
 const monthOf = id => budMonths[id] || (budMonths[id] = todayISO().slice(0, 7));
 const inMonth = (inst, m) => inst.entries.filter(e => (e.date || "").slice(0, 7) === m);
 const sumOf = (es, type) => es.filter(e => e.type === type).reduce((a, e) => a + (+e.amount || 0), 0);
@@ -935,7 +953,7 @@ TYPE_UI.budget = {
      « 25 min kundalini »      → une séance dans le protocole nommé
      « phidippus : une note »  → la note rangée dans le module nommé
    La note part toujours d'abord dans la boîte : reconnaître ne fait que proposer un rangement. */
-function captureIntent(text) {
+export function captureIntent(text) {
   const s = S(), t = String(text).trim();
   const mods = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id)).map(m => ({ id: m.id, inst: s.modules[m.id], name: fold(label(m.id)) }));
   let m = t.match(/^(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur(?:os?)?\b)\s*(.*)$/i);
@@ -958,7 +976,7 @@ function captureIntent(text) {
   return null;
 }
 /* Range une note de la boîte selon un motif reconnu, puis l'en retire. */
-function fileIntent(intent, fromId, noteId) {
+export function fileIntent(intent, fromId, noteId) {
   const s = S(), src = s.modules[fromId], note = src && src.entries.find(x => x.id === noteId), target = s.modules[intent.to];
   if (!note || !target || intent.to === fromId) return;
   let then;
@@ -977,13 +995,13 @@ function acceptNote(toId, fromId, note, text = note.text) {
   return then;
 }
 /* Saisie d'une note : un « ? » en tête la range parmi les hypothèses. */
-function addNote(inst, raw) {
+export function addNote(inst, raw) {
   const p = epPrefix(raw), item = addCapture(inst.entries, p.text, uid(), todayISO());
   if (p.ep) item.ep = p.ep;
   return item;
 }
 /* Après une capture : proposer le rangement reconnu, sinon le message habituel. */
-function afterCapture(boxId, item, fallback) {
+export function afterCapture(boxId, item, fallback) {
   const intent = captureIntent(item.text);
   if (intent && intent.to !== boxId) toastAction(`${intent.say} ?`, "Ranger", () => fileIntent(intent, boxId, item.id), 10000);
   else if (item.ep) toast("Gardé comme hypothèse. Elle attendra ses preuves.");
@@ -991,7 +1009,7 @@ function afterCapture(boxId, item, fallback) {
 }
 /* Où une note peut être rangée : les modules actifs qui savent la recevoir, dans l'ordre de la navigation.
    Un type peut renvoyer une suite à donner (le formulaire d'une tâche, pour la compléter). */
-function noteTargets(fromId) {
+export function noteTargets(fromId) {
   const s = S();
   return s.config.modules.filter(m => m.on && m.id !== fromId).map(m => m.id).filter(id => {
     const inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null, ui = inst && TYPE_UI[inst.type];
@@ -1079,7 +1097,7 @@ CHANGE["ep-set"] = el => {
 /* ---- arc : des étapes, où l'on loge des fragments et des éléments de collection venus d'autres modules ----
    Un arc n'impose aucune grille ; ses étapes sont nommées par l'utilisatrice. Ce qui n'est logé nulle part
    ne se voit pas ici : c'est le vide dans une colonne qui porte l'information, pas une liste de manquants. */
-function arcCandidates() {
+export function arcCandidates() {
   const out = [];
   for (const [mod, m] of Object.entries(S().modules)) {
     if (m.type === "cumul") for (const e of m.scraps || []) out.push({ ref: `${mod}/${e.id}`, mod, e });
@@ -1177,7 +1195,7 @@ function motifsOf(text) {
    interprétation à moitié, inexpliqué pointé. */
 const EP_GLYPH = { obs: `<circle cx="8" cy="8" r="5" fill="currentColor"/>`, hyp: `<circle cx="8" cy="8" r="5" stroke-dasharray="2 2"/>`,
   int: `<circle cx="8" cy="8" r="5"/><path d="M8 3a5 5 0 0 1 0 10z" fill="currentColor" stroke="none"/>`, inx: `<circle cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none"/>` };
-const epGlyph = ep => Object.hasOwn(EP_GLYPH, ep || "") ? `<svg class="ep-glyph" viewBox="0 0 16 16" aria-hidden="true">${EP_GLYPH[ep]}</svg>` : "";
+export const epGlyph = ep => Object.hasOwn(EP_GLYPH, ep || "") ? `<svg class="ep-glyph" viewBox="0 0 16 16" aria-hidden="true">${EP_GLYPH[ep]}</svg>` : "";
 SHEETS.specimen = ref => {
   const hit = refFind(ref); if (!hit) return `<p class="empty">Cette entrée n'existe plus.</p>`;
   const { mod, e } = hit, inst = S().modules[mod], c = inst.config, text = String(e.text || e.note || "");
@@ -1527,9 +1545,9 @@ CLICK["mb-new-add"] = el => {
 
 /* ---- Radar culturel (radar.js) : sur demande, ce qui se tient dans la Métropole de Lille et parle de tes mots ----
    Le portail reçoit la zone (lieu du ciel, arrondi) et les dates ; les mots restent ici, le tri se fait sur l'appareil. */
-const RADAR_KEY = "selene-radar"; // cache de l'appareil : { at, key, events }, six heures
-const radarConf = () => { const r = S().config.radar; return { words: r && typeof r.words === "string" ? r.words : "" }; };
-const radarPlace = () => { const c = skyConf(); return c && nearLille(+c.lat, +c.lon) ? c : null; };
+export const RADAR_KEY = "selene-radar"; // cache de l'appareil : { at, key, events }, six heures
+export const radarConf = () => { const r = S().config.radar; return { words: r && typeof r.words === "string" ? r.words : "" }; };
+export const radarPlace = () => { const c = skyConf(); return c && nearLille(+c.lat, +c.lon) ? c : null; };
 let radarState = null; // { busy, err, items, total, words, kept } : la feuille en cours
 /* Une lecture de l'agenda : directe d'abord ; si le navigateur n'a pas le droit d'en lire la réponse (le portail de
    la MEL n'envoie pas d'en-tête CORS : constaté le 29 septembre 2026), par le passeur, qui lit du JSON pour toi. L'échec
@@ -1593,7 +1611,7 @@ CLICK["radar-keep"] = el => {
   addNote(S().modules[box], [x.title, radarWhen(x, todayISO()), [x.place, x.city].filter(Boolean).join(", "), x.url].filter(Boolean).join(" — ").slice(0, 2000));
   st.kept.add(x.id); site.save(); render(); $("#sheetBody").innerHTML = SHEETS.radar(); toast(`Gardé dans ${label(box)}.`);
 };
-function radarSettingsHTML() {
+export function radarSettingsHTML() {
   const c = skyConf(), near = radarPlace();
   return `<section id="radar"><h3>Radar culturel · Métropole de Lille uniquement</h3><p class="hint">Couverture locale : changer de ville n’étend pas ce service à une autre région. Pour suivre des événements ailleurs, ajoute tes propres flux dans Dehors.</p><p class="hint">Sur demande, depuis l'accueil : les événements de la Métropole de Lille (OpenAgenda, open data de la MEL) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification.</p>
     <label>Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)<input data-act="radar-words" value="${esc(radarConf().words)}" placeholder="poésie, jazz, photographie, lecture…" maxlength="300" autocomplete="off"></label>
@@ -1602,7 +1620,7 @@ function radarSettingsHTML() {
 
 /* Réglages → Passeur (passeur.js) : vérifier en lisant la page de Selene elle-même, copier l'identifiant. */
 CLICK["passeur-check"] = async el => {
-  el.disabled = true; passeurEtat = "";
+  el.disabled = true; passeurReset();
   try { await passeurFetch(location.origin + location.pathname, "page"); toast("Passeur : il répond, et il te reconnaît."); }
   catch (e) { toast(e.message); }
   render();
@@ -1642,7 +1660,7 @@ function watchedArtists() {
 }
 const dehorsAll = () => [...dehorsFeeds(), ...(dehorsConf().artists ? [{ id: MB_WATCH, title: "Sorties de tes artistes", mod: musicMods()[0] || "", seen: dehorsConf().artistsSeen || 0, watch: true }] : []),
   ...dehorsResearch().map(r => ({ id: "oa-" + r.id, title: `Veille : ${r.name || r.q}`, mod: r.mod || "", seen: r.seen || 0, research: r }))];
-const dehorsOn = () => hosted() && authReady() && !!authSession;
+export const dehorsOn = () => hosted() && authReady() && !!authSession;
 function dehorsCache() {
   try { const c = JSON.parse(platform.storage.get(DEHORS_KEY) || "null"); if (c && typeof c === "object" && c.feeds && typeof c.feeds === "object") return { at: +c.at || 0, feeds: c.feeds, hidden: Array.isArray(c.hidden) ? c.hidden : [] }; } catch {}
   return { at: 0, feeds: {}, hidden: [] };
@@ -1676,7 +1694,7 @@ function dehorsWhy(x, f) {
 }
 function dehorsNow() { const c = dehorsCache(); return dehorsNew(dehorsAll(), c.feeds, new Set(c.hidden), Date.now(), { test: dehorsTest(), key: dehorsKey, why: dehorsWhy }); }
 let dehorsBusy = false;
-async function dehorsRefresh(force = false) {
+export async function dehorsRefresh(force = false) {
   if (dehorsBusy || !dehorsOn() || document.visibilityState !== "visible") return;
   const feeds = dehorsFeeds(), due = feeds.length && passeurPret() && (force || Date.now() - dehorsCache().at >= 3 * 3600000);
   const watchDue = dehorsConf().artists && (force || Date.now() - ((dehorsCache().feeds[MB_WATCH] || {}).at || 0) >= 7 * 86400000);
@@ -1769,7 +1787,7 @@ async function dehorsFollow(raw, mod) {
   return f;
 }
 /* Sur l'accueil, une ligne de texte, et seulement s'il y a du nouveau : pas de pastille. */
-function dehorsLine() {
+export function dehorsLine() {
   if (!dehorsOn() || !dehorsAll().length) return "";
   const n = dehorsNow().total;
   return n ? `<p class="hint dehors-go"><a href="#dehors">Dehors : ${n} nouveauté${n > 1 ? "s" : ""}</a></p>` : "";
@@ -1891,7 +1909,7 @@ const ICS_URL = "selene-ics-url", ICS_CACHE = "selene-ics";
 const icsUrl = () => platform.secrets.get(ICS_URL) || "";
 function icsCache() { try { const c = JSON.parse(platform.storage.get(ICS_CACHE) || "null"); if (c && Array.isArray(c.events)) return c; } catch {} return { at: 0, events: [], err: "" }; }
 let agendaBusy = false;
-async function agendaRefresh(force = false) {
+export async function agendaRefresh(force = false) {
   const url = icsUrl();
   if (agendaBusy || !url || !passeurPret() || document.visibilityState !== "visible") return;
   if (!force && Date.now() - icsCache().at < 3600000) return;
@@ -1915,7 +1933,7 @@ function agendaRoute(summary) {
   const mod = S().config.modules.find(x => x.on && Object.hasOwn(S().modules, x.id) && fold(label(x.id)) === fold(m[1].trim()));
   return mod ? { mod: mod.id, text: m[2].trim() } : { mod: "", text: summary };
 }
-function agendaHTML() {
+export function agendaHTML() {
   if (!dehorsOn() || !icsUrl()) return "";
   const t0 = new Date(); t0.setHours(0, 0, 0, 0);
   const day = n => { const a = new Date(t0); a.setDate(a.getDate() + n); return a.getTime(); };
@@ -1928,7 +1946,7 @@ function agendaHTML() {
   };
   return block(0, "Aujourd'hui, au calendrier") + block(1, "Demain");
 }
-function agendaSettingsHTML() {
+export function agendaSettingsHTML() {
   const c = icsCache(), has = !!icsUrl();
   return `<section id="agenda"><h3>Calendrier</h3><p class="hint">Un seul calendrier, dédié (crée-en un « Selene ») : aujourd'hui et demain s'affichent sous « Aujourd'hui ». Un titre « Chantier : plombier » se range sous Chantier. Google : paramètres de l'agenda → Intégrer l'agenda → Adresse secrète au format iCal. Apple : partager en public, lien webcal.</p>
     <label>Adresse iCal secrète<input type="password" data-act="ics-url" value="${has ? "••••••••" : ""}" autocomplete="off" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"></label>
@@ -2004,7 +2022,7 @@ CLICK["zot-keep"] = el => {
   const e = keepSource(id, x, { from: "Zotero", text: (zotInfo() || {}).username || "ta bibliothèque", date: todayISO() });
   site.save(); render(); toast(`Gardée, reliée à Zotero : « ${excerpt(e, 50)} ».`);
 };
-function zotSettingsHTML() {
+export function zotSettingsHTML() {
   const info = zotInfo(), has = !!zotKey();
   return `<section id="zotero"><h3>Zotero</h3><p class="hint">Ta bibliothèque Zotero, en lecture seule : dans un module de Sources, cherche une fiche (ou les dernières ajoutées) et garde-la comme Source, reliée à sa fiche Zotero. Zotero reste l'archive ; Selene, l'endroit où tu t'en sers.</p>
     <p class="hint">Crée une clé sur <a href="https://www.zotero.org/settings/keys/new" target="_blank" rel="noopener noreferrer">zotero.org/settings/keys/new</a> : sous « Personal Library », coche <b>Allow library access</b> seulement (ni « Allow write access », ni les groupes). Elle reste dans ce navigateur, n'est jamais synchronisée et s'efface à la déconnexion.</p>
@@ -2034,7 +2052,7 @@ function sourceLinkForm(mod, id) {
   ], {}, v => {
     const hit = refFind(`${mod}/${id}`); if (!hit) return toast("Cette source a disparu entre-temps.");
     if (!addLink(hit.e, v.to, "documente", uid(), todayISO())) return toast("Déjà reliée ainsi.");
-    if (sortesLast && sortesLast.e === hit.e) sortesLast = null; // elle n'est plus oubliée
+    sortesForget(hit.e); // elle n'est plus oubliée
     site.save(); render(); toast("Reliée. Elle apparaît en marge de ce qu'elle documente.");
   });
 }

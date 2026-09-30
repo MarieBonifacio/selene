@@ -3,12 +3,25 @@
    fonction « assistant » (supabase/functions/assistant, docs/assistant.md), qui garde la clé Anthropic du compte,
    chiffrée, et appelle Claude pour lui : la clé ne revient jamais dans la page. Le contexte ne contient que les
    modules que la personne a choisi de partager. */
-let sampleNS = null, downloadsNS = null, chatBusy = false;
+import { hosted, platform } from "../platform.js";
+import { addBudgetEntry, addCapture, addTask, inboxId, setTaskDone } from "../core/domain.js";
+import { VIEWS } from "./registry.js";
+import { $, S, enabled, esc, fmt, label, money, moon, render, site, toast, todayISO, uid } from "./app.js";
+import { SUPABASE_ANON_KEY, SUPABASE_URL, authReady, authRefreshIfNeeded, authSession } from "./auth.js";
+import { TYPE_UI, allTasks } from "./types.js";
+export let sampleNS = null, downloadsNS = null, chatBusy = false;
+/* Sur claude.ai : les espaces de noms de l'hôte (le modèle sans clé, les téléchargements). */
+export async function assistantUseHost() {
+  if (!platform.claude.available()) return false;
+  sampleNS = await platform.claude.use("sample"); downloadsNS = await platform.claude.use("downloads");
+  return true;
+}
 /* Ce que dit le serveur de la clé du compte : null tant qu'on ne sait pas, { cle, indice? } ensuite ; « absent »
    si la fonction n'est pas déployée (on n'insiste pas). */
 let assistantCle = null, assistantEtat = "", assistantDemande = null;
+export const assistantSetCle = r => { assistantCle = r; }; // l'état de la clé, tel que le serveur vient de le dire
 const assistantPret = () => hosted() && authReady() && !!authSession && assistantEtat !== "absent";
-async function assistantCall(corps, delai = 15000) {
+export async function assistantCall(corps, delai = 15000) {
   if (!assistantPret()) throw new Error("L'assistant hébergé demande d'être connectée à ton compte.");
   const s = await authRefreshIfNeeded(); if (!s) throw new Error("Session expirée : reconnecte-toi.");
   const ac = new AbortController(), t = setTimeout(() => ac.abort(), delai);
@@ -40,10 +53,10 @@ function assistantRefresh() {
   })();
   return assistantDemande;
 }
-const assistantKnown = () => { if (!assistantCle) assistantRefresh(); return assistantCle; };
-function backend() { if (!enabled("assistant")) return "off"; if (sampleNS) return "sample"; if (hosted() && assistantKnown()?.cle) return "api"; return "none"; }
-const chatLog = { get() { try { return JSON.parse(platform.storage.get("selene-chat") || "[]"); } catch { return []; } }, set(v) { try { platform.storage.set("selene-chat", JSON.stringify(v.slice(-40))); } catch {} } };
-function contextText() {
+export const assistantKnown = () => { if (!assistantCle) assistantRefresh(); return assistantCle; };
+export function backend() { if (!enabled("assistant")) return "off"; if (sampleNS) return "sample"; if (hosted() && assistantKnown()?.cle) return "api"; return "none"; }
+export const chatLog = { get() { try { return JSON.parse(platform.storage.get("selene-chat") || "[]"); } catch { return []; } }, set(v) { try { platform.storage.set("selene-chat", JSON.stringify(v.slice(-40))); } catch {} } };
+export function contextText() {
   const s = S(), sh = s.config.assistant.share, now = todayISO(), m = moon(), L = [];
   L.push(`Date : ${fmt(now, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}. Lune : ${m.name.toLowerCase()}, éclairée à ${Math.round(m.illum * 100)} %.`);
   for (const [id, inst] of Object.entries(s.modules)) {
@@ -60,7 +73,7 @@ ${permitted.length ? "Tu peux agir uniquement avec les outils fournis. Ne les ut
 DONNÉES DU TABLEAU DE BORD
 ${contextText()}`;
 }
-const TOOLS = [
+export const TOOLS = [
   { name: "ajouter_tache", module: () => firstOfType("taches"), description: "Ajoute une tâche au premier module de tâches (voir ses types dans les données). Renvoie une confirmation.", inputSchema: { type: "object", properties: { titre: { type: "string" }, piece: { type: "string", description: "pièce ou lieu" }, echeance: { type: "string", description: "AAAA-MM-JJ" }, type: { type: "string" } }, required: ["titre"] },
     execute(i) { const inst = S().modules[firstOfType("taches")]; const t = addTask(inst.entries, { title: i.titre, room: i.piece, cat: i.type || inst.config.cats[0], due: i.echeance, note: "Ajoutée par l'assistant" }, uid(), todayISO()); site.save(); render(); return `Tâche ajoutée : ${t.title}`; } },
   { name: "terminer_tache", module: () => firstOfType("taches"), description: "Marque comme faite une tâche, par son identifiant entre crochets.", inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
@@ -74,11 +87,11 @@ const TOOLS = [
     execute(i) { const entry = addBudgetEntry(S().modules[firstOfType("budget")].entries, { amount: i.montant, type: i.type, cat: i.enveloppe, note: i.note, date: i.date }, uid(), todayISO()); site.save(); render(); return `Enregistré : ${money(entry.amount)}`; } }
 ];
 // Premier module actif d'un type, dans l'ordre de la navigation.
-const firstOfType = type => (S().config.modules.find(m => m.on && Object.hasOwn(S().modules, m.id) && S().modules[m.id].type === type) || {}).id || null;
+export const firstOfType = type => (S().config.modules.find(m => m.on && Object.hasOwn(S().modules, m.id) && S().modules[m.id].type === type) || {}).id || null;
 // Le module d'un outil peut dépendre des données (la boîte de réception est celle qu'on a désignée).
 const toolModule = t => typeof t.module === "function" ? t.module() : t.module;
-const availableTools = () => S().config.assistant.actions ? TOOLS.filter(t => { const m = toolModule(t); return m && enabled(m); }) : [];
-const executeTool = (name, input) => {
+export const availableTools = () => S().config.assistant.actions ? TOOLS.filter(t => { const m = toolModule(t); return m && enabled(m); }) : [];
+export const executeTool = (name, input) => {
   const tool = availableTools().find(t => t.name === name);
   if (!tool) throw new Error("Action non autorisée ou module désactivé");
   return tool.execute(input);
@@ -106,7 +119,7 @@ async function askSample(history, onText) {
   catch (e) { if (e && e.code === "tools_unavailable") { delete opts.tools; return (await sampleNS(input, opts)).text; } throw e; }
 }
 const mdLite = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*(?!\s)(.+?)\*/g, "$1<i>$2</i>");
-async function sendChat(text) {
+export async function sendChat(text) {
   if (chatBusy || !text.trim()) return;
   const b = backend(); if (b !== "sample" && b !== "api") return toast("L'assistant n'est pas branché. Voir Réglages.");
   const log = chatLog.get(); log.push({ role: "user", content: text.trim().slice(0, 4000) }); chatLog.set(log); chatBusy = true; if ($("#chatIn")) $("#chatIn").value = ""; render();

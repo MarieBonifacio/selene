@@ -2,9 +2,14 @@
    Les flux RSS, la plupart des pages et les calendriers n'envoient pas d'en-tête CORS : la page ne peut pas lire leur
    réponse. Le passeur (supabase/functions/passeur, docs/passeur.md) va les chercher pour toi seule, avec ta session.
    Ici : l'appel, et la lecture d'une page (métadonnées, flux annoncés), faite par DOMParser, qui n'exécute rien. */
-let passeurEtat = ""; // "" inconnu, "ok", "absent" (non déployé ou non configuré : on n'insiste pas), ou un message
-const passeurPret = () => hosted() && authReady() && !!authSession && passeurEtat !== "absent";
-async function passeurFetch(url, genre, cond = {}) {
+import { hosted } from "../platform.js";
+import { clip, findDoi, normalizeUrl } from "../core/sources.js";
+import { esc } from "./app.js";
+import { SUPABASE_ANON_KEY, SUPABASE_URL, authReady, authRefreshIfNeeded, authSession } from "./auth.js";
+export let passeurEtat = "";
+export const passeurReset = () => { passeurEtat = ""; }; // redemander, après un refus ou une absence // "" inconnu, "ok", "absent" (non déployé ou non configuré : on n'insiste pas), ou un message
+export const passeurPret = () => hosted() && authReady() && !!authSession && passeurEtat !== "absent";
+export async function passeurFetch(url, genre, cond = {}) {
   if (!hosted() || !authReady() || !authSession) throw new Error("Le passeur n'existe que dans la version hébergée, connectée à ton compte.");
   const s = await authRefreshIfNeeded(); if (!s) throw new Error("Session expirée : reconnecte-toi.");
   const ac = new AbortController(), t = setTimeout(() => ac.abort(), 15000);
@@ -29,7 +34,7 @@ function sameSite(u, base) {
 }
 /* Une page HTML → les champs d'une source, et les flux qu'elle annonce. Ordre de confiance : les balises des revues
    savantes (citation_*), OpenGraph, JSON-LD, puis le reste. Tout est du texte : rien n'est inséré tel quel. */
-function pageToSource(html, base) {
+export function pageToSource(html, base) {
   const d = new window.DOMParser().parseFromString(String(html || ""), "text/html");
   const metas = n => [...d.querySelectorAll("meta")].filter(m => (m.getAttribute("property") || m.getAttribute("name") || "").toLowerCase() === n).map(m => (m.getAttribute("content") || "").trim()).filter(Boolean);
   const meta = (...ns) => { for (const n of ns) { const v = metas(n)[0]; if (v) return v; } return ""; };
@@ -61,7 +66,7 @@ function pageToSource(html, base) {
   };
 }
 /* Réglages → Passeur : son état, ton identifiant (pour le secret PASSEUR_USERS), une vérification à la demande. */
-function passeurSettingsHTML() {
+export function passeurSettingsHTML() {
   const st = passeurEtat === "ok" ? "Déployé et ouvert à ton compte." : passeurEtat === "absent" ? "Pas encore déployé, ou pas encore configuré." : passeurEtat ? `Refusé : ${passeurEtat}.` : "Pas encore vérifié sur cet appareil.";
   return `<section id="passeur"><h3>Passeur</h3><p class="hint">Une petite fonction dans ton projet Supabase qui lit pour toi les pages, flux et calendriers que le navigateur ne peut pas lire seul. Elle ne sert que ton compte, refuse toute adresse privée et ne garde rien. Sans elle, les pages passent par Microlink.</p>
     <p class="row" style="margin:0 0 8px"><span data-passeur-etat>${esc(st)}</span><button class="btn sm" data-act="passeur-check">Vérifier</button></p>
