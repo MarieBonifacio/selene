@@ -34,9 +34,19 @@ demo.config.sky = { name: 'Lille, Hauts-de-France, France', lat: 50.6, lon: 3.1,
   ok(l.every(x => x.delay <= 0), 'la phase vient de l’horloge (retard négatif) : un nouveau rendu ne remet pas le ciel à zéro');
 
   console.log('hors de vue, réglage, système');
-  await p.evaluate(() => { document.body.style.minHeight = '4000px'; scrollTo(0, 3000); }); await p.waitForTimeout(400);
+  // L'observateur et l'état des animations sont asynchrones, notamment sous WebKit.
+  // Attendre le comportement vérifié, sans supposer qu'il sera acquis en 400 ms sous charge.
+  const waitMotion = async state => p.waitForFunction(expected => {
+    const els = [...document.querySelectorAll('.hero .band, .hero .drops')];
+    return els.length && els.every(el => {
+      getComputedStyle(el).animationPlayState;
+      return el.getAnimations()[0]?.playState === expected;
+    });
+  }, state, { timeout: 5000 });
+  await p.evaluate(() => { document.body.style.minHeight = '4000px'; scrollTo(0, 3000); });
+  await waitMotion('paused');
   ok((await layers(p)).every(x => x.state === 'paused'), 'défilée hors de vue, la scène s’immobilise');
-  await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(400);
+  await p.evaluate(() => scrollTo(0, 0)); await waitMotion('running');
   ok((await layers(p)).every(x => x.state === 'running'), 'et repart quand elle revient');
   await p.evaluate(() => location.hash = 'reglages'); await p.waitForTimeout(300);
   await p.uncheck('[data-act="sky-live"]'); await p.waitForTimeout(150);
