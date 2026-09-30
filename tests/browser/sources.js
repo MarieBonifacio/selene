@@ -83,8 +83,10 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   await r.goto(BASE + shared); await r.waitForTimeout(500);
   ok(await r.isVisible('#authEmail') && (await r.evaluate(() => sessionStorage.getItem('selene-share'))).includes('exemple.org'), 'pas encore connectée : le lien attend, rien n’est déposé dans le vide');
   await r.evaluate(s => { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', 'u1'); }, session);
-  await r.reload(); await r.waitForTimeout(900); // un vrai rechargement : la session est lue au démarrage
-  const box = await storeJSON(r, 'selene-site-v1').then(d => { const k = Object.keys(d.modules).find(x => d.modules[x].type === 'notes' && d.modules[x].config.inbox); return d.modules[k].entries.map(e => e.text); });
+  await r.reload(); // un vrai rechargement : la session est lue au démarrage ; le lien est déposé une fois connectée
+  const inbox = () => storeJSON(r, 'selene-site-v1').then(d => { const k = Object.keys(d.modules).find(x => d.modules[x].type === 'notes' && d.modules[x].config.inbox); return d.modules[k].entries.map(e => e.text); }).catch(() => []);
+  let box = [];
+  for (const end = Date.now() + 10000; Date.now() < end && !(box = await inbox()).some(x => x.includes('exemple.org'));) await r.waitForTimeout(100);
   ok(box.includes('Un texte trouvé — https://exemple.org/texte?utm_source=x'), 'connectée : le lien partagé devient une note de la boîte');
   ok((await r.evaluate(() => location.search)) === '' && !(await r.evaluate(() => sessionStorage.getItem('selene-share'))), 'l’adresse est nettoyée, la file vidée');
   // Le dépôt synchronisé avant de recharger : sinon sa dernière écriture (keepalive) part pendant le rechargement.
