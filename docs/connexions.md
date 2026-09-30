@@ -52,7 +52,8 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
 
 **5d : Radar culturel**
 - [x] Réglages → Radar culturel : tes mots (`config.radar.words`, 300 caractères au plus, synchronisés).
-- [x] Sur l'accueil, un bouton « Radar culturel » (seulement avec des mots et un lieu près de Lille) : les
+- [x] Sur l'accueil, un bouton « Radar culturel » (seulement avec des mots et un lieu, partout en France depuis le
+      30 septembre 2026 ; avant, la Métropole de Lille seulement) : les
       événements OpenAgenda (jeu national du portail public d'Opendatasoft, API Explore v2.1, sans clé ; celui de la
       MEL a fermé le 30 septembre 2026) des deux
       semaines à venir, à 20 km du lieu du ciel. **Le portail reçoit la zone et les dates, jamais les mots** : le tri

@@ -84,8 +84,12 @@ const RESULTS = [
   ok((await storeJSON(n, 'selene-site-v1').then(d => d.config.radar.words)) === 'cinéma, danse', 'les mots sont gardés dans le compte (synchronisés)');
   await n.evaluate(() => location.hash = ''); await n.waitForTimeout(300);
   ok(await n.isVisible('[data-act="radar-open"]'), 'et le bouton paraît sur l’accueil');
-  const m = await open({ ...LILLE, name: 'Marseille', lat: 43.3, lon: 5.4 }, 'jazz', 'ok', '#reglages');
-  ok((await m.textContent('#radar')).includes('trop loin') && !(await m.evaluate(() => { location.hash = ''; return new Promise(r => setTimeout(() => r(!!document.querySelector('[data-act="radar-open"]')), 300)); })), 'loin de Lille : dit, et pas de bouton');
+  console.log('partout en France');
+  const m = await open({ ...LILLE, name: 'Marseille, Provence-Alpes-Côte d’Azur, France', lat: 43.3, lon: 5.4 }, 'jazz');
+  await m.click('[data-act="radar-open"]'); await m.waitForTimeout(400);
+  ok(m.asked.length === 1 && m.asked[0].searchParams.get('where').includes('POINT(5.4 43.3)') && (await sheet(m)).includes('Autour de Marseille'), 'loin de Lille : le radar cherche autour du lieu réglé');
+  const s = await open(null, 'jazz', 'ok', '#reglages');
+  ok((await s.textContent('#radar')).includes('Il lui faut un lieu') && !(await s.evaluate(() => { location.hash = ''; return new Promise(r => setTimeout(() => r(!!document.querySelector('[data-act="radar-open"]')), 300)); })), 'sans lieu : dit, et pas de bouton');
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

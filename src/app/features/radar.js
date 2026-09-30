@@ -2,7 +2,6 @@
 import { platform } from "../../platform.js";
 import { inboxId } from "../../core/domain.js";
 import { radarEvents, radarFold, radarMatch, radarUrl, radarWords } from "../../core/radar.js";
-import { nearLille } from "../../core/sky.js";
 import { CLICK, SHEETS } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { fmt, todayISO } from "../lib/format.js";
@@ -13,11 +12,12 @@ import { render } from "../shell/render.js";
 import { openSheet, sheetKind } from "../shell/sheets.js";
 import { S, label, site } from "../state/site.js";
 
-/* ---- Radar culturel (radar.js) : sur demande, ce qui se tient dans la Métropole de Lille et parle de tes mots ----
+/* ---- Radar culturel (radar.js) : sur demande, ce qui se tient autour du lieu du ciel et parle de tes mots ----
    Le portail reçoit la zone (lieu du ciel, arrondi) et les dates ; les mots restent ici, le tri se fait sur l'appareil. */
 export const RADAR_KEY = "selene-radar"; // cache de l'appareil : { at, key, events }, six heures
 export const radarConf = () => { const r = S().config.radar; return { words: r && typeof r.words === "string" ? r.words : "" }; };
-export const radarPlace = () => { const c = skyConf(); return c && nearLille(+c.lat, +c.lon) ? c : null; };
+// Le lieu réglé dans Ciel, où qu'il soit : OpenAgenda couvre la France entière (et un peu au-delà, peu).
+export const radarPlace = () => skyConf();
 let radarState = null; // { busy, err, items, total, words, kept } : la feuille en cours
 /* Une lecture de l'agenda : directe (le portail envoie l'en-tête CORS) ; si le navigateur n'a pas le droit d'en lire la
    réponse (l'ancien portail de la MEL ne l'envoyait pas), par le passeur, qui lit du JSON pour toi. L'échec direct est
@@ -52,7 +52,7 @@ function radarWhen(x, today) {
 }
 SHEETS.radar = () => {
   const st = radarState, c = radarPlace(); if (!st) return "";
-  const head = `<h2 id="sheetTitle">Radar culturel</h2><p class="hint">Autour de ${esc(c ? c.name.split(",")[0] : "Lille")}, les deux semaines à venir, ce qui parle de : ${esc(st.words.map(w => st.said[w] || w).join(", "))}. Cinq au plus ; le reste attendra que tu reviennes.</p>`;
+  const head = `<h2 id="sheetTitle">Radar culturel</h2><p class="hint">Autour de ${esc(c ? c.name.split(",")[0] : "chez toi")}, à 20 km, les deux semaines à venir, ce qui parle de : ${esc(st.words.map(w => st.said[w] || w).join(", "))}. Cinq au plus ; le reste attendra que tu reviennes.</p>`;
   const foot = `<p class="hint" style="margin-top:12px">Source : OpenAgenda, par le portail public d'Opendatasoft. Le portail voit la zone (arrondie) et les dates, jamais tes mots : le tri se fait ici.</p>`;
   if (st.busy) return head + `<p class="hint" role="status">Recherche…</p>`;
   if (st.err) return head + `<p class="hint" role="status">${esc(st.err)}</p><button class="btn sm" data-act="radar-open">Réessayer</button>` + foot;
@@ -82,8 +82,8 @@ CLICK["radar-keep"] = el => {
   st.kept.add(x.id); site.save(); render(); $("#sheetBody").innerHTML = SHEETS.radar(); toast(`Gardé dans ${label(box)}.`);
 };
 export function radarSettingsHTML() {
-  const c = skyConf(), near = radarPlace();
-  return `<section id="radar"><h3>Radar culturel · Métropole de Lille uniquement</h3><p class="hint">Couverture locale : changer de ville n’étend pas ce service à une autre région. Pour suivre des événements ailleurs, ajoute tes propres flux dans Dehors.</p><p class="hint">Sur demande, depuis l'accueil : les événements de la Métropole de Lille (OpenAgenda) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification.</p>
+  const c = radarPlace();
+  return `<section id="radar"><h3>Radar culturel</h3><p class="hint">Sur demande, depuis l'accueil : les événements à 20 km du lieu réglé dans Ciel (OpenAgenda, partout en France) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification. Changer de lieu, c'est changer de radar.</p>
     <label>Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)<input data-act="radar-words" value="${esc(radarConf().words)}" placeholder="poésie, jazz, photographie, lecture…" maxlength="300" autocomplete="off"></label>
-    ${near ? "" : `<p class="hint" style="margin-top:6px">${c ? `Le radar ne couvre que la Métropole de Lille : le lieu réglé (${esc(c.name)}) en est trop loin.` : "Il lui faut un lieu près de Lille : règle-le dans Ciel, ci-dessus."}</p>`}</section>`;
+    ${c ? `<p class="hint" style="margin-top:6px">Autour de ${esc(c.name)}.</p>` : `<p class="hint" style="margin-top:6px">Il lui faut un lieu : règle-le dans Ciel, ci-dessus.</p>`}</section>`;
 }
