@@ -28,7 +28,7 @@ test('politique de confidentialité : publiée avec le site, sans script ni ress
   assert.match(p, /Supprimer mon compte/);
   // Chaque service appelé par la page (sa CSP) est nommé dans la politique : l'une ne change pas sans l'autre.
   const csp = fs.readFileSync('build.py', 'utf8').match(/CONNECT = \(([\s\S]*?)\)\n/)[1];
-  const services = { 'open-meteo': 'Open-Meteo', crossref: 'Crossref', microlink: 'Microlink', musicbrainz: 'MusicBrainz', lillemetropole: 'Lille', openalex: 'OpenAlex', zotero: 'Zotero', supabase: 'Supabase', googleapis: 'Google Fonts', gstatic: 'Google Fonts' };
+  const services = { 'open-meteo': 'Open-Meteo', crossref: 'Crossref', microlink: 'Microlink', musicbrainz: 'MusicBrainz', opendatasoft: 'OpenAgenda', openalex: 'OpenAlex', zotero: 'Zotero', supabase: 'Supabase', googleapis: 'Google Fonts', gstatic: 'Google Fonts' };
   for (const host of csp.match(/https:\/\/[^\s"']+/g)) {
     const k = Object.keys(services).find(x => host.includes(x));
     assert.ok(k, `service sans nom dans la politique : ${host}`);

@@ -91,3 +91,16 @@ test('résumé du matin : un par jour qui a quelque chose, à l’heure choisie,
   assert.match(again.body + again.title, /Poser le Velux|de plus/, 'une échéance du lendemain compte');
   assert.ok(app.dayDigest(iso).includes('Échéance : Poser le Velux'));
 });
+
+test('une action qui échoue le dit : jamais un clic sans effet visible', async () => {
+  const app = launch(new Map());
+  const toast = () => app.nodes.get('#toast').textContent;
+  const quiet = console.error; console.error = () => {};
+  try {
+    app.runAction({ boum() { throw new Error('portail muet'); } }, 'boum');
+    assert.match(toast(), /n'a pas abouti : portail muet/);
+    app.runAction({ plusTard: async () => { throw new Error('refusé plus tard'); } }, 'plusTard');
+    await new Promise(r => setTimeout(r, 0));
+    assert.match(toast(), /n'a pas abouti : refusé plus tard/);
+  } finally { console.error = quiet; }
+});

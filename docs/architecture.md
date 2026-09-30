@@ -283,7 +283,7 @@ et la conversation avec l'assistant ; la clé API, gardée chiffrée par la fonc
   un script injecté ou un attribut `onerror=` est refusé par le navigateur même si l'échappement faillait
   (`tests/browser/csp.js`). Les styles gardent `'unsafe-inline'` (voir ADR 8). Connexions limitées à Google Fonts,
   `*.supabase.co` et aux services publics de la phase 1, chacun nommé (Open-Meteo, Crossref, Microlink,
-  MusicBrainz, open data de la MEL, OpenAlex, Zotero ; images de Cover Art Archive) : voir [connexions.md](connexions.md).
+  MusicBrainz, OpenAgenda (Opendatasoft), OpenAlex, Zotero ; images de Cover Art Archive) : voir [connexions.md](connexions.md).
 - **Assistant** : ne lit que les modules cochés dans Réglages → Assistant ; ses actions sont revérifiées
   à l'exécution (module actif, écriture autorisée) et passent par les mêmes règles métier que l'interface.
 
