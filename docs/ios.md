@@ -12,6 +12,9 @@ La même coquille Capacitor que sous Android (docs/android.md), autour de la mê
 - **Les liens `selene://`** : `selene://share?url=…&title=…&text=…` dépose un lien dans la boîte de réception,
   `selene://capture` ouvre la capture, que l'app tourne ou que le lien la lance.
 - La mise en arrière-plan pousse ce qui attend.
+- **Le résumé du matin** (Réglages → Notifications) : programmé par iOS pour la semaine qui vient, il sonne app fermée.
+  iOS garde au plus 64 notifications en attente par app ; Selene en programme sept.
+- **Un léger retour haptique** à la capture.
 
 ## « Partager → Selene » par un Raccourci
 

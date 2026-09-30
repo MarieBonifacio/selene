@@ -151,6 +151,15 @@ const platform = {
   },
   // Les écritures en cours vers un coffre asynchrone (rien à attendre avec localStorage).
   async flush() { while (pendingWrites.size) await Promise.all([...pendingWrites]); },
+  /* Notifications locales (ADR 19), dans une coquille native seulement : programmées par le système, elles sonnent
+     app fermée. Sur le web, rien (une notification de page exige qu'elle tourne, ou un serveur de push). */
+  notifications: {
+    supported: () => !!(native && native.notifications),
+    permission: async () => (native && native.notifications ? native.notifications.permission() : "denied"),
+    replace: async list => { if (native && native.notifications) await native.notifications.replace(list); }
+  },
+  // Un léger retour haptique (une capture enregistrée) ; rien là où l'hôte n'en a pas.
+  haptic() { try { if (native && native.haptic) native.haptic(); } catch {} },
   // Demande au navigateur de ne pas évincer les données locales sous la pression d'espace (PWA seulement).
   persist() { if (platform.runtime() !== "web") return; try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {} }
 };

@@ -31,7 +31,7 @@ function launch(storage, { bare = false } = {}) {
   const context = { document, window, localStorage, location: { hash: '' },
     navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
   // Inspect the closure without changing production code.
-  const instrumented = script.replace(/\}\);\s*\}\)\(\);\s*$/, 'globalThis.__test = { board, site, TOOLS, availableTools, executeTool, parseBackup, createBackup };\n});\n})();'); // dans platform.ready
+  const instrumented = script.replace(/\}\);\s*\}\)\(\);\s*$/, 'globalThis.__test = { board, site, TOOLS, availableTools, executeTool, parseBackup, createBackup, digestPlan, dayDigest };\n});\n})();'); // dans platform.ready
   vm.runInNewContext(instrumented, context);
   return { ...context.__test, nodes };
 }
@@ -66,4 +66,28 @@ test('assistant actions respect module and global permissions at execution time'
   app.site.data.config.assistant.actions = true;
   app.executeTool('ajouter_operation', { montant: 20 });
   assert.equal(budget.length, 1);
+});
+
+test('résumé du matin : un par jour qui a quelque chose, à l’heure choisie, en texte brut, jamais dans le passé', () => {
+  const storage = new Map();
+  assert.equal(launch(storage).digestPlan().length, 0, 'désactivé par défaut');
+  storage.set('selene-notify', JSON.stringify({ on: true, at: '07:45' }));
+  const app = launch(storage);
+  const t = new Date(); t.setHours(12, 0, 0, 0);
+  const plan = app.digestPlan(t.getTime());
+  assert.ok(plan.length > 0, 'le jeu d’essai a des rappels dus');
+  assert.ok(!plan.some(n => n.id === 100), 'aujourd’hui, 7 h 45 est passé');
+  for (const n of plan) {
+    const d = new Date(n.at);
+    assert.ok(d.getTime() > t.getTime() && d.getHours() === 7 && d.getMinutes() === 45);
+    assert.ok(n.id > 100 && n.id < 107);
+    assert.doesNotMatch(n.title + n.body, /<|&amp;|&#39;/);
+    assert.ok(n.body.length > 0);
+  }
+  const tomorrow = new Date(t); tomorrow.setDate(t.getDate() + 1);
+  const iso = tomorrow.toISOString().slice(0, 10);
+  app.site.data.modules.chantier.entries.push({ id: 'x', title: 'Poser le Velux', due: iso, done: false });
+  const again = app.digestPlan(t.getTime()).find(n => n.id === 101);
+  assert.match(again.body + again.title, /Poser le Velux|de plus/, 'une échéance du lendemain compte');
+  assert.ok(app.dayDigest(iso).includes('Échéance : Poser le Velux'));
 });

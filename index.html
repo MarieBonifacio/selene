@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-wihvc35LLY0xWbOgCnwTsvqPLHHf3t0Xd1D1sZFpCUY=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-1y2U5E6BtbdI3MMLShZGQ8jez6fFkpCNeWEjL+TEOz4=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -2397,6 +2397,15 @@ const platform = {
   },
   // Les écritures en cours vers un coffre asynchrone (rien à attendre avec localStorage).
   async flush() { while (pendingWrites.size) await Promise.all([...pendingWrites]); },
+  /* Notifications locales (ADR 19), dans une coquille native seulement : programmées par le système, elles sonnent
+     app fermée. Sur le web, rien (une notification de page exige qu'elle tourne, ou un serveur de push). */
+  notifications: {
+    supported: () => !!(native && native.notifications),
+    permission: async () => (native && native.notifications ? native.notifications.permission() : "denied"),
+    replace: async list => { if (native && native.notifications) await native.notifications.replace(list); }
+  },
+  // Un léger retour haptique (une capture enregistrée) ; rien là où l'hôte n'en a pas.
+  haptic() { try { if (native && native.haptic) native.haptic(); } catch {} },
   // Demande au navigateur de ne pas évincer les données locales sous la pression d'espace (PWA seulement).
   persist() { if (platform.runtime() !== "web") return; try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {} }
 };
@@ -3775,6 +3784,7 @@ VIEWS.reglages = () => {
     <div class="field-row" style="margin-top:14px"><label>Mode<select data-set="config.mode"><option value="auto" ${c.mode === "auto" ? "selected" : ""}>Suivre l'appareil</option><option value="dark" ${c.mode === "dark" ? "selected" : ""}>Toujours sombre</option><option value="light" ${c.mode === "light" ? "selected" : ""}>Toujours clair</option><option value="sun" ${c.mode === "sun" ? "selected" : ""}>Suivre le soleil</option></select></label>
     <label>Nom affiché<input data-set="config.name" value="${esc(c.name)}"></label></div>
     <div class="field-row" style="margin-top:12px"><label>Ouvrir sur (cet appareil)<select data-act="open-on"><option value="accueil" ${openOn() === "accueil" ? "selected" : ""}>L'accueil</option><option value="last" ${openOn() === "last" ? "selected" : ""}>Là où j'en étais</option></select></label><span></span></div></section>
+  ${notifySettingsHTML()}
   ${skySettingsHTML()}
   ${radarSettingsHTML()}
   <section><h3>Modules</h3><p class="hint">Active, renomme, réordonne, range par domaine (Maison, Création… : la navigation les regroupe). Les modules personnalisés (marqués ✕) peuvent être supprimés définitivement.</p>
@@ -4086,8 +4096,57 @@ function render() {
   renderMemo = new Map();
   try { renderNow(); } finally { renderMemo = null; }
   skyWatch();
+  notifySoon();
   if (sharePending) applyShare();
 }
+/* ================= le résumé du matin (ADR 19) =================
+   Dans une coquille native seulement : une notification par jour, à l'heure choisie (réglage propre à l'appareil),
+   pour les sept jours qui viennent. Elle dit ce qui demande un geste ce jour-là : les rappels de l'accueil qui
+   proposent une action (un rappel déjà honoré n'en propose plus), et les tâches qui arrivent à échéance. Le système
+   garde la liste et la sonne app fermée ; chaque rendu la recalcule et ne la renvoie que si elle a changé. Ouvrir
+   Selene au moins une fois par semaine suffit à la tenir à jour : l'oubli prolongé a, lui, sa propre sanction. */
+const NOTIFY_KEY = "selene-notify", NOTIFY_AT = "08:30";
+const notifyConf = () => {
+  let c = null; try { c = JSON.parse(platform.storage.get(NOTIFY_KEY) || "null"); } catch {}
+  return { on: !!(c && c.on), at: c && /^([01]\d|2[0-3]):[0-5]\d$/.test(c.at) ? c.at : NOTIFY_AT };
+};
+const plainText = html => String(html).replace(/<[^>]*>/g, "").replace(/&(amp|lt|gt|quot|#39);/g, (_, e) => ({ amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'" })[e]).replace(/\s+/g, " ").trim();
+function dayDigest(day) {
+  const s = S(), out = [];
+  for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) for (const a of TYPE_UI[inst.type].alerts(id, inst, day)) if (a.actions) out.push(plainText(a.text));
+  for (const [id, t] of allTasks()) if (enabled(id) && !t.done && t.due === day) out.push(`Échéance : ${t.title}`);
+  return out;
+}
+function digestPlan(nowMs = Date.now(), days = 7) {
+  const { on, at } = notifyConf(); if (!on) return [];
+  const [h, m] = at.split(":").map(Number), plan = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(nowMs); d.setDate(d.getDate() + i); d.setHours(h, m, 0, 0);
+    if (d.getTime() <= nowMs) continue; // l'heure est passée : ce jour-là, l'app est déjà ouverte
+    const items = dayDigest(iso(d)); if (!items.length) continue; // un jour sans rien ne mérite pas qu'on sonne
+    plan.push({ id: 100 + i, at: d.toISOString(), title: `Selene : ${plural(items.length, "chose")} ${i ? "ce jour" : "aujourd'hui"}`,
+      body: items.slice(0, 3).join(" · ") + (items.length > 3 ? ` · et ${items.length - 3} de plus` : "") });
+  }
+  return plan;
+}
+let notifyTimer = null, notifySent = null;
+function notifySoon() {
+  if (!platform.notifications.supported()) return;
+  clearTimeout(notifyTimer);
+  notifyTimer = setTimeout(() => {
+    const plan = digestPlan(), sig = JSON.stringify(plan);
+    if (sig === notifySent) return;
+    notifySent = sig;
+    platform.notifications.replace(plan).catch(() => { notifySent = null; });
+  }, 1500);
+}
+const notifySettingsHTML = () => {
+  if (!platform.notifications.supported()) return "";
+  const c = notifyConf();
+  return `<section id="notify-cfg"><h3>Notifications</h3><p class="hint">Sur cet appareil : chaque matin, ce qui t'attend (rappels, échéances), programmé par le téléphone lui-même, même app fermée. Rien ne part sur un serveur. Les jours sans rien, silence.</p>
+    <div class="field-row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-act="notify-on" ${c.on ? "checked" : ""}>Résumé du matin</label>
+    <label>Heure<input type="time" data-act="notify-at" value="${esc(c.at)}"></label></div></section>`;
+};
 /* ================= recevoir un lien depuis ailleurs =================
    `?url=&title=&text=` à l'ouverture : c'est ce qu'envoient le partage Android (Web Share Target, déclaré dans le
    manifeste), le favori « Envoyer à Selene » et un Raccourci iOS. Le lien attend que les données soient prêtes (la
@@ -4210,6 +4269,7 @@ function capture(inp = $("#capIn")) {
   if (!inp || !inp.value.trim()) return;
   const id = inboxId(S().modules); if (!id) return toast("Aucune boîte de réception : voir Réglages.");
   const item = addNote(S().modules[id], inp.value); site.save(); inp.value = "";
+  platform.haptic();
   if (inp.id === "capSheetIn") { saveDraft("sheet", inp); closeSheet(); } // fermée avant le message, qui passerait dessous
   render();
   afterCapture(id, item, "Gardé. Tu peux oublier, c'est écrit.");
@@ -4410,6 +4470,15 @@ document.addEventListener("change", e => {
     platform.storage.remove(RADAR_KEY); site.save(); el.blur(); render();
   }
   else if (act === "sky-live") { platform.storage.set("selene-sky-live", el.checked ? "on" : "off"); render(); }
+  else if (act === "notify-on" || act === "notify-at") {
+    const c = notifyConf(), save = () => { platform.storage.set(NOTIFY_KEY, JSON.stringify(c)); render(); };
+    if (act === "notify-at") { if (/^([01]\d|2[0-3]):[0-5]\d$/.test(el.value)) c.at = el.value; return save(); }
+    if (!el.checked) { c.on = false; return save(); }
+    platform.notifications.permission().then(p => {
+      c.on = p === "granted"; save();
+      toast(c.on ? `Chaque matin à ${c.at}, s'il y a quelque chose. Sinon, la paix.` : "Notifications refusées : elles s'autorisent dans les réglages du téléphone.");
+    }, () => { el.checked = false; toast("Les notifications ne sont pas disponibles ici."); });
+  }
   else if (act === "open-on") { platform.storage.set("selene-open", el.value); toast(el.value === "last" ? "L'app rouvrira le dernier espace où tu étais." : "L'app s'ouvrira sur l'accueil."); }
   else if (act === "mod-on") { S().config.modules[+el.closest("[data-i]").dataset.i].on = el.checked; site.save(); render(); }
   else if (act === "mod-label") {
