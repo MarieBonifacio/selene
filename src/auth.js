@@ -21,7 +21,7 @@ const LAST_UID_KEY = "selene-auth-last-uid";
 /* Déconnexion ou changement de compte : rien de la personne précédente ne doit rester sur l'appareil —
    ni ses données, ni sa conversation avec l'assistant, ni sa clé API (facturée à elle). */
 const PERSONAL_KEYS = ["selene-chat", "selene-recent", "selene-dehors", "selene-mb-seen", "selene-radar", "selene-ics", "selene-zotero", "selene-cites"]; // selene-recent : les derniers espaces ouverts ; puis ce que le dehors a apporté
-const PERSONAL_SECRETS = ["selene-api-key", "selene-openalex-key", "selene-ics-url", "selene-zotero-key"]; // platform.secrets
+const PERSONAL_SECRETS = platform.secretKeys.filter(k => k !== AUTH_KEY); // platform.secrets (la session a son propre sort)
 function authResetLocal() {
   board.reset({ updatedAt: 0, tasks: [] });
   site.reset(siteSeed());

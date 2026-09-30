@@ -12,7 +12,7 @@ const sources = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(e =>
 test('seul platform.js touche au stockage du navigateur, à window.claude et à navigator.storage', () => {
   const offenders = sources('src').filter(f => path.basename(f) !== 'platform.js').flatMap(f =>
     fs.readFileSync(f, 'utf8').split('\n').flatMap((line, i) =>
-      /\b(localStorage|sessionStorage)\b|window\.claude|navigator\.storage/.test(line) ? [`${f}:${i + 1}`] : []));
+      /\b(localStorage|sessionStorage|indexedDB|BroadcastChannel)\b|window\.claude|navigator\.storage/.test(line) ? [`${f}:${i + 1}`] : []));
   assert.deepEqual(offenders, [], 'passer par platform.storage / secrets / session / claude');
 });
 
@@ -125,4 +125,39 @@ test('natif : un coffre qui refuse une écriture ne casse rien ; un coffre illis
   await new Promise(r => setTimeout(r, 20));
   assert.equal(started, false, 'sans ses données, Selene ne démarre pas (elle les écraserait)');
   assert.match(ctx.document.body.textContent, /n'a pas pu lire/);
+});
+
+// La migration de localStorage vers IndexedDB (ADR 13), avec un coffre simulé : ce qui part, ce qui reste, et quand.
+const loadMigrate = () => {
+  const ctx = { window: { claude: null } };
+  vm.runInNewContext(fs.readFileSync('src/platform.js', 'utf8') + '\n;globalThis.__m = { migrateToIdb, webStore, SECRET_KEYS };', ctx);
+  return ctx.__m;
+};
+const fakeIdb = (initial = {}, { failWrite = false } = {}) => {
+  const data = new Map(Object.entries(initial));
+  return { data, load: async () => [...data], writeAll: async entries => { if (failWrite) throw new Error('plein'); for (const [k, v] of entries) data.set(k, v); } };
+};
+
+test('migration : les clés ordinaires passent dans IndexedDB, les secrets restent, IndexedDB l’emporte', async () => {
+  const { migrateToIdb, webStore } = loadMigrate(), ls = memory();
+  ls.setItem('selene-site-v1', 'ancien'); ls.setItem('selene-bilan', 'mois'); ls.setItem('selene-auth-session', 'jeton'); ls.setItem('selene-api-key', 'sk');
+  const idb = fakeIdb({ 'selene-site-v1': 'récent' });
+  await migrateToIdb(idb, webStore(() => ls));
+  assert.equal(idb.data.get('selene-site-v1'), 'récent', 'IndexedDB a déjà le document : la copie de localStorage est périmée');
+  assert.equal(idb.data.get('selene-bilan'), 'mois');
+  assert.ok(!idb.data.has('selene-auth-session') && !idb.data.has('selene-api-key'), 'aucun secret dans IndexedDB');
+  assert.deepEqual([...Array(ls.length).keys()].map(i => ls.key(i)).sort(), ['selene-api-key', 'selene-auth-session'], 'localStorage ne garde que les secrets');
+});
+
+test('migration : si IndexedDB refuse l’écriture, rien ne quitte localStorage', async () => {
+  const { migrateToIdb, webStore } = loadMigrate(), ls = memory();
+  ls.setItem('selene-site-v1', 'doc');
+  await assert.rejects(migrateToIdb(fakeIdb({}, { failWrite: true }), webStore(() => ls)));
+  assert.equal(ls.getItem('selene-site-v1'), 'doc');
+});
+
+test('les secrets déclarés par platform sont ceux que la déconnexion efface', () => {
+  const { SECRET_KEYS } = loadMigrate();
+  assert.ok(SECRET_KEYS.includes('selene-auth-session') && SECRET_KEYS.includes('selene-api-key'));
+  assert.match(fs.readFileSync('src/auth.js', 'utf8'), /PERSONAL_SECRETS = platform\.secretKeys\.filter/);
 });

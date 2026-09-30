@@ -1,5 +1,5 @@
 /* Scénario de navigateur : Sources (connexions externes, phase 1, vague 5a : docs/connexions.md). Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeJSON, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources',
   config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), display: 'liste', sources: true, statuses: ['À lire', 'Lue', 'Utilisée'], doneFrom: 1, addLabel: 'Ajouter à la main',
@@ -24,7 +24,7 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
     await ctx.addInitScript(([d, h]) => { if (!h) window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, [JSON.stringify(demo), hostedMode]);
     await p.goto(BASE + path); await p.waitForTimeout(400); return p;
   };
-  const data = p => p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')));
+  const data = p => storeJSON(p, 'selene-site-v1');
   const search = async (p, v) => { await p.fill('#srcIn', v); await p.click('[data-act="src-fetch"]'); await p.waitForTimeout(300); };
 
   console.log('un DOI, complété par Crossref');
@@ -84,11 +84,11 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   ok(await r.isVisible('#authEmail') && (await r.evaluate(() => sessionStorage.getItem('selene-share'))).includes('exemple.org'), 'pas encore connectée : le lien attend, rien n’est déposé dans le vide');
   await r.evaluate(s => { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', 'u1'); }, session);
   await r.reload(); await r.waitForTimeout(900); // un vrai rechargement : la session est lue au démarrage
-  const box = await r.evaluate(() => { const d = JSON.parse(localStorage.getItem('selene-site-v1')); const k = Object.keys(d.modules).find(x => d.modules[x].type === 'notes' && d.modules[x].config.inbox); return d.modules[k].entries.map(e => e.text); });
+  const box = await storeJSON(r, 'selene-site-v1').then(d => { const k = Object.keys(d.modules).find(x => d.modules[x].type === 'notes' && d.modules[x].config.inbox); return d.modules[k].entries.map(e => e.text); });
   ok(box.includes('Un texte trouvé — https://exemple.org/texte?utm_source=x'), 'connectée : le lien partagé devient une note de la boîte');
   ok((await r.evaluate(() => location.search)) === '' && !(await r.evaluate(() => sessionStorage.getItem('selene-share'))), 'l’adresse est nettoyée, la file vidée');
   await r.reload(); await r.waitForTimeout(700);
-  const again = await r.evaluate(() => { const d = JSON.parse(localStorage.getItem('selene-site-v1')); return Object.values(d.modules).filter(m => m.type === 'notes').flatMap(m => m.entries).length; });
+  const again = await storeJSON(r, 'selene-site-v1').then(d => Object.values(d.modules).filter(m => m.type === 'notes').flatMap(m => m.entries).length);
   ok(again === box.length, 'un rechargement ne le dépose pas deux fois');
 
   console.log('réglages et manifeste');

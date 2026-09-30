@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Zotero en lecture seule (connexions externes, phase 2, vague 6f : docs/connexions.md).
    Version hébergée simulée (faux Supabase, faux passeur), API Zotero simulée. Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeGet, storeJSON, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, sources: true, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1,
   fields: { title: 'Titre', subtitle: 'Auteurs', tag: 'Type', due: '', text: 'Résumé' } }, entries: [] };
@@ -43,7 +43,7 @@ const ITEMS = [
     await p.goto(BASE + path); await p.waitForTimeout(600); return p;
   };
   const setKey = async (p, k = KEY) => { await p.fill('[data-act="zot-key"]', k); await p.press('[data-act="zot-key"]', 'Tab'); await p.waitForTimeout(500); };
-  const data = p => p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')));
+  const data = p => storeJSON(p, 'selene-site-v1');
 
   console.log('la clé, en lecture seule');
   const p = await open();
@@ -52,7 +52,7 @@ const ITEMS = [
   await setKey(p);
   ok(p.zot.length === 1 && p.zot[0].u.pathname === '/keys/current' && p.zot[0].key === KEY && !p.zot[0].u.search.includes(KEY), 'la clé est vérifiée, en en-tête (jamais dans l’adresse)');
   ok((await p.textContent('#zotero')).includes('Bibliothèque de marie, en lecture seule'), 'à qui elle est, et qu’elle ne peut pas écrire');
-  ok(!(await p.evaluate(() => localStorage.getItem('selene-site-v1'))).includes(KEY) && (await p.inputValue('[data-act="zot-key"]')).startsWith('•'), 'la clé reste hors des données synchronisées, et n’est pas réaffichée');
+  ok(!(await storeGet(p, 'selene-site-v1')).includes(KEY) && (await p.inputValue('[data-act="zot-key"]')).startsWith('•'), 'la clé reste hors des données synchronisées, et n’est pas réaffichée');
 
   console.log('chercher, garder');
   await p.evaluate(() => location.hash = 'sources'); await p.waitForTimeout(300);

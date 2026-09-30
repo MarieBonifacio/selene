@@ -1,5 +1,5 @@
 /* Scénario de navigateur : Radar culturel (connexions externes, phase 1, vague 5d : docs/connexions.md). Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeSet, storeJSON, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const LILLE = { name: 'Lille, Hauts-de-France, France', lat: 50.6, lon: 3.1, weather: false, realMoon: true };
 const site = (sky, words) => { const d = JSON.parse(fixture()); d.config.sky = sky; if (words) d.config.radar = { words }; return JSON.stringify(d); };
 const rec = (uid, title, from, to, extra = {}) => ({ uid, title_fr: title, firstdate_begin: from + 'T18:00:00+00:00', lastdate_end: (to || from) + 'T22:00:00+00:00',
@@ -52,7 +52,7 @@ const RESULTS = [
   const link = await p.$eval('#sheet .radar a', a => ({ href: a.getAttribute('href'), target: a.target, rel: a.rel }));
   ok(link.href.startsWith('https://openagenda.com/') && link.target === '_blank' && link.rel.includes('noopener'), 'le lien vers l’événement s’ouvre à part');
   await p.click('#sheet .radar li:nth-child(2) [data-act="radar-keep"]'); await p.waitForTimeout(250);
-  const box = await p.evaluate(() => { const d = JSON.parse(localStorage.getItem('selene-site-v1')); const k = Object.keys(d.modules).find(x => d.modules[x].type === 'notes' && d.modules[x].config.inbox); return d.modules[k].entries.map(e => e.text); });
+  const box = await storeJSON(p, 'selene-site-v1').then(d => { const k = Object.keys(d.modules).find(x => d.modules[x].type === 'notes' && d.modules[x].config.inbox); return d.modules[k].entries.map(e => e.text); });
   ok(box.some(x => x.startsWith('Nuit de la poésie') && x.includes('vendredi 2 octobre') && x.includes('https://openagenda.com/lille/events/2')), '« garder » le dépose dans la boîte, avec la date et le lien');
   ok((await p.textContent('#sheet .radar li:nth-child(2)')).includes('gardé'), 'et le dit');
   await p.keyboard.press('Escape'); await p.waitForTimeout(150);
@@ -71,7 +71,7 @@ const RESULTS = [
   const c = await open(LILLE, 'jazz', 'cors', '', true);
   await c.click('[data-act="radar-open"]'); await c.waitForTimeout(500);
   ok(c.asked.length === 1 && c.passeur.length === 1 && c.passeur[0].genre === 'json' && c.passeur[0].url.startsWith('https://opendata.lillemetropole.fr/') && (await c.$$('#sheet .radar li')).length === 5, 'lecture directe refusée : le passeur lit l’agenda (genre json), les événements s’affichent');
-  await c.keyboard.press('Escape'); await c.evaluate(() => localStorage.removeItem('selene-radar')); await c.click('[data-act="radar-open"]'); await c.waitForTimeout(500);
+  await c.keyboard.press('Escape'); await storeSet(c, 'selene-radar', null); await c.click('[data-act="radar-open"]'); await c.waitForTimeout(500);
   ok(c.asked.length === 1 && c.passeur.length === 2, 'la porte fermée est retenue : ensuite, directement par le passeur');
   const a = await open(LILLE, 'jazz', 'cors');
   await a.click('[data-act="radar-open"]'); await a.waitForTimeout(400);
@@ -81,7 +81,7 @@ const RESULTS = [
   const n = await open(LILLE, '', 'ok', '#reglages');
   ok(!(await n.$('[data-act="radar-open"]')), 'sans mots : pas de bouton');
   await n.fill('[data-act="radar-words"]', '  cinéma,   danse '); await n.press('[data-act="radar-words"]', 'Tab'); await n.waitForTimeout(200);
-  ok((await n.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).config.radar.words)) === 'cinéma, danse', 'les mots sont gardés dans le compte (synchronisés)');
+  ok((await storeJSON(n, 'selene-site-v1').then(d => d.config.radar.words)) === 'cinéma, danse', 'les mots sont gardés dans le compte (synchronisés)');
   await n.evaluate(() => location.hash = ''); await n.waitForTimeout(300);
   ok(await n.isVisible('[data-act="radar-open"]'), 'et le bouton paraît sur l’accueil');
   const m = await open({ ...LILLE, name: 'Marseille', lat: 43.3, lon: 5.4 }, 'jazz', 'ok', '#reglages');
