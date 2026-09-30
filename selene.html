@@ -1087,6 +1087,7 @@ var __selene = (() => {
     reservedId: () => reservedId,
     retargetLinks: () => retargetLinks,
     routeOf: () => routeOf,
+    runAction: () => runAction,
     sampleNS: () => sampleNS,
     saveCollectionItem: () => saveCollectionItem,
     saveDraft: () => saveDraft,
@@ -2988,15 +2989,15 @@ var __selene = (() => {
   }
 
   // src/core/radar.js
-  var RADAR_HOST = "https://opendata.lillemetropole.fr";
+  var RADAR_HOST = "https://public.opendatasoft.com";
   var RADAR_FIELDS = "uid,title_fr,description_fr,keywords_fr,firstdate_begin,lastdate_end,location_name,location_city,canonicalurl";
   var radarFold = (s) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   var addDaysISO = (iso2, n) => new Date(Date.parse(iso2 + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10);
   function radarUrl(place, from, { days = 14, km = 20, lean = true } = {}) {
     const lat = Math.round(+place.lat * 10) / 10, lon = Math.round(+place.lon * 10) / 10;
     const where = `lastdate_end >= date'${from}' and firstdate_begin < date'${addDaysISO(from, days)}' and within_distance(location_coordinates, geom'POINT(${lon} ${lat})', ${km}km)`;
-    const q = Object.entries({ where, order_by: "firstdate_begin", limit: "100", ...lean ? { select: RADAR_FIELDS } : {} }).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
-    return `${RADAR_HOST}/api/explore/v2.1/catalog/datasets/evenements-publics-openagenda/records?${q}`;
+    const q = Object.entries({ where, order_by: "firstdate_begin", limit: "-1", ...lean ? { select: RADAR_FIELDS } : {} }).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+    return `${RADAR_HOST}/api/explore/v2.1/catalog/datasets/evenements-publics-openagenda/exports/json?${q}`;
   }
   var radarText = (v, n) => {
     const t = String(Array.isArray(v) ? v.join(", ") : v ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -3005,7 +3006,7 @@ var __selene = (() => {
   var radarDay = (v) => /^\d{4}-\d{2}-\d{2}/.test(String(v || "")) ? String(v).slice(0, 10) : "";
   function radarEvents(json) {
     const seen = /* @__PURE__ */ new Set(), out = [];
-    for (const r of json && Array.isArray(json.results) ? json.results : []) {
+    for (const r of Array.isArray(json) ? json : json && Array.isArray(json.results) ? json.results : []) {
       if (!r || typeof r !== "object") continue;
       const title = radarText(r.title_fr ?? r.title, 200);
       if (!title) continue;
@@ -4463,7 +4464,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
         clearTimeout(t);
       }
     }
-    if (!passeurPret()) throw new Error("Le portail de la Métropole ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).");
+    if (!passeurPret()) throw new Error("L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).");
     const q = await passeurFetch(url, "json");
     return { status: q.status || 0, json: q.status === 200 && typeof q.texte === "string" ? JSON.parse(q.texte) : null };
   }
@@ -4476,7 +4477,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     }
     let r = await radarGet(radarUrl(c, from, { lean: true }));
     if (r.status === 400) r = await radarGet(radarUrl(c, from, { lean: false }));
-    if (!r.json) throw new Error(`L'agenda de la Métropole répond ${r.status || "par une erreur"} (le portail a peut-être changé). Réessaie plus tard.`);
+    if (!r.json) throw new Error(`L'agenda répond ${r.status || "par une erreur"} (le portail a peut-être changé). Réessaie plus tard.`);
     const events = radarEvents(r.json);
     try {
       platform.storage.set(RADAR_KEY, JSON.stringify({ at: Date.now(), key, events }));
@@ -4495,7 +4496,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     const st = radarState, c = radarPlace();
     if (!st) return "";
     const head = `<h2 id="sheetTitle">Radar culturel</h2><p class="hint">Autour de ${esc(c ? c.name.split(",")[0] : "Lille")}, les deux semaines à venir, ce qui parle de : ${esc(st.words.map((w) => st.said[w] || w).join(", "))}. Cinq au plus ; le reste attendra que tu reviennes.</p>`;
-    const foot = `<p class="hint" style="margin-top:12px">Source : OpenAgenda, par l'open data de la Métropole européenne de Lille. Le portail voit la zone (arrondie) et les dates, jamais tes mots : le tri se fait ici.</p>`;
+    const foot = `<p class="hint" style="margin-top:12px">Source : OpenAgenda, par le portail public d'Opendatasoft. Le portail voit la zone (arrondie) et les dates, jamais tes mots : le tri se fait ici.</p>`;
     if (st.busy) return head + `<p class="hint" role="status">Recherche…</p>`;
     if (st.err) return head + `<p class="hint" role="status">${esc(st.err)}</p><button class="btn sm" data-act="radar-open">Réessayer</button>` + foot;
     if (!st.items.length) return head + `<p class="empty">Rien qui te ressemble, cette fois. La ville continuera sans toi, elle a l'habitude.</p>` + foot;
@@ -4520,7 +4521,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     try {
       events = await radarFetch(c, todayISO());
     } catch (e) {
-      err = e.message || "L'agenda de la Métropole ne répond pas. Réessaie plus tard.";
+      err = e.message || "L'agenda ne répond pas. Réessaie plus tard.";
     }
     const st = radarState;
     if (!st) return;
@@ -4540,7 +4541,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
   };
   function radarSettingsHTML() {
     const c = skyConf(), near = radarPlace();
-    return `<section id="radar"><h3>Radar culturel · Métropole de Lille uniquement</h3><p class="hint">Couverture locale : changer de ville n’étend pas ce service à une autre région. Pour suivre des événements ailleurs, ajoute tes propres flux dans Dehors.</p><p class="hint">Sur demande, depuis l'accueil : les événements de la Métropole de Lille (OpenAgenda, open data de la MEL) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification.</p>
+    return `<section id="radar"><h3>Radar culturel · Métropole de Lille uniquement</h3><p class="hint">Couverture locale : changer de ville n’étend pas ce service à une autre région. Pour suivre des événements ailleurs, ajoute tes propres flux dans Dehors.</p><p class="hint">Sur demande, depuis l'accueil : les événements de la Métropole de Lille (OpenAgenda) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification.</p>
     <label>Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)<input data-act="radar-words" value="${esc(radarConf().words)}" placeholder="poésie, jazz, photographie, lecture…" maxlength="300" autocomplete="off"></label>
     ${near ? "" : `<p class="hint" style="margin-top:6px">${c ? `Le radar ne couvre que la Métropole de Lille : le lieu réglé (${esc(c.name)}) en est trop loin.` : "Il lui faut un lieu près de Lille : règle-le dans Ciel, ci-dessus."}</p>`}</section>`;
   }
@@ -6094,9 +6095,21 @@ ${contextText()}`;
     site.save();
     render();
   }
+  function runAction(table, name, ...args) {
+    const failed = (err) => {
+      console.error(`Action « ${name} »`, err);
+      toast(`Cette action n'a pas abouti : ${err && err.message || err}`);
+    };
+    try {
+      const r = table[name](...args);
+      if (r && typeof r.then === "function") r.then(null, failed);
+    } catch (err) {
+      failed(err);
+    }
+  }
   document.addEventListener("click", (e) => {
     const a = e.target.closest("[data-act]");
-    if (a && CLICK[a.dataset.act] && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) CLICK[a.dataset.act](a, e);
+    if (a && Object.hasOwn(CLICK, a.dataset.act) && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) runAction(CLICK, a.dataset.act, a, e);
   });
   document.addEventListener("keydown", (e) => {
     if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || "")) return;
@@ -6138,7 +6151,7 @@ ${contextText()}`;
   });
   document.addEventListener("change", (e) => {
     const el = e.target, act = el.dataset.act;
-    if (act && Object.hasOwn(CHANGE, act)) CHANGE[act](el);
+    if (act && Object.hasOwn(CHANGE, act)) runAction(CHANGE, act, el);
     else if (act && act.startsWith("grp-") && act !== "grp-filter") {
       const mod = el.closest("[data-mod]").dataset.mod, g = gcfg(mod), G = grouperFor(mod);
       if (act === "grp-on") g.on = el.checked;

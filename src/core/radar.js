@@ -1,27 +1,31 @@
 /* ================= radar : événements culturels de la Métropole de Lille (pur, sans DOM ni réseau) =================
-   Source : le jeu « evenements-publics-openagenda » du portail open data de la MEL (Opendatasoft, API Explore v2.1,
-   sans clé, CORS ouvert). On demande une zone et une période, jamais les mots : le filtre par centres d'intérêt se
+   Source : le jeu national « evenements-publics-openagenda » du portail public d'Opendatasoft (API Explore v2.1, sans
+   clé, CORS ouvert). Jusqu'au 30 septembre 2026, le portail de la MEL (opendata.lillemetropole.fr) le servait ; il a
+   changé de logiciel et ne le sert plus (redirection vers l'accueil de data.lillemetropole.fr). Les événements de la
+   Métropole sont les mêmes : ils viennent d'OpenAgenda. On demande une zone et une période, jamais les mots : le filtre par centres d'intérêt se
    fait ici, sur l'appareil. Tirer, jamais pousser : cinq au plus, pas de « voir plus ». Se teste seul (tests/radar.test.js). */
-const RADAR_HOST = "https://opendata.lillemetropole.fr";
+const RADAR_HOST = "https://public.opendatasoft.com";
 const RADAR_FIELDS = "uid,title_fr,description_fr,keywords_fr,firstdate_begin,lastdate_end,location_name,location_city,canonicalurl";
 export const radarFold = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const addDaysISO = (iso, n) => new Date(Date.parse(iso + "T12:00:00Z") + n * 86400000).toISOString().slice(0, 10);
 /* L'adresse de la requête : ce qui se tient entre `from` et `from + days`, à `km` du lieu (arrondi au dixième de degré
-   par Réglages → Ciel), du plus proche au plus lointain. `select` allège la réponse ; sans lui (lean = false), on
+   par Réglages → Ciel). Tout, par l'export (l'API « records » plafonne à 100, et autour de Lille les expositions
+   commencées depuis des mois occuperaient ces cent places avant les sorties à venir) : un millier d'événements, environ
+   170 Ko compressés, une fois toutes les six heures au plus. `select` allège la réponse ; sans lui (lean = false), on
    reçoit tout, au cas où le portail aurait renommé un champ. */
 export function radarUrl(place, from, { days = 14, km = 20, lean = true } = {}) {
   const lat = Math.round(+place.lat * 10) / 10, lon = Math.round(+place.lon * 10) / 10;
   const where = `lastdate_end >= date'${from}' and firstdate_begin < date'${addDaysISO(from, days)}' and within_distance(location_coordinates, geom'POINT(${lon} ${lat})', ${km}km)`;
-  const q = Object.entries({ where, order_by: "firstdate_begin", limit: "100", ...(lean ? { select: RADAR_FIELDS } : {}) }).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
-  return `${RADAR_HOST}/api/explore/v2.1/catalog/datasets/evenements-publics-openagenda/records?${q}`;
+  const q = Object.entries({ where, order_by: "firstdate_begin", limit: "-1", ...(lean ? { select: RADAR_FIELDS } : {}) }).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+  return `${RADAR_HOST}/api/explore/v2.1/catalog/datasets/evenements-publics-openagenda/exports/json?${q}`;
 }
 const radarText = (v, n) => { const t = String(Array.isArray(v) ? v.join(", ") : v ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t; };
 const radarDay = v => /^\d{4}-\d{2}-\d{2}/.test(String(v || "")) ? String(v).slice(0, 10) : "";
-/* La réponse (results) → des événements propres. Tolérant : un champ `_fr` ou sans suffixe, des mots-clés en liste ou
+/* La réponse (une liste, celle de l'export ; ou { results }, celle de l'API « records ») → des événements propres. Tolérant : un champ `_fr` ou sans suffixe, des mots-clés en liste ou
    en texte ; une adresse qui n'est pas en https n'est pas gardée (elle finit dans un href). */
 export function radarEvents(json) {
   const seen = new Set(), out = [];
-  for (const r of (json && Array.isArray(json.results) ? json.results : [])) {
+  for (const r of (Array.isArray(json) ? json : json && Array.isArray(json.results) ? json.results : [])) {
     if (!r || typeof r !== "object") continue;
     const title = radarText(r.title_fr ?? r.title, 200); if (!title) continue;
     const from = radarDay(r.firstdate_begin), to = radarDay(r.lastdate_end) || from;

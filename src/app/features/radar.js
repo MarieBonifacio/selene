@@ -1,4 +1,4 @@
-/* Le radar culturel : les sorties près de chez toi (open data de la Métropole de Lille), triées par tes mots. */
+/* Le radar culturel : les sorties près de chez toi (OpenAgenda, par le portail public d'Opendatasoft), triées par tes mots. */
 import { platform } from "../../platform.js";
 import { inboxId } from "../../core/domain.js";
 import { radarEvents, radarFold, radarMatch, radarUrl, radarWords } from "../../core/radar.js";
@@ -15,15 +15,13 @@ import { S, label, site } from "../state/site.js";
 
 /* ---- Radar culturel (radar.js) : sur demande, ce qui se tient dans la Métropole de Lille et parle de tes mots ----
    Le portail reçoit la zone (lieu du ciel, arrondi) et les dates ; les mots restent ici, le tri se fait sur l'appareil. */
-export const RADAR_KEY = "selene-radar";
- // cache de l'appareil : { at, key, events }, six heures
+export const RADAR_KEY = "selene-radar"; // cache de l'appareil : { at, key, events }, six heures
 export const radarConf = () => { const r = S().config.radar; return { words: r && typeof r.words === "string" ? r.words : "" }; };
 export const radarPlace = () => { const c = skyConf(); return c && nearLille(+c.lat, +c.lon) ? c : null; };
-let radarState = null;
- // { busy, err, items, total, words, kept } : la feuille en cours
-/* Une lecture de l'agenda : directe d'abord ; si le navigateur n'a pas le droit d'en lire la réponse (le portail de
-   la MEL n'envoie pas d'en-tête CORS : constaté le 29 septembre 2026), par le passeur, qui lit du JSON pour toi. L'échec
-   direct est retenu pour la session : on ne refrappe pas à une porte qu'on sait fermée. */
+let radarState = null; // { busy, err, items, total, words, kept } : la feuille en cours
+/* Une lecture de l'agenda : directe (le portail envoie l'en-tête CORS) ; si le navigateur n'a pas le droit d'en lire la
+   réponse (l'ancien portail de la MEL ne l'envoyait pas), par le passeur, qui lit du JSON pour toi. L'échec direct est
+   retenu pour la session : on ne refrappe pas à une porte qu'on sait fermée. */
 let radarDirect = true;
 async function radarGet(url) {
   if (radarDirect) {
@@ -31,7 +29,7 @@ async function radarGet(url) {
     try { const r = await fetch(url, { signal: ac.signal }); return { status: r.status, json: r.ok ? await r.json() : null }; }
     catch { radarDirect = false; } finally { clearTimeout(t); }
   }
-  if (!passeurPret()) throw new Error("Le portail de la Métropole ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).");
+  if (!passeurPret()) throw new Error("L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).");
   const q = await passeurFetch(url, "json");
   return { status: q.status || 0, json: q.status === 200 && typeof q.texte === "string" ? JSON.parse(q.texte) : null };
 }
@@ -40,7 +38,7 @@ async function radarFetch(c, from) {
   try { const x = JSON.parse(platform.storage.get(RADAR_KEY) || "null"), age = x ? Date.now() - x.at : NaN; if (x && x.key === key && age > -300000 && age < 6 * 3600000 && Array.isArray(x.events)) return x.events; } catch {}
   let r = await radarGet(radarUrl(c, from, { lean: true }));
   if (r.status === 400) r = await radarGet(radarUrl(c, from, { lean: false })); // un champ renommé par le portail : tout recevoir plutôt que rien
-  if (!r.json) throw new Error(`L'agenda de la Métropole répond ${r.status || "par une erreur"} (le portail a peut-être changé). Réessaie plus tard.`);
+  if (!r.json) throw new Error(`L'agenda répond ${r.status || "par une erreur"} (le portail a peut-être changé). Réessaie plus tard.`);
   const events = radarEvents(r.json);
   try { platform.storage.set(RADAR_KEY, JSON.stringify({ at: Date.now(), key, events })); } catch {}
   return events;
@@ -55,7 +53,7 @@ function radarWhen(x, today) {
 SHEETS.radar = () => {
   const st = radarState, c = radarPlace(); if (!st) return "";
   const head = `<h2 id="sheetTitle">Radar culturel</h2><p class="hint">Autour de ${esc(c ? c.name.split(",")[0] : "Lille")}, les deux semaines à venir, ce qui parle de : ${esc(st.words.map(w => st.said[w] || w).join(", "))}. Cinq au plus ; le reste attendra que tu reviennes.</p>`;
-  const foot = `<p class="hint" style="margin-top:12px">Source : OpenAgenda, par l'open data de la Métropole européenne de Lille. Le portail voit la zone (arrondie) et les dates, jamais tes mots : le tri se fait ici.</p>`;
+  const foot = `<p class="hint" style="margin-top:12px">Source : OpenAgenda, par le portail public d'Opendatasoft. Le portail voit la zone (arrondie) et les dates, jamais tes mots : le tri se fait ici.</p>`;
   if (st.busy) return head + `<p class="hint" role="status">Recherche…</p>`;
   if (st.err) return head + `<p class="hint" role="status">${esc(st.err)}</p><button class="btn sm" data-act="radar-open">Réessayer</button>` + foot;
   if (!st.items.length) return head + `<p class="empty">Rien qui te ressemble, cette fois. La ville continuera sans toi, elle a l'habitude.</p>` + foot;
@@ -72,7 +70,7 @@ CLICK["radar-open"] = async () => {
   radarState = { busy: true, err: "", items: [], total: 0, words, said, kept: new Set() };
   if ($("#sheet").open && sheetKind === "radar") $("#sheetBody").innerHTML = SHEETS.radar(); else openSheet("radar");
   let events = null, err = "";
-  try { events = await radarFetch(c, todayISO()); } catch (e) { err = e.message || "L'agenda de la Métropole ne répond pas. Réessaie plus tard."; }
+  try { events = await radarFetch(c, todayISO()); } catch (e) { err = e.message || "L'agenda ne répond pas. Réessaie plus tard."; }
   const st = radarState; if (!st) return;
   Object.assign(st, { busy: false, err }, events ? radarMatch(events, words, 5) : {});
   if ($("#sheet").open && sheetKind === "radar") $("#sheetBody").innerHTML = SHEETS.radar();
@@ -85,7 +83,7 @@ CLICK["radar-keep"] = el => {
 };
 export function radarSettingsHTML() {
   const c = skyConf(), near = radarPlace();
-  return `<section id="radar"><h3>Radar culturel · Métropole de Lille uniquement</h3><p class="hint">Couverture locale : changer de ville n’étend pas ce service à une autre région. Pour suivre des événements ailleurs, ajoute tes propres flux dans Dehors.</p><p class="hint">Sur demande, depuis l'accueil : les événements de la Métropole de Lille (OpenAgenda, open data de la MEL) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification.</p>
+  return `<section id="radar"><h3>Radar culturel · Métropole de Lille uniquement</h3><p class="hint">Couverture locale : changer de ville n’étend pas ce service à une autre région. Pour suivre des événements ailleurs, ajoute tes propres flux dans Dehors.</p><p class="hint">Sur demande, depuis l'accueil : les événements de la Métropole de Lille (OpenAgenda) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification.</p>
     <label>Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)<input data-act="radar-words" value="${esc(radarConf().words)}" placeholder="poésie, jazz, photographie, lecture…" maxlength="300" autocomplete="off"></label>
     ${near ? "" : `<p class="hint" style="margin-top:6px">${c ? `Le radar ne couvre que la Métropole de Lille : le lieu réglé (${esc(c.name)}) en est trop loin.` : "Il lui faut un lieu près de Lille : règle-le dans Ciel, ci-dessus."}</p>`}</section>`;
 }

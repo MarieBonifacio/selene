@@ -6,8 +6,9 @@ const R = require('../src/core/radar.js');
 
 test('requête : la zone arrondie et deux semaines, sans aucun mot', () => {
   const u = new URL(R.radarUrl({ lat: 50.6321, lon: 3.0578 }, '2026-09-28'));
-  assert.equal(u.origin, 'https://opendata.lillemetropole.fr');
-  assert.ok(u.pathname.endsWith('/catalog/datasets/evenements-publics-openagenda/records'));
+  assert.equal(u.origin, 'https://public.opendatasoft.com');
+  assert.ok(u.pathname.endsWith('/catalog/datasets/evenements-publics-openagenda/exports/json'));
+  assert.equal(u.searchParams.get('limit'), '-1', 'tout, pas les cent premiers : les expositions au long cours les prendraient tous');
   const w = u.searchParams.get('where');
   assert.ok(w.includes("lastdate_end >= date'2026-09-28'") && w.includes("firstdate_begin < date'2026-10-12'"));
   assert.ok(w.includes("geom'POINT(3.1 50.6)', 20km"), w);
@@ -27,6 +28,7 @@ test('réponse : champs tolérants, adresse https seulement, doublons écartés'
   assert.deepEqual({ ...ev[0], kw: [...ev[0].kw] }, { id: '1', title: 'Nuit de la poésie', from: '2026-10-02', to: '2026-10-02', place: 'La Condition publique', city: 'Roubaix', url: 'https://openagenda.com/e/1', kw: ['Poésie', 'lecture'], text: 'Lectures à voix haute.' });
   assert.equal(ev[1].url, ''); assert.deepEqual([...ev[1].kw], ['jazz', 'concert']);
   assert.deepEqual([...R.radarEvents(null)], []); assert.deepEqual([...R.radarEvents({ results: 'x' })], []);
+  assert.deepEqual(R.radarEvents([{ uid: 9, title_fr: 'Export' }]).map(e => e.title), ['Export'], 'l’export répond par une liste');
 });
 
 test('tri : tes mots sans accents ni casse, du plus tôt au plus tard, cinq au plus', () => {

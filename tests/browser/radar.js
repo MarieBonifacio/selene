@@ -17,16 +17,16 @@ const RESULTS = [
   const open = async (sky, words, mode = 'ok', hash = '', hosted = false) => {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, timezoneId: 'Europe/Paris', serviceWorkers: 'block' }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
     p.asked = []; p.passeur = [];
-    await ctx.route('https://opendata.lillemetropole.fr/**', r => {
+    await ctx.route('https://public.opendatasoft.com/**', r => {
       const u = new URL(r.request().url()); p.asked.push(u);
       if (mode === 'cors') return r.abort('failed'); // ce que voit le navigateur quand le portail n'envoie pas d'en-tête CORS
       if (mode === 'down') return r.fulfill({ status: 503, body: '' });
       if (mode === 'renamed' && u.searchParams.get('select')) return r.fulfill({ status: 400, contentType: 'application/json', body: '{"error_code":"ODSQLError"}' });
-      r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ total_count: RESULTS.length, results: RESULTS }) });
+      r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(RESULTS) }); // l’export : une liste
     });
     await ctx.route('https://*.supabase.co/**', r => {
       const req = r.request();
-      if (new URL(req.url()).pathname === '/functions/v1/passeur') { const q = req.postDataJSON(); p.passeur.push(q); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ status: 200, url: q.url, type: 'application/json; charset=utf-8', texte: JSON.stringify({ total_count: RESULTS.length, results: RESULTS }) }) }); }
+      if (new URL(req.url()).pathname === '/functions/v1/passeur') { const q = req.postDataJSON(); p.passeur.push(q); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ status: 200, url: q.url, type: 'application/json; charset=utf-8', texte: JSON.stringify(RESULTS) }) }); }
       r.fulfill({ contentType: 'application/json', body: req.method() === 'GET' ? '[]' : '{}' });
     });
     const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.parse('2026-09-28T08:00:00Z') / 1000) + 3600, user: { id: '0b8f0c2e-1111-2222-3333-444455556666', email: 'a@b.c' } });
@@ -67,10 +67,10 @@ const RESULTS = [
   await d.click('[data-act="radar-open"]'); await d.waitForTimeout(400);
   ok((await sheet(d)).includes('répond 503') && await d.isVisible('#sheet [data-act="radar-open"]'), 'portail en panne : dit, et « Réessayer »');
 
-  console.log('CORS fermé (constaté sur le vrai portail) : le passeur prend le relais');
+  console.log('CORS fermé (comme sur l’ancien portail de la MEL) : le passeur prend le relais');
   const c = await open(LILLE, 'jazz', 'cors', '', true);
   await c.click('[data-act="radar-open"]'); await c.waitForTimeout(500);
-  ok(c.asked.length === 1 && c.passeur.length === 1 && c.passeur[0].genre === 'json' && c.passeur[0].url.startsWith('https://opendata.lillemetropole.fr/') && (await c.$$('#sheet .radar li')).length === 5, 'lecture directe refusée : le passeur lit l’agenda (genre json), les événements s’affichent');
+  ok(c.asked.length === 1 && c.passeur.length === 1 && c.passeur[0].genre === 'json' && c.passeur[0].url.startsWith('https://public.opendatasoft.com/') && (await c.$$('#sheet .radar li')).length === 5, 'lecture directe refusée : le passeur lit l’agenda (genre json), les événements s’affichent');
   await c.keyboard.press('Escape'); await storeSet(c, 'selene-radar', null); await c.click('[data-act="radar-open"]'); await c.waitForTimeout(500);
   ok(c.asked.length === 1 && c.passeur.length === 2, 'la porte fermée est retenue : ensuite, directement par le passeur');
   const a = await open(LILLE, 'jazz', 'cors');
