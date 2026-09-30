@@ -54,6 +54,7 @@ export * from "./features/specimen.js";
 export * from "./features/tensions.js";
 export * from "./features/timer.js";
 export * from "./features/vasculum.js";
+export * from "./features/widget.js";
 export * from "./features/zotero.js";
 export * from "./views/accueil.js";
 export * from "./views/bilan.js";

@@ -30,8 +30,9 @@ function fakeCapacitor({ native = true, launchUrl = null } = {}) {
     async schedule({ notifications }) { log.push('schedule'); pending.push(...notifications); }
   };
   const Haptics = { impact: async ({ style }) => { log.push('haptic ' + style); } };
+  const SeleneWidget = { update: async d => { log.push('widget ' + JSON.stringify(d)); } };
   const events = [], history = { back() { log.push('back'); } };
-  const window = { Capacitor: { isNativePlatform: () => native, Plugins: { Filesystem, SecureStorage, App, LocalNotifications, Haptics } }, dispatchEvent(e) { events.push(e.type); } };
+  const window = { Capacitor: { isNativePlatform: () => native, Plugins: { Filesystem, SecureStorage, App, LocalNotifications, Haptics, SeleneWidget } }, dispatchEvent(e) { events.push(e.type); } };
   const docEvents = [], docHandlers = {}, session = new Map();
   const document = { addEventListener(n, f) { docHandlers[n] = f; }, dispatchEvent(e) { docEvents.push(e); if (docHandlers[e.type]) docHandlers[e.type](e); } };
   const CustomEvent = class { constructor(type, init = {}) { this.type = type; this.detail = init.detail; } };
@@ -128,4 +129,10 @@ test('notifications : la liste donnée remplace tout ce qui était programmé, a
   c.window.seleneNative.haptic();
   await new Promise(r => setImmediate(r));
   assert.deepEqual(c.log, ['haptic LIGHT']);
+});
+
+test('widget (Android) : la lune et des lignes de texte, rien d’autre, vers le plugin de l’app', async () => {
+  const c = fakeCapacitor();
+  await c.window.seleneNative.widget.update({ moon: 'Pleine lune · 100 %', lines: ['Arroser', 42, null], extra: 'ignoré' });
+  assert.deepEqual(c.log, ['widget {"moon":"Pleine lune · 100 %","lines":["Arroser","42","null"]}']);
 });

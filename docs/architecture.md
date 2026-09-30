@@ -706,3 +706,20 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
 - **Conséquences** : le plus gros fichier fait 27 Ko (`features/dehors.js`) ; le test d'architecture a refusé deux
   dépendances au chargement pendant le découpage (`lib/dom.js` qui importait l'état) et elles ont été corrigées plutôt
   que tolérées. Le comportement est inchangé : mêmes 173 tests, mêmes 52 scénarios de navigateur.
+
+### ADR 24 — Un widget d'écran d'accueil sous Android, qui ne calcule rien
+
+- **Contexte** : un widget rend Selene visible sans l'ouvrir. Mais un widget qui recalcule seul (tâches, rappels,
+  lune) devrait réimplémenter en Java ce que fait la page, ou réveiller une WebView en arrière-plan.
+- **Décision** : le widget montre ce que la page lui a dit en dernier. À chaque rendu, Selene calcule la lune du jour
+  et les trois choses qui attendent (tâches choisies pour aujourd'hui, puis rappels et échéances du jour : les mêmes
+  que le résumé du matin), et les envoie si elles ont changé, par un plugin Capacitor propre à l'app
+  (`WidgetPlugin.java`, enregistré dans `MainActivity`) qui les borne et les garde dans des préférences privées.
+  `SeleneWidget.java` (un `AppWidgetProvider`) les affiche ; toucher le widget ouvre l'app, « + » ouvre la capture par
+  le lien `selene://capture`. `updatePeriodMillis = 0` : aucun réveil programmé. `platform.widget` n'existe que là où la
+  coquille en a un.
+- **Écarté** : iOS pour l'instant (WidgetKit demande une extension Swift, un App Group partagé et donc une signature :
+  à faire avec le compte Apple) ; un widget qui interroge lui-même le stockage (deux lectures du même document, deux
+  vérités possibles).
+- **Conséquences** : un widget à jour de la dernière ouverture, pas davantage ; le job *apk* compile le Java du widget
+  à chaque PR ; `tests/native-boot.test.js`, `platform.test.js` et `app.test.js` vérifient le pont et le contenu.

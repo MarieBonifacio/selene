@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-H4GbPZ7EVe+GtGl6NI5zTR6PTRGrHZb3QWrlo1W1RXg=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-a1uOn0iLEGksRwi/k8z9AoIFQ8/jyS2fnebeA7SpKbI=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -861,6 +861,13 @@ var __platform = (() => {
         if (native && native.notifications) await native.notifications.replace(list);
       }
     },
+    // Le widget d'écran d'accueil (ADR 24) : ce qu'il affiche, envoyé par la page ; seulement là où la coquille en a un.
+    widget: {
+      supported: () => !!(native && native.widget),
+      update: async (data) => {
+        if (native && native.widget) await native.widget.update(data);
+      }
+    },
     // Un léger retour haptique (une capture enregistrée) ; rien là où l'hôte n'en a pas.
     haptic() {
       try {
@@ -1254,6 +1261,8 @@ var __selene = (() => {
     uid: () => uid,
     validDate: () => validDate,
     weatherState: () => weatherState,
+    widgetData: () => widgetData,
+    widgetSoon: () => widgetSoon,
     windName: () => windName,
     within: () => within,
     zoned: () => zoned,
@@ -8558,6 +8567,29 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     toast(`Ajouté à ${label(x.mb.mod)} : ${x.mb.artist}, « ${x.mb.album} ».`);
   };
 
+  // src/app/features/widget.js
+  var WIDGET_LINES = 3;
+  function widgetData() {
+    const m = moon(), lines = [];
+    for (const [, t] of todayTasks()) if (!lines.includes(t.title)) lines.push(t.title);
+    for (const x of dayDigest(todayISO())) if (!lines.includes(x) && !lines.some((l) => x === `Échéance : ${l}`)) lines.push(x);
+    return { moon: `${m.name} · ${Math.round(m.illum * 100)} %`, lines: lines.slice(0, WIDGET_LINES) };
+  }
+  var widgetTimer = null;
+  var widgetSent = null;
+  function widgetSoon() {
+    if (!platform.widget.supported()) return;
+    clearTimeout(widgetTimer);
+    widgetTimer = setTimeout(() => {
+      const data = widgetData(), sig = JSON.stringify(data);
+      if (sig === widgetSent) return;
+      widgetSent = sig;
+      platform.widget.update(data).catch(() => {
+        widgetSent = null;
+      });
+    }, 1e3);
+  }
+
   // src/app/shell/render.js
   function applyTheme() {
     const c = S().config, r = document.documentElement;
@@ -8584,6 +8616,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     }
     skyWatch();
     notifySoon();
+    widgetSoon();
     if (sharePending) applyShare();
   }
   function renderNow() {
