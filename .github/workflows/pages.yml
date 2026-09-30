@@ -22,13 +22,16 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
-      - name: Rassembler les seuls fichiers publiés
-        run: |
-          mkdir _site
-          cp index.html sw.js manifest.webmanifest icon-192.png icon-512.png apple-touch-icon.png _site/
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # La sortie web, construite depuis les sources (la même que index.html, vérifiée par le job check).
+      - run: npm run build:dist
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: _site
+          path: dist/web
       - id: deployment
         uses: actions/deploy-pages@v5
