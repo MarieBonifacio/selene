@@ -66,15 +66,28 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   // Ce qui dépasse l'écran : les éléments les plus profonds dont le bord droit sort, pour que l'échec dise où chercher.
   const overflow = W => q.evaluate(W => {
     const out = [];
+    // Un élément fixé (la barre du bas) s'étire avec la zone d'affichage : il subit le débordement, il ne le cause pas.
+    const fixed = el => { for (let e = el; e && e !== document.body; e = e.parentElement) if (getComputedStyle(e).position === 'fixed') return true; return false; };
     for (const el of document.body.querySelectorAll('*')) {
-      const r = el.getBoundingClientRect(); if (!r.width || r.right <= W + 0.5) continue;
+      const r = el.getBoundingClientRect(); if (!r.width || r.right <= W + 0.5 || fixed(el)) continue;
       if ([...el.children].some(c => c.getBoundingClientRect().right > W + 0.5)) continue;
       const at = el.closest('[id]'), cls = typeof el.className === 'string' ? el.className.trim().replace(/\s+/g, '.') : '';
       out.push(`${el.tagName.toLowerCase()}${cls ? '.' + cls : ''}${el.dataset.act ? '[' + el.dataset.act + ']' : ''} dans #${at ? at.id : '?'} (${Math.round(r.left)}→${Math.round(r.right)})`);
     }
-    return { sw: document.documentElement.scrollWidth, out: out.slice(0, 8) };
+    // Rien ne dépasse à l'œil (du texte, l'intérieur d'un contrôle natif) : on cache tour à tour chaque enfant et l'on
+    // descend dans celui dont l'absence rétrécit le plus la page, jusqu'au responsable.
+    const sw = () => document.documentElement.scrollWidth, name = el => `${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}${typeof el.className === 'string' && el.className.trim() ? '.' + el.className.trim().replace(/\s+/g, '.') : ''}${el.dataset && el.dataset.act ? '[' + el.dataset.act + ']' : ''}`;
+    let node = document.body; const path = [];
+    for (let depth = 0; !out.length && depth < 40; depth++) {
+      let best = null, bestSw = sw();
+      for (const c of node.children) { const d = c.style.display; c.style.display = 'none'; const s = sw(); c.style.display = d; if (s < bestSw) { best = c; bestSw = s; } }
+      if (!best) break;
+      node = best; path.push(`${name(node)} (${bestSw})`);
+    }
+    if (path.length) out.push(`${path.slice(-4).join(' › ')} = ${node.outerHTML.replace(/\s+/g, ' ').slice(0, 160)}`);
+    return { sw: sw(), out: out.slice(0, 8) };
   }, W);
-  const fits = async W => { const o = await overflow(W); return [o.sw <= W, o.sw <= W ? '' : ` : ${o.sw} px, ${o.out.join(' ; ') || 'rien de visible'}`]; };
+  const fits = async W => { const o = await overflow(W); return [o.sw <= W, o.sw <= W ? '' : ` : ${o.sw} px, ${o.out.join(' ; ') || 'introuvable'}`]; };
   let [fit, why] = await fits(390);
   ok(fit, 'tout déplié, rien ne déborde en largeur' + why);
   await q.setViewportSize({ width: 320, height: 640 }); await q.waitForTimeout(150); // le plus étroit des iPhone
