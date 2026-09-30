@@ -16,6 +16,9 @@ export default [
   // Le noyau est pur (ni DOM, ni stockage, ni réseau) : un module n'y voit que ses imports et URL.
   { files: ["src/core/**/*.js"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { URL: "readonly" } }, rules },
   { files: ["scripts/**/*.mjs"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { process: "readonly", URL: "readonly" } }, rules },
+  // L'amorçage des coquilles natives (src/native/boot.js), posé seul avant Selene dans dist/native.
+  { files: ["src/native/*.js"], languageOptions: { ecmaVersion: 2023, sourceType: "script",
+    globals: { window: "readonly", history: "readonly", Event: "readonly" } }, rules },
   { files: ["sw.js"], languageOptions: { ecmaVersion: 2023, sourceType: "script",
     globals: { self: "readonly", caches: "readonly", fetch: "readonly", location: "readonly", URL: "readonly" } }, rules }
 ];

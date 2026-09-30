@@ -526,3 +526,22 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
 - **Conséquences** : `tests/build.test.js` vérifie que `dist/web` et `dist/artifact` sont exactement les pages
   versionnées et que la page native n'autorise que son script ; `npm run test:browser` construit `dist/` d'abord, et
   `tests/browser/natif.js` tourne sur `dist/native/index.html`.
+
+### ADR 15 — Android par Capacitor, autour de la page native
+
+- **Contexte** : la PWA ne reçoit pas le partage d'Android hors de Chrome, dépend du stockage d'une WebView évinçable,
+  et range les secrets dans `localStorage`.
+- **Décision** : Capacitor 8 (`capacitor.config.json`, projet dans `native/android`, versionné sauf ce que
+  `cap sync` copie) sert `dist/native`. Un amorçage (`src/native/boot.js`, premier script de la page native, autorisé
+  par son empreinte) pose `window.seleneNative` : stockage dans des fichiers privés (plugin Filesystem, écriture par
+  fichier temporaire renommé), secrets dans l'Android Keystore (plugin `@aparajita/capacitor-secure-storage`,
+  appelé par ses méthodes natives : pas de JavaScript de plugin dans la page), bouton retour relié à l'historique,
+  mise en pause changée en `pagehide`. Le partage (`ACTION_SEND`) est rendu à la page sous la forme du Web Share
+  Target (`MainActivity`). Les fonctions Supabase acceptent l'origine `https://localhost` par défaut. L'APK de
+  débogage est construit en CI (workflow *Android*) ; toutes les versions ont plus de 24 heures à l'adoption.
+- **Écarté** : React Native ou Flutter (réécrire une app qui marche) ; Tauri mobile (moins mûr sur mobile) ;
+  Preferences pour les données (un document de plusieurs Mo tout entier en mémoire des préférences) ; le JavaScript
+  des plugins dans la page (un bundle de plus, et une empreinte CSP à suivre).
+- **Conséquences** : Android ne demande que trois fichiers propres ; la dépendance de build `uuid` que tire la CLI de
+  Capacitor (via `xcode`) porte un avis de sécurité modéré sans portée ici (API non utilisée, outil de build) ;
+  l'essai sur un vrai téléphone reste manuel (docs/android.md).

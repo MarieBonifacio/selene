@@ -34,7 +34,9 @@ demo.config.sky = { name: 'Lille, Hauts-de-France, France', lat: 50.6, lon: 3.1,
   ok(l.every(x => x.delay <= 0), 'la phase vient de l’horloge (retard négatif) : un nouveau rendu ne remet pas le ciel à zéro');
 
   console.log('hors de vue, réglage, système');
-  await p.evaluate(() => { document.body.style.minHeight = '4000px'; scrollTo(0, 3000); }); await p.waitForTimeout(400);
+  await p.evaluate(() => { document.body.style.minHeight = '4000px'; scrollTo(0, 3000); });
+  // L'IntersectionObserver répond quand le navigateur en a le temps : attendre l'état (5 s au plus), pas un délai fixe.
+  for (const end = Date.now() + 5000; Date.now() < end && !(await layers(p)).every(x => x.state === 'paused');) await p.waitForTimeout(100);
   ok((await layers(p)).every(x => x.state === 'paused'), 'défilée hors de vue, la scène s’immobilise');
   await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(400);
   ok((await layers(p)).every(x => x.state === 'running'), 'et repart quand elle revient');
