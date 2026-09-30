@@ -244,16 +244,20 @@ Seul un refus explicite du serveur (400 / 401 au rafraîchissement) met fin à l
 coupé ou 5xx laissent l'app travailler en local, avec « Non synchronisé » affiché. Le jeton est
 rafraîchi s'il lui reste moins de 10 min (vérification toutes les 5 min), jamais deux fois en même
 temps (les refresh tokens sont à usage unique). La déconnexion pousse d'abord les modifications en
-attente (et demande confirmation si c'est impossible), puis efface de l'appareil les données, la base,
-la conversation avec l'assistant et la clé API.
+attente (et demande confirmation si c'est impossible), puis efface de l'appareil les données, la base
+et la conversation avec l'assistant ; la clé API, gardée chiffrée par la fonction `assistant`, reste au compte.
 
 ## Sécurité
 
 - **Frontière de plateforme** : seul `platform.js` touche à `localStorage`, `sessionStorage`, `window.claude`
-  et `navigator.storage` (vérifié par `tests/platform.test.js`). Les secrets (session Supabase, clés
-  Anthropic, OpenAlex et Zotero, adresse privée d'agenda) passent par `platform.secrets` : sur le web, le même
+  et `navigator.storage` (vérifié par `tests/platform.test.js`). Les secrets de l'appareil (session Supabase,
+  clés OpenAlex et Zotero, adresse privée d'agenda) passent par `platform.secrets` : sur le web, le même
   `localStorage` que le reste, donc lisibles par un script qui s'exécuterait dans la page (d'où la CSP
   ci-dessous) ; une coquille native les rangera dans le trousseau du système.
+- **Clé Anthropic** : jamais dans la page. La fonction `assistant` (docs/assistant.md) la reçoit une fois, la vérifie
+  auprès d'Anthropic, la chiffre (AES-GCM, secret du serveur, identifiant du compte en données associées) dans la
+  table `assistant_keys` (RLS sans règle : aucun navigateur n'y accède) et relaie les messages, champs filtrés et
+  bornés. La CSP ne permet plus à la page de joindre `api.anthropic.com`.
 - **Isolation entre comptes** : RLS sur `app_state` (`auth.uid() = user_id`). La clé publique Supabase
   est faite pour être exposée ; la clé `service_role` ne doit jamais entrer dans ce dépôt.
 - **Injection** : toute donnée insérée dans le HTML passe par `esc()` ; les identifiants de module sont
@@ -262,7 +266,7 @@ la conversation avec l'assistant et la clé API.
 - **CSP** du build hébergé : pas de `'unsafe-inline'` pour les scripts ; `build.py` inscrit l'empreinte
   SHA-256 des deux seuls scripts de la page (le script principal, l'enregistrement du service worker), donc
   un script injecté ou un attribut `onerror=` est refusé par le navigateur même si l'échappement faillait
-  (`tests/browser/csp.js`). Les styles gardent `'unsafe-inline'` (voir ADR 8). Connexions limitées à Anthropic, Google Fonts,
+  (`tests/browser/csp.js`). Les styles gardent `'unsafe-inline'` (voir ADR 8). Connexions limitées à Google Fonts,
   `*.supabase.co` et aux services publics de la phase 1, chacun nommé (Open-Meteo, Crossref, Microlink,
   MusicBrainz, open data de la MEL, OpenAlex, Zotero ; images de Cover Art Archive) : voir [connexions.md](connexions.md).
 - **Assistant** : ne lit que les modules cochés dans Réglages → Assistant ; ses actions sont revérifiées
@@ -280,7 +284,7 @@ installe par `npm ci`, et les scripts npm sont les seules commandes, en local co
 | `npm test` | tests unitaires Node (`tests/*.test.js`) |
 | `npm run test:syntax` | `node --check` sur chaque source (`src/`, `src/core/`, `scripts/`), arrêt au premier fichier invalide |
 | `npm run lint` | eslint sur le script assemblé (`build.py --bundle .lint/selene.js`), sur chaque module du noyau (`sourceType: "module"`), sur `scripts/` et `sw.js` |
-| `npm run test:passeur` | types et tests Deno du passeur |
+| `npm run test:functions` | types et tests Deno des fonctions Supabase (passeur, assistant) |
 | `npm run test:browser` | parcours Playwright dans Chromium (`npx playwright install chromium` une fois) ; `SELENE_BROWSER=webkit` pour WebKit |
 | `npm run check` / `check:all` | tout sauf le navigateur / tout |
 
@@ -459,3 +463,23 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   leurs accès dans `platform.ready` (avant `});\n})();`) ; `tests/platform.test.js` couvre l'hydratation,
   l'ordre des écritures, `flush`, un coffre qui refuse d'écrire et un coffre illisible. Seuil de sortie de
   `localStorage` (phase 13) : `npm run bench` affiche la taille du document `site`.
+
+### ADR 12 — La clé Anthropic de chacun, gardée et utilisée par le serveur
+
+- **Contexte** : l'assistant hébergé appelait Anthropic depuis le navigateur (`anthropic-dangerous-direct-browser-access`)
+  avec une clé gardée dans `localStorage`. Pour une app distribuée, une seule faille de la page suffirait à vider les
+  clés de tout le monde, facturées à chacun.
+- **Décision** : une fonction Supabase Edge `assistant`, sur le modèle du passeur (session vérifiée, origines
+  listées, débit par compte). Elle reçoit la clé une fois, la vérifie gratuitement (liste des modèles), la chiffre
+  en AES-GCM (secret `ASSISTANT_KEY_SECRET`, identifiant du compte en données associées : une ligne copiée sous un
+  autre compte ne se déchiffre pas) et ne la rend jamais ; elle relaie les messages avec le SDK officiel, en ne
+  gardant que modèle, `max_tokens` (4096 au plus), consigne, messages et outils, sans flux ni en-tête choisi par la
+  page ; adresse et authentification du SDK fixées dans le code. Ouverte à tout compte connecté : chacun paie avec
+  sa clé. Une clé laissée par une ancienne version sur l'appareil est confiée au serveur puis effacée localement.
+- **Écarté** : la clé de l'opératrice avec des quotas (sa facture deviendrait la variable d'ajustement de n'importe
+  quel compte) ; la clé dans le coffre de l'appareil (le trousseau protège au repos, pas contre un script qui
+  s'exécute dans la page et appelle Anthropic avec) ; un chiffrement par la base (pgsodium, Vault : plus de
+  surface, et la clé du chiffrement vivrait à côté des données).
+- **Conséquences** : `api.anthropic.com` sort de la CSP ; l'assistant hébergé demande un compte connecté et la
+  fonction déployée (docs/assistant.md : table, secret, déploiement) ; la déconnexion ne supprime plus la clé,
+  « Oublier la clé » l'efface du serveur. Réponses non diffusées en continu (comme avant), 60 s au plus.

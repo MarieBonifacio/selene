@@ -923,13 +923,13 @@ VIEWS.reglages = () => {
         <div style="margin-top:10px">${moduleSettingsHTML(m.id)}</div>
       </details>`).join("")}
   </section>
-  ${enabled("assistant") ? `<section id="assistant-cfg"><h3>Assistant</h3><p class="hint">Claude dans le tableau de bord. Sur claude.ai, il passe par ton compte. Hébergé ailleurs (GitHub Pages), il faut ta propre clé API, gardée uniquement dans ce navigateur.</p>
-    <div class="field-row"><label>Clé API Anthropic (hébergé uniquement)<input type="password" data-act="as-key" value="${getKey() ? "••••••••" : ""}" placeholder="sk-ant-…" autocomplete="off"></label>
+  ${enabled("assistant") ? `<section id="assistant-cfg"><h3>Assistant</h3><p class="hint">Claude dans le tableau de bord. Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.</p>
+    <div class="field-row">${hosted() ? `<label>Clé API Anthropic${assistantKnown()?.cle ? ` (enregistrée : ${esc(assistantKnown().indice || "")})` : ""}<input type="password" data-act="as-key" value="" placeholder="${assistantKnown()?.cle ? "Coller une autre clé pour la remplacer" : "sk-ant-…"}" autocomplete="off"></label>` : ""}
     <label>Modèle<select data-act="as-model">${[["claude-haiku-4-5-20251001", "Haiku 4.5, rapide et peu cher"], ["claude-sonnet-5", "Sonnet 5, équilibré"], ["claude-opus-5-5", "Opus 5.5, le plus capable"]].map(([k, l]) => `<option value="${k}" ${s.config.assistant.model === k ? "selected" : ""}>${l}</option>`).join("")}</select></label></div>
     <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" data-act="as-actions" ${s.config.assistant.actions ? "checked" : ""}>Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)</label>
     <p class="hint" style="margin:12px 0 4px">Ce que Claude peut lire :</p><div class="row">${Object.keys(s.config.assistant.share).filter(enabled).map(k => `<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" data-act="as-share" data-k="${esc(k)}" ${s.config.assistant.share[k] ? "checked" : ""}>${esc(label(k))}</label>`).join("")}</div>
-    ${getKey() ? `<button class="btn ghost sm" data-act="as-forget" style="margin-top:10px">Oublier la clé sur cet appareil</button>` : ""}</section>` : ""}
-  ${hosted() && authReady() && authSession ? `<section><h3>Compte</h3><p class="hint">Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données, la conversation avec l'assistant et la clé API.</p>
+    ${hosted() && assistantKnown()?.cle ? `<button class="btn ghost sm" data-act="as-forget" style="margin-top:10px">Oublier la clé (sur tous tes appareils)</button>` : ""}</section>` : ""}
+  ${hosted() && authReady() && authSession ? `<section><h3>Compte</h3><p class="hint">Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.</p>
     <button class="btn ghost" data-act="auth-out">Se déconnecter</button></section>` : ""}
   ${hosted() ? shareSettingsHTML() : ""}
   ${hosted() && authReady() && authSession ? passeurSettingsHTML() : ""}
@@ -1430,7 +1430,10 @@ const CLICK = {
   "chat-send": () => { const t = $("#chatIn").value; sendChat(t); },
   "chat-chip": el => sendChat(el.textContent),
   "chat-clear": async () => { if (await ask("Effacer la conversation ?")) { chatLog.set([]); render(); } },
-  "as-forget": () => { platform.secrets.remove("selene-api-key"); render(); toast("Clé oubliée sur cet appareil."); },
+  "as-forget": async () => {
+    try { assistantCle = await assistantCall({ action: "oublier" }); toast("Clé effacée du serveur."); } catch (e) { toast("Clé non effacée : " + e.message); }
+    render();
+  },
   "exp": () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, site.data), "application/json", "Sauvegarde Selene"),
   "pal": el => { S().config.palette = el.dataset.p; site.save(); render(); },
   "mod-up": el => moveMod(el, -1), "mod-down": el => moveMod(el, 1),
@@ -1491,7 +1494,10 @@ document.addEventListener("change", e => {
     }
     site.save(); el.blur(); render();
   }
-  else if (act === "as-key") { const v = el.value.trim(); if (v && !v.startsWith("•")) { platform.secrets.set("selene-api-key", v); toast(hosted() ? "Clé enregistrée dans ce navigateur." : "Clé enregistrée. Elle servira une fois le site hébergé."); } el.blur(); render(); }
+  else if (act === "as-key") { // la clé part au serveur, qui la vérifie et la chiffre ; elle ne reste pas dans la page
+    const v = el.value.trim(); el.value = ""; el.blur();
+    if (v) assistantCall({ action: "cle", cle: v }).then(r => { assistantCle = r; toast("Clé vérifiée et enregistrée."); }, e => toast("Clé non enregistrée : " + e.message)).then(render);
+  }
   else if (act === "as-model") { S().config.assistant.model = el.value; site.save(); render(); }
   else if (act === "as-actions") { S().config.assistant.actions = el.checked; site.save(); render(); }
   else if (act === "as-share") { S().config.assistant.share[el.dataset.k] = el.checked; site.save(); render(); }

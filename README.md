@@ -99,7 +99,7 @@ Pour ajouter un *type* de module au code, voir [docs/architecture.md](docs/archi
 Le module Assistant est désactivé par défaut (Réglages → Modules).
 
 - Sur claude.ai, il passe par ton compte : aucune clé à fournir.
-- Hébergé (GitHub Pages), il appelle directement l'API Anthropic depuis le navigateur avec **ta propre clé**, saisie dans Réglages → Assistant. La clé reste dans le `localStorage` de ce navigateur : elle n'est jamais écrite dans le code, dans le dépôt ni dans les exports. Donne-lui une limite de dépense dans la console Anthropic.
+- Hébergé (GitHub Pages), il passe par la fonction Supabase `assistant` avec **ta propre clé**, saisie une fois dans Réglages → Assistant : vérifiée auprès d'Anthropic, elle est gardée chiffrée côté serveur, attachée à ton compte, et ne revient jamais dans la page (la page n'a d'ailleurs plus le droit d'appeler Anthropic). Donne-lui une limite de dépense dans la console Anthropic. Déploiement : [docs/assistant.md](docs/assistant.md).
 - Réglages → Assistant permet de choisir le modèle, les modules que Claude peut lire, et s'il a le droit de modifier le tableau de bord.
 
 ## Données
@@ -130,4 +130,4 @@ Comment la synchronisation se comporte :
 - Deux appareils modifiés en même temps, ou l'un hors ligne : les modifications sont **fusionnées**, pas écrasées. Une entrée supprimée d'un côté mais modifiée de l'autre est conservée.
 - Hors ligne, l'app continue de fonctionner et affiche « Non synchronisé » ; tout part au retour du réseau. Une coupure ne déconnecte pas.
 - Importer une sauvegarde remplace l'état du compte (sur tous les appareils), sans fusion.
-- Se déconnecter envoie d'abord ce qui attend, puis efface de l'appareil les données, la conversation avec l'assistant et la clé API. Les données restent isolées par compte (RLS) ; l'artefact claude.ai (`selene.html`) n'est pas concerné et continue de fonctionner sans connexion (même code partagé, mais `auth.js` ne s'active que hors claude.ai).
+- Se déconnecter envoie d'abord ce qui attend, puis efface de l'appareil les données et la conversation avec l'assistant (la clé API reste attachée au compte, chiffrée, jusqu'à « Oublier la clé »). Les données restent isolées par compte (RLS) ; l'artefact claude.ai (`selene.html`) n'est pas concerné et continue de fonctionner sans connexion (même code partagé, mais `auth.js` ne s'active que hors claude.ai).

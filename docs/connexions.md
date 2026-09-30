@@ -12,7 +12,7 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
   est ce qu'on a gardé (synchronisée) ; un *import* devient une donnée Selene. Supabase ne reçoit que les deux derniers.
 - **La Source** : un élément de collection qui porte `src = { url, doi, site, date }`. Elle n'a pas de statut
   épistémique (un article n'est pas une affirmation de l'utilisatrice) ; on la relie à un fragment par « documente ».
-- **Aucun secret dans le code publié.** Une clé personnelle se saisit et reste sur l'appareil, comme la clé Anthropic.
+- **Aucun secret dans le code publié.** Une clé personnelle se saisit et reste sur l'appareil ; la clé Anthropic, elle, est confiée chiffrée à la fonction `assistant` (docs/assistant.md).
 - **Chaque service peut disparaître** (Pocket, Omnivore, l'API Instagram des comptes personnels l'ont fait) : ce qui a
   été gardé l'est dans Selene, pas chez eux.
 

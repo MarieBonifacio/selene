@@ -10,6 +10,7 @@
              { erreur } avec un code HTTP 4xx ou 5xx sinon.
    Déploiement et secrets : docs/passeur.md. Point d'entrée : index.ts. */
 import { cible, comptes, decoder, encodage, GENRES, type Genre, ipPublique, MAX_OCTETS, MAX_SAUTS, origines, typeAccepte } from "./garde.ts";
+import { compte, limiteur, origineDe, prevol, reponse } from "../_shared/session.ts";
 
 /* Ce dont le passeur a besoin du monde : injecté, pour que les tests (passeur_test.ts) le remplacent. */
 export type Monde = {
@@ -21,34 +22,8 @@ export type Monde = {
 const AGENT = "Selene-passeur/1 (lecteur personnel ; +https://github.com/MarieBonifacio/selene)";
 const DELAI_MS = 8000;
 
-/* Qui appelle : la session est vérifiée auprès de Supabase Auth (valable avec les nouvelles clés comme les
-   anciennes), puis gardée une minute en mémoire pour ne pas redemander à chaque flux. */
-const vus = new Map<string, { id: string; jusqua: number }>();
-async function compte(m: Monde, req: Request): Promise<string | null> {
-  const jeton = (req.headers.get("authorization") || "").match(/^Bearer\s+(\S+)$/i)?.[1], cle = req.headers.get("apikey") || "";
-  if (!jeton || !cle) return null;
-  const v = vus.get(jeton);
-  if (v && v.jusqua > Date.now()) return v.id;
-  const base = m.env("SUPABASE_URL");
-  if (!base) return null;
-  try {
-    const r = await m.fetch(`${base}/auth/v1/user`, { headers: { authorization: `Bearer ${jeton}`, apikey: cle }, signal: AbortSignal.timeout(5000) });
-    if (!r.ok) return null;
-    const u = await r.json();
-    if (typeof u?.id !== "string") return null;
-    if (vus.size > 50) vus.clear();
-    vus.set(jeton, { id: u.id.toLowerCase(), jusqua: Date.now() + 60_000 });
-    return u.id.toLowerCase();
-  } catch { return null; }
-}
-
-/* Un débit raisonnable par compte (au mieux : la mémoire d'une instance) : 150 appels par dizaine de minutes. */
-const debit = new Map<string, number[]>();
-function tropVite(id: string): boolean {
-  const t = Date.now(), l = (debit.get(id) || []).filter(x => t - x < 600_000);
-  l.push(t); debit.set(id, l);
-  return l.length > 150;
-}
+/* Un débit raisonnable par compte : 150 appels par dizaine de minutes. */
+const tropVite = limiteur(150, 600_000);
 
 /* Toutes les adresses d'un nom doivent être publiques. Si l'environnement ne sait pas résoudre, la garde de l'URL
    (IP écrite, noms locaux) reste seule : le fetch du nuage ne joint de toute façon pas le réseau privé du projet. */
@@ -75,19 +50,9 @@ async function lire(corps: ReadableStream<Uint8Array> | null): Promise<Uint8Arra
   return out;
 }
 
-function reponse(corps: unknown, status: number, origine: string | null): Response {
-  const h = new Headers({ "content-type": "application/json; charset=utf-8", "cache-control": "no-store", vary: "Origin" });
-  if (origine) h.set("access-control-allow-origin", origine);
-  return new Response(JSON.stringify(corps), { status, headers: h });
-}
-
 export const passeur = (m: Monde) => async (req: Request): Promise<Response> => {
-  const o = (req.headers.get("origin") || "").replace(/\/$/, ""), origine = origines(m.env("PASSEUR_ORIGINS")).includes(o) ? o : null;
-  if (req.method === "OPTIONS") {
-    if (!origine) return new Response(null, { status: 403 });
-    return new Response(null, { status: 204, headers: { "access-control-allow-origin": origine, "access-control-allow-methods": "POST, OPTIONS",
-      "access-control-allow-headers": "authorization, apikey, content-type", "access-control-max-age": "86400", vary: "Origin" } });
-  }
+  const origine = origineDe(req, origines(m.env("PASSEUR_ORIGINS")));
+  if (req.method === "OPTIONS") return prevol(origine);
   if (req.method !== "POST") return reponse({ erreur: "POST seulement" }, 405, origine);
   if (!origine) return reponse({ erreur: "origine non autorisée" }, 403, null);
   const autorises = comptes(m.env("PASSEUR_USERS"));
