@@ -27,6 +27,8 @@ iOS suffit :
 
 ## Installer
 
+Versions publiées, signées : voir docs/publication.md (une étiquette `v1.2.3` suffit une fois les clés en place).
+
 Installer une app sur un iPhone demande de la signer : un compte Apple Developer (99 $ par an), puis TestFlight, ou
 Xcode et un iPhone branché (profil de développement). C'est la phase de publication (phase 14). En attendant, le
 workflow *iOS* prouve que le projet se compile (simulateur, sans signature).

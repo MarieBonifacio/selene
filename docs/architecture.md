@@ -628,3 +628,20 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   une fonction SQL `security definer` appelée par la page (elle ne peut pas effacer `auth.users` proprement).
 - **Conséquences** : `compte_test.ts` vérifie l'ordre, l'isolement entre comptes et les pannes ; la politique de
   confidentialité doit être mise à jour avec chaque nouveau service tiers (docs/compte.md).
+
+### ADR 21 — Publier par une étiquette ; les clés dans les secrets, jamais dans le dépôt
+
+- **Contexte** : chaque store veut un paquet signé et un numéro de build croissant ; les clés de signature sont les
+  seules choses qui ne se reconstruisent pas.
+- **Décision** : un workflow *Publication* déclenché par une étiquette `v1.2.3`, qui calcule la version et le numéro de
+  build (`10203`), puis signe par plateforme avec les secrets du dépôt : Gradle lit la clé et la version dans
+  l'environnement (sans elles, la version « release » reste non signée) ; Tauri reçoit la version et l'empreinte du
+  certificat par `--config` ; iOS utilise la signature automatique d'Xcode avec une clé d'API App Store Connect (pas
+  de certificat ni de profil à entretenir), et envoie à TestFlight. Une plateforme sans secrets est sautée avec un
+  avis. La Release GitHub rassemble l'APK et l'installateur Windows. Le workflow Android de chaque PR éprouve le
+  chemin de signature avec une clé jetable. L'icône iOS 1024 est aplatie sur le fond de Selene (l'App Store refuse
+  la transparence).
+- **Écarté** : fastlane (une chaîne Ruby de plus pour trois commandes) ; l'envoi automatique à Google Play (un compte
+  de service de plus, et le premier envoi est manuel de toute façon).
+- **Conséquences** : docs/publication.md liste ce qui reste à faire à la main (comptes, clés, formulaires) ; le chemin
+  iOS n'est éprouvé qu'à la première course avec un compte Apple.

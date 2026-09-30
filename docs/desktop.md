@@ -23,6 +23,8 @@ dans la WebView du système (WebView2 sous Windows), avec un petit cœur Rust (`
 
 ## Installer (Windows)
 
+Versions publiées : l'installateur de chaque Release GitHub (docs/publication.md), signé si un certificat est fourni.
+
 1. Onglet *Actions* du dépôt → *Desktop* → la dernière exécution verte → artefact **selene-windows** (un zip contenant
    `Selene_…_x64-setup.exe`).
 2. Lancer l'installateur. Il n'est pas encore signé : Windows (SmartScreen) avertira d'un « éditeur inconnu » ;

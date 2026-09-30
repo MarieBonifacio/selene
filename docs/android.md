@@ -27,6 +27,8 @@ Le code propre à Android tient en trois fichiers : `src/native/boot.js` (les co
 
 ## Installer (usage personnel)
 
+Versions publiées, signées : voir docs/publication.md (une étiquette `v1.2.3` suffit une fois les clés en place).
+
 1. Onglet *Actions* du dépôt → *Android* → la dernière exécution verte → artefact **selene-android-debug** (un zip
    contenant `app-debug.apk`). Chaque PR qui touche `src/`, `native/` ou le build en produit un.
 2. Sur le téléphone : ouvrir l'APK, autoriser l'installation depuis cette source, installer.

@@ -7,8 +7,9 @@ android {
         applicationId "io.github.mariebonifacio.selene"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // Publication (.github/workflows/release.yml, docs/publication.md) : la version vient de l'étiquette v1.2.3.
+        versionCode((System.getenv("SELENE_VERSION_CODE") ?: "1") as int)
+        versionName System.getenv("SELENE_VERSION_NAME") ?: "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +17,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // La clé de signature n'est jamais dans le dépôt : le workflow de publication la pose depuis les secrets du dépôt et
+    // passe son chemin et ses mots de passe par l'environnement. Sans eux, la version « release » reste non signée.
+    signingConfigs {
+        release {
+            if (System.getenv("SELENE_KEYSTORE")) {
+                storeFile file(System.getenv("SELENE_KEYSTORE"))
+                storePassword System.getenv("SELENE_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("SELENE_KEY_ALIAS")
+                keyPassword System.getenv("SELENE_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
+            if (System.getenv("SELENE_KEYSTORE")) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
