@@ -311,6 +311,14 @@ details.mreg>summary:hover{color:var(--ink)}
 .mreg-type::before{content:"·";margin-right:8px}
 .mreg-body{margin:4px 0 14px;padding:10px 0 6px 16px;border-left:2px solid var(--tint,var(--accent))}
 .mreg-note .btn{padding-left:0}
+/* Téléphone : les réglages d'un espace prennent toute la largeur, le filet suffit à les rattacher à leur ligne. */
+@media (max-width:560px){details.mreg,.mreg-note{margin-left:0}.mreg-body{padding-left:12px}}
+/* Un champ ou un menu suit sa colonne au lieu d'imposer sa largeur naturelle : WebKit donne à un <select> celle de sa
+   plus longue option, et un élément de grille ou de flex ne descend pas, par défaut, sous la largeur de son contenu.
+   Sur téléphone, la page débordait. Un chemin de fichier (code) se coupe où il faut. */
+.reg input:not([type=checkbox]):not([type=radio]),.reg select,.reg textarea,.reg .field-row>*{min-width:0}
+.mod-name>input{flex:1 1 0}
+.reg code{overflow-wrap:anywhere}
 details.newmod>summary{display:inline-flex;list-style:none}
 details.newmod>summary::-webkit-details-marker{display:none}
 .newmod-body{margin:16px 0 0}

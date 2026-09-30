@@ -62,7 +62,10 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   await q.addInitScript(d => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, fixture());
   await q.goto(BASE + '/index.html#reglages'); await q.waitForTimeout(400);
   await q.evaluate(() => document.querySelectorAll('details').forEach(d => d.open = true)); await q.waitForTimeout(100);
-  ok(await q.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'tout déplié, rien ne déborde en largeur');
+  // Émulation mobile : un contenu qui déborde élargit la zone d'affichage (innerWidth le suit) ; on compare à l'écran.
+  ok(await q.evaluate(() => document.documentElement.scrollWidth <= 390), 'tout déplié, rien ne déborde en largeur');
+  await q.setViewportSize({ width: 320, height: 640 }); await q.waitForTimeout(150); // le plus étroit des iPhone
+  ok(await q.evaluate(() => document.documentElement.scrollWidth <= 320), 'à 320 px non plus : champs, menus et chemins suivent leur colonne');
   await q.tap('.reg-keys .tip >> nth=1'); await q.waitForTimeout(150);
   ok(await q.evaluate(() => { const o = document.querySelector('.tipb:popover-open'); if (!o) return false; const r = o.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }), 'une bulle tient dans un écran de téléphone');
 
