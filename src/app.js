@@ -1061,7 +1061,7 @@ const SHEETS = {
   capture() {
     const s = S(), inbox = inboxId(s.modules), n = inbox ? s.modules[inbox].entries.length : 0;
     return `<h2 id="sheetTitle">Capturer</h2>${inbox ? `<div class="capture"><input id="capSheetIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="Capture rapide" enterkeyhint="done"><button class="btn acc" data-act="cap-sheet-add">Garder</button></div>
-      <p class="hint" style="margin:10px 0 0">« 12 € courses », « 25 min kundalini », « Module : une note » se rangent d'un geste.${n ? ` <a href="#${esc(inbox)}">${plural(n, "élément")} à trier</a>` : ""}</p>${n > 1 ? `<div class="row" style="margin-top:10px"><button class="btn sm" data-act="vasculum">Trier une à une</button></div>` : ""}`
+      <p class="hint" style="margin:10px 0 0">« 12 € courses », « Mon module : une note » se rangent d'un geste.${n ? ` <a href="#${esc(inbox)}">${plural(n, "élément")} à trier</a>` : ""}</p>${n > 1 ? `<div class="row" style="margin-top:10px"><button class="btn sm" data-act="vasculum">Trier une à une</button></div>` : ""}`
       : `<p class="hint">Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans <a href="#reglages">Réglages</a>.</p>`}`;
   }
 };
@@ -1448,6 +1448,23 @@ async function downloadFile(filename, data, type, title) {
 }
 /* Ajoute un module (depuis un modèle ou un type vide), actif et partagé avec l'assistant. */
 function addModule(tpl, name) {
+  if (tpl.type === "programme") {
+    const defaults = { ...MODULE_TYPES.programme.defaults().config, ...tpl.config };
+    return openForm("Choisir ton sport ou ta pratique", [
+      { n: "name", l: "Nom du sport ou de la pratique", req: true },
+      { n: "weeks", l: "Durée en semaines (1 à 520, proposition modifiable)", t: "number", req: true },
+      { n: "perWeek", l: "Séances par semaine (1 à 7, proposition modifiable)", t: "number", req: true },
+      { n: "unitLabel", l: "Unité suivie (min, km, longueurs…)", req: true }
+    ], { name: name === tpl.name ? "" : name, ...defaults }, v => {
+      const weeks = Number(v.weeks), perWeek = Number(v.perWeek), unitLabel = v.unitLabel.trim();
+      if (!v.name.trim() || !unitLabel || !Number.isInteger(weeks) || weeks < 1 || weeks > 520 || !Number.isInteger(perWeek) || perWeek < 1 || perWeek > 7)
+        throw new Error("Indique un nom, une unité, 1 à 520 semaines et 1 à 7 séances par semaine.");
+      installModule({ ...tpl, config: { ...tpl.config, weeks, perWeek, unitLabel } }, v.name.trim());
+    });
+  }
+  installModule(tpl, name);
+}
+function installModule(tpl, name) {
   try {
     const s = S(), id = slugId(name, [...s.config.modules.map(x => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
     createFromTemplate(s.modules, tpl, name, id);

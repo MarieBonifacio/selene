@@ -16,6 +16,12 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 
   console.log('programme');
   await create('programme', 'Lecture');
+  ok(await p.inputValue('#form [name=name]') === 'Lecture', 'le formulaire reprend le nom choisi dans les réglages');
+  await p.fill('#form [name=weeks]', '12');
+  await p.fill('#form [name=perWeek]', '3');
+  await p.fill('#form [name=unitLabel]', 'min');
+  await p.click('#form button[value=save]');
+  await p.waitForFunction(() => !!JSON.parse(localStorage.getItem('selene-site-v1')).modules.lecture);
   await go('lecture'); await p.click('[data-act="prog-start"]'); await p.waitForTimeout(150);
   await p.click('[data-act="entry-add"]'); await p.fill('#form [name=value]', '25'); await p.fill('#form [name=note]', 'chapitre 1'); await p.click('#form button[value=save]'); await p.waitForTimeout(200);
   ok((await main()).includes('chapitre 1'), 'séance notée via le formulaire du type');
