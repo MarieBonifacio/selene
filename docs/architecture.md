@@ -69,9 +69,10 @@ le même fichier, et chaque fichier commence par une phrase qui dit son rôle.
 | Dossier (`src/app/`) | Contenu |
 |---|---|
 | `registry.js` | les registres : `VIEWS`, `SHEETS`, `CLICK`, `CHANGE`, `TYPE_UI` et `registerType` ; ne dépend de rien |
-| `lib/` | sans état ni interface propre : `dom.js` (sélecteur, échappement, messages, pagination), `format.js` (dates, nombres, pluriels), `download.js` |
+| `lib/` | sans état ni interface propre : `dom.js` (sélecteur, échappement, messages, pagination), `format.js` (dates, nombres, pluriels), `download.js`, `labels.js` (ce que le noyau nomme en français, traduit pour l'affichage : statuts, liens, ciel, erreurs, modèles de module) |
+| `i18n/` | les langues de l'interface : `tr`, `trp`, `trn`, `N_`, la langue en vigueur et ses formats, un dictionnaire par langue (`en.js`) ; ne dépend de rien d'autre. Règles : [i18n.md](i18n.md) |
 | `state/` | `store.js` (un document JSON synchronisé, qui ne connaît pas l'interface), `site.js` (les deux documents, leur normalisation, `S()`), `drafts.js` |
-| `services/` | ce qui parle à un serveur ou à l'hôte : `auth.js` (Supabase, suppression du compte), `passeur.js`, `host.js` (espaces de noms de claude.ai) |
+| `services/` | ce qui parle à un serveur ou à l'hôte : `auth.js` (Supabase, suppression du compte), `passeur.js`, `host.js` (espaces de noms de claude.ai), `erreurs.js` (les codes d'erreur des fonctions serveur, traduits) |
 | `scene/` | le paysage de l'accueil : `moon.js`, `forest.js`, `sky.js` (lieu, météo, scène) |
 | `ui/` | `dialogs.js` : confirmation et formulaire générique |
 | `shell/` | la charpente de la page : `nav.js`, `render.js`, `actions.js` (délégation des événements), `sheets.js`, `palette.js`, `sigils.js` |
@@ -300,6 +301,7 @@ installe par `npm ci`, et les scripts npm sont les seules commandes, en local co
 | `npm test` | tests unitaires Node (`tests/*.test.js`) |
 | `npm run test:syntax` | `node --check` sur chaque source (`src/`, `src/app/`, `src/core/`, `src/native/`, `scripts/`), arrêt au premier fichier invalide |
 | `npm run lint` | eslint sur chaque module (`src/`, `sourceType: "module"`), l'amorçage natif, `scripts/` et `sw.js` |
+| `npm run i18n` | les textes marqués pour la traduction confrontés aux dictionnaires : orphelins, valeurs `{n}`, langues proposées complètes ; ADR 25 |
 | `npm run test:functions` | types et tests Deno des fonctions Supabase (passeur, assistant) |
 | `npm run test:browser` | parcours Playwright dans Chromium (`npx playwright install chromium` une fois) ; `SELENE_BROWSER=webkit` pour WebKit |
 | `npm run check` / `check:all` | tout sauf le navigateur / tout |
@@ -313,7 +315,8 @@ installe par `npm ci`, et les scripts npm sont les seules commandes, en local co
 - Les tests d'un module pur l'importent (`require` d'un module ES, Node 22) ; ceux qui ont besoin de toute
   l'application exécutent le script assemblé dans une VM et lisent l'espace de noms `__selene` ;
   `platform.test.js` évalue `platform.js` (traduit en CommonJS par esbuild) avec les globales de chaque cas ;
-  `architecture.test.js` vérifie les couches et l'ordre de chargement.
+  `architecture.test.js` vérifie les couches et l'ordre de chargement ; `i18n.test.js`, les langues et la réserve
+  des noms de la traduction.
 
 - `tests/browser/` : parcours dans un vrai Chromium (Playwright), un fichier par sujet, lancés par
   `run.js` contre un petit serveur de fichiers statique ; chaque vérification affiche ✓ / ✗ et un seul ✗
@@ -723,6 +726,46 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   vérités possibles).
 - **Conséquences** : un widget à jour de la dernière ouverture, pas davantage ; le job *apk* compile le Java du widget
   à chaque PR ; `tests/native-boot.test.js`, `platform.test.js` et `app.test.js` vérifient le pont et le contenu.
+
+### ADR 25 — Plusieurs langues : le français pour clé, un dictionnaire par langue
+
+- **Contexte** : Selene ne parlait que français, et pas seulement par ses mots : de l'ordre de 1 500 textes écrits
+  dans les gabarits HTML de 58 fichiers, la locale `fr-FR` inscrite à 25 endroits (dates, sommes, tris), un pluriel
+  qui ajoute « s », des mots français servant de clés dans les données enregistrées (`"dépense"`, statuts, noms des
+  modules de départ), des algorithmes qui supposent le français (mots vides de la dérive lexicale, pluriel en s/x,
+  capture qui comprend, `statut:`), et une consigne « Réponds en français » à l'assistant. L'anglais est demandé.
+- **Décision** :
+  - un module maison, `src/app/i18n/` : `tr` (gabarit étiqueté : ``tr`Pleine lune dans ${n} j.` `` a pour clé
+    « Pleine lune dans {0} j. »), `trp` (un contexte, comme `msgctxt` chez gettext), `trn` (pluriels par
+    `Intl.PluralRules`, catégories du CLDR), `N_` (marque sans traduire). Le texte français reste dans le code et sert
+    de clé ; ce qu'un dictionnaire ne traduit pas reste en français. Ces quatre noms sont réservés dans `src/app` (un
+    test le vérifie) : `t`, le nom attendu, était déjà celui de 127 variables locales (une tâche, un modèle, une heure) ;
+  - les formats passent par `Intl` dans la langue en vigueur (`uiLocale()`), les tris par un `Intl.Collator` gardé.
+    La région suit la langue (fr → fr-FR, en → en-GB), pas l'appareil ; la monnaie reste l'euro, seule sa
+    présentation change ;
+  - la langue est un réglage du compte, synchronisé (`config.lang`) ; vide, c'est celle de l'appareil
+    (`navigator.languages`) : les données de départ restent identiques d'un appareil à l'autre. Pas de nouveau
+    `SCHEMA_VERSION` : le réglage manquant est complété à l'entrée, une ancienne version l'ignore ;
+  - une langue n'est proposée (`READY_LANGS`) que complète. `npm run i18n` (CI) relève chaque texte marqué dans l'arbre
+    syntaxique et refuse une traduction orpheline, une valeur `{n}` perdue ou inventée, un texte manquant dans une
+    langue proposée. La pseudo-langue `qps`, jamais proposée, montre ce qui est passé par la traduction ;
+  - on traduit l'affichage, jamais la donnée : les clés enregistrées gardent leur forme, ce que la personne a écrit
+    n'est jamais traduit, un modèle l'est au moment où il crée un module. Le noyau reste pur : il rendra des codes
+    d'erreur, que l'interface traduit ;
+  - l'assistant répond dans la langue de l'interface ; l'app de bureau prendra celle du système pour son menu, que le
+    cœur Rust construit avant la page (pas de septième commande, ADR 16).
+- **Écarté** : i18next ou FormatJS (une dépendance de production et des dizaines de Ko pour ce qu'`Intl` fait déjà) ;
+  des clés inventées (`reglages.apparence.titre`) : 1 500 noms à tenir, un code qui ne se lit plus, et plus de repli
+  naturel sur le français ; des dictionnaires chargés à la demande (l'artefact est un seul fichier, et la CSP
+  n'autorise que les scripts de la page) ; la seule langue de l'appareil (une anglophone sur un téléphone réglé en
+  français ne pourrait pas choisir) ; la région de l'appareil pour les formats (des dates différentes d'un appareil à
+  l'autre pour une même personne, et des tests qui dépendraient de la machine).
+- **Conséquences** : la langue est appliquée à chaque rendu, avant tout texte ; en changer redessine sans recharger.
+  Les dictionnaires voyagent dans le script. Les parcours de navigateur fixent la langue du navigateur (fr-FR,
+  `tests/browser/helpers.js`) : sans cela, un runner en anglais basculerait l'interface dès l'ouverture de l'anglais.
+  Corriger une virgule dans un texte français rend sa traduction orpheline : `npm run i18n` le dit, il faut la
+  reporter. L'étape 1 ne change rien à l'écran (mêmes 52 scénarios verts, plus un pour la langue). Étapes et règles
+  d'écriture : [i18n.md](i18n.md).
 
 ### Suivi sensible de régulation
 

@@ -38,7 +38,8 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
 4. **Le premier AAB** s'envoie à la main : pousser l'étiquette, récupérer `selene-1.0.0.aab` dans les artefacts de la
    course *Publication*, et le déposer dans Tests → Test interne.
 5. **Les formulaires** (Contenu de l'application) :
-   - Politique de confidentialité : `https://mariebonifacio.github.io/selene/confidentialite.html` ;
+   - Politique de confidentialité : `https://mariebonifacio.github.io/selene/confidentialite.html` (en anglais :
+     `https://mariebonifacio.github.io/selene/privacy.html`, pour une fiche anglaise) ;
    - Sécurité des données : collecte l'adresse e-mail (gestion du compte) et le contenu créé (fonctionnement de
      l'app), et la position approximative (le lieu du ciel, arrondi à ~10 km, facultatif : fonctionnalité de l'app),
      liés au compte, non partagés, chiffrés en transit, supprimables par l'utilisateur (dans l'app) ;
@@ -46,7 +47,9 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
    - Publicités : non. Public cible : adultes. Questionnaire de classification : aucun contenu sensible.
 6. **La fiche** : description, icône 512 px (`icon-512.png`), image de présentation 1024 × 500, au moins deux captures
    d'écran de téléphone : `npm run screenshots` (ou Actions → Captures → Run workflow, polices comprises) les produit
-   dans `dist/store/android/`, en 1080 × 1920, sur un espace de démonstration fictif.
+   dans `dist/store/fr/android/`, en 1080 × 1920, sur un espace de démonstration fictif ; la fiche anglaise prend
+   celles de `dist/store/en/android/` (même espace, écrit en anglais, interface en anglais ; `npm run screenshots -- en`
+   pour celles-là seulement).
 
 ## iOS : App Store
 
@@ -63,7 +66,7 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
    par l'app TestFlight sur l'iPhone.
 6. **Les formulaires** : Confidentialité de l'app (mêmes réponses que pour Google Play : e-mail, contenu et position
    approximative, liés à l'identité, pas de suivi), adresse de la politique, catégorie Productivité, captures d'écran 6,9 pouces
-   (`dist/store/ios/`, 1320 × 2868, par la même commande).
+   (`dist/store/fr/ios/` et `dist/store/en/ios/`, 1320 × 2868, par la même commande).
 
 Ce chemin n'a pas pu être essayé sans compte Apple : la première course dira s'il manque quelque chose.
 
@@ -77,7 +80,8 @@ plus vite. Un certificat `.pfx` : son contenu en base64 dans `WINDOWS_CERTIFICAT
 
 ## À chaque version
 
-1. Vérifier que `confidentialite.html` dit toujours vrai (le test de `build.test.js` le vérifie pour les services).
+1. Vérifier que `confidentialite.html` et `privacy.html` disent toujours vrai, et la même chose (le test de
+   `build.test.js` le vérifie pour les services, les sections, les liens et la date).
 2. `git tag v1.2.3 && git push origin v1.2.3`.
 3. Google Play : promouvoir l'AAB (artefact de la course) du test interne vers la production.
 4. App Store : soumettre la version TestFlight à la vérification.

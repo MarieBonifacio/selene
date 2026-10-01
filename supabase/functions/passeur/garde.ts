@@ -72,17 +72,17 @@ export function ipPublique(ip: string): boolean {
 }
 export const estIp = (h: string) => !!octets4(h) || !!groupes6(h);
 
-/* L'adresse demandée, si elle est acceptable ; sinon une raison, en français, pour l'interface. */
-export function cible(brut: unknown): { url: URL } | { refus: string } {
-  if (typeof brut !== "string" || brut.length > 2000) return { refus: "adresse absente ou trop longue" };
+/* L'adresse demandée, si elle est acceptable ; sinon une raison, en français, et son code, que l'interface traduit. */
+export function cible(brut: unknown): { url: URL } | { refus: string; code: string } {
+  if (typeof brut !== "string" || brut.length > 2000) return { refus: "adresse absente ou trop longue", code: "adresse-absente" };
   let u: URL;
-  try { u = new URL(brut.trim()); } catch { return { refus: "adresse illisible" }; }
-  if (u.protocol !== "http:" && u.protocol !== "https:") return { refus: "seulement http et https" };
-  if (u.username || u.password) return { refus: "pas d'identifiants dans l'adresse" };
-  if (u.port && u.port !== "80" && u.port !== "443") return { refus: "port inhabituel" };
+  try { u = new URL(brut.trim()); } catch { return { refus: "adresse illisible", code: "adresse-illisible" }; }
+  if (u.protocol !== "http:" && u.protocol !== "https:") return { refus: "seulement http et https", code: "protocole" };
+  if (u.username || u.password) return { refus: "pas d'identifiants dans l'adresse", code: "identifiants" };
+  if (u.port && u.port !== "80" && u.port !== "443") return { refus: "port inhabituel", code: "port" };
   const h = u.hostname.replace(/\.$/, "");
-  if (estIp(h)) return ipPublique(h) ? { url: u } : { refus: "adresse privée ou réservée" };
-  if (!h.includes(".") || NOMS_LOCAUX.test(h)) return { refus: "nom de réseau local" };
+  if (estIp(h)) return ipPublique(h) ? { url: u } : { refus: "adresse privée ou réservée", code: "adresse-privee" };
+  if (!h.includes(".") || NOMS_LOCAUX.test(h)) return { refus: "nom de réseau local", code: "nom-local" };
   u.hash = "";
   return { url: u };
 }

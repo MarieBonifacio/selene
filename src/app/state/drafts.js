@@ -1,13 +1,14 @@
 /* Les brouillons : ce qu'on tapait dans un champ marqué data-draft survit à un rechargement, propre à l'appareil. */
 import { platform } from "../../platform.js";
+import { N_, tr } from "../i18n/index.js";
 import { lastView } from "../shell/render.js";
 
 /* ---- reprise : ce qui attend, sur l'accueil (dernier espace ouvert, son pont, les brouillons en cours) ---- */
-const DRAFT_WHAT = { scrapIn: "un fragment", noteIn: "une note", rapNote: "une observation", chatIn: "un message", capSheetIn: "une capture" };
+const DRAFT_WHAT = { scrapIn: N_("un fragment"), noteIn: N_("une note"), rapNote: N_("une observation"), chatIn: N_("un message"), capSheetIn: N_("une capture") };
 export function pendingDrafts() {
   const out = [];
   for (const k of platform.storage.keys()) { if (!k.startsWith(DRAFT_PREFIX)) continue;
-    const [view, field] = k.slice(DRAFT_PREFIX.length).split(":"); if (view !== "accueil") out.push({ view, what: DRAFT_WHAT[field] || "un texte" }); }
+    const [view, field] = k.slice(DRAFT_PREFIX.length).split(":"); if (view !== "accueil") out.push({ view, what: tr(DRAFT_WHAT[field] || N_("un texte")) }); }
   return out;
 }
 /* Brouillons : le texte en cours d'un champ libre survit à la fermeture de l'app (iOS tue volontiers une PWA

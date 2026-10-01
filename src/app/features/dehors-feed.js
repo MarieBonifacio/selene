@@ -1,6 +1,7 @@
 /* Dehors, la lecture : un flux (RSS, Atom, JSON Feed) lu sans rien exécuter, le cache fusionné, « nouveau depuis »,
    croisé avec ce que tu gardes. */
 import { clip } from "../../core/sources.js";
+import { tr } from "../i18n/index.js";
 
 /* Dehors : lire un flux, dire ce qui est nouveau (sans réseau).
    RSS 2.0, RSS 1.0 (RDF), Atom et JSON Feed, lus par DOMParser en XML (rien ne s'exécute) ou JSON.parse.
@@ -68,7 +69,7 @@ export function dehorsNew(feeds, cache, hidden, now, { test = null, key = null, 
       all.push(it);
     }
   }
-  for (const it of all) it.why = [...(it.motifs.length ? [`motif : ${it.motifs.join(", ")}`] : []), ...(it.also.length ? [`aussi dans ${it.also.join(", ")}`] : []), ...it.extra];
+  for (const it of all) it.why = [...(it.motifs.length ? [tr`motif : ${it.motifs.join(", ")}`] : []), ...(it.also.length ? [tr`aussi dans ${it.also.join(", ")}`] : []), ...it.extra];
   all.sort((a, b) => b.why.length - a.why.length || b.t - a.t);
   return { items: all.slice(0, max), total: all.length };
 }

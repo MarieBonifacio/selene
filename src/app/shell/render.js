@@ -3,11 +3,13 @@ import { hosted, platform } from "../../platform.js";
 import { approxPlace, sunPosition } from "../../core/sky.js";
 import { SHEETS, TYPE_UI, VIEWS } from "../registry.js";
 import { $, esc, pageSize } from "../lib/dom.js";
+import { applyLang, tr, trp, uiLocale } from "../i18n/index.js";
 import { bridgeBar, bridgeOpen, setBridgeOpen } from "../features/bridge.js";
 import { dehorsOn } from "../features/dehors.js";
 import { notifySoon } from "../features/digest.js";
 import { widgetSoon } from "../features/widget.js";
 import { applyShare, sharePending } from "../features/share.js";
+import { timerLabel } from "../features/timer.js";
 import { setOpenId } from "../modules/taches.js";
 import { moon, moonSVG } from "../scene/moon.js";
 import { skyConf, skyWatch } from "../scene/sky.js";
@@ -25,6 +27,21 @@ function applyTheme() {
   // Deux bascules par jour, comme le mode automatique d'iOS : jamais un fondu continu de l'interface.
   if (c.mode === "sun") { const pl = skyConf() || approxPlace(); r.dataset.mode = sunPosition(Date.now(), +pl.lat, +pl.lon).alt < -3 ? "dark" : "light"; }
   else if (c.mode === "auto") delete r.dataset.mode; else r.dataset.mode = c.mode;
+}
+/* Le squelette (src/shell.html) est écrit en français, pour le premier affichage, avant tout script ; ses textes
+   suivent la langue quand elle change. Les autres se redessinent à chaque rendu. */
+function localizeShell() {
+  const set = (sel, v, attr) => { const el = $(sel); if (el) { if (attr) el.setAttribute(attr, v); else el.textContent = v; } };
+  set(".brand", tr`Aujourd'hui (appui long : minuteur de 15 min)`, "title");
+  set("#timerBtn", timerLabel());
+  set("#timerReset", tr`Réinitialiser le minuteur`, "aria-label");
+  set("#nav", tr`Navigation principale`, "aria-label");
+  set("#bar", tr`Navigation rapide`, "aria-label");
+  set("#palette", tr`Aller, agir, chercher`, "aria-label");
+  set("#palIn", tr`Aller, agir, chercher…`, "placeholder");
+  set("#palList", tr`Suggestions`, "aria-label");
+  set('#cdlg button[value="ok"]', tr`Confirmer`);
+  set('#cdlg button[value="cancel"]', trp("formulaire", "Annuler"));
 }
 export let lastView = null;
 /* Calculs coûteux partagés par plusieurs parties d'un même rendu (la concordance sert la vue, l'accueil et
@@ -45,6 +62,7 @@ export function render() {
 }
 function renderNow() {
   applyTheme();
+  if (applyLang(S().config.lang)) localizeShell(); // avant tout texte, écran de connexion compris (la langue de l'appareil, tant qu'aucun compte n'est lu)
   if (hosted() && authReady() && !authSession) { $("#nav").innerHTML = ""; $("#bar").innerHTML = ""; $("#main").innerHTML = authView(); return; }
   const s = S(), m = moon();
   let view = routeOf().view;
@@ -55,7 +73,7 @@ function renderNow() {
   $("#brandName").textContent = s.config.name || "Selene";
   document.title = s.config.name || "Selene";
   $("#miniMoon").innerHTML = moonSVG(m.p, 40);
-  $("#dateline").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
+  $("#dateline").textContent = new Date().toLocaleDateString(uiLocale(), { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
   $("#nav").innerHTML = navHTML(view);
   $("#bar").innerHTML = barHTML(view);
   if (inst && view !== lastView) noteVisit(view);
@@ -67,16 +85,19 @@ function renderNow() {
   const keep = {}; let focusId = null, caret = null;
   $("#main").querySelectorAll("[data-draft]").forEach(el => saveDraft(lastView, el)); // un champ vidé par l'envoi efface son brouillon
   if (view === lastView) $("#main").querySelectorAll("input[id],textarea[id],select[id]").forEach(el => { if (el.type !== "file" && el.type !== "checkbox") keep[el.id] = el.value; });
+  // Un bloc déplié (details à identifiant : les réglages d'un espace) le reste après un changement fait dedans.
+  const opened = view === lastView ? [...$("#main").querySelectorAll("details[id][open]")].map(d => d.id) : [];
   if (document.activeElement && document.activeElement.id && keep[document.activeElement.id] != null) { focusId = document.activeElement.id; try { caret = document.activeElement.selectionStart; } catch {} }
   const back = backTo && backTo.to === view ? `<a class="back" href="#${esc(backTo.from)}">‹ ${esc(backTo.label)}</a>` : "";
   // Un espace : sa planche (sigil, numéro, « Je m'arrête ici… » tant qu'aucun pont n'est posé, « régler »), son pont, sa vue ;
   // le tout dans la teinte de son domaine.
   const bridging = inst && (inst.resume || bridgeOpen === view);
-  $("#main").innerHTML = back + (inst ? `<div class="view ${tintOf(view)}">${plateHTML(view, bridging ? "" : `<button class="btn ghost sm" data-act="bridge-edit" data-mod="${esc(view)}">Je m'arrête ici…</button>`)}${bridging ? bridgeBar(view, inst) : ""}${TYPE_UI[inst.type].view(view)}</div>` : VIEWS[view]());
+  $("#main").innerHTML = back + (inst ? `<div class="view ${tintOf(view)}">${plateHTML(view, bridging ? "" : `<button class="btn ghost sm" data-act="bridge-edit" data-mod="${esc(view)}">${tr`Je m'arrête ici…`}</button>`)}${bridging ? bridgeBar(view, inst) : ""}${TYPE_UI[inst.type].view(view)}</div>` : VIEWS[view]());
   // La feuille « régler » ouverte se redessine aussi, sauf pendant une frappe dans l'un de ses champs.
   const fa = document.activeElement, typingSheet = fa && fa.closest && fa.closest("#sheet") && (fa.tagName === "TEXTAREA" || (fa.tagName === "INPUT" && !["checkbox", "radio"].includes(fa.type)));
   if (["module", "specimen", "vasculum"].includes(sheetKind) && $("#sheet").open && !typingSheet) $("#sheetBody").innerHTML = SHEETS[sheetKind](sheetArg);
   for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && v !== "" && el.value !== v) el.value = v; }
+  for (const id of opened) { const el = document.getElementById(id); if (el && el.tagName === "DETAILS") el.open = true; }
   if (view !== lastView) $("#main").querySelectorAll("[data-draft]").forEach(el => { const v = loadDraft(view, el); if (v) el.value = v; });
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
   if (view !== lastView) revealed = null;

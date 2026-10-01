@@ -23,6 +23,35 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 const SERVICE: &str = "io.github.mariebonifacio.selene";
 const TMP: &str = ".tmp";
 
+/// La langue du menu de la zone de notification : celle du système (docs/i18n.md), si Selene la parle ; sinon le
+/// français, la langue source, comme la page. Le menu existe avant la page : il ne peut pas lui demander la sienne.
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum Langue { Fr, En }
+/// Une étiquette de langue (« en_GB.UTF-8 », « en-US », « fr_FR », « C ») : seule sa langue compte. Sous Windows, le
+/// système donne un LANGID, pas une étiquette : elle n'y sert qu'aux tests.
+#[cfg_attr(windows, allow(dead_code))]
+fn langue_de(tag: &str) -> Langue { if tag.to_ascii_lowercase().starts_with("en") { Langue::En } else { Langue::Fr } }
+/// Sous Windows : la langue de l'interface du système (GetUserDefaultUILanguage, dans kernel32, sans crate de plus).
+/// Elle rend un LANGID : ses dix bits de poids faible disent la langue (0x09, LANG_ENGLISH, dans winnt.h).
+#[cfg(windows)]
+fn langue_systeme() -> Langue {
+    #[link(name = "kernel32")]
+    extern "system" { fn GetUserDefaultUILanguage() -> u16; }
+    if unsafe { GetUserDefaultUILanguage() } & 0x3ff == 0x09 { Langue::En } else { Langue::Fr }
+}
+/// Ailleurs : LC_ALL, puis LC_MESSAGES, puis LANG, la première qui est réglée (l'ordre de POSIX).
+#[cfg(not(windows))]
+fn langue_systeme() -> Langue {
+    langue_de(&["LC_ALL", "LC_MESSAGES", "LANG"].iter().filter_map(|k| std::env::var(k).ok()).find(|v| !v.is_empty()).unwrap_or_default())
+}
+/// Les trois entrées du menu (capturer, ouvrir, quitter), dans une langue.
+fn textes_menu(l: Langue) -> [&'static str; 3] {
+    match l {
+        Langue::Fr => ["Capturer (Ctrl+Alt+S)", "Ouvrir Selene", "Quitter"],
+        Langue::En => ["Capture (Ctrl+Alt+S)", "Open Selene", "Quit"],
+    }
+}
+
 fn hex(k: &str) -> String { k.bytes().map(|b| format!("{b:02x}")).collect() }
 fn unhex(s: &str) -> Option<String> {
     if s.len() % 2 != 0 { return None; }
@@ -161,10 +190,11 @@ fn main() {
             if let Ok(Some(links)) = app.deep_link().get_current() { for l in &links { open_link(&handle, l); } }
             let h = handle.clone();
             app.deep_link().on_open_url(move |e| { for l in e.urls() { open_link(&h, &l); } });
+            let [t_capture, t_open, t_quit] = textes_menu(langue_systeme());
             let menu = Menu::with_items(app, &[
-                &MenuItem::with_id(app, "capture", "Capturer (Ctrl+Alt+S)", true, None::<&str>)?,
-                &MenuItem::with_id(app, "open", "Ouvrir Selene", true, None::<&str>)?,
-                &MenuItem::with_id(app, "quit", "Quitter", true, None::<&str>)?,
+                &MenuItem::with_id(app, "capture", t_capture, true, None::<&str>)?,
+                &MenuItem::with_id(app, "open", t_open, true, None::<&str>)?,
+                &MenuItem::with_id(app, "quit", t_quit, true, None::<&str>)?,
             ])?;
             let mut tray = TrayIconBuilder::with_id("selene").tooltip("Selene").menu(&menu)
                 .on_menu_event(|app, e| match e.id.as_ref() { "capture" => capture(app), "open" => show(app), "quit" => quit(app), _ => {} });
@@ -187,6 +217,13 @@ mod tests {
         }
         assert_eq!(unhex("zz"), None);
         assert_eq!(unhex("abc"), None);
+    }
+    #[test]
+    fn langue_du_menu() {
+        for t in ["en_GB.UTF-8", "en-US", "EN", "en"] { assert_eq!(langue_de(t), Langue::En, "{t}"); }
+        for t in ["fr_FR.UTF-8", "fr-CA", "de_DE", "C", "POSIX", ""] { assert_eq!(langue_de(t), Langue::Fr, "{t}"); }
+        assert_eq!(textes_menu(Langue::En), ["Capture (Ctrl+Alt+S)", "Open Selene", "Quit"]);
+        assert_eq!(textes_menu(Langue::Fr)[2], "Quitter");
     }
     #[test]
     fn partage_en_json() {

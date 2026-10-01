@@ -1,7 +1,9 @@
 /* Les sortes : une entrée ancienne, oubliée, tirée au sort pour être relue. */
 import { CLICK } from "../registry.js";
 import { esc, toast } from "../lib/dom.js";
-import { diffDays, plural, todayISO } from "../lib/format.js";
+import { diffDays, todayISO } from "../lib/format.js";
+import { tr, trn } from "../i18n/index.js";
+import { linkLabel } from "../lib/labels.js";
 import { concordance, fallow, isConcordance } from "./concordance.js";
 import { excerpt, refHTML } from "./links.js";
 import { openTensions } from "./tensions.js";
@@ -43,20 +45,20 @@ export function sortesDraw() {
   return pool.at(-1);
 }
 function sortesCard(x) {
-  if (x.kind === "tension") return `<div class="card"><span class="tag">Tension ouverte</span><p>${refHTML(x.a)} <span class="hint">contredit</span> ${refHTML(x.b)}</p><div class="row"><button class="btn ghost sm" data-act="tension-resolve" data-a="${esc(x.a)}" data-b="${esc(x.b)}">résoudre</button><button class="btn ghost sm" data-act="tension-dossier" data-a="${esc(x.a)}" data-b="${esc(x.b)}">dossier</button></div></div>`;
+  if (x.kind === "tension") return `<div class="card"><span class="tag">${tr`Tension ouverte`}</span><p>${refHTML(x.a)} <span class="hint">${esc(linkLabel("contredit"))}</span> ${refHTML(x.b)}</p><div class="row"><button class="btn ghost sm" data-act="tension-resolve" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${tr`résoudre`}</button><button class="btn ghost sm" data-act="tension-dossier" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${tr`dossier`}</button></div></div>`;
   if (x.kind === "source") {
     const st = S().modules[x.mod].config.statuses, fresh = x.e.status === st[0], lun = Math.floor(x.days / SYNODIC);
     const url = x.e.src && /^https?:\/\//i.test(x.e.src.url || "") ? x.e.src.url : "";
-    return `<div class="card"><span class="tag">Source oubliée, ${esc(label(x.mod))}</span><p><b>${esc(x.e.title)}</b>${x.e.subtitle ? `, <i>${esc(x.e.subtitle)}</i>` : ""}</p>
-      <div class="meta">${x.e.src && x.e.src.site ? `<span>${esc(x.e.src.site)}</span>` : ""}<span>gardée il y a ${lun >= 2 ? `${lun} lunaisons` : plural(x.days, "jour")}, ${fresh ? "jamais relue" : "reliée à rien"}</span></div>
-      <div class="row">${url ? `<a class="btn ghost sm" href="${esc(url)}" target="_blank" rel="noopener noreferrer">ouvrir ↗</a>` : ""}<a class="btn ghost sm" href="#${esc(x.mod)}/${esc(x.e.id)}">voir</a><button class="btn ghost sm" data-act="src-link" data-ref="${esc(x.mod)}/${esc(x.e.id)}">documente…</button></div></div>`;
+    return `<div class="card"><span class="tag">${tr`Source oubliée, ${esc(label(x.mod))}`}</span><p><b>${esc(x.e.title)}</b>${x.e.subtitle ? `, <i>${esc(x.e.subtitle)}</i>` : ""}</p>
+      <div class="meta">${x.e.src && x.e.src.site ? `<span>${esc(x.e.src.site)}</span>` : ""}<span>${tr`gardée il y a ${lun >= 2 ? tr`${lun} lunaisons` : trn(x.days, "{0} jour", "{0} jours")}, ${fresh ? tr`jamais relue` : tr`reliée à rien`}`}</span></div>
+      <div class="row">${url ? `<a class="btn ghost sm" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${tr`ouvrir ↗`}</a>` : ""}<a class="btn ghost sm" href="#${esc(x.mod)}/${esc(x.e.id)}">${tr`voir`}</a><button class="btn ghost sm" data-act="src-link" data-ref="${esc(x.mod)}/${esc(x.e.id)}">${tr`documente…`}</button></div></div>`;
   }
-  if (x.kind === "motif") return `<div class="card"><span class="tag">Motif en jachère, ${esc(label(x.mod))}</span><p><b>${esc(x.e.title)}</b></p><div class="row"><a class="btn ghost sm" href="#${esc(x.mod)}">voir</a><button class="btn ghost sm" data-act="search-for" data-q="${esc(x.e.title)}">chercher</button></div></div>`;
-  return `<div class="card"><span class="tag">${esc(label(x.mod))}, ${x.kind === "fragment" ? "fragment" : "note"} endormi</span><p style="white-space:pre-wrap">${esc(excerpt(x.e, 200))}</p><div class="meta"><span>${plural(x.days, "jour")} sans y toucher</span></div><div class="row"><a class="btn ghost sm" href="#${esc(x.mod)}">voir</a></div></div>`;
+  if (x.kind === "motif") return `<div class="card"><span class="tag">${tr`Motif en jachère, ${esc(label(x.mod))}`}</span><p><b>${esc(x.e.title)}</b></p><div class="row"><a class="btn ghost sm" href="#${esc(x.mod)}">${tr`voir`}</a><button class="btn ghost sm" data-act="search-for" data-q="${esc(x.e.title)}">${tr`chercher`}</button></div></div>`;
+  return `<div class="card"><span class="tag">${x.kind === "fragment" ? tr`${esc(label(x.mod))}, fragment endormi` : tr`${esc(label(x.mod))}, note endormie`}</span><p style="white-space:pre-wrap">${esc(excerpt(x.e, 200))}</p><div class="meta"><span>${trn(x.days, "{0} jour sans y toucher", "{0} jours sans y toucher")}</span></div><div class="row"><a class="btn ghost sm" href="#${esc(x.mod)}">${tr`voir`}</a></div></div>`;
 }
 export function sortesSection() {
-  return `<section><h2>Tirer un sort</h2><p class="hint">Un fragment endormi, une note oubliée, une source gardée puis reliée à rien, une tension ouverte ou un motif en jachère — le hasard pondéré par l'oubli, dans ton seul matériau.</p>
+  return `<section><h2>${tr`Tirer un sort`}</h2><p class="hint">${tr`Un fragment endormi, une note oubliée, une source gardée puis reliée à rien, une tension ouverte ou un motif en jachère — le hasard pondéré par l'oubli, dans ton seul matériau.`}</p>
     ${sortesLast ? sortesCard(sortesLast) : ""}
-    <button class="btn ${sortesLast ? "ghost" : ""} sm" data-act="sortes-draw">${sortesLast ? "Retirer" : "Tirer"}</button></section>`;
+    <button class="btn ${sortesLast ? "ghost" : ""} sm" data-act="sortes-draw">${sortesLast ? tr`Retirer` : tr`Tirer`}</button></section>`;
 }
-CLICK["sortes-draw"] = () => { sortesLast = sortesDraw(); render(); if (!sortesLast) toast("Rien d'assez ancien à tirer. Reviens dans deux semaines."); };
+CLICK["sortes-draw"] = () => { sortesLast = sortesDraw(); render(); if (!sortesLast) toast(tr`Rien d'assez ancien à tirer. Reviens dans deux semaines.`); };

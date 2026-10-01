@@ -2,13 +2,18 @@
 const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 const iso = d => new Date(d - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-const today = iso(Date.now()), lastMonth = iso(Date.now() - 33 * 864e5);
+// L'horloge de la page est figée au milieu d'un mois : « le mois dernier » (33 jours avant, donc hors du cycle lunaire
+// en cours) tombe alors toujours dans le mois civil précédent, ce que le jour réel ne garantit pas (le 1er octobre,
+// 33 jours plus tôt, c'est le 29 août : septembre resterait vide).
+const NOW = new Date('2026-09-20T12:00:00Z');
+const today = iso(NOW.getTime()), lastMonth = iso(NOW.getTime() - 33 * 864e5);
 demo.modules.kundalini.entries = [{ id: 'k1', date: today, value: 20, note: '' }, { id: 'k2', date: lastMonth, value: 30, note: '' }];
 demo.modules.ecriture.entries = [{ id: 'e1', date: today, value: 1200, category: '' }];
 (async () => {
   const b = await engine.launch(launchOptions);
   const p = await (await b.newContext({ viewport: { width: 900, height: 900 } })).newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.addInitScript(d => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, JSON.stringify(demo));
+  await p.clock.setFixedTime(NOW);
   await p.goto(BASE + '/index.html'); await p.waitForTimeout(400);
   const main = async () => (await p.textContent('#main')).replace(/\s+/g, ' ');
   const ok = check;
@@ -16,7 +21,7 @@ demo.modules.ecriture.entries = [{ id: 'e1', date: today, value: 1200, category:
   let t = await main();
   ok(t.includes('Cycle du') && t.includes('1 séance, 20 min') && t.includes('+1 200 mots'), 'bilan du cycle en cours : séances, mots');
   await p.click('[data-act="bilan-mode"][data-m="mois"]'); await p.waitForTimeout(150);
-  t = await main(); const name = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  t = await main(); const name = NOW.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
   ok(t.includes(name) && t.includes('avant : 1 séance, 30 min'), `mode mois (${name}), période précédente en regard`);
   await p.click('[data-act="bilan-nav"][data-d="1"]'); await p.waitForTimeout(150);
   ok((await main()).includes('1 séance, 30 min') && await p.isVisible('[data-act="bilan-nav"][data-d="-1"]'), 'remonter d’un mois, puis pouvoir revenir');

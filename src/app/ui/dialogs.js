@@ -1,6 +1,8 @@
 /* Les boîtes de dialogue : confirmation (ask) et formulaire générique (openForm), construits à partir d'une
    description de champs. */
 import { $, esc, toast } from "../lib/dom.js";
+import { tr, trp } from "../i18n/index.js";
+import { errMsg } from "../lib/labels.js";
 
 export function ask(msg) { return new Promise(res => { const d = $("#cdlg"); $("#cmsg").textContent = msg; d.returnValue = ""; d.onclose = () => res(d.returnValue === "ok"); d.showModal(); }); }
 export let formCb = null;
@@ -16,12 +18,14 @@ function fieldHTML(f, v) {
 export function openForm(title, fields, values, cb, description = "") {
   formCb = cb;
   $("#form").innerHTML = `<h2>${esc(title)}</h2>${description ? `<p class="hint">${esc(description)}</p>` : ""}` + fields.map(f => f.row ? `<div class="field-row">${f.row.map(x => fieldHTML(x, values)).join("")}</div>` : fieldHTML(f, values)).join("") +
-    `<div class="row"><button class="btn solid" value="save">Enregistrer</button><button class="btn" value="cancel" formnovalidate>Annuler</button></div>`;
+    `<div class="row"><button class="btn solid" value="save">${tr`Enregistrer`}</button><button class="btn" value="cancel" formnovalidate>${trp("formulaire", "Annuler")}</button></div>`;
   $("#dlg").showModal();
 }
 $("#dlg").addEventListener("close", () => {
   if ($("#dlg").returnValue !== "save" || !formCb) return;
   const v = {}; new FormData($("#form")).forEach((x, k) => v[k] = typeof x === "string" ? x.trim() : x);
   const cb = formCb; formCb = null;
-  try { const result = cb(v); if (result && typeof result.catch === "function") result.catch(e => toast(e.message || "Saisie invalide.")); } catch (e) { toast(e.message || "Saisie invalide."); } // sinon l'erreur disparaît en silence
+  // Une suite asynchrone (une confirmation demandée après le formulaire) qui échoue le dit aussi.
+  const failed = e => toast(errMsg(e, tr`Saisie invalide.`));
+  try { const r = cb(v); if (r && typeof r.then === "function") r.then(null, failed); } catch (e) { failed(e); } // sinon l'erreur disparaît en silence
 });

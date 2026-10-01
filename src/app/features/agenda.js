@@ -3,6 +3,8 @@ import { platform } from "../../platform.js";
 import { icsBetween, icsParse } from "../../core/agenda.js";
 import { CHANGE, CLICK } from "../registry.js";
 import { esc, toast } from "../lib/dom.js";
+import { tr, trn } from "../i18n/index.js";
+import { serverMsg } from "../services/erreurs.js";
 import { dehorsOn, dehorsWhen } from "./dehors.js";
 import { hm } from "../scene/sky.js";
 import { passeurFetch, passeurPret } from "../services/passeur.js";
@@ -29,8 +31,8 @@ export async function agendaRefresh(force = false) {
     if (r.status >= 200 && r.status < 300 && typeof r.texte === "string") {
       const now = Date.now(), ev = icsParse(r.texte);
       // On ne garde que ce qui peut encore servir : les récurrences, et ce qui n'est pas fini depuis plus d'un jour.
-      c.events = ev.filter(e => e.rrule || e.end > now - 86400000).slice(0, 800); c.err = ev.length || /BEGIN:VCALENDAR/.test(r.texte) ? "" : "ce n'est pas un calendrier iCal";
-    } else c.err = r.erreur || `le calendrier répond ${r.status}`;
+      c.events = ev.filter(e => e.rrule || e.end > now - 86400000).slice(0, 800); c.err = ev.length || /BEGIN:VCALENDAR/.test(r.texte) ? "" : tr`ce n'est pas un calendrier iCal`;
+    } else c.err = serverMsg(r, tr`le calendrier répond ${r.status}`);
   } catch (e) { c.err = e.message; }
   c.at = Date.now();
   try { platform.storage.set(ICS_CACHE, JSON.stringify(c)); } catch {}
@@ -51,24 +53,24 @@ export function agendaHTML() {
     const occ = icsBetween(icsCache().events, Math.max(day(n), n ? 0 : Date.now() - 3600000), day(n + 1));
     if (!occ.length) return "";
     return `<div class="agenda-day"><p class="hint" style="margin:10px 0 2px">${name}</p><ul class="plain">${occ.slice(0, 8).map(o => { const r = agendaRoute(o.summary);
-      return `<li class="agenda-ev"><span class="when">${o.allDay ? "journée" : `${esc(hhmm(o.start))}${o.end - o.start > 0 && o.end - o.start < 86400000 ? `–${esc(hhmm(o.end))}` : ""}`}</span> ${r.mod ? `<a class="tag" href="#${esc(r.mod)}">${esc(label(r.mod))}</a> ` : ""}${esc(r.text)}${o.location ? ` <span class="hint" style="margin:0">· ${esc(o.location)}</span>` : ""}</li>`; }).join("")}</ul></div>`;
+      return `<li class="agenda-ev"><span class="when">${o.allDay ? tr`journée` : `${esc(hhmm(o.start))}${o.end - o.start > 0 && o.end - o.start < 86400000 ? `–${esc(hhmm(o.end))}` : ""}`}</span> ${r.mod ? `<a class="tag" href="#${esc(r.mod)}">${esc(label(r.mod))}</a> ` : ""}${esc(r.text)}${o.location ? ` <span class="hint" style="margin:0">· ${esc(o.location)}</span>` : ""}</li>`; }).join("")}</ul></div>`;
   };
-  return block(0, "Aujourd'hui, au calendrier") + block(1, "Demain");
+  return block(0, tr`Aujourd'hui, au calendrier`) + block(1, tr`Demain`);
 }
 export function agendaSettingsHTML() {
   const c = icsCache(), has = !!icsUrl();
-  return `<section id="agenda"><h3>Calendrier</h3><p class="hint">Un seul calendrier, dédié (crée-en un « Selene ») : aujourd'hui et demain s'affichent sous « Aujourd'hui ». Un titre « Chantier : plombier » se range sous Chantier. Google : paramètres de l'agenda → Intégrer l'agenda → Adresse secrète au format iCal. Apple : partager en public, lien webcal.</p>
-    <label>Adresse iCal secrète<input type="password" data-act="ics-url" value="${has ? "••••••••" : ""}" autocomplete="off" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"></label>
-    <p class="hint" style="margin-top:6px">Qui possède cette adresse lit tout le calendrier : elle reste dans ce navigateur, n'est jamais synchronisée, ne passe que par ton passeur (qui ne garde rien), et s'efface à la déconnexion. Si elle fuit, réinitialise-la dans l'agenda.</p>
-    ${has ? `<p class="row" style="margin:0"><span>${esc(agendaBusy ? "Lecture…" : c.err ? `Ne répond pas : ${c.err}` : c.at ? `Lu ${dehorsWhen(c.at)} : ${c.events.length} événement${c.events.length > 1 ? "s" : ""} à venir ou récurrent${c.events.length > 1 ? "s" : ""}.` : "Pas encore lu.")}</span><button class="btn sm" data-act="ics-check">Relire</button><button class="btn ghost sm" data-act="ics-forget">oublier</button></p>` : ""}</section>`;
+  return `<section id="agenda"><h4>${tr`Calendrier`}</h4><p class="hint">${tr`Un seul calendrier, dédié (crée-en un « Selene ») : aujourd'hui et demain s'affichent sous « Aujourd'hui ». Un titre « Chantier : plombier » se range sous Chantier. Google : paramètres de l'agenda → Intégrer l'agenda → Adresse secrète au format iCal. Apple : partager en public, lien webcal.`}</p>
+    <label>${tr`Adresse iCal secrète`}<input type="password" data-act="ics-url" value="${has ? "••••••••" : ""}" autocomplete="off" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"></label>
+    <p class="hint" style="margin-top:6px">${tr`Qui possède cette adresse lit tout le calendrier : elle reste dans ce navigateur, n'est jamais synchronisée, ne passe que par ton passeur (qui ne garde rien), et s'efface à la déconnexion. Si elle fuit, réinitialise-la dans l'agenda.`}</p>
+    ${has ? `<p class="row" style="margin:0"><span>${esc(agendaBusy ? tr`Lecture…` : c.err ? tr`Ne répond pas : ${c.err}` : c.at ? trn(c.events.length, "Lu {1} : {0} événement à venir ou récurrent.", "Lu {1} : {0} événements à venir ou récurrents.", dehorsWhen(c.at)) : tr`Pas encore lu.`)}</span><button class="btn sm" data-act="ics-check">${tr`Relire`}</button><button class="btn ghost sm" data-act="ics-forget">${tr`oublier`}</button></p>` : ""}</section>`;
 }
 CHANGE["ics-url"] = el => {
   let v = el.value.trim(); if (v.startsWith("•")) return;
   v = v.replace(/^webcal:\/\//i, "https://");
-  if (v && !/^https:\/\//i.test(v)) { el.value = ""; return toast("Une adresse https:// (ou webcal://) est attendue."); }
+  if (v && !/^https:\/\//i.test(v)) { el.value = ""; return toast(tr`Une adresse https:// (ou webcal://) est attendue.`); }
   try { if (v) platform.secrets.set(ICS_URL, v); else platform.secrets.remove(ICS_URL); platform.storage.remove(ICS_CACHE); } catch {}
   el.blur(); render();
-  if (v) { toast("Adresse gardée dans ce navigateur. Lecture…"); agendaRefresh(true); }
+  if (v) { toast(tr`Adresse gardée dans ce navigateur. Lecture…`); agendaRefresh(true); }
 };
 CLICK["ics-check"] = () => agendaRefresh(true);
-CLICK["ics-forget"] = () => { platform.secrets.remove(ICS_URL); platform.storage.remove(ICS_CACHE); render(); toast("Calendrier oublié sur cet appareil."); };
+CLICK["ics-forget"] = () => { platform.secrets.remove(ICS_URL); platform.storage.remove(ICS_CACHE); render(); toast(tr`Calendrier oublié sur cet appareil.`); };

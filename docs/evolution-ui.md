@@ -242,7 +242,7 @@ plutôt qu'une pluie périmée. La CSP hébergée (`build.py`) devra autoriser `
 
 - [x] Shell adaptatif : barre basse sur téléphone (Aujourd'hui · Espaces · ⊕ Capturer · Chercher · Bilan),
       barre latérale collante sur ordinateur (≥ 900 px), feuilles Espaces et Capturer.
-- [x] Domaines : un champ « Domaine » par module (Réglages → Modules) ; la navigation, la feuille Espaces et
+- [x] Domaines : un champ « Domaine » par module (Réglages → Espaces) ; la navigation, la feuille Espaces et
       le sommaire de l'accueil se regroupent. Facultatif, synchronisé, validé à l'import (40 caractères).
 - [x] Palette de commandes `⌘K` / `Ctrl+K` : aller (récents, espaces, vues), agir (minuteur, capturer,
       mode du bilan), garder une phrase dans la boîte, chercher (textes menant à leur entrée).
@@ -358,6 +358,21 @@ Du moins risqué au plus risqué ; chaque étape se suffit à elle-même (on peu
       liaisons dit la même chose en texte, seule d'abord sur téléphone (« Voir la carte » la déplie). Feuille large
       sur ordinateur. 70 ms pour la carte d'un motif sur l'historique du banc d'essai (5 500 textes).
 - [ ] Critère d'abandon écrit d'avance : pas ouverte pendant un mois, retirée. (À juger à l'usage, fin octobre 2026.)
+
+### Réglages en chapitres
+
+- [x] Six chapitres numérotés, du plus courant au plus rare : Apparence et rythme, Espaces, Ciel et alentours, Assistant,
+      Connexions, Compte et données (la sauvegarde avant l'irréversible, rangé en dernier sous « Zone sensible »). Sommaire
+      en tête ; au-delà de 1180 px, dans la marge droite, collant, et il marque le chapitre lu (filet de marge).
+- [x] Un espace n'y paraît qu'une fois : sa ligne (afficher, nommer, domaine, ordre, avec son sigil), et dessous ses
+      réglages propres, repliés (« régler », avec son type). Un bloc déplié le reste après un changement fait dedans.
+- [x] Créer un espace : les modèles s'affichent avec leur description, au lieu d'attendre au fond d'une liste déroulante ;
+      « Sur mesure » garde le type vide et le modèle sous un autre nom.
+- [x] Infobulles (`ui/tips.js`) : un « ? » à côté de ce qui ne va pas de soi, ouvert au clic ou au toucher, jamais au seul
+      survol ; l'API popover ferme par Échap ou un geste ailleurs et passe au-dessus des feuilles ; la bulle est posée dans
+      l'écran. Sans l'API, le texte s'affiche en clair.
+- [x] « cet appareil » marque ce qui ne suit pas le compte. Premier accueil repliable (comment la page est rangée, le
+      vocabulaire de Selene), rouvert depuis le sommaire. Textes d'aide réunis dans `views/reglages-aide.js`, pour la traduction.
 
 ## Espace optionnel « Reprendre la main »
 

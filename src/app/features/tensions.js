@@ -1,6 +1,8 @@
 /* Les tensions : deux pensées qui se contredisent, restées sans synthèse. */
 import { esc } from "../lib/dom.js";
 import { ago } from "../lib/format.js";
+import { tr } from "../i18n/index.js";
+import { linkLabel } from "../lib/labels.js";
 import { refFind, refHTML, thoughtItems } from "./links.js";
 
 /* Tensions.
@@ -17,6 +19,6 @@ export function openTensions() {
 export function tensionSection() {
   const ts = openTensions();
   if (!ts.length) return "";
-  return `<section><h3>Tensions ouvertes</h3><p class="hint">Deux entrées qui se contredisent, en attente d'une synthèse qui dérive des deux. Aucune urgence : certaines contradictions sont plus fécondes que leurs solutions.</p>
-    <ul class="plain">${ts.map(t => `<li class="item"><span></span><div>${refHTML(t.a)} <span class="hint">contredit</span> ${refHTML(t.b)}${t.date ? `<div class="meta"><span>ouverte ${ago(t.date)}</span></div>` : ""}</div><div class="row"><button class="btn ghost sm" data-act="tension-resolve" data-a="${esc(t.a)}" data-b="${esc(t.b)}">résoudre</button><button class="btn ghost sm" data-act="tension-dossier" data-a="${esc(t.a)}" data-b="${esc(t.b)}">dossier</button></div></li>`).join("")}</ul></section>`;
+  return `<section><h3>${tr`Tensions ouvertes`}</h3><p class="hint">${tr`Deux entrées qui se contredisent, en attente d'une synthèse qui dérive des deux. Aucune urgence : certaines contradictions sont plus fécondes que leurs solutions.`}</p>
+    <ul class="plain">${ts.map(t => `<li class="item"><span></span><div>${refHTML(t.a)} <span class="hint">${esc(linkLabel("contredit"))}</span> ${refHTML(t.b)}${t.date ? `<div class="meta"><span>${tr`ouverte ${ago(t.date)}`}</span></div>` : ""}</div><div class="row"><button class="btn ghost sm" data-act="tension-resolve" data-a="${esc(t.a)}" data-b="${esc(t.b)}">${tr`résoudre`}</button><button class="btn ghost sm" data-act="tension-dossier" data-a="${esc(t.a)}" data-b="${esc(t.b)}">${tr`dossier`}</button></div></li>`).join("")}</ul></section>`;
 }

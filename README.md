@@ -4,7 +4,7 @@ Tableau de bord personnel : chantier de l'appartement, pratique de kundalini, é
 
 Aucune dépendance de production, aucun client vendorisé : le build hébergé (GitHub Pages) parle directement, via `fetch`, aux API REST de Supabase (Auth + PostgREST) pour les comptes multi-utilisateurs — voir « Comptes et synchronisation » plus bas. La source éditable est dans `src/` : `shell.html` (gabarit), `platform.js` (seul accès aux API de l'hôte : stockage, secrets, claude.ai), `core/` (le noyau pur, en modules ES : `sync.js` fusion à trois voies, `backup.js` sauvegarde, `domain.js` règles métier et registre pur des types de module, et la traduction des services externes), `store.js` (persistance et synchronisation), `auth.js` (comptes Supabase, hébergé uniquement), `app.js` (interface et orchestration), `types.js` (affichage de chaque type de module), `assistant.js` (Claude) et `boot.js` (démarrage). Ajouter un type de module = une entrée dans `MODULE_TYPES` (`domain.js`) et une dans `TYPE_UI` (`types.js`), rien d'autre. `python3 build.py` (après `npm ci` : esbuild y assemble le noyau) génère `selene.html` pour claude.ai et `index.html` pour GitHub Pages. Ne modifie pas directement les HTML générés.
 
-Vérification locale (Node 22, Python 3) : `npm ci` une fois, puis `npm run check` (build, tests unitaires, syntaxe, eslint, passeur) ; les parcours dans un vrai navigateur : `npx playwright install chromium` une fois, puis `npm run test:browser` (`npm run test:browser -- budget` n'en lance qu'un ; `SELENE_BROWSER=webkit` pour WebKit, après `npx playwright install webkit`). Liste des scripts : [docs/architecture.md](docs/architecture.md#vérification). App Android (Capacitor) : [docs/android.md](docs/android.md). App Windows (Tauri) : [docs/desktop.md](docs/desktop.md). App iOS (Capacitor) : [docs/ios.md](docs/ios.md). Performances sur un gros historique : `npm run bench`. Fonctionnement interne, synchronisation et décisions d'architecture : [docs/architecture.md](docs/architecture.md). Évolution de l'interface (principes, système visuel, vagues à venir) : [docs/evolution-ui.md](docs/evolution-ui.md).
+Vérification locale (Node 22, Python 3) : `npm ci` une fois, puis `npm run check` (build, tests unitaires, syntaxe, eslint, passeur) ; les parcours dans un vrai navigateur : `npx playwright install chromium` une fois, puis `npm run test:browser` (`npm run test:browser -- budget` n'en lance qu'un ; `SELENE_BROWSER=webkit` pour WebKit, après `npx playwright install webkit`). Liste des scripts : [docs/architecture.md](docs/architecture.md#vérification). App Android (Capacitor) : [docs/android.md](docs/android.md). App Windows (Tauri) : [docs/desktop.md](docs/desktop.md). App iOS (Capacitor) : [docs/ios.md](docs/ios.md). Performances sur un gros historique : `npm run bench`. Fonctionnement interne, synchronisation et décisions d'architecture : [docs/architecture.md](docs/architecture.md). Évolution de l'interface (principes, système visuel, vagues à venir) : [docs/evolution-ui.md](docs/evolution-ui.md). Langues de l'interface (écrire un texte traduisible, compléter une traduction, état du chantier) : [docs/i18n.md](docs/i18n.md).
 
 ## Publier avec GitHub Pages
 
@@ -25,17 +25,17 @@ Les données de l'app installée sont séparées de celles de Safari : exporter 
 
 Un compte neuf part presque vide (une boîte de réception) : l'accueil propose des **modèles** (tâches, protocole, écriture, budget, tableau de production, liste « à découvrir », soins, carnet), à ajouter autant de fois qu'on veut. Ces modèles restent disponibles dans « + Créer un module », à côté des types vides.
 
-Réglages → Modules : activer, renommer, réordonner, supprimer, et « + Créer un module ». Chaque module est une instance de l'un de ces types (l'exemple entre parenthèses est le module d'origine) ; seul l'Assistant est une fonction, activable, sans données propres.
+Réglages → Espaces (le vocabulaire de la navigation : un espace est un module) : activer, renommer, réordonner, supprimer, régler chacun (« régler », sous sa ligne), et « + Créer un espace », où les modèles s'affichent avec leur description. Chaque module est une instance de l'un de ces types (l'exemple entre parenthèses est le module d'origine) ; seul l'Assistant est une fonction, activable, sans données propres.
 
   - *Programme* : un protocole de N semaines, un calendrier et un objectif de séances par semaine (ex. Kundalini) ;
   - *Objectif cumulatif* : un compteur vers un objectif, avec des catégories et, en option, un carnet de notes libres (ex. Écriture et ses fragments) ;
   - *Rappels* : des types d'événements récurrents avec une fréquence, et un journal (ex. Phidippus) ;
-  - *Notes* : des textes datés. L'une des boîtes est la **boîte de réception** (Réglages → Réglages par module) : elle reçoit la capture rapide de l'accueil, et chaque note peut ensuite être rangée d'un geste dans tout module qui sait la recevoir (ex. la Capture) ;
+  - *Notes* : des textes datés. L'une des boîtes est la **boîte de réception** (Réglages → Espaces, « régler » sous le module) : elle reçoit la capture rapide de l'accueil, et chaque note peut ensuite être rangée d'un geste dans tout module qui sait la recevoir (ex. la Capture) ;
   - *Tâches* : échéances, étapes, effort, coûts facultatifs, regroupées par pièce ou par lieu (le nom se règle) ; l'étoile « Aujourd'hui » est plafonnée à trois tâches **tous modules confondus**, et l'accueil les réunit (ex. le Chantier) ;
   - *Budget* : des opérations (dépenses, revenus), des enveloppes à plafond mensuel et leurs jauges, mois par mois (ex. le Budget) ;
   - *Collection* : des éléments à statuts (titre, sous-titre, étiquette, date, texte : chaque champ se renomme ou se masque), affichés en colonnes ou en liste filtrable (ex. october.moth en colonnes, Musique en liste) ; en colonnes, sur téléphone une colonne à la fois par un sélecteur, sur ordinateur une carte se glisse d'une colonne à l'autre (ou `[` et `]` sur la carte qui a le focus).
 
-Un module se supprime définitivement (✕, puis retaper son nom) : ses données partent avec lui, sur tous les appareils. Ses réglages propres sont dans Réglages → Réglages par module. Un nouveau module est partagé par défaut avec l'assistant, sauf « Reprendre la main » ; décocher dans Réglages → Assistant pour le garder privé.
+Un module se supprime définitivement (✕, puis retaper son nom) : ses données partent avec lui, sur tous les appareils. Ses réglages propres sont sous sa ligne, dans Réglages → Espaces (« régler »), ou depuis le module lui-même. Un nouveau module est partagé par défaut avec l'assistant, sauf « Reprendre la main » ; décocher dans Réglages → Assistant pour le garder privé.
 
 Pour ajouter un *type* de module au code, voir [docs/architecture.md](docs/architecture.md#ajouter-un-type-de-module).
 
@@ -47,11 +47,13 @@ Le module n'est **pas partagé avec l'assistant à sa création** et ses détail
 
 ## Au quotidien
 
+- **Réglages** : six chapitres, du plus courant au plus rare (Apparence et rythme, Espaces, Ciel et alentours, Assistant, Connexions, Compte et données), avec un sommaire (dans la marge sur grand écran, il marque le chapitre lu). Un « ? » ouvre une courte explication ; « cet appareil » marque ce qui ne suit pas le compte. La première visite explique comment la page est rangée, avec le vocabulaire de Selene (« Guide et vocabulaire » la rouvre). Les textes d'aide sont réunis dans `src/app/views/reglages-aide.js`, pour la traduction.
+- **Langue** : français ou anglais, celle de l'appareil par défaut ; Réglages → Apparence et rythme → Langue pour en choisir une, qui suit alors le compte sur tous tes appareils. L'assistant répond dans la langue de l'interface. Ce que tu écris reste dans ta langue à toi : la recherche, les motifs et la dérive lexicale lisent chaque texte dans la sienne.
 - **Brouillons** : le texte en cours d'un champ libre (capture, note, fragment, observation, message à l'assistant) survit à la fermeture de l'app, sur cet appareil.
 - **Annuler** : supprimer un élément affiche « Annuler » pendant quelques secondes, au lieu d'une confirmation.
 - **Accueil** : « fait » sur un rappel en retard (une ligne par module), « Noter N min » pour la séance du jour (dernière durée), éléments prévus ou en retard ; le chevron d'une ligne la déplie sur ses derniers éléments. Sur téléphone, le paysage se réduit à partir de la deuxième ouverture du jour.
 - **Actions de ligne** (supprimer, modifier, dériver, lier…) : au survol sur ordinateur ; sur téléphone, toucher la ligne (« ⋯ » signale qu'il y en a). Chaque vue retrouve sa position de défilement quand on y revient.
-- **Navigation** : sur téléphone, une barre en bas (Aujourd'hui, Espaces, ⊕ Capturer, Chercher, Bilan) ; sur ordinateur, une barre latérale. Réglages → Modules : un « Domaine » par module (Maison, Création…) regroupe la navigation et l'accueil. Réglages → Apparence : « Ouvrir sur » l'accueil ou là où tu en étais (propre à l'appareil).
+- **Navigation** : sur téléphone, une barre en bas (Aujourd'hui, Espaces, ⊕ Capturer, Chercher, Bilan) ; sur ordinateur, une barre latérale. Réglages → Espaces : un « Domaine » par module (Maison, Création…) regroupe la navigation et l'accueil. Réglages → Apparence : « Ouvrir sur » l'accueil ou là où tu en étais (propre à l'appareil).
 - **Fiche** (« fiche » dans les actions d'un fragment, d'une note ou d'un élément) : tout ce qu'on sait d'une entrée au même endroit : provenance, statut et son histoire, liens dans les deux sens, motifs présents.
 - **Trier une à une** (dans la boîte de réception) : une note à la fois, rangée d'un geste dans l'espace de son choix, ou laissée pour plus tard.
 - **Minuteur** : l'anneau autour de la petite lune se referme à mesure que les quinze minutes passent ; un appui long sur la petite lune le lance.
@@ -85,7 +87,7 @@ Le module n'est **pas partagé avec l'assistant à sa création** et ses détail
 ## Penser avec
 
 - **Pont de reprise** : en haut de chaque module, « Je m'arrête ici… » note le prochain geste ; il s'affiche au retour dans le module et sur l'accueil, sous sa ligne. Le champ s'ouvre de lui-même à la fin du minuteur (l'ignorer suffit). « fait » le lève ; ce qui était prévu et ce qu'il en est advenu restent dans un court historique.
-- **Statut épistémique** : un fragment ou une note peut se dire *observé*, *hypothèse*, *interprétation* ou *inexpliqué* (vide par défaut). Un « ? » en tête d'une saisie en fait une hypothèse. Chaque changement est daté ; « statut:hypothèse » dans la recherche filtre ; le bilan compte les idées de la période par statut.
+- **Statut épistémique** : un fragment ou une note peut se dire *observé*, *hypothèse*, *interprétation* ou *inexpliqué* (vide par défaut). Un « ? » en tête d'une saisie en fait une hypothèse. Chaque changement est daté ; « statut:hypothèse » (ou « status:hypothesis ») dans la recherche filtre ; le bilan compte les idées de la période par statut.
 - **Provenance** : une note rangée depuis une boîte disparaît, mais ce qui en naît (fragment, tâche, élément…) garde une copie de son texte, de sa date et de sa boîte d'origine (« ↳ de Capture, 3 sept. »). Rangée deux fois, elle garde sa première naissance.
 - **Liaisons** : sous chaque fragment et chaque note, « dériver » (la prochaine entrée écrite en découle) et « lier… » (dérive de, contredit, fait écho à, documente). Chaque entrée montre ses liens et ceux qui la visent (« a donné… », « contredit par… »). Un lien vers une entrée supprimée le dit. Une note rangée emporte ses liens, et ceux qui la visaient la suivent.
 - **Tensions** (dans le bilan) : chaque « contredit » reste ouvert jusqu'à une synthèse qui dérive des deux ; « résoudre » ouvre cette synthèse, dans le module de la première.
@@ -102,7 +104,7 @@ Le module n'est **pas partagé avec l'assistant à sa création** et ses détail
 
 ## Assistant (Claude)
 
-Le module Assistant est désactivé par défaut (Réglages → Modules).
+Le module Assistant est désactivé par défaut (Réglages → Espaces).
 
 - Sur claude.ai, il passe par ton compte : aucune clé à fournir.
 - Hébergé (GitHub Pages), il passe par la fonction Supabase `assistant` avec **ta propre clé**, saisie une fois dans Réglages → Assistant : vérifiée auprès d'Anthropic, elle est gardée chiffrée côté serveur, attachée à ton compte, et ne revient jamais dans la page (la page n'a d'ailleurs plus le droit d'appeler Anthropic). Donne-lui une limite de dépense dans la console Anthropic. Déploiement : [docs/assistant.md](docs/assistant.md).
