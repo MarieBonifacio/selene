@@ -109,6 +109,57 @@ test('le ciel du noyau est couvert : temps, pluies d’étoiles, éclipses (2026
   for (let d = 0; d < 360; d += 45) assert.ok(Object.hasOwn(WIND_TEXT, windName(d)), windName(d));
 });
 
+test('chaque erreur du noyau a sa traduction : codes levés par coreError, champs nommés par requireText', () => {
+  const { CORE_ERRORS, CORE_FIELDS, errMsg } = require('../src/app/lib/labels.js');
+  const src = fs.readdirSync('src/core').filter(f => f.endsWith('.js')).map(f => fs.readFileSync(path.join('src/core', f), 'utf8')).join('\n');
+  const codes = new Set([...src.matchAll(/coreError\("([\w-]+)"/g)].map(m => m[1]));
+  assert.deepEqual([...codes].sort(), Object.keys(CORE_ERRORS).sort());
+  const fields = new Set([...src.matchAll(/requireText\([^,]+, "([^"]+)"/g)].map(m => m[1]));
+  assert.deepEqual([...fields].sort(), [...CORE_FIELDS].sort());
+  const { coreError } = require('../src/core/domain.js');
+  withKeys({ 'Tâche introuvable': 'Task not found' }, () => {
+    applyLang('en', BOTH);
+    assert.equal(errMsg(coreError('task-missing', 'Tâche introuvable')), 'Task not found');
+    assert.equal(errMsg(new Error('Passeur injoignable')), 'Passeur injoignable');
+    assert.equal(errMsg(null, 'repli'), 'repli');
+  });
+});
+
+test('chaque erreur des fonctions serveur a son code, et chaque code sa traduction', async () => {
+  const { SERVER_ERRORS, serverMsg } = await import('../src/app/services/erreurs.js');
+  const dir = 'supabase/functions', src = fs.readdirSync(dir, { withFileTypes: true }).filter(d => d.isDirectory())
+    .flatMap(d => fs.readdirSync(path.join(dir, d.name)).filter(f => f.endsWith('.ts') && !f.endsWith('_test.ts')).map(f => fs.readFileSync(path.join(dir, d.name, f), 'utf8'))).join('\n');
+  const bare = src.split('\n').filter(l => /erreur: /.test(l) && !/code: /.test(l) && !/^\s*(\/\/|\*)/.test(l));
+  assert.deepEqual(bare, [], 'une réponse d’erreur sans code');
+  const codes = new Set([...src.matchAll(/code: "([\w-]+)"/g)].map(m => m[1]));
+  assert.deepEqual([...codes].sort(), Object.keys(SERVER_ERRORS).sort());
+  withKeys({ 'redirection refusée : {0}': 'redirect refused: {0}', 'nom de réseau local': 'local network name' }, () => {
+    applyLang('en', BOTH);
+    assert.equal(serverMsg({ erreur: 'redirection refusée : nom de réseau local', code: 'redirection', detail: 'nom-local' }), 'redirect refused: local network name');
+    assert.equal(serverMsg({ erreur: 'ancien message' }), 'ancien message', 'une fonction d’avant les codes : son message');
+    assert.equal(serverMsg({ code: 'inconnu-ici' }, 'repli'), 'repli');
+  });
+});
+
+test('un modèle de module se crée dans la langue de l’interface ; les valeurs du code ne bougent pas', () => {
+  const { MODULE_TEMPLATES, createFromTemplate } = require('../src/core/domain.js');
+  const { localTemplate } = require('../src/app/lib/labels.js');
+  const tpl = MODULE_TEMPLATES.find(t => t.id === 'sources');
+  applyLang('en', BOTH);
+  try {
+    const lt = localTemplate(tpl), modules = {};
+    assert.equal(lt.name, 'Sources'); assert.equal(lt.hint, 'Articles, books, pages: a link or a DOI is enough, the rest fills itself in');
+    const inst = createFromTemplate(modules, lt, lt.name, 'src1', tr);
+    assert.deepEqual(inst.config.statuses, ['To read', 'Read', 'Used']);
+    assert.equal(inst.config.fields.title, 'Title'); assert.equal(inst.config.statusLabel, 'Reading');
+    assert.equal(inst.config.display, 'liste', 'une valeur du code reste telle quelle');
+    assert.equal(inst.config.sources, true);
+    assert.deepEqual(tpl.config.statuses, ['À lire', 'Lue', 'Utilisée'], 'le modèle du noyau reste intact');
+  } finally { applyLang('fr', BOTH); }
+  const fr = createFromTemplate({}, localTemplate(tpl), 'Sources', 'src2', tr);
+  assert.deepEqual(fr.config.statuses, ['À lire', 'Lue', 'Utilisée']);
+});
+
 test('un texte enregistré dans une langue se reconnaît dans toutes (provenances)', () => {
   const { sameText } = require('../src/app/i18n/index.js');
   withKeys({ 'Dehors d’essai': 'Outside test' }, () => {

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-dUSyIiv5a3ffgndlUUlklRdV4p7WRFSKPAFkbBgTThI=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xULPeR4LL2jAz2ucBQ4HCV1TLw7JudlgCa/EIu9Ohd8=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -820,6 +820,8 @@ var __selene = (() => {
     CARTE_MAX: () => CARTE_MAX,
     CHANGE: () => CHANGE,
     CLICK: () => CLICK,
+    CORE_ERRORS: () => CORE_ERRORS,
+    CORE_FIELDS: () => CORE_FIELDS,
     CORE_LABELS: () => CORE_LABELS,
     DRAFT_PREFIX: () => DRAFT_PREFIX,
     ECLIPSE_TEXT: () => ECLIPSE_TEXT,
@@ -923,6 +925,7 @@ var __selene = (() => {
     connectHost: () => connectHost,
     contextText: () => contextText,
     contrast: () => contrast,
+    coreError: () => coreError,
     coverImg: () => coverImg,
     coverUrl: () => coverUrl,
     createBackup: () => createBackup,
@@ -961,6 +964,7 @@ var __selene = (() => {
     epLabel: () => epLabel,
     epPrefix: () => epPrefix,
     epSelect: () => epSelect,
+    errMsg: () => errMsg,
     esc: () => esc,
     excerpt: () => excerpt,
     executeTool: () => executeTool,
@@ -1013,6 +1017,8 @@ var __selene = (() => {
     linksHTML: () => linksHTML,
     liveRecents: () => liveRecents,
     loadDraft: () => loadDraft,
+    localTemplate: () => localTemplate,
+    localizeConfig: () => localizeConfig,
     lunarPhase: () => lunarPhase,
     lunarSection: () => lunarSection,
     lunarTest: () => lunarTest,
@@ -1203,6 +1209,95 @@ var __selene = (() => {
 
   // src/app/i18n/en.js
   var en_default = {
+    // core/domain.js : modèles et types de module (lus dans leurs tables par scripts/i18n.mjs)
+    "Tâches": "Tasks",
+    "Échéances, étapes, et trois tâches du jour au plus": "Deadlines, steps, and three tasks for today at most",
+    "Protocole": "Protocol",
+    "Choisis ton sport ou ta pratique, sa durée et ton rythme à l'ajout": "Choose your sport or practice, its length and your pace when adding it",
+    "Écriture": "Writing",
+    "Un compteur de mots, des chapitres, un carnet de fragments": "A word counter, chapters, a notebook of fragments",
+    "Fragments": "Fragments",
+    "Budget": "Budget",
+    "Dépenses et revenus du mois, des enveloppes à plafond": "The month's spending and income, capped envelopes",
+    "Tableau de production": "Production board",
+    "Des idées qui avancent de colonne en colonne jusqu'à publication": "Ideas that move from column to column until publication",
+    "Nouvelle idée": "New idea",
+    "Idée": "Idea",
+    "En cours": "In progress",
+    "Prêt": "Ready",
+    "Publié": "Published",
+    "Thème": "Theme",
+    "Date prévue": "Planned date",
+    "À découvrir": "To discover",
+    "Livres, albums, films : une liste à statuts": "Books, albums, films: a list with statuses",
+    "Découvert": "Discovered",
+    "Retenu": "Kept",
+    "Auteur": "Author",
+    "Genre": "Genre",
+    "Décisions": "Decisions",
+    "Ce que tu as décidé, pourquoi, et quand le réexaminer": "What you decided, why, and when to review it",
+    "État": "State",
+    "Noter une décision": "Note a decision",
+    "La raison écrite au moment de décider, relue au moment de réexaminer.": "The reason written down when deciding, reread when reviewing.",
+    "À décider": "To decide",
+    "Prise": "Made",
+    "Abandonnée": "Dropped",
+    "Décision": "Decision",
+    "À réexaminer le": "Review on",
+    "Contexte, options écartées, raison, et ce qui te ferait changer d'avis": "Context, options ruled out, reason, and what would make you change your mind",
+    "Tes motifs récurrents, comptés partout : dernière apparition, voisins, jachère": "Your recurring motifs, counted everywhere: last appearance, neighbours, fallow",
+    "Ajouter un motif": "Add a motif",
+    "Chaque motif est cherché dans tous tes autres modules, en mot entier, pluriel et variantes compris.": "Each motif is searched for in all your other modules, as a whole word, plural and variants included.",
+    "Vivant": "Alive",
+    "Épuisé": "Spent",
+    "Motif": "Motif",
+    "Variantes (séparées par des virgules)": "Variants (comma-separated)",
+    "Famille": "Family",
+    "Musique": "Music",
+    "Des artistes et leurs albums, précisés par MusicBrainz, pochettes et nouvelles sorties comprises": "Artists and their albums, completed by MusicBrainz, covers and new releases included",
+    "Ajouter un artiste": "Add an artist",
+    "À écouter": "To listen to",
+    "Écouté": "Listened",
+    "Artiste": "Artist",
+    "Album": "Album",
+    "Sources": "Sources",
+    "Articles, livres, pages : un lien ou un DOI suffit, le reste se complète": "Articles, books, pages: a link or a DOI is enough, the rest fills itself in",
+    "Lecture": "Reading",
+    "Ajouter à la main": "Add by hand",
+    "Colle un lien ou un DOI : titre, auteurs, revue et date se complètent. Relie ensuite une source au fragment qu'elle documente.": "Paste a link or a DOI: title, authors, journal and date fill themselves in. Then link a source to the fragment it documents.",
+    "À lire": "To read",
+    "Lue": "Read",
+    "Utilisée": "Used",
+    "Auteurs": "Authors",
+    "Résumé et notes": "Summary and notes",
+    "Arc": "Arc",
+    "Une séquence d'étapes où loger des fragments et des éléments d'autres modules": "A sequence of stages to house fragments and items from other modules",
+    "Étape 1": "Stage 1",
+    "Étape 2": "Stage 2",
+    "Étape 3": "Stage 3",
+    "Soins": "Care",
+    "Des gestes récurrents et depuis quand ils attendent": "Recurring chores, and how long they have been waiting",
+    "Carnet": "Notebook",
+    "Des notes datées, gardées ou rangées ailleurs ensuite": "Dated notes, kept or filed elsewhere later",
+    "Programme (calendrier + objectif hebdomadaire)": "Programme (calendar + weekly goal)",
+    "min": "min",
+    "Objectif cumulatif (compteur + catégories)": "Cumulative goal (counter + categories)",
+    "unités": "units",
+    "Catégorie": "Category",
+    "Notes": "Notes",
+    "Rappels (types récurrents + journal)": "Reminders (recurring types + log)",
+    "Fait": "Done",
+    "Budget (opérations, enveloppes à plafond mensuel)": "Budget (transactions, envelopes with a monthly cap)",
+    "Tâches (échéances, lieux, étapes, coûts)": "Tasks (deadlines, places, steps, costs)",
+    "Lieu": "Place",
+    "extérieur, dehors, balcon, jardin, terrasse, façade, toit": "outside, outdoors, balcony, garden, terrace, façade, roof",
+    "Général": "General",
+    "Notes (textes datés, à garder ou à trier)": "Notes (dated texts, to keep or to sort)",
+    "Une note…": "A note…",
+    "Collection (éléments à statuts, en colonnes ou en liste)": "Collection (items with statuses, in columns or a list)",
+    "À faire": "To do",
+    "Étiquette": "Tag",
+    "Arc (étapes, où l'on place des fragments et des éléments d'autres modules)": "Arc (stages, where fragments and items from other modules are placed)",
     // features/agenda.js
     "ce n'est pas un calendrier iCal": "this isn't an iCal calendar",
     "le calendrier répond {0}": "the calendar answers {0}",
@@ -1665,6 +1760,20 @@ var __selene = (() => {
     "vent du sud-ouest {0} km/h": "south-west wind {0} km/h",
     "vent d'ouest {0} km/h": "west wind {0} km/h",
     "vent du nord-ouest {0} km/h": "north-west wind {0} km/h",
+    "{0} : à remplir": "{0}: required",
+    "Tâche introuvable": "Task not found",
+    "Trois tâches du jour maximum": "Three tasks for today at most",
+    "Montant invalide": "Invalid amount",
+    "Date invalide": "Invalid date",
+    "Lien invalide": "Invalid link",
+    "Valeur invalide": "Invalid value",
+    "Ce module ne tient pas de journal": "This module keeps no log",
+    "Identifiant réservé": "Reserved identifier",
+    "Identifiant déjà utilisé": "Identifier already in use",
+    "Type de module inconnu": "Unknown module type",
+    "Module introuvable": "Module not found",
+    "Sauvegarde trop volumineuse": "Backup too large",
+    "Sauvegarde créée par une version plus récente de Selene : mets l'application à jour d'abord.": "Backup created by a newer version of Selene: update the app first.",
     // modules/arc.js
     "Ajoute une étape avant de placer quoi que ce soit.": "Add a stage before placing anything.",
     "Rien à placer pour l'instant : un fragment ou un élément de collection, d'abord.": "Nothing to place yet: a fragment or a collection item first.",
@@ -2102,6 +2211,50 @@ var __selene = (() => {
     "Passeur : il répond, et il te reconnaît.": "Relay: it answers, and it recognises you.",
     "Identifiant copié.": "Identifier copied.",
     "Copie impossible ici : sélectionne-le à la main.": "Can't copy here: select it by hand.",
+    // services/erreurs.js
+    "adresse absente ou trop longue": "address missing or too long",
+    "adresse illisible": "unreadable address",
+    "seulement http et https": "http and https only",
+    "pas d'identifiants dans l'adresse": "no credentials in the address",
+    "port inhabituel": "unusual port",
+    "adresse privée, réservée ou introuvable": "private, reserved or unknown address",
+    "nom de réseau local": "local network name",
+    "POST seulement": "POST only",
+    "origine non autorisée": "origin not allowed",
+    "session absente ou expirée": "session missing or expired",
+    "requête illisible": "unreadable request",
+    "requête trop longue": "request too long",
+    "action inconnue": "unknown action",
+    "trop d'essais ; réessaie dans quelques minutes": "too many attempts; try again in a few minutes",
+    "passeur non configuré : secret PASSEUR_USERS absent": "relay not configured: PASSEUR_USERS secret missing",
+    "ce compte n'est pas autorisé à utiliser ce passeur": "this account isn't allowed to use this relay",
+    "trop d'appels ; réessaie dans quelques minutes": "too many calls; try again in a few minutes",
+    "genre inconnu": "unknown kind",
+    "trop de redirections": "too many redirects",
+    "redirection refusée : {0}": "redirect refused: {0}",
+    "contenu inattendu ({0})": "unexpected content ({0})",
+    "plus de 2 Mo : refusé": "over 2 MB: refused",
+    "le site met plus de 8 secondes à répondre": "the site takes more than 8 seconds to answer",
+    "le site est injoignable": "the site is unreachable",
+    "suppression non configurée (voir docs/compte.md)": "deletion not configured (see docs/compte.md)",
+    "compte illisible": "unreadable account",
+    "confirmation manquante": "confirmation missing",
+    "données non effacées ; réessaie": "data not erased; try again",
+    "données effacées, compte non supprimé ; réessaie": "data erased, account not deleted; try again",
+    "assistant non configuré (voir docs/assistant.md)": "assistant not configured (see docs/assistant.md)",
+    "ce n'est pas une clé d'API Anthropic (sk-ant-…)": "this isn't an Anthropic API key (sk-ant-…)",
+    "Anthropic refuse la clé enregistrée": "Anthropic refuses the saved key",
+    "Anthropic refuse cette clé": "Anthropic refuses this key",
+    "clé enregistrée illisible : enregistre-la de nouveau": "saved key unreadable: save it again",
+    "aucune clé enregistrée pour ce compte": "no key saved for this account",
+    "Anthropic injoignable ; réessaie": "Anthropic unreachable; try again",
+    "trop de messages ; réessaie dans quelques minutes": "too many messages; try again in a few minutes",
+    "requête refusée par le serveur ({0})": "request refused by the server ({0})",
+    "limite de ton compte Anthropic atteinte ; réessaie plus tard": "your Anthropic account's limit is reached; try again later",
+    "Anthropic refuse la requête : {0}": "Anthropic refuses the request: {0}",
+    "Anthropic ne répond pas ; réessaie": "Anthropic isn't answering; try again",
+    "Anthropic répond par une erreur ; réessaie": "Anthropic answers with an error; try again",
+    "base de données injoignable": "database unreachable",
     // shell/actions.js
     "Aucune boîte de réception : voir Réglages.": "No inbox: see Settings.",
     "Gardé. Tu peux oublier, c'est écrit.": "Kept. You can forget it now: it's written down.",
@@ -2593,8 +2746,9 @@ var __selene = (() => {
   var plural = (n, word) => `${n} ${word}${n > 1 ? "s" : ""}`;
 
   // src/core/domain.js
+  var coreError = (code, message, args) => Object.assign(new Error(message), { code, ...args ? { args } : {} });
   var requireText = (value, label2, max) => {
-    if (typeof value !== "string" || !value.trim()) throw new Error(`${label2} manquant`);
+    if (typeof value !== "string" || !value.trim()) throw coreError("required", `${label2} : à remplir`, { label: label2 });
     return value.trim().slice(0, max);
   };
   var validDate = (value) => {
@@ -2623,7 +2777,7 @@ var __selene = (() => {
   }
   function setTaskDone(tasks, id, done, date) {
     const t = tasks.find((x) => x.id === id);
-    if (!t) throw new Error("Tâche introuvable");
+    if (!t) throw coreError("task-missing", "Tâche introuvable");
     t.done = !!done;
     t.doneAt = done ? date : null;
     if (done) t.today = false;
@@ -2631,8 +2785,8 @@ var __selene = (() => {
   }
   function setTaskToday(tasks, id, value, elsewhere = 0) {
     const t = tasks.find((x) => x.id === id);
-    if (!t) throw new Error("Tâche introuvable");
-    if (value && !t.today && tasks.filter((x) => !x.done && x.today).length + elsewhere >= 3) throw new Error("Trois tâches du jour maximum");
+    if (!t) throw coreError("task-missing", "Tâche introuvable");
+    if (value && !t.today && tasks.filter((x) => !x.done && x.today).length + elsewhere >= 3) throw coreError("today-limit", "Trois tâches du jour maximum");
     t.today = !!value;
     return t;
   }
@@ -2643,9 +2797,9 @@ var __selene = (() => {
   }
   function addBudgetEntry(entries, input, id, defaultDate) {
     const amount = Number(input.amount);
-    if (!Number.isFinite(amount) || amount <= 0) throw new Error("Montant invalide");
+    if (!Number.isFinite(amount) || amount <= 0) throw coreError("amount", "Montant invalide");
     const date = input.date || defaultDate;
-    if (!validDate(date)) throw new Error("Date invalide");
+    if (!validDate(date)) throw coreError("date", "Date invalide");
     const entry = {
       id,
       type: input.type === "revenu" ? "revenu" : "dépense",
@@ -3023,7 +3177,7 @@ var __selene = (() => {
   var LINK_TYPES = { derive: "dérive de", contredit: "contredit", echo: "fait écho à", documente: "documente" };
   var LINK_REF = /^[a-z0-9][a-z0-9-]{0,63}\/[^/\s]{1,64}$/;
   function addLink(item, to, type, id, date) {
-    if (!Object.hasOwn(LINK_TYPES, type) || typeof to !== "string" || !LINK_REF.test(to)) throw new Error("Lien invalide");
+    if (!Object.hasOwn(LINK_TYPES, type) || typeof to !== "string" || !LINK_REF.test(to)) throw coreError("link", "Lien invalide");
     if ((item.links || []).some((l) => l.to === to && l.type === type)) return null;
     const link = { id, to, type, date };
     item.links = [...item.links || [], link];
@@ -3050,13 +3204,13 @@ var __selene = (() => {
   }
   function numericValue(raw) {
     const value = raw != null && raw !== "" ? Number(raw) : null;
-    if (value !== null && !Number.isFinite(value)) throw new Error("Valeur invalide");
+    if (value !== null && !Number.isFinite(value)) throw coreError("value", "Valeur invalide");
     return value;
   }
   function addJournalEntry(instance, input, id, defaultDate) {
     const date = input.date && validDate(input.date) ? input.date : defaultDate;
     const type = MODULE_TYPES[instance.type];
-    if (!type.entry) throw new Error("Ce module ne tient pas de journal");
+    if (!type.entry) throw coreError("no-journal", "Ce module ne tient pas de journal");
     const entry = { id, date, note: input.note || "" };
     type.entry(entry, input);
     instance.entries.push(entry);
@@ -3074,12 +3228,25 @@ var __selene = (() => {
     }
     return id;
   }
-  function createModuleInstance(modules, type, name, id) {
+  var CONFIG_TEXTS = ["unitLabel", "categoryLabel", "scrapsLabel", "statusLabel", "addLabel", "description", "placeholder", "groupLabel", "catLabel", "outdoor"];
+  function localizeConfig(c, t) {
+    for (const k of CONFIG_TEXTS) if (typeof c[k] === "string" && c[k]) c[k] = t(c[k]);
+    for (const k of ["statuses", "cats"]) if (Array.isArray(c[k])) c[k] = c[k].map((x) => typeof x === "string" && x ? t(x) : x);
+    if (c.fields && typeof c.fields === "object") {
+      for (const k of Object.keys(c.fields)) if (typeof c.fields[k] === "string" && c.fields[k]) c.fields[k] = t(c.fields[k]);
+    }
+    for (const x of Array.isArray(c.stations) ? c.stations : []) if (x && typeof x.name === "string" && x.name) x.name = t(x.name);
+    for (const x of Array.isArray(c.types) ? c.types : []) if (x && typeof x.label === "string" && x.label) x.label = t(x.label);
+    return c;
+  }
+  function createModuleInstance(modules, type, name, id, t = null) {
     const label2 = requireText(name, "Nom du module", 60);
-    if (reservedId(id)) throw new Error("Identifiant réservé");
-    if (Object.hasOwn(modules, id)) throw new Error("Identifiant déjà utilisé");
-    if (!Object.hasOwn(MODULE_TYPES, type)) throw new Error("Type de module inconnu");
-    return modules[id] = { type, label: label2, ...MODULE_TYPES[type].defaults() };
+    if (reservedId(id)) throw coreError("id-reserved", "Identifiant réservé");
+    if (Object.hasOwn(modules, id)) throw coreError("id-taken", "Identifiant déjà utilisé");
+    if (!Object.hasOwn(MODULE_TYPES, type)) throw coreError("type-unknown", "Type de module inconnu");
+    const inst = { type, label: label2, ...MODULE_TYPES[type].defaults() };
+    if (t) localizeConfig(inst.config, t);
+    return modules[id] = inst;
   }
   var MODULE_TEMPLATES = [
     { id: "taches", name: "Tâches", type: "taches", hint: "Échéances, étapes, et trois tâches du jour au plus" },
@@ -3204,14 +3371,14 @@ var __selene = (() => {
     },
     { id: "carnet", name: "Carnet", type: "notes", hint: "Des notes datées, gardées ou rangées ailleurs ensuite" }
   ];
-  function createFromTemplate(modules, tpl, name, id) {
-    const inst = createModuleInstance(modules, tpl.type, name, id);
+  function createFromTemplate(modules, tpl, name, id, t = null) {
+    const inst = createModuleInstance(modules, tpl.type, name, id, t);
     for (const [k, v] of Object.entries(JSON.parse(JSON.stringify(tpl.config || {}))))
       inst.config[k] = v && typeof v === "object" && !Array.isArray(v) && inst.config[k] && typeof inst.config[k] === "object" ? { ...inst.config[k], ...v } : v;
     return inst;
   }
   function deleteModuleInstance(modules, moduleList, id) {
-    if (!Object.hasOwn(modules, id)) throw new Error("Module introuvable");
+    if (!Object.hasOwn(modules, id)) throw coreError("module-missing", "Module introuvable");
     delete modules[id];
     const i = moduleList.findIndex((m) => m.id === id);
     if (i >= 0) moduleList.splice(i, 1);
@@ -3523,6 +3690,31 @@ var __selene = (() => {
     const k = windName(dir);
     return Object.hasOwn(WIND_TEXT, k) ? WIND_TEXT[k](n) : `vent ${k} ${n} km/h`;
   };
+  var CORE_FIELDS = [N_("Tâche"), N_("Note"), N_("Nom du module")];
+  var CORE_ERRORS = {
+    "required": (a) => tr`${tr(String(a.label))} : à remplir`,
+    "task-missing": () => tr`Tâche introuvable`,
+    "today-limit": () => tr`Trois tâches du jour maximum`,
+    "amount": () => tr`Montant invalide`,
+    "date": () => tr`Date invalide`,
+    "link": () => tr`Lien invalide`,
+    "value": () => tr`Valeur invalide`,
+    "no-journal": () => tr`Ce module ne tient pas de journal`,
+    "id-reserved": () => tr`Identifiant réservé`,
+    "id-taken": () => tr`Identifiant déjà utilisé`,
+    "type-unknown": () => tr`Type de module inconnu`,
+    "module-missing": () => tr`Module introuvable`,
+    "backup-too-big": () => tr`Sauvegarde trop volumineuse`,
+    "backup-format": () => tr`Fichier illisible ou pas une sauvegarde Selene.`,
+    "backup-too-new": () => tr`Sauvegarde créée par une version plus récente de Selene : mets l'application à jour d'abord.`
+  };
+  var errMsg = (e, fallback = "") => e && Object.hasOwn(CORE_ERRORS, e.code) ? CORE_ERRORS[e.code](e.args || {}) : e && e.message || fallback;
+  var localTemplate = (tpl) => ({
+    ...tpl,
+    ...tpl.name ? { name: tr(tpl.name) } : {},
+    ...tpl.hint ? { hint: tr(tpl.hint) } : {},
+    config: localizeConfig(JSON.parse(JSON.stringify(tpl.config || {})), tr)
+  });
 
   // src/core/sync.js
   var isRecord = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
@@ -3732,7 +3924,7 @@ var __selene = (() => {
 
   // src/app/state/site.js
   var MODULE_DEFS = {
-    assistant: "Assistant"
+    assistant: N_("Assistant")
   };
   var OFF_BY_DEFAULT = ["assistant"];
   function siteSeed() {
@@ -3790,7 +3982,7 @@ var __selene = (() => {
   var S = () => site.data;
   var label = (id) => {
     const s = S();
-    return s.config.labels[id] || s.modules[id] && s.modules[id].label || MODULE_DEFS[id];
+    return s.config.labels[id] || s.modules[id] && s.modules[id].label || (Object.hasOwn(MODULE_DEFS, id) ? tr(MODULE_DEFS[id]) : void 0);
   };
   var enabled = (id) => {
     const m = S().config.modules.find((m2) => m2.id === id);
@@ -4080,6 +4272,61 @@ var __selene = (() => {
     return { common, pairs: pairs.slice(0, 6), authors, known: entries.length };
   }
 
+  // src/app/services/erreurs.js
+  var REFUS = {
+    "adresse-absente": () => tr`adresse absente ou trop longue`,
+    "adresse-illisible": () => tr`adresse illisible`,
+    "protocole": () => tr`seulement http et https`,
+    "identifiants": () => tr`pas d'identifiants dans l'adresse`,
+    "port": () => tr`port inhabituel`,
+    "adresse-privee": () => tr`adresse privée, réservée ou introuvable`,
+    "nom-local": () => tr`nom de réseau local`
+  };
+  var detail = (j) => String(j.detail || "");
+  var SERVER_ERRORS = {
+    ...REFUS,
+    "post-seulement": () => tr`POST seulement`,
+    "origine": () => tr`origine non autorisée`,
+    "session": () => tr`session absente ou expirée`,
+    "illisible": () => tr`requête illisible`,
+    "trop-long": () => tr`requête trop longue`,
+    "action-inconnue": () => tr`action inconnue`,
+    "trop-d-essais": () => tr`trop d'essais ; réessaie dans quelques minutes`,
+    // passeur
+    "passeur-non-configure": () => tr`passeur non configuré : secret PASSEUR_USERS absent`,
+    "compte-non-autorise": () => tr`ce compte n'est pas autorisé à utiliser ce passeur`,
+    "trop-d-appels": () => tr`trop d'appels ; réessaie dans quelques minutes`,
+    "genre-inconnu": () => tr`genre inconnu`,
+    "trop-de-redirections": () => tr`trop de redirections`,
+    "redirection": (j) => tr`redirection refusée : ${Object.hasOwn(REFUS, j.detail) ? REFUS[j.detail]() : detail(j)}`,
+    "site": (j) => tr`le site répond ${j.status}`,
+    "contenu": (j) => tr`contenu inattendu (${detail(j)})`,
+    "trop-gros": () => tr`plus de 2 Mo : refusé`,
+    "lent": () => tr`le site met plus de 8 secondes à répondre`,
+    "injoignable": () => tr`le site est injoignable`,
+    // compte
+    "compte-non-configure": () => tr`suppression non configurée (voir docs/compte.md)`,
+    "compte-illisible": () => tr`compte illisible`,
+    "confirmation": () => tr`confirmation manquante`,
+    "donnees-non-effacees": () => tr`données non effacées ; réessaie`,
+    "compte-non-supprime": () => tr`données effacées, compte non supprimé ; réessaie`,
+    // assistant
+    "assistant-non-configure": () => tr`assistant non configuré (voir docs/assistant.md)`,
+    "pas-une-cle": () => tr`ce n'est pas une clé d'API Anthropic (sk-ant-…)`,
+    "cle": (j) => j.detail === "enregistree" ? tr`Anthropic refuse la clé enregistrée` : tr`Anthropic refuse cette clé`,
+    "sans-cle": (j) => j.detail === "illisible" ? tr`clé enregistrée illisible : enregistre-la de nouveau` : tr`aucune clé enregistrée pour ce compte`,
+    "anthropic-injoignable": () => tr`Anthropic injoignable ; réessaie`,
+    "trop-de-messages": () => tr`trop de messages ; réessaie dans quelques minutes`,
+    "requete": (j) => tr`requête refusée par le serveur (${detail(j)})`,
+    "limite-anthropic": () => tr`limite de ton compte Anthropic atteinte ; réessaie plus tard`,
+    "anthropic-requete": (j) => tr`Anthropic refuse la requête : ${detail(j)}`,
+    "anthropic-muet": () => tr`Anthropic ne répond pas ; réessaie`,
+    "anthropic-erreur": () => tr`Anthropic répond par une erreur ; réessaie`,
+    "base-injoignable": () => tr`base de données injoignable`
+  };
+  var serverMsg = (j, fallback = "") => j && typeof j === "object" && typeof j.code === "string" && Object.hasOwn(SERVER_ERRORS, j.code) ? SERVER_ERRORS[j.code](j) : j && typeof j === "object" && typeof j.erreur === "string" && j.erreur || fallback;
+  var serverError = (j, fallback) => Object.assign(new Error(serverMsg(j, fallback)), { code: j && typeof j.code === "string" ? j.code : "" });
+
   // src/app/scene/moon.js
   var SYNODIC = 29.530588853;
   var NEW_MOON_REF = Date.UTC(2e3, 0, 6, 18, 14);
@@ -4203,12 +4450,12 @@ var __selene = (() => {
     if (list.some((x) => typeof x.date !== "string" || !validDate(x.date))) throw new Error(`${name} : date invalide`);
   };
   function parseBackup(text) {
-    if (typeof text !== "string" || text.length > 5e6) throw new Error("Sauvegarde trop volumineuse");
+    if (typeof text !== "string" || text.length > 5e6) throw coreError("backup-too-big", "Sauvegarde trop volumineuse");
     const data = JSON.parse(text);
-    if (!record(data) || data.format !== "selene-v1" || !record(data.board) || !record(data.site)) throw new Error("Format de sauvegarde invalide");
+    if (!record(data) || data.format !== "selene-v1" || !record(data.board) || !record(data.site)) throw coreError("backup-format", "Format de sauvegarde invalide");
     const { board: board2, site: site2 } = data;
-    if (site2.schemaVersion != null && !(Number.isInteger(site2.schemaVersion) && site2.schemaVersion >= 1)) throw new Error("Version de format invalide");
-    if ((site2.schemaVersion || 1) > SCHEMA_VERSION) throw new Error("Sauvegarde créée par une version plus récente de Selene : mets l'application à jour d'abord.");
+    if (site2.schemaVersion != null && !(Number.isInteger(site2.schemaVersion) && site2.schemaVersion >= 1)) throw coreError("backup-format", "Version de format invalide");
+    if ((site2.schemaVersion || 1) > SCHEMA_VERSION) throw coreError("backup-too-new", "Sauvegarde créée par une version plus récente de Selene : mets l'application à jour d'abord.");
     collection(board2.tasks, "Tâches");
     if (board2.tasks.some((t) => typeof t.id !== "string" || typeof t.title !== "string" || t.steps != null && (!Array.isArray(t.steps) || t.steps.some((s) => !record(s) || typeof s.t !== "string")))) throw new Error("Tâche invalide");
     if (!record(site2.config) || site2.config.modules != null && (!Array.isArray(site2.config.modules) || site2.config.modules.some((m) => !record(m) || typeof m.id !== "string" || typeof m.on !== "boolean" || m.group != null && (typeof m.group !== "string" || m.group.length > 40) || // group : domaine de navigation, facultatif
@@ -4692,7 +4939,7 @@ var __selene = (() => {
     try {
       cb(v);
     } catch (e) {
-      toast(e.message || tr`Saisie invalide.`);
+      toast(errMsg(e, tr`Saisie invalide.`));
     }
   });
 
@@ -4935,7 +5182,7 @@ var __selene = (() => {
     }
     const j = await r.json().catch(() => ({}));
     if (r.status === 404) throw new Error(tr`La suppression n'est pas encore installée sur le serveur (docs/compte.md).`);
-    if (!r.ok || !j.supprime) throw new Error(j.erreur || tr`erreur ${r.status}`);
+    if (!r.ok || !j.supprime) throw serverError(j, tr`erreur ${r.status}`);
     clearInterval(authRefreshTimer);
     for (const st of [board, site]) {
       clearTimeout(st.timer);
@@ -5035,13 +5282,13 @@ var __selene = (() => {
     const j = await r.json().catch(() => ({}));
     if (r.status === 404 || r.status === 503) {
       passeurEtat = "absent";
-      throw new Error(r.status === 404 ? tr`Passeur non déployé (voir docs/passeur.md).` : j.erreur || tr`Passeur non configuré.`);
+      throw r.status === 404 ? new Error(tr`Passeur non déployé (voir docs/passeur.md).`) : serverError(j, tr`Passeur non configuré.`);
     }
     if (r.status === 401 || r.status === 403) {
-      passeurEtat = j.erreur || tr`refusé`;
-      throw new Error(tr`Passeur : ${j.erreur || tr`accès refusé`}.`);
+      passeurEtat = serverMsg(j, tr`refusé`);
+      throw Object.assign(new Error(tr`Passeur : ${serverMsg(j, tr`accès refusé`)}.`), { code: j.code || "" });
     }
-    if (!r.ok) throw new Error(tr`Passeur : ${j.erreur || tr`erreur ${r.status}`}.`);
+    if (!r.ok) throw Object.assign(new Error(tr`Passeur : ${serverMsg(j, tr`erreur ${r.status}`)}.`), { code: j.code || "" });
     passeurEtat = "ok";
     return j;
   }
@@ -5162,7 +5409,7 @@ var __selene = (() => {
         const now = Date.now(), ev = icsParse(r.texte);
         c.events = ev.filter((e) => e.rrule || e.end > now - 864e5).slice(0, 800);
         c.err = ev.length || /BEGIN:VCALENDAR/.test(r.texte) ? "" : tr`ce n'est pas un calendrier iCal`;
-      } else c.err = r.erreur || tr`le calendrier répond ${r.status}`;
+      } else c.err = serverMsg(r, tr`le calendrier répond ${r.status}`);
     } catch (e) {
       c.err = e.message;
     }
@@ -5404,7 +5651,7 @@ var __selene = (() => {
     }
     if (!passeurPret()) throw new Error(tr`Zotero injoignable depuis le navigateur, et pas de passeur pour le relayer.`);
     const q = await passeurFetch(`${ZOT_API}${viaPasseur}${viaPasseur.includes("?") ? "&" : "?"}key=${encodeURIComponent(key)}`, "json");
-    if (q.status !== 200 || typeof q.texte !== "string") throw q.status ? refuse(q.status) : new Error(q.erreur || tr`Zotero injoignable.`);
+    if (q.status !== 200 || typeof q.texte !== "string") throw q.status ? refuse(q.status) : new Error(serverMsg(q, tr`Zotero injoignable.`));
     return JSON.parse(q.texte);
   }
   async function zotCheck() {
@@ -6324,7 +6571,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     const rows = ds.map((d) => `${named ? `<p class="grp over-grp">${esc(d.name || tr`Espaces`)}</p>` : ""}${d.ids.map(row).join("")}`).join("") + (enabled("assistant") ? row("assistant") : "");
     return `
   ${s.config.welcome ? `<section><h2>${tr`Composer ton espace`}</h2><p class="hint">${tr`Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.`}</p>
-    ${MODULE_TEMPLATES.map((t) => `<div class="set" style="grid-template-columns:1fr auto"><div><b>${esc(t.name)}</b><div class="hint" style="margin:2px 0 0">${esc(t.hint)}</div></div><button class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}">${tr`Ajouter`}</button></div>`).join("")}
+    ${MODULE_TEMPLATES.map((t) => `<div class="set" style="grid-template-columns:1fr auto"><div><b>${esc(tr(t.name))}</b><div class="hint" style="margin:2px 0 0">${esc(tr(t.hint))}</div></div><button class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}">${tr`Ajouter`}</button></div>`).join("")}
     <div class="row" style="margin-top:12px"><button class="btn acc" data-act="welcome-done">${tr`C'est bon`}</button></div></section>` : ""}
   <section class="hero${HERO_COMPACT ? " compact" : ""}${win.right ? " txt-right" : ""}${skyLive() ? " live" : ""}" style="${heroStyle(win.sc, win.dark)}" data-weather="${win.sc.weather || ""}" data-leaves="${win.sc.leaves}" data-sun="${win.sun.alt.toFixed(1)}">${forestSVG(m.p, win.sc, win.moonAt, win.mo)}<div class="txt">
     <div class="phase">${m.name}</div>
@@ -6510,7 +6757,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     <datalist id="domainList">${[...new Set(c.modules.map((m) => String(m.group || "").trim()).filter(Boolean))].map((g) => `<option value="${esc(g)}">`).join("")}</datalist>
     ${c.modules.map((m, i) => `<div class="set mod" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="${tr`Activer ${esc(label(m.id))}`}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="${tr`Nom du module`}">${SYSTEM.includes(m.id) ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="${tr`Domaine`}" aria-label="${tr`Domaine de ${esc(label(m.id))}`}">`}<div class="row">${s.modules[m.id] ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="${tr`Supprimer définitivement`}" title="${tr`Supprimer définitivement`}">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="${tr`Descendre`}">↓</button></div></div>`).join("")}
     <details style="margin-top:14px"><summary class="hint" style="cursor:pointer;margin:0">+ ${tr`Créer un module`}</summary>
-      <div class="field-row" style="margin-top:10px"><label>${tr`Modèle ou type`}<select id="newModType"><optgroup label="${tr`Modèles`}">${MODULE_TEMPLATES.map((t) => `<option value="tpl:${esc(t.id)}">${esc(t.name)} — ${esc(t.hint)}</option>`).join("")}</optgroup><optgroup label="${tr`Types vides`}">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}">${esc(t.label)}</option>`).join("")}</optgroup></select></label>
+      <div class="field-row" style="margin-top:10px"><label>${tr`Modèle ou type`}<select id="newModType"><optgroup label="${tr`Modèles`}">${MODULE_TEMPLATES.map((t) => `<option value="tpl:${esc(t.id)}">${esc(tr(t.name))} — ${esc(tr(t.hint))}</option>`).join("")}</optgroup><optgroup label="${tr`Types vides`}">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}">${esc(tr(t.label))}</option>`).join("")}</optgroup></select></label>
       <label>${tr`Nom`}<input id="newModName" placeholder="${tr`Nom du modèle si vide`}"></label></div>
       <button class="btn sm" data-act="mod-add" style="margin-top:8px">${tr`Créer`}</button></details>
   </section>
@@ -6555,14 +6802,17 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
            ` : ""}` : ""}`;
   }
   CLICK["mod-add"] = () => {
-    const choice = $("#newModType").value, tpl = MODULE_TEMPLATES.find((t) => "tpl:" + t.id === choice);
+    const choice = $("#newModType").value, found = MODULE_TEMPLATES.find((t) => "tpl:" + t.id === choice), tpl = found ? localTemplate(found) : null;
     const name = $("#newModName").value.trim() || (tpl ? tpl.name : "");
     if (!name) return toast(tr`Donne un nom au module.`);
     addModule(tpl || { type: choice }, name);
   };
   CLICK["tpl-add"] = (el) => {
-    const tpl = MODULE_TEMPLATES.find((t) => t.id === el.dataset.tpl);
-    if (tpl) addModule(tpl, tpl.name);
+    const found = MODULE_TEMPLATES.find((t) => t.id === el.dataset.tpl);
+    if (found) {
+      const tpl = localTemplate(found);
+      addModule(tpl, tpl.name);
+    }
   };
   CLICK["mod-del"] = (el) => {
     const id = el.dataset.mod, name = label(id);
@@ -6970,10 +7220,10 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
     const j = await r.json().catch(() => ({}));
     if (r.status === 404 || r.status === 503) {
       assistantEtat = "absent";
-      throw new Error(r.status === 404 ? tr`Assistant non déployé (voir docs/assistant.md).` : j.erreur || tr`Assistant non configuré.`);
+      throw r.status === 404 ? new Error(tr`Assistant non déployé (voir docs/assistant.md).`) : serverError(j, tr`Assistant non configuré.`);
     }
     if (j && j.code === "sans-cle") assistantCle = { cle: false };
-    if (!r.ok) throw new Error(j.erreur || tr`erreur ${r.status}`);
+    if (!r.ok) throw serverError(j, tr`erreur ${r.status}`);
     assistantEtat = "ok";
     return j;
   }
@@ -6987,7 +7237,7 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
             assistantCle = await assistantCall({ action: "cle", cle: ancienne });
             platform.secrets.remove("selene-api-key");
           } catch (e) {
-            if (/refuse|clé d'API/.test(e.message)) platform.secrets.remove("selene-api-key");
+            if (["cle", "pas-une-cle"].includes(e.code) || /refuse|clé d'API/.test(e.message)) platform.secrets.remove("selene-api-key");
             throw e;
           }
         } else assistantCle = await assistantCall({ action: "etat" });
@@ -7415,7 +7665,7 @@ ${contextText()}`;
   CLICK["mod-down"] = (el) => moveMod(el, 1);
   function addModule(tpl, name) {
     if (tpl.type === "programme") {
-      const defaults = { ...MODULE_TYPES.programme.defaults().config, ...tpl.config };
+      const defaults = { ...localizeConfig(MODULE_TYPES.programme.defaults().config, tr), ...tpl.config };
       return openForm(tr`Choisir ton sport ou ta pratique`, [
         { n: "name", l: tr`Nom du sport ou de la pratique`, req: true },
         { n: "weeks", l: tr`Durée en semaines (1 à 520, proposition modifiable)`, t: "number", req: true },
@@ -7433,14 +7683,14 @@ ${contextText()}`;
   function installModule(tpl, name) {
     try {
       const s = S(), id = slugId(name, [...s.config.modules.map((x) => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
-      createFromTemplate(s.modules, tpl, name, id);
+      createFromTemplate(s.modules, tpl, name, id, tr);
       s.config.modules.push({ id, on: true });
       s.config.assistant.share[id] = true;
       site.save();
       render();
       toast(tr`Module « ${name} » créé.`);
     } catch (e) {
-      toast(e.message);
+      toast(errMsg(e));
     }
   }
   function moveMod(el, d) {
@@ -7550,7 +7800,7 @@ ${contextText()}`;
         board.replaceAll(d.board);
         render();
         toast(tr`Sauvegarde importée.`);
-      }).catch(() => toast(tr`Fichier illisible ou pas une sauvegarde Selene.`)).finally(() => {
+      }).catch((e2) => toast(e2 && Object.hasOwn(CORE_ERRORS, e2.code) ? errMsg(e2) : tr`Fichier illisible ou pas une sauvegarde Selene.`)).finally(() => {
         el.value = "";
       });
     } else if (act === "mod-group") {
@@ -7610,7 +7860,7 @@ ${contextText()}`;
       const s = S(), m = s.config.modules[+el.closest("[data-i]").dataset.i], v = el.value.trim();
       if (s.modules[m.id]) {
         s.modules[m.id].label = v || s.modules[m.id].label;
-      } else if (v && v !== MODULE_DEFS[m.id]) s.config.labels[m.id] = v;
+      } else if (v && v !== MODULE_DEFS[m.id] && v !== tr(MODULE_DEFS[m.id] || "")) s.config.labels[m.id] = v;
       else delete s.config.labels[m.id];
       site.save();
       render();
@@ -8183,7 +8433,7 @@ ${nm} (${mo}) : dépenses ${sumOf(es, "dépense")} €, revenus ${sumOf(es, "rev
         try {
           addBudgetEntry(S().modules[modOf(el)].entries, { amount: amt, type: $("#bType").value, cat: $("#bCat").value.trim(), note: $("#bNote").value.trim(), date: $("#bDate").value }, uid(), todayISO());
         } catch (e) {
-          return toast(e.message);
+          return toast(errMsg(e));
         }
         ["#bAmt", "#bNote"].forEach((q) => $(q).value = "");
         site.save();
@@ -9291,7 +9541,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
                 fc.modifie = r.modifie || "";
                 fc.err = "";
               }
-            } else fc.err = r.erreur || tr`le site répond ${r.status}`;
+            } else fc.err = serverMsg(r, tr`le site répond ${r.status}`);
           } catch (e) {
             fc.err = e.message;
           }
@@ -9380,7 +9630,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     const url = normalizeUrl(raw) || normalizeUrl("https://" + String(raw).replace(/^\/+/, ""));
     if (!url) throw new Error(tr`Ce n'est pas une adresse.`);
     const r = await passeurFetch(url, "feed");
-    if (r.status >= 300 || typeof r.texte !== "string") throw new Error(r.erreur || tr`Le site répond ${r.status}.`);
+    if (r.status >= 300 || typeof r.texte !== "string") throw new Error(serverMsg(r, tr`Le site répond ${r.status}.`));
     const pf = parseFeed(r.texte, r.url || url);
     if (pf) return { url: r.url || url, title: pf.title, items: pf.items, etag: r.etag, modifie: r.modifie };
     const found = pageToSource(r.texte, r.url || url).feeds[0];

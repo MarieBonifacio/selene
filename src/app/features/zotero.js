@@ -5,6 +5,7 @@ import { CHANGE, CLICK } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { todayISO } from "../lib/format.js";
 import { tr } from "../i18n/index.js";
+import { serverMsg } from "../services/erreurs.js";
 import { excerpt } from "./links.js";
 import { findSourceDup, keepSource, pubDate } from "./sources.js";
 import { modOf } from "../modules/collection.js";
@@ -29,7 +30,7 @@ async function zotGet(path, viaPasseur = path) {
   // Pas de réponse lisible : CORS refusé, hors ligne, ou trop lent. Le passeur, s'il existe, essaie à son tour.
   if (!passeurPret()) throw new Error(tr`Zotero injoignable depuis le navigateur, et pas de passeur pour le relayer.`);
   const q = await passeurFetch(`${ZOT_API}${viaPasseur}${viaPasseur.includes("?") ? "&" : "?"}key=${encodeURIComponent(key)}`, "json");
-  if (q.status !== 200 || typeof q.texte !== "string") throw q.status ? refuse(q.status) : new Error(q.erreur || tr`Zotero injoignable.`);
+  if (q.status !== 200 || typeof q.texte !== "string") throw q.status ? refuse(q.status) : new Error(serverMsg(q, tr`Zotero injoignable.`));
   return JSON.parse(q.texte);
 }
 async function zotCheck() {

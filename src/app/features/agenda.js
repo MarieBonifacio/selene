@@ -4,6 +4,7 @@ import { icsBetween, icsParse } from "../../core/agenda.js";
 import { CHANGE, CLICK } from "../registry.js";
 import { esc, toast } from "../lib/dom.js";
 import { tr, trn } from "../i18n/index.js";
+import { serverMsg } from "../services/erreurs.js";
 import { dehorsOn, dehorsWhen } from "./dehors.js";
 import { hm } from "../scene/sky.js";
 import { passeurFetch, passeurPret } from "../services/passeur.js";
@@ -31,7 +32,7 @@ export async function agendaRefresh(force = false) {
       const now = Date.now(), ev = icsParse(r.texte);
       // On ne garde que ce qui peut encore servir : les récurrences, et ce qui n'est pas fini depuis plus d'un jour.
       c.events = ev.filter(e => e.rrule || e.end > now - 86400000).slice(0, 800); c.err = ev.length || /BEGIN:VCALENDAR/.test(r.texte) ? "" : tr`ce n'est pas un calendrier iCal`;
-    } else c.err = r.erreur || tr`le calendrier répond ${r.status}`;
+    } else c.err = serverMsg(r, tr`le calendrier répond ${r.status}`);
   } catch (e) { c.err = e.message; }
   c.at = Date.now();
   try { platform.storage.set(ICS_CACHE, JSON.stringify(c)); } catch {}

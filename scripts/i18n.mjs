@@ -1,6 +1,7 @@
 /* Les traductions, vérifiées (npm run i18n) : relève dans src/app chaque texte marqué pour la traduction, puis le
    confronte à chaque dictionnaire (src/app/i18n/). Lecture de l'arbre syntaxique (espree), pas d'expressions
-   régulières : un tr`…` sur deux lignes ou dans une interpolation est trouvé comme les autres.
+   régulières : un tr`…` sur deux lignes ou dans une interpolation est trouvé comme les autres. S'y ajoutent les
+   textes des modèles et types de module du noyau (MODULE_TEMPLATES, MODULE_TYPES), lus dans leurs tables.
    - tr`texte ${x}` → « texte {0} » ; tr("texte"), N_("texte") → « texte » ; trp("ctx", "texte") → « ctx\u0004texte » ;
      trn(n, "une forme", "des formes") → pluriel rangé sous la forme singulière ;
    - échoue (code 1) sur : une traduction orpheline (son texte français a changé ou disparu : la retraduire), un type
@@ -49,6 +50,12 @@ for (const f of files(APP)) {
   const ast = parse(fs.readFileSync(f, "utf8"), { ecmaVersion: "latest", sourceType: "module", loc: true });
   visit(ast, path.relative(root, f).split(path.sep).join("/"));
 }
+// Les modèles et types de module du noyau : nom, aide, réglages de départ. Le noyau, pur, ne marque rien ; ses tables
+// sont lues ici par la fonction même qui les traduit à la création d'un module (localizeConfig).
+const { MODULE_TEMPLATES, MODULE_TYPES, localizeConfig } = await import(pathToFileURL(path.join(root, "src", "core", "domain.js")).href);
+const fromCore = s => { note(s, "src/core/domain.js (modèles et types de module)"); return s; };
+for (const t of MODULE_TEMPLATES) { fromCore(t.name); fromCore(t.hint); localizeConfig(JSON.parse(JSON.stringify(t.config || {})), fromCore); }
+for (const t of Object.values(MODULE_TYPES)) { fromCore(t.label); localizeConfig(t.defaults().config, fromCore); }
 
 const holes = s => [...new Set(String(s).match(/\{\d+\}/g) || [])].sort().join(" ");
 const shown = k => k.replace("\u0004", " ▸ ");
@@ -80,6 +87,6 @@ for (const [code, L] of Object.entries(LANGS)) {
   for (const key of missing) missingList.push(`  ${code} ← « ${shown(key)} »  (${used.get(key).where[0]})`);
 }
 
-process.stdout.write(`i18n : ${used.size} textes marqués dans src/app\n${report.join("\n")}\n`);
+process.stdout.write(`i18n : ${used.size} textes à traduire (src/app, modèles et types du noyau)\n${report.join("\n")}\n`);
 if (process.argv.includes("--missing") && missingList.length) process.stdout.write("À traduire :\n" + missingList.join("\n") + "\n");
 if (errors.length) { process.stderr.write("\n" + errors.join("\n") + "\n"); process.exitCode = 1; }

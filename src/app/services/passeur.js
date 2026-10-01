@@ -7,6 +7,7 @@ import { clip, findDoi, normalizeUrl } from "../../core/sources.js";
 import { CLICK } from "../registry.js";
 import { esc, toast } from "../lib/dom.js";
 import { tr } from "../i18n/index.js";
+import { serverError, serverMsg } from "./erreurs.js";
 import { SUPABASE_ANON_KEY, SUPABASE_URL, authReady, authRefreshIfNeeded, authSession } from "./auth.js";
 import { render } from "../shell/render.js";
 
@@ -24,9 +25,9 @@ export async function passeurFetch(url, genre, cond = {}) {
       body: JSON.stringify({ url, genre, ...(cond.etag ? { etag: cond.etag } : {}), ...(cond.modifie ? { modifie: cond.modifie } : {}) }) });
   } catch { throw new Error(tr`Passeur injoignable (hors ligne, ou pas encore déployé).`); } finally { clearTimeout(t); }
   const j = await r.json().catch(() => ({}));
-  if (r.status === 404 || r.status === 503) { passeurEtat = "absent"; throw new Error(r.status === 404 ? tr`Passeur non déployé (voir docs/passeur.md).` : j.erreur || tr`Passeur non configuré.`); }
-  if (r.status === 401 || r.status === 403) { passeurEtat = j.erreur || tr`refusé`; throw new Error(tr`Passeur : ${j.erreur || tr`accès refusé`}.`); }
-  if (!r.ok) throw new Error(tr`Passeur : ${j.erreur || tr`erreur ${r.status}`}.`);
+  if (r.status === 404 || r.status === 503) { passeurEtat = "absent"; throw r.status === 404 ? new Error(tr`Passeur non déployé (voir docs/passeur.md).`) : serverError(j, tr`Passeur non configuré.`); }
+  if (r.status === 401 || r.status === 403) { passeurEtat = serverMsg(j, tr`refusé`); throw Object.assign(new Error(tr`Passeur : ${serverMsg(j, tr`accès refusé`)}.`), { code: j.code || "" }); }
+  if (!r.ok) throw Object.assign(new Error(tr`Passeur : ${serverMsg(j, tr`erreur ${r.status}`)}.`), { code: j.code || "" });
   passeurEtat = "ok";
   return j;
 }

@@ -303,7 +303,7 @@ test('a legacy section written late by an old app version is absorbed, not lost'
 test('collection items: required title, disabled fields keep their value, unknown status falls back', () => {
   const app = launch(new Map());
   const mus = app.S().modules.musique;
-  assert.throws(() => app.saveCollectionItem(mus, { title: '  ' }, 'x'), /Artiste manquant/);
+  assert.throws(() => app.saveCollectionItem(mus, { title: '  ' }, 'x'), /Artiste : à remplir/);
   const e = app.saveCollectionItem(mus, { title: 'Kate Bush', subtitle: 'Hounds of Love', status: 'Nimporte' }, 'k1');
   assert.equal(e.status, 'À écouter');
   app.saveCollectionItem(mus, { title: 'Kate Bush', status: 'Retenu' }, 'k1'); // formulaire sans le champ sous-titre

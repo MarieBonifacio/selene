@@ -7,6 +7,7 @@ import { hosted, platform } from "../../platform.js";
 import { CLICK } from "../registry.js";
 import { $, setSaving, toast } from "../lib/dom.js";
 import { tr, trp } from "../i18n/index.js";
+import { serverError } from "./erreurs.js";
 import { render } from "../shell/render.js";
 import { DRAFT_PREFIX } from "../state/drafts.js";
 import { board, site, siteSeed } from "../state/site.js";
@@ -199,7 +200,7 @@ export async function authDeleteAccount() {
   } catch { throw new Error(tr`Impossible de joindre le serveur. Vérifie ta connexion.`); }
   const j = await r.json().catch(() => ({}));
   if (r.status === 404) throw new Error(tr`La suppression n'est pas encore installée sur le serveur (docs/compte.md).`);
-  if (!r.ok || !j.supprime) throw new Error(j.erreur || tr`erreur ${r.status}`);
+  if (!r.ok || !j.supprime) throw serverError(j, tr`erreur ${r.status}`);
   clearInterval(authRefreshTimer);
   for (const st of [board, site]) { clearTimeout(st.timer); st.timer = null; }
   board.disconnect(); site.disconnect();

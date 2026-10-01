@@ -9,6 +9,7 @@ import { CHANGE, CLICK, VIEWS } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { addDaysTo, fmt, todayISO, uid } from "../lib/format.js";
 import { tr, trn, uiLocale } from "../i18n/index.js";
+import { serverMsg } from "../services/erreurs.js";
 import { citeOwn, citeSources } from "./cites.js";
 import { motifsOf } from "./concordance.js";
 import { dehorsNew, feedMerge, parseFeed } from "./dehors-feed.js";
@@ -108,7 +109,7 @@ export async function dehorsRefresh(force = false) {
             const pf = parseFeed(r.texte, r.url || f.url);
             if (!pf) fc.err = tr`ce n'est plus un flux lisible`;
             else { fc.items = feedMerge(fc.items, pf.items, Date.now()); fc.etag = r.etag || ""; fc.modifie = r.modifie || ""; fc.err = ""; }
-          } else fc.err = r.erreur || tr`le site répond ${r.status}`;
+          } else fc.err = serverMsg(r, tr`le site répond ${r.status}`);
         } catch (e) { fc.err = e.message; }
         fc.at = Date.now(); c.feeds[f.id] = fc; dehorsStore(c);
         if (passeurEtat === "absent") break;
@@ -163,7 +164,7 @@ async function dehorsFind(raw) {
   const url = normalizeUrl(raw) || normalizeUrl("https://" + String(raw).replace(/^\/+/, ""));
   if (!url) throw new Error(tr`Ce n'est pas une adresse.`);
   const r = await passeurFetch(url, "feed");
-  if (r.status >= 300 || typeof r.texte !== "string") throw new Error(r.erreur || tr`Le site répond ${r.status}.`);
+  if (r.status >= 300 || typeof r.texte !== "string") throw new Error(serverMsg(r, tr`Le site répond ${r.status}.`));
   const pf = parseFeed(r.texte, r.url || url);
   if (pf) return { url: r.url || url, title: pf.title, items: pf.items, etag: r.etag, modifie: r.modifie };
   const found = pageToSource(r.texte, r.url || url).feeds[0];

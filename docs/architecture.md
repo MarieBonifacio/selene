@@ -69,10 +69,10 @@ le même fichier, et chaque fichier commence par une phrase qui dit son rôle.
 | Dossier (`src/app/`) | Contenu |
 |---|---|
 | `registry.js` | les registres : `VIEWS`, `SHEETS`, `CLICK`, `CHANGE`, `TYPE_UI` et `registerType` ; ne dépend de rien |
-| `lib/` | sans état ni interface propre : `dom.js` (sélecteur, échappement, messages, pagination), `format.js` (dates, nombres, pluriels), `download.js` |
+| `lib/` | sans état ni interface propre : `dom.js` (sélecteur, échappement, messages, pagination), `format.js` (dates, nombres, pluriels), `download.js`, `labels.js` (ce que le noyau nomme en français, traduit pour l'affichage : statuts, liens, ciel, erreurs, modèles de module) |
 | `i18n/` | les langues de l'interface : `tr`, `trp`, `trn`, `N_`, la langue en vigueur et ses formats, un dictionnaire par langue (`en.js`) ; ne dépend de rien d'autre. Règles : [i18n.md](i18n.md) |
 | `state/` | `store.js` (un document JSON synchronisé, qui ne connaît pas l'interface), `site.js` (les deux documents, leur normalisation, `S()`), `drafts.js` |
-| `services/` | ce qui parle à un serveur ou à l'hôte : `auth.js` (Supabase, suppression du compte), `passeur.js`, `host.js` (espaces de noms de claude.ai) |
+| `services/` | ce qui parle à un serveur ou à l'hôte : `auth.js` (Supabase, suppression du compte), `passeur.js`, `host.js` (espaces de noms de claude.ai), `erreurs.js` (les codes d'erreur des fonctions serveur, traduits) |
 | `scene/` | le paysage de l'accueil : `moon.js`, `forest.js`, `sky.js` (lieu, météo, scène) |
 | `ui/` | `dialogs.js` : confirmation et formulaire générique |
 | `shell/` | la charpente de la page : `nav.js`, `render.js`, `actions.js` (délégation des événements), `sheets.js`, `palette.js`, `sigils.js` |

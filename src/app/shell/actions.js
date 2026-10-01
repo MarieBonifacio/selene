@@ -2,10 +2,11 @@
    installation de modules. */
 import { platform } from "../../platform.js";
 import { parseBackup } from "../../core/backup.js";
-import { MODULE_TYPES, createFromTemplate, inboxId, slugId } from "../../core/domain.js";
+import { MODULE_TYPES, createFromTemplate, inboxId, localizeConfig, slugId } from "../../core/domain.js";
 import { CHANGE, CLICK, TYPE_UI, VIEWS } from "../registry.js";
 import { $, PAGE, pageSize, toast } from "../lib/dom.js";
 import { tr } from "../i18n/index.js";
+import { CORE_ERRORS, errMsg } from "../lib/labels.js";
 import { assistantCall, assistantSetCle, sendChat } from "../features/assistant.js";
 import { bridgeSave } from "../features/bridge.js";
 import { NOTIFY_KEY, notifyConf } from "../features/digest.js";
@@ -43,10 +44,11 @@ CLICK["page-more"] = el => { const k = el.dataset.k; pageSize[k] = (pageSize[k] 
 CLICK["entry-add"] = el => entryAdd(el.dataset.mod);
 CLICK["entry-del"] = el => removeWithUndo(el.dataset.mod, "entries", idOf(el));
  CLICK["mod-down"] = el => moveMod(el, 1);
-/* Ajoute un module (depuis un modèle ou un type vide), actif et partagé avec l'assistant. */
+/* Ajoute un module (depuis un modèle, déjà traduit par localTemplate, ou un type vide), actif et partagé avec l'assistant.
+   Ses réglages de départ sont écrits dans la langue de l'interface. */
 export function addModule(tpl, name) {
   if (tpl.type === "programme") {
-    const defaults = { ...MODULE_TYPES.programme.defaults().config, ...tpl.config };
+    const defaults = { ...localizeConfig(MODULE_TYPES.programme.defaults().config, tr), ...tpl.config };
     return openForm(tr`Choisir ton sport ou ta pratique`, [
       { n: "name", l: tr`Nom du sport ou de la pratique`, req: true },
       { n: "weeks", l: tr`Durée en semaines (1 à 520, proposition modifiable)`, t: "number", req: true },
@@ -64,11 +66,11 @@ export function addModule(tpl, name) {
 function installModule(tpl, name) {
   try {
     const s = S(), id = slugId(name, [...s.config.modules.map(x => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
-    createFromTemplate(s.modules, tpl, name, id);
+    createFromTemplate(s.modules, tpl, name, id, tr);
     s.config.modules.push({ id, on: true });
     s.config.assistant.share[id] = true;
     site.save(); render(); toast(tr`Module « ${name} » créé.`);
-  } catch (e) { toast(e.message); }
+  } catch (e) { toast(errMsg(e)); }
 }
 export function moveMod(el, d) { const ms = S().config.modules, i = +el.closest("[data-i]").dataset.i, j = i + d; if (j < 0 || j >= ms.length) return; [ms[i], ms[j]] = [ms[j], ms[i]]; site.save(); render(); }
 document.addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (a && CLICK[a.dataset.act] && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) CLICK[a.dataset.act](a, e); });
@@ -115,7 +117,7 @@ document.addEventListener("change", e => {
   else if (act === "as-share") { S().config.assistant.share[el.dataset.k] = el.checked; site.save(); render(); }
   else if (act === "imp") {
     const f = el.files && el.files[0]; if (!f) return;
-    f.text().then(async t => { const d = parseBackup(t); if (!await ask(tr`Remplacer tout l'état actuel par celui du fichier ?`)) return; site.replaceAll(d.site); board.replaceAll(d.board); /* le site d'abord : les tâches d'une ancienne sauvegarde y sont versées */ render(); toast(tr`Sauvegarde importée.`); }).catch(() => toast(tr`Fichier illisible ou pas une sauvegarde Selene.`)).finally(() => { el.value = ""; });
+    f.text().then(async t => { const d = parseBackup(t); if (!await ask(tr`Remplacer tout l'état actuel par celui du fichier ?`)) return; site.replaceAll(d.site); board.replaceAll(d.board); /* le site d'abord : les tâches d'une ancienne sauvegarde y sont versées */ render(); toast(tr`Sauvegarde importée.`); }).catch(e => toast(e && Object.hasOwn(CORE_ERRORS, e.code) ? errMsg(e) : tr`Fichier illisible ou pas une sauvegarde Selene.`)).finally(() => { el.value = ""; });
   }
   else if (act === "mod-group") {
     const m = S().config.modules[+el.closest("[data-i]").dataset.i], v = el.value.trim().slice(0, 40);
@@ -147,7 +149,7 @@ document.addEventListener("change", e => {
   else if (act === "mod-label") {
     const s = S(), m = s.config.modules[+el.closest("[data-i]").dataset.i], v = el.value.trim();
     if (s.modules[m.id]) { s.modules[m.id].label = v || s.modules[m.id].label; }
-    else if (v && v !== MODULE_DEFS[m.id]) s.config.labels[m.id] = v; else delete s.config.labels[m.id];
+    else if (v && v !== MODULE_DEFS[m.id] && v !== tr(MODULE_DEFS[m.id] || "")) s.config.labels[m.id] = v; else delete s.config.labels[m.id];
     site.save(); render();
   }
   else if (el.dataset.setMod) {

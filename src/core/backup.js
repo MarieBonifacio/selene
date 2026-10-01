@@ -1,5 +1,7 @@
-/* Backup contract v1. Keep the existing format and browser storage keys stable. */
-import { EP_STATUS, LINK_REF, LINK_TYPES, MODULE_ID, MODULE_TYPES, SCHEMA_VERSION, reservedId, validDate } from "./domain.js";
+/* Backup contract v1. Keep the existing format and browser storage keys stable.
+   Les refus de l'en-tête (trop gros, format, version plus récente) ont un code, que l'interface traduit ; le détail
+   d'un champ refusé plus bas (« module x : provenance invalide ») reste un diagnostic technique, non traduit. */
+import { EP_STATUS, LINK_REF, LINK_TYPES, MODULE_ID, MODULE_TYPES, SCHEMA_VERSION, coreError, reservedId, validDate } from "./domain.js";
 const record = value => value !== null && typeof value === "object" && !Array.isArray(value);
 const collection = (value, name) => {
   if (!Array.isArray(value) || value.some(item => !record(item))) throw new Error(`${name} invalide`);
@@ -13,12 +15,12 @@ const num = (v, name, min = -Infinity, max = Infinity) => {
 const ids = (list, name) => { if (list.some(x => typeof x.id !== "string" || !x.id || x.id.length > 64)) throw new Error(`${name} : identifiant invalide`); };
 const dated = (list, name) => { if (list.some(x => typeof x.date !== "string" || !validDate(x.date))) throw new Error(`${name} : date invalide`); };
 export function parseBackup(text) {
-  if (typeof text !== "string" || text.length > 5_000_000) throw new Error("Sauvegarde trop volumineuse");
+  if (typeof text !== "string" || text.length > 5_000_000) throw coreError("backup-too-big", "Sauvegarde trop volumineuse");
   const data = JSON.parse(text);
-  if (!record(data) || data.format !== "selene-v1" || !record(data.board) || !record(data.site)) throw new Error("Format de sauvegarde invalide");
+  if (!record(data) || data.format !== "selene-v1" || !record(data.board) || !record(data.site)) throw coreError("backup-format", "Format de sauvegarde invalide");
   const { board, site } = data;
-  if (site.schemaVersion != null && !(Number.isInteger(site.schemaVersion) && site.schemaVersion >= 1)) throw new Error("Version de format invalide");
-  if ((site.schemaVersion || 1) > SCHEMA_VERSION) throw new Error("Sauvegarde créée par une version plus récente de Selene : mets l'application à jour d'abord.");
+  if (site.schemaVersion != null && !(Number.isInteger(site.schemaVersion) && site.schemaVersion >= 1)) throw coreError("backup-format", "Version de format invalide");
+  if ((site.schemaVersion || 1) > SCHEMA_VERSION) throw coreError("backup-too-new", "Sauvegarde créée par une version plus récente de Selene : mets l'application à jour d'abord.");
   collection(board.tasks, "Tâches");
   if (board.tasks.some(t => typeof t.id !== "string" || typeof t.title !== "string" ||
       (t.steps != null && (!Array.isArray(t.steps) || t.steps.some(s => !record(s) || typeof s.t !== "string"))))) throw new Error("Tâche invalide");

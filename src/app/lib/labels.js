@@ -1,7 +1,7 @@
 /* Les libellés que le noyau définit en français (statuts épistémiques, types de lien, le ciel), pour l'affichage. Leurs
    clés (obs, hyp…, derive, contredit…) sont ce qui s'enregistre ; leurs noms se traduisent ici. Le noyau, pur, ne peut
    pas importer la traduction : ils y sont marqués ici, et tests/i18n.test.js vérifie que ces listes suivent les siennes. */
-import { EP_STATUS, LINK_TYPES } from "../../core/domain.js";
+import { EP_STATUS, LINK_TYPES, localizeConfig } from "../../core/domain.js";
 import { windName } from "../../core/sky.js";
 import { N_, tr } from "../i18n/index.js";
 
@@ -28,3 +28,30 @@ export const WIND_TEXT = {
   "d'ouest": n => tr`vent d'ouest ${n} km/h`, "du nord-ouest": n => tr`vent du nord-ouest ${n} km/h`
 };
 export const windText = (dir, n) => { const k = windName(dir); return Object.hasOwn(WIND_TEXT, k) ? WIND_TEXT[k](n) : `vent ${k} ${n} km/h`; };
+/* Les erreurs du noyau (coreError, core/domain.js) : traduites par leur code, le message français restant celui que
+   l'assistant lit. Une erreur sans code connu (réseau, service, saisie) garde son message, déjà dans la langue de
+   l'interface. CORE_FIELDS : les noms de champ que le noyau donne à « … : à remplir » ; un champ d'une collection porte
+   le libellé choisi par la personne, qui passe tel quel. */
+export const CORE_FIELDS = [N_("Tâche"), N_("Note"), N_("Nom du module")];
+export const CORE_ERRORS = {
+  "required": a => tr`${tr(String(a.label))} : à remplir`,
+  "task-missing": () => tr`Tâche introuvable`,
+  "today-limit": () => tr`Trois tâches du jour maximum`,
+  "amount": () => tr`Montant invalide`,
+  "date": () => tr`Date invalide`,
+  "link": () => tr`Lien invalide`,
+  "value": () => tr`Valeur invalide`,
+  "no-journal": () => tr`Ce module ne tient pas de journal`,
+  "id-reserved": () => tr`Identifiant réservé`,
+  "id-taken": () => tr`Identifiant déjà utilisé`,
+  "type-unknown": () => tr`Type de module inconnu`,
+  "module-missing": () => tr`Module introuvable`,
+  "backup-too-big": () => tr`Sauvegarde trop volumineuse`,
+  "backup-format": () => tr`Fichier illisible ou pas une sauvegarde Selene.`,
+  "backup-too-new": () => tr`Sauvegarde créée par une version plus récente de Selene : mets l'application à jour d'abord.`
+};
+export const errMsg = (e, fallback = "") => e && Object.hasOwn(CORE_ERRORS, e.code) ? CORE_ERRORS[e.code](e.args || {}) : (e && e.message) || fallback;
+/* Un modèle de module (MODULE_TEMPLATES) dans la langue de l'interface : nom, phrase d'aide, réglages de départ. Le
+   module créé garde ces mots-là, devenus les siens : ils ne se retraduisent pas si la langue change ensuite. */
+export const localTemplate = tpl => ({ ...tpl, ...(tpl.name ? { name: tr(tpl.name) } : {}), ...(tpl.hint ? { hint: tr(tpl.hint) } : {}),
+  config: localizeConfig(JSON.parse(JSON.stringify(tpl.config || {})), tr) });

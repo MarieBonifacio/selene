@@ -2,6 +2,7 @@
    description de champs. */
 import { $, esc, toast } from "../lib/dom.js";
 import { tr, trp } from "../i18n/index.js";
+import { errMsg } from "../lib/labels.js";
 
 export function ask(msg) { return new Promise(res => { const d = $("#cdlg"); $("#cmsg").textContent = msg; d.returnValue = ""; d.onclose = () => res(d.returnValue === "ok"); d.showModal(); }); }
 export let formCb = null;
@@ -24,5 +25,5 @@ $("#dlg").addEventListener("close", () => {
   if ($("#dlg").returnValue !== "save" || !formCb) return;
   const v = {}; new FormData($("#form")).forEach((x, k) => v[k] = typeof x === "string" ? x.trim() : x);
   const cb = formCb; formCb = null;
-  try { cb(v); } catch (e) { toast(e.message || tr`Saisie invalide.`); } // sinon l'erreur disparaît en silence
+  try { cb(v); } catch (e) { toast(errMsg(e, tr`Saisie invalide.`)); } // sinon l'erreur disparaît en silence
 });

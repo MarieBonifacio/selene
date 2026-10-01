@@ -7,6 +7,7 @@ import { $, esc, toast } from "../lib/dom.js";
 import { downloadFile } from "../lib/download.js";
 import { todayISO } from "../lib/format.js";
 import { N_, collate, langChoices, tr } from "../i18n/index.js";
+import { localTemplate } from "../lib/labels.js";
 import { agendaSettingsHTML } from "../features/agenda.js";
 import { assistantKnown } from "../features/assistant.js";
 import { notifySettingsHTML } from "../features/digest.js";
@@ -44,7 +45,7 @@ VIEWS.reglages = () => {
     <datalist id="domainList">${[...new Set(c.modules.map(m => String(m.group || "").trim()).filter(Boolean))].map(g => `<option value="${esc(g)}">`).join("")}</datalist>
     ${c.modules.map((m, i) => `<div class="set mod" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="${tr`Activer ${esc(label(m.id))}`}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="${tr`Nom du module`}">${SYSTEM.includes(m.id) ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="${tr`Domaine`}" aria-label="${tr`Domaine de ${esc(label(m.id))}`}">`}<div class="row">${s.modules[m.id] ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="${tr`Supprimer définitivement`}" title="${tr`Supprimer définitivement`}">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="${tr`Descendre`}">↓</button></div></div>`).join("")}
     <details style="margin-top:14px"><summary class="hint" style="cursor:pointer;margin:0">+ ${tr`Créer un module`}</summary>
-      <div class="field-row" style="margin-top:10px"><label>${tr`Modèle ou type`}<select id="newModType"><optgroup label="${tr`Modèles`}">${MODULE_TEMPLATES.map(t => `<option value="tpl:${esc(t.id)}">${esc(t.name)} — ${esc(t.hint)}</option>`).join("")}</optgroup><optgroup label="${tr`Types vides`}">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}">${esc(t.label)}</option>`).join("")}</optgroup></select></label>
+      <div class="field-row" style="margin-top:10px"><label>${tr`Modèle ou type`}<select id="newModType"><optgroup label="${tr`Modèles`}">${MODULE_TEMPLATES.map(t => `<option value="tpl:${esc(t.id)}">${esc(tr(t.name))} — ${esc(tr(t.hint))}</option>`).join("")}</optgroup><optgroup label="${tr`Types vides`}">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}">${esc(tr(t.label))}</option>`).join("")}</optgroup></select></label>
       <label>${tr`Nom`}<input id="newModName" placeholder="${tr`Nom du modèle si vide`}"></label></div>
       <button class="btn sm" data-act="mod-add" style="margin-top:8px">${tr`Créer`}</button></details>
   </section>
@@ -91,12 +92,12 @@ export function moduleSettingsHTML(mod) {
            ` : ""}` : ""}`;
 }
 CLICK["mod-add"] = () => {
-  const choice = $("#newModType").value, tpl = MODULE_TEMPLATES.find(t => "tpl:" + t.id === choice);
+  const choice = $("#newModType").value, found = MODULE_TEMPLATES.find(t => "tpl:" + t.id === choice), tpl = found ? localTemplate(found) : null;
   const name = $("#newModName").value.trim() || (tpl ? tpl.name : "");
   if (!name) return toast(tr`Donne un nom au module.`);
   addModule(tpl || { type: choice }, name);
 };
-CLICK["tpl-add"] = el => { const tpl = MODULE_TEMPLATES.find(t => t.id === el.dataset.tpl); if (tpl) addModule(tpl, tpl.name); };
+CLICK["tpl-add"] = el => { const found = MODULE_TEMPLATES.find(t => t.id === el.dataset.tpl); if (found) { const tpl = localTemplate(found); addModule(tpl, tpl.name); } };
 CLICK["mod-del"] = el => {
   const id = el.dataset.mod, name = label(id);
   openForm(tr`Supprimer « ${name} »`, [{ n: "confirm", l: tr`Retape « ${name} » pour confirmer la suppression définitive de ses données.`, req: true }], {}, v => {

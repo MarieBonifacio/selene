@@ -61,6 +61,8 @@ const demo = JSON.parse(fixture());
   const nakedH3 = await marked('#main > h2, #main section > h3');
   check(!nakedH3.length, 'réglages : toutes les sections traduites' + (nakedH3.length ? ' : ' + nakedH3.join(' | ') : ''));
   check(!(await marked('.swatch, select[data-set="config.mode"] option')).length, 'réglages : palettes et modes traduits');
+  const tplNaked = await marked('#newModType option');
+  check(!tplNaked.length && (await p.$$('#newModType option')).length > 10, 'réglages : modèles et types de module traduits' + (tplNaked.length ? ' : ' + tplNaked.join(' | ') : ''));
   const skyNaked = await marked('#ciel .hint, #ciel button, #ciel label');
   check(!skyNaked.length, 'réglages → Ciel traduit' + (skyNaked.length ? ' : ' + skyNaked.join(' | ') : ''));
   await p.evaluate(() => location.hash = 'bilan'); await p.waitForTimeout(250);

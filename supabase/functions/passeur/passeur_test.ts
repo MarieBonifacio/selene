@@ -67,7 +67,8 @@ Deno.test("SSRF : IP privée écrite, nom qui résout vers le privé, redirectio
     assertEquals(r.status, 400, url);
   }
   const p = await h(demande({ url: "https://piege.org/rss", genre: "feed" }));
-  assertEquals(p.status, 502); assert((await p.json()).erreur.includes("redirection refusée"));
+  assertEquals(p.status, 502);
+  const pj = await p.json(); assert(pj.erreur.includes("redirection refusée")); assertEquals([pj.code, pj.detail], ["redirection", "adresse-privee"]);
   assert(!appels.some(a => a.includes("169.254")), "l'adresse des métadonnées n'a jamais été appelée");
   const ok = await (await h(demande({ url: "https://relais.org/a", genre: "feed" }))).json();
   assertEquals(ok.url, "https://relais.org/b"); assertEquals(ok.texte, RSS);
@@ -79,9 +80,10 @@ Deno.test("limites : binaire refusé, 2 Mo, genre inconnu, site en erreur", asyn
     "https://revue.org/enorme": () => new Response("x".repeat(2 * 1024 * 1024 + 1), { headers: { "content-type": "text/xml" } }),
     "https://revue.org/panne": () => new Response("non", { status: 500 })
   });
-  assertEquals((await h(demande({ url: "https://revue.org/image", genre: "feed" }))).status, 415);
+  const image = await h(demande({ url: "https://revue.org/image", genre: "feed" }));
+  assertEquals(image.status, 415); assertEquals((await image.json()).code, "contenu");
   assertEquals((await h(demande({ url: "https://revue.org/enorme", genre: "feed" }))).status, 413);
   assertEquals((await h(demande({ url: "https://revue.org/rss", genre: "video" }))).status, 400);
   const p = await (await h(demande({ url: "https://revue.org/panne", genre: "feed" }))).json();
-  assertEquals(p.status, 500); assert(p.erreur.includes("500"));
+  assertEquals(p.status, 500); assert(p.erreur.includes("500")); assertEquals(p.code, "site");
 });

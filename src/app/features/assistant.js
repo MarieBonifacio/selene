@@ -9,6 +9,7 @@ import { CLICK, TYPE_UI, VIEWS } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { fmt, money, todayISO, uid } from "../lib/format.js";
 import { LANGS, tr, uiLang } from "../i18n/index.js";
+import { serverError } from "../services/erreurs.js";
 import { allTasks } from "../modules/taches.js";
 import { moon } from "../scene/moon.js";
 import { SUPABASE_ANON_KEY, SUPABASE_URL, authReady, authRefreshIfNeeded, authSession } from "../services/auth.js";
@@ -33,9 +34,9 @@ export async function assistantCall(corps, delai = 15000) {
       headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${s.access_token}` }, body: JSON.stringify(corps) });
   } catch { throw new Error(ac.signal.aborted ? tr`Claude met trop de temps à répondre.` : tr`Assistant injoignable (hors ligne, ou pas encore déployé).`); } finally { clearTimeout(t); }
   const j = await r.json().catch(() => ({}));
-  if (r.status === 404 || r.status === 503) { assistantEtat = "absent"; throw new Error(r.status === 404 ? tr`Assistant non déployé (voir docs/assistant.md).` : j.erreur || tr`Assistant non configuré.`); }
+  if (r.status === 404 || r.status === 503) { assistantEtat = "absent"; throw r.status === 404 ? new Error(tr`Assistant non déployé (voir docs/assistant.md).`) : serverError(j, tr`Assistant non configuré.`); }
   if (j && j.code === "sans-cle") assistantCle = { cle: false };
-  if (!r.ok) throw new Error(j.erreur || tr`erreur ${r.status}`);
+  if (!r.ok) throw serverError(j, tr`erreur ${r.status}`);
   assistantEtat = "ok";
   return j;
 }
@@ -48,7 +49,7 @@ function assistantRefresh() {
     try {
       if (ancienne) {
         try { assistantCle = await assistantCall({ action: "cle", cle: ancienne }); platform.secrets.remove("selene-api-key"); }
-        catch (e) { if (/refuse|clé d'API/.test(e.message)) platform.secrets.remove("selene-api-key"); throw e; }
+        catch (e) { if (["cle", "pas-une-cle"].includes(e.code) || /refuse|clé d'API/.test(e.message)) platform.secrets.remove("selene-api-key"); throw e; } // le texte : un serveur d'avant les codes
       } else assistantCle = await assistantCall({ action: "etat" });
     } catch {} finally { assistantDemande = null; }
     render();

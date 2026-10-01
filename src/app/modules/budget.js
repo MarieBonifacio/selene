@@ -4,6 +4,7 @@ import { TYPE_UI, registerType } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { fmt, iso, money, todayISO, uid } from "../lib/format.js";
 import { tr, uiLocale } from "../i18n/index.js";
+import { errMsg } from "../lib/labels.js";
 import { modOf } from "./collection.js";
 import { instOf, recentBy, removeWithUndo, within } from "./entries.js";
 import { gFilter, gMatch, groupPanel } from "./groups.js";
@@ -74,7 +75,7 @@ registerType("budget", {
     "bud-month": el => { const id = modOf(el), [y, mo] = monthOf(id).split("-").map(Number), d = new Date(y, mo - 1 + +el.dataset.d, 15); budMonths[id] = iso(d).slice(0, 7); gFilter[id] = ""; render(); },
     "bud-add": el => {
       const amt = Math.abs(+$("#bAmt").value); if (!Number.isFinite(amt) || !amt) return toast(tr`Un montant, même symbolique.`);
-      try { addBudgetEntry(S().modules[modOf(el)].entries, { amount: amt, type: $("#bType").value, cat: $("#bCat").value.trim(), note: $("#bNote").value.trim(), date: $("#bDate").value }, uid(), todayISO()); } catch (e) { return toast(e.message); }
+      try { addBudgetEntry(S().modules[modOf(el)].entries, { amount: amt, type: $("#bType").value, cat: $("#bCat").value.trim(), note: $("#bNote").value.trim(), date: $("#bDate").value }, uid(), todayISO()); } catch (e) { return toast(errMsg(e)); }
       ["#bAmt", "#bNote"].forEach(q => $(q).value = ""); site.save(); render();
     },
     "bud-del": el => removeWithUndo(modOf(el), "entries", idOf(el)),
