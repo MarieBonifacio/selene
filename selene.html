@@ -1203,6 +1203,357 @@ var __selene = (() => {
     "aujourd'hui": "today",
     "hier": "yesterday",
     "il y a {0} j": "{0} d ago",
+    // modules/arc.js
+    "Ajoute une étape avant de placer quoi que ce soit.": "Add a stage before placing anything.",
+    "Rien à placer pour l'instant : un fragment ou un élément de collection, d'abord.": "Nothing to place yet: a fragment or a collection item first.",
+    "Placer dans l'arc": "Place in the arc",
+    "Étape": "Stage",
+    "Élément": "Item",
+    "Ce module a été supprimé entre-temps.": "This module was deleted in the meantime.",
+    "Déjà à cette étape.": "Already at this stage.",
+    "(supprimé)": "(deleted)",
+    "retirer": "remove",
+    "Placer un élément": "Place an item",
+    "Vide.": "Empty.",
+    "Aucune étape pour l'instant. Ajoute-en dans {0}.": "No stages yet. Add some in {0}.",
+    "Étapes, dans l'ordre": "Stages, in order",
+    "Nom de l'étape": "Stage name",
+    "suppr.": "delete",
+    "Ajouter une étape": "Add a stage",
+    "arc{0} sur {1}": "{0} across {1}",
+    "{0} élément": { one: "{0} item", other: "{0} items" },
+    "{0} étape": { one: "{0} stage", other: "{0} stages" },
+    "{0} vide": { one: "{0} empty", other: "{0} empty" },
+    "{0} placé": { one: "{0} placed", other: "{0} placed" },
+    "Rien placé": "Nothing placed",
+    "Douze étapes. Au-delà, ce n'est plus un arc, c'est un calendrier.": "Twelve stages. Beyond that, it isn't an arc any more, it's a calendar.",
+    "Étape {0}": "Stage {0}",
+    "Supprimer l'étape « {0} » ?": "Delete the stage “{0}”?",
+    "{0} placement sera retiré.": { one: "{0} placement will be removed.", other: "{0} placements will be removed." },
+    // modules/budget.js
+    "revenu": "income",
+    "dépense": "expense",
+    "Mois précédent": "Previous month",
+    "Mois suivant": "Next month",
+    "Revenus": "Income",
+    "Dépenses": "Expenses",
+    "Solde": "Balance",
+    "Type": "Type",
+    "Montant": "Amount",
+    "Enveloppe": "Envelope",
+    "Note": "Note",
+    "Date": "Date",
+    "Opérations": "Transactions",
+    "L'argent ne disparaît pas, il change simplement de propriétaire.": "Money doesn't disappear; it simply changes hands.",
+    "Aucune opération ce mois-ci. Suspect.": "No transactions this month. Suspicious.",
+    "Part de chaque enveloppe mensuelle déjà consommée. Le rouge signale le dépassement.": "Share of each monthly envelope already spent. Red means over budget.",
+    "Les tâches en cours estiment encore {0} de dépenses à venir.": "Open tasks still estimate {0} of expenses to come.",
+    "Enveloppes mensuelles": "Monthly envelopes",
+    "Nom de l'enveloppe": "Envelope name",
+    "€ / mois": "€ / month",
+    "Plafond mensuel": "Monthly cap",
+    "Ajouter une enveloppe": "Add an envelope",
+    "{0} dépensés, {1} reçus, solde {2}": "{0} spent, {1} received, balance {2}",
+    "Ce mois-ci : {0} dépensés, solde {1}": "This month: {0} spent, balance {1}",
+    "Sans enveloppe": "No envelope",
+    "{0} sur {1}": "{0} of {1}",
+    "Un montant, même symbolique.": "An amount, even a symbolic one.",
+    "Nouvelle enveloppe": "New envelope",
+    "Supprimer l'enveloppe « {0} » ? Les opérations restent.": "Delete the envelope “{0}”? The transactions stay.",
+    // modules/collection.js
+    "« {0} » est passé à « {1} ». Le monde n'a rien remarqué, comme prévu.": "“{0}” moved to “{1}”. The world didn't notice, as planned.",
+    "« {0} » : {1}. Une chose de moins qui attend ton attention.": "“{0}”: {1}. One less thing waiting for your attention.",
+    "{1} : « {0} ». L'Œuvre avance, à pas de lichen.": "{1}: “{0}”. The Work advances, at the pace of lichen.",
+    "{0} le {1}": "{0} on {1}",
+    "maintenue": "kept",
+    "Modifier « {0} »": "Edit “{0}”",
+    "{0} : [ pour reculer, ] pour avancer": "{0}: [ to move back, ] to move forward",
+    "Reculer": "Move back",
+    "Avancer": "Move forward",
+    "fiche": "record",
+    "Demande à MusicBrainz ce qu'ont publié tes artistes reliés depuis ta dernière vérification": "Ask MusicBrainz what your linked artists have released since your last check",
+    "Nouvelles sorties": "New releases",
+    "Part arrivée à « {0} » dans chaque groupe. Clique pour filtrer.": "Share that has reached “{0}” in each group. Click to filter.",
+    "Aucun élément.": "No items.",
+    "préciser {0}": "specify {0}",
+    "{0} à préciser": "{0} to specify",
+    "à réexaminer le {0}": "to review on {0}",
+    "discographie": "discography",
+    "documente…": "documents…",
+    "Rien dans ce filtre.": "Nothing in this filter.",
+    "Affichage": "Display",
+    "Liste filtrable": "Filterable list",
+    "Colonnes (une par statut)": "Columns (one per status)",
+    "Bouton d'ajout": "Add button",
+    "Nom des statuts": "Status name",
+    "Champs d'un élément. Laisser un nom vide masque le champ.": "An item's fields. Leaving a name empty hides the field.",
+    "Titre": "Title",
+    "Sous-titre": "Subtitle",
+    "(masqué)": "(hidden)",
+    "Étiquette (sert au regroupement)": "Tag (used for grouping)",
+    "(masquée)": "(hidden)",
+    "Texte long": "Long text",
+    "{0}, dans l'ordre": "{0}, in order",
+    "Nom du statut": "Status name",
+    "Ajouter un statut": "Add a status",
+    "Compte comme fait à partir de": "Counts as done from",
+    "Concordance : chaque élément est un motif, compté dans les textes de tous les autres modules (variantes dans le sous-titre)": "Concordance: each item is a motif, counted in the texts of all the other modules (variants in the subtitle)",
+    "En jachère après (jours d'absence)": "Lying fallow after (days of absence)",
+    "Musique : le titre est un artiste, le sous-titre un album, précisés par MusicBrainz (discographie, pochettes, nouvelles sorties)": "Music: the title is an artist, the subtitle an album, identified through MusicBrainz (discography, covers, new releases)",
+    "Importer un export Instagram": "Import an Instagram export",
+    "Import manuel de tes publications : aucune connexion à Instagram, aucune synchronisation automatique. Choisis le compte voulu lors de l’export Meta. Pour plusieurs comptes, crée une collection par compte et donne-lui son nom ; les archives ne sont pas vérifiées par compte. Légende et date uniquement (pas de lien, l’export n’en contient pas). Centre de comptes Meta → Tes informations et autorisations → Télécharger tes informations, format JSON ; puis {0} et {1} (dossier {2}). Le fichier est lu sur cet appareil ; les publications importées sont ensuite enregistrées dans ton espace et suivent sa synchronisation. Un second import dans la même collection n’ajoute que les nouvelles.": "Manual import of your posts: no connection to Instagram, no automatic sync. Choose the account you want during the Meta export. For several accounts, create one collection per account and give it its name; archives are not checked per account. Caption and date only (no link: the export doesn't contain any). Meta Accounts Center → Your information and permissions → Download your information, JSON format; then {0} and {1} (folder {2}). The file is read on this device; imported posts are then saved in your space and follow its sync. A second import into the same collection only adds the new ones.",
+    "La date est un rendez-vous de révision : elle revient sur l'accueil quel que soit le {0}, sauf le dernier": "The date is a review appointment: it comes back on Today whatever the {0}, except the last one",
+    "Aucun motif rencontré": "No motif encountered",
+    "{0} à réexaminer, {1}": "{0} to review, {1}",
+    "{0} réexamen fait": { one: "{0} review done", other: "{0} reviews done" },
+    "Rien à réexaminer": "Nothing to review",
+    "{0}, dont {1} « {2} »": "{0}, of which {1} “{2}”",
+    "{0} prévu": { one: "{0} planned", other: "{0} planned" },
+    "Rien de prévu": "Nothing planned",
+    "« {0} » : à réexaminer ({1})": "“{0}”: to review ({1})",
+    "relire": "reread",
+    "« {0} » : en retard ({1})": "“{0}”: overdue ({1})",
+    "« {0} » : prévu aujourd'hui ({1})": "“{0}”: planned for today ({1})",
+    "Vide": "Empty",
+    "Maintenue. La raison d'alors tient encore.": "Kept. The reasoning of the time still holds.",
+    "Douze statuts. Au-delà, ce n'est plus un suivi, c'est une bureaucratie.": "Twelve statuses. Beyond that, it isn't tracking any more, it's bureaucracy.",
+    "Statut {0}": "Status {0}",
+    "Deux statuts minimum : sinon rien ne peut avancer.": "Two statuses minimum: otherwise nothing can move forward.",
+    "Supprimer le statut « {0} » ?": "Delete the status “{0}”?",
+    "Ses {0} élément(s) passeront à « {1} ».": "Its {0} item(s) will move to “{1}”.",
+    "Ce fichier n'est pas un export Instagram lisible (JSON).": "This file isn't a readable Instagram export (JSON).",
+    "Rien de nouveau : tout est déjà là.": "Nothing new: everything is already here.",
+    "Aucune publication dans ce fichier. C'est posts_1.json ou reels.json qu'il faut.": "No posts in this file. You need posts_1.json or reels.json.",
+    "Importer {0} publication (du {1} au {2}) dans {3}, au statut « {4} » ?": { one: "Import {0} post (from {1} to {2}) into {3}, with the status “{4}”?", other: "Import {0} posts (from {1} to {2}) into {3}, with the status “{4}”?" },
+    "{0} déjà là, ignorée.": { one: "{0} already here, skipped.", other: "{0} already here, skipped." },
+    "{0} publication importée dans {1}.": { one: "{0} post imported into {1}.", other: "{0} posts imported into {1}." },
+    "« {0} » existe déjà.": "“{0}” already exists.",
+    // modules/cumul.js
+    "Objectif atteint. Le reste relève de l'orgueil, ou de la réécriture.": "Goal reached. Anything more is vanity, or rewriting.",
+    "Pas assez d'élan ces 30 derniers jours pour prédire une fin. La prophétie attendra.": "Not enough momentum these last 30 days to predict an end. The prophecy will wait.",
+    "Au rythme des 30 derniers jours ({0} {1} par jour), objectif atteint vers le {2}.": "At the pace of the last 30 days ({0} {1} a day), goal reached around {2}.",
+    "{0} version antérieure": { one: "{0} earlier version", other: "{0} earlier versions" },
+    "Hors {0}": "No {0}",
+    "Sans titre": "Untitled",
+    "Chaque {0} a son propre objectif.": "Each {0} has its own goal.",
+    "cumul{0} sur {1}": "{0} out of {1}",
+    "Dernière session {0}. Série de {1} jour(s).": "Last session {0}. Streak of {1} day(s).",
+    "Total atteint ({0})": "Total reached ({0})",
+    "{0} aujourd'hui": "{0} today",
+    "Total atteint": "Total reached",
+    "Ajout du jour": "Today's addition",
+    "Ajoute des {0} dans {1} pour suivre chacune en pourcentage.": "Add {0} in {1} to follow each one as a percentage.",
+    "Une phrase qui passe, avant qu'elle ne reparte. Un « ? » devant en fait une hypothèse.": "A passing sentence, caught before it leaves again. A “?” in front makes it a hypothesis.",
+    "Nouveau": "New",
+    "Filtrer": "Filter",
+    "Tous": "All",
+    "Exporter en Markdown": "Export as Markdown",
+    "Avec dates, statuts, provenance et liens, pour une lecture assistée": "With dates, statuses, provenance and links, for assisted reading",
+    "Dossier": "Dossier",
+    "modifier": "edit",
+    "Rien pour l'instant.": "Nothing yet.",
+    "Titre / sous-titre": "Title / subtitle",
+    "Objectif": "Goal",
+    "Je saisis": "I enter",
+    "Ce que j'ai fait aujourd'hui": "What I did today",
+    "Le total atteint (l'app calcule la différence)": "The total reached (the app works out the difference)",
+    "Unité": "Unit",
+    "mots": "words",
+    "Nom des catégories": "Category name",
+    "Chapitre": "Chapter",
+    "Quinze minutes.": "Fifteen minutes.",
+    "Quel total, maintenant ?": "What's the total now?",
+    "Combien de {0} ?": "How many {0}?",
+    "Même total qu'avant. Rien de neuf, ou alors en silence.": "Same total as before. Nothing new, or else in silence.",
+    "Zéro. Noté mentalement, pas davantage.": "Zero. Noted mentally, nothing more.",
+    "+{0} {1}. Ça avance, que tu y croies ou non.": "+{0} {1}. It's moving, whether you believe it or not.",
+    "{0} {1}. Couper, c'est aussi écrire.": "{0} {1}. Cutting is writing too.",
+    "Synthèse gardée. La tension est levée.": "Synthesis kept. The tension is lifted.",
+    "Dérivé, et relié à sa source.": "Derived, and linked to its source.",
+    "Gardé comme hypothèse. Elle attendra ses preuves.": "Kept as a hypothesis. It will wait for its evidence.",
+    "hors {0}": "no {0}",
+    "Modifier le fragment": "Edit the fragment",
+    "Texte": "Text",
+    "Ce fragment a disparu entre-temps.": "This fragment disappeared in the meantime.",
+    "Modifié. L'ancienne version reste lisible dessous.": "Edited. The old version stays readable underneath.",
+    "Supprimer « {0} » ? Les entrées déjà ajoutées passeront hors catégorie.": "Delete “{0}”? Entries already added will become uncategorized.",
+    // modules/entries.js
+    "l'élément": "the item",
+    "Supprimé : « {0} ».": "Deleted: “{0}”.",
+    "Rétabli. Rien ne s'est passé.": "Restored. Nothing happened.",
+    "de {0}, {1}": "from {0}, {1}",
+    "de {0}": "from {0}",
+    "{0} : « {1} »": "{0}: “{1}”",
+    // modules/groups.js
+    "Sans groupe": "No group",
+    "{0} %": "{0}%",
+    "Rien à regrouper pour l'instant.": "Nothing to group yet.",
+    // modules/notes.js
+    "{0} en dépense dans {1}": "{0} as an expense in {1}",
+    "{0} min dans {1}": "{0} min in {1}",
+    "Rangé : {0}.": "Filed: {0}.",
+    "{0} ?": "{0}?",
+    "Ranger": "File",
+    "Nouvelle note": "New note",
+    "Ranger : {0}": "File: {0}",
+    "Garder comme source": "Keep as a source",
+    "Vide. Le silence d'une clairière, ou celui d'un cerveau.": "Empty. The silence of a clearing, or of a brain.",
+    "Boîte de réception : reçoit la capture rapide de l'accueil": "Inbox: receives the quick capture from Today",
+    "Description": "Description",
+    "Une phrase sous le titre": "A sentence under the title",
+    "Texte d'invite": "Prompt text",
+    "{0} à trier": "{0} to sort",
+    "{0} note": { one: "{0} note", other: "{0} notes" },
+    "Rangé dans {0}.": "Filed in {0}.",
+    // modules/programme.js
+    "Semaine {0}": "Week {0}",
+    "{0} sur {1} séances": "{0} of {1} sessions",
+    "Par semaine": "By week",
+    "Objectif : {0} séances par semaine, réglable dans Réglages.": "Goal: {0} sessions a week, adjustable in Settings.",
+    "Paliers": "Tiers",
+    "« {0} » atteint le {1}": "“{0}” reached on {1}",
+    "Aucun critère écrit. Ajoutes-en dans {0}.": "No criteria written. Add some in {0}.",
+    "{0} sur {1} coché.": { one: "{0} of {1} ticked.", other: "{0} of {1} ticked." },
+    "{0} critère": { one: "{0} criterion", other: "{0} criteria" },
+    "Tous cochés. Le passage reste ton choix, pas une formalité automatique.": "All ticked. Moving on is still your choice, not an automatic formality.",
+    "Coché ou non, rien ne fait avancer le palier à ta place.": "Ticked or not, nothing moves the tier forward for you.",
+    "Passer au palier suivant": "Move to the next tier",
+    "Tous les paliers sont franchis.": "Every tier has been passed.",
+    "Un protocole de {0} semaines, une séance à la fois.": "A {0}-week protocol, one session at a time.",
+    "Commencer aujourd'hui": "Start today",
+    "ou choisir une autre date": "or choose another date",
+    "S{0}": "W{0}",
+    "Noter une séance": "Log a session",
+    "sur {0}": "of {0}",
+    "{0} séances, {1} {2} au total, série actuelle de {3} jour(s).": "{0} sessions, {1} {2} in total, current streak of {3} day(s).",
+    "Ce que le corps a fait, ce que la tête en a pensé.": "What the body did, what the head thought of it.",
+    "Aucune séance notée.": "No sessions logged.",
+    "Début du protocole": "Protocol start",
+    "Durée (semaines)": "Length (weeks)",
+    "Séances visées par semaine": "Target sessions per week",
+    "Paliers : des critères que tu écris, jamais franchis tout seuls": "Tiers: criteria you write, never passed on their own",
+    "Nom du palier": "Tier name",
+    "12 séances à 20 min…": "12 sessions of 20 min…",
+    "Critère": "Criterion",
+    "critère": "criterion",
+    "Ajouter un palier": "Add a tier",
+    "Pas encore commencé": "Not started yet",
+    "Semaine {0} sur {1}": "Week {0} of {1}",
+    "{0} séance": { one: "{0} session", other: "{0} sessions" },
+    "série de {0} j": "{0}-day streak",
+    "palier « {0} »": "tier “{0}”",
+    "Noter {0} {1}": "Log {0} {1}",
+    "autre…": "other…",
+    "noter": "log",
+    "Séance de {0} faite.": "{0} session done.",
+    "Pas encore de séance de {0} aujourd'hui.": "No {0} session today yet.",
+    "Quinze minutes. Les noter dans {0} ?": "Fifteen minutes. Log them in {0}?",
+    "Noter {0} min": "Log {0} min",
+    "Noté. Le corps a fait sa part.": "Logged. The body did its part.",
+    "Durée ({0})": "Duration ({0})",
+    "Ce qui s'est passé": "What happened",
+    "{0} {1} notées. Le corps a fait sa part.": "{0} {1} logged. The body did its part.",
+    "Palier {0}": "Tier {0}",
+    "Supprimer le palier « {0} » ? Ses critères disparaissent avec lui ; l'historique du palier franchi n'y touche pas.": "Delete the tier “{0}”? Its criteria go with it; the history of tiers already passed is untouched.",
+    "Palier « {0} » atteint.": "Tier “{0}” reached.",
+    "Palier « {0} » atteint ({1})": "Tier “{0}” reached ({1})",
+    "Noter la décision : « {0} »": "Write down the decision: “{0}”",
+    // modules/rappels.js
+    "tous les {0} j": "every {0} d",
+    "Fait aujourd'hui": "Done today",
+    "Observation…": "Observation…",
+    "Observation": "Observation",
+    "Noter": "Note it",
+    "Réglable dans {0}.": "Adjustable in {0}.",
+    "Journal": "Log",
+    "Aucune entrée.": "No entries.",
+    "Sous-titre (ex. nom propre)": "Subtitle (e.g. a proper name)",
+    "Types et rappels": "Types and reminders",
+    "tous les X j": "every X d",
+    "Fréquence": "Frequency",
+    "Ajouter un type": "Add a type",
+    "{0} : {1}": "{0}: {1}",
+    "{0} entrée": { one: "{0} entry", other: "{0} entries" },
+    "fait": "done",
+    "{0} : fait": "{0}: done",
+    "Rien de noté": "Nothing noted",
+    "Nouveau type": "New type",
+    "Supprimer « {0} » ?": "Delete “{0}”?",
+    // modules/taches.js
+    "Fait. Le monde s'effondre un peu moins vite.": "Done. The world is collapsing a little less quickly.",
+    "Un de moins. L'entropie note ta résistance.": "One fewer. Entropy notes your resistance.",
+    "Coché. Personne n'applaudit, alors je le fais.": "Ticked. Nobody's clapping, so I will.",
+    "Terminé. Ton futur toi te déteste un peu moins.": "Finished. Your future self hates you a little less.",
+    "Réglé. Le chaos recule d'un centimètre.": "Sorted. Chaos retreats by an inch.",
+    "Sans date": "No date",
+    "En retard de {0} j": "{0} d overdue",
+    "Demain": "Tomorrow",
+    "Dans {0} j": "In {0} d",
+    "Prévision Open-Meteo pour {0}, cinq jours": "Open-Meteo forecast for {0}, five days",
+    "sec jusqu'à {0}": "dry until {0}",
+    "pluie prévue {0}, le jour prévu": "rain forecast {0}, on the planned day",
+    "pluie prévue {0}": "rain forecast {0}",
+    "Marquer comme fait": "Mark as done",
+    "{0}/{1} étapes": "{0}/{1} steps",
+    "{0} €": "€{0}",
+    "Faire aujourd'hui": "Do today",
+    "Modifier": "Edit",
+    "Supprimer": "Delete",
+    "Modifier la tâche": "Edit the task",
+    "Nouvelle tâche": "New task",
+    "Tâche": "Task",
+    "Date butoir": "Deadline",
+    "Effort": "Effort",
+    "Petit, moins de 30 min": "Small, under 30 min",
+    "Moyen, une demi-journée": "Medium, half a day",
+    "Gros, un week-end": "Big, a weekend",
+    "Coût estimé (€)": "Estimated cost (€)",
+    "Étapes (une par ligne)": "Steps (one per line)",
+    "Aujourd'hui est plein. Le hasard respecte les plafonds.": "Today is full. Chance respects the caps.",
+    "Rien à tirer.": "Nothing to draw.",
+    "Le sort a désigné : « {0} ». Pas de recours possible.": "Fate has chosen: “{0}”. No appeal possible.",
+    "En retard": "Overdue",
+    "Le passé ne se repeint pas. Ça, si.": "The past can't be repainted. This can.",
+    "Cette semaine": "This week",
+    "Assez proche pour paniquer utilement.": "Close enough to panic usefully.",
+    "Ce mois-ci": "This month",
+    "Le problème de toi dans trois semaines.": "A problem for you in three weeks.",
+    "Plus tard": "Later",
+    "Hors de vue. Pas hors de ta vie.": "Out of sight. Not out of your life.",
+    "Les tâches sans date ne meurent jamais. Elles hantent.": "Tasks without a date never die. They haunt.",
+    "Ajouter une tâche": "Add a task",
+    "Tirer au sort": "Draw at random",
+    "Trois tâches maximum, tous modules confondus. Au-delà, c'est une liste de reproches.": "Three tasks at most, across all modules. Beyond that, it's a list of reproaches.",
+    "Coche l'étoile d'une tâche.": "Tick a task's star.",
+    "Échéances": "Deadlines",
+    "{0} : tout": "{0}: all",
+    "Plus rien ici. Soit c'est fini, soit tu as filtré trop fort.": "Nothing left here. Either it's done, or you filtered too hard.",
+    "La mousse gagne à mesure que tu finis. Clique pour filtrer.": "The moss spreads as you finish. Click to filter.",
+    "Budget estimé : {0} € engagés, {1} € encore à prévoir.": "Estimated budget: €{0} committed, €{1} still to plan.",
+    "Fait récemment": "Recently done",
+    "annuler": "undo",
+    "Rien pour l'instant. L'histoire ne retiendra rien.": "Nothing yet. History will remember nothing.",
+    "Nom du regroupement": "Grouping name",
+    "Pièce, lieu, client…": "Room, place, client…",
+    "Nom des types": "Type name",
+    "Tâches à ciel ouvert (mots dans le titre ou le lieu, séparés par des virgules)": "Open-air tasks (words in the title or place, separated by commas)",
+    "extérieur, balcon, jardin…": "outside, balcony, garden…",
+    "Elles montrent la pluie des cinq prochains jours, si un lieu est réglé (Réglages → Ciel).": "They show the rain for the next five days, if a place is set (Settings → Sky).",
+    "Types de tâche (un par ligne)": "Task types (one per line)",
+    "Suivre les coûts estimés": "Track estimated costs",
+    "Enveloppe du budget pour les coûts": "Budget envelope for costs",
+    "aucune": "none",
+    "{0} en retard": "{0} overdue",
+    "{0} à faire, {1} % fait": "{0} to do, {1}% done",
+    "Petit": "Small",
+    "Moyen": "Medium",
+    "Gros": "Big",
+    "{0} tâche terminée": { one: "{0} task finished", other: "{0} tasks finished" },
+    "{0} de coûts estimés": "{0} in estimated costs",
+    "Trois, c'est le plafond. Termine ou retire-en une.": "Three is the cap. Finish one or remove one.",
+    "Fait. {0} estimés : les passer au budget ({1}) ?": "Done. {0} estimated: add them to the budget ({1})?",
+    "Fait. {0} estimés : les passer au budget ?": "Done. {0} estimated: add them to the budget?",
+    "Ajouté à {0}. L'argent, lui, était déjà parti.": "Added to {0}. The money, for its part, was already gone.",
     // scene/moon.js
     "Nouvelle lune": "New moon",
     "Premier croissant": "Waxing crescent",
@@ -3287,17 +3638,17 @@ var __selene = (() => {
   function removeWithUndo(id, list, itemId) {
     const inst = S().modules[id], i = inst[list].findIndex((x) => x.id === itemId);
     if (i < 0) return;
-    const item = inst[list][i], name = String(item.title || item.text || item.note || item.type || "l'élément");
+    const item = inst[list][i], name = String(item.title || item.text || item.note || item.type || tr`l'élément`);
     inst[list] = inst[list].filter((x) => x.id !== itemId);
     site.save();
     render();
-    toastUndo(`Supprimé : « ${name.length > 40 ? name.slice(0, 40) + "…" : name} ».`, () => {
+    toastUndo(tr`Supprimé : « ${name.length > 40 ? name.slice(0, 40) + "…" : name} ».`, () => {
       const cur = S().modules[id];
       if (!cur || cur[list].some((x) => x.id === itemId)) return;
       cur[list].splice(Math.min(i, cur[list].length), 0, item);
       site.save();
       render();
-      toast("Rétabli. Rien ne s'est passé.");
+      toast(tr`Rétabli. Rien ne s'est passé.`);
     });
   }
   var lastOf = (inst, type) => inst.entries.filter((x) => x.type === type).map((x) => x.date).sort().pop();
@@ -3313,7 +3664,8 @@ var __selene = (() => {
     const o = e.origin;
     if (!o) return "";
     const same = String(current ?? "").trim() === o.text.trim(), short = o.text.length > 90 ? o.text.slice(0, 90) + "…" : o.text;
-    return `<span class="origin" title="${esc(o.text)}">↳ de ${esc(o.from)}${o.date ? `, ${fmt(o.date)}` : ""}${same ? "" : ` : « ${esc(short)} »`}</span>`;
+    const from = o.date ? tr`de ${esc(o.from)}, ${fmt(o.date)}` : tr`de ${esc(o.from)}`;
+    return `<span class="origin" title="${esc(o.text)}">↳ ${same ? from : tr`${from} : « ${esc(short)} »`}</span>`;
   }
 
   // src/core/radar.js
@@ -4654,18 +5006,18 @@ var __selene = (() => {
     const bud = firstOfType("budget");
     if (m && bud && +m[1].replace(",", ".") > 0) {
       const amount = +m[1].replace(",", "."), rest = m[2].trim(), env = rest && s.modules[bud].config.envelopes.find((v) => fold(rest).includes(fold(v.name)));
-      return { to: bud, kind: "budget", amount, note: rest, cat: env ? env.name : "", say: `${money(amount)} en dépense dans ${label(bud)}${env ? ` (${env.name})` : ""}` };
+      return { to: bud, kind: "budget", amount, note: rest, cat: env ? env.name : "", say: tr`${money(amount)} en dépense dans ${label(bud)}` + (env ? ` (${env.name})` : "") };
     }
     m = t.match(/^(\d+)\s*min(?:utes?)?\s+(.+)$/i);
     if (m) {
       const target = mods.find((x) => x.inst.type === "programme" && fold(m[2]).includes(x.name));
-      if (target) return { to: target.id, kind: "minutes", value: +m[1], say: `${m[1]} min dans ${label(target.id)}` };
+      if (target) return { to: target.id, kind: "minutes", value: +m[1], say: tr`${m[1]} min dans ${label(target.id)}` };
     }
     m = t.match(/^([^:]{2,40}?)\s*:\s*(.+)$/);
     if (m) {
       const target = mods.find((x) => x.name === fold(m[1].trim())), ui = target && TYPE_UI[target.inst.type];
       if (target && ui.accept && (!ui.canAccept || ui.canAccept(target.inst)))
-        return { to: target.id, kind: "accept", text: m[2].trim(), say: `« ${m[2].trim().slice(0, 40)} » dans ${label(target.id)}` };
+        return { to: target.id, kind: "accept", text: m[2].trim(), say: tr`« ${m[2].trim().slice(0, 40)} » dans ${label(target.id)}` };
     }
     return null;
   }
@@ -4680,7 +5032,7 @@ var __selene = (() => {
     site.save();
     render();
     if (typeof then === "function") then();
-    else toast(`Rangé : ${intent.say}.`);
+    else toast(tr`Rangé : ${intent.say}.`);
   }
   function acceptNote(toId, fromId, note, text = note.text) {
     const target = S().modules[toId], before = entryIds(target);
@@ -4696,8 +5048,8 @@ var __selene = (() => {
   }
   function afterCapture(boxId, item, fallback) {
     const intent = captureIntent(item.text);
-    if (intent && intent.to !== boxId) toastAction(`${intent.say} ?`, "Ranger", () => fileIntent(intent, boxId, item.id), 1e4);
-    else if (item.ep) toast("Gardé comme hypothèse. Elle attendra ses preuves.");
+    if (intent && intent.to !== boxId) toastAction(tr`${intent.say} ?`, tr`Ranger`, () => fileIntent(intent, boxId, item.id), 1e4);
+    else if (item.ep) toast(tr`Gardé comme hypothèse. Elle attendra ses preuves.`);
     else if (fallback) toast(fallback);
   }
   function noteTargets(fromId) {
@@ -4710,25 +5062,25 @@ var __selene = (() => {
   registerType("notes", {
     view(id) {
       const inst = S().modules[id], c = inst.config, targets = noteTargets(id);
-      return `<div data-mod="${esc(id)}"><div class="row" style="align-items:baseline"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span>${c.inbox && inst.entries.length > 1 ? `<button class="btn sm" data-act="vasculum">Trier une à une</button>` : ""}</div>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}
-  ${deriveBanner(id)}<div class="capture" style="margin-bottom:18px"><input id="noteIn" data-draft placeholder="${esc(c.placeholder)}" aria-label="Nouvelle note"><button class="btn acc" data-act="note-add">Garder</button></div>
+      return `<div data-mod="${esc(id)}"><div class="row" style="align-items:baseline"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span>${c.inbox && inst.entries.length > 1 ? `<button class="btn sm" data-act="vasculum">${tr`Trier une à une`}</button>` : ""}</div>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}
+  ${deriveBanner(id)}<div class="capture" style="margin-bottom:18px"><input id="noteIn" data-draft placeholder="${esc(c.placeholder)}" aria-label="${tr`Nouvelle note`}"><button class="btn acc" data-act="note-add">${tr`Garder`}</button></div>
   <ul class="plain margins">${((pg) => pg.items.map((x) => {
         const intent = captureIntent(x.text);
         return `<li class="item" data-id="${esc(x.id)}"><span class="jdate">${fmt(x.date)}</span><div>${esc(x.text)}<div class="meta">${epSelect(id, x)}${linksHTML(id)}</div>
-    ${intent && intent.to !== id ? `<div class="row" style="margin-top:6px"><button class="btn sm acc" data-act="note-file">Ranger : ${esc(intent.say)}</button></div>` : ""}
-    ${sourcesModule() && (findDoi(x.text) || findUrl(x.text)) ? `<div class="row" style="margin-top:6px"><button class="btn sm" data-act="note-source">Garder comme source</button></div>` : ""}
+    ${intent && intent.to !== id ? `<div class="row" style="margin-top:6px"><button class="btn sm acc" data-act="note-file">${tr`Ranger : ${esc(intent.say)}`}</button></div>` : ""}
+    ${sourcesModule() && (findDoi(x.text) || findUrl(x.text)) ? `<div class="row" style="margin-top:6px"><button class="btn sm" data-act="note-source">${tr`Garder comme source`}</button></div>` : ""}
     ${targets.length ? `<div class="row${c.inbox ? "" : " ra"}" style="margin-top:6px">${targets.map((k) => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
-    ${margHTML(id, x, x.text)}<button class="btn ghost sm ra" data-act="note-del">suppr.</button></li>`;
-      }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? "Vide. Le silence d'une clairière, ou celui d'un cerveau." : "Rien pour l'instant."}</li>`}</ul></div>`;
+    ${margHTML(id, x, x.text)}<button class="btn ghost sm ra" data-act="note-del">${tr`suppr.`}</button></li>`;
+      }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? tr`Vide. Le silence d'une clairière, ou celui d'un cerveau.` : tr`Rien pour l'instant.`}</li>`}</ul></div>`;
     },
-    settings: (id, { config: c }) => `<label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="notes-inbox" data-mod="${esc(id)}" ${c.inbox ? "checked" : ""}>Boîte de réception : reçoit la capture rapide de l'accueil</label>
-    <div class="field-row" style="margin-top:8px"><label>Description<input data-set-mod="${esc(id)}.description" value="${esc(c.description)}" placeholder="Une phrase sous le titre"></label><label>Texte d'invite<input data-set-mod="${esc(id)}.placeholder" value="${esc(c.placeholder)}" required></label></div>`,
-    summary: (id, inst) => inst.config.inbox ? `${inst.entries.length} à trier` : plural(inst.entries.length, "note"),
+    settings: (id, { config: c }) => `<label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="notes-inbox" data-mod="${esc(id)}" ${c.inbox ? "checked" : ""}>${tr`Boîte de réception : reçoit la capture rapide de l'accueil`}</label>
+    <div class="field-row" style="margin-top:8px"><label>${tr`Description`}<input data-set-mod="${esc(id)}.description" value="${esc(c.description)}" placeholder="${tr`Une phrase sous le titre`}"></label><label>${tr`Texte d'invite`}<input data-set-mod="${esc(id)}.placeholder" value="${esc(c.placeholder)}" required></label></div>`,
+    summary: (id, inst) => inst.config.inbox ? tr`${inst.entries.length} à trier` : trn(inst.entries.length, "{0} note", "{0} notes"),
     context: (inst, nm) => `
 ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.text).join(" ; ") || "vide"}`,
     badge: (inst) => inst.config.inbox ? inst.entries.length : 0,
     recent: (inst) => inst.entries.slice(-3).reverse().map((x) => x.text.length > 80 ? x.text.slice(0, 80) + "…" : x.text),
-    review: (inst, from, to) => plural(within(inst.entries, from, to).length, "note"),
+    review: (inst, from, to) => trn(within(inst.entries, from, to).length, "{0} note", "{0} notes"),
     texts: (inst) => inst.entries.map((x) => ({ text: x.text, date: x.date, ep: x.ep, eid: x.id })),
     accept: (id, inst, note) => {
       addCapture(inst.entries, note.text, uid(), note.date);
@@ -4741,7 +5093,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
         inp.value = "";
         site.save();
         render();
-        if (derived) toast(derived > 1 ? "Synthèse gardée. La tension est levée." : "Dérivé, et relié à sa source.");
+        if (derived) toast(derived > 1 ? tr`Synthèse gardée. La tension est levée.` : tr`Dérivé, et relié à sa source.`);
         else afterCapture(id, item);
       },
       "note-file": (el) => {
@@ -4759,7 +5111,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
         drop();
         render();
         if (typeof then === "function") then();
-        else toast(`Rangé dans ${label(to)}.`);
+        else toast(tr`Rangé dans ${label(to)}.`);
       }
     },
     change: {
@@ -5633,13 +5985,13 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   var itemGroups = (items, keyFn, doneFn) => {
     const m = /* @__PURE__ */ new Map();
     for (const it of items) {
-      const k = keyFn(it) || "Sans groupe";
+      const k = keyFn(it) || tr`Sans groupe`;
       const g = m.get(k) || { name: k, num: 0, den: 0 };
       g.den++;
       if (doneFn(it)) g.num++;
       m.set(k, g);
     }
-    return [...m.values()].map((g) => ({ ...g, pct: Math.round(100 * g.num / g.den), sub: `${g.num} sur ${g.den}` }));
+    return [...m.values()].map((g) => ({ ...g, pct: Math.round(100 * g.num / g.den), sub: tr`${g.num} sur ${g.den}` }));
   };
   function grouperFor(mod) {
     const inst = Object.hasOwn(S().modules, mod) ? S().modules[mod] : null;
@@ -5659,15 +6011,15 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     const sorters = { name: (a, b) => (a.order ?? 0) - (b.order ?? 0) || collate(a.name, b.name), pct: (a, b) => (b.pct ?? -1) - (a.pct ?? -1), left: (a, b) => (a.pct ?? 101) - (b.pct ?? 101) };
     gs.sort(sorters[c.sort] || sorters.name);
     const active = gFilter[mod];
-    const title = c.title || `Par ${G.fields[by].toLowerCase()}`;
-    return `<section><div class="row" style="margin-bottom:4px"><h3 style="margin:0">${esc(title)}</h3><span class="spacer"></span><a class="btn ghost sm" href="#reglages" data-act="goto-groups" data-mod="${esc(mod)}">régler</a></div>
+    const title = c.title || tr`Par ${G.fields[by].toLowerCase()}`;
+    return `<section><div class="row" style="margin-bottom:4px"><h3 style="margin:0">${esc(title)}</h3><span class="spacer"></span><a class="btn ghost sm" href="#reglages" data-act="goto-groups" data-mod="${esc(mod)}">${tr`régler`}</a></div>
     <p class="hint">${hint}</p>
-    <div class="rooms">${gs.map((g) => `<button class="room ${active === g.name ? "active" : ""} ${g.pct > 100 ? "over" : ""}" ${G.filterable ? `data-act="grp-filter" data-mod="${esc(mod)}" data-g="${esc(g.name)}"` : "disabled"}><div class="fill" style="width:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></button>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
+    <div class="rooms">${gs.map((g) => `<button class="room ${active === g.name ? "active" : ""} ${g.pct > 100 ? "over" : ""}" ${G.filterable ? `data-act="grp-filter" data-mod="${esc(mod)}" data-g="${esc(g.name)}"` : "disabled"}><div class="fill" style="width:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : tr`${g.pct} %`}</b><small>${esc(g.sub)}</small></button>`).join("") || `<p class="empty">${tr`Rien à regrouper pour l'instant.`}</p>`}</div></section>`;
   }
   var gMatch = (mod, it) => {
     const v = gFilter[mod];
     if (!v) return true;
-    return (grouperFor(mod).key(it, groupBy(mod)) || "Sans groupe") === v;
+    return (grouperFor(mod).key(it, groupBy(mod)) || tr`Sans groupe`) === v;
   };
   CLICK["grp-filter"] = (el) => {
     const m = el.dataset.mod, g = el.dataset.g;
@@ -5697,7 +6049,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   var taskFilters = {};
   var tf = (id) => taskFilters[id] || (taskFilters[id] = { room: "", cat: "" });
   var roomsOf = (id) => [...new Set(S().modules[id].entries.map((t) => t.room).filter(Boolean))].sort(collate);
-  var doneLines = ["Fait. Le monde s'effondre un peu moins vite.", "Un de moins. L'entropie note ta résistance.", "Coché. Personne n'applaudit, alors je le fais.", "Terminé. Ton futur toi te déteste un peu moins.", "Réglé. Le chaos recule d'un centimètre."];
+  var doneLines = [N_("Fait. Le monde s'effondre un peu moins vite."), N_("Un de moins. L'entropie note ta résistance."), N_("Coché. Personne n'applaudit, alors je le fais."), N_("Terminé. Ton futur toi te déteste un peu moins."), N_("Réglé. Le chaos recule d'un centimètre.")];
   var openId = null;
   var setOpenId = (id) => {
     openId = id;
@@ -5708,12 +6060,12 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   };
   var taskMod = (el) => el.closest("[data-task]").dataset.mod;
   function dueLabel(t) {
-    if (!t.due) return { txt: "Sans date", cls: "" };
+    if (!t.due) return { txt: tr`Sans date`, cls: "" };
     const n = diffDays(t.due, todayISO());
-    if (n < 0) return { txt: `En retard de ${-n} j`, cls: "late" };
-    if (n === 0) return { txt: "Aujourd'hui", cls: "late" };
-    if (n === 1) return { txt: "Demain", cls: "soon" };
-    if (n <= 7) return { txt: `Dans ${n} j`, cls: "soon" };
+    if (n < 0) return { txt: tr`En retard de ${-n} j`, cls: "late" };
+    if (n === 0) return { txt: tr`Aujourd'hui`, cls: "late" };
+    if (n === 1) return { txt: tr`Demain`, cls: "soon" };
+    if (n <= 7) return { txt: tr`Dans ${n} j`, cls: "soon" };
     return { txt: fmt(t.due), cls: "" };
   }
   function outdoorRain(c, t) {
@@ -5723,36 +6075,37 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     const sc = skyConf(), w = sc && sc.weather !== false ? freshWeather(sc) : null;
     if (!w || !Array.isArray(w.days) || !w.days.length) return "";
     const today = todayISO(), rain = rainDays(w.days, today, 5), day = (d) => fmt(d, { weekday: "short", day: "numeric" });
-    const tip = `title="Prévision Open-Meteo pour ${esc(sc.name)}, cinq jours"`;
-    if (!rain.length) return `<span class="wx" ${tip}>sec jusqu'à ${esc(day(addDaysTo(today, 4)))}</span>`;
-    return `<span class="wx rain" ${tip}>pluie prévue ${esc(rain.map(day).join(", "))}${t.due && rain.includes(t.due) ? ", le jour prévu" : ""}</span>`;
+    const tip = `title="${tr`Prévision Open-Meteo pour ${esc(sc.name)}, cinq jours`}"`;
+    if (!rain.length) return `<span class="wx" ${tip}>${tr`sec jusqu'à ${esc(day(addDaysTo(today, 4)))}`}</span>`;
+    const when = esc(rain.map(day).join(", "));
+    return `<span class="wx rain" ${tip}>${t.due && rain.includes(t.due) ? tr`pluie prévue ${when}, le jour prévu` : tr`pluie prévue ${when}`}</span>`;
   }
   function taskHTML(id, t) {
     const c = S().modules[id].config, d = dueLabel(t), sd = (t.steps || []).filter((x) => x.d).length, ef = Math.min(3, Math.max(1, Math.round(+t.effort) || 1));
     return `<li class="item ${t.done ? "done" : ""} ${openId === t.id ? "open" : ""}" data-task="${esc(t.id)}" data-mod="${esc(id)}">
-    <input type="checkbox" class="check" data-act="task-done" ${t.done ? "checked" : ""} aria-label="Marquer comme fait">
+    <input type="checkbox" class="check" data-act="task-done" ${t.done ? "checked" : ""} aria-label="${tr`Marquer comme fait`}">
     <div><button class="t-title" data-act="task-open">${esc(t.title)}</button>
-      <div class="meta">${t.room ? `<span class="tag">${esc(t.room)}</span>` : ""}<span class="${t.done ? "" : d.cls}">${esc(d.txt)}</span><span>${esc(t.cat)}</span><span>${"●".repeat(ef)}${"○".repeat(3 - ef)}</span>${(t.steps || []).length ? `<span>${sd}/${t.steps.length} étapes</span>` : ""}${c.costs && t.cost ? `<span>${esc(t.cost)} €</span>` : ""}${outdoorRain(c, t)}</div></div>
-    <button class="star ${t.today ? "on" : ""}" data-act="task-today" title="Faire aujourd'hui" aria-label="Faire aujourd'hui">★</button>
+      <div class="meta">${t.room ? `<span class="tag">${esc(t.room)}</span>` : ""}<span class="${t.done ? "" : d.cls}">${esc(d.txt)}</span><span>${esc(t.cat)}</span><span>${"●".repeat(ef)}${"○".repeat(3 - ef)}</span>${(t.steps || []).length ? `<span>${tr`${sd}/${t.steps.length} étapes`}</span>` : ""}${c.costs && t.cost ? `<span>${tr`${esc(t.cost)} €`}</span>` : ""}${outdoorRain(c, t)}</div></div>
+    <button class="star ${t.today ? "on" : ""}" data-act="task-today" title="${tr`Faire aujourd'hui`}" aria-label="${tr`Faire aujourd'hui`}">★</button>
     <div class="details">
       ${(t.steps || []).length ? `<ul class="steps">${t.steps.map((x, i) => `<li><input type="checkbox" data-act="task-step" data-i="${i}" ${x.d ? "checked" : ""} id="s${esc(t.id)}-${i}"><label for="s${esc(t.id)}-${i}" style="font-weight:400;display:inline">${esc(x.t)}</label></li>`).join("")}</ul>` : ""}
       ${t.note ? `<p class="note">${esc(t.note)}</p>` : ""}${t.origin ? `<p class="meta">${originHTML(t, t.title)}</p>` : ""}
-      <div class="row"><button class="btn ghost sm" data-act="task-edit">Modifier</button><button class="btn ghost sm" data-act="task-del">Supprimer</button></div>
+      <div class="row"><button class="btn ghost sm" data-act="task-edit">${tr`Modifier`}</button><button class="btn ghost sm" data-act="task-del">${tr`Supprimer`}</button></div>
     </div></li>`;
   }
   function taskForm(id, t) {
     const c = S().modules[id].config;
     $("#roomList").innerHTML = roomsOf(id).map((r) => `<option value="${esc(r)}">`).join("");
-    openForm(t ? "Modifier la tâche" : "Nouvelle tâche", [
-      { n: "title", l: "Tâche", req: true },
+    openForm(t ? tr`Modifier la tâche` : tr`Nouvelle tâche`, [
+      { n: "title", l: tr`Tâche`, req: true },
       { row: [{ n: "room", l: c.groupLabel, list: "roomList" }, { n: "cat", l: c.catLabel, t: "select", o: !t || !t.cat || c.cats.includes(t.cat) ? c.cats : [...c.cats, t.cat] }] },
-      { row: [{ n: "due", l: "Date butoir", t: "date" }, { n: "effort", l: "Effort", t: "select", o: [["1", "Petit, moins de 30 min"], ["2", "Moyen, une demi-journée"], ["3", "Gros, un week-end"]] }] },
-      ...c.costs ? [{ n: "cost", l: "Coût estimé (€)", t: "number" }] : [],
-      { n: "steps", l: "Étapes (une par ligne)", t: "textarea", rows: 4 },
-      { n: "note", l: "Note", t: "textarea", rows: 2 }
+      { row: [{ n: "due", l: tr`Date butoir`, t: "date" }, { n: "effort", l: tr`Effort`, t: "select", o: [["1", tr`Petit, moins de 30 min`], ["2", tr`Moyen, une demi-journée`], ["3", tr`Gros, un week-end`]] }] },
+      ...c.costs ? [{ n: "cost", l: tr`Coût estimé (€)`, t: "number" }] : [],
+      { n: "steps", l: tr`Étapes (une par ligne)`, t: "textarea", rows: 4 },
+      { n: "note", l: tr`Note`, t: "textarea", rows: 2 }
     ], t ? { ...t, effort: String(t.effort), steps: (t.steps || []).map((x) => x.t).join("\n") } : { room: tf(id).room || (gcfg(id).by === "room" ? gFilter[id] || "" : ""), cat: c.cats[0], effort: "1" }, (v) => {
       const inst = S().modules[id];
-      if (!inst) return toast("Ce module a été supprimé entre-temps.");
+      if (!inst) return toast(tr`Ce module a été supprimé entre-temps.`);
       const lines = v.steps.split("\n").map((x) => x.trim()).filter(Boolean);
       const data = { title: v.title, room: v.room, cat: v.cat, due: v.due || null, effort: +v.effort, cost: "cost" in v ? v.cost ? +v.cost : null : t ? t.cost : null, note: v.note };
       const cur = t && inst.entries.find((x) => x.id === t.id);
@@ -5770,15 +6123,15 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     return c.costEnvelope != null ? c.costEnvelope : (envs.find((v) => /travaux/i.test(v.name)) || {}).name || "";
   }
   function pickTask(only) {
-    if (todayTasks().length >= 3) return toast("Aujourd'hui est plein. Le hasard respecte les plafonds.");
+    if (todayTasks().length >= 3) return toast(tr`Aujourd'hui est plein. Le hasard respecte les plafonds.`);
     const o = allTasks().filter(([m, t2]) => !t2.done && !t2.today && (!only || m === only));
-    if (!o.length) return toast("Rien à tirer.");
+    if (!o.length) return toast(tr`Rien à tirer.`);
     const small = o.filter(([, t2]) => t2.effort === 1), pool = (small.length ? small : o).sort(([, a], [, b]) => byDue(a, b)).slice(0, 5);
     const [id, t] = pool[Math.floor(Math.random() * pool.length)];
     setTaskToday(S().modules[id].entries, t.id, true, todayElsewhere(id));
     site.save();
     render();
-    toast(`Le sort a désigné : « ${t.title} ». Pas de recours possible.`);
+    toast(tr`Le sort a désigné : « ${t.title} ». Pas de recours possible.`);
   }
   registerType("taches", {
     view(id) {
@@ -5787,39 +6140,39 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       const cats = [...new Set(inst.entries.map((t) => t.cat))];
       const filtered = o.filter((t) => !t.today && (!f.room || t.room === f.room) && (!f.cat || t.cat === f.cat) && gMatch(id, t)).sort(byDue);
       const groups = [
-        ["En retard", "Le passé ne se repeint pas. Ça, si.", (t) => t.due && t.due < now, true],
-        ["Cette semaine", "Assez proche pour paniquer utilement.", (t) => t.due && t.due >= now && diffDays(t.due, now) <= 7],
-        ["Ce mois-ci", "Le problème de toi dans trois semaines.", (t) => t.due && diffDays(t.due, now) > 7 && diffDays(t.due, now) <= 31],
-        ["Plus tard", "Hors de vue. Pas hors de ta vie.", (t) => t.due && diffDays(t.due, now) > 31],
-        ["Sans date", "Les tâches sans date ne meurent jamais. Elles hantent.", (t) => !t.due]
+        [tr`En retard`, tr`Le passé ne se repeint pas. Ça, si.`, (t) => t.due && t.due < now, true],
+        [tr`Cette semaine`, tr`Assez proche pour paniquer utilement.`, (t) => t.due && t.due >= now && diffDays(t.due, now) <= 7],
+        [tr`Ce mois-ci`, tr`Le problème de toi dans trois semaines.`, (t) => t.due && diffDays(t.due, now) > 7 && diffDays(t.due, now) <= 31],
+        [tr`Plus tard`, tr`Hors de vue. Pas hors de ta vie.`, (t) => t.due && diffDays(t.due, now) > 31],
+        [tr`Sans date`, tr`Les tâches sans date ne meurent jamais. Elles hantent.`, (t) => !t.due]
       ].map(([n, h, fn, late]) => {
         const it = filtered.filter(fn);
         return it.length ? `<div style="margin-bottom:22px"><h3 class="${late ? "late" : ""}">${n} <span class="hint" style="font-size:1rem">${it.length}</span></h3><p class="hint">${h}</p><ul class="plain">${it.map((t) => taskHTML(id, t)).join("")}</ul></div>` : "";
       }).join("");
       const spent = inst.entries.filter((t) => t.done && t.cost).reduce((a, t) => a + +t.cost, 0), left2 = o.filter((t) => t.cost).reduce((a, t) => a + +t.cost, 0);
       const done = inst.entries.filter((t) => t.done).sort((a, b) => (b.doneAt || "").localeCompare(a.doneAt || "")).slice(0, 8);
-      return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:24px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn solid" data-act="task-new">Ajouter une tâche</button><button class="btn" data-act="task-pick">Tirer au sort</button></div>
+      return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:24px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn solid" data-act="task-new">${tr`Ajouter une tâche`}</button><button class="btn" data-act="task-pick">${tr`Tirer au sort`}</button></div>
   <div class="two"><div>
-    <section><h3>Aujourd'hui</h3><p class="hint">Trois tâches maximum, tous modules confondus. Au-delà, c'est une liste de reproches.</p><ul class="plain">${tod.map((t) => taskHTML(id, t)).join("") || `<li class="empty">Coche l'étoile d'une tâche.</li>`}</ul></section>
-    <section><div class="row" style="margin-bottom:12px"><h3 style="margin:0">Échéances</h3><span class="spacer"></span>
-      <select data-act="f-room" aria-label="${esc(c.groupLabel)}"><option value="">${esc(c.groupLabel)} : tout</option>${roomsOf(id).map((r) => `<option ${r === f.room ? "selected" : ""}>${esc(r)}</option>`).join("")}</select>
-      <select data-act="f-cat" aria-label="${esc(c.catLabel)}"><option value="">${esc(c.catLabel)} : tout</option>${cats.map((x) => `<option ${x === f.cat ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div>
-      ${groups || `<p class="empty">Plus rien ici. Soit c'est fini, soit tu as filtré trop fort.</p>`}</section>
+    <section><h3>${tr`Aujourd'hui`}</h3><p class="hint">${tr`Trois tâches maximum, tous modules confondus. Au-delà, c'est une liste de reproches.`}</p><ul class="plain">${tod.map((t) => taskHTML(id, t)).join("") || `<li class="empty">${tr`Coche l'étoile d'une tâche.`}</li>`}</ul></section>
+    <section><div class="row" style="margin-bottom:12px"><h3 style="margin:0">${tr`Échéances`}</h3><span class="spacer"></span>
+      <select data-act="f-room" aria-label="${esc(c.groupLabel)}"><option value="">${tr`${esc(c.groupLabel)} : tout`}</option>${roomsOf(id).map((r) => `<option ${r === f.room ? "selected" : ""}>${esc(r)}</option>`).join("")}</select>
+      <select data-act="f-cat" aria-label="${esc(c.catLabel)}"><option value="">${tr`${esc(c.catLabel)} : tout`}</option>${cats.map((x) => `<option ${x === f.cat ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div>
+      ${groups || `<p class="empty">${tr`Plus rien ici. Soit c'est fini, soit tu as filtré trop fort.`}</p>`}</section>
   </div><aside>
-    ${groupPanel(id, "La mousse gagne à mesure que tu finis. Clique pour filtrer.")}
-    ${c.costs && (spent || left2) ? `<p class="hint">Budget estimé : ${spent} € engagés, ${left2} € encore à prévoir.</p>` : ""}
-    <section><h3>Fait récemment</h3><ul class="plain">${done.map((t) => `<li class="item" data-task="${esc(t.id)}" data-mod="${esc(id)}"><span></span><div>${esc(t.title)}<div class="meta">${fmt(t.doneAt)}</div></div><button class="btn ghost sm" data-act="task-undo">annuler</button></li>`).join("") || `<li class="empty">Rien pour l'instant. L'histoire ne retiendra rien.</li>`}</ul></section>
+    ${groupPanel(id, tr`La mousse gagne à mesure que tu finis. Clique pour filtrer.`)}
+    ${c.costs && (spent || left2) ? `<p class="hint">${tr`Budget estimé : ${spent} € engagés, ${left2} € encore à prévoir.`}</p>` : ""}
+    <section><h3>${tr`Fait récemment`}</h3><ul class="plain">${done.map((t) => `<li class="item" data-task="${esc(t.id)}" data-mod="${esc(id)}"><span></span><div>${esc(t.title)}<div class="meta">${fmt(t.doneAt)}</div></div><button class="btn ghost sm" data-act="task-undo">${tr`annuler`}</button></li>`).join("") || `<li class="empty">${tr`Rien pour l'instant. L'histoire ne retiendra rien.`}</li>`}</ul></section>
   </aside></div></div>`;
     },
-    settings: (id, { config: c }) => `<div class="field-row"><label>Nom du regroupement<input data-set-mod="${esc(id)}.groupLabel" value="${esc(c.groupLabel)}" placeholder="Pièce, lieu, client…" required></label><label>Nom des types<input data-set-mod="${esc(id)}.catLabel" value="${esc(c.catLabel)}" required></label></div>
-    <label style="margin-top:8px;display:block">Tâches à ciel ouvert (mots dans le titre ou le lieu, séparés par des virgules)<input data-set-mod="${esc(id)}.outdoor" value="${esc(c.outdoor || "")}" placeholder="extérieur, balcon, jardin…" maxlength="300"></label>
-    <p class="hint" style="margin:4px 0 0">Elles montrent la pluie des cinq prochains jours, si un lieu est réglé (Réglages → Ciel).</p>
-    <div class="field-row" style="margin-top:8px"><label>Types de tâche (un par ligne)<textarea data-act="task-cats" data-mod="${esc(id)}" rows="4">${esc(c.cats.join("\n"))}</textarea></label>
-    <label style="display:flex;gap:8px;align-items:center;align-self:start;margin-top:26px"><input type="checkbox" data-act="task-costs" data-mod="${esc(id)}" ${c.costs ? "checked" : ""}>Suivre les coûts estimés</label></div>
-    ${c.costs && firstOfType("budget") ? `<div class="field-row" style="margin-top:8px"><label>Enveloppe du budget pour les coûts<input data-set-mod="${esc(id)}.costEnvelope" value="${esc(costEnvelope(id, firstOfType("budget")))}" list="env-${esc(id)}" placeholder="aucune"><datalist id="env-${esc(id)}">${S().modules[firstOfType("budget")].config.envelopes.map((v) => `<option value="${esc(v.name)}">`).join("")}</datalist></label><span></span></div>` : ""}`,
+    settings: (id, { config: c }) => `<div class="field-row"><label>${tr`Nom du regroupement`}<input data-set-mod="${esc(id)}.groupLabel" value="${esc(c.groupLabel)}" placeholder="${tr`Pièce, lieu, client…`}" required></label><label>${tr`Nom des types`}<input data-set-mod="${esc(id)}.catLabel" value="${esc(c.catLabel)}" required></label></div>
+    <label style="margin-top:8px;display:block">${tr`Tâches à ciel ouvert (mots dans le titre ou le lieu, séparés par des virgules)`}<input data-set-mod="${esc(id)}.outdoor" value="${esc(c.outdoor || "")}" placeholder="${tr`extérieur, balcon, jardin…`}" maxlength="300"></label>
+    <p class="hint" style="margin:4px 0 0">${tr`Elles montrent la pluie des cinq prochains jours, si un lieu est réglé (Réglages → Ciel).`}</p>
+    <div class="field-row" style="margin-top:8px"><label>${tr`Types de tâche (un par ligne)`}<textarea data-act="task-cats" data-mod="${esc(id)}" rows="4">${esc(c.cats.join("\n"))}</textarea></label>
+    <label style="display:flex;gap:8px;align-items:center;align-self:start;margin-top:26px"><input type="checkbox" data-act="task-costs" data-mod="${esc(id)}" ${c.costs ? "checked" : ""}>${tr`Suivre les coûts estimés`}</label></div>
+    ${c.costs && firstOfType("budget") ? `<div class="field-row" style="margin-top:8px"><label>${tr`Enveloppe du budget pour les coûts`}<input data-set-mod="${esc(id)}.costEnvelope" value="${esc(costEnvelope(id, firstOfType("budget")))}" list="env-${esc(id)}" placeholder="${tr`aucune`}"><datalist id="env-${esc(id)}">${S().modules[firstOfType("budget")].config.envelopes.map((v) => `<option value="${esc(v.name)}">`).join("")}</datalist></label><span></span></div>` : ""}`,
     summary(id, inst) {
       const now = todayISO(), o = inst.entries.filter((t) => !t.done), late = o.filter((t) => t.due && t.due < now).length, all = inst.entries.length;
-      return `${late ? `<span class="late">${late} en retard</span>, ` : ""}${o.length} à faire, ${all ? Math.round(100 * (all - o.length) / all) : 0} % fait`;
+      return `${late ? `<span class="late">${tr`${late} en retard`}</span>, ` : ""}${tr`${o.length} à faire, ${all ? Math.round(100 * (all - o.length) / all) : 0} % fait`}`;
     },
     context(inst, nm) {
       const o = inst.entries.filter((t) => !t.done).sort(byDue), c = inst.config;
@@ -5828,8 +6181,8 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
 - [${t.id}] ${t.title} | ${t.room || "?"} | ${t.due ? "échéance " + t.due : "sans date"}${t.today ? " | choisie pour aujourd'hui" : ""}${c.costs && t.cost ? " | " + t.cost + " €" : ""}`).join("");
     },
     grouper: (inst, id) => {
-      const c = inst.config, fields = { room: c.groupLabel, cat: c.catLabel, effort: "Effort" };
-      const key = (t, f) => f === "effort" ? ["", "Petit", "Moyen", "Gros"][t.effort || 1] : t[f];
+      const c = inst.config, fields = { room: c.groupLabel, cat: c.catLabel, effort: tr`Effort` };
+      const key = (t, f) => f === "effort" ? ["", tr`Petit`, tr`Moyen`, tr`Gros`][t.effort || 1] : t[f];
       return {
         fields,
         renamable: ["room", "cat"],
@@ -5843,7 +6196,7 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
     recent: (inst) => inst.entries.filter((t) => !t.done).sort(byDue).slice(0, 3).map((t) => `${t.title} · ${dueLabel(t).txt}`),
     review: (inst, from, to) => {
       const done = within(inst.entries, from, to, "doneAt"), cost = done.reduce((a, t) => a + (+t.cost || 0), 0);
-      return `${plural(done.length, "tâche")} terminée${done.length > 1 ? "s" : ""}${inst.config.costs && cost ? `, ${money(cost)} de coûts estimés` : ""}`;
+      return trn(done.length, "{0} tâche terminée", "{0} tâches terminées") + (inst.config.costs && cost ? ", " + tr`${money(cost)} de coûts estimés` : "");
     },
     texts: (inst) => inst.entries.map((t) => ({ text: [t.title, t.room, t.note, ...(t.steps || []).map((x) => x.t)].filter(Boolean).join(" · "), date: t.due || t.created, eid: t.id })),
     accept(id, inst, note) {
@@ -5861,7 +6214,7 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
         try {
           setTaskToday(S().modules[id].entries, t.id, !t.today, todayElsewhere(id));
         } catch {
-          return toast("Trois, c'est le plafond. Termine ou retire-en une.");
+          return toast(tr`Trois, c'est le plafond. Termine ou retire-en une.`);
         }
         site.save();
         render();
@@ -5883,15 +6236,15 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
         render();
         if (!el.checked) return;
         const bud = firstOfType("budget"), c = S().modules[id].config;
-        if (!(c.costs && t.cost && bud)) return toast(doneLines[Math.floor(Math.random() * doneLines.length)]);
+        if (!(c.costs && t.cost && bud)) return toast(tr(doneLines[Math.floor(Math.random() * doneLines.length)]));
         const env = costEnvelope(id, bud);
-        toastAction(`Fait. ${money(t.cost)} estimés : les passer au budget${env ? ` (${env})` : ""} ?`, "Ajouter", () => {
+        toastAction(env ? tr`Fait. ${money(t.cost)} estimés : les passer au budget (${env}) ?` : tr`Fait. ${money(t.cost)} estimés : les passer au budget ?`, tr`Ajouter`, () => {
           const b = S().modules[bud];
           if (!b) return;
           addBudgetEntry(b.entries, { amount: +t.cost, type: "dépense", cat: env, note: t.title, date: todayISO() }, uid(), todayISO());
           site.save();
           render();
-          toast(`Ajouté à ${label(bud)}. L'argent, lui, était déjà parti.`);
+          toast(tr`Ajouté à ${label(bud)}. L'argent, lui, était déjà parti.`);
         }, 1e4);
       },
       "task-step": (el) => {
@@ -6774,14 +7127,14 @@ ${contextText()}`;
     e.status = c.statuses[i];
     site.save();
     render();
-    if (i === c.statuses.length - 1) toast(collectionDoneLines[Math.floor(Math.random() * collectionDoneLines.length)].replace("%t", e.title).replace("%s", e.status));
+    if (i === c.statuses.length - 1) toast(tr(collectionDoneLines[Math.floor(Math.random() * collectionDoneLines.length)], e.title, e.status));
   }
   var modOf = (el) => el.closest("[data-mod]").dataset.mod;
   var itemOf = (el) => S().modules[modOf(el)].entries.find((x) => x.id === idOf(el));
-  var collectionDoneLines = ["« %t » est passé à « %s ». Le monde n'a rien remarqué, comme prévu.", "« %t » : %s. Une chose de moins qui attend ton attention.", "%s : « %t ». L'Œuvre avance, à pas de lichen."];
+  var collectionDoneLines = [N_("« {0} » est passé à « {1} ». Le monde n'a rien remarqué, comme prévu."), N_("« {0} » : {1}. Une chose de moins qui attend ton attention."), N_("{1} : « {0} ». L'Œuvre avance, à pas de lichen.")];
   var reviewedHTML = (e) => {
     const r = (e.reviews || []).at(-1);
-    return r ? `<span>${esc(r.verdict)} le ${fmt(r.date)}</span>` : "";
+    return r ? `<span>${tr`${esc(r.verdict === "maintenue" ? tr`maintenue` : r.verdict)} le ${fmt(r.date)}`}</span>` : "";
   };
   function collectionForm(id, item, title) {
     const c = S().modules[id].config, f = c.fields;
@@ -6790,9 +7143,9 @@ ${contextText()}`;
     for (let i = 0; i < extra.length; i += 2) fields.push({ row: extra.slice(i, i + 2) });
     fields.push({ n: "status", l: c.statusLabel, t: "select", o: c.statuses });
     if (f.text) fields.push({ n: "text", l: f.text, t: "textarea", rows: c.display === "colonnes" ? 6 : 3 });
-    openForm(title || (item ? `Modifier « ${item.title} »` : c.addLabel), fields, item || { status: c.statuses[0] }, (v) => {
+    openForm(title || (item ? tr`Modifier « ${item.title} »` : c.addLabel), fields, item || { status: c.statuses[0] }, (v) => {
       const inst = S().modules[id];
-      if (!inst) return toast("Ce module a été supprimé entre-temps.");
+      if (!inst) return toast(tr`Ce module a été supprimé entre-temps.`);
       saveCollectionItem(inst, v, item && item.id ? item.id : uid(), todayISO());
       site.save();
       render();
@@ -6800,47 +7153,47 @@ ${contextText()}`;
   }
   function collectionCard(id, e, ci, last) {
     const f = S().modules[id].config.fields, meta = [f.tag && e.tag ? `<span class="tag">${esc(e.tag)}</span>` : "", f.due && e.due ? `<span>${fmt(e.due)}</span>` : "", srcMeta(e), originHTML(e, e.title)].join("");
-    return `<div class="card" data-id="${esc(e.id)}" data-ci="${ci}" draggable="true" tabindex="0" aria-label="${esc(e.title)} : [ pour reculer, ] pour avancer"><b>${esc(e.title)}</b>${f.subtitle && e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ""}${meta ? `<div class="meta">${meta}</div>` : ""}${f.text && e.text ? `<p>${esc(e.text.slice(0, 160))}${e.text.length > 160 ? "…" : ""}</p>` : ""}
-      <div class="row">${ci > 0 ? `<button class="btn ghost sm" data-act="col-move" data-d="-1" aria-label="Reculer">←</button>` : ""}${ci < last ? `<button class="btn ghost sm" data-act="col-move" data-d="1" aria-label="Avancer">→</button>` : ""}<span class="spacer"></span><button class="btn ghost sm ra" data-act="specimen">fiche</button><button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></div>`;
+    return `<div class="card" data-id="${esc(e.id)}" data-ci="${ci}" draggable="true" tabindex="0" aria-label="${tr`${esc(e.title)} : [ pour reculer, ] pour avancer`}"><b>${esc(e.title)}</b>${f.subtitle && e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ""}${meta ? `<div class="meta">${meta}</div>` : ""}${f.text && e.text ? `<p>${esc(e.text.slice(0, 160))}${e.text.length > 160 ? "…" : ""}</p>` : ""}
+      <div class="row">${ci > 0 ? `<button class="btn ghost sm" data-act="col-move" data-d="-1" aria-label="${tr`Reculer`}">←</button>` : ""}${ci < last ? `<button class="btn ghost sm" data-act="col-move" data-d="1" aria-label="${tr`Avancer`}">→</button>` : ""}<span class="spacer"></span><button class="btn ghost sm ra" data-act="specimen">${tr`fiche`}</button><button class="btn ghost sm ra" data-act="col-edit">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="col-del">${tr`suppr.`}</button></div></div>`;
   }
   registerType("collection", {
     view(id) {
       const inst = S().modules[id], c = inst.config, f = c.fields, items = inst.entries.filter((e) => gMatch(id, e));
-      const head = `<div class="row" style="margin-bottom:${c.display === "colonnes" ? 20 : 8}px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="col-new">${esc(c.addLabel)}</button></div>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}${c.sources ? sourceBar(id) : ""}${c.music && inst.entries.some((e) => e.mb && e.mb.a) ? `<div class="row" style="margin:-2px 0 12px"><button class="btn ghost sm" data-act="mb-new" title="Demande à MusicBrainz ce qu'ont publié tes artistes reliés depuis ta dernière vérification">Nouvelles sorties</button></div>` : ""}`;
+      const head = `<div class="row" style="margin-bottom:${c.display === "colonnes" ? 20 : 8}px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="col-new">${esc(c.addLabel)}</button></div>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}${c.sources ? sourceBar(id) : ""}${c.music && inst.entries.some((e) => e.mb && e.mb.a) ? `<div class="row" style="margin:-2px 0 12px"><button class="btn ghost sm" data-act="mb-new" title="${tr`Demande à MusicBrainz ce qu'ont publié tes artistes reliés depuis ta dernière vérification`}">${tr`Nouvelles sorties`}</button></div>` : ""}`;
       if (c.concordance) return concordanceView(id, inst, head);
-      const panel = groupPanel(id, `Part arrivée à « ${esc(c.statuses[c.doneFrom])} » dans chaque groupe. Clique pour filtrer.`);
+      const panel = groupPanel(id, tr`Part arrivée à « ${esc(c.statuses[c.doneFrom])} » dans chaque groupe. Clique pour filtrer.`);
       if (c.display === "colonnes") {
         const byDue2 = (a, b) => (a.due || "9999").localeCompare(b.due || "9999");
         const tab = Math.min(c.statuses.length - 1, colTab[id] || 0);
         const seg = `<div class="seg" role="tablist" aria-label="${esc(c.statusLabel)}">${c.statuses.map((st, ci) => `<button type="button" role="tab" aria-selected="${ci === tab}" class="${ci === tab ? "on" : ""}" data-act="col-tab" data-i="${ci}">${esc(st)} <span>${items.filter((e) => e.status === st).length}</span></button>`).join("")}</div>`;
         return `<div data-mod="${esc(id)}">${head}${seg}<div class="board" style="margin-bottom:34px">${c.statuses.map((st, ci) => {
           const col = items.filter((e) => e.status === st).sort(byDue2);
-          return `<div class="col ${ci === tab ? "on" : ""}" data-ci="${ci}"><h3>${esc(st)} <span class="hint" style="font-size:.95rem">${col.length}</span></h3>${col.map((e) => collectionCard(id, e, ci, c.statuses.length - 1)).join("") || `<p class="col-empty"><span class="sr">Aucun élément.</span></p>`}</div>`;
+          return `<div class="col ${ci === tab ? "on" : ""}" data-ci="${ci}"><h3>${esc(st)} <span class="hint" style="font-size:.95rem">${col.length}</span></h3>${col.map((e) => collectionCard(id, e, ci, c.statuses.length - 1)).join("") || `<p class="col-empty"><span class="sr">${tr`Aucun élément.`}</span></p>`}</div>`;
         }).join("")}</div>${panel}</div>`;
       }
       const filter = colFilter[id] || "", shown = items.filter((e) => !filter || e.status === filter);
       return `<div data-mod="${esc(id)}">${head}
-  <div class="row" style="margin-bottom:10px"><select data-act="col-f" aria-label="Filtrer"><option value="">Tous</option>${c.statuses.map((st) => `<option ${st === filter ? "selected" : ""}>${esc(st)}</option>`).join("")}</select></div>
-  <div class="two"><div><ul class="plain col-list">${((pg) => pg.items.map((e) => `<li class="item" data-id="${esc(e.id)}"><span>${c.music && e.mb && e.mb.rg ? coverImg(e.mb.rg) : ""}</span><div><b>${esc(e.title)}</b>${f.subtitle ? e.subtitle ? `, <i>${esc(e.subtitle)}</i>${c.music && e.mb && e.mb.y ? ` <span class="hint">(${esc(e.mb.y)})</span>` : ""}` : c.music ? ` <button class="btn ghost sm" data-act="mb-open">préciser ${esc(f.subtitle.toLowerCase())}</button>` : ` <span class="hint">${esc(f.subtitle.toLowerCase())} à préciser</span>` : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${c.review ? "à réexaminer le " : ""}${fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}${reviewedHTML(e) || e.origin || e.src ? `<div class="meta">${srcMeta(e)}${reviewedHTML(e)}${originHTML(e, e.title)}</div>` : ""}${c.sources && (e.links || []).length ? `<div class="meta src-docs">${e.links.map((l) => `<span>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</span>`).join("")}</div>` : ""}</div>
-    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map((st) => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm ra" data-act="specimen">fiche</button>${c.music ? `<button class="btn ghost sm ra" data-act="mb-open">discographie</button>` : ""}${c.sources ? `<button class="btn ghost sm ra" data-act="src-link">documente…</button>` : ""}<button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">Rien dans ce filtre.</li>`}</ul></div><div>${panel}</div></div></div>`;
+  <div class="row" style="margin-bottom:10px"><select data-act="col-f" aria-label="${tr`Filtrer`}"><option value="">${tr`Tous`}</option>${c.statuses.map((st) => `<option ${st === filter ? "selected" : ""}>${esc(st)}</option>`).join("")}</select></div>
+  <div class="two"><div><ul class="plain col-list">${((pg) => pg.items.map((e) => `<li class="item" data-id="${esc(e.id)}"><span>${c.music && e.mb && e.mb.rg ? coverImg(e.mb.rg) : ""}</span><div><b>${esc(e.title)}</b>${f.subtitle ? e.subtitle ? `, <i>${esc(e.subtitle)}</i>${c.music && e.mb && e.mb.y ? ` <span class="hint">(${esc(e.mb.y)})</span>` : ""}` : c.music ? ` <button class="btn ghost sm" data-act="mb-open">${tr`préciser ${esc(f.subtitle.toLowerCase())}`}</button>` : ` <span class="hint">${tr`${esc(f.subtitle.toLowerCase())} à préciser`}</span>` : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${c.review ? tr`à réexaminer le ${fmt(e.due)}` : fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}${reviewedHTML(e) || e.origin || e.src ? `<div class="meta">${srcMeta(e)}${reviewedHTML(e)}${originHTML(e, e.title)}</div>` : ""}${c.sources && (e.links || []).length ? `<div class="meta src-docs">${e.links.map((l) => `<span>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</span>`).join("")}</div>` : ""}</div>
+    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map((st) => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm ra" data-act="specimen">${tr`fiche`}</button>${c.music ? `<button class="btn ghost sm ra" data-act="mb-open">${tr`discographie`}</button>` : ""}${c.sources ? `<button class="btn ghost sm ra" data-act="src-link">${tr`documente…`}</button>` : ""}<button class="btn ghost sm ra" data-act="col-edit">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="col-del">${tr`suppr.`}</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">${tr`Rien dans ce filtre.`}</li>`}</ul></div><div>${panel}</div></div></div>`;
     },
     settings: (id, { config: c }) => {
       const f = c.fields, fid = esc(id);
       const field = (k, l, hint) => `<label>${l}<input data-set-mod="${fid}.fields.${k}" value="${esc(f[k])}" placeholder="${hint}" ${k === "title" ? "required" : ""}></label>`;
-      return `<div class="field-row"><label>Affichage<select data-set-mod="${fid}.display"><option value="liste" ${c.display === "liste" ? "selected" : ""}>Liste filtrable</option><option value="colonnes" ${c.display === "colonnes" ? "selected" : ""}>Colonnes (une par statut)</option></select></label><label>Bouton d'ajout<input data-set-mod="${fid}.addLabel" value="${esc(c.addLabel)}" required></label></div>
-    <div class="field-row" style="margin-top:8px"><label>Description<input data-set-mod="${fid}.description" value="${esc(c.description)}" placeholder="Une phrase sous le titre"></label><label>Nom des statuts<input data-set-mod="${fid}.statusLabel" value="${esc(c.statusLabel)}" required></label></div>
-    <p class="hint" style="margin:12px 0 4px">Champs d'un élément. Laisser un nom vide masque le champ.</p>
-    <div class="field-row">${field("title", "Titre", "Titre")}${field("subtitle", "Sous-titre", "(masqué)")}</div>
-    <div class="field-row" style="margin-top:8px">${field("tag", "Étiquette (sert au regroupement)", "(masquée)")}${field("due", "Date", "(masquée)")}</div>
-    <div class="field-row" style="margin-top:8px">${field("text", "Texte long", "(masqué)")}<span></span></div>
-    <div style="margin-top:10px"><span class="hint" style="margin:0">${esc(c.statusLabel)}s, dans l'ordre</span>${c.statuses.map((st, i) => `<div class="set" data-si="${i}" style="grid-template-columns:1fr auto"><input data-act="st-name" data-mod="${fid}" value="${esc(st)}" aria-label="Nom du statut"><div class="row"><button class="btn ghost sm" data-act="st-up" data-mod="${fid}" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="st-del" data-mod="${fid}">suppr.</button></div></div>`).join("")}<button class="btn sm" data-act="st-add" data-mod="${fid}" style="margin-top:8px">Ajouter un statut</button></div>
-    <div class="field-row" style="margin-top:10px"><label>Compte comme fait à partir de<select data-act="col-done" data-mod="${fid}">${c.statuses.map((st, i) => i ? `<option value="${i}" ${c.doneFrom === i ? "selected" : ""}>${esc(st)}</option>` : "").join("")}</select></label><span></span></div>
-    <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-concordance" data-mod="${fid}" ${c.concordance ? "checked" : ""}>Concordance : chaque élément est un motif, compté dans les textes de tous les autres modules (variantes dans le sous-titre)</label>
-    ${c.concordance ? `<div class="field-row" style="margin-top:8px"><label>En jachère après (jours d'absence)<input type="number" min="1" max="3650" data-set-mod="${fid}.fallowDays" value="${esc(c.fallowDays)}"></label><span></span></div>` : ""}
-    <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-music" data-mod="${fid}" ${c.music ? "checked" : ""}>Musique : le titre est un artiste, le sous-titre un album, précisés par MusicBrainz (discographie, pochettes, nouvelles sorties)</label>
-    <div style="margin-top:12px"><label class="btn sm" style="display:inline-block;font-weight:500">Importer un export Instagram<input type="file" accept="application/json,.json" multiple data-act="col-ig" data-mod="${fid}" style="display:none"></label>
-      <p class="hint" style="margin:4px 0 0">Import manuel de tes publications : aucune connexion à Instagram, aucune synchronisation automatique. Choisis le compte voulu lors de l’export Meta. Pour plusieurs comptes, crée une collection par compte et donne-lui son nom ; les archives ne sont pas vérifiées par compte. Légende et date uniquement (pas de lien, l’export n’en contient pas). Centre de comptes Meta → Tes informations et autorisations → Télécharger tes informations, format JSON ; puis <code>posts_1.json</code> et <code>reels.json</code> (dossier <code>your_instagram_activity/media</code>). Le fichier est lu sur cet appareil ; les publications importées sont ensuite enregistrées dans ton espace et suivent sa synchronisation. Un second import dans la même collection n’ajoute que les nouvelles.</p></div>
-    <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-review" data-mod="${fid}" ${c.review ? "checked" : ""}>La date est un rendez-vous de révision : elle revient sur l'accueil quel que soit le ${esc(c.statusLabel.toLowerCase())}, sauf le dernier</label>`;
+      return `<div class="field-row"><label>${tr`Affichage`}<select data-set-mod="${fid}.display"><option value="liste" ${c.display === "liste" ? "selected" : ""}>${tr`Liste filtrable`}</option><option value="colonnes" ${c.display === "colonnes" ? "selected" : ""}>${tr`Colonnes (une par statut)`}</option></select></label><label>${tr`Bouton d'ajout`}<input data-set-mod="${fid}.addLabel" value="${esc(c.addLabel)}" required></label></div>
+    <div class="field-row" style="margin-top:8px"><label>${tr`Description`}<input data-set-mod="${fid}.description" value="${esc(c.description)}" placeholder="${tr`Une phrase sous le titre`}"></label><label>${tr`Nom des statuts`}<input data-set-mod="${fid}.statusLabel" value="${esc(c.statusLabel)}" required></label></div>
+    <p class="hint" style="margin:12px 0 4px">${tr`Champs d'un élément. Laisser un nom vide masque le champ.`}</p>
+    <div class="field-row">${field("title", tr`Titre`, tr`Titre`)}${field("subtitle", tr`Sous-titre`, tr`(masqué)`)}</div>
+    <div class="field-row" style="margin-top:8px">${field("tag", tr`Étiquette (sert au regroupement)`, tr`(masquée)`)}${field("due", tr`Date`, tr`(masquée)`)}</div>
+    <div class="field-row" style="margin-top:8px">${field("text", tr`Texte long`, tr`(masqué)`)}<span></span></div>
+    <div style="margin-top:10px"><span class="hint" style="margin:0">${tr`${`${esc(c.statusLabel)}s`}, dans l'ordre`}</span>${c.statuses.map((st, i) => `<div class="set" data-si="${i}" style="grid-template-columns:1fr auto"><input data-act="st-name" data-mod="${fid}" value="${esc(st)}" aria-label="${tr`Nom du statut`}"><div class="row"><button class="btn ghost sm" data-act="st-up" data-mod="${fid}" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="st-del" data-mod="${fid}">${tr`suppr.`}</button></div></div>`).join("")}<button class="btn sm" data-act="st-add" data-mod="${fid}" style="margin-top:8px">${tr`Ajouter un statut`}</button></div>
+    <div class="field-row" style="margin-top:10px"><label>${tr`Compte comme fait à partir de`}<select data-act="col-done" data-mod="${fid}">${c.statuses.map((st, i) => i ? `<option value="${i}" ${c.doneFrom === i ? "selected" : ""}>${esc(st)}</option>` : "").join("")}</select></label><span></span></div>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-concordance" data-mod="${fid}" ${c.concordance ? "checked" : ""}>${tr`Concordance : chaque élément est un motif, compté dans les textes de tous les autres modules (variantes dans le sous-titre)`}</label>
+    ${c.concordance ? `<div class="field-row" style="margin-top:8px"><label>${tr`En jachère après (jours d'absence)`}<input type="number" min="1" max="3650" data-set-mod="${fid}.fallowDays" value="${esc(c.fallowDays)}"></label><span></span></div>` : ""}
+    <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-music" data-mod="${fid}" ${c.music ? "checked" : ""}>${tr`Musique : le titre est un artiste, le sous-titre un album, précisés par MusicBrainz (discographie, pochettes, nouvelles sorties)`}</label>
+    <div style="margin-top:12px"><label class="btn sm" style="display:inline-block;font-weight:500">${tr`Importer un export Instagram`}<input type="file" accept="application/json,.json" multiple data-act="col-ig" data-mod="${fid}" style="display:none"></label>
+      <p class="hint" style="margin:4px 0 0">${tr`Import manuel de tes publications : aucune connexion à Instagram, aucune synchronisation automatique. Choisis le compte voulu lors de l’export Meta. Pour plusieurs comptes, crée une collection par compte et donne-lui son nom ; les archives ne sont pas vérifiées par compte. Légende et date uniquement (pas de lien, l’export n’en contient pas). Centre de comptes Meta → Tes informations et autorisations → Télécharger tes informations, format JSON ; puis ${"<code>posts_1.json</code>"} et ${"<code>reels.json</code>"} (dossier ${"<code>your_instagram_activity/media</code>"}). Le fichier est lu sur cet appareil ; les publications importées sont ensuite enregistrées dans ton espace et suivent sa synchronisation. Un second import dans la même collection n’ajoute que les nouvelles.`}</p></div>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-review" data-mod="${fid}" ${c.review ? "checked" : ""}>${tr`La date est un rendez-vous de révision : elle revient sur l'accueil quel que soit le ${esc(c.statusLabel.toLowerCase())}, sauf le dernier`}</label>`;
     },
     accept: (id, inst, note) => {
       saveCollectionItem(inst, { title: note.text }, uid());
@@ -6851,15 +7204,15 @@ ${contextText()}`;
       const c = inst.config;
       if (c.concordance) {
         const ms = motifsIn(inst, from, to);
-        return ms.length ? ms.slice(0, 5).map((x) => `${x.name} ×${x.n}`).join(", ") : "Aucun motif rencontré";
+        return ms.length ? ms.slice(0, 5).map((x) => `${x.name} ×${x.n}`).join(", ") : tr`Aucun motif rencontré`;
       }
       if (!c.fields.due) return null;
       if (c.review) {
         const due = within(inst.entries, from, to, "due").filter((e) => e.status !== c.statuses.at(-1)).length, done = inst.entries.flatMap((e) => within(e.reviews || [], from, to)).length;
-        return due || done ? `${due} à réexaminer, ${plural(done, "réexamen")} fait${done > 1 ? "s" : ""}` : "Rien à réexaminer";
+        return due || done ? tr`${due} à réexaminer, ${trn(done, "{0} réexamen fait", "{0} réexamens faits")}` : tr`Rien à réexaminer`;
       }
       const es = within(inst.entries, from, to, "due");
-      return es.length ? `${plural(es.length, "prévu")}, dont ${es.filter((e) => c.statuses.indexOf(e.status) >= c.doneFrom).length} « ${c.statuses[c.doneFrom]} »` : "Rien de prévu";
+      return es.length ? tr`${trn(es.length, "{0} prévu", "{0} prévus")}, dont ${es.filter((e) => c.statuses.indexOf(e.status) >= c.doneFrom).length} « ${c.statuses[c.doneFrom]} »` : tr`Rien de prévu`;
     },
     texts: (inst) => inst.entries.map((e) => ({ text: [e.title, e.subtitle, e.tag, e.text, e.src && e.src.site, e.src && e.src.doi].filter(Boolean).join(" · "), date: e.due || null, eid: e.id })),
     // Ce qui est prévu aujourd'hui ou en retard, et pas encore « fait ».
@@ -6867,15 +7220,15 @@ ${contextText()}`;
       const c = inst.config;
       if (!c.fields.due) return [];
       if (c.review) return inst.entries.filter((e) => e.due && e.due <= now && e.status !== c.statuses.at(-1)).map((e) => ({
-        text: `« ${esc(e.title)} » : à réexaminer (${esc(label(id))})`,
-        actions: `<button class="btn sm" data-act="col-reread" data-mod="${esc(id)}" data-id="${esc(e.id)}">relire</button><button class="btn ghost sm" data-act="col-keep" data-mod="${esc(id)}" data-id="${esc(e.id)}">maintenue</button>`
+        text: tr`« ${esc(e.title)} » : à réexaminer (${esc(label(id))})`,
+        actions: `<button class="btn sm" data-act="col-reread" data-mod="${esc(id)}" data-id="${esc(e.id)}">${tr`relire`}</button><button class="btn ghost sm" data-act="col-keep" data-mod="${esc(id)}" data-id="${esc(e.id)}">${tr`maintenue`}</button>`
       }));
       return inst.entries.filter((e) => e.due && e.due <= now && c.statuses.indexOf(e.status) < c.doneFrom).map((e) => ({
-        text: `« ${esc(e.title)} » : ${e.due < now ? "en retard" : "prévu aujourd'hui"} (${esc(label(id))})`,
+        text: e.due < now ? tr`« ${esc(e.title)} » : en retard (${esc(label(id))})` : tr`« ${esc(e.title)} » : prévu aujourd'hui (${esc(label(id))})`,
         href: `#${id}`
       }));
     },
-    summary: (id, inst) => isConcordance(inst) ? concordanceSummary(inst) : inst.config.statuses.map((st) => [st, inst.entries.filter((e) => e.status === st).length]).filter(([, n]) => n).map(([st, n]) => `${esc(st)} : ${n}`).join(", ") || "Vide",
+    summary: (id, inst) => isConcordance(inst) ? concordanceSummary(inst) : inst.config.statuses.map((st) => [st, inst.entries.filter((e) => e.status === st).length]).filter(([, n]) => n).map(([st, n]) => tr`${esc(st)} : ${n}`).join(", ") || tr`Vide`,
     context(inst, nm) {
       const c = inst.config;
       return `
@@ -6909,7 +7262,7 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
         e.due = "";
         site.save();
         render();
-        toastUndo("Maintenue. La raison d'alors tient encore.", () => {
+        toastUndo(tr`Maintenue. La raison d'alors tient encore.`, () => {
           const cur = S().modules[id] && S().modules[id].entries.find((x) => x.id === itemId);
           if (!cur) return;
           cur.due = due;
@@ -6929,8 +7282,8 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
       },
       "st-add": (el) => {
         const c = instOf(el).config;
-        if (c.statuses.length >= 12) return toast("Douze statuts. Au-delà, ce n'est plus un suivi, c'est une bureaucratie.");
-        c.statuses.push(`Statut ${c.statuses.length + 1}`);
+        if (c.statuses.length >= 12) return toast(tr`Douze statuts. Au-delà, ce n'est plus un suivi, c'est une bureaucratie.`);
+        c.statuses.push(tr`Statut ${c.statuses.length + 1}`);
         site.save();
         render();
       },
@@ -6945,9 +7298,9 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
       },
       "st-del": async (el) => {
         const inst = instOf(el), c = inst.config, i = +el.closest("[data-si]").dataset.si, st = c.statuses[i];
-        if (c.statuses.length <= 2) return toast("Deux statuts minimum : sinon rien ne peut avancer.");
+        if (c.statuses.length <= 2) return toast(tr`Deux statuts minimum : sinon rien ne peut avancer.`);
         const n = inst.entries.filter((e) => e.status === st).length, to = c.statuses[i === 0 ? 1 : i - 1];
-        if (!await ask(`Supprimer le statut « ${st} » ?${n ? ` Ses ${n} élément(s) passeront à « ${to} ».` : ""}`)) return;
+        if (!await ask(tr`Supprimer le statut « ${st} » ?` + (n ? " " + tr`Ses ${n} élément(s) passeront à « ${to} ».` : ""))) return;
         inst.entries.forEach((e) => {
           if (e.status === st) e.status = to;
         });
@@ -7007,9 +7360,9 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
           seen.add(k);
           return true;
         }).sort((a, b) => a.t - b.t);
-        if (!fresh.length) return toast(bad === files.length ? "Ce fichier n'est pas un export Instagram lisible (JSON)." : posts.length ? "Rien de nouveau : tout est déjà là." : "Aucune publication dans ce fichier. C'est posts_1.json ou reels.json qu'il faut.");
+        if (!fresh.length) return toast(bad === files.length ? tr`Ce fichier n'est pas un export Instagram lisible (JSON).` : posts.length ? tr`Rien de nouveau : tout est déjà là.` : tr`Aucune publication dans ce fichier. C'est posts_1.json ou reels.json qu'il faut.`);
         const c = inst.config, last = c.statuses[c.statuses.length - 1], day = (t) => fmt(igDay(t), { day: "numeric", month: "long", year: "numeric" });
-        const q = `Importer ${fresh.length} publication${fresh.length > 1 ? "s" : ""} (du ${day(fresh[0].t)} au ${day(fresh[fresh.length - 1].t)}) dans ${label(mod)}, au statut « ${last} » ?${posts.length > fresh.length ? ` ${posts.length - fresh.length} déjà là, ignorée${posts.length - fresh.length > 1 ? "s" : ""}.` : ""}`;
+        const q = trn(fresh.length, "Importer {0} publication (du {1} au {2}) dans {3}, au statut « {4} » ?", "Importer {0} publications (du {1} au {2}) dans {3}, au statut « {4} » ?", day(fresh[0].t), day(fresh[fresh.length - 1].t), label(mod), last) + (posts.length > fresh.length ? " " + trn(posts.length - fresh.length, "{0} déjà là, ignorée.", "{0} déjà là, ignorées.") : "");
         if (!await ask(q)) return;
         for (const p of fresh) {
           const x = igEntry(p), n = saveCollectionItem(inst, { title: x.title, text: x.text, due: x.due, status: last }, uid());
@@ -7017,13 +7370,13 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
         }
         site.save();
         render();
-        toast(`${fresh.length} publication${fresh.length > 1 ? "s" : ""} importée${fresh.length > 1 ? "s" : ""} dans ${label(mod)}.`);
+        toast(trn(fresh.length, "{0} publication importée dans {1}.", "{0} publications importées dans {1}.", label(mod)));
       },
       "st-name": (el) => {
         const inst = instOf(el), c = inst.config, i = +el.closest("[data-si]").dataset.si, from = c.statuses[i], to = el.value.trim();
         if (!to || to === from) return render();
         if (c.statuses.includes(to)) {
-          toast(`« ${to} » existe déjà.`);
+          toast(tr`« ${to} » existe déjà.`);
           return render();
         }
         c.statuses[i] = to;
@@ -7085,6 +7438,7 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
   var budMonths = {};
   var monthOf = (id) => budMonths[id] || (budMonths[id] = todayISO().slice(0, 7));
   var inMonth = (inst, m) => inst.entries.filter((e) => (e.date || "").slice(0, 7) === m);
+  var typeLabel = (type) => type === "revenu" ? tr`revenu` : tr`dépense`;
   var sumOf = (es, type) => es.filter((e) => e.type === type).reduce((a, e) => a + (+e.amount || 0), 0);
   registerType("budget", {
     view(id) {
@@ -7094,31 +7448,31 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
       const tasksLeft = allTasks().filter(([m2, t]) => !t.done && t.cost && S().modules[m2].config.costs).reduce((a, [, t]) => a + +t.cost, 0);
       const defDate = m === todayISO().slice(0, 7) ? todayISO() : m + "-01";
       return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span>
-    <button class="btn ghost" data-act="bud-month" data-d="-1" aria-label="Mois précédent">‹</button><b style="min-width:9ch;text-align:center;text-transform:capitalize">${mLabel}</b><button class="btn ghost" data-act="bud-month" data-d="1" aria-label="Mois suivant">›</button></div>
-  <div class="stats"><div><span>Revenus</span><b class="big pos">${money(inn)}</b></div><div><span>Dépenses</span><b class="big">${money(out)}</b></div><div><span>Solde</span><b class="big ${inn - out < 0 ? "neg" : "pos"}">${money(inn - out)}</b></div></div>
+    <button class="btn ghost" data-act="bud-month" data-d="-1" aria-label="${tr`Mois précédent`}">‹</button><b style="min-width:9ch;text-align:center;text-transform:capitalize">${mLabel}</b><button class="btn ghost" data-act="bud-month" data-d="1" aria-label="${tr`Mois suivant`}">›</button></div>
+  <div class="stats"><div><span>${tr`Revenus`}</span><b class="big pos">${money(inn)}</b></div><div><span>${tr`Dépenses`}</span><b class="big">${money(out)}</b></div><div><span>${tr`Solde`}</span><b class="big ${inn - out < 0 ? "neg" : "pos"}">${money(inn - out)}</b></div></div>
   <datalist id="envList">${inst.config.envelopes.map((v) => `<option value="${esc(v.name)}">`).join("")}</datalist>
   <div class="row" style="margin-bottom:26px">
-    <select id="bType" style="max-width:130px" aria-label="Type"><option>dépense</option><option>revenu</option></select>
-    <input id="bAmt" type="number" step="0.01" min="0" placeholder="Montant" style="max-width:130px" inputmode="decimal" aria-label="Montant">
-    <input id="bCat" list="envList" placeholder="Enveloppe" style="max-width:170px" aria-label="Enveloppe">
-    <input id="bNote" placeholder="Note" style="max-width:220px" aria-label="Note">
-    <input id="bDate" type="date" value="${defDate}" style="max-width:160px" aria-label="Date">
-    <button class="btn acc" data-act="bud-add">Ajouter</button></div>
-  <div class="two"><section><h3>Opérations</h3><p class="hint">L'argent ne disparaît pas, il change simplement de propriétaire.</p>
-    <ul class="plain">${shown.map((e) => `<li class="item" data-id="${esc(e.id)}"><span class="jdate">${fmt(e.date)}</span><div>${esc(e.note || e.cat || e.type)}<div class="meta">${e.cat ? `<span class="tag">${esc(e.cat)}</span>` : ""}</div></div><div class="row"><b class="${e.type === "revenu" ? "pos" : ""}">${e.type === "revenu" ? "+" : "−"}${money(e.amount)}</b><button class="btn ghost sm ra" data-act="bud-del">suppr.</button></div></li>`).join("") || `<li class="empty">Aucune opération ce mois-ci. Suspect.</li>`}</ul></section>
-  <div>${groupPanel(id, "Part de chaque enveloppe mensuelle déjà consommée. Le rouge signale le dépassement.")}
-    ${tasksLeft ? `<p class="hint">Les tâches en cours estiment encore ${money(tasksLeft)} de dépenses à venir.</p>` : ""}</div></div></div>`;
+    <select id="bType" style="max-width:130px" aria-label="${tr`Type`}"><option value="dépense">${typeLabel("dépense")}</option><option value="revenu">${typeLabel("revenu")}</option></select>
+    <input id="bAmt" type="number" step="0.01" min="0" placeholder="${tr`Montant`}" style="max-width:130px" inputmode="decimal" aria-label="${tr`Montant`}">
+    <input id="bCat" list="envList" placeholder="${tr`Enveloppe`}" style="max-width:170px" aria-label="${tr`Enveloppe`}">
+    <input id="bNote" placeholder="${tr`Note`}" style="max-width:220px" aria-label="${tr`Note`}">
+    <input id="bDate" type="date" value="${defDate}" style="max-width:160px" aria-label="${tr`Date`}">
+    <button class="btn acc" data-act="bud-add">${tr`Ajouter`}</button></div>
+  <div class="two"><section><h3>${tr`Opérations`}</h3><p class="hint">${tr`L'argent ne disparaît pas, il change simplement de propriétaire.`}</p>
+    <ul class="plain">${shown.map((e) => `<li class="item" data-id="${esc(e.id)}"><span class="jdate">${fmt(e.date)}</span><div>${esc(e.note || e.cat || typeLabel(e.type))}<div class="meta">${e.cat ? `<span class="tag">${esc(e.cat)}</span>` : ""}</div></div><div class="row"><b class="${e.type === "revenu" ? "pos" : ""}">${e.type === "revenu" ? "+" : "−"}${money(e.amount)}</b><button class="btn ghost sm ra" data-act="bud-del">${tr`suppr.`}</button></div></li>`).join("") || `<li class="empty">${tr`Aucune opération ce mois-ci. Suspect.`}</li>`}</ul></section>
+  <div>${groupPanel(id, tr`Part de chaque enveloppe mensuelle déjà consommée. Le rouge signale le dépassement.`)}
+    ${tasksLeft ? `<p class="hint">${tr`Les tâches en cours estiment encore ${money(tasksLeft)} de dépenses à venir.`}</p>` : ""}</div></div></div>`;
     },
-    settings: (id, { config: c }) => `<div><span class="hint" style="margin:0">Enveloppes mensuelles</span>${c.envelopes.map((v, i) => `<div class="set" data-vi="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="env-name" data-mod="${esc(id)}" value="${esc(v.name)}" aria-label="Nom de l'enveloppe"><input type="number" min="0" data-act="env-limit" data-mod="${esc(id)}" value="${esc(v.limit || "")}" placeholder="€ / mois" aria-label="Plafond mensuel"><button class="btn ghost sm" data-act="env-del" data-mod="${esc(id)}">suppr.</button></div>`).join("")}<button class="btn sm" data-act="env-add" data-mod="${esc(id)}" style="margin-top:8px">Ajouter une enveloppe</button></div>`,
-    recent: (inst) => recentBy(inst.entries).map((e) => `${fmt(e.date)} · ${e.note || e.cat || e.type} · ${e.type === "revenu" ? "+" : "−"}${money(e.amount)}`),
+    settings: (id, { config: c }) => `<div><span class="hint" style="margin:0">${tr`Enveloppes mensuelles`}</span>${c.envelopes.map((v, i) => `<div class="set" data-vi="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="env-name" data-mod="${esc(id)}" value="${esc(v.name)}" aria-label="${tr`Nom de l'enveloppe`}"><input type="number" min="0" data-act="env-limit" data-mod="${esc(id)}" value="${esc(v.limit || "")}" placeholder="${tr`€ / mois`}" aria-label="${tr`Plafond mensuel`}"><button class="btn ghost sm" data-act="env-del" data-mod="${esc(id)}">${tr`suppr.`}</button></div>`).join("")}<button class="btn sm" data-act="env-add" data-mod="${esc(id)}" style="margin-top:8px">${tr`Ajouter une enveloppe`}</button></div>`,
+    recent: (inst) => recentBy(inst.entries).map((e) => `${fmt(e.date)} · ${e.note || e.cat || typeLabel(e.type)} · ${e.type === "revenu" ? "+" : "−"}${money(e.amount)}`),
     review: (inst, from, to) => {
       const es = within(inst.entries, from, to), out = sumOf(es, "dépense"), inn = sumOf(es, "revenu");
-      return `${money(out)} dépensés, ${money(inn)} reçus, solde ${money(inn - out)}`;
+      return tr`${money(out)} dépensés, ${money(inn)} reçus, solde ${money(inn - out)}`;
     },
     texts: (inst) => inst.entries.filter((e) => e.note || e.cat).map((e) => ({ text: [e.note, e.cat, money(e.amount)].filter(Boolean).join(" · "), date: e.date, eid: e.id })),
     summary(id, inst) {
       const es = inMonth(inst, todayISO().slice(0, 7)), out = sumOf(es, "dépense"), bal = sumOf(es, "revenu") - out;
-      return `Ce mois-ci : ${money(out)} dépensés, solde <span class="${bal < 0 ? "neg" : "pos"}">${money(bal)}</span>`;
+      return tr`Ce mois-ci : ${money(out)} dépensés, solde ${`<span class="${bal < 0 ? "neg" : "pos"}">${money(bal)}</span>`}`;
     },
     context(inst, nm) {
       const mo = todayISO().slice(0, 7), es = inMonth(inst, mo);
@@ -7129,23 +7483,23 @@ ${nm} (${mo}) : dépenses ${sumOf(es, "dépense")} €, revenus ${sumOf(es, "rev
     envelopeGroups(inst, m) {
       const sums = /* @__PURE__ */ new Map();
       inMonth(inst, m).filter((e) => e.type === "dépense").forEach((e) => {
-        const k = e.cat || "Sans enveloppe";
+        const k = e.cat || tr`Sans enveloppe`;
         sums.set(k, (sums.get(k) || 0) + (+e.amount || 0));
       });
       const out = inst.config.envelopes.map((v, i) => {
         const s = sums.get(v.name) || 0;
         sums.delete(v.name);
-        return { name: v.name, num: s, den: +v.limit || 0, pct: +v.limit ? Math.round(100 * s / v.limit) : null, sub: `${money(s)} sur ${money(v.limit)}`, order: i };
+        return { name: v.name, num: s, den: +v.limit || 0, pct: +v.limit ? Math.round(100 * s / v.limit) : null, sub: tr`${money(s)} sur ${money(v.limit)}`, order: i };
       });
       for (const [n, s] of sums) out.push({ name: n, num: s, den: 0, pct: null, sub: money(s), order: 900 });
       return out;
     },
     grouper: (inst, id) => ({
-      fields: { cat: "Enveloppe" },
+      fields: { cat: tr`Enveloppe` },
       renamable: ["cat"],
       filterable: true,
       items: () => inst.entries,
-      key: (e) => e.cat || "Sans enveloppe",
+      key: (e) => e.cat || tr`Sans enveloppe`,
       store: () => site,
       groups: () => TYPE_UI.budget.envelopeGroups(inst, monthOf(id)),
       rename: (from, to) => inst.config.envelopes.forEach((v) => {
@@ -7161,7 +7515,7 @@ ${nm} (${mo}) : dépenses ${sumOf(es, "dépense")} €, revenus ${sumOf(es, "rev
       },
       "bud-add": (el) => {
         const amt = Math.abs(+$("#bAmt").value);
-        if (!Number.isFinite(amt) || !amt) return toast("Un montant, même symbolique.");
+        if (!Number.isFinite(amt) || !amt) return toast(tr`Un montant, même symbolique.`);
         try {
           addBudgetEntry(S().modules[modOf(el)].entries, { amount: amt, type: $("#bType").value, cat: $("#bCat").value.trim(), note: $("#bNote").value.trim(), date: $("#bDate").value }, uid(), todayISO());
         } catch (e) {
@@ -7173,13 +7527,13 @@ ${nm} (${mo}) : dépenses ${sumOf(es, "dépense")} €, revenus ${sumOf(es, "rev
       },
       "bud-del": (el) => removeWithUndo(modOf(el), "entries", idOf(el)),
       "env-add": (el) => {
-        instOf(el).config.envelopes.push({ id: uid(), name: "Nouvelle enveloppe", limit: 100 });
+        instOf(el).config.envelopes.push({ id: uid(), name: tr`Nouvelle enveloppe`, limit: 100 });
         site.save();
         render();
       },
       "env-del": async (el) => {
         const c = instOf(el).config, i = +el.closest("[data-vi]").dataset.vi;
-        if (await ask(`Supprimer l'enveloppe « ${c.envelopes[i].name} » ? Les opérations restent.`)) {
+        if (await ask(tr`Supprimer l'enveloppe « ${c.envelopes[i].name} » ? Les opérations restent.`)) {
           c.envelopes.splice(i, 1);
           site.save();
           render();
@@ -7212,17 +7566,17 @@ ${nm} (${mo}) : dépenses ${sumOf(es, "dépense")} €, revenus ${sumOf(es, "rev
   function projection(inst) {
     const c = inst.config, goal = +c.goal || 0, tot = totalOf(inst);
     if (!goal) return "";
-    if (tot >= goal) return "Objectif atteint. Le reste relève de l'orgueil, ou de la réécriture.";
+    if (tot >= goal) return tr`Objectif atteint. Le reste relève de l'orgueil, ou de la réécriture.`;
     const recent = inst.entries.filter((x) => x.date >= addDaysTo(todayISO(), -29)).reduce((a, x) => a + (+x.value || 0), 0);
-    if (recent <= 0) return "Pas assez d'élan ces 30 derniers jours pour prédire une fin. La prophétie attendra.";
+    if (recent <= 0) return tr`Pas assez d'élan ces 30 derniers jours pour prédire une fin. La prophétie attendra.`;
     const perDay = recent / 30, end = addDaysTo(todayISO(), Math.ceil((goal - tot) / perDay));
-    return `Au rythme des 30 derniers jours (${Math.round(perDay).toLocaleString(uiLocale())} ${c.unitLabel} par jour), objectif atteint vers le ${fmt(end, { day: "numeric", month: "long", year: "numeric" })}.`;
+    return tr`Au rythme des 30 derniers jours (${Math.round(perDay).toLocaleString(uiLocale())} ${c.unitLabel} par jour), objectif atteint vers le ${fmt(end, { day: "numeric", month: "long", year: "numeric" })}.`;
   }
   var fragFilter = {};
   function versionsHTML(f) {
     const n = (f.versions || []).length;
     if (!n) return "";
-    return `<details class="versions"><summary class="hint" style="cursor:pointer;margin:4px 0">${n} version${n > 1 ? "s" : ""} antérieure${n > 1 ? "s" : ""}</summary>${[...f.versions].reverse().map((v) => `<p class="note" style="white-space:pre-wrap">${fmt(v.at)} : ${esc(v.text)}</p>`).join("")}</details>`;
+    return `<details class="versions"><summary class="hint" style="cursor:pointer;margin:4px 0">${trn(n, "{0} version antérieure", "{0} versions antérieures")}</summary>${[...f.versions].reverse().map((v) => `<p class="note" style="white-space:pre-wrap">${tr`${fmt(v.at)} : ${esc(v.text)}`}</p>`).join("")}</details>`;
   }
   function scrapsMarkdown(id, inst) {
     const c = inst.config, block = (list) => list.map((f) => f.text.trim()).join("\n\n");
@@ -7232,7 +7586,7 @@ ${nm} (${mo}) : dépenses ${sumOf(es, "dépense")} €, revenus ${sumOf(es, "rev
       if (fs.length) parts.push(`## ${cat.name}`, block(fs));
     }
     const loose = inst.scraps.filter((f) => !c.categories.some((cat) => cat.id === f.category));
-    if (loose.length) parts.push(c.categories.length ? `## Hors ${c.categoryLabel.toLowerCase()}` : "", block(loose));
+    if (loose.length) parts.push(c.categories.length ? `## ${tr`Hors ${c.categoryLabel.toLowerCase()}`}` : "", block(loose));
     return parts.filter(Boolean).join("\n\n") + "\n";
   }
   function cumulGroupPanel(id) {
@@ -7240,7 +7594,7 @@ ${nm} (${mo}) : dépenses ${sumOf(es, "dépense")} €, revenus ${sumOf(es, "rev
     const sum = (catId) => inst.entries.filter((x) => (x.category || "") === catId).reduce((a, x) => a + (+x.value || 0), 0);
     const out = c.categories.map((cat) => {
       const v = sum(cat.id), g = +cat.goal || 0;
-      return { name: cat.name || "Sans titre", pct: g ? Math.min(100, Math.round(100 * v / g)) : null, sub: g ? `${v.toLocaleString(uiLocale())} / ${g.toLocaleString(uiLocale())} ${c.unitLabel}` : `${v.toLocaleString(uiLocale())} ${c.unitLabel}` };
+      return { name: cat.name || tr`Sans titre`, pct: g ? Math.min(100, Math.round(100 * v / g)) : null, sub: g ? `${v.toLocaleString(uiLocale())} / ${g.toLocaleString(uiLocale())} ${c.unitLabel}` : `${v.toLocaleString(uiLocale())} ${c.unitLabel}` };
     });
     const frags = (catId) => c.scraps ? (inst.scraps || []).filter((f) => (f.category || "") === catId).length : 0;
     out.forEach((g, i) => {
@@ -7248,9 +7602,9 @@ ${nm} (${mo}) : dépenses ${sumOf(es, "dépense")} €, revenus ${sumOf(es, "rev
       if (n) g.sub += ` · ${plural(n, c.scrapsLabel.toLowerCase().replace(/s$/, ""))}`;
     });
     const loose = sum("");
-    if (loose && c.categories.length) out.push({ name: `Hors ${c.categoryLabel.toLowerCase()}`, pct: null, sub: `${loose.toLocaleString(uiLocale())} ${c.unitLabel}` });
-    return `<section><h3 style="margin:0 0 4px">Par ${esc(c.categoryLabel).toLowerCase()}</h3><p class="hint">Chaque ${esc(c.categoryLabel).toLowerCase()} a son propre objectif.</p>
-    <div class="rooms">${out.map((g) => `<div class="room"><div class="fill" style="width:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : g.pct + " %"}</b><small>${esc(g.sub)}</small></div>`).join("")}</div></section>`;
+    if (loose && c.categories.length) out.push({ name: tr`Hors ${c.categoryLabel.toLowerCase()}`, pct: null, sub: `${loose.toLocaleString(uiLocale())} ${c.unitLabel}` });
+    return `<section><h3 style="margin:0 0 4px">${tr`Par ${esc(c.categoryLabel).toLowerCase()}`}</h3><p class="hint">${tr`Chaque ${esc(c.categoryLabel).toLowerCase()} a son propre objectif.`}</p>
+    <div class="rooms">${out.map((g) => `<div class="room"><div class="fill" style="width:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : tr`${g.pct} %`}</b><small>${esc(g.sub)}</small></div>`).join("")}</div></section>`;
   }
   registerType("cumul", {
     view(id) {
@@ -7259,26 +7613,26 @@ ${nm} (${mo}) : dépenses ${sumOf(es, "dépense")} €, revenus ${sumOf(es, "rev
       const last = inst.entries.map((x) => x.date).sort().pop(), total = c.entryMode === "total";
       const lastCat = ([...inst.entries].reverse().find((x) => x.category != null) || {}).category || "";
       const lastScrapCat = ([...inst.scraps || []].reverse().find((x) => x.category != null) || {}).category ?? lastCat, ff = fragFilter[id] ?? "*";
-      const catSelect = (domId, value, fallback, attrs = "") => c.categories.length ? `<select ${domId ? `id="${domId}"` : ""} ${attrs} aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">Hors ${esc(c.categoryLabel).toLowerCase()}</option>${c.categories.map((x) => `<option value="${esc(x.id)}" ${x.id === (value || fallback) ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>` : "";
+      const catSelect = (domId, value, fallback, attrs = "") => c.categories.length ? `<select ${domId ? `id="${domId}"` : ""} ${attrs} aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">${tr`Hors ${esc(c.categoryLabel).toLowerCase()}`}</option>${c.categories.map((x) => `<option value="${esc(x.id)}" ${x.id === (value || fallback) ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>` : "";
       return `<h2>${esc(label(id))}</h2>${c.title ? `<p class="hint">${esc(c.title)}</p>` : ""}
   <div class="two"><section>
-    <div class="big">${tot.toLocaleString(uiLocale())} <span class="hint" style="font-size:1.1rem">${esc(c.unitLabel)} sur ${(+c.goal).toLocaleString(uiLocale())}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
-    <p class="hint">Dernière session ${ago(last)}. Série de ${streakOf(inst.entries.map((x) => x.date))} jour(s). ${esc(projection(inst))}</p>
-    <div class="row"><input type="number" id="cumIn" min="${total ? 0 : 1}" placeholder="${total ? `Total atteint (${esc(c.unitLabel)})` : `${esc(c.unitLabel)} aujourd'hui`}" style="max-width:200px" inputmode="numeric" aria-label="${total ? "Total atteint" : "Ajout du jour"}">${c.categories.length ? `<select id="cumCat" aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">Hors ${esc(c.categoryLabel).toLowerCase()}</option>${c.categories.map((x) => `<option value="${esc(x.id)}" ${x.id === lastCat ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>` : ""}<button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">Ajouter</button></div>
-    <div style="margin-top:28px">${c.categories.length ? cumulGroupPanel(id) : `<p class="hint">Ajoute des ${esc(c.categoryLabel).toLowerCase()}s dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a> pour suivre chacune en pourcentage.</p>`}</div>
-  </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">Une phrase qui passe, avant qu'elle ne reparte. Un « ? » devant en fait une hypothèse.</p>
-    ${deriveBanner(id)}<textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="Nouveau"></textarea><div class="row" style="margin-top:8px">${catSelect("scrapCat", "", lastScrapCat)}<button class="btn" data-act="scrap-add" data-mod="${esc(id)}">Garder</button></div>
-    ${c.categories.length || inst.scraps.length ? `<div class="row" style="margin-top:14px">${c.categories.length ? `<select data-act="scrap-f" data-mod="${esc(id)}" aria-label="Filtrer"><option value="*">Tous</option>${[["", `Hors ${c.categoryLabel.toLowerCase()}`], ...c.categories.map((x) => [x.id, x.name])].map(([k, n]) => `<option value="${esc(k)}" ${ff === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : ""}<span class="spacer"></span>${inst.scraps.length ? `<button class="btn ghost sm" data-act="scrap-md" data-mod="${esc(id)}">Exporter en Markdown</button><button class="btn ghost sm" data-act="scrap-dossier" data-mod="${esc(id)}" title="Avec dates, statuts, provenance et liens, pour une lecture assistée">Dossier</button>` : ""}</div>` : ""}
-    <ul class="plain margins" style="margin-top:10px">${((pg) => pg.items.map((f) => `<li class="item" data-id="${esc(f.id)}"><span class="jdate">${fmt(f.date)}</span><div><div style="white-space:pre-wrap">${esc(f.text)}</div><div class="meta">${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${linksHTML(id)}</div>${versionsHTML(f)}</div>${margHTML(id, f, f.text)}<div class="row"><button class="btn ghost sm ra" data-act="scrap-edit" data-mod="${esc(id)}">modifier</button><button class="btn ghost sm ra" data-act="scrap-del" data-mod="${esc(id)}">suppr.</button></div></li>`).join("") + pg.more)(paged(`scraps:${id}`, [...inst.scraps].reverse().filter((f) => ff === "*" || (f.category || "") === ff))) || `<li class="empty">Rien pour l'instant.</li>`}</ul>
+    <div class="big">${tot.toLocaleString(uiLocale())} <span class="hint" style="font-size:1.1rem">${trp("cumul", "{0} sur {1}", esc(c.unitLabel), (+c.goal).toLocaleString(uiLocale()))}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
+    <p class="hint">${tr`Dernière session ${ago(last)}. Série de ${streakOf(inst.entries.map((x) => x.date))} jour(s).`} ${esc(projection(inst))}</p>
+    <div class="row"><input type="number" id="cumIn" min="${total ? 0 : 1}" placeholder="${total ? tr`Total atteint (${esc(c.unitLabel)})` : tr`${esc(c.unitLabel)} aujourd'hui`}" style="max-width:200px" inputmode="numeric" aria-label="${total ? tr`Total atteint` : tr`Ajout du jour`}">${c.categories.length ? `<select id="cumCat" aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">${tr`Hors ${esc(c.categoryLabel).toLowerCase()}`}</option>${c.categories.map((x) => `<option value="${esc(x.id)}" ${x.id === lastCat ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>` : ""}<button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">${tr`Ajouter`}</button></div>
+    <div style="margin-top:28px">${c.categories.length ? cumulGroupPanel(id) : `<p class="hint">${tr`Ajoute des ${`${esc(c.categoryLabel).toLowerCase()}s`} dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`} pour suivre chacune en pourcentage.`}</p>`}</div>
+  </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">${tr`Une phrase qui passe, avant qu'elle ne reparte. Un « ? » devant en fait une hypothèse.`}</p>
+    ${deriveBanner(id)}<textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="${tr`Nouveau`}"></textarea><div class="row" style="margin-top:8px">${catSelect("scrapCat", "", lastScrapCat)}<button class="btn" data-act="scrap-add" data-mod="${esc(id)}">${tr`Garder`}</button></div>
+    ${c.categories.length || inst.scraps.length ? `<div class="row" style="margin-top:14px">${c.categories.length ? `<select data-act="scrap-f" data-mod="${esc(id)}" aria-label="${tr`Filtrer`}"><option value="*">${tr`Tous`}</option>${[["", tr`Hors ${c.categoryLabel.toLowerCase()}`], ...c.categories.map((x) => [x.id, x.name])].map(([k, n]) => `<option value="${esc(k)}" ${ff === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : ""}<span class="spacer"></span>${inst.scraps.length ? `<button class="btn ghost sm" data-act="scrap-md" data-mod="${esc(id)}">${tr`Exporter en Markdown`}</button><button class="btn ghost sm" data-act="scrap-dossier" data-mod="${esc(id)}" title="${tr`Avec dates, statuts, provenance et liens, pour une lecture assistée`}">${tr`Dossier`}</button>` : ""}</div>` : ""}
+    <ul class="plain margins" style="margin-top:10px">${((pg) => pg.items.map((f) => `<li class="item" data-id="${esc(f.id)}"><span class="jdate">${fmt(f.date)}</span><div><div style="white-space:pre-wrap">${esc(f.text)}</div><div class="meta">${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${linksHTML(id)}</div>${versionsHTML(f)}</div>${margHTML(id, f, f.text)}<div class="row"><button class="btn ghost sm ra" data-act="scrap-edit" data-mod="${esc(id)}">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="scrap-del" data-mod="${esc(id)}">${tr`suppr.`}</button></div></li>`).join("") + pg.more)(paged(`scraps:${id}`, [...inst.scraps].reverse().filter((f) => ff === "*" || (f.category || "") === ff))) || `<li class="empty">${tr`Rien pour l'instant.`}</li>`}</ul>
   </section>` : ""}</div>`;
     },
-    settings: (id, { config: c }) => `<div class="field-row"><label>Titre / sous-titre<input data-set-mod="${esc(id)}.title" value="${esc(c.title || "")}"></label><label>Objectif<input type="number" min="1" data-set-mod="${esc(id)}.goal" value="${esc(c.goal)}"></label></div>
-    <div class="field-row" style="margin-top:8px"><label>Je saisis<select data-set-mod="${esc(id)}.entryMode"><option value="delta" ${c.entryMode !== "total" ? "selected" : ""}>Ce que j'ai fait aujourd'hui</option><option value="total" ${c.entryMode === "total" ? "selected" : ""}>Le total atteint (l'app calcule la différence)</option></select></label><span></span></div>
-    <div class="field-row" style="margin-top:8px"><label>Unité<input data-set-mod="${esc(id)}.unitLabel" value="${esc(c.unitLabel)}" placeholder="mots"></label><label>Nom des catégories<input data-set-mod="${esc(id)}.categoryLabel" value="${esc(c.categoryLabel)}" placeholder="Chapitre"></label></div>
-    <div style="margin-top:10px"><span class="hint" style="margin:0">${esc(c.categoryLabel)}s</span>${c.categories.map((cat, i) => `<div class="set" data-ci="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="cat-name" data-mod="${esc(id)}" value="${esc(cat.name)}" aria-label="Nom"><input type="number" min="0" data-act="cat-goal" data-mod="${esc(id)}" value="${esc(cat.goal || "")}" placeholder="Objectif" aria-label="Objectif"><div class="row"><button class="btn ghost sm" data-act="cat-up" data-mod="${esc(id)}" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="cat-del" data-mod="${esc(id)}">suppr.</button></div></div>`).join("")}<button class="btn sm" data-act="cat-add" data-mod="${esc(id)}" style="margin-top:8px">Ajouter</button></div>`,
+    settings: (id, { config: c }) => `<div class="field-row"><label>${tr`Titre / sous-titre`}<input data-set-mod="${esc(id)}.title" value="${esc(c.title || "")}"></label><label>${tr`Objectif`}<input type="number" min="1" data-set-mod="${esc(id)}.goal" value="${esc(c.goal)}"></label></div>
+    <div class="field-row" style="margin-top:8px"><label>${tr`Je saisis`}<select data-set-mod="${esc(id)}.entryMode"><option value="delta" ${c.entryMode !== "total" ? "selected" : ""}>${tr`Ce que j'ai fait aujourd'hui`}</option><option value="total" ${c.entryMode === "total" ? "selected" : ""}>${tr`Le total atteint (l'app calcule la différence)`}</option></select></label><span></span></div>
+    <div class="field-row" style="margin-top:8px"><label>${tr`Unité`}<input data-set-mod="${esc(id)}.unitLabel" value="${esc(c.unitLabel)}" placeholder="${tr`mots`}"></label><label>${tr`Nom des catégories`}<input data-set-mod="${esc(id)}.categoryLabel" value="${esc(c.categoryLabel)}" placeholder="${tr`Chapitre`}"></label></div>
+    <div style="margin-top:10px"><span class="hint" style="margin:0">${esc(c.categoryLabel)}s</span>${c.categories.map((cat, i) => `<div class="set" data-ci="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="cat-name" data-mod="${esc(id)}" value="${esc(cat.name)}" aria-label="${tr`Nom`}"><input type="number" min="0" data-act="cat-goal" data-mod="${esc(id)}" value="${esc(cat.goal || "")}" placeholder="${tr`Objectif`}" aria-label="${tr`Objectif`}"><div class="row"><button class="btn ghost sm" data-act="cat-up" data-mod="${esc(id)}" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="cat-del" data-mod="${esc(id)}">${tr`suppr.`}</button></div></div>`).join("")}<button class="btn sm" data-act="cat-add" data-mod="${esc(id)}" style="margin-top:8px">${tr`Ajouter`}</button></div>`,
     summary(id, inst) {
       const c = inst.config;
-      return `${totalOf(inst).toLocaleString(uiLocale())} ${esc(c.unitLabel)} sur ${(+c.goal).toLocaleString(uiLocale())}${c.scraps ? `, ${inst.scraps.length} ${esc(c.scrapsLabel).toLowerCase()}` : ""}`;
+      return `${trp("cumul", "{0} sur {1}", `${totalOf(inst).toLocaleString(uiLocale())} ${esc(c.unitLabel)}`, (+c.goal).toLocaleString(uiLocale()))}${c.scraps ? `, ${inst.scraps.length} ${esc(c.scrapsLabel).toLowerCase()}` : ""}`;
     },
     context(inst, nm) {
       const c = inst.config;
@@ -7295,7 +7649,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       const inp = $("#cumIn");
       if (!inp) return false;
       inp.focus();
-      toast(`Quinze minutes. ${inst.config.entryMode === "total" ? "Quel total, maintenant ?" : `Combien de ${inst.config.unitLabel} ?`}`);
+      toast(`${tr`Quinze minutes.`} ${inst.config.entryMode === "total" ? tr`Quel total, maintenant ?` : tr`Combien de ${inst.config.unitLabel} ?`}`);
       return true;
     },
     canAccept: (inst) => !!inst.config.scraps,
@@ -7307,12 +7661,12 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       const raw = $("#cumIn").value.trim(), n = +raw, unit = inst.config.unitLabel;
       if (!raw || !Number.isFinite(n)) return;
       const v = inst.config.entryMode === "total" ? n - totalOf(inst) : n;
-      if (!v) return toast(inst.config.entryMode === "total" ? "Même total qu'avant. Rien de neuf, ou alors en silence." : "Zéro. Noté mentalement, pas davantage.");
+      if (!v) return toast(inst.config.entryMode === "total" ? tr`Même total qu'avant. Rien de neuf, ou alors en silence.` : tr`Zéro. Noté mentalement, pas davantage.`);
       addJournalEntry(inst, { date: todayISO(), value: v, category: $("#cumCat") ? $("#cumCat").value : "" }, uid(), todayISO());
       $("#cumIn").value = "";
       site.save();
       render();
-      toast(v > 0 ? `+${v.toLocaleString(uiLocale())} ${unit}. Ça avance, que tu y croies ou non.` : `${v.toLocaleString(uiLocale())} ${unit}. Couper, c'est aussi écrire.`);
+      toast(v > 0 ? tr`+${v.toLocaleString(uiLocale())} ${unit}. Ça avance, que tu y croies ou non.` : tr`${v.toLocaleString(uiLocale())} ${unit}. Couper, c'est aussi écrire.`);
     },
     click: {
       "scrap-add": (el) => {
@@ -7325,15 +7679,15 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
         $("#scrapIn").value = "";
         site.save();
         render();
-        if (derived) toast(derived > 1 ? "Synthèse gardée. La tension est levée." : "Dérivé, et relié à sa source.");
-        else if (p.ep) toast("Gardé comme hypothèse. Elle attendra ses preuves.");
+        if (derived) toast(derived > 1 ? tr`Synthèse gardée. La tension est levée.` : tr`Dérivé, et relié à sa source.`);
+        else if (p.ep) toast(tr`Gardé comme hypothèse. Elle attendra ses preuves.`);
       },
       // Le dossier suit le filtre de chapitre affiché ; les fragments dans l'ordre où ils ont été écrits.
       "scrap-dossier": (el) => {
         const id = el.dataset.mod, inst = S().modules[id], ff = fragFilter[id] ?? "*", c = inst.config;
         const fs = inst.scraps.filter((f) => ff === "*" || (f.category || "") === ff);
-        const chap = ff === "*" ? "" : ff === "" ? ` — hors ${c.categoryLabel.toLowerCase()}` : ` — ${(c.categories.find((x) => x.id === ff) || {}).name || ""}`;
-        dossierFile(`${label(id)}${chap}`, `${label(id)} : ${c.scrapsLabel.toLowerCase()}${chap}`, fs.map((f) => ({ mod: id, text: f.text, date: f.date, e: f })));
+        const chap = ff === "*" ? "" : ff === "" ? ` — ${tr`hors ${c.categoryLabel.toLowerCase()}`}` : ` — ${(c.categories.find((x) => x.id === ff) || {}).name || ""}`;
+        dossierFile(`${label(id)}${chap}`, tr`${label(id)} : ${c.scrapsLabel.toLowerCase()}` + chap, fs.map((f) => ({ mod: id, text: f.text, date: f.date, e: f })));
       },
       "scrap-md": (el) => {
         const id = el.dataset.mod;
@@ -7343,13 +7697,13 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       "scrap-edit": (el) => {
         const id = el.dataset.mod, f = S().modules[id].scraps.find((x) => x.id === idOf(el));
         if (!f) return;
-        openForm("Modifier le fragment", [{ n: "text", l: "Texte", t: "textarea", rows: 6, req: true }], { text: f.text }, (v) => {
+        openForm(tr`Modifier le fragment`, [{ n: "text", l: tr`Texte`, t: "textarea", rows: 6, req: true }], { text: f.text }, (v) => {
           const cur = S().modules[id], target = cur && cur.scraps.find((x) => x.id === f.id);
-          if (!target) return toast("Ce fragment a disparu entre-temps.");
+          if (!target) return toast(tr`Ce fragment a disparu entre-temps.`);
           if (editFragmentText(target, v.text, todayISO())) {
             site.save();
             render();
-            toast("Modifié. L'ancienne version reste lisible dessous.");
+            toast(tr`Modifié. L'ancienne version reste lisible dessous.`);
           }
         });
       },
@@ -7361,7 +7715,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       },
       "cat-del": async (el) => {
         const inst = instOf(el), i = +el.closest("[data-ci]").dataset.ci, cat = inst.config.categories[i];
-        if (!await ask(`Supprimer « ${cat.name} » ? Les entrées déjà ajoutées passeront hors catégorie.`)) return;
+        if (!await ask(tr`Supprimer « ${cat.name} » ? Les entrées déjà ajoutées passeront hors catégorie.`)) return;
         inst.entries.forEach((x) => {
           if (x.category === cat.id) x.category = "";
         });
@@ -8798,16 +9152,16 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   }
   function arcPlace(id) {
     const inst = S().modules[id], c = inst.config;
-    if (!c.stations.length) return toast("Ajoute une étape avant de placer quoi que ce soit.");
+    if (!c.stations.length) return toast(tr`Ajoute une étape avant de placer quoi que ce soit.`);
     const choices = arcCandidates().filter((x) => x.mod !== id).sort((a, b) => (b.e.date || "").localeCompare(a.e.date || "")).slice(0, 300);
-    if (!choices.length) return toast("Rien à placer pour l'instant : un fragment ou un élément de collection, d'abord.");
-    openForm("Placer dans l'arc", [
-      { n: "station", l: "Étape", t: "select", o: c.stations.map((s) => [s.id, s.name]) },
-      { n: "ref", l: "Élément", t: "select", o: choices.map((x) => [x.ref, `${label(x.mod)} · ${x.e.date ? fmt(x.e.date) + " · " : ""}${excerpt(x.e, 70)}`]) }
+    if (!choices.length) return toast(tr`Rien à placer pour l'instant : un fragment ou un élément de collection, d'abord.`);
+    openForm(tr`Placer dans l'arc`, [
+      { n: "station", l: tr`Étape`, t: "select", o: c.stations.map((s) => [s.id, s.name]) },
+      { n: "ref", l: tr`Élément`, t: "select", o: choices.map((x) => [x.ref, `${label(x.mod)} · ${x.e.date ? fmt(x.e.date) + " · " : ""}${excerpt(x.e, 70)}`]) }
     ], {}, (v) => {
       const cur = S().modules[id];
-      if (!cur) return toast("Ce module a été supprimé entre-temps.");
-      if (cur.entries.some((p) => p.station === v.station && p.ref === v.ref)) return toast("Déjà à cette étape.");
+      if (!cur) return toast(tr`Ce module a été supprimé entre-temps.`);
+      if (cur.entries.some((p) => p.station === v.station && p.ref === v.ref)) return toast(tr`Déjà à cette étape.`);
       cur.entries.push({ id: uid(), station: v.station, ref: v.ref, at: todayISO() });
       site.save();
       render();
@@ -8822,23 +9176,23 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       const placed = (st) => [...inst.entries].filter((p) => p.station === st.id).sort((a, b) => (a.at || "").localeCompare(b.at || ""));
       const card = (p) => {
         const hit = refFind(p.ref);
-        return `<div class="card" data-id="${esc(p.id)}">${hit ? `<span class="tag">${esc(label(hit.mod))}</span><p style="margin:6px 0"><a href="#${esc(hit.mod)}/${esc(hit.e.id)}">${esc(excerpt(hit.e, 140))}</a></p>${hit.e.date ? `<div class="meta">${fmt(hit.e.date)}</div>` : ""}` : `<i>(supprimé)</i>`}<div class="row"><button class="btn ghost sm ra" data-act="arc-remove" data-mod="${esc(id)}">retirer</button></div></div>`;
+        return `<div class="card" data-id="${esc(p.id)}">${hit ? `<span class="tag">${esc(label(hit.mod))}</span><p style="margin:6px 0"><a href="#${esc(hit.mod)}/${esc(hit.e.id)}">${esc(excerpt(hit.e, 140))}</a></p>${hit.e.date ? `<div class="meta">${fmt(hit.e.date)}</div>` : ""}` : `<i>${tr`(supprimé)`}</i>`}<div class="row"><button class="btn ghost sm ra" data-act="arc-remove" data-mod="${esc(id)}">${tr`retirer`}</button></div></div>`;
       };
-      return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="arc-place" data-mod="${esc(id)}">Placer un élément</button></div>
-    ${c.stations.length ? `<div class="board">${c.stations.map((st) => `<div class="col"><h3>${esc(st.name)} <span class="hint" style="font-size:.95rem">${placed(st).length}</span></h3>${placed(st).map(card).join("") || `<p class="empty">Vide.</p>`}</div>`).join("")}</div>` : `<p class="hint">Aucune étape pour l'instant. Ajoute-en dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a>.</p>`}</div>`;
+      return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="arc-place" data-mod="${esc(id)}">${tr`Placer un élément`}</button></div>
+    ${c.stations.length ? `<div class="board">${c.stations.map((st) => `<div class="col"><h3>${esc(st.name)} <span class="hint" style="font-size:.95rem">${placed(st).length}</span></h3>${placed(st).map(card).join("") || `<p class="empty">${tr`Vide.`}</p>`}</div>`).join("")}</div>` : `<p class="hint">${tr`Aucune étape pour l'instant. Ajoute-en dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`}.`}</p>`}</div>`;
     },
-    settings: (id, { config: c }) => `<div><span class="hint" style="margin:0">Étapes, dans l'ordre</span>${c.stations.map((st, i) => `<div class="set" data-sti="${i}" style="grid-template-columns:1fr auto"><input data-act="stat-name" data-mod="${esc(id)}" value="${esc(st.name)}" aria-label="Nom de l'étape"><div class="row"><button class="btn ghost sm" data-act="stat-up" data-mod="${esc(id)}" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="stat-del" data-mod="${esc(id)}">suppr.</button></div></div>`).join("")}<button class="btn sm" data-act="stat-add" data-mod="${esc(id)}" style="margin-top:8px">Ajouter une étape</button></div>`,
+    settings: (id, { config: c }) => `<div><span class="hint" style="margin:0">${tr`Étapes, dans l'ordre`}</span>${c.stations.map((st, i) => `<div class="set" data-sti="${i}" style="grid-template-columns:1fr auto"><input data-act="stat-name" data-mod="${esc(id)}" value="${esc(st.name)}" aria-label="${tr`Nom de l'étape`}"><div class="row"><button class="btn ghost sm" data-act="stat-up" data-mod="${esc(id)}" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="stat-del" data-mod="${esc(id)}">${tr`suppr.`}</button></div></div>`).join("")}<button class="btn sm" data-act="stat-add" data-mod="${esc(id)}" style="margin-top:8px">${tr`Ajouter une étape`}</button></div>`,
     summary(id, inst) {
       const empty = arcEmpty(inst).length;
-      return `${plural(inst.entries.length, "élément")} sur ${plural(inst.config.stations.length, "étape")}${empty ? `, ${plural(empty, "vide")}` : ""}`;
+      return trp("arc", "{0} sur {1}", trn(inst.entries.length, "{0} élément", "{0} éléments"), trn(inst.config.stations.length, "{0} étape", "{0} étapes")) + (empty ? ", " + trn(empty, "{0} vide", "{0} vides") : "");
     },
     recent: (inst) => [...inst.entries].sort((a, b) => (b.at || "").localeCompare(a.at || "")).slice(0, 3).map((p) => {
       const hit = refFind(p.ref), st = inst.config.stations.find((s) => s.id === p.station);
-      return `${st ? st.name : "?"} · ${hit ? excerpt(hit.e, 50) : "(supprimé)"}`;
+      return `${st ? st.name : "?"} · ${hit ? excerpt(hit.e, 50) : tr`(supprimé)`}`;
     }),
     review: (inst, from, to) => {
       const n = within(inst.entries, from, to, "at").length;
-      return n ? `${n} placé${n > 1 ? "s" : ""}` : "Rien placé";
+      return n ? trn(n, "{0} placé", "{0} placés") : tr`Rien placé`;
     },
     context(inst, nm) {
       const c = inst.config, empty = arcEmpty(inst).map((s) => s.name);
@@ -8850,8 +9204,8 @@ ${nm} : arc de ${c.stations.length} étapes (${c.stations.map((s) => s.name).joi
       "arc-remove": (el) => removeWithUndo(el.dataset.mod, "entries", idOf(el)),
       "stat-add": (el) => {
         const c = instOf(el).config;
-        if (c.stations.length >= 12) return toast("Douze étapes. Au-delà, ce n'est plus un arc, c'est un calendrier.");
-        c.stations.push({ id: uid(), name: `Étape ${c.stations.length + 1}` });
+        if (c.stations.length >= 12) return toast(tr`Douze étapes. Au-delà, ce n'est plus un arc, c'est un calendrier.`);
+        c.stations.push({ id: uid(), name: tr`Étape ${c.stations.length + 1}` });
         site.save();
         render();
       },
@@ -8866,7 +9220,7 @@ ${nm} : arc de ${c.stations.length} étapes (${c.stations.map((s) => s.name).joi
       "stat-del": async (el) => {
         const inst = instOf(el), c = inst.config, i = +el.closest("[data-sti]").dataset.sti, st = c.stations[i];
         const n = inst.entries.filter((p) => p.station === st.id).length;
-        if (!await ask(`Supprimer l'étape « ${st.name} » ?${n ? ` ${plural(n, "placement")} seront retirés.` : ""}`)) return;
+        if (!await ask(tr`Supprimer l'étape « ${st.name} » ?` + (n ? " " + trn(n, "{0} placement sera retiré.", "{0} placements seront retirés.") : ""))) return;
         inst.entries = inst.entries.filter((p) => p.station !== st.id);
         c.stations.splice(i, 1);
         site.save();
@@ -8892,10 +9246,10 @@ ${nm} : arc de ${c.stations.length} étapes (${c.stations.map((s) => s.name).joi
       let n = 0;
       for (let d = 0; d < 7; d++) if (days.has(addDaysTo(c.start, w * 7 + d))) n++;
       const den = +c.perWeek || 1;
-      out.push({ name: `Semaine ${w + 1}`, pct: Math.min(100, Math.round(100 * n / den)), sub: `${n} sur ${den} séances` });
+      out.push({ name: tr`Semaine ${w + 1}`, pct: Math.min(100, Math.round(100 * n / den)), sub: tr`${n} sur ${den} séances` });
     }
-    return `<section><h3 style="margin:0 0 4px">Par semaine</h3><p class="hint">Objectif : ${esc(c.perWeek)} séances par semaine, réglable dans Réglages.</p>
-    <div class="rooms">${out.map((g) => `<div class="room ${g.pct > 100 ? "over" : ""}"><div class="fill" style="width:${Math.min(100, g.pct)}%"></div><small>${esc(g.name)}</small><b>${g.pct} %</b><small>${esc(g.sub)}</small></div>`).join("") || `<p class="empty">Rien à regrouper pour l'instant.</p>`}</div></section>`;
+    return `<section><h3 style="margin:0 0 4px">${tr`Par semaine`}</h3><p class="hint">${tr`Objectif : ${esc(c.perWeek)} séances par semaine, réglable dans Réglages.`}</p>
+    <div class="rooms">${out.map((g) => `<div class="room ${g.pct > 100 ? "over" : ""}"><div class="fill" style="width:${Math.min(100, g.pct)}%"></div><small>${esc(g.name)}</small><b>${tr`${g.pct} %`}</b><small>${esc(g.sub)}</small></div>`).join("") || `<p class="empty">${tr`Rien à regrouper pour l'instant.`}</p>`}</div></section>`;
   }
   var tierCurrent = (c) => (c.tiers || []).find((t) => !t.advancedAt) || null;
   var firstDecisions = () => (S().config.modules.find((m) => m.on && Object.hasOwn(S().modules, m.id) && S().modules[m.id].type === "collection" && S().modules[m.id].config.review) || {}).id || null;
@@ -8904,76 +9258,76 @@ ${nm} : arc de ${c.stations.length} étapes (${c.stations.map((s) => s.name).joi
     if (!c.tiers.length) return "";
     const passed = c.tiers.filter((t) => t.advancedAt), cur = tierCurrent(c), crit = cur ? cur.criteria || [] : [];
     const done = crit.filter((cr) => cr.done).length;
-    return `<section style="margin-top:28px"><h3 style="margin:0 0 4px">Paliers</h3>
-    ${passed.length ? `<p class="hint">${passed.map((t) => `« ${esc(t.name)} » atteint le ${fmt(t.advancedAt)}`).join(" · ")}</p>` : ""}
+    return `<section style="margin-top:28px"><h3 style="margin:0 0 4px">${tr`Paliers`}</h3>
+    ${passed.length ? `<p class="hint">${passed.map((t) => tr`« ${esc(t.name)} » atteint le ${fmt(t.advancedAt)}`).join(" · ")}</p>` : ""}
     ${cur ? `<b>${esc(cur.name)}</b>
-      <ul class="plain">${crit.map((cr) => `<li class="item" data-id="${esc(cr.id)}"><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" data-act="tier-check" data-mod="${esc(id)}" ${cr.done ? "checked" : ""}>${esc(cr.text)}</label></li>`).join("") || `<li class="empty">Aucun critère écrit. Ajoutes-en dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a>.</li>`}</ul>
-      <p class="hint" style="margin:4px 0">${crit.length ? `${done} sur ${plural(crit.length, "critère")} coché${done > 1 ? "s" : ""}. ` : ""}${crit.length && done === crit.length ? "Tous cochés. Le passage reste ton choix, pas une formalité automatique." : "Coché ou non, rien ne fait avancer le palier à ta place."}</p>
-      <button class="btn sm" data-act="tier-advance" data-mod="${esc(id)}">Passer au palier suivant</button>` : `<p class="hint">Tous les paliers sont franchis.</p>`}
+      <ul class="plain">${crit.map((cr) => `<li class="item" data-id="${esc(cr.id)}"><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" data-act="tier-check" data-mod="${esc(id)}" ${cr.done ? "checked" : ""}>${esc(cr.text)}</label></li>`).join("") || `<li class="empty">${tr`Aucun critère écrit. Ajoutes-en dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`}.`}</li>`}</ul>
+      <p class="hint" style="margin:4px 0">${crit.length ? trn(done, "{0} sur {1} coché.", "{0} sur {1} cochés.", trn(crit.length, "{0} critère", "{0} critères")) + " " : ""}${crit.length && done === crit.length ? tr`Tous cochés. Le passage reste ton choix, pas une formalité automatique.` : tr`Coché ou non, rien ne fait avancer le palier à ta place.`}</p>
+      <button class="btn sm" data-act="tier-advance" data-mod="${esc(id)}">${tr`Passer au palier suivant`}</button>` : `<p class="hint">${tr`Tous les paliers sont franchis.`}</p>`}
   </section>`;
   }
   registerType("programme", {
     view(id) {
       const inst = S().modules[id], c = inst.config, now = todayISO();
-      if (!c.start) return `<h2>${esc(label(id))}</h2><p class="hint">Un protocole de ${esc(c.weeks)} semaines, une séance à la fois.</p><button class="btn acc" data-act="prog-start" data-mod="${esc(id)}">Commencer aujourd'hui</button> <a class="btn ghost" href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">ou choisir une autre date</a>`;
+      if (!c.start) return `<h2>${esc(label(id))}</h2><p class="hint">${tr`Un protocole de ${esc(c.weeks)} semaines, une séance à la fois.`}</p><button class="btn acc" data-act="prog-start" data-mod="${esc(id)}">${tr`Commencer aujourd'hui`}</button> <a class="btn ghost" href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`ou choisir une autre date`}</a>`;
       const days = new Set(inst.entries.map((x) => x.date)), W = Math.min(52, Math.max(1, Math.round(+c.weeks) || 12));
       const week = Math.min(W, Math.floor(diffDays(now, c.start) / 7) + 1);
       const pct = Math.min(100, Math.round(100 * (diffDays(now, c.start) + 1) / (W * 7)));
       let cal = "";
       for (let w = 0; w < W; w++) {
-        cal += `<span>S${w + 1}</span>`;
+        cal += `<span>${tr`S${w + 1}`}</span>`;
         for (let d = 0; d < 7; d++) {
           const day = addDaysTo(c.start, w * 7 + d);
           cal += `<i class="${days.has(day) ? "on" : ""} ${day === now ? "today" : ""} ${day > now ? "future" : ""}" title="${fmt(day)}"></i>`;
         }
       }
       const recent = [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12);
-      return `<div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">Noter une séance</button></div>
+      return `<div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">${tr`Noter une séance`}</button></div>
   <div class="two"><section>
-    <div class="big">Semaine ${week} <span class="hint" style="font-size:1.1rem">sur ${W}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
-    <p class="hint">${inst.entries.length} séances, ${totalOf(inst)} ${esc(c.unitLabel)} au total, série actuelle de ${streakOf([...days])} jour(s).</p>
+    <div class="big">${tr`Semaine ${week}`} <span class="hint" style="font-size:1.1rem">${tr`sur ${W}`}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
+    <p class="hint">${tr`${inst.entries.length} séances, ${totalOf(inst)} ${esc(c.unitLabel)} au total, série actuelle de ${streakOf([...days])} jour(s).`}</p>
     <div class="cal">${cal}</div>
     <div style="margin-top:28px">${programmeGroupPanel(id)}</div>
     ${tiersPanel(id)}
-  </section><section><h3>Journal</h3><p class="hint">Ce que le corps a fait, ce que la tête en a pensé.</p>
-    <ul class="plain">${recent.map((x) => `<li class="item" data-id="${esc(x.id)}"><span class="jdate">${fmt(x.date, { weekday: "short", day: "numeric", month: "short" })}</span><div>${esc(x.value ?? "?")} ${esc(c.unitLabel)}${x.note ? `<div class="note" style="margin:2px 0 0">${esc(x.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune séance notée.</li>`}</ul>
+  </section><section><h3>${tr`Journal`}</h3><p class="hint">${tr`Ce que le corps a fait, ce que la tête en a pensé.`}</p>
+    <ul class="plain">${recent.map((x) => `<li class="item" data-id="${esc(x.id)}"><span class="jdate">${fmt(x.date, { weekday: "short", day: "numeric", month: "short" })}</span><div>${esc(x.value ?? "?")} ${esc(c.unitLabel)}${x.note ? `<div class="note" style="margin:2px 0 0">${esc(x.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">${tr`suppr.`}</button></li>`).join("") || `<li class="empty">${tr`Aucune séance notée.`}</li>`}</ul>
   </section></div>`;
     },
-    settings: (id, { config: c }) => `<div class="field-row"><label>Début du protocole<input type="date" data-set-mod="${esc(id)}.start" value="${esc(c.start || "")}"></label><label>Durée (semaines)<input type="number" min="1" max="520" data-set-mod="${esc(id)}.weeks" value="${esc(c.weeks)}"></label></div>
-    <div class="field-row" style="margin-top:8px"><label>Unité<input data-set-mod="${esc(id)}.unitLabel" value="${esc(c.unitLabel)}" placeholder="min"></label><label>Séances visées par semaine<input type="number" min="1" max="7" data-set-mod="${esc(id)}.perWeek" value="${esc(c.perWeek)}"></label></div>
-    <div style="margin-top:14px"><span class="hint" style="margin:0">Paliers : des critères que tu écris, jamais franchis tout seuls</span>
+    settings: (id, { config: c }) => `<div class="field-row"><label>${tr`Début du protocole`}<input type="date" data-set-mod="${esc(id)}.start" value="${esc(c.start || "")}"></label><label>${tr`Durée (semaines)`}<input type="number" min="1" max="520" data-set-mod="${esc(id)}.weeks" value="${esc(c.weeks)}"></label></div>
+    <div class="field-row" style="margin-top:8px"><label>${tr`Unité`}<input data-set-mod="${esc(id)}.unitLabel" value="${esc(c.unitLabel)}" placeholder="min"></label><label>${tr`Séances visées par semaine`}<input type="number" min="1" max="7" data-set-mod="${esc(id)}.perWeek" value="${esc(c.perWeek)}"></label></div>
+    <div style="margin-top:14px"><span class="hint" style="margin:0">${tr`Paliers : des critères que tu écris, jamais franchis tout seuls`}</span>
     ${c.tiers.map((t, ti) => `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--rule)">
-      <div class="set" data-tri="${ti}" style="grid-template-columns:1fr auto"><input data-act="tier-name" data-mod="${esc(id)}" value="${esc(t.name)}" aria-label="Nom du palier"><div class="row"><button class="btn ghost sm" data-act="tier-up" data-mod="${esc(id)}" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="tier-del" data-mod="${esc(id)}">suppr.</button></div></div>
-      <div style="margin:6px 0 0 10px">${(t.criteria || []).map((cr, ci) => `<div class="set" data-tri="${ti}" data-cri="${ci}" style="grid-template-columns:1fr auto"><input data-act="crit-text" data-mod="${esc(id)}" value="${esc(cr.text)}" placeholder="12 séances à 20 min…" aria-label="Critère"><button class="btn ghost sm" data-act="crit-del" data-mod="${esc(id)}">suppr.</button></div>`).join("")}
-      <button class="btn ghost sm" data-act="crit-add" data-mod="${esc(id)}" data-tri="${ti}" style="margin-top:4px">+ critère</button></div></div>`).join("")}
-    <button class="btn sm" data-act="tier-add" data-mod="${esc(id)}" style="margin-top:10px">Ajouter un palier</button></div>`,
+      <div class="set" data-tri="${ti}" style="grid-template-columns:1fr auto"><input data-act="tier-name" data-mod="${esc(id)}" value="${esc(t.name)}" aria-label="${tr`Nom du palier`}"><div class="row"><button class="btn ghost sm" data-act="tier-up" data-mod="${esc(id)}" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="tier-del" data-mod="${esc(id)}">${tr`suppr.`}</button></div></div>
+      <div style="margin:6px 0 0 10px">${(t.criteria || []).map((cr, ci) => `<div class="set" data-tri="${ti}" data-cri="${ci}" style="grid-template-columns:1fr auto"><input data-act="crit-text" data-mod="${esc(id)}" value="${esc(cr.text)}" placeholder="${tr`12 séances à 20 min…`}" aria-label="${tr`Critère`}"><button class="btn ghost sm" data-act="crit-del" data-mod="${esc(id)}">${tr`suppr.`}</button></div>`).join("")}
+      <button class="btn ghost sm" data-act="crit-add" data-mod="${esc(id)}" data-tri="${ti}" style="margin-top:4px">+ ${tr`critère`}</button></div></div>`).join("")}
+    <button class="btn sm" data-act="tier-add" data-mod="${esc(id)}" style="margin-top:10px">${tr`Ajouter un palier`}</button></div>`,
     summary(id, inst) {
       const c = inst.config;
-      if (!c.start) return "Pas encore commencé";
+      if (!c.start) return tr`Pas encore commencé`;
       const w = Math.min(c.weeks, Math.floor(diffDays(todayISO(), c.start) / 7) + 1), cur = tierCurrent(c);
-      return `Semaine ${w} sur ${esc(c.weeks)}, ${plural(inst.entries.length, "séance")}, série de ${streakOf(inst.entries.map((x) => x.date))} j${cur ? `, palier « ${esc(cur.name)} »` : ""}`;
+      return [tr`Semaine ${w} sur ${esc(c.weeks)}`, trn(inst.entries.length, "{0} séance", "{0} séances"), tr`série de ${streakOf(inst.entries.map((x) => x.date))} j`, ...cur ? [tr`palier « ${esc(cur.name)} »`] : []].join(", ");
     },
     alerts(id, inst, now) {
       if (!inst.config.start) return [];
       const done = inst.entries.some((x) => x.date === now), name = esc(label(id)).toLowerCase(), last = lastValue(inst), m = esc(id);
-      const actions = done ? "" : last != null ? `<button class="btn sm" data-act="prog-quick" data-mod="${m}">Noter ${esc(last)} ${esc(inst.config.unitLabel)}</button><button class="btn ghost sm" data-act="entry-add" data-mod="${m}">autre…</button>` : `<button class="btn ghost sm" data-act="entry-add" data-mod="${m}">noter</button>`;
-      return [{ text: done ? `Séance de ${name} faite.` : `Pas encore de séance de ${name} aujourd'hui.`, actions }];
+      const actions = done ? "" : last != null ? `<button class="btn sm" data-act="prog-quick" data-mod="${m}">${tr`Noter ${esc(last)} ${esc(inst.config.unitLabel)}`}</button><button class="btn ghost sm" data-act="entry-add" data-mod="${m}">${tr`autre…`}</button>` : `<button class="btn ghost sm" data-act="entry-add" data-mod="${m}">${tr`noter`}</button>`;
+      return [{ text: done ? tr`Séance de ${name} faite.` : tr`Pas encore de séance de ${name} aujourd'hui.`, actions }];
     },
     recent: (inst) => recentBy(inst.entries).map((x) => `${fmt(x.date)} · ${x.value ?? "?"} ${inst.config.unitLabel}${x.note ? " · " + x.note : ""}`),
     review: (inst, from, to) => {
       const es = within(inst.entries, from, to);
-      return `${plural(es.length, "séance")}, ${es.reduce((a, x) => a + (+x.value || 0), 0)} ${inst.config.unitLabel}`;
+      return `${trn(es.length, "{0} séance", "{0} séances")}, ${es.reduce((a, x) => a + (+x.value || 0), 0)} ${inst.config.unitLabel}`;
     },
     texts: (inst) => inst.entries.filter((x) => x.note).map((x) => ({ text: x.note, date: x.date, eid: x.id })),
     timerDone(id, inst, minutes) {
       if (!/^min/i.test(inst.config.unitLabel)) return false;
-      toastAction(`Quinze minutes. Les noter dans ${label(id)} ?`, `Noter ${minutes} min`, () => {
+      toastAction(tr`Quinze minutes. Les noter dans ${label(id)} ?`, tr`Noter ${minutes} min`, () => {
         const cur = S().modules[id];
         if (!cur) return;
         addJournalEntry(cur, { date: todayISO(), value: minutes }, uid(), todayISO());
         site.save();
         render();
-        toast("Noté. Le corps a fait sa part.");
+        toast(tr`Noté. Le corps a fait sa part.`);
       }, 15e3);
       return true;
     },
@@ -8985,8 +9339,8 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
     },
     add(id, inst) {
       openForm(
-        "Noter une séance",
-        [{ row: [{ n: "date", l: "Date", t: "date", req: true }, { n: "value", l: `Durée (${inst.config.unitLabel})`, t: "number" }] }, { n: "note", l: "Ce qui s'est passé", t: "textarea", rows: 4 }],
+        tr`Noter une séance`,
+        [{ row: [{ n: "date", l: tr`Date`, t: "date", req: true }, { n: "value", l: tr`Durée (${inst.config.unitLabel})`, t: "number" }] }, { n: "note", l: tr`Ce qui s'est passé`, t: "textarea", rows: 4 }],
         { date: todayISO(), value: lastValue(inst) ?? "" },
         (v) => {
           addJournalEntry(inst, { date: v.date, value: v.value, note: v.note }, uid(), todayISO());
@@ -9001,7 +9355,7 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
         addJournalEntry(inst, { date: todayISO(), value: v }, uid(), todayISO());
         site.save();
         render();
-        toast(`${v} ${inst.config.unitLabel} notées. Le corps a fait sa part.`);
+        toast(tr`${v} ${inst.config.unitLabel} notées. Le corps a fait sa part.`);
       },
       "prog-start": (el) => {
         instOf(el).config.start = todayISO();
@@ -9009,7 +9363,7 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
         render();
       },
       "tier-add": (el) => {
-        instOf(el).config.tiers.push({ id: uid(), name: `Palier ${instOf(el).config.tiers.length + 1}`, criteria: [] });
+        instOf(el).config.tiers.push({ id: uid(), name: tr`Palier ${instOf(el).config.tiers.length + 1}`, criteria: [] });
         site.save();
         render();
       },
@@ -9023,7 +9377,7 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
       },
       "tier-del": async (el) => {
         const t = instOf(el).config.tiers[+el.closest("[data-tri]").dataset.tri];
-        if (!await ask(`Supprimer le palier « ${t.name} » ? Ses critères disparaissent avec lui ; l'historique du palier franchi n'y touche pas.`)) return;
+        if (!await ask(tr`Supprimer le palier « ${t.name} » ? Ses critères disparaissent avec lui ; l'historique du palier franchi n'y touche pas.`)) return;
         instOf(el).config.tiers.splice(+el.closest("[data-tri]").dataset.tri, 1);
         site.save();
         render();
@@ -9047,9 +9401,9 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
         site.save();
         render();
         const dec = firstDecisions();
-        if (!dec) return toast(`Palier « ${cur.name} » atteint.`);
+        if (!dec) return toast(tr`Palier « ${cur.name} » atteint.`);
         const dc = S().modules[dec].config;
-        collectionForm(dec, { title: `Palier « ${cur.name} » atteint (${label(el.dataset.mod)})`, status: dc.statuses[Math.min(1, dc.statuses.length - 1)] }, `Noter la décision : « ${cur.name} »`);
+        collectionForm(dec, { title: tr`Palier « ${cur.name} » atteint (${label(el.dataset.mod)})`, status: dc.statuses[Math.min(1, dc.statuses.length - 1)] }, tr`Noter la décision : « ${cur.name} »`);
       }
     },
     change: {
@@ -9085,21 +9439,21 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
       const inst = S().modules[id], c = inst.config, now = todayISO();
       const line = (t) => {
         const l = lastOf(inst, t.id), due = t.every && (!l || diffDays(now, l) >= t.every);
-        return `<div class="set"><span class="${due ? "late" : ""}">${esc(t.label)}</span><span class="hint" style="margin:0">${ago(l)}${t.every ? `, tous les ${esc(t.every)} j` : ""}</span><button class="btn sm" data-act="entry-log" data-mod="${esc(id)}" data-t="${esc(t.id)}">Fait aujourd'hui</button></div>`;
+        return `<div class="set"><span class="${due ? "late" : ""}">${esc(t.label)}</span><span class="hint" style="margin:0">${ago(l)}${t.every ? `, ${tr`tous les ${esc(t.every)} j`}` : ""}</span><button class="btn sm" data-act="entry-log" data-mod="${esc(id)}" data-t="${esc(t.id)}">${tr`Fait aujourd'hui`}</button></div>`;
       };
       const recent = [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
       return `<h2>${esc(label(id))}${c.subtitle ? ` <span class="hint" style="font-size:1.2rem">${esc(c.subtitle)}</span>` : ""}</h2>
   <div class="two"><section>
     ${c.types.map(line).join("")}
-    <div class="row" style="margin-top:14px"><input id="rapNote" data-draft placeholder="Observation…" aria-label="Observation"><button class="btn" data-act="entry-note" data-mod="${esc(id)}">Noter</button></div>
-    <p class="hint" style="margin-top:10px">Réglable dans <a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">Réglages</a>.</p>
-  </section><section><h3>Journal</h3><ul class="plain">${recent.map((l) => `<li class="item" data-id="${esc(l.id)}"><span class="jdate">${fmt(l.date)}</span><div><span class="tag">${esc(l.type)}</span>${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}${l.origin ? `<div class="meta">${originHTML(l, l.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">suppr.</button></li>`).join("") || `<li class="empty">Aucune entrée.</li>`}</ul></section></div>`;
+    <div class="row" style="margin-top:14px"><input id="rapNote" data-draft placeholder="${tr`Observation…`}" aria-label="${tr`Observation`}"><button class="btn" data-act="entry-note" data-mod="${esc(id)}">${tr`Noter`}</button></div>
+    <p class="hint" style="margin-top:10px">${tr`Réglable dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`}.`}</p>
+  </section><section><h3>${tr`Journal`}</h3><ul class="plain">${recent.map((l) => `<li class="item" data-id="${esc(l.id)}"><span class="jdate">${fmt(l.date)}</span><div><span class="tag">${esc(l.type)}</span>${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}${l.origin ? `<div class="meta">${originHTML(l, l.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">${tr`suppr.`}</button></li>`).join("") || `<li class="empty">${tr`Aucune entrée.`}</li>`}</ul></section></div>`;
     },
-    settings: (id, { config: c }) => `<div class="field-row"><label>Sous-titre (ex. nom propre)<input data-set-mod="${esc(id)}.subtitle" value="${esc(c.subtitle || "")}"></label><span></span></div>
-    <div style="margin-top:10px"><span class="hint" style="margin:0">Types et rappels</span>${c.types.map((t, i) => `<div class="set" data-ti="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="typ-name" data-mod="${esc(id)}" value="${esc(t.label)}" aria-label="Nom"><input type="number" min="0" data-act="typ-every" data-mod="${esc(id)}" value="${esc(t.every || "")}" placeholder="tous les X j" aria-label="Fréquence"><button class="btn ghost sm" data-act="typ-del" data-mod="${esc(id)}">suppr.</button></div>`).join("")}<button class="btn sm" data-act="typ-add" data-mod="${esc(id)}" style="margin-top:8px">Ajouter un type</button></div>`,
+    settings: (id, { config: c }) => `<div class="field-row"><label>${tr`Sous-titre (ex. nom propre)`}<input data-set-mod="${esc(id)}.subtitle" value="${esc(c.subtitle || "")}"></label><span></span></div>
+    <div style="margin-top:10px"><span class="hint" style="margin:0">${tr`Types et rappels`}</span>${c.types.map((t, i) => `<div class="set" data-ti="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="typ-name" data-mod="${esc(id)}" value="${esc(t.label)}" aria-label="${tr`Nom`}"><input type="number" min="0" data-act="typ-every" data-mod="${esc(id)}" value="${esc(t.every || "")}" placeholder="${tr`tous les X j`}" aria-label="${tr`Fréquence`}"><button class="btn ghost sm" data-act="typ-del" data-mod="${esc(id)}">${tr`suppr.`}</button></div>`).join("")}<button class="btn sm" data-act="typ-add" data-mod="${esc(id)}" style="margin-top:8px">${tr`Ajouter un type`}</button></div>`,
     summary(id, inst) {
       const t = inst.config.types[0];
-      return t ? `${esc(t.label)} : ${ago(lastOf(inst, t.id))}` : plural(inst.entries.length, "entrée");
+      return t ? tr`${esc(t.label)} : ${ago(lastOf(inst, t.id))}` : trn(inst.entries.length, "{0} entrée", "{0} entrées");
     },
     // Une seule ligne par module sur l'accueil, quel que soit le nombre de rappels dus : « Phidippus : Repas (jamais) · Brumisation (jamais) ».
     alerts(id, inst, now) {
@@ -9110,8 +9464,8 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
       if (!due.length) return [];
       const one = due.length === 1;
       return [{
-        text: `<b>${esc(label(id))}</b> : ${due.map((t) => `${esc(t.label)} (${ago(lastOf(inst, t.id))})`).join(" · ")}`,
-        actions: due.map((t) => `<button class="btn sm" data-act="entry-log" data-mod="${esc(id)}" data-t="${esc(t.id)}">${one ? "fait" : `${esc(t.label.toLowerCase())} : fait`}</button>`).join("") + `<a class="btn ghost sm" href="#${esc(id)}">voir</a>`
+        text: tr`${`<b>${esc(label(id))}</b>`} : ${due.map((t) => `${esc(t.label)} (${ago(lastOf(inst, t.id))})`).join(" · ")}`,
+        actions: due.map((t) => `<button class="btn sm" data-act="entry-log" data-mod="${esc(id)}" data-t="${esc(t.id)}">${one ? tr`fait` : tr`${esc(t.label.toLowerCase())} : fait`}</button>`).join("") + `<a class="btn ghost sm" href="#${esc(id)}">${tr`voir`}</a>`
       }];
     },
     accept: (id, inst, note) => {
@@ -9120,7 +9474,7 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
     recent: (inst) => recentBy(inst.entries).map((x) => `${fmt(x.date)} · ${(inst.config.types.find((t) => t.id === x.type) || {}).label || x.type}${x.note ? " · " + x.note : ""}`),
     review: (inst, from, to) => {
       const es = within(inst.entries, from, to);
-      if (!es.length) return "Rien de noté";
+      if (!es.length) return tr`Rien de noté`;
       const by = [...new Set(es.map((x) => x.type))].map((t) => `${((inst.config.types.find((y) => y.id === t) || {}).label || t).toLowerCase()} ×${es.filter((x) => x.type === t).length}`);
       return by.join(", ");
     },
@@ -9145,13 +9499,13 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
         render();
       },
       "typ-add": (el) => {
-        instOf(el).config.types.push({ id: uid(), label: "Nouveau type", every: 0 });
+        instOf(el).config.types.push({ id: uid(), label: tr`Nouveau type`, every: 0 });
         site.save();
         render();
       },
       "typ-del": async (el) => {
         const inst = instOf(el), i = +el.closest("[data-ti]").dataset.ti;
-        if (await ask(`Supprimer « ${inst.config.types[i].label} » ?`)) {
+        if (await ask(tr`Supprimer « ${inst.config.types[i].label} » ?`)) {
           inst.config.types.splice(i, 1);
           site.save();
           render();

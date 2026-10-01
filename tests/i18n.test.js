@@ -53,8 +53,8 @@ test('pluriels : les catégories du CLDR de chaque langue (0 est singulier en fr
     applyLang('en', BOTH);
     assert.equal(trn(0, '{0} fragment', '{0} fragments'), '0 fragments');
     assert.equal(trn(1, '{0} fragment', '{0} fragments'), '1 fragment');
-    // Sans traduction, les règles françaises choisissent entre les formes françaises.
-    assert.equal(trn(0, '{0} note', '{0} notes'), '0 note');
+    // Sans traduction, les règles françaises choisissent entre les formes françaises (clé d'essai, absente de tout dictionnaire).
+    assert.equal(trn(0, '{0} chose d’essai', '{0} choses d’essai'), '0 chose d’essai');
   });
 });
 

@@ -43,6 +43,16 @@ const demo = JSON.parse(fixture());
   await p.click('#timerBtn');
   await p.evaluate(() => location.hash = 'kundalini'); await p.waitForTimeout(200);
   check(!(await marked('.plate .pl, .plate [data-act="goto-groups"], .plate [data-act="bridge-edit"]')).length, 'la planche d’un espace (numéro, « régler », pont) traduite');
+  // Les types de module : un échantillon de leurs textes propres (le reste, ce sont les données de la personne).
+  const types = { kundalini: '[data-act="prog-start"], #main a[data-act="goto-groups"]', // pas encore commencé, dans le jeu d'essai ecriture: '[data-act="scrap-add"], [data-act="scrap-md"]', phidippus: '[data-act="entry-log"], [data-act="entry-note"]',
+    chantier: '[data-act="task-new"], [data-act="task-pick"]', budget: '.stats span, [data-act="bud-add"], #bType option', inbox: '[data-act="note-add"]' };
+  for (const [mod, sel] of Object.entries(types)) {
+    await p.evaluate(m => location.hash = m, mod); await p.waitForTimeout(150);
+    const naked = await marked(sel);
+    check(!naked.length && (await p.$$(sel)).length, `type ${mod} : ses textes passent par la traduction` + (naked.length ? ' : ' + naked.join(' | ') : ''));
+  }
+  await p.evaluate(() => location.hash = 'budget'); await p.waitForTimeout(150);
+  check(JSON.stringify(await p.$$eval('#bType option', os => os.map(o => o.value))) === '["dépense","revenu"]', 'budget : les valeurs enregistrées restent « dépense » et « revenu », seuls les libellés se traduisent');
   await p.evaluate(() => location.hash = 'accueil'); await p.waitForTimeout(200);
   const homeNaked = await marked('.two h2, #main section > .row > h2, .hero .txt > p:not(.sky-line)'); // les Sortes ont leur lot
   check(!homeNaked.length, 'accueil : titres et phrase de la lune traduits' + (homeNaked.length ? ' : ' + homeNaked.join(' | ') : ''));
