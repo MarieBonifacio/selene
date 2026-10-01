@@ -43,7 +43,7 @@ CLICK["cap-sheet-add"] = () => capture($("#capSheetIn"));
 CLICK["page-more"] = el => { const k = el.dataset.k; pageSize[k] = (pageSize[k] || PAGE) + PAGE; render(); };
 CLICK["entry-add"] = el => entryAdd(el.dataset.mod);
 CLICK["entry-del"] = el => removeWithUndo(el.dataset.mod, "entries", idOf(el));
- CLICK["mod-down"] = el => moveMod(el, 1);
+CLICK["mod-down"] = el => moveMod(el, 1);
 /* Ajoute un module (depuis un modèle, déjà traduit par localTemplate, ou un type vide), actif et partagé avec l'assistant.
    Ses réglages de départ sont écrits dans la langue de l'interface. */
 export function addModule(tpl, name) {
@@ -73,7 +73,13 @@ function installModule(tpl, name) {
   } catch (e) { toast(errMsg(e)); }
 }
 export function moveMod(el, d) { const ms = S().config.modules, i = +el.closest("[data-i]").dataset.i, j = i + d; if (j < 0 || j >= ms.length) return; [ms[i], ms[j]] = [ms[j], ms[i]]; site.save(); render(); }
-document.addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (a && CLICK[a.dataset.act] && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) CLICK[a.dataset.act](a, e); });
+/* Lance une action de CLICK ou de CHANGE. Une action qui échoue, tout de suite ou plus tard (une promesse rejetée), le
+   dit : un clic sans aucun effet visible est la pire des réponses, on ne sait ni quoi réessayer ni quoi signaler. */
+export function runAction(table, name, ...args) {
+  const failed = err => { console.error(`Action « ${name} »`, err); toast(`Cette action n'a pas abouti : ${(err && err.message) || err}`); };
+  try { const r = table[name](...args); if (r && typeof r.then === "function") r.then(null, failed); } catch (err) { failed(err); }
+}
+document.addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (a && Object.hasOwn(CLICK, a.dataset.act) && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) runAction(CLICK, a.dataset.act, a, e); });
 // « / » ouvre la recherche (sur ordinateur), sauf pendant une saisie.
 document.addEventListener("keydown", e => {
   if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || "")) return;
@@ -90,7 +96,7 @@ document.addEventListener("keydown", e => {
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "capSheetIn") capture(e.target); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && e.target.id === "bridgeIn") bridgeSave(e.target.dataset.mod); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
 document.addEventListener("change", e => {
   const el = e.target, act = el.dataset.act;
-  if (act && Object.hasOwn(CHANGE, act)) CHANGE[act](el);
+  if (act && Object.hasOwn(CHANGE, act)) runAction(CHANGE, act, el);
   else if (act && act.startsWith("grp-") && act !== "grp-filter") {
     const mod = el.closest("[data-mod]").dataset.mod, g = gcfg(mod), G = grouperFor(mod);
     if (act === "grp-on") g.on = el.checked;

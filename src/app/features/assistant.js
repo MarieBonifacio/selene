@@ -20,8 +20,11 @@ import { ask } from "../ui/dialogs.js";
 
 export let chatBusy = false;
 /* Ce que dit le serveur de la clé du compte : null tant qu'on ne sait pas, { cle, indice? } ensuite ; « absent »
-   si la fonction n'est pas déployée (on n'insiste pas). */
-let assistantCle = null, assistantEtat = "", assistantDemande = null;
+   si la fonction n'est pas déployée (on n'insiste pas). Une demande qui échoue (hors ligne, fonction injoignable,
+   refus CORS) n'est pas refaite avant ASSISTANT_PAUSE : la page, qui la déclenche en se dessinant, la relancerait
+   sinon à chaque rendu. */
+let assistantCle = null, assistantEtat = "", assistantDemande = null, assistantPause = 0;
+const ASSISTANT_PAUSE = 5 * 60000;
 export const assistantSetCle = r => { assistantCle = r; }; // l'état de la clé, tel que le serveur vient de le dire
 const assistantPret = () => hosted() && authReady() && !!authSession && assistantEtat !== "absent";
 export async function assistantCall(corps, delai = 15000) {
@@ -43,16 +46,19 @@ export async function assistantCall(corps, delai = 15000) {
 /* L'état de la clé, demandé une fois ; une clé laissée dans cet appareil par une ancienne version est d'abord
    confiée au serveur, puis effacée d'ici (même refusée : elle ne sert plus à rien ici). */
 function assistantRefresh() {
-  if (!assistantPret() || assistantDemande) return assistantDemande;
+  if (!assistantPret() || assistantDemande || Date.now() < assistantPause) return assistantDemande;
   const ancienne = platform.secrets.get("selene-api-key");
   assistantDemande = (async () => {
+    const avant = assistantCle;
     try {
       if (ancienne) {
         try { assistantCle = await assistantCall({ action: "cle", cle: ancienne }); platform.secrets.remove("selene-api-key"); }
         catch (e) { if (["cle", "pas-une-cle"].includes(e.code) || /refuse|clé d'API/.test(e.message)) platform.secrets.remove("selene-api-key"); throw e; } // le texte : un serveur d'avant les codes
       } else assistantCle = await assistantCall({ action: "etat" });
-    } catch {} finally { assistantDemande = null; }
-    render();
+    } catch { assistantPause = Date.now() + ASSISTANT_PAUSE; } finally { assistantDemande = null; }
+    // Redessiner seulement si la réponse change ce qu'on montre : jamais après un échec, qui ne change rien (et un
+    // rendu redemanderait aussitôt : la boucle qui rendait tous les boutons inertes, le 30 septembre 2026).
+    if (assistantCle !== avant) render();
   })();
   return assistantDemande;
 }

@@ -59,7 +59,7 @@ export function tintOf(id) {
   return `t${(named.indexOf(g) % 7) + 1}`;
 }
 const ROMAN = [[10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
-const roman = n => { let out = ""; for (const [v, r] of [[50, "L"], [40, "XL"], ...ROMAN]) while (n >= v) { out += r; n -= v; } return out; };
+export const roman = n => { let out = ""; for (const [v, r] of [[50, "L"], [40, "XL"], ...ROMAN]) while (n >= v) { out += r; n -= v; } return out; };
 /* La planche d'un espace : son sigil et son numéro (l'ordre de la navigation), en tête de sa page. */
 export function plateHTML(id, extra = "") {
   const n = S().config.modules.filter(m => m.on && Object.hasOwn(S().modules, m.id)).findIndex(m => m.id === id) + 1;

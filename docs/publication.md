@@ -46,7 +46,8 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
    - Suppression du compte : dans l'app (Réglages → Compte), et l'adresse de la politique pour la demander ;
    - Publicités : non. Public cible : adultes. Questionnaire de classification : aucun contenu sensible.
 6. **La fiche** : description, icône 512 px (`icon-512.png`), image de présentation 1024 × 500, au moins deux captures
-   d'écran de téléphone.
+   d'écran de téléphone : `npm run screenshots` (ou Actions → Captures → Run workflow, polices comprises) les produit
+   dans `dist/store/android/`, en 1080 × 1920, sur un espace de démonstration fictif.
 
 ## iOS : App Store
 
@@ -62,7 +63,8 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
 5. **TestFlight** : après l'envoi, la version apparaît dans TestFlight (quelques minutes de traitement) ; l'installer
    par l'app TestFlight sur l'iPhone.
 6. **Les formulaires** : Confidentialité de l'app (mêmes réponses que pour Google Play : e-mail, contenu et position
-   approximative, liés à l'identité, pas de suivi), adresse de la politique, catégorie Productivité, captures d'écran 6,9 pouces.
+   approximative, liés à l'identité, pas de suivi), adresse de la politique, catégorie Productivité, captures d'écran 6,9 pouces
+   (`dist/store/ios/`, 1320 × 2868, par la même commande).
 
 Ce chemin n'a pas pu être essayé sans compte Apple : la première course dira s'il manque quelque chose.
 

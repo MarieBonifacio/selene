@@ -48,7 +48,7 @@ takeShare();
 export function shareSettingsHTML() {
   const base = location.origin + location.pathname;
   const bm = `javascript:(()=>{window.open('${base}?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title),'_blank')})()`;
-  return `<section><h3>${tr`Envoyer à Selene`}</h3><p class="hint">${tr`Un lien lu ailleurs arrive dans ta boîte de réception, prêt à devenir une source. Rien ne part ailleurs que chez toi.`}</p>
+  return `<section><h4>${tr`Envoyer à Selene`}</h4><p class="hint">${tr`Un lien lu ailleurs arrive dans ta boîte de réception, prêt à devenir une source. Rien ne part ailleurs que chez toi.`}</p>
     <p class="row" style="margin:0 0 8px"><a class="btn sm" href="${esc(bm)}" data-act="bookmarklet">${tr`Envoyer à Selene`}</a><span class="hint" style="margin:0">${tr`Sur ordinateur : glisse ce bouton dans ta barre de favoris.`}</span></p>
     <p class="hint">${tr`Sur Android, une fois l'app installée : « Partager », puis Selene. Sur iPhone : app Raccourcis, un raccourci qui s'affiche dans la feuille de partage (URL), avec l'action « Ouvrir les URL » : ${`<code>${esc(base)}?url=</code>`} suivi de l'entrée du raccourci.`}</p></section>`;
 }

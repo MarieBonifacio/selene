@@ -284,7 +284,7 @@ et la conversation avec l'assistant ; la clé API, gardée chiffrée par la fonc
   un script injecté ou un attribut `onerror=` est refusé par le navigateur même si l'échappement faillait
   (`tests/browser/csp.js`). Les styles gardent `'unsafe-inline'` (voir ADR 8). Connexions limitées à Google Fonts,
   `*.supabase.co` et aux services publics de la phase 1, chacun nommé (Open-Meteo, Crossref, Microlink,
-  MusicBrainz, open data de la MEL, OpenAlex, Zotero ; images de Cover Art Archive) : voir [connexions.md](connexions.md).
+  MusicBrainz, OpenAgenda (Opendatasoft), OpenAlex, Zotero ; images de Cover Art Archive) : voir [connexions.md](connexions.md).
 - **Assistant** : ne lit que les modules cochés dans Réglages → Assistant ; ses actions sont revérifiées
   à l'exécution (module actif, écriture autorisée) et passent par les mêmes règles métier que l'interface.
 
@@ -301,7 +301,7 @@ installe par `npm ci`, et les scripts npm sont les seules commandes, en local co
 | `npm test` | tests unitaires Node (`tests/*.test.js`) |
 | `npm run test:syntax` | `node --check` sur chaque source (`src/`, `src/app/`, `src/core/`, `src/native/`, `scripts/`), arrêt au premier fichier invalide |
 | `npm run lint` | eslint sur chaque module (`src/`, `sourceType: "module"`), l'amorçage natif, `scripts/` et `sw.js` |
-| `npm run i18n` | les textes marqués pour la traduction confrontés aux dictionnaires : orphelins, valeurs `{n}`, langues proposées complètes ; ADR 24 |
+| `npm run i18n` | les textes marqués pour la traduction confrontés aux dictionnaires : orphelins, valeurs `{n}`, langues proposées complètes ; ADR 25 |
 | `npm run test:functions` | types et tests Deno des fonctions Supabase (passeur, assistant) |
 | `npm run test:browser` | parcours Playwright dans Chromium (`npx playwright install chromium` une fois) ; `SELENE_BROWSER=webkit` pour WebKit |
 | `npm run check` / `check:all` | tout sauf le navigateur / tout |
@@ -710,7 +710,24 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   dépendances au chargement pendant le découpage (`lib/dom.js` qui importait l'état) et elles ont été corrigées plutôt
   que tolérées. Le comportement est inchangé : mêmes 173 tests, mêmes 52 scénarios de navigateur.
 
-### ADR 24 — Plusieurs langues : le français pour clé, un dictionnaire par langue
+### ADR 24 — Un widget d'écran d'accueil sous Android, qui ne calcule rien
+
+- **Contexte** : un widget rend Selene visible sans l'ouvrir. Mais un widget qui recalcule seul (tâches, rappels,
+  lune) devrait réimplémenter en Java ce que fait la page, ou réveiller une WebView en arrière-plan.
+- **Décision** : le widget montre ce que la page lui a dit en dernier. À chaque rendu, Selene calcule la lune du jour
+  et les trois choses qui attendent (tâches choisies pour aujourd'hui, puis rappels et échéances du jour : les mêmes
+  que le résumé du matin), et les envoie si elles ont changé, par un plugin Capacitor propre à l'app
+  (`WidgetPlugin.java`, enregistré dans `MainActivity`) qui les borne et les garde dans des préférences privées.
+  `SeleneWidget.java` (un `AppWidgetProvider`) les affiche ; toucher le widget ouvre l'app, « + » ouvre la capture par
+  le lien `selene://capture`. `updatePeriodMillis = 0` : aucun réveil programmé. `platform.widget` n'existe que là où la
+  coquille en a un.
+- **Écarté** : iOS pour l'instant (WidgetKit demande une extension Swift, un App Group partagé et donc une signature :
+  à faire avec le compte Apple) ; un widget qui interroge lui-même le stockage (deux lectures du même document, deux
+  vérités possibles).
+- **Conséquences** : un widget à jour de la dernière ouverture, pas davantage ; le job *apk* compile le Java du widget
+  à chaque PR ; `tests/native-boot.test.js`, `platform.test.js` et `app.test.js` vérifient le pont et le contenu.
+
+### ADR 25 — Plusieurs langues : le français pour clé, un dictionnaire par langue
 
 - **Contexte** : Selene ne parlait que français, et pas seulement par ses mots : de l'ordre de 1 500 textes écrits
   dans les gabarits HTML de 58 fichiers, la locale `fr-FR` inscrite à 25 endroits (dates, sommes, tris), un pluriel

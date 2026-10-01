@@ -18,7 +18,8 @@
     "test:browser": "npm run build:dist && node tests/browser/run.js",
     "bench": "node tests/bench.js",
     "check": "npm run build:check && npm test && npm run test:syntax && npm run lint && npm run i18n && npm run test:functions",
-    "check:all": "npm run check && npm run test:browser"
+    "check:all": "npm run check && npm run test:browser",
+    "screenshots": "npm run build:dist && node scripts/store-screenshots.mjs"
   },
   "devDependencies": {
     "@aparajita/capacitor-secure-storage": "8.0.1",

@@ -186,7 +186,7 @@ export default {
   "Masquer la carte": "Hide the map",
   // features/cites.js
   "OpenAlex injoignable (hors ligne ?).": "OpenAlex unreachable (offline?).",
-  "OpenAlex : quota du jour atteint (une clé gratuite, dans Réglages → Dehors, le décuple).": "OpenAlex: daily quota reached (a free key, in Settings → Outside, multiplies it tenfold).",
+  "OpenAlex : quota du jour atteint (une clé gratuite, dans Dehors, le décuple).": "OpenAlex: daily quota reached (a free key, in Outside, multiplies it tenfold).",
   "OpenAlex répond {0}.": "OpenAlex answers {0}.",
   "Lecture des bibliographies de tes sources…": "Reading your sources' bibliographies…",
   "OpenAlex connaît {0} de tes {1} sources à DOI.": "OpenAlex knows {0} of your {1} sources with a DOI.",

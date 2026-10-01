@@ -33,7 +33,7 @@ def csp_hash(text):
     return "'sha256-" + base64.b64encode(hashlib.sha256(text.encode("utf-8")).digest()).decode("ascii") + "'"
 CONNECT = ("'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com "
            "https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org "
-           "https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org")
+           "https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org")
 # Les coquilles de bureau (Tauri) parlent à leur cœur par le protocole ipc (http://ipc.localhost sous Windows).
 IPC = " ipc: http://ipc.localhost"
 def csp(scripts, pwa):

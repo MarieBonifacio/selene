@@ -91,3 +91,28 @@ test('résumé du matin : un par jour qui a quelque chose, à l’heure choisie,
   assert.match(again.body + again.title, /Poser le Velux|de plus/, 'une échéance du lendemain compte');
   assert.ok(app.dayDigest(iso).includes('Échéance : Poser le Velux'));
 });
+
+test('widget : la lune du jour, puis les tâches choisies et les rappels du jour, trois au plus, sans doublon', () => {
+  const app = launch(new Map());
+  const today = app.todayISO(), inst = app.site.data.modules.chantier;
+  for (const [n, title] of ['Poser le Velux', 'Appeler le couvreur', 'Changer le joint', 'Vider la cave'].entries())
+    inst.entries.push({ id: 'w' + n, title, today: n < 2, done: false, due: n === 0 ? today : null, room: '', cat: 'Bricolage', steps: [] });
+  const w = app.widgetData();
+  assert.match(w.moon, /^.+ · \d{1,3} %$/);
+  assert.ok(w.lines.length <= 3);
+  assert.deepEqual([...w.lines].slice(0, 2), ['Poser le Velux', 'Appeler le couvreur'], 'les tâches du jour d’abord');
+  assert.ok(!w.lines.includes('Échéance : Poser le Velux'), 'une tâche du jour à échéance aujourd’hui ne compte qu’une fois');
+});
+
+test('une action qui échoue le dit : jamais un clic sans effet visible', async () => {
+  const app = launch(new Map());
+  const toast = () => app.nodes.get('#toast').textContent;
+  const quiet = console.error; console.error = () => {};
+  try {
+    app.runAction({ boum() { throw new Error('portail muet'); } }, 'boum');
+    assert.match(toast(), /n'a pas abouti : portail muet/);
+    app.runAction({ plusTard: async () => { throw new Error('refusé plus tard'); } }, 'plusTard');
+    await new Promise(r => setTimeout(r, 0));
+    assert.match(toast(), /n'a pas abouti : refusé plus tard/);
+  } finally { console.error = quiet; }
+});
