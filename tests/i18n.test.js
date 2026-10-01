@@ -4,7 +4,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { LANGS, applyLang, collate, resolveLang, tr, trn, trp, uiLang, uiLocale } = require('../src/app/i18n/index.js');
+const { LANGS, READY_LANGS, applyLang, collate, resolveLang, tr, trn, trp, uiLang, uiLocale } = require('../src/app/i18n/index.js');
 
 const BOTH = ['fr', 'en'];
 // Une clé d'essai le temps d'un test, dans le vrai dictionnaire anglais (retirée ensuite).
@@ -155,6 +155,24 @@ test('les genres de source du noyau sont tous dans la liste à traduire', () => 
   for (const k of [...Object.values(CROSSREF_KIND), ...Object.values(ZOT_KIND), 'page', 'article', 'vidéo']) assert.ok(SOURCE_KINDS.includes(k), k);
   const src = fs.readFileSync('src/app/services/passeur.js', 'utf8') + fs.readFileSync('src/core/sources.js', 'utf8');
   for (const m of src.matchAll(/kind: (?:[^,]*\? )?"([^"]+)"/g)) assert.ok(SOURCE_KINDS.includes(m[1]), m[1]);
+});
+
+test('les coquilles natives déclarent les langues proposées, ni plus ni moins (iOS, Android, installateur Windows)', () => {
+  const ready = [...READY_LANGS].sort(), res = 'native/android/app/src/main/res', all = (s, re) => [...s.matchAll(re)].map(m => m[1]);
+  const plist = fs.readFileSync('native/ios/App/App/Info.plist', 'utf8');
+  const ios = plist.match(/<key>CFBundleLocalizations<\/key>\s*<array>([^]*?)<\/array>/);
+  assert.ok(ios, 'CFBundleLocalizations manque dans Info.plist');
+  assert.deepEqual(all(ios[1], /<string>([^<]+)<\/string>/g).sort(), ready);
+  assert.deepEqual(all(fs.readFileSync(path.join(res, 'xml/locales_config.xml'), 'utf8'), /<locale android:name="([^"]+)"/g).sort(), ready);
+  assert.match(fs.readFileSync('native/android/app/src/main/AndroidManifest.xml', 'utf8'), /android:localeConfig="@xml\/locales_config"/);
+  // Les textes du widget : chaque texte à traduire de values/ (le français) existe dans le dossier de chaque autre langue.
+  const names = f => all(fs.readFileSync(path.join(res, f), 'utf8'), /<string name="([^"]+)"(?![^>]*translatable="false")/g).sort();
+  for (const l of READY_LANGS.filter(l => l !== 'fr')) assert.deepEqual(names(`values-${l}/strings.xml`), names('values/strings.xml'), l);
+  // L'installateur : le nom NSIS de chaque langue, le français d'abord (NSIS prend la première pour une autre langue
+  // du système, comme l'interface et le menu de la zone de notification prennent le français).
+  const NSIS = { fr: 'French', en: 'English' };
+  const nsis = JSON.parse(fs.readFileSync('native/tauri/tauri.conf.json', 'utf8')).bundle.windows.nsis.languages;
+  assert.deepEqual(nsis, ['fr', ...READY_LANGS.filter(l => l !== 'fr')].map(l => NSIS[l] ?? `nom NSIS de ${l} ?`));
 });
 
 test('un modèle de module se crée dans la langue de l’interface ; les valeurs du code ne bougent pas', () => {

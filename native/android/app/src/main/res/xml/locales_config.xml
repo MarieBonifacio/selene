@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Les langues de l'interface (READY_LANGS, docs/i18n.md), déclarées à Android 13+ : il les propose dans Paramètres →
+     Applications → Selene → Langue, pour Selene seule. Le widget (res/values-en/) et la page la suivent comme langue de
+     l'appareil. Un test les garde égales. -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="fr" />
+    <locale android:name="en" />
+</locale-config>

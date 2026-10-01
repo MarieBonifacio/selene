@@ -6,6 +6,13 @@
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<!-- Les langues de l'interface (READY_LANGS, docs/i18n.md) : WebKit ne donne à la page (navigator.languages) qu'une
+	     langue que l'app déclare, et iOS les propose dans Réglages → Selene → Langue. Un test les garde égales. -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>fr</string>
+		<string>en</string>
+	</array>
 	<key>CFBundleDisplayName</key>
         <string>Selene</string>
 	<key>CFBundleExecutable</key>
