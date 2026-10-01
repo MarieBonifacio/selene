@@ -158,7 +158,7 @@ registerType("collection", {
       const inst = instOf(el), c = inst.config, i = +el.closest("[data-si]").dataset.si, st = c.statuses[i];
       if (c.statuses.length <= 2) return toast(tr`Deux statuts minimum : sinon rien ne peut avancer.`);
       const n = inst.entries.filter(e => e.status === st).length, to = c.statuses[i === 0 ? 1 : i - 1];
-      if (!await ask(tr`Supprimer le statut « ${st} » ?` + (n ? " " + tr`Ses ${n} élément(s) passeront à « ${to} ».` : ""))) return;
+      if (!await ask(tr`Supprimer le statut « ${st} » ?` + (n ? " " + trn(n, "{0} élément passera à « {1} ».", "{0} éléments passeront à « {1} ».", to) : ""))) return;
       inst.entries.forEach(e => { if (e.status === st) e.status = to; });
       c.statuses.splice(i, 1); c.doneFrom = Math.min(c.statuses.length - 1, Math.max(1, c.doneFrom - (i < c.doneFrom ? 1 : 0)));
       site.save(); render();

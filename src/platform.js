@@ -100,6 +100,17 @@ export async function migrateToIdb(vault, area) {
 let storageImpl = native && native.storage ? mirror(native.storage) : webStore(() => localStorage);
 let channel = null;
 const watchers = [];
+/* Le message d'un démarrage impossible (données illisibles). Il s'affiche avant l'interface et sans les données, donc
+   sans le réglage de langue du compte : la langue de l'appareil, en anglais ou en français (le français sinon), comme
+   l'interface en l'absence de choix. Pas de module de traduction ici : platform.js reste la seule couche de l'hôte. */
+const UNREADABLE = {
+  fr: "Selene n'a pas pu lire les données de cet appareil. Ferme l'application et rouvre-la.",
+  en: "Selene couldn't read this device's data. Close the app and open it again."
+};
+export function unreadable(languages = typeof navigator !== "undefined" ? navigator.languages || [navigator.language] : []) {
+  for (const tag of languages) { const base = String(tag || "").toLowerCase().split("-")[0]; if (Object.hasOwn(UNREADABLE, base)) return UNREADABLE[base]; }
+  return UNREADABLE.fr;
+}
 export const platform = {
   // "artifact" (claude.ai), "web" (PWA, navigateur), ou ce que dit la coquille native ("capacitor", "tauri").
   runtime: () => window.claude ? "artifact" : native ? String(native.runtime || "native") : "web",
@@ -130,7 +141,7 @@ export const platform = {
      Si un coffre qui détient les données devient illisible, rien ne démarre : une app vide écraserait, au
      premier enregistrement, les données restées dans le coffre. */
   ready(start) {
-    const fail = () => { document.body.textContent = "Selene n'a pas pu lire les données de cet appareil. Ferme l'application et rouvre-la."; };
+    const fail = () => { document.body.textContent = unreadable(); };
     if (native) {
       Promise.all([storageImpl, platform.secrets].map(s => (s.hydrate ? s.hydrate() : null))).then(() => start(), fail);
       return;
