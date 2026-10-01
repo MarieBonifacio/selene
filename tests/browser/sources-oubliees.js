@@ -28,9 +28,12 @@ demo.config.modules.push({ id: 'sources', on: true });
   console.log('la relier');
   await p.click('.card [data-act="src-link"]'); await p.waitForTimeout(150);
   ok((await p.$$eval('#form [name=to] option', os => os.map(o => o.value))).join() === 'ecriture/f1', 'on choisit ce qu’elle documente parmi les notes et fragments');
-  await p.selectOption('#form [name=to]', 'ecriture/f1'); await p.click('#form button[value=save]'); await p.waitForTimeout(200);
-  const s = (await data()).modules.sources.entries[0];
-  ok(s.links.length === 1 && s.links[0].to === 'ecriture/f1' && s.links[0].type === 'documente', 'la source documente le fragment');
+  await p.selectOption('#form [name=to]', 'ecriture/f1'); await p.click('#form button[value=save]');
+  // Attendre l'enregistrement lui-même, pas un délai fixe : sous WebKit et sur une machine chargée, 200 ms ne
+  // suffisaient pas toujours (la source relue n'avait pas encore de liens).
+  let s = null;
+  for (const end = Date.now() + 5000; Date.now() < end; await p.waitForTimeout(50)) { s = (await data()).modules.sources.entries[0]; if (s.links && s.links.length) break; }
+  ok(!!s.links && s.links.length === 1 && s.links[0].to === 'ecriture/f1' && s.links[0].type === 'documente', 'la source documente le fragment');
   ok(!(await p.$('.card')) && (await p.textContent('#toast')).includes('Reliée'), 'la carte s’efface : elle n’est plus oubliée');
   await p.click('[data-act="sortes-draw"]'); await p.waitForTimeout(200);
   ok((await p.textContent('#toast')).includes('Rien d\'assez ancien'), 'plus rien à tirer : reliée, elle a quitté le bassin');
