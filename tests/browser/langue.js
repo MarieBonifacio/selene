@@ -55,7 +55,7 @@ const demo = JSON.parse(fixture());
   // La charpente : navigation, barre du bas, minuteur, et le squelette statique (shell.html), retraduit au changement.
   // Les textes restés nus (hors ⟦ ⟧) ; raccourcis clavier (kbd) et marques de navigation (.nx) mis de côté.
   // Les textes de l'interface sous `sel` qui ne sont pas passés par la traduction (raccourcis, compteurs, à part : `strip`).
-  const marked = (sel, strip = 'kbd, .nx') => p.$$eval(sel, (els, strip) => els.map(el => { const c = el.cloneNode(true); c.querySelectorAll(strip).forEach(k => k.remove()); return c.textContent.trim(); }).filter(t => t && !/^⟦[^]*⟧$/.test(t)), strip);
+  const marked = (sel, strip = 'kbd, .nx') => p.$$eval(sel, (els, strip) => els.map(el => { const c = el.cloneNode(true); c.querySelectorAll(strip).forEach(k => k.remove()); return c.textContent.trim(); }).filter(t => t && !/^[^\p{L}\p{N}]*⟦[^]*⟧$/u.test(t)), strip); // un symbole devant (✕, ›, +) n'est pas un texte
   const navNaked = await marked('#nav a[href="#accueil"], #nav a[href="#bilan"], #nav a[href="#recherche"], #nav a[href="#reglages"], #nav .pal-hint');
   check(!navNaked.length, 'navigation latérale traduite' + (navNaked.length ? ' : ' + navNaked.join(' | ') : ''));
   check(!(await marked('#bar a span, #bar button span')).length, 'barre du bas traduite');
@@ -80,8 +80,11 @@ const demo = JSON.parse(fixture());
   const homeNaked = await marked('.two h2, #main section > .row > h2, .hero .txt > p:not(.sky-line)'); // les Sortes ont leur lot
   check(!homeNaked.length, 'accueil : titres et phrase de la lune traduits' + (homeNaked.length ? ' : ' + homeNaked.join(' | ') : ''));
   await p.evaluate(() => location.hash = 'reglages'); await p.waitForTimeout(200);
-  const nakedH3 = await marked('#main > h2, #main section > h3');
-  check(!nakedH3.length, 'réglages : toutes les sections traduites' + (nakedH3.length ? ' : ' + nakedH3.join(' | ') : ''));
+  const nakedH3 = await marked('#main > h2, #main h3, #main h4, .chap > p.hint, .reg-toc button, .reg-guide p, .reg-guide summary, .lex dt, .lex dd, .reg-keys > span, .fld-h > span[id], .newmod summary, .tpl b, .tpl .hint', '.n, .tip, .tipb');
+  check(!nakedH3.length, 'réglages : chapitres, sommaire, guide, vocabulaire, sous-titres et champs traduits' + (nakedH3.length ? ' : ' + nakedH3.join(' | ') : ''));
+  const tipsNaked = await marked('.tipb');
+  check(!tipsNaked.length && (await p.$$('.tipb')).length > 10, 'réglages : les infobulles aussi' + (tipsNaked.length ? ' : ' + tipsNaked.join(' | ') : ''));
+  check(!(await p.$$eval('button.tip', bs => bs.map(x => x.getAttribute('aria-label')).filter(l => !/^⟦/.test(l)))).length, 'réglages : le nom de chaque « ? » (lecteurs d’écran)');
   check(!(await marked('.swatch, select[data-set="config.mode"] option')).length, 'réglages : palettes et modes traduits');
   const tplNaked = await marked('#newModType option');
   check(!tplNaked.length && (await p.$$('#newModType option')).length > 10, 'réglages : modèles et types de module traduits' + (tplNaked.length ? ' : ' + tplNaked.join(' | ') : ''));

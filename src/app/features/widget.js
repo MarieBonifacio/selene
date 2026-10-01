@@ -3,6 +3,7 @@
    l'ouvrir suffit à le remettre à l'heure. */
 import { platform } from "../../platform.js";
 import { todayISO } from "../lib/format.js";
+import { tr } from "../i18n/index.js";
 import { todayTasks } from "../modules/taches.js";
 import { moon } from "../scene/moon.js";
 import { dayDigest } from "./digest.js";
@@ -12,8 +13,8 @@ const WIDGET_LINES = 3;
 export function widgetData() {
   const m = moon(), lines = [];
   for (const [, t] of todayTasks()) if (!lines.includes(t.title)) lines.push(t.title);
-  for (const x of dayDigest(todayISO())) if (!lines.includes(x) && !lines.some(l => x === `Échéance : ${l}`)) lines.push(x);
-  return { moon: `${m.name} · ${Math.round(m.illum * 100)} %`, lines: lines.slice(0, WIDGET_LINES) };
+  for (const x of dayDigest(todayISO())) if (!lines.includes(x) && !lines.some(l => x === tr`Échéance : ${l}`)) lines.push(x); // la même phrase que dayDigest, dans la même langue
+  return { moon: tr`${m.name} · ${Math.round(m.illum * 100)} %`, lines: lines.slice(0, WIDGET_LINES) };
 }
 let widgetTimer = null, widgetSent = null;
 export function widgetSoon() {

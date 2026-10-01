@@ -27,7 +27,7 @@ import { roman, sigil, sigilPicker, tintOf } from "../shell/sigils.js";
 import { S, board, enabled, label, site } from "../state/site.js";
 import { openForm } from "../ui/dialogs.js";
 import { tip } from "../ui/tips.js";
-import { CHAPTERS, GLOSSARY, GUIDE, TEXTS, TIPS } from "./reglages-aide.js";
+import { CHAPTERS, GUIDE, TEXTS, TIPS, glossary } from "./reglages-aide.js";
 
 const PALETTES = [["nigredo", N_("Nigredo, mousse"), "#6f9a68"], ["albedo", N_("Albedo, lichen"), "#aab7a6"], ["citrinitas", N_("Citrinitas, résine"), "#c99a3c"], ["rubedo", N_("Rubedo, amanite"), "#c0554a"]];
 // La politique de confidentialité, dans la langue de l'interface quand elle existe (confidentialite.html, privacy.html).
@@ -57,7 +57,7 @@ const GUIDE_KEY = "selene-reglages-guide";
 const guideOpen = () => { try { return platform.storage.get(GUIDE_KEY) !== "vu"; } catch { return true; } };
 function guideHTML() {
   return `<aside class="reg-guide" aria-label="${esc(GUIDE.title)}"><p class="reg-guide-t">${esc(GUIDE.title)}</p><p>${esc(GUIDE.body)}</p><p>${esc(GUIDE.device)}</p>
-    <details id="reg-lexique"><summary>${esc(GUIDE.glossaryTitle)}</summary><dl class="lex">${GLOSSARY.map(([t, d]) => `<dt>${esc(tr(t))}</dt><dd>${esc(tr(d))}</dd>`).join("")}</dl></details>
+    <details id="reg-lexique"><summary>${esc(GUIDE.glossaryTitle)}</summary><dl class="lex">${glossary().map(([t, d]) => `<dt>${esc(t)}</dt><dd>${esc(d)}</dd>`).join("")}</dl></details>
     <p class="hint">${esc(GUIDE.wit)}</p><button type="button" class="btn sm" data-act="reg-guide" data-v="vu">${esc(GUIDE.dismiss)}</button></aside>`;
 }
 function tocHTML() {
@@ -80,7 +80,8 @@ function apparenceHTML(c) {
 }
 
 /* ---- II. Espaces : une ligne par espace, ses réglages dessous, puis de quoi en créer ---- */
-const typeName = type => tr(String(MODULE_TYPES[type]?.label || "")).split(" (")[0]; // « Collection (éléments…) » → « Collection »
+// « Collection (éléments…) » → « Collection » : coupé en français, puis traduit (une traduction ne garde pas forcément la parenthèse).
+const typeName = type => tr(String(MODULE_TYPES[type]?.label || "").split(" (")[0]);
 function modBlock(s, m, i) {
   const name = label(m.id), inst = s.modules[m.id], sys = SYSTEM.includes(m.id);
   const settings = enabled(m.id) && (inst || grouperFor(m.id));

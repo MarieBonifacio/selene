@@ -76,7 +76,7 @@ export function moveMod(el, d) { const ms = S().config.modules, i = +el.closest(
 /* Lance une action de CLICK ou de CHANGE. Une action qui échoue, tout de suite ou plus tard (une promesse rejetée), le
    dit : un clic sans aucun effet visible est la pire des réponses, on ne sait ni quoi réessayer ni quoi signaler. */
 export function runAction(table, name, ...args) {
-  const failed = err => { console.error(`Action « ${name} »`, err); toast(`Cette action n'a pas abouti : ${(err && err.message) || err}`); };
+  const failed = err => { console.error(`Action « ${name} »`, err); toast(tr`Cette action n'a pas abouti : ${errMsg(err) || String(err)}`); };
   try { const r = table[name](...args); if (r && typeof r.then === "function") r.then(null, failed); } catch (err) { failed(err); }
 }
 document.addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (a && Object.hasOwn(CLICK, a.dataset.act) && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) runAction(CLICK, a.dataset.act, a, e); });

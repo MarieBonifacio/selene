@@ -3,7 +3,7 @@
    morceau (l'ordre des mots change d'une langue à l'autre) ; celles qui citent un nom sont des fonctions, pour que la
    traduction le place où sa grammaire le veut. Du texte brut : l'affichage l'échappe.
    Des accesseurs (get) : chaque lecture traduit dans la langue en vigueur, sans que la page ait à le savoir. */
-import { N_, tr } from "../i18n/index.js";
+import { tr, trp } from "../i18n/index.js";
 
 /* Les chapitres, du plus courant au plus rare ; leur numéro (I, II…) suit cet ordre. */
 export const CHAPTERS = [
@@ -48,16 +48,17 @@ export const GUIDE = {
   get dismiss() { return tr`Compris`; },
   get reopen() { return tr`Guide et vocabulaire`; }
 };
-/* Le vocabulaire : des paires marquées (N_), traduites à l'affichage. */
-export const GLOSSARY = [
-  [N_("Espace"), N_("Une page de ta navigation (un « module » dans la documentation), d'un type donné.")],
-  [N_("Type"), N_("La mécanique d'un espace : tâches, collection, notes, budget, programme, rappels, objectif cumulatif ou arc.")],
-  [N_("Modèle"), N_("Un type déjà garni (statuts, catégories, sigil), pour commencer sans rien régler.")],
-  [N_("Domaine"), N_("Un regroupement d'espaces (Maison, Création…) dans la navigation et l'accueil, avec sa teinte.")],
-  [N_("Sigil, planche"), N_("Le signe gravé d'un espace et son numéro (Pl. III), selon l'ordre de la navigation.")],
-  [N_("Boîte de réception"), N_("L'espace de notes qui reçoit la capture rapide ; ce qu'elle contient se range ensuite ailleurs.")],
-  [N_("Passeur"), N_("Ta fonction, sur le serveur, qui lit pour Selene ce que le navigateur n'a pas le droit de lire.")],
-  [N_("Cet appareil"), N_("Un réglage qui ne suit pas ton compte : il reste sur l'appareil où tu l'as fait.")]
+/* Le vocabulaire, traduit à chaque appel. « Modèle » y est un gabarit d'espace (trp « gabarit ») : le même mot
+   nomme ailleurs le modèle de l'assistant (Model, en anglais), ici un Template. */
+export const glossary = () => [
+  [tr`Espace`, tr`Une page de ta navigation (un « module » dans la documentation), d'un type donné.`],
+  [tr`Type`, tr`La mécanique d'un espace : tâches, collection, notes, budget, programme, rappels, objectif cumulatif ou arc.`],
+  [trp("gabarit", "Modèle"), tr`Un type déjà garni (statuts, catégories, sigil), pour commencer sans rien régler.`],
+  [tr`Domaine`, tr`Un regroupement d'espaces (Maison, Création…) dans la navigation et l'accueil, avec sa teinte.`],
+  [tr`Sigil, planche`, tr`Le signe gravé d'un espace et son numéro (Pl. III), selon l'ordre de la navigation.`],
+  [tr`Boîte de réception`, tr`L'espace de notes qui reçoit la capture rapide ; ce qu'elle contient se range ensuite ailleurs.`],
+  [tr`Passeur`, tr`Ta fonction, sur le serveur, qui lit pour Selene ce que le navigateur n'a pas le droit de lire.`],
+  [tr`Cet appareil`, tr`Un réglage qui ne suit pas ton compte : il reste sur l'appareil où tu l'as fait.`]
 ];
 
 /* Les autres textes de la page. */
