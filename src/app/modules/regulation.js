@@ -45,9 +45,15 @@ const alcoholUrgent = () => tr`Confusion, hallucinations, convulsions, fortes su
 const alcoholHelp = () => tr`Alcool Info Service : 0 980 980 930, de 8 h à 2 h, 7 jours sur 7, anonyme et non surtaxé.`;
 
 /* ---- formulaires ---- */
+/* Premier réglage, en deux formulaires : le nom (libre) et le sujet, puis l'intention. Le nom est enregistré tout de
+   suite ; le sujet, avec la première version d'objectif seulement (un formulaire abandonné ne fige rien). */
 function subjectForm(id) {
-  openForm(tr`Ce que je veux suivre`, [{ n: "subject", l: tr`Sujet du suivi`, t: "select", o: Object.keys(SUBJECTS).map(k => [k, SUBJECTS[k].name()]) }], { subject: "tabac" },
-    v => goalForm(id, v.subject),
+  openForm(tr`Ce que je veux suivre`, [{ n: "name", l: tr`Nom du suivi (visible dans la navigation)`, req: true }, { n: "subject", l: tr`Sujet du suivi`, t: "select", o: Object.keys(SUBJECTS).map(k => [k, SUBJECTS[k].name()]) }], { name: label(id), subject: "tabac" },
+    v => {
+      const inst = S().modules[id], name = v.name.trim().slice(0, 60);
+      if (inst && name && name !== label(id)) { inst.label = name; delete S().config.labels[id]; save(); }
+      goalForm(id, v.subject);
+    },
     tr`Un suivi, un sujet, une unité : le tabac en cigarettes, le cannabis en grammes de produit, l'alcool en verres standard, les réseaux sociaux en minutes déclarées. Pour en suivre plusieurs, crée un suivi par sujet : leurs unités, objectifs et marques ne se mélangent pas. Le sujet ne change plus ensuite.`);
 }
 function goalForm(id, setupSubject = null) {

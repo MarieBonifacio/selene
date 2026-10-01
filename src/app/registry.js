@@ -12,7 +12,9 @@ export const CLICK = {};
 export const CHANGE = {};
 /* Les types de module, côté interface (le côté données est MODULE_TYPES, src/core/domain.js). Un fichier de
    src/app/modules/ par type, qui s'enregistre par registerType. Ce qu'un type peut fournir :
-     sensitive             exclut les détails des surfaces générales (aucun texts, review ou recent sensible)
+     sensitive             suivi sensible (docs/regulation.md) : non partagé avec l'assistant à la création, partage confirmé
+                           sur le résumé ; ignoré du bilan, de la planche, des liens, des ponts et de la reprise de l'accueil.
+                           Un parcours transversal qui lit les modules sans passer par un hook doit le tester.
      view(id)              écran du module
      settings(id, inst)    champs du bloc « Réglages par module »
      summary(id, inst)     ligne de l'accueil « Où en sont les choses » (HTML)

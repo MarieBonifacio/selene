@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5gh9icieycQ5HpGdnq8KnE2D5ml69nEQr+aBmSfciUM=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-R43F4IyaP8/QJTIMkpvjaZW4lOk2xalK3CVuYHmL4Ck=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -2317,6 +2317,7 @@ var __selene = (() => {
     "Confusion, hallucinations, convulsions, fortes sueurs avec tremblements : appelle le 15 (Samu) ou le 112. Par SMS ou en visio, le 114 pour les personnes sourdes ou malentendantes.": "Confusion, hallucinations, seizures, heavy sweating with shaking: call 15 (SAMU, French emergency medical service) or 112. By text or video call, 114 for deaf or hard-of-hearing people.",
     "Alcool Info Service : 0 980 980 930, de 8 h à 2 h, 7 jours sur 7, anonyme et non surtaxé.": "Alcool Info Service (France): 0 980 980 930, 8 am to 2 am, 7 days a week, anonymous, standard rate.",
     "Ce que je veux suivre": "What I want to track",
+    "Nom du suivi (visible dans la navigation)": "Tracker name (shown in navigation)",
     "Sujet du suivi": "Tracker subject",
     "Un suivi, un sujet, une unité : le tabac en cigarettes, le cannabis en grammes de produit, l'alcool en verres standard, les réseaux sociaux en minutes déclarées. Pour en suivre plusieurs, crée un suivi par sujet : leurs unités, objectifs et marques ne se mélangent pas. Le sujet ne change plus ensuite.": "One tracker, one subject, one unit: tobacco in cigarettes, cannabis in grams of product, alcohol in standard drinks, social media in minutes you enter. To track several, create one tracker per subject: their units, goals and marks never mix. The subject can't change afterwards.",
     "La limite ne sert qu'à réduire. Observer n'attribue ni réussite ni échec ; viser l'arrêt vise zéro. Selene ne baisse jamais une limite d'elle-même et ne propose aucun rythme. Les journées déjà confirmées gardent leur objectif.": "The limit is only for cutting down. Observing gives no success or failure; aiming to stop aims for zero. Selene never lowers a limit by itself and suggests no pace. Days already confirmed keep their goal.",
@@ -8679,9 +8680,17 @@ ${contextText()}`;
   function subjectForm(id) {
     openForm(
       tr`Ce que je veux suivre`,
-      [{ n: "subject", l: tr`Sujet du suivi`, t: "select", o: Object.keys(SUBJECTS).map((k) => [k, SUBJECTS[k].name()]) }],
-      { subject: "tabac" },
-      (v) => goalForm(id, v.subject),
+      [{ n: "name", l: tr`Nom du suivi (visible dans la navigation)`, req: true }, { n: "subject", l: tr`Sujet du suivi`, t: "select", o: Object.keys(SUBJECTS).map((k) => [k, SUBJECTS[k].name()]) }],
+      { name: label(id), subject: "tabac" },
+      (v) => {
+        const inst = S().modules[id], name = v.name.trim().slice(0, 60);
+        if (inst && name && name !== label(id)) {
+          inst.label = name;
+          delete S().config.labels[id];
+          save();
+        }
+        goalForm(id, v.subject);
+      },
       tr`Un suivi, un sujet, une unité : le tabac en cigarettes, le cannabis en grammes de produit, l'alcool en verres standard, les réseaux sociaux en minutes déclarées. Pour en suivre plusieurs, crée un suivi par sujet : leurs unités, objectifs et marques ne se mélangent pas. Le sujet ne change plus ensuite.`
     );
   }

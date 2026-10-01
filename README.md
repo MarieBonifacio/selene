@@ -41,9 +41,9 @@ Pour ajouter un *type* de module au code, voir [docs/architecture.md](docs/archi
 
 ## Reprendre la main
 
-Un espace optionnel pour le **tabac, le cannabis, l'alcool et les réseaux sociaux**, en observation, réduction ou objectif d'arrêt. Ajouter le modèle « Reprendre la main », puis définir le sujet et l'objectif dans l'espace. Journal rapide, envies, pause facultative de cinq minutes, actions du plan et bilan sur sept jours. Une journée inconnue ne vaut jamais zéro. Les récompenses sont facultatives : une marque par journée avec une action réalisée, sans perte après un écart.
+Un espace facultatif pour suivre soi-même le **tabac, le cannabis, l'alcool ou les réseaux sociaux** : observer, réduire avec une limite quotidienne choisie, ou viser l'arrêt. Un suivi par sujet, chacun avec son unité (cigarettes, grammes de produit, verres standard, minutes déclarées). Quatre gestes : une envie (avec une pause facultative de cinq minutes), une consommation ou une durée, une action de son plan, le point du jour. **Une journée inconnue ne vaut jamais zéro** : elle ne compte qu'une fois confirmée, sur son total exact. Marques facultatives, une par journée avec une action réalisée, sans série ni perte après un écart. Bilan sur sept jours.
 
-Le module n'est **pas partagé avec l'assistant à sa création** et ses détails sont exclus des vues transversales. Ses données suivent toutefois le stockage, la synchronisation et les sauvegardes du compte. Il ne prescrit pas de sevrage ; l'alcool dispose d'une information spécifique avant le choix de l'objectif. Fonctionnement, unités, confidentialité et limites : [docs/regulation.md](docs/regulation.md).
+Ce n'est ni un diagnostic ni un programme de sevrage ; pour l'alcool, une information sur les risques d'un arrêt brutal précède tout objectif. L'espace n'est **pas partagé avec l'assistant à sa création** et ses détails restent dans l'espace (recherche, bilans, accueil, notifications) ; ses données suivent pourtant la synchronisation et les sauvegardes du compte, sans chiffrement de bout en bout. Fonctionnement, unités, confidentialité, sources et limites : [docs/regulation.md](docs/regulation.md).
 
 ## Au quotidien
 

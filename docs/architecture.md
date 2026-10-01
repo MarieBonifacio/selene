@@ -767,6 +767,32 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   reporter. L'étape 1 ne change rien à l'écran (mêmes 52 scénarios verts, plus un pour la langue). Étapes et règles
   d'écriture : [i18n.md](i18n.md).
 
-### Suivi sensible de régulation
+### ADR 26 — « Reprendre la main » : un suivi sensible dans un type de module
 
-Le type `regulation` (format 7) utilise les registres et le store existants ; ses règles sont dans `src/core/regulation.js`, son interface dans `src/app/modules/regulation.js`. Intentions, quantités, journées connues, récompenses dédupliquées et exclusions des surfaces générales : [regulation.md](regulation.md).
+- **Contexte** : un espace facultatif de suivi du tabac, du cannabis, de l'alcool ou des réseaux sociaux est demandé
+  (observer, réduire, viser l'arrêt), avec des récompenses facultatives. Ces données touchent à la santé : elles ne
+  doivent ni nourrir les analyses transversales de Selene (recherche, motifs, dérive, test lunaire, bilans, planche),
+  ni partir vers l'assistant sans un geste explicite. Et une donnée absente ne doit jamais passer pour une
+  consommation nulle.
+- **Décision** :
+  - un type de module ordinaire (`regulation` : `MODULE_TYPES`, `registerType`), règles pures dans
+    `core/regulation.js`, horloge et date locale passées en paramètres ; marqué `sensitive` dans `TYPE_UI`. Ses
+    détails restent dans l'espace parce qu'il ne fournit aucun des hooks que lisent les surfaces transversales
+    (`texts`, `alerts`, `badge`, `accept`) ; les quelques surfaces qui parcourent tous les modules sans hook (bilan,
+    planche, liens, pont et reprise de l'accueil) testent `sensitive`. Le partage avec l'assistant est faux à la
+    création d'un type sensible, et ne s'active qu'après lecture du résumé exact ;
+  - une journée est complète par une confirmation qui garde l'instantané de ses quantités ; le noyau refuse de
+    confirmer un instantané qui n'est plus celui que la personne a vu. Les marques sont dérivées des actions (une par
+    date), jamais un compteur ; les objectifs, des versions datées jamais réécrites ;
+  - `SCHEMA_VERSION` passe de 6 à 7 : une version antérieure planterait sur un type inconnu ; la garde existante
+    l'empêche d'écrire.
+- **Écarté** : un document ou une table à part, voire un chiffrement propre à cet espace (une infrastructure nouvelle
+  pour un besoin que le store et ses fusions couvrent ; et promettre un coffre qu'on n'a pas construit) ; réutiliser
+  le minuteur de quinze minutes pour la pause (unique, en mémoire, il déclenche le pont et les suites des modules) ;
+  un compteur de points incrémenté (doublé par deux appareils, faux après une correction) ; des séries d'abstinence
+  (une pression à tenir, pas un intérêt établi) ; valider à l'import le pas de l'unité ou les dates à venir (une
+  fusion légitime pourrait produire un état qu'aucune sauvegarde ne restaurerait plus).
+- **Conséquences** : le nom et la présence de l'espace restent visibles ; ses données suivent la synchronisation et les
+  sauvegardes du compte, sans chiffrement de bout en bout, ce que l'espace dit lui-même. Tout futur parcours
+  transversal qui lit les modules sans passer par un hook doit tester `sensitive` ; `tests/regulation.test.js` vérifie
+  chaque surface existante. Fonctionnement, sources et limites : [regulation.md](regulation.md).
