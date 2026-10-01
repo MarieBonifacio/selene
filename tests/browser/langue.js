@@ -30,6 +30,20 @@ const demo = JSON.parse(fixture());
   check(/^⟦.+⟧$/.test(s.phase), 'la phase de la lune est passée par la traduction : ' + s.phase);
   check(FR_DAYS.test(s.dateline) && s.dateline.includes('⟦'), 'les dates gardent les formats de la langue source, le nom de la lune est marqué');
   check(/^⟦/.test(await p.getAttribute('#miniMoon svg', 'aria-label')), 'l’étiquette de la petite lune aussi (lecteurs d’écran)');
+  // La charpente : navigation, barre du bas, minuteur, et le squelette statique (shell.html), retraduit au changement.
+  // Les textes restés nus (hors ⟦ ⟧) ; raccourcis clavier (kbd) et marques de navigation (.nx) mis de côté.
+  const marked = sel => p.$$eval(sel, els => els.map(el => { const c = el.cloneNode(true); c.querySelectorAll('kbd, .nx').forEach(k => k.remove()); return c.textContent.trim(); }).filter(t => t && !/^⟦[^]*⟧$/.test(t)));
+  const navNaked = await marked('#nav a[href="#accueil"], #nav a[href="#bilan"], #nav a[href="#recherche"], #nav a[href="#reglages"], #nav .pal-hint');
+  check(!navNaked.length, 'navigation latérale traduite' + (navNaked.length ? ' : ' + navNaked.join(' | ') : ''));
+  check(!(await marked('#bar a span, #bar button span')).length, 'barre du bas traduite');
+  check(!(await marked('#timerBtn, #cdlg button')).length, 'minuteur et boîte de confirmation (squelette) traduits');
+  check(/^⟦/.test(await p.getAttribute('#palIn', 'placeholder')) && /^⟦/.test(await p.getAttribute('#nav', 'aria-label')), 'attributs du squelette traduits (placeholder, aria-label)');
+  await p.click('#timerBtn'); await p.waitForTimeout(100);
+  check(/^⟦Pàüsé/.test(await p.textContent('#timerBtn')), 'le bouton du minuteur suit son état dans la langue : ' + await p.textContent('#timerBtn'));
+  await p.click('#timerBtn');
+  await p.evaluate(() => location.hash = 'kundalini'); await p.waitForTimeout(200);
+  check(!(await marked('.plate .pl, .plate [data-act="goto-groups"], .plate [data-act="bridge-edit"]')).length, 'la planche d’un espace (numéro, « régler », pont) traduite');
+  await p.evaluate(() => location.hash = 'accueil'); await p.waitForTimeout(200);
 
   console.log('retour à la langue de l’appareil, par le réglage générique, sans recharger');
   await p.evaluate(() => {
@@ -39,6 +53,8 @@ const demo = JSON.parse(fixture());
   await p.waitForTimeout(200);
   s = await state();
   check(s.lang === 'fr' && !s.phase.includes('⟦'), 'l’interface redevient française aussitôt : ' + s.phase);
+  check(await p.textContent('#timerBtn') === 'Reprendre' && await p.textContent('#cdlg button[value="ok"]') === 'Confirmer' && await p.getAttribute('#palIn', 'placeholder') === 'Aller, agir, chercher…',
+    'le squelette redevient français lui aussi (minuteur en pause : « Reprendre »)');
   await p.waitForTimeout(1300); // l'enregistrement part au bout d'une seconde
   check(await p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).config.lang) === '', 'le choix est enregistré dans le compte (config.lang)');
 

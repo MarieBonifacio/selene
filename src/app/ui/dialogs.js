@@ -24,5 +24,5 @@ $("#dlg").addEventListener("close", () => {
   if ($("#dlg").returnValue !== "save" || !formCb) return;
   const v = {}; new FormData($("#form")).forEach((x, k) => v[k] = typeof x === "string" ? x.trim() : x);
   const cb = formCb; formCb = null;
-  try { cb(v); } catch (e) { toast(e.message || "Saisie invalide."); } // sinon l'erreur disparaît en silence
+  try { cb(v); } catch (e) { toast(e.message || tr`Saisie invalide.`); } // sinon l'erreur disparaît en silence
 });

@@ -2,7 +2,7 @@
 import { inboxId } from "../../core/domain.js";
 import { CLICK, SHEETS } from "../registry.js";
 import { $, esc } from "../lib/dom.js";
-import { plural } from "../lib/format.js";
+import { tr, trn } from "../i18n/index.js";
 import { domains, liveRecents, navMarks } from "./nav.js";
 import { lastView } from "./render.js";
 import { sigil, tintOf } from "./sigils.js";
@@ -16,21 +16,21 @@ Object.assign(SHEETS, {
   espaces() {
     const rec = liveRecents().filter(r => r.id !== lastView).slice(0, 3);
     const row = id => `<a class="srow ${tintOf(id)}" href="#${esc(id)}">${sigil(id)}<b>${esc(label(id))}</b><span class="sub">${summaryFor(id)}</span>${navMarks(id)}</a>`;
-    return `<h2 id="sheetTitle">Espaces</h2>
-      ${rec.length ? `<p class="grp">Récents</p><div class="recents">${rec.map(r => `<a class="btn" href="#${esc(r.id)}">${esc(label(r.id))}</a>`).join("")}</div>` : ""}
-      ${domains().map(d => `<p class="grp">${esc(d.name || "Espaces")}</p>${d.ids.map(row).join("")}`).join("")}
-      <p class="grp">Système</p>${enabled("assistant") ? `<a class="srow" href="#assistant"><b>${esc(label("assistant"))}</b></a>` : ""}<a class="srow" href="#reglages"><b>Réglages</b></a>`;
+    return `<h2 id="sheetTitle">${tr`Espaces`}</h2>
+      ${rec.length ? `<p class="grp">${tr`Récents`}</p><div class="recents">${rec.map(r => `<a class="btn" href="#${esc(r.id)}">${esc(label(r.id))}</a>`).join("")}</div>` : ""}
+      ${domains().map(d => `<p class="grp">${esc(d.name || tr`Espaces`)}</p>${d.ids.map(row).join("")}`).join("")}
+      <p class="grp">${tr`Système`}</p>${enabled("assistant") ? `<a class="srow" href="#assistant"><b>${esc(label("assistant"))}</b></a>` : ""}<a class="srow" href="#reglages"><b>${tr`Réglages`}</b></a>`;
   },
   module(mod) {
-    if (!Object.hasOwn(S().modules, mod)) return `<p class="empty">Ce module n'existe plus.</p>`;
+    if (!Object.hasOwn(S().modules, mod)) return `<p class="empty">${tr`Ce module n'existe plus.`}</p>`;
     return `<div data-mod="${esc(mod)}" class="${tintOf(mod)}"><h2 id="sheetTitle" class="sheet-title">${sigil(mod)}${esc(label(mod))}</h2>
-      <p class="hint">Réglages de cet espace, appliqués tout de suite. Nom, domaine et ordre : <a href="#reglages">Réglages</a>.</p>${moduleSettingsHTML(mod)}</div>`;
+      <p class="hint">${tr`Réglages de cet espace, appliqués tout de suite. Nom, domaine et ordre : ${`<a href="#reglages">${tr`Réglages`}</a>`}.`}</p>${moduleSettingsHTML(mod)}</div>`;
   },
   capture() {
     const s = S(), inbox = inboxId(s.modules), n = inbox ? s.modules[inbox].entries.length : 0;
-    return `<h2 id="sheetTitle">Capturer</h2>${inbox ? `<div class="capture"><input id="capSheetIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="Capture rapide" enterkeyhint="done"><button class="btn acc" data-act="cap-sheet-add">Garder</button></div>
-      <p class="hint" style="margin:10px 0 0">« 12 € courses », « Mon module : une note » se rangent d'un geste.${n ? ` <a href="#${esc(inbox)}">${plural(n, "élément")} à trier</a>` : ""}</p>${n > 1 ? `<div class="row" style="margin-top:10px"><button class="btn sm" data-act="vasculum">Trier une à une</button></div>` : ""}`
-      : `<p class="hint">Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans <a href="#reglages">Réglages</a>.</p>`}`;
+    return `<h2 id="sheetTitle">${tr`Capturer`}</h2>${inbox ? `<div class="capture"><input id="capSheetIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="${tr`Capture rapide`}" enterkeyhint="done"><button class="btn acc" data-act="cap-sheet-add">${tr`Garder`}</button></div>
+      <p class="hint" style="margin:10px 0 0">${tr`« 12 € courses », « Mon module : une note » se rangent d'un geste.`}${n ? ` <a href="#${esc(inbox)}">${trn(n, "{0} élément à trier", "{0} éléments à trier")}</a>` : ""}</p>${n > 1 ? `<div class="row" style="margin-top:10px"><button class="btn sm" data-act="vasculum">${tr`Trier une à une`}</button></div>` : ""}`
+      : `<p class="hint">${tr`Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans ${`<a href="#reglages">${tr`Réglages`}</a>`}.`}</p>`}`;
   }
 });
 export let sheetKind = null, sheetArg = null;

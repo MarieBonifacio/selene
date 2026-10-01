@@ -5,6 +5,7 @@ import { parseBackup } from "../../core/backup.js";
 import { MODULE_TYPES, createFromTemplate, inboxId, slugId } from "../../core/domain.js";
 import { CHANGE, CLICK, TYPE_UI, VIEWS } from "../registry.js";
 import { $, PAGE, pageSize, toast } from "../lib/dom.js";
+import { tr } from "../i18n/index.js";
 import { assistantCall, assistantSetCle, sendChat } from "../features/assistant.js";
 import { bridgeSave } from "../features/bridge.js";
 import { NOTIFY_KEY, notifyConf } from "../features/digest.js";
@@ -25,12 +26,12 @@ export const idOf = el => el.closest("[data-id]")?.dataset.id;
 /* Capture rapide, depuis l'accueil ou depuis la feuille « Capturer » (barre basse du téléphone). */
 function capture(inp = $("#capIn")) {
   if (!inp || !inp.value.trim()) return;
-  const id = inboxId(S().modules); if (!id) return toast("Aucune boîte de réception : voir Réglages.");
+  const id = inboxId(S().modules); if (!id) return toast(tr`Aucune boîte de réception : voir Réglages.`);
   const item = addNote(S().modules[id], inp.value); site.save(); inp.value = "";
   platform.haptic();
   if (inp.id === "capSheetIn") { saveDraft("sheet", inp); closeSheet(); } // fermée avant le message, qui passerait dessous
   render();
-  afterCapture(id, item, "Gardé. Tu peux oublier, c'est écrit.");
+  afterCapture(id, item, tr`Gardé. Tu peux oublier, c'est écrit.`);
 }
 function entryAdd(id) {
   const inst = S().modules[id], ui = TYPE_UI[inst.type];
@@ -46,15 +47,15 @@ CLICK["entry-del"] = el => removeWithUndo(el.dataset.mod, "entries", idOf(el));
 export function addModule(tpl, name) {
   if (tpl.type === "programme") {
     const defaults = { ...MODULE_TYPES.programme.defaults().config, ...tpl.config };
-    return openForm("Choisir ton sport ou ta pratique", [
-      { n: "name", l: "Nom du sport ou de la pratique", req: true },
-      { n: "weeks", l: "Durée en semaines (1 à 520, proposition modifiable)", t: "number", req: true },
-      { n: "perWeek", l: "Séances par semaine (1 à 7, proposition modifiable)", t: "number", req: true },
-      { n: "unitLabel", l: "Unité suivie (min, km, longueurs…)", req: true }
+    return openForm(tr`Choisir ton sport ou ta pratique`, [
+      { n: "name", l: tr`Nom du sport ou de la pratique`, req: true },
+      { n: "weeks", l: tr`Durée en semaines (1 à 520, proposition modifiable)`, t: "number", req: true },
+      { n: "perWeek", l: tr`Séances par semaine (1 à 7, proposition modifiable)`, t: "number", req: true },
+      { n: "unitLabel", l: tr`Unité suivie (min, km, longueurs…)`, req: true }
     ], { name: name === tpl.name ? "" : name, ...defaults }, v => {
       const weeks = Number(v.weeks), perWeek = Number(v.perWeek), unitLabel = v.unitLabel.trim();
       if (!v.name.trim() || !unitLabel || !Number.isInteger(weeks) || weeks < 1 || weeks > 520 || !Number.isInteger(perWeek) || perWeek < 1 || perWeek > 7)
-        throw new Error("Indique un nom, une unité, 1 à 520 semaines et 1 à 7 séances par semaine.");
+        throw new Error(tr`Indique un nom, une unité, 1 à 520 semaines et 1 à 7 séances par semaine.`);
       installModule({ ...tpl, config: { ...tpl.config, weeks, perWeek, unitLabel } }, v.name.trim());
     });
   }
@@ -66,7 +67,7 @@ function installModule(tpl, name) {
     createFromTemplate(s.modules, tpl, name, id);
     s.config.modules.push({ id, on: true });
     s.config.assistant.share[id] = true;
-    site.save(); render(); toast(`Module « ${name} » créé.`);
+    site.save(); render(); toast(tr`Module « ${name} » créé.`);
   } catch (e) { toast(e.message); }
 }
 export function moveMod(el, d) { const ms = S().config.modules, i = +el.closest("[data-i]").dataset.i, j = i + d; if (j < 0 || j >= ms.length) return; [ms[i], ms[j]] = [ms[j], ms[i]]; site.save(); render(); }
@@ -101,20 +102,20 @@ document.addEventListener("change", e => {
       if (G.rename) G.rename(from, to); // ex. une enveloppe du budget porte le nom du groupe
       if (gFilter[mod] === from) gFilter[mod] = to;
       if (taskFilters[mod] && taskFilters[mod].room === from) taskFilters[mod].room = to;
-      G.store().save(); toast(`« ${from} » s'appelle désormais « ${to} ».`);
+      G.store().save(); toast(tr`« ${from} » s'appelle désormais « ${to} ».`);
     }
     site.save(); el.blur(); render();
   }
   else if (act === "as-key") { // la clé part au serveur, qui la vérifie et la chiffre ; elle ne reste pas dans la page
     const v = el.value.trim(); el.value = ""; el.blur();
-    if (v) assistantCall({ action: "cle", cle: v }).then(r => { assistantSetCle(r); toast("Clé vérifiée et enregistrée."); }, e => toast("Clé non enregistrée : " + e.message)).then(render);
+    if (v) assistantCall({ action: "cle", cle: v }).then(r => { assistantSetCle(r); toast(tr`Clé vérifiée et enregistrée.`); }, e => toast(tr`Clé non enregistrée : ${e.message}`)).then(render);
   }
   else if (act === "as-model") { S().config.assistant.model = el.value; site.save(); render(); }
   else if (act === "as-actions") { S().config.assistant.actions = el.checked; site.save(); render(); }
   else if (act === "as-share") { S().config.assistant.share[el.dataset.k] = el.checked; site.save(); render(); }
   else if (act === "imp") {
     const f = el.files && el.files[0]; if (!f) return;
-    f.text().then(async t => { const d = parseBackup(t); if (!await ask("Remplacer tout l'état actuel par celui du fichier ?")) return; site.replaceAll(d.site); board.replaceAll(d.board); /* le site d'abord : les tâches d'une ancienne sauvegarde y sont versées */ render(); toast("Sauvegarde importée."); }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene.")).finally(() => { el.value = ""; });
+    f.text().then(async t => { const d = parseBackup(t); if (!await ask(tr`Remplacer tout l'état actuel par celui du fichier ?`)) return; site.replaceAll(d.site); board.replaceAll(d.board); /* le site d'abord : les tâches d'une ancienne sauvegarde y sont versées */ render(); toast(tr`Sauvegarde importée.`); }).catch(() => toast(tr`Fichier illisible ou pas une sauvegarde Selene.`)).finally(() => { el.value = ""; });
   }
   else if (act === "mod-group") {
     const m = S().config.modules[+el.closest("[data-i]").dataset.i], v = el.value.trim().slice(0, 40);
@@ -138,10 +139,10 @@ document.addEventListener("change", e => {
     if (!el.checked) { c.on = false; return save(); }
     platform.notifications.permission().then(p => {
       c.on = p === "granted"; save();
-      toast(c.on ? `Chaque matin à ${c.at}, s'il y a quelque chose. Sinon, la paix.` : "Notifications refusées : elles s'autorisent dans les réglages du téléphone.");
-    }, () => { el.checked = false; toast("Les notifications ne sont pas disponibles ici."); });
+      toast(c.on ? tr`Chaque matin à ${c.at}, s'il y a quelque chose. Sinon, la paix.` : tr`Notifications refusées : elles s'autorisent dans les réglages du téléphone.`);
+    }, () => { el.checked = false; toast(tr`Les notifications ne sont pas disponibles ici.`); });
   }
-  else if (act === "open-on") { platform.storage.set("selene-open", el.value); toast(el.value === "last" ? "L'app rouvrira le dernier espace où tu étais." : "L'app s'ouvrira sur l'accueil."); }
+  else if (act === "open-on") { platform.storage.set("selene-open", el.value); toast(el.value === "last" ? tr`L'app rouvrira le dernier espace où tu étais.` : tr`L'app s'ouvrira sur l'accueil.`); }
   else if (act === "mod-on") { S().config.modules[+el.closest("[data-i]").dataset.i].on = el.checked; site.save(); render(); }
   else if (act === "mod-label") {
     const s = S(), m = s.config.modules[+el.closest("[data-i]").dataset.i], v = el.value.trim();

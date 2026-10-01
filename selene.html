@@ -1144,6 +1144,7 @@ var __selene = (() => {
     tick: () => tick,
     tierCurrent: () => tierCurrent,
     timerDone: () => timerDone,
+    timerLabel: () => timerLabel,
     tintOf: () => tintOf,
     toast: () => toast,
     toastAction: () => toastAction,
@@ -1183,12 +1184,24 @@ var __selene = (() => {
 
   // src/app/i18n/en.js
   var en_default = {
+    // features/timer.js
+    "Quinze minutes. Tu as le droit d'arrêter. Et celui de continuer.": "Fifteen minutes. You're allowed to stop. And to keep going.",
+    "Pause": "Pause",
+    "Relancer": "Restart",
+    "Reprendre": "Resume",
+    "Lancer 15 min": "Start 15 min",
+    "Quinze minutes, dans le halo de la lune.": "Fifteen minutes, in the moon's halo.",
+    "Minuteur en pause.": "Timer paused.",
     // lib/dom.js
     "toastAnnuler": "Undo",
     "Voir les {0} suivants ({1} de plus)": "Show the next {0} ({1} more)",
-    // ui/dialogs.js
-    "Enregistrer": "Save",
-    "formulaireAnnuler": "Cancel",
+    // lib/download.js
+    "Export annulé.": "Export cancelled.",
+    // lib/format.js
+    "jamais": "never",
+    "aujourd'hui": "today",
+    "hier": "yesterday",
+    "il y a {0} j": "{0} d ago",
     // scene/moon.js
     "Nouvelle lune": "New moon",
     "Premier croissant": "Waxing crescent",
@@ -1199,6 +1212,106 @@ var __selene = (() => {
     "Dernier quartier": "Last quarter",
     "Dernier croissant": "Waning crescent",
     "Phase de la lune": "Moon phase",
+    // shell/actions.js
+    "Aucune boîte de réception : voir Réglages.": "No inbox: see Settings.",
+    "Gardé. Tu peux oublier, c'est écrit.": "Kept. You can forget it now: it's written down.",
+    "Choisir ton sport ou ta pratique": "Choose your sport or practice",
+    "Nom du sport ou de la pratique": "Name of the sport or practice",
+    "Durée en semaines (1 à 520, proposition modifiable)": "Length in weeks (1 to 520, a suggestion you can change)",
+    "Séances par semaine (1 à 7, proposition modifiable)": "Sessions per week (1 to 7, a suggestion you can change)",
+    "Unité suivie (min, km, longueurs…)": "Unit tracked (min, km, lengths…)",
+    "Indique un nom, une unité, 1 à 520 semaines et 1 à 7 séances par semaine.": "Give a name, a unit, 1 to 520 weeks and 1 to 7 sessions per week.",
+    "Module « {0} » créé.": "Module “{0}” created.",
+    "« {0} » s'appelle désormais « {1} ».": "“{0}” is now called “{1}”.",
+    "Clé vérifiée et enregistrée.": "Key verified and saved.",
+    "Clé non enregistrée : {0}": "Key not saved: {0}",
+    "Remplacer tout l'état actuel par celui du fichier ?": "Replace everything here with the contents of the file?",
+    "Sauvegarde importée.": "Backup imported.",
+    "Fichier illisible ou pas une sauvegarde Selene.": "Unreadable file, or not a Selene backup.",
+    "Chaque matin à {0}, s'il y a quelque chose. Sinon, la paix.": "Every morning at {0}, if there's anything. Otherwise, peace.",
+    "Notifications refusées : elles s'autorisent dans les réglages du téléphone.": "Notifications refused: they can be allowed in the phone's settings.",
+    "Les notifications ne sont pas disponibles ici.": "Notifications aren't available here.",
+    "L'app rouvrira le dernier espace où tu étais.": "The app will reopen the last space you were in.",
+    "L'app s'ouvrira sur l'accueil.": "The app will open on Today.",
+    // shell/nav.js
+    "Pont de reprise en attente": "Re-entry bridge waiting",
+    "reprise en attente": "re-entry waiting",
+    "en attente": "waiting",
+    "Aller à…": "Go to…",
+    "Aujourd'hui": "Today",
+    "Bilan": "Review",
+    "Chercher": "Search",
+    "Dehors": "Outside",
+    "Espaces": "Spaces",
+    "Réglages": "Settings",
+    "à trier": "to sort",
+    "Capturer": "Capture",
+    "à l'instant": "just now",
+    "il y a {0} min": "{0} min ago",
+    "il y a {0} h": "{0} h ago",
+    "Recherche « {0} »": "Search “{0}”",
+    "Recherche": "Search",
+    // shell/palette.js
+    "Récent": "Recent",
+    "Espace": "Space",
+    "Vue": "View",
+    "Mettre le minuteur en pause": "Pause the timer",
+    "Lancer le minuteur (15 min)": "Start the timer (15 min)",
+    "Capturer…": "Capture…",
+    "Trier la boîte, une note à la fois": "Sort the inbox, one note at a time",
+    "Bilan par cycle lunaire": "Review by lunar cycle",
+    "Bilan par mois": "Review by month",
+    "Action": "Action",
+    "Garder": "Keep",
+    "« {0} » dans {1}": "“{0}” in {1}",
+    "« {0} » partout": "“{0}” everywhere",
+    "Rien. Ni espace, ni action, ni trace écrite.": "Nothing. No space, no action, not a written trace.",
+    // shell/render.js (le squelette, shell.html, compris)
+    "Aujourd'hui (appui long : minuteur de 15 min)": "Today (long press: 15-minute timer)",
+    "Réinitialiser le minuteur": "Reset the timer",
+    "Navigation principale": "Main navigation",
+    "Navigation rapide": "Quick navigation",
+    "Aller, agir, chercher": "Go, act, search",
+    "Aller, agir, chercher…": "Go, act, search…",
+    "Suggestions": "Suggestions",
+    "Confirmer": "Confirm",
+    "Je m'arrête ici…": "I'm stopping here…",
+    // shell/sheets.js
+    "Récents": "Recent",
+    "Système": "System",
+    "Ce module n'existe plus.": "This module no longer exists.",
+    "Réglages de cet espace, appliqués tout de suite. Nom, domaine et ordre : {0}.": "This space's settings, applied at once. Name, domain and order: {0}.",
+    "Capture rapide": "Quick capture",
+    "« 12 € courses », « Mon module : une note » se rangent d'un geste.": "“12 € groceries” or “My module: a note” are filed in one go.",
+    "{0} élément à trier": { one: "{0} item to sort", other: "{0} items to sort" },
+    "Trier une à une": "Sort one by one",
+    "Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans {0}.": "No inbox. Tick “Inbox” on a Notes module, in {0}.",
+    // shell/sigils.js
+    "Phalène": "Moth",
+    "Araignée sauteuse": "Jumping spider",
+    "Plume": "Quill",
+    "Diapason": "Tuning fork",
+    "Équerre": "Set square",
+    "Trébuchet": "Balance",
+    "Boîte d'herborisation": "Vasculum",
+    "Souffle": "Breath",
+    "Loupe": "Hand lens",
+    "Sceau": "Seal",
+    "Lanterne": "Lantern",
+    "Fougère": "Fern",
+    "Sablier": "Hourglass",
+    "Compas": "Drawing compass",
+    "Clef": "Key",
+    "Feuille": "Leaf",
+    "Champignon": "Mushroom",
+    "Croissant": "Crescent",
+    "Pl. {0}": "Pl. {0}",
+    "régler": "adjust",
+    "Sigil de l'espace": "Space sigil",
+    // ui/dialogs.js
+    "Enregistrer": "Save",
+    "formulaireAnnuler": "Cancel",
+    "Saisie invalide.": "Invalid entry.",
     // views/reglages.js
     "Langue": "Language",
     "Langue de l'appareil": "Device language"
@@ -1224,6 +1337,7 @@ var __selene = (() => {
   }
   var lang = "fr";
   var collator = null;
+  var frRules = null;
   var rules = null;
   var uiLang = () => lang;
   var uiLocale = () => LANGS[lang].locale;
@@ -1256,6 +1370,18 @@ var __selene = (() => {
     return translate(key, key, vals);
   }
   var trp = (ctx, text, ...vals) => translate(ctx + "" + text, text, vals);
+  function trn(n, one, other, ...vals) {
+    const L = LANGS[lang], d = L.dict, forms = d && Object.hasOwn(d, one) && typeof d[one] === "object" ? d[one] : null;
+    let form;
+    if (forms) {
+      if (!rules) rules = new Intl.PluralRules(L.locale);
+      form = forms[rules.select(n)] ?? forms.other;
+    } else {
+      if (!frRules) frRules = new Intl.PluralRules("fr-FR");
+      form = frRules.select(n) === "one" ? one : other;
+    }
+    return fill(L.pseudo ? pseudo(form) : form, [n, ...vals]);
+  }
   var N_ = (s) => s;
   function collate(a, b) {
     if (!collator) collator = new Intl.Collator(uiLocale());
@@ -1332,7 +1458,7 @@ var __selene = (() => {
       try {
         await downloadsNS.save({ filename, data });
       } catch (e) {
-        toast("Export annulé.");
+        toast(tr`Export annulé.`);
       }
       return;
     }
@@ -1380,9 +1506,9 @@ var __selene = (() => {
     return v;
   };
   var ago = (s) => {
-    if (!s) return "jamais";
+    if (!s) return tr`jamais`;
     const n = diffDays(todayISO(), s);
-    return n === 0 ? "aujourd'hui" : n === 1 ? "hier" : `il y a ${n} j`;
+    return n === 0 ? tr`aujourd'hui` : n === 1 ? tr`hier` : tr`il y a ${n} j`;
   };
   var money = (n) => (+n || 0).toLocaleString(uiLocale(), { style: "currency", currency: "EUR" });
   function streakOf(dates) {
@@ -3441,7 +3567,7 @@ var __selene = (() => {
     try {
       cb(v);
     } catch (e) {
-      toast(e.message || "Saisie invalide.");
+      toast(e.message || tr`Saisie invalide.`);
     }
   });
 
@@ -5331,20 +5457,20 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     espaces() {
       const rec = liveRecents().filter((r) => r.id !== lastView).slice(0, 3);
       const row = (id) => `<a class="srow ${tintOf(id)}" href="#${esc(id)}">${sigil(id)}<b>${esc(label(id))}</b><span class="sub">${summaryFor(id)}</span>${navMarks(id)}</a>`;
-      return `<h2 id="sheetTitle">Espaces</h2>
-      ${rec.length ? `<p class="grp">Récents</p><div class="recents">${rec.map((r) => `<a class="btn" href="#${esc(r.id)}">${esc(label(r.id))}</a>`).join("")}</div>` : ""}
-      ${domains().map((d) => `<p class="grp">${esc(d.name || "Espaces")}</p>${d.ids.map(row).join("")}`).join("")}
-      <p class="grp">Système</p>${enabled("assistant") ? `<a class="srow" href="#assistant"><b>${esc(label("assistant"))}</b></a>` : ""}<a class="srow" href="#reglages"><b>Réglages</b></a>`;
+      return `<h2 id="sheetTitle">${tr`Espaces`}</h2>
+      ${rec.length ? `<p class="grp">${tr`Récents`}</p><div class="recents">${rec.map((r) => `<a class="btn" href="#${esc(r.id)}">${esc(label(r.id))}</a>`).join("")}</div>` : ""}
+      ${domains().map((d) => `<p class="grp">${esc(d.name || tr`Espaces`)}</p>${d.ids.map(row).join("")}`).join("")}
+      <p class="grp">${tr`Système`}</p>${enabled("assistant") ? `<a class="srow" href="#assistant"><b>${esc(label("assistant"))}</b></a>` : ""}<a class="srow" href="#reglages"><b>${tr`Réglages`}</b></a>`;
     },
     module(mod) {
-      if (!Object.hasOwn(S().modules, mod)) return `<p class="empty">Ce module n'existe plus.</p>`;
+      if (!Object.hasOwn(S().modules, mod)) return `<p class="empty">${tr`Ce module n'existe plus.`}</p>`;
       return `<div data-mod="${esc(mod)}" class="${tintOf(mod)}"><h2 id="sheetTitle" class="sheet-title">${sigil(mod)}${esc(label(mod))}</h2>
-      <p class="hint">Réglages de cet espace, appliqués tout de suite. Nom, domaine et ordre : <a href="#reglages">Réglages</a>.</p>${moduleSettingsHTML(mod)}</div>`;
+      <p class="hint">${tr`Réglages de cet espace, appliqués tout de suite. Nom, domaine et ordre : ${`<a href="#reglages">${tr`Réglages`}</a>`}.`}</p>${moduleSettingsHTML(mod)}</div>`;
     },
     capture() {
       const s = S(), inbox = inboxId(s.modules), n = inbox ? s.modules[inbox].entries.length : 0;
-      return `<h2 id="sheetTitle">Capturer</h2>${inbox ? `<div class="capture"><input id="capSheetIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="Capture rapide" enterkeyhint="done"><button class="btn acc" data-act="cap-sheet-add">Garder</button></div>
-      <p class="hint" style="margin:10px 0 0">« 12 € courses », « Mon module : une note » se rangent d'un geste.${n ? ` <a href="#${esc(inbox)}">${plural(n, "élément")} à trier</a>` : ""}</p>${n > 1 ? `<div class="row" style="margin-top:10px"><button class="btn sm" data-act="vasculum">Trier une à une</button></div>` : ""}` : `<p class="hint">Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans <a href="#reglages">Réglages</a>.</p>`}`;
+      return `<h2 id="sheetTitle">${tr`Capturer`}</h2>${inbox ? `<div class="capture"><input id="capSheetIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="${tr`Capture rapide`}" enterkeyhint="done"><button class="btn acc" data-act="cap-sheet-add">${tr`Garder`}</button></div>
+      <p class="hint" style="margin:10px 0 0">${tr`« 12 € courses », « Mon module : une note » se rangent d'un geste.`}${n ? ` <a href="#${esc(inbox)}">${trn(n, "{0} élément à trier", "{0} éléments à trier")}</a>` : ""}</p>${n > 1 ? `<div class="row" style="margin-top:10px"><button class="btn sm" data-act="vasculum">${tr`Trier une à une`}</button></div>` : ""}` : `<p class="hint">${tr`Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans ${`<a href="#reglages">${tr`Réglages`}</a>`}.`}</p>`}`;
     }
   });
   var sheetKind = null;
@@ -5953,11 +6079,13 @@ ${contextText()}`;
       setBridgeOpen(view);
       render();
     }
-    if (!(hook && hook(view, inst, 15))) toast("Quinze minutes. Tu as le droit d'arrêter. Et celui de continuer.");
+    if (!(hook && hook(view, inst, 15))) toast(tr`Quinze minutes. Tu as le droit d'arrêter. Et celui de continuer.`);
   }
   var left = 900;
   var tick = null;
   var endAt = 0;
+  var paused = false;
+  var timerLabel = () => tick ? tr`Pause` : left === 0 ? tr`Relancer` : paused ? tr`Reprendre` : tr`Lancer 15 min`;
   var mmss = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
   function haloUpdate(done = false) {
     const h = $("#halo");
@@ -5974,7 +6102,7 @@ ${contextText()}`;
       clearInterval(tick);
       tick = null;
       $("#clock").classList.add("done");
-      $("#timerBtn").textContent = "Relancer";
+      $("#timerBtn").textContent = timerLabel();
       haloUpdate(true);
       timerDone();
       try {
@@ -5988,14 +6116,16 @@ ${contextText()}`;
     if (tick) {
       clearInterval(tick);
       tick = null;
-      b.textContent = "Reprendre";
+      paused = true;
+      b.textContent = timerLabel();
       return;
     }
+    paused = false;
     if (left === 0) left = 900;
     endAt = Date.now() + left * 1e3;
     $("#clock").classList.remove("done");
-    b.textContent = "Pause";
     tick = setInterval(tickTimer, 500);
+    b.textContent = timerLabel();
     haloUpdate();
   });
   document.addEventListener("visibilitychange", () => {
@@ -6004,10 +6134,11 @@ ${contextText()}`;
   $("#timerReset").addEventListener("click", () => {
     clearInterval(tick);
     tick = null;
+    paused = false;
     left = 900;
     $("#clock").textContent = mmss(left);
     $("#clock").classList.remove("done");
-    $("#timerBtn").textContent = "Lancer 15 min";
+    $("#timerBtn").textContent = timerLabel();
     haloUpdate();
   });
   var haloPress = null;
@@ -6018,7 +6149,7 @@ ${contextText()}`;
     haloPress = setTimeout(() => {
       haloFired = true;
       $("#timerBtn").click();
-      toast(tick ? "Quinze minutes, dans le halo de la lune." : "Minuteur en pause.");
+      toast(tick ? tr`Quinze minutes, dans le halo de la lune.` : tr`Minuteur en pause.`);
     }, 550);
   });
   for (const ev of ["pointerup", "pointerleave", "pointercancel"]) $(".brand").addEventListener(ev, () => clearTimeout(haloPress));
@@ -6041,36 +6172,36 @@ ${contextText()}`;
   function paletteItems(q) {
     const s = S(), f = fold(q.trim()), out = [], match = (t) => !f || fold(t).includes(f);
     const spaces = s.config.modules.filter((m) => m.on && Object.hasOwn(s.modules, m.id)).map((m) => [m.id, label(m.id)]);
-    if (!f) for (const r of liveRecents().slice(0, 3)) out.push({ k: "Récent", t: label(r.id), run: goTo(r.id) });
-    for (const [id, t] of spaces) if (match(t) && !out.some((o) => o.t === t)) out.push({ k: "Espace", t, run: goTo(id) });
-    for (const [id, t] of [["accueil", "Aujourd'hui"], ["bilan", "Bilan"], ["recherche", "Chercher"], ...dehorsOn() ? [["dehors", "Dehors"]] : [], ["reglages", "Réglages"], ...enabled("assistant") ? [["assistant", label("assistant")]] : []])
-      if (match(t)) out.push({ k: "Vue", t, run: goTo(id) });
+    if (!f) for (const r of liveRecents().slice(0, 3)) out.push({ k: tr`Récent`, t: label(r.id), run: goTo(r.id) });
+    for (const [id, t] of spaces) if (match(t) && !out.some((o) => o.t === t)) out.push({ k: tr`Espace`, t, run: goTo(id) });
+    for (const [id, t] of [["accueil", tr`Aujourd'hui`], ["bilan", tr`Bilan`], ["recherche", tr`Chercher`], ...dehorsOn() ? [["dehors", tr`Dehors`]] : [], ["reglages", tr`Réglages`], ...enabled("assistant") ? [["assistant", label("assistant")]] : []])
+      if (match(t)) out.push({ k: tr`Vue`, t, run: goTo(id) });
     const other = bilanMode() === "mois" ? "lune" : "mois";
     for (const [t, run] of [
-      [tick ? "Mettre le minuteur en pause" : "Lancer le minuteur (15 min)", () => {
+      [tick ? tr`Mettre le minuteur en pause` : tr`Lancer le minuteur (15 min)`, () => {
         closeOverlays();
         $("#timerBtn").click();
       }],
-      ["Capturer…", () => openSheet("capture")],
-      ["Trier la boîte, une note à la fois", () => CLICK["vasculum"]()],
-      [`Bilan par ${other === "lune" ? "cycle lunaire" : "mois"}`, () => {
+      [tr`Capturer…`, () => openSheet("capture")],
+      [tr`Trier la boîte, une note à la fois`, () => CLICK["vasculum"]()],
+      [other === "lune" ? tr`Bilan par cycle lunaire` : tr`Bilan par mois`, () => {
         platform.storage.set("selene-bilan", other);
         setBilanOffset(0);
         goTo("bilan")();
       }]
     ])
-      if (match(t)) out.push({ k: "Action", t, run });
+      if (match(t)) out.push({ k: tr`Action`, t, run });
     if (f) {
       const inbox = inboxId(s.modules), text = q.trim();
-      if (inbox) out.push({ k: "Garder", t: `« ${text} » dans ${label(inbox)}`, run: () => {
+      if (inbox) out.push({ k: tr`Garder`, t: tr`« ${text} » dans ${label(inbox)}`, run: () => {
         const item = addNote(S().modules[inbox], text);
         site.save();
         closeOverlays();
         render();
-        afterCapture(inbox, item, "Gardé. Tu peux oublier, c'est écrit.");
+        afterCapture(inbox, item, tr`Gardé. Tu peux oublier, c'est écrit.`);
       } });
       for (const h of searchAll(text).slice(0, 6)) out.push({ k: label(h.id), t: h.text.replace(/\s+/g, " ").slice(0, 110), sub: h.date ? fmt(h.date) : "", run: goTo(h.id + (h.eid ? "/" + h.eid : "")) });
-      out.push({ k: "Chercher", t: `« ${text} » partout`, run: () => {
+      out.push({ k: tr`Chercher`, t: tr`« ${text} » partout`, run: () => {
         setSearchQuery(text);
         goTo("recherche")();
       } });
@@ -6080,7 +6211,7 @@ ${contextText()}`;
   function renderPalette() {
     palItems = paletteItems($("#palIn").value);
     palIdx = Math.max(0, Math.min(palIdx, palItems.length - 1));
-    $("#palList").innerHTML = palItems.map((it, i) => `<li id="pal-${i}" role="option" aria-selected="${i === palIdx}" data-i="${i}"><span class="k">${esc(it.k)}</span><span class="t">${esc(it.t)}</span>${it.sub ? `<span class="sub">${esc(it.sub)}</span>` : ""}</li>`).join("") || `<li class="empty" aria-disabled="true">Rien. Ni espace, ni action, ni trace écrite.</li>`;
+    $("#palList").innerHTML = palItems.map((it, i) => `<li id="pal-${i}" role="option" aria-selected="${i === palIdx}" data-i="${i}"><span class="k">${esc(it.k)}</span><span class="t">${esc(it.t)}</span>${it.sub ? `<span class="sub">${esc(it.sub)}</span>` : ""}</li>`).join("") || `<li class="empty" aria-disabled="true">${tr`Rien. Ni espace, ni action, ni trace écrite.`}</li>`;
     if (palItems.length) $("#palIn").setAttribute("aria-activedescendant", `pal-${palIdx}`);
     else $("#palIn").removeAttribute("aria-activedescendant");
     const a = document.getElementById(`pal-${palIdx}`);
@@ -6121,7 +6252,7 @@ ${contextText()}`;
   function capture(inp = $("#capIn")) {
     if (!inp || !inp.value.trim()) return;
     const id = inboxId(S().modules);
-    if (!id) return toast("Aucune boîte de réception : voir Réglages.");
+    if (!id) return toast(tr`Aucune boîte de réception : voir Réglages.`);
     const item = addNote(S().modules[id], inp.value);
     site.save();
     inp.value = "";
@@ -6131,7 +6262,7 @@ ${contextText()}`;
       closeSheet();
     }
     render();
-    afterCapture(id, item, "Gardé. Tu peux oublier, c'est écrit.");
+    afterCapture(id, item, tr`Gardé. Tu peux oublier, c'est écrit.`);
   }
   function entryAdd(id) {
     const inst = S().modules[id], ui = TYPE_UI[inst.type];
@@ -6150,15 +6281,15 @@ ${contextText()}`;
   function addModule(tpl, name) {
     if (tpl.type === "programme") {
       const defaults = { ...MODULE_TYPES.programme.defaults().config, ...tpl.config };
-      return openForm("Choisir ton sport ou ta pratique", [
-        { n: "name", l: "Nom du sport ou de la pratique", req: true },
-        { n: "weeks", l: "Durée en semaines (1 à 520, proposition modifiable)", t: "number", req: true },
-        { n: "perWeek", l: "Séances par semaine (1 à 7, proposition modifiable)", t: "number", req: true },
-        { n: "unitLabel", l: "Unité suivie (min, km, longueurs…)", req: true }
+      return openForm(tr`Choisir ton sport ou ta pratique`, [
+        { n: "name", l: tr`Nom du sport ou de la pratique`, req: true },
+        { n: "weeks", l: tr`Durée en semaines (1 à 520, proposition modifiable)`, t: "number", req: true },
+        { n: "perWeek", l: tr`Séances par semaine (1 à 7, proposition modifiable)`, t: "number", req: true },
+        { n: "unitLabel", l: tr`Unité suivie (min, km, longueurs…)`, req: true }
       ], { name: name === tpl.name ? "" : name, ...defaults }, (v) => {
         const weeks = Number(v.weeks), perWeek = Number(v.perWeek), unitLabel = v.unitLabel.trim();
         if (!v.name.trim() || !unitLabel || !Number.isInteger(weeks) || weeks < 1 || weeks > 520 || !Number.isInteger(perWeek) || perWeek < 1 || perWeek > 7)
-          throw new Error("Indique un nom, une unité, 1 à 520 semaines et 1 à 7 séances par semaine.");
+          throw new Error(tr`Indique un nom, une unité, 1 à 520 semaines et 1 à 7 séances par semaine.`);
         installModule({ ...tpl, config: { ...tpl.config, weeks, perWeek, unitLabel } }, v.name.trim());
       });
     }
@@ -6172,7 +6303,7 @@ ${contextText()}`;
       s.config.assistant.share[id] = true;
       site.save();
       render();
-      toast(`Module « ${name} » créé.`);
+      toast(tr`Module « ${name} » créé.`);
     } catch (e) {
       toast(e.message);
     }
@@ -6249,7 +6380,7 @@ ${contextText()}`;
         if (gFilter[mod] === from) gFilter[mod] = to;
         if (taskFilters[mod] && taskFilters[mod].room === from) taskFilters[mod].room = to;
         G.store().save();
-        toast(`« ${from} » s'appelle désormais « ${to} ».`);
+        toast(tr`« ${from} » s'appelle désormais « ${to} ».`);
       }
       site.save();
       el.blur();
@@ -6260,8 +6391,8 @@ ${contextText()}`;
       el.blur();
       if (v) assistantCall({ action: "cle", cle: v }).then((r) => {
         assistantSetCle(r);
-        toast("Clé vérifiée et enregistrée.");
-      }, (e2) => toast("Clé non enregistrée : " + e2.message)).then(render);
+        toast(tr`Clé vérifiée et enregistrée.`);
+      }, (e2) => toast(tr`Clé non enregistrée : ${e2.message}`)).then(render);
     } else if (act === "as-model") {
       S().config.assistant.model = el.value;
       site.save();
@@ -6279,12 +6410,12 @@ ${contextText()}`;
       if (!f) return;
       f.text().then(async (t) => {
         const d = parseBackup(t);
-        if (!await ask("Remplacer tout l'état actuel par celui du fichier ?")) return;
+        if (!await ask(tr`Remplacer tout l'état actuel par celui du fichier ?`)) return;
         site.replaceAll(d.site);
         board.replaceAll(d.board);
         render();
-        toast("Sauvegarde importée.");
-      }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene.")).finally(() => {
+        toast(tr`Sauvegarde importée.`);
+      }).catch(() => toast(tr`Fichier illisible ou pas une sauvegarde Selene.`)).finally(() => {
         el.value = "";
       });
     } else if (act === "mod-group") {
@@ -6328,14 +6459,14 @@ ${contextText()}`;
       platform.notifications.permission().then((p) => {
         c.on = p === "granted";
         save();
-        toast(c.on ? `Chaque matin à ${c.at}, s'il y a quelque chose. Sinon, la paix.` : "Notifications refusées : elles s'autorisent dans les réglages du téléphone.");
+        toast(c.on ? tr`Chaque matin à ${c.at}, s'il y a quelque chose. Sinon, la paix.` : tr`Notifications refusées : elles s'autorisent dans les réglages du téléphone.`);
       }, () => {
         el.checked = false;
-        toast("Les notifications ne sont pas disponibles ici.");
+        toast(tr`Les notifications ne sont pas disponibles ici.`);
       });
     } else if (act === "open-on") {
       platform.storage.set("selene-open", el.value);
-      toast(el.value === "last" ? "L'app rouvrira le dernier espace où tu étais." : "L'app s'ouvrira sur l'accueil.");
+      toast(el.value === "last" ? tr`L'app rouvrira le dernier espace où tu étais.` : tr`L'app s'ouvrira sur l'accueil.`);
     } else if (act === "mod-on") {
       S().config.modules[+el.closest("[data-i]").dataset.i].on = el.checked;
       site.save();
@@ -7184,23 +7315,23 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   };
   function navMarks(id) {
     const n = badgeOf(id), r = Object.hasOwn(S().modules, id) && S().modules[id].resume;
-    return n || r ? `<span class="nx">${r ? `<i class="dot" title="Pont de reprise en attente"><span class="sr">reprise en attente</span></i>` : ""}${n ? `<span class="badge">${n}<span class="sr"> en attente</span></span>` : ""}</span>` : "";
+    return n || r ? `<span class="nx">${r ? `<i class="dot" title="${tr`Pont de reprise en attente`}"><span class="sr">${tr`reprise en attente`}</span></i>` : ""}${n ? `<span class="badge">${n}<span class="sr"> ${tr`en attente`}</span></span>` : ""}</span>` : "";
   }
   function navHTML(view) {
     const link = (id, text, extra = "", cls = "") => `<a href="#${esc(id)}" class="${id === view ? "on" : ""} ${cls}"${id === view ? ' aria-current="page"' : ""}>${text}${extra}</a>`;
-    return `<button type="button" class="pal-hint" data-act="palette-open">Aller à… <kbd>⌘K</kbd></button>
-    ${link("accueil", "Aujourd'hui")}${link("bilan", "Bilan")}${link("recherche", "Chercher")}${dehorsOn() ? link("dehors", "Dehors") : ""}
-    ${domains().map((d) => `<p class="grp">${esc(d.name || "Espaces")}</p>${d.ids.map((id) => link(id, `${sigil(id)}${esc(label(id))}`, navMarks(id), tintOf(id))).join("")}`).join("")}
-    <div class="sys">${enabled("assistant") ? link("assistant", `${sigil("assistant")}${esc(label("assistant"))}`) : ""}${link("reglages", "Réglages")}</div>`;
+    return `<button type="button" class="pal-hint" data-act="palette-open">${tr`Aller à…`} <kbd>⌘K</kbd></button>
+    ${link("accueil", tr`Aujourd'hui`)}${link("bilan", tr`Bilan`)}${link("recherche", tr`Chercher`)}${dehorsOn() ? link("dehors", tr`Dehors`) : ""}
+    ${domains().map((d) => `<p class="grp">${esc(d.name || tr`Espaces`)}</p>${d.ids.map((id) => link(id, `${sigil(id)}${esc(label(id))}`, navMarks(id), tintOf(id))).join("")}`).join("")}
+    <div class="sys">${enabled("assistant") ? link("assistant", `${sigil("assistant")}${esc(label("assistant"))}`) : ""}${link("reglages", tr`Réglages`)}</div>`;
   }
   function barHTML(view) {
     const inbox = inboxId(S().modules), pending = inbox ? S().modules[inbox].entries.length : 0;
     const inSpace = Object.hasOwn(S().modules, view) || view === "reglages" || view === "assistant";
     const link = (id, text, icon) => `<a href="#${id}" class="${view === id ? "on" : ""}"${view === id ? ' aria-current="page"' : ""}>${ICONS[icon]}<span>${text}</span></a>`;
-    return `${link("accueil", "Aujourd'hui", "moon")}
-    <button type="button" data-act="sheet-espaces" class="${inSpace ? "on" : ""}" aria-haspopup="dialog">${ICONS.cabinet}<span>Espaces</span>${pending ? `<i class="pip">${pending}<span class="sr"> à trier</span></i>` : ""}</button>
-    <button type="button" data-act="sheet-capture" class="cap" aria-haspopup="dialog">${ICONS.plus}<span>Capturer</span></button>
-    ${link("recherche", "Chercher", "search")}${link("bilan", "Bilan", "lunation")}`;
+    return `${link("accueil", tr`Aujourd'hui`, "moon")}
+    <button type="button" data-act="sheet-espaces" class="${inSpace ? "on" : ""}" aria-haspopup="dialog">${ICONS.cabinet}<span>${tr`Espaces`}</span>${pending ? `<i class="pip">${pending}<span class="sr"> ${tr`à trier`}</span></i>` : ""}</button>
+    <button type="button" data-act="sheet-capture" class="cap" aria-haspopup="dialog">${ICONS.plus}<span>${tr`Capturer`}</span></button>
+    ${link("recherche", tr`Chercher`, "search")}${link("bilan", tr`Bilan`, "lunation")}`;
   }
   var RECENT_KEY = "selene-recent";
   function recents() {
@@ -7220,14 +7351,14 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   var liveRecents = () => recents().filter((r) => Object.hasOwn(S().modules, r.id) && enabled(r.id));
   var agoTime = (t) => {
     const m = Math.round((Date.now() - Date.parse(t)) / 6e4);
-    return !(m >= 0) ? "" : m < 2 ? "à l'instant" : m < 60 ? `il y a ${m} min` : m < 1440 ? `il y a ${Math.round(m / 60)} h` : ago(iso(new Date(t)));
+    return !(m >= 0) ? "" : m < 2 ? tr`à l'instant` : m < 60 ? tr`il y a ${m} min` : m < 1440 ? tr`il y a ${Math.round(m / 60)} h` : ago(iso(new Date(t)));
   };
   var backTo = null;
   function trackBack(view, entry, from) {
     if (entry && from && from !== view) backTo = { from, to: view, label: backLabel(from) };
     else if (!backTo || view !== backTo.to) backTo = null;
   }
-  var backLabel = (v) => v === "dehors" ? "Dehors" : v === "recherche" ? searchQuery.trim() ? `Recherche « ${searchQuery.trim()} »` : "Recherche" : v === "accueil" ? "Aujourd'hui" : v === "bilan" ? "Bilan" : v === "reglages" ? "Réglages" : label(v) || v;
+  var backLabel = (v) => v === "dehors" ? tr`Dehors` : v === "recherche" ? searchQuery.trim() ? tr`Recherche « ${searchQuery.trim()} »` : tr`Recherche` : v === "accueil" ? tr`Aujourd'hui` : v === "bilan" ? tr`Bilan` : v === "reglages" ? tr`Réglages` : label(v) || v;
   function entryEl(id) {
     let hit = null;
     $("#main").querySelectorAll("[data-id], [data-task]").forEach((el) => {
@@ -7281,24 +7412,24 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     lunation: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"/></svg>`
   };
   var SIGILS = {
-    phalene: ["Phalène", `<path d="M12 6.5v12.5M12 8.5C8.5 4.5 3.5 5 4 9s4.5 5 8 3M12 8.5c3.5-4 8.5-3.5 8 .5s-4.5 5-8 3M12 12.5c-3 1-5.5 3.2-4.4 5.5S11 17.6 12 15M12 12.5c3 1 5.5 3.2 4.4 5.5S13 17.6 12 15M11.4 6.6 9.4 3.4M12.6 6.6l2-3.2"/>`],
-    salticide: ["Araignée sauteuse", `<circle cx="12" cy="9.6" r="3"/><circle cx="12" cy="16.2" r="3.4"/><path d="M9.4 8.6 5 5.6M9.2 10.6l-5.2-.2M9.3 14.4 4.6 16M10 18.3l-3.6 3M14.6 8.6 19 5.6M14.8 10.6l5.2-.2M14.7 14.4l4.7 1.6M14 18.3l3.6 3"/><circle cx="10.9" cy="8.9" r=".45"/><circle cx="13.1" cy="8.9" r=".45"/>`],
-    plume: ["Plume", `<path d="M19.5 4C11.5 5 7 11 6 19.5M19.5 4c-1 6.5-5.5 10.5-12 12.5M10.2 12.2l3.2 1M12.4 9.2l3.2.8M6 19.5l-1.8 1.5"/>`],
-    diapason: ["Diapason", `<path d="M9 3v8a3 3 0 0 0 6 0V3M12 14v7M10.2 21h3.6"/>`],
-    equerre: ["Équerre", `<path d="M4 3.5v17h17zM7.5 11.5v5.5H13z"/>`],
-    trebuchet: ["Trébuchet", `<path d="M12 4v16M8.5 20h7M5 7.5h14M5 7.5l-2.6 5h5.2zM19 7.5l-2.6 5h5.2zM11 4h2"/>`],
-    vasculum: ["Boîte d'herborisation", `<rect x="3.5" y="9" width="17" height="9" rx="4.5"/><path d="M6.2 9.4c0-4.2 11.6-4.2 11.6 0M9 9.2v8.6"/>`],
-    spirale: ["Souffle", `<path d="M12 12.4c0-1.2 1.6-1.6 2.1-.4.6 1.4-.8 2.8-2.3 2.8-1.9 0-3.1-1.6-3-3.3.1-2.4 2.3-4.2 4.8-4 3 .2 5 2.8 4.8 5.7-.3 3.6-3.4 6.1-7 5.8-4.2-.4-7.2-4-6.8-8.2"/>`],
-    loupe: ["Loupe", `<circle cx="10" cy="10" r="5.5"/><path d="M14.1 14.1 20 20"/>`],
-    sceau: ["Sceau", `<circle cx="12" cy="10.5" r="5"/><circle cx="12" cy="10.5" r="2.2"/><path d="M9.2 14.6 7.6 21l4.4-2 4.4 2-1.6-6.4"/>`],
-    lanterne: ["Lanterne", `<path d="M9 5.5h6M10 5.5V3.6h4v1.9M8 7.5h8l-1.2 10.5H9.2zM7.4 18h9.2M12 10.5v4"/>`],
-    fougere: ["Fougère", `<path d="M12 21C12 13.5 10.4 7.5 6.5 3.5M11.8 16.8 7.6 15.6M11.4 13.6 7.2 11.4M10.3 10.4 7.4 7.4M11.8 16.2l3.1-2.8M11.4 12.9l3-3.3M10.3 9.6l2-3"/>`],
-    sablier: ["Sablier", `<path d="M6.5 3h11M6.5 21h11M8 3c0 5.2 8 6 8 9s-8 3.8-8 9M16 3c0 5.2-8 6-8 9s8 3.8 8 9"/>`],
-    compas: ["Compas", `<circle cx="12" cy="4.6" r="1.6"/><path d="M11.2 6.1 6 20.5M12.8 6.1l5.2 14.4M8 15h8"/>`],
-    clef: ["Clef", `<circle cx="7.5" cy="12" r="3.6"/><path d="M11.1 12H21M17.2 12v3.2M20 12v2.6"/>`],
-    feuille: ["Feuille", `<path d="M5 19C5 10 10 5 19 5c0 9-5 14-14 14zM5 19l8-8"/>`],
-    champignon: ["Champignon", `<path d="M4 12.2a8 7 0 0 1 16 0zM9.5 12.2v6.3a2.5 2 0 0 0 5 0v-6.3"/>`],
-    croissant: ["Croissant", `<path d="M15.2 4.2a8.2 8.2 0 1 0 4.6 12.7 6.6 6.6 0 0 1-4.6-12.7z"/>`]
+    phalene: [N_("Phalène"), `<path d="M12 6.5v12.5M12 8.5C8.5 4.5 3.5 5 4 9s4.5 5 8 3M12 8.5c3.5-4 8.5-3.5 8 .5s-4.5 5-8 3M12 12.5c-3 1-5.5 3.2-4.4 5.5S11 17.6 12 15M12 12.5c3 1 5.5 3.2 4.4 5.5S13 17.6 12 15M11.4 6.6 9.4 3.4M12.6 6.6l2-3.2"/>`],
+    salticide: [N_("Araignée sauteuse"), `<circle cx="12" cy="9.6" r="3"/><circle cx="12" cy="16.2" r="3.4"/><path d="M9.4 8.6 5 5.6M9.2 10.6l-5.2-.2M9.3 14.4 4.6 16M10 18.3l-3.6 3M14.6 8.6 19 5.6M14.8 10.6l5.2-.2M14.7 14.4l4.7 1.6M14 18.3l3.6 3"/><circle cx="10.9" cy="8.9" r=".45"/><circle cx="13.1" cy="8.9" r=".45"/>`],
+    plume: [N_("Plume"), `<path d="M19.5 4C11.5 5 7 11 6 19.5M19.5 4c-1 6.5-5.5 10.5-12 12.5M10.2 12.2l3.2 1M12.4 9.2l3.2.8M6 19.5l-1.8 1.5"/>`],
+    diapason: [N_("Diapason"), `<path d="M9 3v8a3 3 0 0 0 6 0V3M12 14v7M10.2 21h3.6"/>`],
+    equerre: [N_("Équerre"), `<path d="M4 3.5v17h17zM7.5 11.5v5.5H13z"/>`],
+    trebuchet: [N_("Trébuchet"), `<path d="M12 4v16M8.5 20h7M5 7.5h14M5 7.5l-2.6 5h5.2zM19 7.5l-2.6 5h5.2zM11 4h2"/>`],
+    vasculum: [N_("Boîte d'herborisation"), `<rect x="3.5" y="9" width="17" height="9" rx="4.5"/><path d="M6.2 9.4c0-4.2 11.6-4.2 11.6 0M9 9.2v8.6"/>`],
+    spirale: [N_("Souffle"), `<path d="M12 12.4c0-1.2 1.6-1.6 2.1-.4.6 1.4-.8 2.8-2.3 2.8-1.9 0-3.1-1.6-3-3.3.1-2.4 2.3-4.2 4.8-4 3 .2 5 2.8 4.8 5.7-.3 3.6-3.4 6.1-7 5.8-4.2-.4-7.2-4-6.8-8.2"/>`],
+    loupe: [N_("Loupe"), `<circle cx="10" cy="10" r="5.5"/><path d="M14.1 14.1 20 20"/>`],
+    sceau: [N_("Sceau"), `<circle cx="12" cy="10.5" r="5"/><circle cx="12" cy="10.5" r="2.2"/><path d="M9.2 14.6 7.6 21l4.4-2 4.4 2-1.6-6.4"/>`],
+    lanterne: [N_("Lanterne"), `<path d="M9 5.5h6M10 5.5V3.6h4v1.9M8 7.5h8l-1.2 10.5H9.2zM7.4 18h9.2M12 10.5v4"/>`],
+    fougere: [N_("Fougère"), `<path d="M12 21C12 13.5 10.4 7.5 6.5 3.5M11.8 16.8 7.6 15.6M11.4 13.6 7.2 11.4M10.3 10.4 7.4 7.4M11.8 16.2l3.1-2.8M11.4 12.9l3-3.3M10.3 9.6l2-3"/>`],
+    sablier: [N_("Sablier"), `<path d="M6.5 3h11M6.5 21h11M8 3c0 5.2 8 6 8 9s-8 3.8-8 9M16 3c0 5.2-8 6-8 9s8 3.8 8 9"/>`],
+    compas: [N_("Compas"), `<circle cx="12" cy="4.6" r="1.6"/><path d="M11.2 6.1 6 20.5M12.8 6.1l5.2 14.4M8 15h8"/>`],
+    clef: [N_("Clef"), `<circle cx="7.5" cy="12" r="3.6"/><path d="M11.1 12H21M17.2 12v3.2M20 12v2.6"/>`],
+    feuille: [N_("Feuille"), `<path d="M5 19C5 10 10 5 19 5c0 9-5 14-14 14zM5 19l8-8"/>`],
+    champignon: [N_("Champignon"), `<path d="M4 12.2a8 7 0 0 1 16 0zM9.5 12.2v6.3a2.5 2 0 0 0 5 0v-6.3"/>`],
+    croissant: [N_("Croissant"), `<path d="M15.2 4.2a8.2 8.2 0 1 0 4.6 12.7 6.6 6.6 0 0 1-4.6-12.7z"/>`]
   };
   function sigilOf(id) {
     const s = S(), m = s.config.modules.find((x) => x.id === id), inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null;
@@ -7330,11 +7461,11 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   };
   function plateHTML(id, extra = "") {
     const n = S().config.modules.filter((m) => m.on && Object.hasOwn(S().modules, m.id)).findIndex((m) => m.id === id) + 1;
-    return `<div class="plate ${tintOf(id)}">${sigil(id)}<span class="pl">Pl. ${roman(n)}</span><span class="spacer"></span>${extra}<button class="btn ghost sm" data-act="goto-groups" data-mod="${esc(id)}">régler</button></div>`;
+    return `<div class="plate ${tintOf(id)}">${sigil(id)}<span class="pl">${tr`Pl. ${roman(n)}`}</span><span class="spacer"></span>${extra}<button class="btn ghost sm" data-act="goto-groups" data-mod="${esc(id)}">${tr`régler`}</button></div>`;
   }
   function sigilPicker(mod) {
     const cur = sigilOf(mod);
-    return `<div class="sigils" role="radiogroup" aria-label="Sigil de l'espace">${Object.entries(SIGILS).map(([k, [name]]) => `<button type="button" role="radio" aria-checked="${k === cur}" class="${k === cur ? "on" : ""}" data-act="sigil-set" data-mod="${esc(mod)}" data-s="${k}" title="${esc(name)}" aria-label="${esc(name)}">${sigilSVG(k)}</button>`).join("")}</div>`;
+    return `<div class="sigils" role="radiogroup" aria-label="${tr`Sigil de l'espace`}">${Object.entries(SIGILS).map(([k, [name]]) => `<button type="button" role="radio" aria-checked="${k === cur}" class="${k === cur ? "on" : ""}" data-act="sigil-set" data-mod="${esc(mod)}" data-s="${k}" title="${esc(tr(name))}" aria-label="${esc(tr(name))}">${sigilSVG(k)}</button>`).join("")}</div>`;
   }
   CLICK["sigil-set"] = (el) => {
     const m = S().config.modules.find((x) => x.id === el.dataset.mod);
@@ -8355,6 +8486,25 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     } else if (c.mode === "auto") delete r.dataset.mode;
     else r.dataset.mode = c.mode;
   }
+  function localizeShell() {
+    const set = (sel, v, attr) => {
+      const el = $(sel);
+      if (el) {
+        if (attr) el.setAttribute(attr, v);
+        else el.textContent = v;
+      }
+    };
+    set(".brand", tr`Aujourd'hui (appui long : minuteur de 15 min)`, "title");
+    set("#timerBtn", timerLabel());
+    set("#timerReset", tr`Réinitialiser le minuteur`, "aria-label");
+    set("#nav", tr`Navigation principale`, "aria-label");
+    set("#bar", tr`Navigation rapide`, "aria-label");
+    set("#palette", tr`Aller, agir, chercher`, "aria-label");
+    set("#palIn", tr`Aller, agir, chercher…`, "placeholder");
+    set("#palList", tr`Suggestions`, "aria-label");
+    set('#cdlg button[value="ok"]', tr`Confirmer`);
+    set('#cdlg button[value="cancel"]', trp("formulaire", "Annuler"));
+  }
   var lastView = null;
   var renderMemo = null;
   function memoInRender(key, compute) {
@@ -8375,7 +8525,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   }
   function renderNow() {
     applyTheme();
-    applyLang(S().config.lang);
+    if (applyLang(S().config.lang)) localizeShell();
     if (hosted() && authReady() && !authSession) {
       $("#nav").innerHTML = "";
       $("#bar").innerHTML = "";
@@ -8411,7 +8561,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     }
     const back = backTo && backTo.to === view ? `<a class="back" href="#${esc(backTo.from)}">‹ ${esc(backTo.label)}</a>` : "";
     const bridging = inst && (inst.resume || bridgeOpen === view);
-    $("#main").innerHTML = back + (inst ? `<div class="view ${tintOf(view)}">${plateHTML(view, bridging ? "" : `<button class="btn ghost sm" data-act="bridge-edit" data-mod="${esc(view)}">Je m'arrête ici…</button>`)}${bridging ? bridgeBar(view, inst) : ""}${TYPE_UI[inst.type].view(view)}</div>` : VIEWS[view]());
+    $("#main").innerHTML = back + (inst ? `<div class="view ${tintOf(view)}">${plateHTML(view, bridging ? "" : `<button class="btn ghost sm" data-act="bridge-edit" data-mod="${esc(view)}">${tr`Je m'arrête ici…`}</button>`)}${bridging ? bridgeBar(view, inst) : ""}${TYPE_UI[inst.type].view(view)}</div>` : VIEWS[view]());
     const fa = document.activeElement, typingSheet = fa && fa.closest && fa.closest("#sheet") && (fa.tagName === "TEXTAREA" || fa.tagName === "INPUT" && !["checkbox", "radio"].includes(fa.type));
     if (["module", "specimen", "vasculum"].includes(sheetKind) && $("#sheet").open && !typingSheet) $("#sheetBody").innerHTML = SHEETS[sheetKind](sheetArg);
     for (const [id, v] of Object.entries(keep)) {
