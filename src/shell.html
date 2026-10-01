@@ -585,6 +585,30 @@ mark{background:var(--accent);color:var(--bg);padding:0 2px;border-radius:2px}
 .saving{font-size:.78rem;color:var(--muted)}
 .empty{color:var(--muted);font-style:italic;padding:8px 0}
 .room.over .fill{background:var(--alarm);opacity:.25}.room.over b{color:var(--alarm)}
+/* Reprendre la main (modules/regulation.js) : des filets et de l'encre. Aucune teinte d'état pour juger une journée :
+   « au-delà de l'objectif » se lit, il ne clignote pas. */
+.rlm h4{font-family:var(--f-label);text-transform:lowercase;letter-spacing:.05em;font-weight:500;font-size:.95rem;color:var(--muted);margin:18px 0 6px}
+.rlm-acts{display:grid;grid-template-columns:repeat(4,minmax(0,auto));gap:8px;justify-content:start;margin-top:12px}
+.rlm-acts .btn{min-height:44px;text-align:left}
+@media (max-width:640px){.rlm-acts{grid-template-columns:1fr 1fr}.rlm-acts .btn{width:100%}}
+@media (max-width:360px){.rlm-acts{grid-template-columns:1fr}}
+.rlm-tablewrap{overflow-x:auto;margin:0 0 10px}
+.rlm-cmp{border-collapse:collapse;width:100%;font-family:var(--f-ui);font-size:.9rem;font-variant-numeric:tabular-nums lining-nums}
+.rlm-cmp th,.rlm-cmp td{padding:6px 8px;border-top:1px solid var(--rule);text-align:right;vertical-align:top}
+.rlm-cmp th[scope=row]{text-align:left;font-weight:400;color:var(--ink-2)}
+.rlm-cmp thead th{border-top:0;font-family:var(--f-label);text-transform:lowercase;letter-spacing:.04em;font-weight:500;color:var(--muted)}
+.rlm-cmp tbody tr:last-child>*{border-bottom:1px solid var(--rule)}
+.rlm-miles{list-style:none;display:flex;flex-wrap:wrap;gap:4px 18px;margin:8px 0;padding:8px 0 0;border-top:1px solid var(--rule);font-family:var(--f-ui);font-size:.88rem;color:var(--muted)}
+.rlm-miles li.on{color:var(--ink)}.rlm-miles li.on span{color:var(--accent)}
+.rlm-pause{border-left:2px solid var(--accent);padding-left:14px}
+.rlm-facts li{padding:6px 0;border-top:1px solid var(--rule)}
+.rlm-quote{margin:6px 0;padding:0 0 0 12px;border-left:2px solid var(--rule-strong);font-size:.9rem;white-space:pre-wrap}
+.rlm-warn{border-left:2px solid var(--warn);padding-left:10px;font-style:normal;color:var(--ink)}
+details.rlm-privacy,details.rlm-info{margin:0 0 32px}
+details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:var(--f-ui);font-size:.92rem;padding:6px 0}
+.rlm-supports li{padding:2px 0}.rlm-supports li::before{content:"– ";color:var(--muted)}
+/* Une confirmation ou un formulaire en plusieurs paragraphes : les sauts de ligne du texte sont gardés. */
+#cmsg,#form>p.hint{white-space:pre-line}
 .stats{display:flex;gap:28px;flex-wrap:wrap;margin:10px 0 22px}.stats div span{display:block;color:var(--muted);font-size:.85rem}
 .pos{color:var(--ok)}.neg{color:var(--alarm)}
 .chat{display:flex;flex-direction:column;gap:14px;margin:12px 0 18px}

@@ -35,9 +35,15 @@ Réglages → Espaces (le vocabulaire de la navigation : un espace est un module
   - *Budget* : des opérations (dépenses, revenus), des enveloppes à plafond mensuel et leurs jauges, mois par mois (ex. le Budget) ;
   - *Collection* : des éléments à statuts (titre, sous-titre, étiquette, date, texte : chaque champ se renomme ou se masque), affichés en colonnes ou en liste filtrable (ex. october.moth en colonnes, Musique en liste) ; en colonnes, sur téléphone une colonne à la fois par un sélecteur, sur ordinateur une carte se glisse d'une colonne à l'autre (ou `[` et `]` sur la carte qui a le focus).
 
-Un module se supprime définitivement (✕, puis retaper son nom) : ses données partent avec lui, sur tous les appareils. Ses réglages propres sont sous sa ligne, dans Réglages → Espaces (« régler »), ou depuis le module lui-même. Un nouveau module est partagé par défaut avec l'assistant ; décocher dans Réglages → Assistant pour le garder privé.
+Un module se supprime définitivement (✕, puis retaper son nom) : ses données partent avec lui, sur tous les appareils. Ses réglages propres sont sous sa ligne, dans Réglages → Espaces (« régler »), ou depuis le module lui-même. Un nouveau module est partagé par défaut avec l'assistant, sauf « Reprendre la main » ; décocher dans Réglages → Assistant pour le garder privé.
 
 Pour ajouter un *type* de module au code, voir [docs/architecture.md](docs/architecture.md#ajouter-un-type-de-module).
+
+## Reprendre la main
+
+Un espace facultatif pour suivre soi-même le **tabac, le cannabis, l'alcool ou les réseaux sociaux** : observer, réduire avec une limite quotidienne choisie, ou viser l'arrêt. Un suivi par sujet, chacun avec son unité (cigarettes, grammes de produit, verres standard, minutes déclarées). Quatre gestes : une envie (avec une pause facultative de cinq minutes), une consommation ou une durée, une action de son plan, le point du jour. **Une journée inconnue ne vaut jamais zéro** : elle ne compte qu'une fois confirmée, sur son total exact. Marques facultatives, une par journée avec une action réalisée, sans série ni perte après un écart. Bilan sur sept jours.
+
+Ce n'est ni un diagnostic ni un programme de sevrage ; pour l'alcool, une information sur les risques d'un arrêt brutal précède tout objectif. L'espace n'est **pas partagé avec l'assistant à sa création** et ses détails restent dans l'espace (recherche, bilans, accueil, notifications) ; ses données suivent pourtant la synchronisation et les sauvegardes du compte, sans chiffrement de bout en bout. Fonctionnement, unités, confidentialité, sources et limites : [docs/regulation.md](docs/regulation.md).
 
 ## Au quotidien
 

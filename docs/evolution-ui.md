@@ -373,3 +373,7 @@ Du moins risqué au plus risqué ; chaque étape se suffit à elle-même (on peu
       l'écran. Sans l'API, le texte s'affiche en clair.
 - [x] « cet appareil » marque ce qui ne suit pas le compte. Premier accueil repliable (comment la page est rangée, le
       vocabulaire de Selene), rouvert depuis le sommaire. Textes d'aide réunis dans `views/reglages-aide.js`, pour la traduction.
+
+## Espace optionnel « Reprendre la main »
+
+Exception locale au principe du bilan sans trophée, demandée pour le suivi des consommations et comportements : progression facultative (masquée par défaut) dans le seul espace de suivi. Jalons fixes, aucune série obligatoire ni remise à zéro après un écart. Le bilan général reste descriptif et n'a pas de ligne pour cet espace, pas plus que la planche de lunaison. Pas de nouvelle scène illustrée ni de teinte d'état pour juger une journée : encre, filets et marques dans l'espace ; la lune et le ciel ne dépendent jamais de ce qui est déclaré. Quatre actions principales, en grille de deux sur téléphone (cibles de 44 px). Voir [regulation.md](regulation.md).

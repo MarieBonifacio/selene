@@ -35,7 +35,7 @@ export function thoughtItems() {
    fragments liés ferait sinon autant de parcours complets que de liens). */
 export function refFind(ref) {
   const [mod, id] = String(ref).split("/"), m = Object.hasOwn(S().modules, mod) ? S().modules[mod] : null;
-  if (!m) return null;
+  if (!m || TYPE_UI[m.type]?.sensitive) return null;
   const e = memoInRender("refs:" + mod, () => new Map([...m.entries, ...(m.scraps || [])].map(x => [x.id, x]))).get(id);
   return e ? { mod, e } : null;
 }

@@ -3,7 +3,7 @@
    pas importer la traduction : ils y sont marqués ici, et tests/i18n.test.js vérifie que ces listes suivent les siennes. */
 import { EP_STATUS, LINK_TYPES, localizeConfig } from "../../core/domain.js";
 import { windName } from "../../core/sky.js";
-import { N_, tr } from "../i18n/index.js";
+import { N_, tr, uiLocale } from "../i18n/index.js";
 
 export const CORE_LABELS = [N_("observé"), N_("hypothèse"), N_("interprétation"), N_("inexpliqué"),
   N_("dérive de"), N_("contredit"), N_("fait écho à"), N_("documente")];
@@ -32,7 +32,7 @@ export const windText = (dir, n) => { const k = windName(dir); return Object.has
    l'assistant lit. Une erreur sans code connu (réseau, service, saisie) garde son message, déjà dans la langue de
    l'interface. CORE_FIELDS : les noms de champ que le noyau donne à « … : à remplir » ; un champ d'une collection porte
    le libellé choisi par la personne, qui passe tel quel. */
-export const CORE_FIELDS = [N_("Tâche"), N_("Note"), N_("Nom du module")];
+export const CORE_FIELDS = [N_("Tâche"), N_("Note"), N_("Nom du module"), N_("Action réalisée")];
 export const CORE_ERRORS = {
   "required": a => tr`${tr(String(a.label))} : à remplir`,
   "task-missing": () => tr`Tâche introuvable`,
@@ -48,8 +48,32 @@ export const CORE_ERRORS = {
   "module-missing": () => tr`Module introuvable`,
   "backup-too-big": () => tr`Sauvegarde trop volumineuse`,
   "backup-format": () => tr`Fichier illisible ou pas une sauvegarde Selene.`,
-  "backup-too-new": () => tr`Sauvegarde créée par une version plus récente de Selene : mets l'application à jour d'abord.`
+  "backup-too-new": () => tr`Sauvegarde créée par une version plus récente de Selene : mets l'application à jour d'abord.`,
+  // Reprendre la main (core/regulation.js) : ce qu'il faut corriger, pas seulement ce qui est refusé.
+  "reg-setup": () => tr`Choisis d'abord ce que tu veux suivre.`,
+  "reg-subject": () => tr`Choisis ce que tu veux suivre parmi les quatre sujets proposés.`,
+  "reg-subject-locked": () => tr`Le sujet d'un suivi commencé ne change pas, pour ne pas relire son historique dans une autre unité. Crée un autre suivi.`,
+  "reg-mode": () => tr`Choisis une intention : observer, réduire ou viser l'arrêt.`,
+  "reg-limit": () => tr`Pour réduire, indique une limite quotidienne positive dans l'unité du suivi. Pour zéro, choisis plutôt de viser l'arrêt.`,
+  "reg-quantity": a => regQuantityHint(a.subject),
+  "reg-date": () => tr`Choisis une date valide. Une consommation, une envie ou une action ne se déclarent pas à l'avance.`,
+  "reg-day-max": () => tr`Une journée compte 1440 minutes : ce total les dépasserait.`,
+  "reg-intensity": () => tr`L'intensité va de 0 à 10, ou reste vide.`,
+  "reg-entry": () => tr`Saisie invalide.`,
+  "reg-missing": () => tr`Cette entrée n'existe plus (supprimée sur un autre appareil ?). Rien n'a été enregistré.`,
+  "reg-total-below": a => tr`Le total déclaré (${regNum(a.total)}) est inférieur à ce qui est déjà noté ce jour-là (${regNum(a.existing)}). Corrige ou supprime d'abord les saisies concernées dans le journal.`,
+  "reg-day-changed": () => tr`Les consommations de cette journée ont changé pendant la confirmation (sur cet appareil ou un autre). Rien n'a été validé : vérifie le nouveau total, puis confirme à nouveau.`,
+  "reg-reward": () => tr`Le seuil de la récompense va de 1 à 365 marques.`
 };
+/* Reprendre la main : un nombre dans la langue de l'interface (1,5 ou 1.5), et ce qu'une quantité doit être, par sujet. */
+export const regNum = n => Number(n).toLocaleString(uiLocale(), { maximumFractionDigits: 2 });
+const REG_QUANTITY = {
+  tabac: () => tr`Indique un nombre entier de cigarettes, 200 au plus.`,
+  cannabis: () => tr`Indique une quantité en grammes, au centième près (0,25 par exemple), 100 au plus.`,
+  alcool: () => tr`Indique un nombre de verres standard, au dixième près (1,5 par exemple), 100 au plus.`,
+  reseaux: () => tr`Indique un nombre entier de minutes, 1440 au plus.`
+};
+export const regQuantityHint = subject => Object.hasOwn(REG_QUANTITY, subject) ? REG_QUANTITY[subject]() : tr`Quantité invalide pour cette unité.`;
 export const errMsg = (e, fallback = "") => e && Object.hasOwn(CORE_ERRORS, e.code) ? CORE_ERRORS[e.code](e.args || {}) : (e && e.message) || fallback;
 /* Un modèle de module (MODULE_TEMPLATES) dans la langue de l'interface : nom, phrase d'aide, réglages de départ. Le
    module créé garde ces mots-là, devenus les siens : ils ne se retraduisent pas si la langue change ensuite. */

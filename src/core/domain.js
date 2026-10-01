@@ -1,8 +1,10 @@
+import { normalizeRegulation, regulationDefaults, validateRegulation } from "./regulation.js";
+
 /* Business operations shared by the UI and assistant. No DOM or storage access. */
 /* Une erreur du noyau : son message en français (l'assistant le lit, les journaux le gardent) et un code stable, que
    l'interface traduit (CORE_ERRORS, src/app/lib/labels.js) ; `args`, les valeurs que la phrase traduite reprend. */
 export const coreError = (code, message, args) => Object.assign(new Error(message), { code, ...(args ? { args } : {}) });
-const requireText = (value, label, max) => {
+export const requireText = (value, label, max) => {
   if (typeof value !== "string" || !value.trim()) throw coreError("required", `${label} : à remplir`, { label });
   return value.trim().slice(0, max);
 };
@@ -60,10 +62,12 @@ export function addBudgetEntry(entries, input, id, defaultDate) {
 /* Version du format des données du site. 1 = sections en dur (kundalini, ecriture, phidippus à la racine),
    2 = modules génériques sous `modules`, 3 = october.moth et Musique deviennent des collections,
    4 = la Capture devient un module Notes, 5 = le Budget devient un module générique,
-   6 = le Chantier devient un module Tâches (ses tâches quittent le document « board »).
+   6 = le Chantier devient un module Tâches (ses tâches quittent le document « board »),
+   7 = le type « regulation » (« Reprendre la main », docs/regulation.md) : une ancienne version ne saurait ni
+   l'afficher ni le valider.
    Une version de l'app qui lit un numéro plus grand que le sien ne doit ni fusionner ni écrire :
    elle ne connaît pas la forme de ces données. */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 /* Anciennes sections à la racine du document → instances de module. Chaque conversion reçoit l'ancienne
    section, le nom personnalisé et le réglage de regroupement éventuels. Sert aussi aux données de départ. */
 export const SECTION_TO_MODULE = {
@@ -283,6 +287,13 @@ export const MODULE_TYPES = {
       }
     }
   },
+  regulation: {
+    label: "Reprendre la main (tabac, cannabis, alcool ou réseaux sociaux)",
+    // Suivi sensible (docs/regulation.md) : règles dans regulation.js ; aucun texte versé aux analyses transversales.
+    defaults: () => regulationDefaults(),
+    normalize: inst => normalizeRegulation(inst),
+    validate: (inst, v) => validateRegulation(inst, v)
+  },
   arc: {
     label: "Arc (étapes, où l'on place des fragments et des éléments d'autres modules)",
     datedEntries: false, // un placement n'a pas de date de journal ; `at` note juste quand il a été fait
@@ -440,7 +451,7 @@ export function slugId(name, existing) {
 const CONFIG_TEXTS = ["unitLabel", "categoryLabel", "scrapsLabel", "statusLabel", "addLabel", "description", "placeholder", "groupLabel", "catLabel", "outdoor"];
 export function localizeConfig(c, t) {
   for (const k of CONFIG_TEXTS) if (typeof c[k] === "string" && c[k]) c[k] = t(c[k]);
-  for (const k of ["statuses", "cats"]) if (Array.isArray(c[k])) c[k] = c[k].map(x => typeof x === "string" && x ? t(x) : x);
+  for (const k of ["statuses", "cats", "supports"]) if (Array.isArray(c[k])) c[k] = c[k].map(x => typeof x === "string" && x ? t(x) : x);
   if (c.fields && typeof c.fields === "object") for (const k of Object.keys(c.fields)) if (typeof c.fields[k] === "string" && c.fields[k]) c.fields[k] = t(c.fields[k]);
   for (const x of Array.isArray(c.stations) ? c.stations : []) if (x && typeof x.name === "string" && x.name) x.name = t(x.name);
   for (const x of Array.isArray(c.types) ? c.types : []) if (x && typeof x.label === "string" && x.label) x.label = t(x.label);
@@ -490,7 +501,8 @@ export const MODULE_TEMPLATES = [
     config: { stations: [{ id: "1", name: "Étape 1" }, { id: "2", name: "Étape 2" }, { id: "3", name: "Étape 3" }] } },
   { id: "rappels", name: "Soins", type: "rappels", hint: "Des gestes récurrents et depuis quand ils attendent",
     config: { types: [] } },
-  { id: "carnet", name: "Carnet", type: "notes", hint: "Des notes datées, gardées ou rangées ailleurs ensuite" }
+  { id: "carnet", name: "Carnet", type: "notes", hint: "Des notes datées, gardées ou rangées ailleurs ensuite" },
+  { id: "regulation", name: "Reprendre la main", type: "regulation", hint: "Tabac, cannabis, alcool ou réseaux sociaux : observer, réduire ou viser l'arrêt, à ton rythme. Privé par défaut" }
 ];
 /* Crée un module depuis un modèle : les réglages du modèle complètent ceux du type (un niveau de profondeur). Un modèle
    traduit arrive déjà traduit (localizeConfig) ; `t` traduit les réglages par défaut du type. */

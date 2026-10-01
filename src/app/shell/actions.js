@@ -14,6 +14,7 @@ import { RADAR_KEY } from "../features/radar.js";
 import { removeWithUndo } from "../modules/entries.js";
 import { gFilter, gcfg, groupBy, grouperFor } from "../modules/groups.js";
 import { addNote, afterCapture } from "../modules/notes.js";
+import { confirmSensitiveShare } from "../modules/regulation.js";
 import { taskFilters } from "../modules/taches.js";
 import { refreshWeather, skyConf, skySearch } from "../scene/sky.js";
 import { openPalette } from "./palette.js";
@@ -44,7 +45,8 @@ CLICK["page-more"] = el => { const k = el.dataset.k; pageSize[k] = (pageSize[k] 
 CLICK["entry-add"] = el => entryAdd(el.dataset.mod);
 CLICK["entry-del"] = el => removeWithUndo(el.dataset.mod, "entries", idOf(el));
 CLICK["mod-down"] = el => moveMod(el, 1);
-/* Ajoute un module (depuis un modèle, déjà traduit par localTemplate, ou un type vide), actif et partagé avec l'assistant.
+/* Ajoute un module (depuis un modèle, déjà traduit par localTemplate, ou un type vide), actif. Il est partagé avec
+   l'assistant, sauf un type sensible (TYPE_UI[type].sensitive) : son partage reste un geste explicite, dans les Réglages.
    Ses réglages de départ sont écrits dans la langue de l'interface. */
 export function addModule(tpl, name) {
   if (tpl.type === "programme") {
@@ -68,7 +70,7 @@ function installModule(tpl, name) {
     const s = S(), id = slugId(name, [...s.config.modules.map(x => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
     createFromTemplate(s.modules, tpl, name, id, tr);
     s.config.modules.push({ id, on: true });
-    s.config.assistant.share[id] = true;
+    s.config.assistant.share[id] = !TYPE_UI[tpl.type]?.sensitive;
     site.save(); render(); toast(tr`Module « ${name} » créé.`);
   } catch (e) { toast(errMsg(e)); }
 }
@@ -120,7 +122,12 @@ document.addEventListener("change", e => {
   }
   else if (act === "as-model") { S().config.assistant.model = el.value; site.save(); render(); }
   else if (act === "as-actions") { S().config.assistant.actions = el.checked; site.save(); render(); }
-  else if (act === "as-share") { S().config.assistant.share[el.dataset.k] = el.checked; site.save(); render(); }
+  else if (act === "as-share") {
+    // Un suivi sensible ne se partage qu'après lecture du résumé exact qui partirait (modules/regulation.js).
+    const k = el.dataset.k, inst = Object.hasOwn(S().modules, k) ? S().modules[k] : null;
+    if (el.checked && inst && TYPE_UI[inst.type]?.sensitive) { el.checked = false; return confirmSensitiveShare(k); }
+    S().config.assistant.share[k] = el.checked; site.save(); render();
+  }
   else if (act === "imp") {
     const f = el.files && el.files[0]; if (!f) return;
     f.text().then(async t => { const d = parseBackup(t); if (!await ask(tr`Remplacer tout l'état actuel par celui du fichier ?`)) return; site.replaceAll(d.site); board.replaceAll(d.board); /* le site d'abord : les tâches d'une ancienne sauvegarde y sont versées */ render(); toast(tr`Sauvegarde importée.`); }).catch(e => toast(e && Object.hasOwn(CORE_ERRORS, e.code) ? errMsg(e) : tr`Fichier illisible ou pas une sauvegarde Selene.`)).finally(() => { el.value = ""; });

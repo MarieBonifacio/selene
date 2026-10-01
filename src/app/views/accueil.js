@@ -36,7 +36,7 @@ VIEWS.accueil = () => {
   // Toute la ligne mène au module ; un chevron la déplie sur ses derniers éléments, sans avoir à l'ouvrir.
   const row = id => {
     const inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null, more = inst && TYPE_UI[inst.type].recent ? TYPE_UI[inst.type].recent(inst) : [];
-    const r = inst && inst.resume, bridge = r ? `<small class="resume ${bridgeStale(r) ? "stale" : ""}">↳ ${esc(r.text)} · ${ago(r.at)}</small>` : "";
+    const r = inst && !TYPE_UI[inst.type].sensitive && inst.resume, bridge = r ? `<small class="resume ${bridgeStale(r) ? "stale" : ""}">↳ ${esc(r.text)} · ${ago(r.at)}</small>` : "";
     return `<div class="over-wrap${more.length ? " has-more" : ""} ${tintOf(id)}"><a class="over" href="#${esc(id)}"><b>${sigil(id)}${esc(label(id))}</b><span>${summaryFor(id)}${bridge}</span></a>${more.length ? `<details class="more"><summary><span class="sr">${tr`Derniers éléments de ${esc(label(id))}`}</span></summary><ul>${more.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
   };
   // Regroupées par domaine quand il y en a (un titre en petites capitales par domaine), sinon une seule liste.
@@ -80,7 +80,7 @@ export function summaryFor(id) {
   return inst ? TYPE_UI[inst.type].summary(id, inst) : SUMMARY[id] ? SUMMARY[id]() : "";
 }
 function resumeSection() {
-  const s = S(), drafts = pendingDrafts(), last = liveRecents()[0], lines = [];
+  const s = S(), drafts = pendingDrafts().filter(d => !TYPE_UI[s.modules[d.view]?.type]?.sensitive), last = liveRecents().find(r => !TYPE_UI[s.modules[r.id]?.type]?.sensitive), lines = [];
   if (last) {
     const r = s.modules[last.id].resume, mine = drafts.filter(d => d.view === last.id).map(d => d.what);
     if (r || mine.length) lines.push(`<li><a href="#${esc(last.id)}"><b>${esc(label(last.id))}</b></a>${r ? ` — ↳ ${esc(r.text)}` : ""}${mine.length ? ` · ${esc(tr`${mine.join(", ")} en cours`)}` : ""} <span class="hint">· ${agoTime(last.at)}</span></li>`);
