@@ -61,6 +61,8 @@ const { SOURCE_KINDS } = await import(pathToFileURL(path.join(root, "src", "core
 for (const k of SOURCE_KINDS) note(k, "src/core/sources.js (genres de source)");
 
 const holes = s => [...new Set(String(s).match(/\{\d+\}/g) || [])].sort().join(" ");
+// Un pluriel paresseux (« jour(s) ») dans un texte marqué : il passe par trn, qui choisit la forme.
+for (const [key, u] of used) if (/\p{L}\(s\)/u.test(key)) errors.push(`${u.where[0]} : « ${key.replace("\u0004", " ▸ ")} » : un pluriel en « (s) » ; trn choisit la forme qui convient`);
 const shown = k => k.replace("\u0004", " ▸ ");
 const report = [], missingList = [];
 for (const [code, L] of Object.entries(LANGS)) {
@@ -80,6 +82,7 @@ for (const [code, L] of Object.entries(LANGS)) {
     else if (holes(v) !== holes(key)) errors.push(`${code} : « ${shown(key)} » → « ${v} » : les valeurs {n} ne correspondent pas (${holes(key) || "aucune"} contre ${holes(v) || "aucune"})`);
   }
   for (const [key, v] of Object.entries(dict)) for (const form of typeof v === "string" ? [v] : v && typeof v === "object" ? Object.values(v) : []) {
+    if (typeof form === "string" && /\p{L}\(s\)/u.test(form)) errors.push(`${code} : « ${shown(key)} » → « ${form} » : un pluriel en « (s) » ; une traduction en { one, other } (trn)`);
     const extra = ['"', "<", ">", "&"].filter(c => typeof form === "string" && form.includes(c) && !key.includes(c));
     if (extra.length) errors.push(`${code} : « ${shown(key)} » → « ${form} » : caractère de HTML (${extra.join(" ")}) absent du français`);
   }

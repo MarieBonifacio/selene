@@ -193,3 +193,12 @@ test('widget : absent sur le web, relayé vers la coquille native qui en a un', 
   await nat.widget.update({ moon: 'Pleine lune', lines: ['a'] });
   assert.equal(got.length, 1);
 });
+
+test('un démarrage impossible se dit dans la langue de l’appareil (l’anglais ou, sinon, le français)', () => {
+  const { unreadable } = load({ window: { claude: null, addEventListener() {} }, localStorage: memory(), sessionStorage: memory() });
+  assert.match(unreadable(['en-US']), /^Selene couldn't read/);
+  assert.match(unreadable(['de-DE', 'en-GB']), /^Selene couldn't read/, 'la première langue que Selene parle');
+  assert.match(unreadable(['fr-CA', 'en']), /^Selene n'a pas pu lire/);
+  assert.match(unreadable(['ja']), /^Selene n'a pas pu lire/, 'aucune : le français');
+  assert.match(unreadable([]), /^Selene n'a pas pu lire/);
+});

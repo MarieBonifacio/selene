@@ -661,6 +661,7 @@ var __platform = (() => {
     hosted: () => hosted,
     migrateToIdb: () => migrateToIdb,
     platform: () => platform,
+    unreadable: () => unreadable,
     webStore: () => webStore
   });
   var native = window.seleneNative || null;
@@ -779,6 +780,17 @@ var __platform = (() => {
   var storageImpl = native && native.storage ? mirror(native.storage) : webStore(() => localStorage);
   var channel = null;
   var watchers = [];
+  var UNREADABLE = {
+    fr: "Selene n'a pas pu lire les données de cet appareil. Ferme l'application et rouvre-la.",
+    en: "Selene couldn't read this device's data. Close the app and open it again."
+  };
+  function unreadable(languages = typeof navigator !== "undefined" ? navigator.languages || [navigator.language] : []) {
+    for (const tag of languages) {
+      const base = String(tag || "").toLowerCase().split("-")[0];
+      if (Object.hasOwn(UNREADABLE, base)) return UNREADABLE[base];
+    }
+    return UNREADABLE.fr;
+  }
   var platform = {
     // "artifact" (claude.ai), "web" (PWA, navigateur), ou ce que dit la coquille native ("capacitor", "tauri").
     runtime: () => window.claude ? "artifact" : native ? String(native.runtime || "native") : "web",
@@ -812,7 +824,7 @@ var __platform = (() => {
        premier enregistrement, les données restées dans le coffre. */
     ready(start) {
       const fail = () => {
-        document.body.textContent = "Selene n'a pas pu lire les données de cet appareil. Ferme l'application et rouvre-la.";
+        document.body.textContent = unreadable();
       };
       if (native) {
         Promise.all([storageImpl, platform.secrets].map((s) => s.hydrate ? s.hydrate() : null)).then(() => start(), fail);
@@ -2008,7 +2020,7 @@ var __selene = (() => {
     "Statut {0}": "Status {0}",
     "Deux statuts minimum : sinon rien ne peut avancer.": "Two statuses minimum: otherwise nothing can move forward.",
     "Supprimer le statut « {0} » ?": "Delete the status “{0}”?",
-    "Ses {0} élément(s) passeront à « {1} ».": "Its {0} item(s) will move to “{1}”.",
+    "{0} élément passera à « {1} ».": { one: "{0} item will move to “{1}”.", other: "{0} items will move to “{1}”." },
     "Ce fichier n'est pas un export Instagram lisible (JSON).": "This file isn't a readable Instagram export (JSON).",
     "Rien de nouveau : tout est déjà là.": "Nothing new: everything is already here.",
     "Aucune publication dans ce fichier. C'est posts_1.json ou reels.json qu'il faut.": "No posts in this file. You need posts_1.json or reels.json.",
@@ -2025,7 +2037,8 @@ var __selene = (() => {
     "Sans titre": "Untitled",
     "Chaque {0} a son propre objectif.": "Each {0} has its own goal.",
     "cumul{0} sur {1}": "{0} out of {1}",
-    "Dernière session {0}. Série de {1} jour(s).": "Last session {0}. Streak of {1} day(s).",
+    "Dernière session {0}.": "Last session {0}.",
+    "Série de {0} jour.": { one: "Streak of {0} day.", other: "Streak of {0} days." },
     "Total atteint ({0})": "Total reached ({0})",
     "{0} aujourd'hui": "{0} today",
     "Total atteint": "Total reached",
@@ -2113,7 +2126,7 @@ var __selene = (() => {
     "S{0}": "W{0}",
     "Noter une séance": "Log a session",
     "sur {0}": "of {0}",
-    "{0} séances, {1} {2} au total, série actuelle de {3} jour(s).": "{0} sessions, {1} {2} in total, current streak of {3} day(s).",
+    "{0} séance, {1} {2} au total, série actuelle de {3}.": { one: "{0} session, {1} {2} in total, current streak of {3}.", other: "{0} sessions, {1} {2} in total, current streak of {3}." },
     "Ce que le corps a fait, ce que la tête en a pensé.": "What the body did, what the head thought of it.",
     "Aucune séance notée.": "No sessions logged.",
     "Début du protocole": "Protocol start",
@@ -2842,7 +2855,7 @@ var __selene = (() => {
   };
 
   // plateforme:src/platform.js
-  var { SECRET_KEYS, hosted, migrateToIdb, platform, webStore } = __platform;
+  var { SECRET_KEYS, hosted, migrateToIdb, platform, unreadable, webStore } = __platform;
 
   // src/app/services/host.js
   var sampleNS = null;
@@ -8754,7 +8767,7 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
         const inst = instOf(el), c = inst.config, i = +el.closest("[data-si]").dataset.si, st = c.statuses[i];
         if (c.statuses.length <= 2) return toast(tr`Deux statuts minimum : sinon rien ne peut avancer.`);
         const n = inst.entries.filter((e) => e.status === st).length, to = c.statuses[i === 0 ? 1 : i - 1];
-        if (!await ask(tr`Supprimer le statut « ${st} » ?` + (n ? " " + tr`Ses ${n} élément(s) passeront à « ${to} ».` : ""))) return;
+        if (!await ask(tr`Supprimer le statut « ${st} » ?` + (n ? " " + trn(n, "{0} élément passera à « {1} ».", "{0} éléments passeront à « {1} ».", to) : ""))) return;
         inst.entries.forEach((e) => {
           if (e.status === st) e.status = to;
         });
@@ -9071,7 +9084,7 @@ ${nm} (${mo}) : dépenses ${sumOf(es, "dépense")} €, revenus ${sumOf(es, "rev
       return `<h2>${esc(label(id))}</h2>${c.title ? `<p class="hint">${esc(c.title)}</p>` : ""}
   <div class="two"><section>
     <div class="big">${tot.toLocaleString(uiLocale())} <span class="hint" style="font-size:1.1rem">${trp("cumul", "{0} sur {1}", esc(c.unitLabel), (+c.goal).toLocaleString(uiLocale()))}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
-    <p class="hint">${tr`Dernière session ${ago(last)}. Série de ${streakOf(inst.entries.map((x) => x.date))} jour(s).`} ${esc(projection(inst))}</p>
+    <p class="hint">${tr`Dernière session ${ago(last)}.`} ${trn(streakOf(inst.entries.map((x) => x.date)), "Série de {0} jour.", "Série de {0} jours.")} ${esc(projection(inst))}</p>
     <div class="row"><input type="number" id="cumIn" min="${total ? 0 : 1}" placeholder="${total ? tr`Total atteint (${esc(c.unitLabel)})` : tr`${esc(c.unitLabel)} aujourd'hui`}" style="max-width:200px" inputmode="numeric" aria-label="${total ? tr`Total atteint` : tr`Ajout du jour`}">${c.categories.length ? `<select id="cumCat" aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">${tr`Hors ${esc(c.categoryLabel).toLowerCase()}`}</option>${c.categories.map((x) => `<option value="${esc(x.id)}" ${x.id === lastCat ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>` : ""}<button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">${tr`Ajouter`}</button></div>
     <div style="margin-top:28px">${c.categories.length ? cumulGroupPanel(id) : `<p class="hint">${tr`Ajoute des ${`${esc(c.categoryLabel).toLowerCase()}s`} dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`} pour suivre chacune en pourcentage.`}</p>`}</div>
   </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">${tr`Une phrase qui passe, avant qu'elle ne reparte. Un « ? » devant en fait une hypothèse.`}</p>
@@ -10770,7 +10783,7 @@ ${nm} : arc de ${c.stations.length} étapes (${c.stations.map((s) => s.name).joi
       return `<div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">${tr`Noter une séance`}</button></div>
   <div class="two"><section>
     <div class="big">${tr`Semaine ${week}`} <span class="hint" style="font-size:1.1rem">${tr`sur ${W}`}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
-    <p class="hint">${tr`${inst.entries.length} séances, ${totalOf(inst)} ${esc(c.unitLabel)} au total, série actuelle de ${streakOf([...days])} jour(s).`}</p>
+    <p class="hint">${trn(inst.entries.length, "{0} séance, {1} {2} au total, série actuelle de {3}.", "{0} séances, {1} {2} au total, série actuelle de {3}.", totalOf(inst), esc(c.unitLabel), trn(streakOf([...days]), "{0} jour", "{0} jours"))}</p>
     <div class="cal">${cal}</div>
     <div style="margin-top:28px">${programmeGroupPanel(id)}</div>
     ${tiersPanel(id)}

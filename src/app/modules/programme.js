@@ -49,7 +49,7 @@ registerType("programme", {
     return `<div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">${tr`Noter une séance`}</button></div>
   <div class="two"><section>
     <div class="big">${tr`Semaine ${week}`} <span class="hint" style="font-size:1.1rem">${tr`sur ${W}`}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
-    <p class="hint">${tr`${inst.entries.length} séances, ${totalOf(inst)} ${esc(c.unitLabel)} au total, série actuelle de ${streakOf([...days])} jour(s).`}</p>
+    <p class="hint">${trn(inst.entries.length, "{0} séance, {1} {2} au total, série actuelle de {3}.", "{0} séances, {1} {2} au total, série actuelle de {3}.", totalOf(inst), esc(c.unitLabel), trn(streakOf([...days]), "{0} jour", "{0} jours"))}</p>
     <div class="cal">${cal}</div>
     <div style="margin-top:28px">${programmeGroupPanel(id)}</div>
     ${tiersPanel(id)}
