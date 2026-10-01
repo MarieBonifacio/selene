@@ -2552,7 +2552,7 @@ var __selene = (() => {
        traduction, un texte coupé manquera de place dans une langue plus longue. Jamais proposée dans les Réglages. */
     qps: { name: "Pseudo", frName: "français", tag: "qps-ploc", locale: "fr-FR", dict: null, pseudo: true }
   };
-  var READY_LANGS = ["fr"];
+  var READY_LANGS = ["fr", "en"];
   function resolveLang(pref, device = [], ready = READY_LANGS) {
     if (pref === "qps" || ready.includes(pref)) return pref;
     for (const tag of device) {
@@ -2749,7 +2749,12 @@ var __selene = (() => {
     }
     return n;
   }
-  var plural = (n, word) => `${n} ${word}${n > 1 ? "s" : ""}`;
+  var pluralRules = /* @__PURE__ */ new Map();
+  var plural = (n, word) => {
+    const loc = uiLocale();
+    if (!pluralRules.has(loc)) pluralRules.set(loc, new Intl.PluralRules(loc));
+    return `${n} ${word}${pluralRules.get(loc).select(n) === "one" ? "" : "s"}`;
+  };
 
   // src/core/domain.js
   var coreError = (code, message, args) => Object.assign(new Error(message), { code, ...args ? { args } : {} });

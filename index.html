@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9+8Qe73HursrgRqyJf0NO5kcSN9iGZyUZAuhSc+YvhA=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-3B302cDV/Mj/Z63RQP/6b2FxFYLYdqDP2Irw59cFMxA=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -2562,7 +2562,7 @@ var __selene = (() => {
        traduction, un texte coupé manquera de place dans une langue plus longue. Jamais proposée dans les Réglages. */
     qps: { name: "Pseudo", frName: "français", tag: "qps-ploc", locale: "fr-FR", dict: null, pseudo: true }
   };
-  var READY_LANGS = ["fr"];
+  var READY_LANGS = ["fr", "en"];
   function resolveLang(pref, device = [], ready = READY_LANGS) {
     if (pref === "qps" || ready.includes(pref)) return pref;
     for (const tag of device) {
@@ -2759,7 +2759,12 @@ var __selene = (() => {
     }
     return n;
   }
-  var plural = (n, word) => `${n} ${word}${n > 1 ? "s" : ""}`;
+  var pluralRules = /* @__PURE__ */ new Map();
+  var plural = (n, word) => {
+    const loc = uiLocale();
+    if (!pluralRules.has(loc)) pluralRules.set(loc, new Intl.PluralRules(loc));
+    return `${n} ${word}${pluralRules.get(loc).select(n) === "one" ? "" : "s"}`;
+  };
 
   // src/core/domain.js
   var coreError = (code, message, args) => Object.assign(new Error(message), { code, ...args ? { args } : {} });

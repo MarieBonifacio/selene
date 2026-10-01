@@ -41,6 +41,7 @@ Pour ajouter un *type* de module au code, voir [docs/architecture.md](docs/archi
 
 ## Au quotidien
 
+- **Langue** : français ou anglais, celle de l'appareil par défaut ; Réglages → Apparence → Langue pour en choisir une, qui suit alors le compte sur tous tes appareils. L'assistant répond dans la langue de l'interface. Ce que tu écris reste dans ta langue à toi : la recherche, les motifs et la dérive lexicale lisent chaque texte dans la sienne.
 - **Brouillons** : le texte en cours d'un champ libre (capture, note, fragment, observation, message à l'assistant) survit à la fermeture de l'app, sur cet appareil.
 - **Annuler** : supprimer un élément affiche « Annuler » pendant quelques secondes, au lieu d'une confirmation.
 - **Accueil** : « fait » sur un rappel en retard (une ligne par module), « Noter N min » pour la séance du jour (dernière durée), éléments prévus ou en retard ; le chevron d'une ligne la déplie sur ses derniers éléments. Sur téléphone, le paysage se réduit à partir de la deuxième ouverture du jour.

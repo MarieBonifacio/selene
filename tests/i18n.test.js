@@ -89,6 +89,14 @@ test('tri dans la langue : « é » se range avec « e », pas après « z »', 
   assert.deepEqual(['zèbre', 'été', 'Eau', 'fin'].sort(collate), ['Eau', 'été', 'fin', 'zèbre']);
 });
 
+test('plural : le « s » d’un mot choisi par la personne, au moment que dictent les règles de la langue', () => {
+  const { plural } = require('../src/app/lib/format.js');
+  applyLang('fr', BOTH);
+  assert.deepEqual([0, 1, 2].map(n => plural(n, 'fragment')), ['0 fragment', '1 fragment', '2 fragments']);
+  applyLang('en', BOTH);
+  try { assert.deepEqual([0, 1, 2].map(n => plural(n, 'fragment')), ['0 fragments', '1 fragment', '2 fragments']); } finally { applyLang('fr', BOTH); }
+});
+
 test('les libellés du noyau (statuts, liens) sont tous marqués pour la traduction', () => {
   const { EP_STATUS, LINK_TYPES } = require('../src/core/domain.js');
   const { CORE_LABELS } = require('../src/app/lib/labels.js');

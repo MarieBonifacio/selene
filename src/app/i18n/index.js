@@ -16,9 +16,9 @@ export const LANGS = {
      traduction, un texte coupé manquera de place dans une langue plus longue. Jamais proposée dans les Réglages. */
   qps: { name: "Pseudo", frName: "français", tag: "qps-ploc", locale: "fr-FR", dict: null, pseudo: true }
 };
-/* Les langues proposées : celles dont le dictionnaire est complet (npm run i18n le vérifie). L'anglais attend la fin de
-   l'extraction des textes (docs/i18n.md) : d'ici là, l'interface reste en français, quel que soit l'appareil. */
-export const READY_LANGS = ["fr"];
+/* Les langues proposées : celles dont le dictionnaire est complet (npm run i18n refuse d'en proposer une à qui il
+   manque un texte). Une langue ajoutée à LANGS attend ici son dernier texte traduit. */
+export const READY_LANGS = ["fr", "en"];
 
 /* La langue en vigueur : celle choisie dans les Réglages (config.lang) si elle est proposée, sinon la première langue
    proposée parmi celles de l'appareil (navigator.languages, par ordre de préférence), sinon le français. */

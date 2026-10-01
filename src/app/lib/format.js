@@ -25,4 +25,11 @@ export function streakOf(dates) {
   while (set.has(iso(d))) { n++; d.setDate(d.getDate() - 1); }
   return n;
 }
-export const plural = (n, word) => `${n} ${word}${n > 1 ? "s" : ""}`;
+/* Un nombre et un mot choisi par la personne (« fragment », d'après son libellé « Fragments ») : le « s » est sa
+   morphologie à elle ; seul le moment de l'ajouter suit les règles de pluriel de la langue de l'interface (en
+   français, 0 et 1 au singulier ; en anglais, 0 au pluriel). Les textes de Selene, eux, passent par trn. */
+const pluralRules = new Map();
+export const plural = (n, word) => {
+  const loc = uiLocale(); if (!pluralRules.has(loc)) pluralRules.set(loc, new Intl.PluralRules(loc));
+  return `${n} ${word}${pluralRules.get(loc).select(n) === "one" ? "" : "s"}`;
+};

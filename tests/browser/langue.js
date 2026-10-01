@@ -1,26 +1,48 @@
 /* Scénario de navigateur : la langue de l'interface (src/app/i18n, docs/i18n.md). Lancé par tests/browser/run.js.
-   - un appareil en anglais garde l'interface en français tant que l'anglais n'est pas proposé (READY_LANGS) ;
+   - un appareil en anglais reçoit l'interface en anglais : dates, lune, navigation, écrans principaux, sommes ; les
+     valeurs enregistrées ne bougent pas ;
+   - le sélecteur des Réglages passe en français tout de suite, sans recharger, et le choix suit le compte ;
    - la pseudo-langue (config.lang = "qps") montre chaque texte passé par la traduction, entre ⟦ ⟧ ;
-   - changer config.lang par le réglage générique (data-set) redessine tout de suite, sans recharger, et s'enregistre. */
+   - « langue de l'appareil » (valeur vide) rend l'anglais, squelette compris. */
 const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 (async () => {
   const b = await engine.launch(launchOptions);
-  // Un appareil réglé en anglais américain : la langue que Selene suivrait si l'anglais était déjà proposé.
+  // Un appareil réglé en anglais américain : Selene le suit (l'anglais est proposé), au format britannique (en-GB).
   const p = await b.newPage({ locale: 'en-US', viewport: { width: 1280, height: 900 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.addInitScript(d => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, JSON.stringify(demo));
   await p.goto(BASE + '/index.html'); await p.waitForTimeout(300);
   const state = () => p.evaluate(() => ({ lang: document.documentElement.lang, phase: document.querySelector('.phase')?.textContent || '', dateline: document.querySelector('#dateline').textContent }));
-  const FR_DAYS = /^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche) /;
+  const FR_DAYS = /^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche) /, EN_DAYS = /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/;
+  const go = async h => { await p.evaluate(x => location.hash = x, h); await p.waitForTimeout(200); };
+  const text = sel => p.$eval(sel, el => el.textContent.trim());
 
-  console.log('appareil en anglais, anglais pas encore proposé');
+  console.log('appareil en anglais : l’interface en anglais');
   let s = await state();
   check(await p.evaluate(() => navigator.language) === 'en-US', 'le navigateur se dit bien en anglais');
-  check(s.lang === 'fr', '<html lang="fr">');
-  check(FR_DAYS.test(s.dateline), 'la date du jour reste en français : ' + s.dateline);
-  check(/lune|croissant|quartier|gibbeuse/i.test(s.phase), 'la phase de la lune reste en français : ' + s.phase);
-  await p.evaluate(() => location.hash = 'reglages'); await p.waitForTimeout(200);
-  check(!(await p.$('select[data-set="config.lang"]')), 'pas de sélecteur de langue tant qu’une seule est proposée');
+  check(s.lang === 'en', '<html lang="en">');
+  check(EN_DAYS.test(s.dateline), 'la date du jour en anglais : ' + s.dateline);
+  check(/moon|crescent|quarter|gibbous/i.test(s.phase), 'la phase de la lune en anglais : ' + s.phase);
+  check((await text('#nav a[href="#bilan"]')).includes('Review') && (await text('#nav a[href="#reglages"]')).includes('Settings'), 'navigation en anglais');
+  check(await p.getAttribute('#palIn', 'placeholder') === 'Go, act, search…', 'squelette en anglais (palette)');
+  await go('bilan');
+  check(await text('#main h2') === 'Review' && (await text('[data-act="bilan-mode"][data-m="lune"]')) === 'Lunar cycle', 'bilan en anglais');
+  await go('recherche');
+  check(await text('#main > h2') === 'Search' && await p.getAttribute('#searchIn', 'placeholder') === 'A word, a scrap of a sentence…', 'recherche en anglais');
+  await go('budget');
+  check(JSON.stringify(await p.$$eval('#bType option', os => os.map(o => o.value))) === '["dépense","revenu"]' && !/dépense|revenu/i.test(await text('#bType')), 'budget : libellés en anglais, valeurs enregistrées inchangées');
+  check(/€\d/.test(await p.$eval('#main', el => el.textContent)), 'budget : les sommes au format anglais (€12.00), toujours en euros');
+  await go('reglages');
+  check(JSON.stringify(await p.$$eval('select[data-set="config.lang"] option', os => os.map(o => [o.value, o.textContent]))) === '[["","Device language"],["fr","Français"],["en","English"]]',
+    'réglages : le sélecteur de langue, chaque langue sous son propre nom');
+
+  console.log('le sélecteur : en français tout de suite, et pour le compte');
+  await p.selectOption('select[data-set="config.lang"]', 'fr'); await p.waitForTimeout(200);
+  s = await state();
+  check(s.lang === 'fr' && FR_DAYS.test(s.dateline) && (await text('#main > h2')) === 'Réglages', 'français aussitôt, sans recharger : ' + s.dateline);
+  check((await text('#nav a[href="#bilan"]')).includes('Bilan') && await p.getAttribute('#palIn', 'placeholder') === 'Aller, agir, chercher…', 'navigation et squelette en français');
+  await p.waitForTimeout(1300); // l'enregistrement part au bout d'une seconde
+  check(await p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).config.lang) === 'fr', 'le choix est enregistré dans le compte (config.lang)');
 
   console.log('pseudo-langue');
   await p.evaluate(() => { const d = JSON.parse(localStorage.getItem('selene-site-v1')); d.config.lang = 'qps'; localStorage.setItem('selene-site-v1', JSON.stringify(d)); location.hash = 'accueil'; });
@@ -79,18 +101,26 @@ const demo = JSON.parse(fixture());
   check(/^⟦/.test(await p.getAttribute('#searchIn', 'placeholder')), 'recherche : le champ aussi');
   await p.evaluate(() => location.hash = 'accueil'); await p.waitForTimeout(200);
 
-  console.log('retour à la langue de l’appareil, par le réglage générique, sans recharger');
-  await p.evaluate(() => {
-    const sel = document.createElement('select'); sel.dataset.set = 'config.lang'; sel.innerHTML = '<option value="">appareil</option><option value="qps">pseudo</option>';
-    document.querySelector('#main').appendChild(sel); sel.value = ''; sel.dispatchEvent(new Event('change', { bubbles: true }));
-  });
-  await p.waitForTimeout(200);
+  console.log('retour à la langue de l’appareil, sans recharger');
+  await go('reglages');
+  await p.selectOption('select[data-set="config.lang"]', ''); await p.waitForTimeout(200);
   s = await state();
-  check(s.lang === 'fr' && !s.phase.includes('⟦'), 'l’interface redevient française aussitôt : ' + s.phase);
-  check(await p.textContent('#timerBtn') === 'Reprendre' && await p.textContent('#cdlg button[value="ok"]') === 'Confirmer' && await p.getAttribute('#palIn', 'placeholder') === 'Aller, agir, chercher…',
-    'le squelette redevient français lui aussi (minuteur en pause : « Reprendre »)');
+  check(s.lang === 'en' && EN_DAYS.test(s.dateline), 'l’interface redevient anglaise aussitôt : ' + s.dateline);
+  check(await p.textContent('#timerBtn') === 'Resume' && await p.textContent('#cdlg button[value="ok"]') === 'Confirm' && await p.getAttribute('#palIn', 'placeholder') === 'Go, act, search…',
+    'le squelette suit lui aussi (minuteur en pause : « Resume »)');
   await p.waitForTimeout(1300); // l'enregistrement part au bout d'une seconde
   check(await p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).config.lang) === '', 'le choix est enregistré dans le compte (config.lang)');
+
+  console.log('en anglais, sur téléphone : rien ne déborde');
+  const t = await b.newPage({ locale: 'en-US', viewport: { width: 375, height: 812 } }); t.on('pageerror', e => errs.push(e.message));
+  await t.addInitScript(d => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, JSON.stringify(demo));
+  await t.goto(BASE + '/index.html'); await t.waitForTimeout(300);
+  const wide = [];
+  for (const h of ['accueil', 'bilan', 'bilan/planche', 'recherche', 'reglages', ...Object.keys(demo.modules)]) {
+    await t.evaluate(x => location.hash = x, h); await t.waitForTimeout(150);
+    if (await t.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)) wide.push(h);
+  }
+  check(await t.evaluate(() => document.documentElement.lang) === 'en' && !wide.length, 'aucun débordement horizontal en anglais, sur 375 px' + (wide.length ? ' : ' + wide.join(', ') : ''));
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
