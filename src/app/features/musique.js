@@ -5,6 +5,7 @@ import { coverUrl, mbAlbums, mbArtistQuery, mbArtists, mbSince } from "../../cor
 import { CLICK, SHEETS } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { addDaysTo, todayISO, uid } from "../lib/format.js";
+import { tr, trn } from "../i18n/index.js";
 import { refFind } from "./links.js";
 import { modOf } from "../modules/collection.js";
 import { idOf } from "../shell/actions.js";
@@ -36,25 +37,25 @@ async function mbLoadAlbums(aid) {
   mbState.busy = true; mbState.step = "albums"; $("#sheetBody").innerHTML = SHEETS.mb(mbState.ref);
   const j = await mbFetch(`/release-group?artist=${aid}&type=album|ep&limit=100`).catch(() => null);
   if (!mbState) return;
-  Object.assign(mbState, { busy: false, aid, albums: j ? mbAlbums(j) : null, err: j ? "" : "MusicBrainz ne répond pas (hors ligne, ou trop de demandes). Réessaie dans un instant." });
+  Object.assign(mbState, { busy: false, aid, albums: j ? mbAlbums(j) : null, err: j ? "" : tr`MusicBrainz ne répond pas (hors ligne, ou trop de demandes). Réessaie dans un instant.` });
   if ($("#sheet").open) $("#sheetBody").innerHTML = SHEETS.mb(mbState.ref);
 }
 SHEETS.mb = ref => {
-  const hit = mbEntry(ref); if (!hit || !mbState) return `<p class="empty">Cet élément n'existe plus.</p>`;
+  const hit = mbEntry(ref); if (!hit || !mbState) return `<p class="empty">${tr`Cet élément n'existe plus.`}</p>`;
   const { mod, e } = hit, inst = S().modules[mod], st = mbState;
-  const head = `<h2 id="sheetTitle">${esc(e.title)}</h2><p class="hint">Discographie studio (albums et EP) selon MusicBrainz, base libre et collaborative.</p>`;
-  if (st.busy) return head + `<p class="hint" role="status">Recherche…</p>`;
-  if (st.err) return head + `<p class="hint" role="status">${esc(st.err)}</p><button class="btn sm" data-act="mb-retry">Réessayer</button>`;
+  const head = `<h2 id="sheetTitle">${esc(e.title)}</h2><p class="hint">${tr`Discographie studio (albums et EP) selon MusicBrainz, base libre et collaborative.`}</p>`;
+  if (st.busy) return head + `<p class="hint" role="status">${tr`Recherche…`}</p>`;
+  if (st.err) return head + `<p class="hint" role="status">${esc(st.err)}</p><button class="btn sm" data-act="mb-retry">${tr`Réessayer`}</button>`;
   if (st.step === "artist") {
-    if (!st.artists.length) return head + `<p class="empty">Aucun artiste de ce nom dans MusicBrainz. Vérifie l'orthographe du titre.</p>`;
-    return head + `<p>Plusieurs artistes portent ce nom :</p><ul class="plain">${st.artists.map(a => `<li class="item"><span></span><div><b>${esc(a.name)}</b><div class="meta">${[a.note, a.country, a.begin && `depuis ${a.begin}`].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("")}</div></div><button class="btn sm" data-act="mb-artist" data-a="${esc(a.id)}">choisir</button></li>`).join("")}</ul>`;
+    if (!st.artists.length) return head + `<p class="empty">${tr`Aucun artiste de ce nom dans MusicBrainz. Vérifie l'orthographe du titre.`}</p>`;
+    return head + `<p>${tr`Plusieurs artistes portent ce nom :`}</p><ul class="plain">${st.artists.map(a => `<li class="item"><span></span><div><b>${esc(a.name)}</b><div class="meta">${[a.note, a.country, a.begin && tr`depuis ${a.begin}`].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("")}</div></div><button class="btn sm" data-act="mb-artist" data-a="${esc(a.id)}">${tr`choisir`}</button></li>`).join("")}</ul>`;
   }
   const have = new Set(inst.entries.filter(x => x.mb && x.mb.rg).map(x => x.mb.rg));
   const haveTitle = new Set(inst.entries.filter(x => fold(x.title) === fold(e.title) && x.subtitle).map(x => fold(x.subtitle)));
-  if (!st.albums.length) return head + `<p class="empty">Aucun album ni EP studio référencé pour cet artiste.</p>`;
+  if (!st.albums.length) return head + `<p class="empty">${tr`Aucun album ni EP studio référencé pour cet artiste.`}</p>`;
   return head + `<ul class="plain mb-albums">${st.albums.map(a => { const mine = e.mb && e.mb.rg === a.id, inList = have.has(a.id) || haveTitle.has(fold(a.title));
-    return `<li class="item" data-rg="${esc(a.id)}"><span>${coverImg(a.id)}</span><div><b>${esc(a.title)}</b><div class="meta"><span>${esc(a.date.slice(0, 4) || "sans date")}</span><span>${esc(a.type)}</span></div></div>
-      <div class="row">${mine ? `<span class="hint">choisi</span>` : `<button class="btn sm" data-act="mb-pick">${e.subtitle ? "remplacer" : "choisir"}</button>`}${inList ? "" : `<button class="btn ghost sm" data-act="mb-add">ajouter</button>`}</div></li>`; }).join("")}</ul>`;
+    return `<li class="item" data-rg="${esc(a.id)}"><span>${coverImg(a.id)}</span><div><b>${esc(a.title)}</b><div class="meta"><span>${esc(a.date.slice(0, 4) || tr`sans date`)}</span><span>${esc(a.type)}</span></div></div>
+      <div class="row">${mine ? `<span class="hint">${tr`choisi`}</span>` : `<button class="btn sm" data-act="mb-pick">${e.subtitle ? tr`remplacer` : tr`choisir`}</button>`}${inList ? "" : `<button class="btn ghost sm" data-act="mb-add">${tr`ajouter`}</button>`}</div></li>`; }).join("")}</ul>`;
 };
 async function mbOpen(ref) {
   const hit = mbEntry(ref); if (!hit) return;
@@ -63,7 +64,7 @@ async function mbOpen(ref) {
   if (hit.e.mb && hit.e.mb.a) return mbLoadAlbums(hit.e.mb.a);
   const j = await mbFetch(`/artist?query=${encodeURIComponent(mbArtistQuery(hit.e.title))}&limit=6`).catch(() => null);
   if (!mbState || mbState.ref !== ref) return;
-  Object.assign(mbState, { busy: false, artists: j ? mbArtists(j) : [], err: j ? "" : "MusicBrainz ne répond pas (hors ligne, ou trop de demandes). Réessaie dans un instant." });
+  Object.assign(mbState, { busy: false, artists: j ? mbArtists(j) : [], err: j ? "" : tr`MusicBrainz ne répond pas (hors ligne, ou trop de demandes). Réessaie dans un instant.` });
   if (mbState.artists.length === 1 && !mbState.err) return mbLoadAlbums(mbState.artists[0].id); // un seul candidat : pas de question
   if ($("#sheet").open) $("#sheetBody").innerHTML = SHEETS.mb(ref);
 }
@@ -73,13 +74,13 @@ CLICK["mb-artist"] = el => mbLoadAlbums(el.dataset.a);
 CLICK["mb-pick"] = el => {
   const hit = mbState && mbEntry(mbState.ref), rg = el.closest("[data-rg]").dataset.rg, a = hit && mbState.albums.find(x => x.id === rg); if (!a) return;
   hit.e.subtitle = a.title; hit.e.mb = { a: mbState.aid, rg: a.id, ...(a.date ? { y: a.date.slice(0, 4) } : {}) };
-  site.save(); render(); $("#sheetBody").innerHTML = SHEETS.mb(mbState.ref); toast(`« ${a.title} » : c'est noté.`);
+  site.save(); render(); $("#sheetBody").innerHTML = SHEETS.mb(mbState.ref); toast(tr`« ${a.title} » : c'est noté.`);
 };
 CLICK["mb-add"] = el => {
   const hit = mbState && mbEntry(mbState.ref), rg = el.closest("[data-rg]").dataset.rg, a = hit && mbState.albums.find(x => x.id === rg); if (!a) return;
   const n = saveCollectionItem(S().modules[hit.mod], { title: hit.e.title, subtitle: a.title }, uid());
   n.mb = { a: mbState.aid, rg: a.id, ...(a.date ? { y: a.date.slice(0, 4) } : {}) };
-  site.save(); render(); $("#sheetBody").innerHTML = SHEETS.mb(mbState.ref); toast(`Ajouté : ${hit.e.title}, « ${a.title} ».`);
+  site.save(); render(); $("#sheetBody").innerHTML = SHEETS.mb(mbState.ref); toast(tr`Ajouté : ${hit.e.title}, « ${a.title} ».`);
 };
 /* Nouvelles sorties : pour chaque artiste relié, ce qu'il a publié depuis la dernière vérification (sur cet appareil ;
    la toute première fois, l'année écoulée). Sur demande seulement : jamais en arrière-plan. */
@@ -89,11 +90,11 @@ let mbNews = null;
 SHEETS["mb-new"] = mod => {
   const n = mbNews, lab = esc(label(mod));
   if (!n) return "";
-  const head = `<h2 id="sheetTitle">Nouvelles sorties</h2><p class="hint">Ce que tes artistes reliés dans ${lab} ont publié depuis ta dernière vérification, selon MusicBrainz. Rien n'est vérifié sans toi.</p>`;
-  if (n.done < n.total) return head + `<p class="hint" role="status">${n.done} sur ${n.total} artistes…</p>`;
+  const head = `<h2 id="sheetTitle">${tr`Nouvelles sorties`}</h2><p class="hint">${tr`Ce que tes artistes reliés dans ${lab} ont publié depuis ta dernière vérification, selon MusicBrainz. Rien n'est vérifié sans toi.`}</p>`;
+  if (n.done < n.total) return head + `<p class="hint" role="status">${tr`${n.done} sur ${n.total} artistes…`}</p>`;
   const inst = S().modules[mod], have = new Set(inst.entries.filter(x => x.mb && x.mb.rg).map(x => x.mb.rg));
-  return head + (n.items.length ? `<ul class="plain mb-albums">${n.items.map(x => `<li class="item" data-rg="${esc(x.album.id)}" data-a="${esc(x.aid)}"><span>${coverImg(x.album.id)}</span><div><b>${esc(x.album.title)}</b><div class="meta"><span>${esc(x.artist)}</span><span>${esc(x.album.date)}</span><span>${esc(x.album.type)}</span></div></div>${have.has(x.album.id) ? `<span class="hint">déjà là</span>` : `<button class="btn sm" data-act="mb-new-add">ajouter</button>`}</li>`).join("")}</ul>` : `<p class="empty">Rien de neuf. Le silence est aussi une nouvelle.</p>`)
-    + (n.failed ? `<p class="hint">${n.failed} artiste${n.failed > 1 ? "s" : ""} sans réponse : réessaie plus tard.</p>` : "");
+  return head + (n.items.length ? `<ul class="plain mb-albums">${n.items.map(x => `<li class="item" data-rg="${esc(x.album.id)}" data-a="${esc(x.aid)}"><span>${coverImg(x.album.id)}</span><div><b>${esc(x.album.title)}</b><div class="meta"><span>${esc(x.artist)}</span><span>${esc(x.album.date)}</span><span>${esc(x.album.type)}</span></div></div>${have.has(x.album.id) ? `<span class="hint">${tr`déjà là`}</span>` : `<button class="btn sm" data-act="mb-new-add">${tr`ajouter`}</button>`}</li>`).join("")}</ul>` : `<p class="empty">${tr`Rien de neuf. Le silence est aussi une nouvelle.`}</p>`)
+    + (n.failed ? `<p class="hint">${trn(n.failed, "{0} artiste sans réponse : réessaie plus tard.", "{0} artistes sans réponse : réessaie plus tard.")}</p>` : "");
 };
 CLICK["mb-new"] = async el => {
   const mod = modOf(el), inst = S().modules[mod], artists = new Map();
@@ -118,5 +119,5 @@ CLICK["mb-new-add"] = el => {
   const li = el.closest("[data-rg]"), x = mbNews && mbNews.items.find(i => i.album.id === li.dataset.rg); if (!x) return;
   const n = saveCollectionItem(S().modules[mbNews.mod], { title: x.artist, subtitle: x.album.title }, uid());
   n.mb = { a: x.aid, rg: x.album.id, ...(x.album.date ? { y: x.album.date.slice(0, 4) } : {}) };
-  site.save(); render(); $("#sheetBody").innerHTML = SHEETS["mb-new"](mbNews.mod); toast(`Ajouté : ${x.artist}, « ${x.album.title} ».`);
+  site.save(); render(); $("#sheetBody").innerHTML = SHEETS["mb-new"](mbNews.mod); toast(tr`Ajouté : ${x.artist}, « ${x.album.title} ».`);
 };

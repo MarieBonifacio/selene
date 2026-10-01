@@ -31,5 +31,7 @@ Premier essai conseillé : créer un compte jetable, le supprimer depuis l'app, 
 ## Politique de confidentialité
 
 `confidentialite.html`, à la racine, publiée avec le site : <https://mariebonifacio.github.io/selene/confidentialite.html>.
-C'est l'adresse à donner à l'App Store et à Google Play. Elle est liée depuis les Réglages. Elle doit suivre le code :
-un nouveau service appelé, une nouvelle donnée gardée, et elle change avec.
+C'est l'adresse à donner à l'App Store et à Google Play. Sa version anglaise, `privacy.html`
+(<https://mariebonifacio.github.io/selene/privacy.html>), dit la même chose ; les Réglages lient celle de la langue de
+l'interface. Elles doivent suivre le code : un nouveau service appelé, une nouvelle donnée gardée, et les deux changent
+avec (`build.test.js` vérifie qu'elles ont les mêmes sections, les mêmes liens, la même date, et nomment chaque service).

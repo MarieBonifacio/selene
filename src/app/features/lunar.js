@@ -1,6 +1,7 @@
 /* Le test lunaire : ton activité suit-elle la lune ? Un test honnête, qui dit quand il n'y a pas assez de données. */
 import { TYPE_UI } from "../registry.js";
 import { esc } from "../lib/dom.js";
+import { tr, trn } from "../i18n/index.js";
 import { isConcordance } from "./concordance.js";
 import { NEW_MOON_REF, SYNODIC, moonName } from "../scene/moon.js";
 import { S } from "../state/site.js";
@@ -32,10 +33,10 @@ export function lunarTest() {
 }
 export function lunarSection() {
   const r = lunarTest();
-  if (!r.enough) return `<section><h3>Lune</h3><p class="hint">Pas assez de matière pour un test honnête : ${r.n} événement${r.n > 1 ? "s" : ""} daté${r.n > 1 ? "s" : ""} au lieu de ${LUNAR_MIN_N} au moins. Reviens quand le corpus aura grandi.</p></section>`;
+  if (!r.enough) return `<section><h3>${tr`Lune`}</h3><p class="hint">${trn(r.n, "Pas assez de matière pour un test honnête : {0} événement daté au lieu de {1} au moins. Reviens quand le corpus aura grandi.", "Pas assez de matière pour un test honnête : {0} événements datés au lieu de {1} au moins. Reviens quand le corpus aura grandi.", LUNAR_MIN_N)}</p></section>`;
   const sig = r.p < .05;
-  return `<section><h3>Lune</h3><p class="hint">Test de Rayleigh sur ${r.n} événement${r.n > 1 ? "s" : ""} daté${r.n > 1 ? "s" : ""} : ta lune éclaire-t-elle vraiment ton activité, ou est-ce une histoire qu'on se raconte ? Un seul test compte ici ; le refaire ailleurs sous d'autres formes userait sa valeur (tests multiples).</p>
+  return `<section><h3>${tr`Lune`}</h3><p class="hint">${trn(r.n, "Test de Rayleigh sur {0} événement daté : ta lune éclaire-t-elle vraiment ton activité, ou est-ce une histoire qu'on se raconte ? Un seul test compte ici ; le refaire ailleurs sous d'autres formes userait sa valeur (tests multiples).", "Test de Rayleigh sur {0} événements datés : ta lune éclaire-t-elle vraiment ton activité, ou est-ce une histoire qu'on se raconte ? Un seul test compte ici ; le refaire ailleurs sous d'autres formes userait sa valeur (tests multiples).")}</p>
     <p>${sig
-      ? `Concentration autour de ${esc(moonName(r.meanPhase).toLowerCase())} (R = ${r.R.toFixed(2)}, p = ${r.p.toFixed(3)}). Ce n'est pas rien, mais ce n'est pas une preuve : une seule corrélation, jamais répétée ni contrôlée.`
-      : `Rien de concentré (R = ${r.R.toFixed(2)}, p = ${r.p.toFixed(3)}) : la répartition ne se distingue pas de l'uniforme. La lune plaide non coupable, ce qui est aussi une réponse.`}</p></section>`;
+      ? tr`Concentration autour de ${esc(moonName(r.meanPhase).toLowerCase())} (R = ${r.R.toFixed(2)}, p = ${r.p.toFixed(3)}). Ce n'est pas rien, mais ce n'est pas une preuve : une seule corrélation, jamais répétée ni contrôlée.`
+      : tr`Rien de concentré (R = ${r.R.toFixed(2)}, p = ${r.p.toFixed(3)}) : la répartition ne se distingue pas de l'uniforme. La lune plaide non coupable, ce qui est aussi une réponse.`}</p></section>`;
 }

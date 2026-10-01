@@ -1,9 +1,11 @@
 /* La Fenêtre : le lieu choisi, la météo (Open-Meteo), la scène du moment (soleil, lune, temps) et ses réglages. */
 import { platform } from "../../platform.js";
-import { WEATHER, approxPlace, moonPlacement, moonPosition, nextCrossing, seasonAt, skyEvents, skyMotion, skyScene, sunPosition, weatherState, windName } from "../../core/sky.js";
+import { WEATHER, approxPlace, moonPlacement, moonPosition, nextCrossing, seasonAt, skyEvents, skyMotion, skyScene, sunPosition, weatherState } from "../../core/sky.js";
 import { CLICK } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { fmt, todayISO } from "../lib/format.js";
+import { tr, uiLocale } from "../i18n/index.js";
+import { eclipseText, windText } from "../lib/labels.js";
 import { render } from "../shell/render.js";
 import { S, site } from "../state/site.js";
 
@@ -52,12 +54,12 @@ export function skyWatch() {
 }
 /* Une pluie d'étoiles filantes ou une éclipse, en une phrase : ce qu'on verra vraiment, sans promettre le ciel. */
 function skyEventText(ev, illum) {
-  if (ev.kind === "shower") return `${ev.name} ${ev.inDays ? "demain soir" : "cette nuit"} : jusqu'à ${ev.zhr} météores par heure sous un ciel parfaitement noir, bien moins en ville${illum > .6 ? " ; la lune en effacera la plupart" : ""}.`;
-  const when = ev.inDays === 0 ? "aujourd'hui" : ev.inDays === 1 ? "demain" : `dans ${ev.inDays} jours (${fmt(ev.date, { day: "numeric", month: "long" })})`;
-  const what = ev.type === "pénombre" ? `Éclipse de Lune par la pénombre ${when} : un voile léger, à peine perceptible` : `Éclipse ${ev.type} de ${ev.body === "soleil" ? "Soleil" : "Lune"} ${when}${ev.note ? ` : ${ev.note}` : ""}`;
-  return `${what}${ev.body === "soleil" ? ". Jamais sans lunettes d'éclipse." : "."}`;
+  if (ev.kind === "shower") return tr`${tr(ev.name)} ${ev.inDays ? tr`demain soir` : tr`cette nuit`} : jusqu'à ${ev.zhr} météores par heure sous un ciel parfaitement noir, bien moins en ville` + (illum > .6 ? tr` ; la lune en effacera la plupart` : "") + ".";
+  const when = ev.inDays === 0 ? tr`aujourd'hui` : ev.inDays === 1 ? tr`demain` : tr`dans ${ev.inDays} jours (${fmt(ev.date, { day: "numeric", month: "long" })})`;
+  return `${eclipseText(ev.body, ev.type, when)}${ev.note ? ` : ${tr(ev.note)}` : ""}${ev.body === "soleil" ? tr`. Jamais sans lunettes d'éclipse.` : "."}`;
 }
-export const hm = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
+// « 14 h 05 » : la typographie française de l'heure ; les autres langues gardent la leur (« 14:05 »).
+export const hm = t => { const loc = uiLocale(), s = new Date(t).toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" }); return loc.startsWith("fr") ? s.replace(":", " h ") : s; };
 /* La scène du moment : couleurs (skyScene), place de la lune, et ce qu'on peut en dire en une ligne. */
 export function sceneNow(m) {
   const c = skyConf(), place = c ? { lat: +c.lat, lon: +c.lon } : approxPlace(), t = Date.now(), dark = uiDark();
@@ -68,15 +70,15 @@ export function sceneNow(m) {
   let moonAt;
   // Le mouvement suit le vent mesuré ; sans météo, une brise d'ouest légère, celle qui domine sous nos latitudes.
   const mo = skyMotion(w ? { wind: w.wind, dir: w.dir, precip: w.precip, lat: place.lat } : { lat: place.lat });
-  if (weather) facts.push(`${Math.round(w.temp)} °C · ${WEATHER[weather]}`);
+  if (weather) facts.push(`${Math.round(w.temp)} °C · ${tr(WEATHER[weather])}`);
   // Le vent, en clair ; sur un écran étroit, la ligne s'en passe (le ciel le montre déjà en bougeant).
-  const wind = w && weather && Number.isFinite(w.dir) && w.wind >= 1 ? `vent ${windName(w.dir)} ${Math.round(w.wind)} km/h` : "";
+  const wind = w && weather && Number.isFinite(w.dir) && w.wind >= 1 ? windText(w.dir, Math.round(w.wind)) : "";
   if (c) {
     const ev = nextCrossing(sunPosition, t, place.lat, place.lon, -0.833);
-    if (ev) facts.push(`${ev.rising ? "lever" : "coucher"} ${hm(ev.at)}`);
+    if (ev) facts.push(ev.rising ? tr`lever ${hm(ev.at)}` : tr`coucher ${hm(ev.at)}`);
     if (c.realMoon !== false) {
       moonAt = moonPlacement(moonPosition(t, place.lat, place.lon), place.lat) || false;
-      if (moonAt === false) { const r = nextCrossing(moonPosition, t, place.lat, place.lon, 0); facts.push(`la lune est sous l'horizon${r ? `, lever vers ${hm(r.at)}` : ""}`); }
+      if (moonAt === false) { const r = nextCrossing(moonPosition, t, place.lat, place.lon, 0); facts.push(r ? tr`la lune est sous l'horizon, lever vers ${hm(r.at)}` : tr`la lune est sous l'horizon`); }
     }
   }
   const line = facts.join(" · ");
@@ -94,33 +96,33 @@ export function sceneNow(m) {
 let skyResults = [];
  // résultats de la dernière recherche de ville (propres à l'appareil, oubliés au rechargement)
 export function skySettingsHTML() {
-  const c = skyConf(), f = v => (+v).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  return `<section id="ciel"><h4>Ciel</h4><p class="hint">La scène de l'accueil montre le dehors réel : l'heure par le soleil, la lune à sa place, le temps qu'il fait. Sans lieu, l'heure est estimée d'après le fuseau horaire (à trois quarts d'heure près), et il n'y a pas de météo.</p>
-    ${c ? `<p class="row" style="margin:0 0 10px">Lieu : <b>${esc(c.name)}</b> <span class="hint" style="margin:0">(${f(c.lat)} ; ${f(c.lon)}, arrondis à une dizaine de kilomètres)</span><button class="btn ghost sm" data-act="sky-clear">retirer</button></p>` : ""}
-    <div class="row"><input id="skyCity" placeholder="${c ? "Changer de ville…" : "Une ville…"}" aria-label="Ville" autocomplete="off" style="max-width:260px"><button class="btn sm" data-act="sky-search">Chercher</button><button class="btn ghost sm" data-act="sky-locate">Utiliser ma position</button></div>
-    ${skyResults.length ? `<ul class="plain" style="margin-top:8px">${skyResults.map((r, i) => `<li class="item"><span></span><div>${esc(r.name)}</div><button class="btn sm" data-act="sky-pick" data-i="${i}">Choisir</button></li>`).join("")}</ul>` : ""}
-    ${c ? `<label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:400"><input type="checkbox" data-act="sky-weather" ${c.weather !== false ? "checked" : ""}>Météo en direct</label>
-    <label style="display:flex;gap:8px;align-items:center;margin-top:6px;font-weight:400"><input type="checkbox" data-act="sky-moon" ${c.realMoon !== false ? "checked" : ""}>La lune à sa vraie place (sinon, toujours dans le ciel)</label>` : ""}
-    <label style="display:flex;gap:8px;align-items:center;margin-top:6px;font-weight:400"><input type="checkbox" data-act="sky-live" ${skyLive() ? "checked" : ""}>Ciel vivant : nuages, brume, pluie ou neige bougent au rythme du vent mesuré (sur cet appareil ; immobile si le système demande moins d'animations)</label>
-    <p class="hint" style="margin-top:10px">La météo et la recherche de ville passent par Open-Meteo : le service voit ce lieu arrondi et l'adresse de l'appareil, rien d'autre.</p></section>`;
+  const c = skyConf(), f = v => (+v).toLocaleString(uiLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return `<section id="ciel"><h4>${tr`Ciel`}</h4><p class="hint">${tr`La scène de l'accueil montre le dehors réel : l'heure par le soleil, la lune à sa place, le temps qu'il fait. Sans lieu, l'heure est estimée d'après le fuseau horaire (à trois quarts d'heure près), et il n'y a pas de météo.`}</p>
+    ${c ? `<p class="row" style="margin:0 0 10px">${tr`Lieu : ${`<b>${esc(c.name)}</b>`}`} <span class="hint" style="margin:0">${tr`(${f(c.lat)} ; ${f(c.lon)}, arrondis à une dizaine de kilomètres)`}</span><button class="btn ghost sm" data-act="sky-clear">${tr`retirer`}</button></p>` : ""}
+    <div class="row"><input id="skyCity" placeholder="${c ? tr`Changer de ville…` : tr`Une ville…`}" aria-label="${tr`Ville`}" autocomplete="off" style="max-width:260px"><button class="btn sm" data-act="sky-search">${tr`Chercher`}</button><button class="btn ghost sm" data-act="sky-locate">${tr`Utiliser ma position`}</button></div>
+    ${skyResults.length ? `<ul class="plain" style="margin-top:8px">${skyResults.map((r, i) => `<li class="item"><span></span><div>${esc(r.name)}</div><button class="btn sm" data-act="sky-pick" data-i="${i}">${tr`Choisir`}</button></li>`).join("")}</ul>` : ""}
+    ${c ? `<label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:400"><input type="checkbox" data-act="sky-weather" ${c.weather !== false ? "checked" : ""}>${tr`Météo en direct`}</label>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:6px;font-weight:400"><input type="checkbox" data-act="sky-moon" ${c.realMoon !== false ? "checked" : ""}>${tr`La lune à sa vraie place (sinon, toujours dans le ciel)`}</label>` : ""}
+    <label style="display:flex;gap:8px;align-items:center;margin-top:6px;font-weight:400"><input type="checkbox" data-act="sky-live" ${skyLive() ? "checked" : ""}>${tr`Ciel vivant : nuages, brume, pluie ou neige bougent au rythme du vent mesuré (sur cet appareil ; immobile si le système demande moins d'animations)`}</label>
+    <p class="hint" style="margin-top:10px">${tr`La météo et la recherche de ville passent par Open-Meteo : le service voit ce lieu arrondi et l'adresse de l'appareil, rien d'autre.`}</p></section>`;
 }
 function setSky(name, lat, lon) {
   const old = skyConf() || {}, r1 = v => Math.round(v * 10) / 10;
   S().config.sky = { name: String(name).slice(0, 80), lat: r1(lat), lon: r1(lon), weather: old.weather !== false, realMoon: old.realMoon !== false };
   skyResults = []; site.save(); render(); refreshWeather(true);
-  toast("Lieu gardé. Le ciel de l'accueil est désormais celui d'ici.");
+  toast(tr`Lieu gardé. Le ciel de l'accueil est désormais celui d'ici.`);
 }
 export async function skySearch() {
   const q = ($("#skyCity") || {}).value;
   if (!q || !q.trim()) return;
   try {
-    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q.trim())}&count=5&language=fr&format=json`);
+    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q.trim())}&count=5&language=${uiLocale().split("-")[0]}&format=json`); // les noms de lieux dans la langue de l'interface
     const j = r.ok ? await r.json() : {};
     skyResults = (j.results || []).filter(x => Number.isFinite(+x.latitude) && Number.isFinite(+x.longitude)).slice(0, 5)
       .map(x => ({ name: [x.name, x.admin1, x.country].filter(Boolean).join(", ").slice(0, 80), lat: +x.latitude, lon: +x.longitude }));
-    if (!skyResults.length) toast("Aucun lieu de ce nom. Une ville plus grande, à côté, fera l'affaire.");
+    if (!skyResults.length) toast(tr`Aucun lieu de ce nom. Une ville plus grande, à côté, fera l'affaire.`);
     render();
-  } catch { toast("Recherche impossible : hors ligne, ou le service ne répond pas."); }
+  } catch { toast(tr`Recherche impossible : hors ligne, ou le service ne répond pas.`); }
 }
 /* Les jetons de scène, posés sur la scène seule : l'interface autour ne bouge pas avec l'heure. */
 export function heroStyle(sc, dark) {
@@ -133,8 +135,8 @@ export function heroStyle(sc, dark) {
 CLICK["sky-search"] = () => skySearch();
 CLICK["sky-pick"] = el => { const r = skyResults[+el.dataset.i]; if (r) setSky(r.name, r.lat, r.lon); };
 CLICK["sky-locate"] = () => {
-  if (!navigator.geolocation) return toast("Ce navigateur ne donne pas sa position. Une ville fera l'affaire.");
-  navigator.geolocation.getCurrentPosition(p => setSky("Ma position", p.coords.latitude, p.coords.longitude),
-    () => toast("Position refusée ou indisponible. Une ville fera l'affaire."), { maximumAge: 3600000, timeout: 15000 });
+  if (!navigator.geolocation) return toast(tr`Ce navigateur ne donne pas sa position. Une ville fera l'affaire.`);
+  navigator.geolocation.getCurrentPosition(p => setSky(tr`Ma position`, p.coords.latitude, p.coords.longitude),
+    () => toast(tr`Position refusée ou indisponible. Une ville fera l'affaire.`), { maximumAge: 3600000, timeout: 15000 });
 };
-CLICK["sky-clear"] = () => { delete S().config.sky; platform.storage.remove(WEATHER_KEY); site.save(); render(); toast("Lieu retiré : l'heure redevient estimée, sans météo."); };
+CLICK["sky-clear"] = () => { delete S().config.sky; platform.storage.remove(WEATHER_KEY); site.save(); render(); toast(tr`Lieu retiré : l'heure redevient estimée, sans météo.`); };

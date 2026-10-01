@@ -35,7 +35,12 @@ export function sourceKey(src) {
   const u = src.url && normalizeUrl(src.url);
   return u ? "url:" + u.replace(/^https?:\/\/(www\.)?/, "") : null;
 }
-const CROSSREF_KIND = { "journal-article": "article", "book": "livre", "monograph": "livre", "edited-book": "livre", "book-chapter": "chapitre",
+/* Les genres qu'une source reçoit (Crossref, Zotero, une page lue) : des mots français, traduits par l'interface à
+   l'affichage et quand la source est gardée (son étiquette est alors dans la langue du moment, puis à la personne).
+   Un type inconnu passe tel quel. scripts/i18n.mjs relève cette liste ; tests/i18n.test.js vérifie que les tables
+   ci-dessous et celle de zotero.js n'en sortent pas. */
+export const SOURCE_KINDS = ["article", "livre", "chapitre", "prépublication", "actes", "thèse", "rapport", "notice", "page", "vidéo", "podcast"];
+export const CROSSREF_KIND = { "journal-article": "article", "book": "livre", "monograph": "livre", "edited-book": "livre", "book-chapter": "chapitre",
   "posted-content": "prépublication", "proceedings-article": "actes", "dissertation": "thèse", "report": "rapport", "reference-entry": "notice" };
 const partsDate = p => { const d = p && p["date-parts"] && p["date-parts"][0]; if (!d || !d[0]) return ""; return [String(d[0]).padStart(4, "0"), ...d.slice(1, 3).map(x => String(x).padStart(2, "0"))].join("-"); };
 const people = list => { const n = (list || []).map(a => clip(a.name || [a.given, a.family].filter(Boolean).join(" "), 80)).filter(Boolean); return n.length > 3 ? n.slice(0, 3).join(", ") + " et al." : n.join(", "); };

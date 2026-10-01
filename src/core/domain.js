@@ -1,6 +1,9 @@
 /* Business operations shared by the UI and assistant. No DOM or storage access. */
+/* Une erreur du noyau : son message en français (l'assistant le lit, les journaux le gardent) et un code stable, que
+   l'interface traduit (CORE_ERRORS, src/app/lib/labels.js) ; `args`, les valeurs que la phrase traduite reprend. */
+export const coreError = (code, message, args) => Object.assign(new Error(message), { code, ...(args ? { args } : {}) });
 const requireText = (value, label, max) => {
-  if (typeof value !== "string" || !value.trim()) throw new Error(`${label} manquant`);
+  if (typeof value !== "string" || !value.trim()) throw coreError("required", `${label} : à remplir`, { label });
   return value.trim().slice(0, max);
 };
 export const validDate = value => {
@@ -21,7 +24,7 @@ export function addTask(tasks, input, id, date) {
 }
 export function setTaskDone(tasks, id, done, date) {
   const t = tasks.find(x => x.id === id);
-  if (!t) throw new Error("Tâche introuvable");
+  if (!t) throw coreError("task-missing", "Tâche introuvable");
   t.done = !!done;
   t.doneAt = done ? date : null;
   if (done) t.today = false;
@@ -30,8 +33,8 @@ export function setTaskDone(tasks, id, done, date) {
 /* `elsewhere` : tâches du jour déjà choisies dans les autres modules de tâches (le plafond de trois est global). */
 export function setTaskToday(tasks, id, value, elsewhere = 0) {
   const t = tasks.find(x => x.id === id);
-  if (!t) throw new Error("Tâche introuvable");
-  if (value && !t.today && tasks.filter(x => !x.done && x.today).length + elsewhere >= 3) throw new Error("Trois tâches du jour maximum");
+  if (!t) throw coreError("task-missing", "Tâche introuvable");
+  if (value && !t.today && tasks.filter(x => !x.done && x.today).length + elsewhere >= 3) throw coreError("today-limit", "Trois tâches du jour maximum");
   t.today = !!value;
   return t;
 }
@@ -42,9 +45,9 @@ export function addCapture(items, text, id, date) {
 }
 export function addBudgetEntry(entries, input, id, defaultDate) {
   const amount = Number(input.amount);
-  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Montant invalide");
+  if (!Number.isFinite(amount) || amount <= 0) throw coreError("amount", "Montant invalide");
   const date = input.date || defaultDate;
-  if (!validDate(date)) throw new Error("Date invalide");
+  if (!validDate(date)) throw coreError("date", "Date invalide");
   const entry = {
     id, type: input.type === "revenu" ? "revenu" : "dépense",
     amount, cat: input.cat || "", note: input.note || "", date
@@ -375,7 +378,7 @@ export function stampOrigin(inst, before, note, from) {
 export const LINK_TYPES = { derive: "dérive de", contredit: "contredit", echo: "fait écho à", documente: "documente" };
 export const LINK_REF = /^[a-z0-9][a-z0-9-]{0,63}\/[^/\s]{1,64}$/;
 export function addLink(item, to, type, id, date) {
-  if (!Object.hasOwn(LINK_TYPES, type) || typeof to !== "string" || !LINK_REF.test(to)) throw new Error("Lien invalide");
+  if (!Object.hasOwn(LINK_TYPES, type) || typeof to !== "string" || !LINK_REF.test(to)) throw coreError("link", "Lien invalide");
   if ((item.links || []).some(l => l.to === to && l.type === type)) return null; // déjà lié ainsi
   const link = { id, to, type, date };
   item.links = [...(item.links || []), link];
@@ -405,13 +408,13 @@ export function editFragmentText(f, text, date) {
 }
 function numericValue(raw) {
   const value = raw != null && raw !== "" ? Number(raw) : null;
-  if (value !== null && !Number.isFinite(value)) throw new Error("Valeur invalide"); // un NaN contaminerait tous les totaux
+  if (value !== null && !Number.isFinite(value)) throw coreError("value", "Valeur invalide"); // un NaN contaminerait tous les totaux
   return value;
 }
 export function addJournalEntry(instance, input, id, defaultDate) {
   const date = input.date && validDate(input.date) ? input.date : defaultDate;
   const type = MODULE_TYPES[instance.type];
-  if (!type.entry) throw new Error("Ce module ne tient pas de journal");
+  if (!type.entry) throw coreError("no-journal", "Ce module ne tient pas de journal");
   const entry = { id, date, note: input.note || "" };
   type.entry(entry, input);
   instance.entries.push(entry);
@@ -431,12 +434,27 @@ export function slugId(name, existing) {
   while (existing.includes(id) || reservedId(id)) { id = `${base}-${n}`; n++; }
   return id;
 }
-export function createModuleInstance(modules, type, name, id) {
+/* Les textes d'un réglage de module : ceux qu'une traduction `t` change, à la création seulement (ensuite, ce sont les
+   mots de la personne). Le reste (display, entryMode, groups.by…) est une valeur du code et ne bouge pas. Sert aussi
+   au relevé des textes à traduire (scripts/i18n.mjs), qui y passe chaque modèle et chaque type. */
+const CONFIG_TEXTS = ["unitLabel", "categoryLabel", "scrapsLabel", "statusLabel", "addLabel", "description", "placeholder", "groupLabel", "catLabel", "outdoor"];
+export function localizeConfig(c, t) {
+  for (const k of CONFIG_TEXTS) if (typeof c[k] === "string" && c[k]) c[k] = t(c[k]);
+  for (const k of ["statuses", "cats"]) if (Array.isArray(c[k])) c[k] = c[k].map(x => typeof x === "string" && x ? t(x) : x);
+  if (c.fields && typeof c.fields === "object") for (const k of Object.keys(c.fields)) if (typeof c.fields[k] === "string" && c.fields[k]) c.fields[k] = t(c.fields[k]);
+  for (const x of Array.isArray(c.stations) ? c.stations : []) if (x && typeof x.name === "string" && x.name) x.name = t(x.name);
+  for (const x of Array.isArray(c.types) ? c.types : []) if (x && typeof x.label === "string" && x.label) x.label = t(x.label);
+  return c;
+}
+/* `t` : la traduction des réglages par défaut du type, dans la langue de l'interface (voir localizeConfig). */
+export function createModuleInstance(modules, type, name, id, t = null) {
   const label = requireText(name, "Nom du module", 60);
-  if (reservedId(id)) throw new Error("Identifiant réservé");
-  if (Object.hasOwn(modules, id)) throw new Error("Identifiant déjà utilisé");
-  if (!Object.hasOwn(MODULE_TYPES, type)) throw new Error("Type de module inconnu");
-  return (modules[id] = { type, label, ...MODULE_TYPES[type].defaults() });
+  if (reservedId(id)) throw coreError("id-reserved", "Identifiant réservé");
+  if (Object.hasOwn(modules, id)) throw coreError("id-taken", "Identifiant déjà utilisé");
+  if (!Object.hasOwn(MODULE_TYPES, type)) throw coreError("type-unknown", "Type de module inconnu");
+  const inst = { type, label, ...MODULE_TYPES[type].defaults() };
+  if (t) localizeConfig(inst.config, t);
+  return (modules[id] = inst);
 }
 /* Modèles proposés au premier lancement et à la création : un type et quelques réglages de départ.
    Génériques par principe (aucun contenu personnel) ; `hint` dit à quoi il sert. */
@@ -474,15 +492,16 @@ export const MODULE_TEMPLATES = [
     config: { types: [] } },
   { id: "carnet", name: "Carnet", type: "notes", hint: "Des notes datées, gardées ou rangées ailleurs ensuite" }
 ];
-/* Crée un module depuis un modèle : les réglages du modèle complètent ceux du type (un niveau de profondeur). */
-export function createFromTemplate(modules, tpl, name, id) {
-  const inst = createModuleInstance(modules, tpl.type, name, id);
+/* Crée un module depuis un modèle : les réglages du modèle complètent ceux du type (un niveau de profondeur). Un modèle
+   traduit arrive déjà traduit (localizeConfig) ; `t` traduit les réglages par défaut du type. */
+export function createFromTemplate(modules, tpl, name, id, t = null) {
+  const inst = createModuleInstance(modules, tpl.type, name, id, t);
   for (const [k, v] of Object.entries(JSON.parse(JSON.stringify(tpl.config || {}))))
     inst.config[k] = v && typeof v === "object" && !Array.isArray(v) && inst.config[k] && typeof inst.config[k] === "object" ? { ...inst.config[k], ...v } : v;
   return inst;
 }
 export function deleteModuleInstance(modules, moduleList, id) {
-  if (!Object.hasOwn(modules, id)) throw new Error("Module introuvable");
+  if (!Object.hasOwn(modules, id)) throw coreError("module-missing", "Module introuvable");
   delete modules[id];
   const i = moduleList.findIndex(m => m.id === id);
   if (i >= 0) moduleList.splice(i, 1);

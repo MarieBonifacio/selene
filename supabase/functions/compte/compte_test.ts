@@ -71,5 +71,6 @@ Deno.test("panne : le compte n'est jamais effacé avant ses données ; un nouvel
   assert(w.comptes.has(ELLE), "données pas toutes effacées : le compte reste, on peut réessayer");
   const w2 = monde(ENV, { panne: "auth" });
   const r = await appel(w2.m, { action: "supprimer", confirmation: "supprimer" }, { jeton: "jeton-elle" });
-  assertEquals(r.status, 503); assert((await r.json()).erreur.includes("compte non supprimé"));
+  assertEquals(r.status, 503);
+  const j = await r.json(); assert(j.erreur.includes("compte non supprimé")); assertEquals(j.code, "compte-non-supprime");
 });

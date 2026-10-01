@@ -10,7 +10,7 @@ export function zotKeyInfo(j) {
   const u = (j.access && j.access.user) || {};
   return { userID: j.userID, username: String(j.username || "").slice(0, 100), library: !!u.library, write: !!u.write };
 }
-const ZOT_KIND = { journalArticle: "article", magazineArticle: "article", newspaperArticle: "article", book: "livre", bookSection: "chapitre",
+export const ZOT_KIND = { journalArticle: "article", magazineArticle: "article", newspaperArticle: "article", book: "livre", bookSection: "chapitre",
   thesis: "thèse", report: "rapport", preprint: "prépublication", conferencePaper: "actes", webpage: "page", blogPost: "page",
   videoRecording: "vidéo", podcast: "podcast", encyclopediaArticle: "notice", dictionaryEntry: "notice" };
 const zotText = (v, n) => { const t = String(v ?? "").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t; };

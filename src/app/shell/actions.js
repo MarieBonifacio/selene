@@ -2,9 +2,11 @@
    installation de modules. */
 import { platform } from "../../platform.js";
 import { parseBackup } from "../../core/backup.js";
-import { MODULE_TYPES, createFromTemplate, inboxId, slugId } from "../../core/domain.js";
+import { MODULE_TYPES, createFromTemplate, inboxId, localizeConfig, slugId } from "../../core/domain.js";
 import { CHANGE, CLICK, TYPE_UI, VIEWS } from "../registry.js";
 import { $, PAGE, pageSize, toast } from "../lib/dom.js";
+import { tr } from "../i18n/index.js";
+import { CORE_ERRORS, errMsg } from "../lib/labels.js";
 import { assistantCall, assistantSetCle, sendChat } from "../features/assistant.js";
 import { bridgeSave } from "../features/bridge.js";
 import { NOTIFY_KEY, notifyConf } from "../features/digest.js";
@@ -25,12 +27,12 @@ export const idOf = el => el.closest("[data-id]")?.dataset.id;
 /* Capture rapide, depuis l'accueil ou depuis la feuille « Capturer » (barre basse du téléphone). */
 function capture(inp = $("#capIn")) {
   if (!inp || !inp.value.trim()) return;
-  const id = inboxId(S().modules); if (!id) return toast("Aucune boîte de réception : voir Réglages.");
+  const id = inboxId(S().modules); if (!id) return toast(tr`Aucune boîte de réception : voir Réglages.`);
   const item = addNote(S().modules[id], inp.value); site.save(); inp.value = "";
   platform.haptic();
   if (inp.id === "capSheetIn") { saveDraft("sheet", inp); closeSheet(); } // fermée avant le message, qui passerait dessous
   render();
-  afterCapture(id, item, "Gardé. Tu peux oublier, c'est écrit.");
+  afterCapture(id, item, tr`Gardé. Tu peux oublier, c'est écrit.`);
 }
 function entryAdd(id) {
   const inst = S().modules[id], ui = TYPE_UI[inst.type];
@@ -42,19 +44,20 @@ CLICK["page-more"] = el => { const k = el.dataset.k; pageSize[k] = (pageSize[k] 
 CLICK["entry-add"] = el => entryAdd(el.dataset.mod);
 CLICK["entry-del"] = el => removeWithUndo(el.dataset.mod, "entries", idOf(el));
 CLICK["mod-down"] = el => moveMod(el, 1);
-/* Ajoute un module (depuis un modèle ou un type vide), actif et partagé avec l'assistant. */
+/* Ajoute un module (depuis un modèle, déjà traduit par localTemplate, ou un type vide), actif et partagé avec l'assistant.
+   Ses réglages de départ sont écrits dans la langue de l'interface. */
 export function addModule(tpl, name) {
   if (tpl.type === "programme") {
-    const defaults = { ...MODULE_TYPES.programme.defaults().config, ...tpl.config };
-    return openForm("Choisir ton sport ou ta pratique", [
-      { n: "name", l: "Nom du sport ou de la pratique", req: true },
-      { n: "weeks", l: "Durée en semaines (1 à 520, proposition modifiable)", t: "number", req: true },
-      { n: "perWeek", l: "Séances par semaine (1 à 7, proposition modifiable)", t: "number", req: true },
-      { n: "unitLabel", l: "Unité suivie (min, km, longueurs…)", req: true }
+    const defaults = { ...localizeConfig(MODULE_TYPES.programme.defaults().config, tr), ...tpl.config };
+    return openForm(tr`Choisir ton sport ou ta pratique`, [
+      { n: "name", l: tr`Nom du sport ou de la pratique`, req: true },
+      { n: "weeks", l: tr`Durée en semaines (1 à 520, proposition modifiable)`, t: "number", req: true },
+      { n: "perWeek", l: tr`Séances par semaine (1 à 7, proposition modifiable)`, t: "number", req: true },
+      { n: "unitLabel", l: tr`Unité suivie (min, km, longueurs…)`, req: true }
     ], { name: name === tpl.name ? "" : name, ...defaults }, v => {
       const weeks = Number(v.weeks), perWeek = Number(v.perWeek), unitLabel = v.unitLabel.trim();
       if (!v.name.trim() || !unitLabel || !Number.isInteger(weeks) || weeks < 1 || weeks > 520 || !Number.isInteger(perWeek) || perWeek < 1 || perWeek > 7)
-        throw new Error("Indique un nom, une unité, 1 à 520 semaines et 1 à 7 séances par semaine.");
+        throw new Error(tr`Indique un nom, une unité, 1 à 520 semaines et 1 à 7 séances par semaine.`);
       installModule({ ...tpl, config: { ...tpl.config, weeks, perWeek, unitLabel } }, v.name.trim());
     });
   }
@@ -63,17 +66,17 @@ export function addModule(tpl, name) {
 function installModule(tpl, name) {
   try {
     const s = S(), id = slugId(name, [...s.config.modules.map(x => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
-    createFromTemplate(s.modules, tpl, name, id);
+    createFromTemplate(s.modules, tpl, name, id, tr);
     s.config.modules.push({ id, on: true });
     s.config.assistant.share[id] = true;
-    site.save(); render(); toast(`Module « ${name} » créé.`);
-  } catch (e) { toast(e.message); }
+    site.save(); render(); toast(tr`Module « ${name} » créé.`);
+  } catch (e) { toast(errMsg(e)); }
 }
 export function moveMod(el, d) { const ms = S().config.modules, i = +el.closest("[data-i]").dataset.i, j = i + d; if (j < 0 || j >= ms.length) return; [ms[i], ms[j]] = [ms[j], ms[i]]; site.save(); render(); }
 /* Lance une action de CLICK ou de CHANGE. Une action qui échoue, tout de suite ou plus tard (une promesse rejetée), le
    dit : un clic sans aucun effet visible est la pire des réponses, on ne sait ni quoi réessayer ni quoi signaler. */
 export function runAction(table, name, ...args) {
-  const failed = err => { console.error(`Action « ${name} »`, err); toast(`Cette action n'a pas abouti : ${(err && err.message) || err}`); };
+  const failed = err => { console.error(`Action « ${name} »`, err); toast(tr`Cette action n'a pas abouti : ${errMsg(err) || String(err)}`); };
   try { const r = table[name](...args); if (r && typeof r.then === "function") r.then(null, failed); } catch (err) { failed(err); }
 }
 document.addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (a && Object.hasOwn(CLICK, a.dataset.act) && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) runAction(CLICK, a.dataset.act, a, e); });
@@ -107,20 +110,20 @@ document.addEventListener("change", e => {
       if (G.rename) G.rename(from, to); // ex. une enveloppe du budget porte le nom du groupe
       if (gFilter[mod] === from) gFilter[mod] = to;
       if (taskFilters[mod] && taskFilters[mod].room === from) taskFilters[mod].room = to;
-      G.store().save(); toast(`« ${from} » s'appelle désormais « ${to} ».`);
+      G.store().save(); toast(tr`« ${from} » s'appelle désormais « ${to} ».`);
     }
     site.save(); el.blur(); render();
   }
   else if (act === "as-key") { // la clé part au serveur, qui la vérifie et la chiffre ; elle ne reste pas dans la page
     const v = el.value.trim(); el.value = ""; el.blur();
-    if (v) assistantCall({ action: "cle", cle: v }).then(r => { assistantSetCle(r); toast("Clé vérifiée et enregistrée."); }, e => toast("Clé non enregistrée : " + e.message)).then(render);
+    if (v) assistantCall({ action: "cle", cle: v }).then(r => { assistantSetCle(r); toast(tr`Clé vérifiée et enregistrée.`); }, e => toast(tr`Clé non enregistrée : ${e.message}`)).then(render);
   }
   else if (act === "as-model") { S().config.assistant.model = el.value; site.save(); render(); }
   else if (act === "as-actions") { S().config.assistant.actions = el.checked; site.save(); render(); }
   else if (act === "as-share") { S().config.assistant.share[el.dataset.k] = el.checked; site.save(); render(); }
   else if (act === "imp") {
     const f = el.files && el.files[0]; if (!f) return;
-    f.text().then(async t => { const d = parseBackup(t); if (!await ask("Remplacer tout l'état actuel par celui du fichier ?")) return; site.replaceAll(d.site); board.replaceAll(d.board); /* le site d'abord : les tâches d'une ancienne sauvegarde y sont versées */ render(); toast("Sauvegarde importée."); }).catch(() => toast("Fichier illisible ou pas une sauvegarde Selene.")).finally(() => { el.value = ""; });
+    f.text().then(async t => { const d = parseBackup(t); if (!await ask(tr`Remplacer tout l'état actuel par celui du fichier ?`)) return; site.replaceAll(d.site); board.replaceAll(d.board); /* le site d'abord : les tâches d'une ancienne sauvegarde y sont versées */ render(); toast(tr`Sauvegarde importée.`); }).catch(e => toast(e && Object.hasOwn(CORE_ERRORS, e.code) ? errMsg(e) : tr`Fichier illisible ou pas une sauvegarde Selene.`)).finally(() => { el.value = ""; });
   }
   else if (act === "mod-group") {
     const m = S().config.modules[+el.closest("[data-i]").dataset.i], v = el.value.trim().slice(0, 40);
@@ -144,15 +147,15 @@ document.addEventListener("change", e => {
     if (!el.checked) { c.on = false; return save(); }
     platform.notifications.permission().then(p => {
       c.on = p === "granted"; save();
-      toast(c.on ? `Chaque matin à ${c.at}, s'il y a quelque chose. Sinon, la paix.` : "Notifications refusées : elles s'autorisent dans les réglages du téléphone.");
-    }, () => { el.checked = false; toast("Les notifications ne sont pas disponibles ici."); });
+      toast(c.on ? tr`Chaque matin à ${c.at}, s'il y a quelque chose. Sinon, la paix.` : tr`Notifications refusées : elles s'autorisent dans les réglages du téléphone.`);
+    }, () => { el.checked = false; toast(tr`Les notifications ne sont pas disponibles ici.`); });
   }
-  else if (act === "open-on") { platform.storage.set("selene-open", el.value); toast(el.value === "last" ? "L'app rouvrira le dernier espace où tu étais." : "L'app s'ouvrira sur l'accueil."); }
+  else if (act === "open-on") { platform.storage.set("selene-open", el.value); toast(el.value === "last" ? tr`L'app rouvrira le dernier espace où tu étais.` : tr`L'app s'ouvrira sur l'accueil.`); }
   else if (act === "mod-on") { S().config.modules[+el.closest("[data-i]").dataset.i].on = el.checked; site.save(); render(); }
   else if (act === "mod-label") {
     const s = S(), m = s.config.modules[+el.closest("[data-i]").dataset.i], v = el.value.trim();
     if (s.modules[m.id]) { s.modules[m.id].label = v || s.modules[m.id].label; }
-    else if (v && v !== MODULE_DEFS[m.id]) s.config.labels[m.id] = v; else delete s.config.labels[m.id];
+    else if (v && v !== MODULE_DEFS[m.id] && v !== tr(MODULE_DEFS[m.id] || "")) s.config.labels[m.id] = v; else delete s.config.labels[m.id];
     site.save(); render();
   }
   else if (el.dataset.setMod) {

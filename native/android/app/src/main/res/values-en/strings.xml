@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- Le widget en anglais (docs/i18n.md) : Android prend ce dossier quand la langue du système est l'anglais ; ce qui
+     n'y est pas vient de values/ (le français, ou un nom qui ne se traduit pas). Les lignes du widget, elles, viennent
+     de la page, dans la langue de l'interface. -->
+<resources>
+    <string name="widget_description">Today\'s moon and the three things waiting for you.</string>
+    <string name="widget_empty">Nothing urgent. The moon will see to it.</string>
+    <string name="widget_capture">Capture</string>
+</resources>

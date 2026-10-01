@@ -16,7 +16,10 @@ dans la WebView du système (WebView2 sous Windows), avec un petit cœur Rust (`
 - **`Ctrl+Alt+S`, de n'importe où** : la fenêtre revient et la capture s'ouvre. Si une autre app a déjà pris ce
   raccourci, Selene démarre quand même, sans lui.
 - **La zone de notification** : une icône et son menu (Capturer, Ouvrir Selene, Quitter). Fermer la fenêtre l'y
-  range, pour que le raccourci reste actif ; *Quitter* pousse d'abord ce qui attend.
+  range, pour que le raccourci reste actif ; *Quitter* pousse d'abord ce qui attend. Le menu parle la langue du système
+  (anglais ou français ; le français sinon) : il existe avant la page, et ne peut pas lui demander la sienne. Sous
+  Windows, `GetUserDefaultUILanguage` (kernel32, appelée directement, sans crate) ; ailleurs, `LC_ALL`, `LC_MESSAGES`,
+  `LANG`.
 - **Les liens `selene://`** : `selene://capture` ouvre la capture ; `selene://share?url=…&title=…&text=…` dépose un
   lien dans la boîte de réception, comme le partage d'Android ou de la PWA (même quand le lien lance l'app).
 - **Le glisser-déposer** est laissé à la page (Tauri ne l'intercepte pas).

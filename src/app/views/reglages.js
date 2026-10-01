@@ -8,6 +8,8 @@ import { CLICK, TYPE_UI, VIEWS } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { downloadFile } from "../lib/download.js";
 import { todayISO } from "../lib/format.js";
+import { N_, collate, langChoices, tr, uiLang } from "../i18n/index.js";
+import { localTemplate } from "../lib/labels.js";
 import { agendaSettingsHTML } from "../features/agenda.js";
 import { assistantKnown } from "../features/assistant.js";
 import { notifySettingsHTML } from "../features/digest.js";
@@ -16,7 +18,7 @@ import { shareSettingsHTML } from "../features/share.js";
 import { zotSettingsHTML } from "../features/zotero.js";
 import { gcfg, groupBy, grouperFor } from "../modules/groups.js";
 import { skySettingsHTML } from "../scene/sky.js";
-import { authReady, authSession } from "../services/auth.js";
+import { authReady, authSession, deleteWord } from "../services/auth.js";
 import { passeurSettingsHTML } from "../services/passeur.js";
 import { addModule, moveMod } from "../shell/actions.js";
 import { SYSTEM, openOn, routeOf } from "../shell/nav.js";
@@ -25,9 +27,11 @@ import { roman, sigil, sigilPicker, tintOf } from "../shell/sigils.js";
 import { S, board, enabled, label, site } from "../state/site.js";
 import { openForm } from "../ui/dialogs.js";
 import { tip } from "../ui/tips.js";
-import { CHAPTERS, GLOSSARY, GUIDE, TEXTS, TIPS } from "./reglages-aide.js";
+import { CHAPTERS, GUIDE, TEXTS, TIPS, glossary } from "./reglages-aide.js";
 
-const PALETTES = [["nigredo", "Nigredo, mousse", "#6f9a68"], ["albedo", "Albedo, lichen", "#aab7a6"], ["citrinitas", "Citrinitas, résine", "#c99a3c"], ["rubedo", "Rubedo, amanite", "#c0554a"]];
+const PALETTES = [["nigredo", N_("Nigredo, mousse"), "#6f9a68"], ["albedo", N_("Albedo, lichen"), "#aab7a6"], ["citrinitas", N_("Citrinitas, résine"), "#c99a3c"], ["rubedo", N_("Rubedo, amanite"), "#c0554a"]];
+// La politique de confidentialité, dans la langue de l'interface quand elle existe (confidentialite.html, privacy.html).
+const privacyUrl = () => `https://mariebonifacio.github.io/selene/${uiLang() === "en" ? "privacy" : "confidentialite"}.html`;
 const signedIn = () => hosted() && authReady() && authSession;
 
 /* ---- briques : chapitre, sous-titre, champ, marque « cet appareil » ---- */
@@ -53,7 +57,7 @@ const GUIDE_KEY = "selene-reglages-guide";
 const guideOpen = () => { try { return platform.storage.get(GUIDE_KEY) !== "vu"; } catch { return true; } };
 function guideHTML() {
   return `<aside class="reg-guide" aria-label="${esc(GUIDE.title)}"><p class="reg-guide-t">${esc(GUIDE.title)}</p><p>${esc(GUIDE.body)}</p><p>${esc(GUIDE.device)}</p>
-    <details id="reg-lexique"><summary>${esc(GUIDE.glossaryTitle)}</summary><dl class="lex">${GLOSSARY.map(([t, d]) => `<dt>${esc(t)}</dt><dd>${esc(d)}</dd>`).join("")}</dl></details>
+    <details id="reg-lexique"><summary>${esc(GUIDE.glossaryTitle)}</summary><dl class="lex">${glossary().map(([t, d]) => `<dt>${esc(t)}</dt><dd>${esc(d)}</dd>`).join("")}</dl></details>
     <p class="hint">${esc(GUIDE.wit)}</p><button type="button" class="btn sm" data-act="reg-guide" data-v="vu">${esc(GUIDE.dismiss)}</button></aside>`;
 }
 function tocHTML() {
@@ -62,22 +66,27 @@ function tocHTML() {
 }
 
 /* ---- I. Apparence et rythme ---- */
+/* La langue de l'interface, suivie par le compte (synchronisée) ; vide : celle de l'appareil. Chaque langue sous son
+   propre nom (on cherche « English », pas « Anglais »). Absente tant qu'une seule langue est proposée (i18n). */
+const langField = c => langChoices().length < 2 ? "<span></span>"
+  : field(tr`Langue`, id => `<select aria-labelledby="${id}" data-set="config.lang">${opt("", tr`Langue de l'appareil`, c.lang || "")}${langChoices().map(([k, n]) => `<option value="${k}" lang="${k}" ${c.lang === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>`, { tip: TIPS.langue });
 function apparenceHTML(c) {
-  return `${sub("Palette", TIPS.palette)}<p class="hint">Quatre étapes de l'Œuvre, prises dans le sous-bois.</p>
-    <div class="swatches">${PALETTES.map(([id, n, col]) => `<button class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}"><i style="background:${col}"></i>${n}</button>`).join("")}</div>
-    <div class="field-row" style="margin-top:18px">${field("Mode", id => `<select aria-labelledby="${id}" data-set="config.mode">${opt("auto", "Suivre l'appareil", c.mode)}${opt("dark", "Toujours sombre", c.mode)}${opt("light", "Toujours clair", c.mode)}${opt("sun", "Suivre le soleil", c.mode)}</select>`, { tip: TIPS.mode })}
-    ${field("Nom affiché", id => `<input aria-labelledby="${id}" data-set="config.name" value="${esc(c.name)}">`, { tip: TIPS.name })}</div>
-    <div class="field-row" style="margin-top:12px">${field("Ouvrir sur", id => `<select aria-labelledby="${id}" data-act="open-on">${opt("accueil", "L'accueil", openOn())}${opt("last", "Là où j'en étais", openOn())}</select>`, { tip: TIPS.openOn, local: true })}<span></span></div>
+  return `${sub(tr`Palette`, TIPS.palette)}<p class="hint">${tr`Quatre étapes de l'Œuvre, prises dans le sous-bois.`}</p>
+    <div class="swatches">${PALETTES.map(([id, n, col]) => `<button class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}"><i style="background:${col}"></i>${tr(n)}</button>`).join("")}</div>
+    <div class="field-row" style="margin-top:18px">${field(tr`Mode`, id => `<select aria-labelledby="${id}" data-set="config.mode">${opt("auto", tr`Suivre l'appareil`, c.mode)}${opt("dark", tr`Toujours sombre`, c.mode)}${opt("light", tr`Toujours clair`, c.mode)}${opt("sun", tr`Suivre le soleil`, c.mode)}</select>`, { tip: TIPS.mode })}
+    ${field(tr`Nom affiché`, id => `<input aria-labelledby="${id}" data-set="config.name" value="${esc(c.name)}">`, { tip: TIPS.name })}</div>
+    <div class="field-row" style="margin-top:12px">${field(tr`Ouvrir sur`, id => `<select aria-labelledby="${id}" data-act="open-on">${opt("accueil", tr`L'accueil`, openOn())}${opt("last", tr`Là où j'en étais`, openOn())}</select>`, { tip: TIPS.openOn, local: true })}${langField(c)}</div>
     ${notifySettingsHTML()}`;
 }
 
 /* ---- II. Espaces : une ligne par espace, ses réglages dessous, puis de quoi en créer ---- */
-const typeName = type => String(MODULE_TYPES[type]?.label || "").split(" (")[0]; // « Collection (éléments…) » → « Collection »
+// « Collection (éléments…) » → « Collection » : coupé en français, puis traduit (une traduction ne garde pas forcément la parenthèse).
+const typeName = type => tr(String(MODULE_TYPES[type]?.label || "").split(" (")[0]);
 function modBlock(s, m, i) {
   const name = label(m.id), inst = s.modules[m.id], sys = SYSTEM.includes(m.id);
   const settings = enabled(m.id) && (inst || grouperFor(m.id));
   return `<div class="modblock ${tintOf(m.id)}${m.on ? "" : " off"}">
-    <div class="set mod" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="Activer ${esc(name)}"><div class="mod-name">${sigil(m.id)}<input data-act="mod-label" value="${esc(name)}" aria-label="Nom du module"></div>${sys ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="${esc(TEXTS.domaine)}" aria-label="Domaine de ${esc(name)}">`}<div class="row">${inst ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="Supprimer définitivement" title="Supprimer définitivement">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="Descendre">↓</button></div></div>
+    <div class="set mod" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="${tr`Activer ${esc(name)}`}"><div class="mod-name">${sigil(m.id)}<input data-act="mod-label" value="${esc(name)}" aria-label="${tr`Nom du module`}"></div>${sys ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="${esc(TEXTS.domaine)}" aria-label="${tr`Domaine de ${esc(name)}`}">`}<div class="row">${inst ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="${tr`Supprimer définitivement`}" title="${tr`Supprimer définitivement`}">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="${tr`Descendre`}">↓</button></div></div>
     ${settings ? `<details id="mreg-${esc(m.id)}" data-mod="${esc(m.id)}" class="mreg"><summary aria-label="${esc(TEXTS.regler(name))}">${esc(TEXTS.reglerShort)}${inst ? `<span class="mreg-type">${esc(typeName(inst.type))}</span>` : ""}</summary><div class="mreg-body">${moduleSettingsHTML(m.id)}</div></details>`
       : sys && m.on ? `<p class="mreg-note"><button type="button" class="btn ghost sm" data-act="reg-goto" data-to="reg-assistant">› ${esc(TEXTS.assistantHere)}</button></p>` : ""}
   </div>`;
@@ -91,10 +100,10 @@ function espacesHTML(s, c) {
     <div class="modlist">${c.modules.map((m, i) => modBlock(s, m, i)).join("")}</div>
     <details id="mod-new" class="newmod"><summary class="btn sm">+ ${esc(TEXTS.create)}</summary><div class="newmod-body">
       ${sub(TEXTS.fromTemplate, TIPS.creer)}<p class="hint">${esc(TEXTS.fromTemplateHint)}</p>
-      <div class="tpl-grid">${MODULE_TEMPLATES.map(t => `<div class="tpl"><div><b>${esc(t.name)}</b><p class="hint">${esc(t.hint)}</p></div><button type="button" class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}" aria-label="${esc(TEXTS.addAria(t.name))}">${esc(TEXTS.add)}</button></div>`).join("")}</div>
+      <div class="tpl-grid">${MODULE_TEMPLATES.map(t => `<div class="tpl"><div><b>${esc(tr(t.name))}</b><p class="hint">${esc(tr(t.hint))}</p></div><button type="button" class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}" aria-label="${esc(TEXTS.addAria(tr(t.name)))}">${esc(TEXTS.add)}</button></div>`).join("")}</div>
       ${sub(TEXTS.custom)}<p class="hint">${esc(TEXTS.customHint)}</p>
-      <div class="field-row"><label>Modèle ou type<select id="newModType"><optgroup label="Modèles">${MODULE_TEMPLATES.map(t => `<option value="tpl:${esc(t.id)}" title="${esc(t.hint)}">${esc(t.name)}</option>`).join("")}</optgroup><optgroup label="Types vides">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}" title="${esc(t.label)}">${esc(typeName(k))}</option>`).join("")}</optgroup></select></label>
-      <label>Nom<input id="newModName" placeholder="Nom du modèle si vide"></label></div>
+      <div class="field-row"><label>${tr`Modèle ou type`}<select id="newModType"><optgroup label="${tr`Modèles`}">${MODULE_TEMPLATES.map(t => `<option value="tpl:${esc(t.id)}" title="${esc(tr(t.hint))}">${esc(tr(t.name))}</option>`).join("")}</optgroup><optgroup label="${tr`Types vides`}">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}" title="${esc(tr(t.label))}">${esc(typeName(k))}</option>`).join("")}</optgroup></select></label>
+      <label>${tr`Nom`}<input id="newModName" placeholder="${tr`Nom du modèle si vide`}"></label></div>
       <button class="btn sm" data-act="mod-add" style="margin-top:8px">${esc(TEXTS.add)}</button></div></details>`;
 }
 
@@ -102,12 +111,12 @@ function espacesHTML(s, c) {
 function assistantHTML(s) {
   if (!enabled("assistant")) return `<p class="empty">${esc(TEXTS.assistantOff)}</p><button type="button" class="btn sm" data-act="reg-goto" data-to="reg-espaces">${esc(TEXTS.toEspaces)}</button>`;
   const a = s.config.assistant, known = assistantKnown();
-  return `<section id="assistant-cfg"><p class="hint">Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.</p>
-    <div class="field-row">${hosted() ? field(`Clé API Anthropic${known?.cle ? ` (enregistrée : ${known.indice || ""})` : ""}`, id => `<input type="password" aria-labelledby="${id}" data-act="as-key" value="" placeholder="${known?.cle ? "Coller une autre clé pour la remplacer" : "sk-ant-…"}" autocomplete="off">`, { tip: TIPS.assistantKey }) : ""}
-    ${field("Modèle", id => `<select aria-labelledby="${id}" data-act="as-model">${[["claude-haiku-4-5-20251001", "Haiku 4.5, rapide et peu cher"], ["claude-sonnet-5", "Sonnet 5, équilibré"], ["claude-opus-5-5", "Opus 5.5, le plus capable"]].map(([k, l]) => opt(k, l, a.model)).join("")}</select>`, { tip: TIPS.assistantModel })}</div>
-    <div class="row" style="margin-top:12px"><label class="check-l"><input type="checkbox" data-act="as-actions" ${a.actions ? "checked" : ""}>Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)</label>${tip(TIPS.assistantActions, about("Autoriser Claude à modifier le tableau de bord"))}</div>
-    <div class="fld-h" style="margin:16px 0 6px"><span>Ce que Claude peut lire</span>${tip(TIPS.assistantShare, about("Ce que Claude peut lire"))}</div><div class="row">${Object.keys(a.share).filter(enabled).map(k => `<label class="check-l"><input type="checkbox" data-act="as-share" data-k="${esc(k)}" ${a.share[k] ? "checked" : ""}>${esc(label(k))}</label>`).join("")}</div>
-    ${hosted() && known?.cle ? `<button class="btn ghost sm" data-act="as-forget" style="margin-top:10px">Oublier la clé (sur tous tes appareils)</button>` : ""}</section>`;
+  return `<section id="assistant-cfg"><p class="hint">${tr`Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.`}</p>
+    <div class="field-row">${hosted() ? field(known?.cle ? tr`Clé API Anthropic (enregistrée : ${known.indice || ""})` : tr`Clé API Anthropic`, id => `<input type="password" aria-labelledby="${id}" data-act="as-key" value="" placeholder="${known?.cle ? tr`Coller une autre clé pour la remplacer` : "sk-ant-…"}" autocomplete="off">`, { tip: TIPS.assistantKey }) : ""}
+    ${field(tr`Modèle`, id => `<select aria-labelledby="${id}" data-act="as-model">${[["claude-haiku-4-5-20251001", tr`Haiku 4.5, rapide et peu cher`], ["claude-sonnet-5", tr`Sonnet 5, équilibré`], ["claude-opus-5-5", tr`Opus 5.5, le plus capable`]].map(([k, l]) => opt(k, l, a.model)).join("")}</select>`, { tip: TIPS.assistantModel })}</div>
+    <div class="row" style="margin-top:12px"><label class="check-l"><input type="checkbox" data-act="as-actions" ${a.actions ? "checked" : ""}>${tr`Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)`}</label>${tip(TIPS.assistantActions, about(tr`Autoriser Claude à modifier le tableau de bord`))}</div>
+    <div class="fld-h" style="margin:16px 0 6px"><span>${tr`Ce que Claude peut lire`}</span>${tip(TIPS.assistantShare, about(tr`Ce que Claude peut lire`))}</div><div class="row">${Object.keys(a.share).filter(enabled).map(k => `<label class="check-l"><input type="checkbox" data-act="as-share" data-k="${esc(k)}" ${a.share[k] ? "checked" : ""}>${esc(label(k))}</label>`).join("")}</div>
+    ${hosted() && known?.cle ? `<button class="btn ghost sm" data-act="as-forget" style="margin-top:10px">${tr`Oublier la clé (sur tous tes appareils)`}</button>` : ""}</section>`;
 }
 
 /* ---- V. Connexions : du plus simple (un favori) au plus exigeant (le passeur, puis ce qui en dépend) ---- */
@@ -118,22 +127,22 @@ function connexionsHTML() {
 
 /* ---- VI. Compte et données : la sauvegarde d'abord, l'irréversible en dernier ---- */
 function compteHTML() {
-  return `<section>${sub("Sauvegarde")}<p class="hint">Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.</p>
-    <div class="row"><button class="btn" data-act="exp">Exporter</button><label class="btn" style="display:inline-block;font-weight:500">Importer<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label>${tip(TIPS.importer, about("Importer"))}</div></section>
-  ${signedIn() ? `<section>${sub("Compte")}<p class="hint">Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.</p>
-    <button class="btn ghost" data-act="auth-out">Se déconnecter</button></section>
+  return `<section>${sub(tr`Sauvegarde`)}<p class="hint">${tr`Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.`}</p>
+    <div class="row"><button class="btn" data-act="exp">${tr`Exporter`}</button><label class="btn" style="display:inline-block;font-weight:500">${tr`Importer`}<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label>${tip(TIPS.importer, about(tr`Importer`))}</div></section>
+  ${signedIn() ? `<section>${sub(tr`Compte`)}<p class="hint">${tr`Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.`}</p>
+    <button class="btn ghost" data-act="auth-out">${tr`Se déconnecter`}</button></section>
   <section class="danger">${sub(TEXTS.danger)}
-    <details id="auth-delete"><summary class="hint">Supprimer mon compte</summary>
-      <p class="hint" style="margin-top:8px">Définitif : ton compte, tout ton tableau de bord sur le serveur et ta clé d'assistant sont effacés, puis cet appareil est vidé. Tes autres appareils perdent l'accès. Exporte d'abord une sauvegarde (plus haut) si tu veux garder quelque chose. Politique de confidentialité : <a href="https://mariebonifacio.github.io/selene/confidentialite.html" target="_blank" rel="noopener">ce que Selene garde, et où</a>.</p>
-      <div class="field-row"><label>Tape « supprimer » pour confirmer<input id="authDelIn" autocomplete="off" autocapitalize="off" spellcheck="false"></label><span></span></div>
-      <button class="btn sm" data-act="auth-delete" style="margin-top:8px;color:var(--alarm)">Supprimer définitivement</button></details></section>` : ""}
-  <p class="hint" style="margin-top:24px"><a href="https://mariebonifacio.github.io/selene/confidentialite.html" target="_blank" rel="noopener">Confidentialité</a> : aucun traceur, aucune publicité ; ce que Selene garde, où, et comment tout effacer.</p>`;
+    <details id="auth-delete"><summary class="hint">${tr`Supprimer mon compte`}</summary>
+      <p class="hint" style="margin-top:8px">${tr`Définitif : ton compte, tout ton tableau de bord sur le serveur et ta clé d'assistant sont effacés, puis cet appareil est vidé. Tes autres appareils perdent l'accès. Exporte d'abord une sauvegarde (plus haut) si tu veux garder quelque chose. Politique de confidentialité : ${`<a href="${privacyUrl()}" target="_blank" rel="noopener">${tr`ce que Selene garde, et où`}</a>`}.`}</p>
+      <div class="field-row"><label>${tr`Tape « ${deleteWord()} » pour confirmer`}<input id="authDelIn" autocomplete="off" autocapitalize="off" spellcheck="false"></label><span></span></div>
+      <button class="btn sm" data-act="auth-delete" style="margin-top:8px;color:var(--alarm)">${tr`Supprimer définitivement`}</button></details></section>` : ""}
+  <p class="hint" style="margin-top:24px">${tr`${`<a href="${privacyUrl()}" target="_blank" rel="noopener">${tr`Confidentialité`}</a>`} : aucun traceur, aucune publicité ; ce que Selene garde, où, et comment tout effacer.`}</p>`;
 }
 
 VIEWS.reglages = () => {
   const s = S(), c = s.config;
   setTimeout(markChapter, 0); // une fois la page posée : le sommaire marque le chapitre à l'écran
-  return `<h2>Réglages</h2><p class="hint">Tout ici s'applique immédiatement.</p>
+  return `<h2>${tr`Réglages`}</h2><p class="hint">${tr`Tout ici s'applique immédiatement.`}</p>
   ${guideOpen() ? guideHTML() : ""}
   <div class="reg">${tocHTML()}<div class="reg-body">
     ${chapter("reg-apparence", apparenceHTML(c))}
@@ -148,16 +157,16 @@ VIEWS.reglages = () => {
    Réglages, et dans la feuille qu'ouvre « régler » depuis le module lui-même. */
 export function moduleSettingsHTML(mod) {
   const s = S(), inst = s.modules[mod], G = grouperFor(mod), g = G ? gcfg(mod) : null, by = G ? groupBy(mod) : null;
-  const names = G && G.renamable.includes(by) ? [...new Set(G.items().map(it => it[by]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr")) : [];
+  const names = G && G.renamable.includes(by) ? [...new Set(G.items().map(it => it[by]).filter(Boolean))].sort(collate) : [];
   return `<div class="fld-h" style="margin:0 0 6px"><span>${esc(TEXTS.sigil)}</span>${tip(TIPS.sigil, about(TEXTS.sigil))}</div>${sigilPicker(mod)}
         ${inst ? TYPE_UI[inst.type].settings(mod, inst) : ""}
-        ${G ? `<div class="row" style="margin-top:0"><label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="grp-on" ${g.on ? "checked" : ""}>Regrouper en pourcentage</label>${tip(TIPS.grouper, about("Regrouper en pourcentage"))}</div>
+        ${G ? `<div class="row" style="margin-top:0"><label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="grp-on" ${g.on ? "checked" : ""}>${tr`Regrouper en pourcentage`}</label>${tip(TIPS.grouper, about(tr`Regrouper en pourcentage`))}</div>
           ${g.on ? `<div class="field-row" style="margin-top:8px">
-            <label>Regrouper par<select data-act="grp-by">${Object.entries(G.fields).map(([k, l]) => `<option value="${esc(k)}" ${by === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
-            <label>Trier par<select data-act="grp-sort"><option value="name" ${g.sort === "name" ? "selected" : ""}>Ordre naturel</option><option value="pct" ${g.sort === "pct" ? "selected" : ""}>Le plus avancé d'abord</option><option value="left" ${g.sort === "left" ? "selected" : ""}>Le plus en retard d'abord</option></select></label></div>
-            <div class="field-row" style="margin-top:8px"><label>Titre du bloc<input data-act="grp-title" value="${esc(g.title)}" placeholder="Par ${esc(G.fields[by].toLowerCase())}"></label>
-            <label style="display:flex;gap:8px;align-items:center;align-self:end;padding-bottom:10px"><input type="checkbox" data-act="grp-hide" ${g.hideDone ? "checked" : ""}>Masquer les groupes à 100 %</label></div>
-            ${names.length ? `<details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">Renommer ou fusionner des ${esc(G.fields[by].toLowerCase())}s</summary><p class="hint" style="margin:6px 0">Donne le même nom à deux groupes pour les fusionner.</p>${names.map(n => `<div class="set" style="grid-template-columns:1fr"><input data-act="grp-rename" data-old="${esc(n)}" value="${esc(n)}" aria-label="Renommer ${esc(n)}"></div>`).join("")}</details>` : ""}
+            <label>${tr`Regrouper par`}<select data-act="grp-by">${Object.entries(G.fields).map(([k, l]) => `<option value="${esc(k)}" ${by === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
+            <label>${tr`Trier par`}<select data-act="grp-sort"><option value="name" ${g.sort === "name" ? "selected" : ""}>${tr`Ordre naturel`}</option><option value="pct" ${g.sort === "pct" ? "selected" : ""}>${tr`Le plus avancé d'abord`}</option><option value="left" ${g.sort === "left" ? "selected" : ""}>${tr`Le plus en retard d'abord`}</option></select></label></div>
+            <div class="field-row" style="margin-top:8px"><label>${tr`Titre du bloc`}<input data-act="grp-title" value="${esc(g.title)}" placeholder="${tr`Par ${esc(G.fields[by].toLowerCase())}`}"></label>
+            <label style="display:flex;gap:8px;align-items:center;align-self:end;padding-bottom:10px"><input type="checkbox" data-act="grp-hide" ${g.hideDone ? "checked" : ""}>${tr`Masquer les groupes à 100 %`}</label></div>
+            ${names.length ? `<details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">${tr`Renommer ou fusionner les groupes par ${esc(G.fields[by].toLowerCase())}`}</summary><p class="hint" style="margin:6px 0">${tr`Donne le même nom à deux groupes pour les fusionner.`}</p>${names.map(n => `<div class="set" style="grid-template-columns:1fr"><input data-act="grp-rename" data-old="${esc(n)}" value="${esc(n)}" aria-label="${tr`Renommer ${esc(n)}`}"></div>`).join("")}</details>` : ""}
            ` : ""}` : ""}`;
 }
 /* Le sommaire suit la lecture : le chapitre dont le titre a passé le haut de l'écran est marqué (le dernier, une fois
@@ -184,22 +193,22 @@ CLICK["reg-guide"] = el => {
   if (!el.dataset.v) { const g = document.querySelector(".reg-guide"); if (g) g.scrollIntoView({ block: "nearest" }); }
 };
 CLICK["mod-add"] = () => {
-  const choice = $("#newModType").value, tpl = MODULE_TEMPLATES.find(t => "tpl:" + t.id === choice);
+  const choice = $("#newModType").value, found = MODULE_TEMPLATES.find(t => "tpl:" + t.id === choice), tpl = found ? localTemplate(found) : null;
   const name = $("#newModName").value.trim() || (tpl ? tpl.name : "");
-  if (!name) return toast("Donne un nom au module.");
+  if (!name) return toast(tr`Donne un nom au module.`);
   addModule(tpl || { type: choice }, name);
 };
-CLICK["tpl-add"] = el => { const tpl = MODULE_TEMPLATES.find(t => t.id === el.dataset.tpl); if (tpl) addModule(tpl, tpl.name); };
+CLICK["tpl-add"] = el => { const found = MODULE_TEMPLATES.find(t => t.id === el.dataset.tpl); if (found) { const tpl = localTemplate(found); addModule(tpl, tpl.name); } };
 CLICK["mod-del"] = el => {
   const id = el.dataset.mod, name = label(id);
-  openForm(`Supprimer « ${name} »`, [{ n: "confirm", l: `Retape « ${name} » pour confirmer la suppression définitive de ses données.`, req: true }], {}, v => {
-    if (v.confirm !== name) return toast("Nom incorrect, rien n'a été supprimé.");
+  openForm(tr`Supprimer « ${name} »`, [{ n: "confirm", l: tr`Retape « ${name} » pour confirmer la suppression définitive de ses données.`, req: true }], {}, v => {
+    if (v.confirm !== name) return toast(tr`Nom incorrect, rien n'a été supprimé.`);
     const s = S();
     deleteModuleInstance(s.modules, s.config.modules, id);
     delete s.config.labels[id]; delete s.config.groups[id]; delete s.config.assistant.share[id];
-    site.save(); render(); toast(`« ${name} » supprimé.`);
+    site.save(); render(); toast(tr`« ${name} » supprimé.`);
   });
 };
-CLICK["exp"] = () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, site.data), "application/json", "Sauvegarde Selene");
+CLICK["exp"] = () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, site.data), "application/json", tr`Sauvegarde Selene`);
 CLICK["pal"] = el => { S().config.palette = el.dataset.p; site.save(); render(); };
 CLICK["mod-up"] = el => moveMod(el, -1);

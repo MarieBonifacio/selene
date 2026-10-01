@@ -8,6 +8,8 @@ import { addBudgetEntry, addCapture, addTask, inboxId, setTaskDone } from "../..
 import { CLICK, TYPE_UI, VIEWS } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { fmt, money, todayISO, uid } from "../lib/format.js";
+import { LANGS, tr, uiLang } from "../i18n/index.js";
+import { serverError } from "../services/erreurs.js";
 import { allTasks } from "../modules/taches.js";
 import { moon } from "../scene/moon.js";
 import { SUPABASE_ANON_KEY, SUPABASE_URL, authReady, authRefreshIfNeeded, authSession } from "../services/auth.js";
@@ -26,18 +28,18 @@ const ASSISTANT_PAUSE = 5 * 60000;
 export const assistantSetCle = r => { assistantCle = r; }; // l'état de la clé, tel que le serveur vient de le dire
 const assistantPret = () => hosted() && authReady() && !!authSession && assistantEtat !== "absent";
 export async function assistantCall(corps, delai = 15000) {
-  if (!assistantPret()) throw new Error("L'assistant hébergé demande d'être connectée à ton compte.");
-  const s = await authRefreshIfNeeded(); if (!s) throw new Error("Session expirée : reconnecte-toi.");
+  if (!assistantPret()) throw new Error(tr`L'assistant hébergé demande d'être connectée à ton compte.`);
+  const s = await authRefreshIfNeeded(); if (!s) throw new Error(tr`Session expirée : reconnecte-toi.`);
   const ac = new AbortController(), t = setTimeout(() => ac.abort(), delai);
   let r;
   try {
     r = await fetch(`${SUPABASE_URL}/functions/v1/assistant`, { method: "POST", signal: ac.signal,
       headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${s.access_token}` }, body: JSON.stringify(corps) });
-  } catch { throw new Error(ac.signal.aborted ? "Claude met trop de temps à répondre." : "Assistant injoignable (hors ligne, ou pas encore déployé)."); } finally { clearTimeout(t); }
+  } catch { throw new Error(ac.signal.aborted ? tr`Claude met trop de temps à répondre.` : tr`Assistant injoignable (hors ligne, ou pas encore déployé).`); } finally { clearTimeout(t); }
   const j = await r.json().catch(() => ({}));
-  if (r.status === 404 || r.status === 503) { assistantEtat = "absent"; throw new Error(r.status === 404 ? "Assistant non déployé (voir docs/assistant.md)." : j.erreur || "Assistant non configuré."); }
+  if (r.status === 404 || r.status === 503) { assistantEtat = "absent"; throw r.status === 404 ? new Error(tr`Assistant non déployé (voir docs/assistant.md).`) : serverError(j, tr`Assistant non configuré.`); }
   if (j && j.code === "sans-cle") assistantCle = { cle: false };
-  if (!r.ok) throw new Error(j.erreur || `erreur ${r.status}`);
+  if (!r.ok) throw serverError(j, tr`erreur ${r.status}`);
   assistantEtat = "ok";
   return j;
 }
@@ -51,7 +53,7 @@ function assistantRefresh() {
     try {
       if (ancienne) {
         try { assistantCle = await assistantCall({ action: "cle", cle: ancienne }); platform.secrets.remove("selene-api-key"); }
-        catch (e) { if (/refuse|clé d'API/.test(e.message)) platform.secrets.remove("selene-api-key"); throw e; }
+        catch (e) { if (["cle", "pas-une-cle"].includes(e.code) || /refuse|clé d'API/.test(e.message)) platform.secrets.remove("selene-api-key"); throw e; } // le texte : un serveur d'avant les codes
       } else assistantCle = await assistantCall({ action: "etat" });
     } catch { assistantPause = Date.now() + ASSISTANT_PAUSE; } finally { assistantDemande = null; }
     // Redessiner seulement si la réponse change ce qu'on montre : jamais après un échec, qui ne change rien (et un
@@ -74,7 +76,7 @@ export function contextText() {
 }
 function instructions() {
   const name = S().config.name || "Selene", permitted = availableTools();
-  return `Tu es Claude, intégré au tableau de bord personnel de ${name}. Réponds en français, en prose, sans listes à puces sauf demande. Ton : lucide, cynique, humour noir glissé naturellement ; jamais de morale non demandée ni de justifications répétées. Chaque fois que tu emploies un terme technique ou savant, définis-le brièvement dans la phrase. Sois concis. Tu ne connais que les données ci-dessous, qu'elle a choisi de partager ; tu n'as aucun souvenir d'autres conversations.
+  return `Tu es Claude, intégré au tableau de bord personnel de ${name}. Réponds en ${LANGS[uiLang()].frName}, en prose, sans listes à puces sauf demande. Ton : lucide, cynique, humour noir glissé naturellement ; jamais de morale non demandée ni de justifications répétées. Chaque fois que tu emploies un terme technique ou savant, définis-le brièvement dans la phrase. Sois concis. Tu ne connais que les données ci-dessous, qu'elle a choisi de partager ; tu n'as aucun souvenir d'autres conversations.
 ${permitted.length ? "Tu peux agir uniquement avec les outils fournis. Ne les utilise que si c'est demandé ou clairement voulu, et dis ce que tu as fait." : "Tu ne peux rien modifier : conseille seulement."}
 
 DONNÉES DU TABLEAU DE BORD
@@ -108,7 +110,7 @@ async function askAPI(history) {
   const msgs = history.map(m => ({ role: m.role, content: m.content })); let out = "";
   for (let round = 0; round < 5; round++) {
     const data = await assistantCall({ action: "message", requete: { model: a.model, max_tokens: 1500, system: instructions(), messages: msgs, ...(tools.length ? { tools } : {}) } }, 70000);
-    if (!Array.isArray(data.content)) throw new Error("réponse inattendue de l'API");
+    if (!Array.isArray(data.content)) throw new Error(tr`réponse inattendue de l'API`);
     const txt = data.content.filter(b => b.type === "text").map(b => b.text).join("\n"); if (txt) out += (out ? "\n\n" : "") + txt;
     if (data.stop_reason !== "tool_use") break;
     msgs.push({ role: "assistant", content: data.content });
@@ -116,7 +118,7 @@ async function askAPI(history) {
     for (const b of data.content.filter(b => b.type === "tool_use")) { let r; try { r = await executeTool(b.name, b.input || {}); } catch (e) { r = "Erreur : " + e.message; } results.push({ type: "tool_result", tool_use_id: b.id, content: String(r) }); }
     msgs.push({ role: "user", content: results });
   }
-  return out || "(pas de réponse)";
+  return out || tr`(pas de réponse)`;
 }
 async function askSample(history, onText) {
   const input = [{ role: "user", content: instructions() }, ...history];
@@ -128,7 +130,7 @@ async function askSample(history, onText) {
 const mdLite = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*(?!\s)(.+?)\*/g, "$1<i>$2</i>");
 export async function sendChat(text) {
   if (chatBusy || !text.trim()) return;
-  const b = backend(); if (b !== "sample" && b !== "api") return toast("L'assistant n'est pas branché. Voir Réglages.");
+  const b = backend(); if (b !== "sample" && b !== "api") return toast(tr`L'assistant n'est pas branché. Voir Réglages.`);
   const log = chatLog.get(); log.push({ role: "user", content: text.trim().slice(0, 4000) }); chatLog.set(log); chatBusy = true; if ($("#chatIn")) $("#chatIn").value = ""; render();
   const onText = t => { const p = document.getElementById("pending"); if (p) p.textContent = t; };
   try {
@@ -136,28 +138,28 @@ export async function sendChat(text) {
     const reply = b === "sample" ? await askSample(hist, onText) : await askAPI(hist);
     const l2 = chatLog.get(); l2.push({ role: "assistant", content: reply }); chatLog.set(l2);
   } catch (e) {
-    const code = e && e.code, msg = code === "not_granted" ? "Accès refusé à Claude pour cette page." : code === "rate_limited" ? "Trop de demandes, réessaie dans un moment." : (e && e.message) || "Erreur inconnue.";
+    const code = e && e.code, msg = code === "not_granted" ? tr`Accès refusé à Claude pour cette page.` : code === "rate_limited" ? tr`Trop de demandes, réessaie dans un moment.` : (e && e.message) || tr`Erreur inconnue.`;
     toast(msg);
   }
   chatBusy = false; render();
   const log2 = document.querySelector(".chat"); if (log2) log2.lastElementChild?.scrollIntoView({ block: "nearest" });
 }
 // Une suggestion d'idées pour la première collection affichée en colonnes (un tableau de production).
-const ideaChip = () => { const id = Object.keys(S().modules).find(k => S().modules[k].type === "collection" && S().modules[k].config.display === "colonnes" && enabled(k)); return id ? [`Propose trois idées pour ${label(id)}`] : []; };
+const ideaChip = () => { const id = Object.keys(S().modules).find(k => S().modules[k].type === "collection" && S().modules[k].config.display === "colonnes" && enabled(k)); return id ? [tr`Propose trois idées pour ${label(id)}`] : []; };
 VIEWS.assistant = () => {
   const b = backend(), a = S().config.assistant, log = chatLog.get();
-  const status = b === "sample" ? "Branché via claude.ai : aucune clé requise, la première question te demandera ton accord." : b === "api" ? `Branché via ta clé API, modèle ${esc(a.model)}. Chaque échange est facturé sur ton compte.` : hosted() ? `Pas encore branché. Colle ta clé API dans <a href="#reglages">Réglages</a>.` : "Indisponible dans cette vue.";
-  const shared = Object.entries(a.share).filter(([k, v]) => v && enabled(k)).map(([k]) => label(k)).join(", ") || "rien";
-  return `<div class="row"><h2 style="margin:0">${esc(label("assistant"))}</h2><span class="spacer"></span>${log.length ? `<button class="btn ghost sm" data-act="chat-clear">Effacer la conversation</button>` : ""}</div>
-  <p class="status">${status}<br>Données partagées : ${esc(shared)}. ${a.actions ? "Peut agir sur le tableau de bord." : "Lecture seule."}</p>
+  const status = b === "sample" ? tr`Branché via claude.ai : aucune clé requise, la première question te demandera ton accord.` : b === "api" ? tr`Branché via ta clé API, modèle ${esc(a.model)}. Chaque échange est facturé sur ton compte.` : hosted() ? tr`Pas encore branché. Colle ta clé API dans ${`<a href="#reglages">${tr`Réglages`}</a>`}.` : tr`Indisponible dans cette vue.`;
+  const shared = Object.entries(a.share).filter(([k, v]) => v && enabled(k)).map(([k]) => label(k)).join(", ") || tr`rien`;
+  return `<div class="row"><h2 style="margin:0">${esc(label("assistant"))}</h2><span class="spacer"></span>${log.length ? `<button class="btn ghost sm" data-act="chat-clear">${tr`Effacer la conversation`}</button>` : ""}</div>
+  <p class="status">${status}<br>${tr`Données partagées : ${esc(shared)}.`} ${a.actions ? tr`Peut agir sur le tableau de bord.` : tr`Lecture seule.`}</p>
   <div class="chat">${log.map(m => `<div class="msg ${m.role === "user" ? "user" : "claude"}">${m.role === "user" ? esc(m.content) : mdLite(m.content)}</div>`).join("")}${chatBusy ? `<div class="msg claude" id="pending">…</div>` : ""}</div>
-  ${!log.length ? `<div class="chips">${["Qu'est-ce que je fais aujourd'hui ?", ...(firstOfType("taches") ? [`Fais le point sur ${label(firstOfType("taches"))}`] : []), "Où en est mon budget ce mois-ci ?", ...ideaChip()].map(q => `<button class="btn sm" data-act="chat-chip">${esc(q)}</button>`).join("")}</div>` : ""}
-  <div class="capture"><textarea id="chatIn" data-draft rows="2" placeholder="Écris à Claude…" aria-label="Message" ${b === "sample" || b === "api" ? "" : "disabled"}></textarea><button class="btn acc" data-act="chat-send" ${chatBusy ? "disabled" : ""}>Envoyer</button></div>`;
+  ${!log.length ? `<div class="chips">${[tr`Qu'est-ce que je fais aujourd'hui ?`, ...(firstOfType("taches") ? [tr`Fais le point sur ${label(firstOfType("taches"))}`] : []), tr`Où en est mon budget ce mois-ci ?`, ...ideaChip()].map(q => `<button class="btn sm" data-act="chat-chip">${esc(q)}</button>`).join("")}</div>` : ""}
+  <div class="capture"><textarea id="chatIn" data-draft rows="2" placeholder="${tr`Écris à Claude…`}" aria-label="${tr`Message`}" ${b === "sample" || b === "api" ? "" : "disabled"}></textarea><button class="btn acc" data-act="chat-send" ${chatBusy ? "disabled" : ""}>${tr`Envoyer`}</button></div>`;
 };
 CLICK["chat-send"] = () => { const t = $("#chatIn").value; sendChat(t); };
 CLICK["chat-chip"] = el => sendChat(el.textContent);
-CLICK["chat-clear"] = async () => { if (await ask("Effacer la conversation ?")) { chatLog.set([]); render(); } };
+CLICK["chat-clear"] = async () => { if (await ask(tr`Effacer la conversation ?`)) { chatLog.set([]); render(); } };
 CLICK["as-forget"] = async () => {
-  try { assistantSetCle(await assistantCall({ action: "oublier" })); toast("Clé effacée du serveur."); } catch (e) { toast("Clé non effacée : " + e.message); }
+  try { assistantSetCle(await assistantCall({ action: "oublier" })); toast(tr`Clé effacée du serveur.`); } catch (e) { toast(tr`Clé non effacée : ${e.message}`); }
   render();
 };

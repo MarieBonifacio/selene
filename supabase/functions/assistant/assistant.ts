@@ -7,7 +7,9 @@
    - { action: "cle", cle }        → { cle: true, indice }        après vérification auprès d'Anthropic
    - { action: "oublier" }         → { cle: false }
    - { action: "message", requete: { model, max_tokens, system?, messages, tools? } } → le message d'Anthropic, tel quel
-   { erreur, code? } avec un code HTTP 4xx ou 5xx sinon.
+   { erreur, code, detail? } avec un code HTTP 4xx ou 5xx sinon : erreur, le message en français (pour les versions
+   de l'interface qui ne connaissent pas encore les codes) ; code, stable, que l'interface traduit et dont elle se sert
+   (sans-cle : redemander une clé) ; detail, ce qui précise ou varie (« illisible », le refus d'une requête).
 
    Ouvert à tout compte connecté (chacun paie avec sa clé), depuis une origine listée dans ASSISTANT_ORIGINS.
    Secrets : ASSISTANT_KEY_SECRET (32 octets en base64) ; la base est lue avec la clé serveur du projet. Il ne garde
@@ -91,17 +93,17 @@ const client = (m: Monde, apiKey: string, timeout: number) =>
 export const assistant = (m: Monde) => async (req: Request): Promise<Response> => {
   const origine = origineDe(req, origines(m.env("ASSISTANT_ORIGINS")));
   if (req.method === "OPTIONS") return prevol(origine);
-  if (req.method !== "POST") return reponse({ erreur: "POST seulement" }, 405, origine);
-  if (!origine) return reponse({ erreur: "origine non autorisée" }, 403, null);
+  if (req.method !== "POST") return reponse({ erreur: "POST seulement", code: "post-seulement" }, 405, origine);
+  if (!origine) return reponse({ erreur: "origine non autorisée", code: "origine" }, 403, null);
   const secret = await cleServeur(m), db = table(m);
-  if (!secret || !db) return reponse({ erreur: "assistant non configuré (voir docs/assistant.md)" }, 503, origine);
+  if (!secret || !db) return reponse({ erreur: "assistant non configuré (voir docs/assistant.md)", code: "assistant-non-configure" }, 503, origine);
   const id = await compte(m, req);
-  if (!id) return reponse({ erreur: "session absente ou expirée" }, 401, origine);
+  if (!id) return reponse({ erreur: "session absente ou expirée", code: "session" }, 401, origine);
 
   const texte = await req.text();
-  if (texte.length > MAX_CORPS) return reponse({ erreur: "requête trop longue" }, 413, origine);
+  if (texte.length > MAX_CORPS) return reponse({ erreur: "requête trop longue", code: "trop-long" }, 413, origine);
   let q: { action?: unknown; cle?: unknown; requete?: unknown };
-  try { q = JSON.parse(texte); } catch { return reponse({ erreur: "requête illisible" }, 400, origine); }
+  try { q = JSON.parse(texte); } catch { return reponse({ erreur: "requête illisible", code: "illisible" }, 400, origine); }
 
   try {
     if (q.action === "etat") {
@@ -110,38 +112,38 @@ export const assistant = (m: Monde) => async (req: Request): Promise<Response> =
     }
     if (q.action === "oublier") { await db.effacer(id); return reponse({ cle: false }, 200, origine); }
     if (q.action === "cle") {
-      if (tropDeCles(id)) return reponse({ erreur: "trop d'essais ; réessaie dans quelques minutes" }, 429, origine);
+      if (tropDeCles(id)) return reponse({ erreur: "trop d'essais ; réessaie dans quelques minutes", code: "trop-d-essais" }, 429, origine);
       const cle = typeof q.cle === "string" ? q.cle.trim() : "";
-      if (!/^sk-ant-[A-Za-z0-9_-]{20,200}$/.test(cle)) return reponse({ erreur: "ce n'est pas une clé d'API Anthropic (sk-ant-…)" }, 400, origine);
+      if (!/^sk-ant-[A-Za-z0-9_-]{20,200}$/.test(cle)) return reponse({ erreur: "ce n'est pas une clé d'API Anthropic (sk-ant-…)", code: "pas-une-cle" }, 400, origine);
       try { await client(m, cle, 10_000).models.list({ limit: 1 }); } // gratuit : dit seulement si la clé est acceptée
       catch (e) {
         if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) return reponse({ erreur: "Anthropic refuse cette clé", code: "cle" }, 400, origine);
-        return reponse({ erreur: "Anthropic injoignable ; réessaie" }, 502, origine);
+        return reponse({ erreur: "Anthropic injoignable ; réessaie", code: "anthropic-injoignable" }, 502, origine);
       }
       const indice = "…" + cle.slice(-4);
       await db.ecrire(id, { ...await chiffrer(secret, id, cle), indice });
       return reponse({ cle: true, indice }, 200, origine);
     }
     if (q.action === "message") {
-      if (tropDeMessages(id)) return reponse({ erreur: "trop de messages ; réessaie dans quelques minutes" }, 429, origine);
+      if (tropDeMessages(id)) return reponse({ erreur: "trop de messages ; réessaie dans quelques minutes", code: "trop-de-messages" }, 429, origine);
       const sure = requeteSure(q.requete);
-      if ("refus" in sure) return reponse({ erreur: sure.refus }, 400, origine);
+      if ("refus" in sure) return reponse({ erreur: sure.refus, code: "requete", detail: sure.refus }, 400, origine);
       const l = await db.lire(id);
       if (!l) return reponse({ erreur: "aucune clé enregistrée pour ce compte", code: "sans-cle" }, 409, origine);
       const cle = await dechiffrer(secret, id, l);
-      if (!cle) return reponse({ erreur: "clé enregistrée illisible : enregistre-la de nouveau", code: "sans-cle" }, 409, origine);
+      if (!cle) return reponse({ erreur: "clé enregistrée illisible : enregistre-la de nouveau", code: "sans-cle", detail: "illisible" }, 409, origine);
       try {
         return reponse(await client(m, cle, DELAI_MS).messages.create(sure.params), 200, origine);
       } catch (e) {
-        if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) return reponse({ erreur: "Anthropic refuse la clé enregistrée", code: "cle" }, 400, origine);
-        if (e instanceof Anthropic.RateLimitError) return reponse({ erreur: "limite de ton compte Anthropic atteinte ; réessaie plus tard" }, 429, origine);
-        if (e instanceof Anthropic.BadRequestError) return reponse({ erreur: e.message }, 400, origine);
-        if (e instanceof Anthropic.APIConnectionError) return reponse({ erreur: "Anthropic ne répond pas ; réessaie" }, 504, origine);
-        return reponse({ erreur: "Anthropic répond par une erreur ; réessaie" }, 502, origine);
+        if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) return reponse({ erreur: "Anthropic refuse la clé enregistrée", code: "cle", detail: "enregistree" }, 400, origine);
+        if (e instanceof Anthropic.RateLimitError) return reponse({ erreur: "limite de ton compte Anthropic atteinte ; réessaie plus tard", code: "limite-anthropic" }, 429, origine);
+        if (e instanceof Anthropic.BadRequestError) return reponse({ erreur: e.message, code: "anthropic-requete", detail: e.message }, 400, origine);
+        if (e instanceof Anthropic.APIConnectionError) return reponse({ erreur: "Anthropic ne répond pas ; réessaie", code: "anthropic-muet" }, 504, origine);
+        return reponse({ erreur: "Anthropic répond par une erreur ; réessaie", code: "anthropic-erreur" }, 502, origine);
       }
     }
-    return reponse({ erreur: "action inconnue" }, 400, origine);
+    return reponse({ erreur: "action inconnue", code: "action-inconnue" }, 400, origine);
   } catch {
-    return reponse({ erreur: "base de données injoignable" }, 503, origine);
+    return reponse({ erreur: "base de données injoignable", code: "base-injoignable" }, 503, origine);
   }
 };

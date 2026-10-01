@@ -303,7 +303,7 @@ test('a legacy section written late by an old app version is absorbed, not lost'
 test('collection items: required title, disabled fields keep their value, unknown status falls back', () => {
   const app = launch(new Map());
   const mus = app.S().modules.musique;
-  assert.throws(() => app.saveCollectionItem(mus, { title: '  ' }, 'x'), /Artiste manquant/);
+  assert.throws(() => app.saveCollectionItem(mus, { title: '  ' }, 'x'), /Artiste : à remplir/);
   const e = app.saveCollectionItem(mus, { title: 'Kate Bush', subtitle: 'Hounds of Love', status: 'Nimporte' }, 'k1');
   assert.equal(e.status, 'À écouter');
   app.saveCollectionItem(mus, { title: 'Kate Bush', status: 'Retenu' }, 'k1'); // formulaire sans le champ sous-titre
@@ -568,6 +568,11 @@ test('a finished task with a cost offers to move it into the budget envelope', (
   app.CLICK.undo(); // « Ajouter »
   const op = d.modules.budget.entries.at(-1);
   assert.equal(op.amount, 250); assert.equal(op.cat, 'Travaux'); assert.equal(op.note, 'Velux'); assert.equal(op.type, 'dépense');
+  // L'enveloppe devinée d'après son nom, dans la langue de la personne : « Home improvement », « Rénovation »…
+  d.modules.budget.config.envelopes.find(v => v.name === 'Travaux').name = 'Home improvement';
+  app.addTask(d.modules.chantier.entries, { title: 'Gutter', cost: 80 }, 't2', '2026-09-27');
+  app.CHANGE['task-done']({ checked: true, closest: sel => sel === '[data-task]' ? { dataset: { task: 't2', mod: 'chantier' } } : null });
+  assert.match(app.nodes.get('#toast').innerHTML, /80,00.*Home improvement/);
 });
 
 test('capture patterns: money, minutes and « module : text » are recognised, nothing else', () => {
@@ -580,7 +585,11 @@ test('capture patterns: money, minutes and « module : text » are recognised, n
   const i3 = app.captureIntent('Phidippus : refus de proie');
   assert.equal(i3.to, 'phidippus'); assert.equal(i3.text, 'refus de proie');
   assert.equal(app.captureIntent('Écriture: une phrase').to, 'ecriture', 'accents and spacing ignored');
-  for (const plain of ['acheter du pain', 'rdv : 14h chez le dentiste', '25 min de marche', '0 € rien']) assert.equal(app.captureIntent(plain), null, plain);
+  for (const plain of ['acheter du pain', 'rdv : 14h chez le dentiste', '25 min de marche', '0 € rien', '€0 rien']) assert.equal(app.captureIntent(plain), null, plain);
+  // Écrits à l'anglaise : la monnaie devant la somme, « mins ».
+  const i4 = app.captureIntent('€12.50 courses');
+  assert.equal(i4.to, 'budget'); assert.equal(i4.amount, 12.5); assert.equal(i4.cat, 'Courses');
+  assert.equal(app.captureIntent('25 mins kundalini').value, 25);
   // Rangement : la note quitte la boîte et arrive au bon endroit.
   app.addCapture(d.modules.inbox.entries, 'Phidippus : refus de proie', 'n1', '2026-09-20');
   app.fileIntent(app.captureIntent('Phidippus : refus de proie'), 'inbox', 'n1');
@@ -666,6 +675,9 @@ test('epistemic status: « ? » marks a hypothesis, changes are dated, search fi
   assert.deepEqual([...app.searchAll('soi statut:interp').map(h => h.text)], ['Le soi est symbolique']);
   assert.equal(app.searchAll('statut:nimportequoi').length, 0);
   assert.equal(app.searchAll('statut:').length, 0);
+  // « status: » vaut « statut: » (l'anglais, quelle que soit la langue de l'interface).
+  assert.deepEqual([...app.searchAll('Status:Hyp').map(h => h.text)], ['Le DMN fabrique le sentiment de soi']);
+  assert.equal(app.searchAll('status:').length, 0);
   // Bilan : le décompte par statut de la période.
   assert.deepEqual({ ...app.epCounts('2026-09-01', '2026-10-01') }, { hyp: 1, int: 1 });
   // Sauvegarde : un statut inconnu est refusé.
@@ -876,6 +888,26 @@ test('lexical drift: words proper to the period against the six before, stopword
   assert.equal(app.lexicalDrift('mois', 0).rising.find(x => x.k === 'brouillard').n, 2, 'the motifs module is not part of the corpus');
   app.location.hash = '#bilan'; app.render();
   assert.match(app.nodes.get('#main').innerHTML, /<h3>Vocabulaire<\/h3>/);
+});
+
+test('texts in several languages: each read in its own (stopwords, plurals); motifs find English plurals too', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  assert.equal(app.textLang(['the', 'stories', 'of', 'the', 'moon']), 'en');
+  assert.equal(app.textLang(['la', 'lune', 'et', 'le', 'seuil']), 'fr');
+  assert.equal(app.textLang(['lune']), 'fr', 'no marker: the interface language decides');
+  assert.equal(app.textLang(['lune'], 'en'), 'en');
+  assert.equal(app.textLang(['the', 'la']), 'fr', 'a tie: the interface language decides');
+  const en = app.driftWords('The stories of the boxes and the glasses, with parties and cats');
+  assert.ok(![...en.keys()].some(k => ['the', 'and', 'with'].includes(k)), 'English stopwords ignored in an English text');
+  assert.deepEqual(['story', 'box', 'glass', 'party', 'cat'].map(k => en.get(k)), ['stories', 'boxes', 'glasses', 'parties', 'cats'], 'English plurals folded (Porter, step 1a)');
+  const fr = app.driftWords('Les parties de la forêt, avec des lunes');
+  assert.equal(fr.get('partie'), 'parties', 'a French text keeps the French rule: « parties » is not « party »');
+  assert.ok(!fr.has('avec') && fr.has('lune'));
+  // Concordance : les pluriels sont engendrés depuis le motif, dans les deux langues.
+  const hit = (title, text) => app.motifHit(app.motifForms({ title, subtitle: '' }), text);
+  assert.ok(hit('story', 'Two stories tonight')); assert.ok(hit('box', 'Boxes everywhere')); assert.ok(hit('moon', 'Moons'));
+  assert.ok(hit('lune', 'Des lunes')); assert.ok(hit('bijou', 'Des bijoux'));
+  assert.ok(!hit('lune', 'Mes lunettes'), 'whole words only');
 });
 
 test('links: derive, contradict, backlinks, tensions resolved by a synthesis of both', () => {

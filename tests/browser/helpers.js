@@ -10,7 +10,18 @@ try { playwright = require('playwright'); } catch { playwright = require(path.jo
 // Moteur : Chromium par défaut, SELENE_BROWSER=webkit pour celui de Safari, des WebView iOS et de Tauri (macOS, Linux).
 const ENGINE = process.env.SELENE_BROWSER || 'chromium';
 if (!['chromium', 'webkit'].includes(ENGINE)) throw new Error('SELENE_BROWSER : chromium ou webkit, pas « ' + ENGINE + ' »');
-const engine = playwright[ENGINE];
+/* Les scénarios lisent l'interface en français : la langue du navigateur est fixée (fr-FR), quelle que soit celle de
+   la machine, sinon Selene, qui suit la langue de l'appareil, pourrait parler anglais sur un runner américain. Un
+   scénario peut en demander une autre (option locale de newContext ou newPage). */
+const LOCALE = { locale: 'fr-FR' };
+const engine = {
+  async launch(options) {
+    const b = await playwright[ENGINE].launch(options), newContext = b.newContext.bind(b), newPage = b.newPage.bind(b);
+    b.newContext = (o = {}) => newContext({ ...LOCALE, ...o });
+    b.newPage = (o = {}) => newPage({ ...LOCALE, ...o });
+    return b;
+  }
+};
 
 const BASE = process.env.SELENE_BASE || 'http://localhost:8765';
 const launchOptions = ENGINE === 'chromium' && process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {};

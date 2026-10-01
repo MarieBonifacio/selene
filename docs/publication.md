@@ -38,7 +38,8 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
 4. **Le premier AAB** s'envoie à la main : pousser l'étiquette, récupérer `selene-1.0.0.aab` dans les artefacts de la
    course *Publication*, et le déposer dans Tests → Test interne.
 5. **Les formulaires** (Contenu de l'application) :
-   - Politique de confidentialité : `https://mariebonifacio.github.io/selene/confidentialite.html` ;
+   - Politique de confidentialité : `https://mariebonifacio.github.io/selene/confidentialite.html` (en anglais :
+     `https://mariebonifacio.github.io/selene/privacy.html`, pour une fiche anglaise) ;
    - Sécurité des données : collecte l'adresse e-mail (gestion du compte) et le contenu créé (fonctionnement de
      l'app), et la position approximative (le lieu du ciel, arrondi à ~10 km, facultatif : fonctionnalité de l'app),
      liés au compte, non partagés, chiffrés en transit, supprimables par l'utilisateur (dans l'app) ;
@@ -77,7 +78,8 @@ plus vite. Un certificat `.pfx` : son contenu en base64 dans `WINDOWS_CERTIFICAT
 
 ## À chaque version
 
-1. Vérifier que `confidentialite.html` dit toujours vrai (le test de `build.test.js` le vérifie pour les services).
+1. Vérifier que `confidentialite.html` et `privacy.html` disent toujours vrai, et la même chose (le test de
+   `build.test.js` le vérifie pour les services, les sections, les liens et la date).
 2. `git tag v1.2.3 && git push origin v1.2.3`.
 3. Google Play : promouvoir l'AAB (artefact de la course) du test interne vers la production.
 4. App Store : soumettre la version TestFlight à la vérification.

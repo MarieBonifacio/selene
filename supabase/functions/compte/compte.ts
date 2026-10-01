@@ -6,7 +6,7 @@
    publique (apikey). La personne ne peut supprimer que son propre compte (celui de la session).
    Ce qui part, dans l'ordre : la ligne app_state (tout le tableau de bord), la clé d'assistant chiffrée
    (assistant_keys), puis le compte Supabase Auth lui-même (les clés étrangères « on delete cascade » rattraperaient
-   une table oubliée). → { supprime: true } ; { erreur } avec un code 4xx ou 5xx sinon. Si l'effacement du compte
+   une table oubliée). → { supprime: true } ; { erreur, code } avec un code 4xx ou 5xx sinon (code : stable, traduit par l'interface). Si l'effacement du compte
    échoue après celui des données, un nouvel essai termine le travail : chaque étape tolère ce qui est déjà parti.
 
    Secrets : la clé serveur (COMPTE_DB_KEY, sinon SUPABASE_SERVICE_ROLE_KEY, fournie par Supabase). Origines :
@@ -39,25 +39,25 @@ export function compteFn(m: Monde) {
   return async (req: Request): Promise<Response> => {
     const origine = origineDe(req, liste);
     if (req.method === "OPTIONS") return prevol(origine);
-    if (req.method !== "POST") return reponse({ erreur: "POST seulement" }, 405, origine);
-    if (!origine) return reponse({ erreur: "origine non autorisée" }, 403, null);
+    if (req.method !== "POST") return reponse({ erreur: "POST seulement", code: "post-seulement" }, 405, origine);
+    if (!origine) return reponse({ erreur: "origine non autorisée", code: "origine" }, 403, null);
     const a = admin(m);
-    if (!a) return reponse({ erreur: "suppression non configurée (voir docs/compte.md)" }, 503, origine);
+    if (!a) return reponse({ erreur: "suppression non configurée (voir docs/compte.md)", code: "compte-non-configure" }, 503, origine);
     const id = await compte(m, req);
-    if (!id) return reponse({ erreur: "session absente ou expirée" }, 401, origine);
-    if (!/^[0-9a-f-]{36}$/.test(id)) return reponse({ erreur: "compte illisible" }, 400, origine);
-    if (tropDEssais(id)) return reponse({ erreur: "trop d'essais ; réessaie dans quelques minutes" }, 429, origine);
+    if (!id) return reponse({ erreur: "session absente ou expirée", code: "session" }, 401, origine);
+    if (!/^[0-9a-f-]{36}$/.test(id)) return reponse({ erreur: "compte illisible", code: "compte-illisible" }, 400, origine);
+    if (tropDEssais(id)) return reponse({ erreur: "trop d'essais ; réessaie dans quelques minutes", code: "trop-d-essais" }, 429, origine);
 
     const texte = await req.text();
-    if (texte.length > MAX_CORPS) return reponse({ erreur: "requête trop longue" }, 413, origine);
+    if (texte.length > MAX_CORPS) return reponse({ erreur: "requête trop longue", code: "trop-long" }, 413, origine);
     let q: { action?: unknown; confirmation?: unknown };
-    try { q = JSON.parse(texte); } catch { return reponse({ erreur: "requête illisible" }, 400, origine); }
-    if (q.action !== "supprimer") return reponse({ erreur: "action inconnue" }, 400, origine);
+    try { q = JSON.parse(texte); } catch { return reponse({ erreur: "requête illisible", code: "illisible" }, 400, origine); }
+    if (q.action !== "supprimer") return reponse({ erreur: "action inconnue", code: "action-inconnue" }, 400, origine);
     // Un garde-fou contre un appel parti par erreur : la page ne l'envoie qu'après une confirmation tapée.
-    if (q.confirmation !== "supprimer") return reponse({ erreur: "confirmation manquante" }, 400, origine);
+    if (q.confirmation !== "supprimer") return reponse({ erreur: "confirmation manquante", code: "confirmation" }, 400, origine);
 
-    try { await a.effacerDonnees(id); } catch { return reponse({ erreur: "données non effacées ; réessaie" }, 503, origine); }
-    try { await a.effacerCompte(id); } catch { return reponse({ erreur: "données effacées, compte non supprimé ; réessaie" }, 503, origine); }
+    try { await a.effacerDonnees(id); } catch { return reponse({ erreur: "données non effacées ; réessaie", code: "donnees-non-effacees" }, 503, origine); }
+    try { await a.effacerCompte(id); } catch { return reponse({ erreur: "données effacées, compte non supprimé ; réessaie", code: "compte-non-supprime" }, 503, origine); }
     return reponse({ supprime: true }, 200, origine);
   };
 }

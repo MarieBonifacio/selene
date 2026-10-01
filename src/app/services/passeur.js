@@ -6,6 +6,8 @@ import { hosted } from "../../platform.js";
 import { clip, findDoi, normalizeUrl } from "../../core/sources.js";
 import { CLICK } from "../registry.js";
 import { esc, toast } from "../lib/dom.js";
+import { tr } from "../i18n/index.js";
+import { serverError, serverMsg } from "./erreurs.js";
 import { SUPABASE_ANON_KEY, SUPABASE_URL, authReady, authRefreshIfNeeded, authSession } from "./auth.js";
 import { render } from "../shell/render.js";
 
@@ -13,19 +15,19 @@ export let passeurEtat = "";
 export const passeurReset = () => { passeurEtat = ""; }; // redemander, après un refus ou une absence // "" inconnu, "ok", "absent" (non déployé ou non configuré : on n'insiste pas), ou un message
 export const passeurPret = () => hosted() && authReady() && !!authSession && passeurEtat !== "absent";
 export async function passeurFetch(url, genre, cond = {}) {
-  if (!hosted() || !authReady() || !authSession) throw new Error("Le passeur n'existe que dans la version hébergée, connectée à ton compte.");
-  const s = await authRefreshIfNeeded(); if (!s) throw new Error("Session expirée : reconnecte-toi.");
+  if (!hosted() || !authReady() || !authSession) throw new Error(tr`Le passeur n'existe que dans la version hébergée, connectée à ton compte.`);
+  const s = await authRefreshIfNeeded(); if (!s) throw new Error(tr`Session expirée : reconnecte-toi.`);
   const ac = new AbortController(), t = setTimeout(() => ac.abort(), 15000);
   let r;
   try {
     r = await fetch(`${SUPABASE_URL}/functions/v1/passeur`, { method: "POST", signal: ac.signal,
       headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${s.access_token}` },
       body: JSON.stringify({ url, genre, ...(cond.etag ? { etag: cond.etag } : {}), ...(cond.modifie ? { modifie: cond.modifie } : {}) }) });
-  } catch { throw new Error("Passeur injoignable (hors ligne, ou pas encore déployé)."); } finally { clearTimeout(t); }
+  } catch { throw new Error(tr`Passeur injoignable (hors ligne, ou pas encore déployé).`); } finally { clearTimeout(t); }
   const j = await r.json().catch(() => ({}));
-  if (r.status === 404 || r.status === 503) { passeurEtat = "absent"; throw new Error(r.status === 404 ? "Passeur non déployé (voir docs/passeur.md)." : j.erreur || "Passeur non configuré."); }
-  if (r.status === 401 || r.status === 403) { passeurEtat = j.erreur || "refusé"; throw new Error(`Passeur : ${j.erreur || "accès refusé"}.`); }
-  if (!r.ok) throw new Error(`Passeur : ${j.erreur || `erreur ${r.status}`}.`);
+  if (r.status === 404 || r.status === 503) { passeurEtat = "absent"; throw r.status === 404 ? new Error(tr`Passeur non déployé (voir docs/passeur.md).`) : serverError(j, tr`Passeur non configuré.`); }
+  if (r.status === 401 || r.status === 403) { passeurEtat = serverMsg(j, tr`refusé`); throw Object.assign(new Error(tr`Passeur : ${serverMsg(j, tr`accès refusé`)}.`), { code: j.code || "" }); }
+  if (!r.ok) throw Object.assign(new Error(tr`Passeur : ${serverMsg(j, tr`erreur ${r.status}`)}.`), { code: j.code || "" });
   passeurEtat = "ok";
   return j;
 }
@@ -70,18 +72,18 @@ export function pageToSource(html, base) {
 }
 /* Réglages → Passeur : son état, ton identifiant (pour le secret PASSEUR_USERS), une vérification à la demande. */
 export function passeurSettingsHTML() {
-  const st = passeurEtat === "ok" ? "Déployé et ouvert à ton compte." : passeurEtat === "absent" ? "Pas encore déployé, ou pas encore configuré." : passeurEtat ? `Refusé : ${passeurEtat}.` : "Pas encore vérifié sur cet appareil.";
-  return `<section id="passeur"><h4>Passeur</h4><p class="hint">Une petite fonction dans ton projet Supabase qui lit pour toi les pages, flux et calendriers que le navigateur ne peut pas lire seul. Elle ne sert que ton compte, refuse toute adresse privée et ne garde rien. Sans elle, les pages passent par Microlink.</p>
-    <p class="row" style="margin:0 0 8px"><span data-passeur-etat>${esc(st)}</span><button class="btn sm" data-act="passeur-check">Vérifier</button></p>
-    <p class="hint">Ton identifiant, à mettre dans le secret <code>PASSEUR_USERS</code> : <code style="word-break:break-all">${esc(authSession.user.id)}</code> <button class="btn ghost sm" data-act="passeur-copy">copier</button>. Mode d'emploi : <a href="https://github.com/MarieBonifacio/selene/blob/main/docs/passeur.md" target="_blank" rel="noopener noreferrer">docs/passeur.md</a>.</p></section>`;
+  const st = passeurEtat === "ok" ? tr`Déployé et ouvert à ton compte.` : passeurEtat === "absent" ? tr`Pas encore déployé, ou pas encore configuré.` : passeurEtat ? tr`Refusé : ${passeurEtat}.` : tr`Pas encore vérifié sur cet appareil.`;
+  return `<section id="passeur"><h4>${tr`Passeur`}</h4><p class="hint">${tr`Une petite fonction dans ton projet Supabase qui lit pour toi les pages, flux et calendriers que le navigateur ne peut pas lire seul. Elle ne sert que ton compte, refuse toute adresse privée et ne garde rien. Sans elle, les pages passent par Microlink.`}</p>
+    <p class="row" style="margin:0 0 8px"><span data-passeur-etat>${esc(st)}</span><button class="btn sm" data-act="passeur-check">${tr`Vérifier`}</button></p>
+    <p class="hint">${tr`Ton identifiant, à mettre dans le secret ${"<code>PASSEUR_USERS</code>"} : ${`<code style="word-break:break-all">${esc(authSession.user.id)}</code> <button class="btn ghost sm" data-act="passeur-copy">${tr`copier`}</button>`}. Mode d'emploi : ${`<a href="https://github.com/MarieBonifacio/selene/blob/main/docs/passeur.md" target="_blank" rel="noopener noreferrer">docs/passeur.md</a>`}.`}</p></section>`;
 }
 /* Réglages → Passeur (passeur.js) : vérifier en lisant la page de Selene elle-même, copier l'identifiant. */
 CLICK["passeur-check"] = async el => {
   el.disabled = true; passeurReset();
-  try { await passeurFetch(location.origin + location.pathname, "page"); toast("Passeur : il répond, et il te reconnaît."); }
+  try { await passeurFetch(location.origin + location.pathname, "page"); toast(tr`Passeur : il répond, et il te reconnaît.`); }
   catch (e) { toast(e.message); }
   render();
 };
 CLICK["passeur-copy"] = async () => {
-  try { await navigator.clipboard.writeText(authSession.user.id); toast("Identifiant copié."); } catch { toast("Copie impossible ici : sélectionne-le à la main."); }
+  try { await navigator.clipboard.writeText(authSession.user.id); toast(tr`Identifiant copié.`); } catch { toast(tr`Copie impossible ici : sélectionne-le à la main.`); }
 };
