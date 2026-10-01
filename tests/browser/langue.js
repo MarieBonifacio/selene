@@ -44,6 +44,13 @@ const demo = JSON.parse(fixture());
   await p.evaluate(() => location.hash = 'kundalini'); await p.waitForTimeout(200);
   check(!(await marked('.plate .pl, .plate [data-act="goto-groups"], .plate [data-act="bridge-edit"]')).length, 'la planche d’un espace (numéro, « régler », pont) traduite');
   await p.evaluate(() => location.hash = 'accueil'); await p.waitForTimeout(200);
+  const homeNaked = await marked('.two h2, #main section > .row > h2, .hero .txt > p:not(.sky-line)'); // les Sortes ont leur lot
+  check(!homeNaked.length, 'accueil : titres et phrase de la lune traduits' + (homeNaked.length ? ' : ' + homeNaked.join(' | ') : ''));
+  await p.evaluate(() => location.hash = 'reglages'); await p.waitForTimeout(200);
+  const nakedH3 = await marked('#main h2, #main h3');
+  check(!nakedH3.some(t => ['Réglages', 'Apparence', 'Modules', 'Réglages par module', 'Sauvegarde'].includes(t)), 'réglages : leurs propres sections traduites');
+  check(!(await marked('.swatch, select[data-set="config.mode"] option')).length, 'réglages : palettes et modes traduits');
+  await p.evaluate(() => location.hash = 'accueil'); await p.waitForTimeout(200);
 
   console.log('retour à la langue de l’appareil, par le réglage générique, sans recharger');
   await p.evaluate(() => {

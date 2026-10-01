@@ -6,6 +6,7 @@
 import { hosted, platform } from "../../platform.js";
 import { CLICK } from "../registry.js";
 import { $, setSaving, toast } from "../lib/dom.js";
+import { tr, trp } from "../i18n/index.js";
 import { render } from "../shell/render.js";
 import { DRAFT_PREFIX } from "../state/drafts.js";
 import { board, site, siteSeed } from "../state/site.js";
@@ -233,11 +234,14 @@ export function authView() {
 document.addEventListener("submit", e => { if (e.target.id === "authForm") { e.preventDefault(); authSubmit(); } });
 CLICK["auth-switch"] = () => { authToggleMode(); render(); };
 CLICK["auth-out"] = () => authSignOut();
+/* Le mot à taper pour supprimer son compte : celui de la langue de l'interface, ou « supprimer » dans toutes. Le serveur,
+   lui, reçoit toujours la constante du protocole (confirmation: "supprimer"), qui ne se traduit pas. */
+export const deleteWord = () => trp("confirmation", "supprimer");
 CLICK["auth-delete"] = async el => {
-  const inp = $("#authDelIn");
-  if (!inp || inp.value.trim().toLowerCase() !== "supprimer") { toast("Tape « supprimer » pour confirmer."); if (inp) inp.focus(); return; }
-  if (!await ask("Supprimer ton compte et toutes ses données, sur le serveur et sur cet appareil ? C'est définitif.")) return;
+  const inp = $("#authDelIn"), typed = inp ? inp.value.trim().toLowerCase() : "";
+  if (typed !== deleteWord().toLowerCase() && typed !== "supprimer") { toast(tr`Tape « ${deleteWord()} » pour confirmer.`); if (inp) inp.focus(); return; }
+  if (!await ask(tr`Supprimer ton compte et toutes ses données, sur le serveur et sur cet appareil ? C'est définitif.`)) return;
   el.disabled = true;
-  try { await authDeleteAccount(); toast("Compte supprimé. Il ne reste rien de toi ici, ce qui est plus que la plupart des services peuvent dire."); }
-  catch (e) { el.disabled = false; toast("Compte non supprimé : " + e.message); }
+  try { await authDeleteAccount(); toast(tr`Compte supprimé. Il ne reste rien de toi ici, ce qui est plus que la plupart des services peuvent dire.`); }
+  catch (e) { el.disabled = false; toast(tr`Compte non supprimé : ${e.message}`); }
 };

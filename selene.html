@@ -926,6 +926,7 @@ var __selene = (() => {
     dehorsSet: () => dehorsSet,
     dehorsWhen: () => dehorsWhen,
     deleteModuleInstance: () => deleteModuleInstance,
+    deleteWord: () => deleteWord,
     deriveBanner: () => deriveBanner,
     diffDays: () => diffDays,
     digestPlan: () => digestPlan,
@@ -1212,6 +1213,12 @@ var __selene = (() => {
     "Dernier quartier": "Last quarter",
     "Dernier croissant": "Waning crescent",
     "Phase de la lune": "Moon phase",
+    // services/auth.js
+    "confirmationsupprimer": "delete",
+    "Tape « {0} » pour confirmer.": "Type “{0}” to confirm.",
+    "Supprimer ton compte et toutes ses données, sur le serveur et sur cet appareil ? C'est définitif.": "Delete your account and all its data, on the server and on this device? This is final.",
+    "Compte supprimé. Il ne reste rien de toi ici, ce qui est plus que la plupart des services peuvent dire.": "Account deleted. Nothing of you is left here, which is more than most services can say.",
+    "Compte non supprimé : {0}": "Account not deleted: {0}",
     // shell/actions.js
     "Aucune boîte de réception : voir Réglages.": "No inbox: see Settings.",
     "Gardé. Tu peux oublier, c'est écrit.": "Kept. You can forget it now: it's written down.",
@@ -1308,13 +1315,123 @@ var __selene = (() => {
     "Pl. {0}": "Pl. {0}",
     "régler": "adjust",
     "Sigil de l'espace": "Space sigil",
+    // state/drafts.js
+    "un fragment": "a fragment",
+    "une note": "a note",
+    "une observation": "an observation",
+    "un message": "a message",
+    "une capture": "a capture",
+    "un texte": "a text",
     // ui/dialogs.js
     "Enregistrer": "Save",
     "formulaireAnnuler": "Cancel",
     "Saisie invalide.": "Invalid entry.",
+    // views/accueil.js
+    "Derniers éléments de {0}": "Latest items in {0}",
+    "Composer ton espace": "Compose your space",
+    "Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.": "Add what you want to follow, as many times as you like. Everything can be renamed, adjusted or deleted later in Settings.",
+    "Ajouter": "Add",
+    "C'est bon": "Done",
+    "Éclairée à {0} %, jour {1} du cycle.": "{0}% lit, day {1} of the cycle.",
+    "Pleine lune dans {0} j.": "Full moon in {0} d.",
+    "Nouvelle lune dans {0} j.": "New moon in {0} d.",
+    "Trois choses. La forêt pousse très bien sans que tu la surveilles.": "Three things. The forest grows perfectly well without you watching it.",
+    "voir": "see",
+    "Aucune tâche choisie.": "No task chosen.",
+    "Tirer une petite tâche au sort": "Draw a small task at random",
+    "Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.": "Nothing planned. A task module would fill this space, if you insist.",
+    "{0} ce qui, près d'ici, parle de tes mots": "{0}: what, near here, speaks of your words",
+    "Radar culturel": "Cultural radar",
+    "Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.": "Drop it here like a dead leaf; you'll sort the humus later.",
+    "Où en sont les choses": "Where things stand",
+    "Bilan du mois": "Review of the month",
+    "Bilan du cycle": "Review of the cycle",
+    "Branché via claude.ai": "Connected through claude.ai",
+    "Branché via ta clé API": "Connected through your API key",
+    "Pas encore branché": "Not connected yet",
+    "{0} en cours": "{0} in progress",
+    "reprendre": "pick up",
+    "accueilReprendre": "Pick up where you left off",
     // views/reglages.js
     "Langue": "Language",
-    "Langue de l'appareil": "Device language"
+    "Langue de l'appareil": "Device language",
+    "Nigredo, mousse": "Nigredo, moss",
+    "Albedo, lichen": "Albedo, lichen",
+    "Citrinitas, résine": "Citrinitas, resin",
+    "Rubedo, amanite": "Rubedo, fly agaric",
+    "Tout ici s'applique immédiatement.": "Everything here applies immediately.",
+    "Apparence": "Appearance",
+    "Quatre étapes de l'Œuvre, prises dans le sous-bois.": "Four stages of the Great Work, taken from the undergrowth.",
+    "Mode": "Mode",
+    "Suivre l'appareil": "Follow the device",
+    "Toujours sombre": "Always dark",
+    "Toujours clair": "Always light",
+    "Suivre le soleil": "Follow the sun",
+    "Nom affiché": "Display name",
+    "Ouvrir sur (cet appareil)": "Open on (this device)",
+    "L'accueil": "Today",
+    "Là où j'en étais": "Where I left off",
+    "Modules": "Modules",
+    "Active, renomme, réordonne, range par domaine (Maison, Création… : la navigation les regroupe). Les modules personnalisés (marqués ✕) peuvent être supprimés définitivement.": "Turn on, rename, reorder, file by domain (Home, Creation…: the navigation groups them). Custom modules (marked ✕) can be deleted for good.",
+    "Activer {0}": "Turn on {0}",
+    "Nom du module": "Module name",
+    "Domaine": "Domain",
+    "Domaine de {0}": "Domain of {0}",
+    "Supprimer définitivement": "Delete for good",
+    "Monter": "Move up",
+    "Descendre": "Move down",
+    "Créer un module": "Create a module",
+    "Modèle ou type": "Template or type",
+    "Modèles": "Templates",
+    "Types vides": "Empty types",
+    "Nom": "Name",
+    "Nom du modèle si vide": "Template name if empty",
+    "Créer": "Create",
+    "Réglages par module": "Settings by module",
+    "Un bloc par module actif, dans l'ordre de la navigation : ses réglages propres, et le regroupement en pourcentage quand il existe.": "One block per active module, in navigation order: its own settings, and percentage grouping where it exists.",
+    "Assistant": "Assistant",
+    "Claude dans le tableau de bord. Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.": "Claude in the dashboard. On claude.ai, it goes through your account. In the hosted version, you need your own API key: verified with Anthropic, it is kept encrypted on Selene's server, tied to your account, and never comes back to the page.",
+    "Clé API Anthropic (enregistrée : {0})": "Anthropic API key (saved: {0})",
+    "Clé API Anthropic": "Anthropic API key",
+    "Coller une autre clé pour la remplacer": "Paste another key to replace it",
+    "Modèle": "Model",
+    "Haiku 4.5, rapide et peu cher": "Haiku 4.5, fast and cheap",
+    "Sonnet 5, équilibré": "Sonnet 5, balanced",
+    "Opus 5.5, le plus capable": "Opus 5.5, the most capable",
+    "Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)": "Allow Claude to change the dashboard (tasks, capture, budget)",
+    "Ce que Claude peut lire :": "What Claude can read:",
+    "Oublier la clé (sur tous tes appareils)": "Forget the key (on all your devices)",
+    "Compte": "Account",
+    "Connecté en tant que {0}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.": "Signed in as {0}. Your data belongs to this account and follows you on all your devices. Signing out erases your data and the conversation with the assistant from this device; your API key stays tied to your account, encrypted, until you forget it.",
+    "Se déconnecter": "Sign out",
+    "Supprimer mon compte": "Delete my account",
+    "Définitif : ton compte, tout ton tableau de bord sur le serveur et ta clé d'assistant sont effacés, puis cet appareil est vidé. Tes autres appareils perdent l'accès. Exporte d'abord une sauvegarde (plus bas) si tu veux garder quelque chose. Politique de confidentialité : {0}.": "Final: your account, your whole dashboard on the server and your assistant key are erased, then this device is emptied. Your other devices lose access. Export a backup first (below) if you want to keep anything. Privacy policy: {0}.",
+    "ce que Selene garde, et où": "what Selene keeps, and where",
+    "Tape « {0} » pour confirmer": "Type “{0}” to confirm",
+    "Sauvegarde": "Backup",
+    "Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.": "Your whole state in a JSON file, to move from claude.ai to GitHub Pages or from one browser to another. The API key is never in it.",
+    "Exporter": "Export",
+    "Importer": "Import",
+    "{0} : aucun traceur, aucune publicité ; ce que Selene garde, où, et comment tout effacer.": "{0}: no trackers, no ads; what Selene keeps, where, and how to erase it all.",
+    "Confidentialité": "Privacy",
+    "Regrouper en pourcentage": "Group by percentage",
+    "Regrouper par": "Group by",
+    "Trier par": "Sort by",
+    "Ordre naturel": "Natural order",
+    "Le plus avancé d'abord": "Most advanced first",
+    "Le plus en retard d'abord": "Furthest behind first",
+    "Titre du bloc": "Block title",
+    "Par {0}": "By {0}",
+    "Masquer les groupes à 100 %": "Hide groups at 100%",
+    "Renommer ou fusionner les groupes par {0}": "Rename or merge groups by {0}",
+    "Donne le même nom à deux groupes pour les fusionner.": "Give two groups the same name to merge them.",
+    "Renommer {0}": "Rename {0}",
+    "Donne un nom au module.": "Give the module a name.",
+    "Supprimer « {0} »": "Delete “{0}”",
+    "Retape « {0} » pour confirmer la suppression définitive de ses données.": "Type “{0}” again to confirm the permanent deletion of its data.",
+    "Nom incorrect, rien n'a été supprimé.": "Wrong name, nothing was deleted.",
+    "« {0} » supprimé.": "“{0}” deleted.",
+    "Sauvegarde Selene": "Selene backup"
   };
 
   // src/app/i18n/index.js
@@ -3864,21 +3981,22 @@ var __selene = (() => {
     render();
   };
   CLICK["auth-out"] = () => authSignOut();
+  var deleteWord = () => trp("confirmation", "supprimer");
   CLICK["auth-delete"] = async (el) => {
-    const inp = $("#authDelIn");
-    if (!inp || inp.value.trim().toLowerCase() !== "supprimer") {
-      toast("Tape « supprimer » pour confirmer.");
+    const inp = $("#authDelIn"), typed = inp ? inp.value.trim().toLowerCase() : "";
+    if (typed !== deleteWord().toLowerCase() && typed !== "supprimer") {
+      toast(tr`Tape « ${deleteWord()} » pour confirmer.`);
       if (inp) inp.focus();
       return;
     }
-    if (!await ask("Supprimer ton compte et toutes ses données, sur le serveur et sur cet appareil ? C'est définitif.")) return;
+    if (!await ask(tr`Supprimer ton compte et toutes ses données, sur le serveur et sur cet appareil ? C'est définitif.`)) return;
     el.disabled = true;
     try {
       await authDeleteAccount();
-      toast("Compte supprimé. Il ne reste rien de toi ici, ce qui est plus que la plupart des services peuvent dire.");
+      toast(tr`Compte supprimé. Il ne reste rien de toi ici, ce qui est plus que la plupart des services peuvent dire.`);
     } catch (e) {
       el.disabled = false;
-      toast("Compte non supprimé : " + e.message);
+      toast(tr`Compte non supprimé : ${e.message}`);
     }
   };
 
@@ -5184,43 +5302,43 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     const row = (id) => {
       const inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null, more = inst && TYPE_UI[inst.type].recent ? TYPE_UI[inst.type].recent(inst) : [];
       const r = inst && inst.resume, bridge = r ? `<small class="resume ${bridgeStale(r) ? "stale" : ""}">↳ ${esc(r.text)} · ${ago(r.at)}</small>` : "";
-      return `<div class="over-wrap${more.length ? " has-more" : ""} ${tintOf(id)}"><a class="over" href="#${esc(id)}"><b>${sigil(id)}${esc(label(id))}</b><span>${summaryFor(id)}${bridge}</span></a>${more.length ? `<details class="more"><summary><span class="sr">Derniers éléments de ${esc(label(id))}</span></summary><ul>${more.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
+      return `<div class="over-wrap${more.length ? " has-more" : ""} ${tintOf(id)}"><a class="over" href="#${esc(id)}"><b>${sigil(id)}${esc(label(id))}</b><span>${summaryFor(id)}${bridge}</span></a>${more.length ? `<details class="more"><summary><span class="sr">${tr`Derniers éléments de ${esc(label(id))}`}</span></summary><ul>${more.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></details>` : ""}</div>`;
     };
     const ds = domains().map((d) => ({ ...d, ids: d.ids.filter((id) => id !== inbox) })).filter((d) => d.ids.length), named = ds.some((d) => d.name);
-    const rows = ds.map((d) => `${named ? `<p class="grp over-grp">${esc(d.name || "Espaces")}</p>` : ""}${d.ids.map(row).join("")}`).join("") + (enabled("assistant") ? row("assistant") : "");
+    const rows = ds.map((d) => `${named ? `<p class="grp over-grp">${esc(d.name || tr`Espaces`)}</p>` : ""}${d.ids.map(row).join("")}`).join("") + (enabled("assistant") ? row("assistant") : "");
     return `
-  ${s.config.welcome ? `<section><h2>Composer ton espace</h2><p class="hint">Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.</p>
-    ${MODULE_TEMPLATES.map((t) => `<div class="set" style="grid-template-columns:1fr auto"><div><b>${esc(t.name)}</b><div class="hint" style="margin:2px 0 0">${esc(t.hint)}</div></div><button class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}">Ajouter</button></div>`).join("")}
-    <div class="row" style="margin-top:12px"><button class="btn acc" data-act="welcome-done">C'est bon</button></div></section>` : ""}
+  ${s.config.welcome ? `<section><h2>${tr`Composer ton espace`}</h2><p class="hint">${tr`Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.`}</p>
+    ${MODULE_TEMPLATES.map((t) => `<div class="set" style="grid-template-columns:1fr auto"><div><b>${esc(t.name)}</b><div class="hint" style="margin:2px 0 0">${esc(t.hint)}</div></div><button class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}">${tr`Ajouter`}</button></div>`).join("")}
+    <div class="row" style="margin-top:12px"><button class="btn acc" data-act="welcome-done">${tr`C'est bon`}</button></div></section>` : ""}
   <section class="hero${HERO_COMPACT ? " compact" : ""}${win.right ? " txt-right" : ""}${skyLive() ? " live" : ""}" style="${heroStyle(win.sc, win.dark)}" data-weather="${win.sc.weather || ""}" data-leaves="${win.sc.leaves}" data-sun="${win.sun.alt.toFixed(1)}">${forestSVG(m.p, win.sc, win.moonAt, win.mo)}<div class="txt">
     <div class="phase">${m.name}</div>
-    <p>Éclairée à ${Math.round(m.illum * 100)} %, jour ${Math.floor(m.age) + 1} du cycle. ${m.p < 0.5 ? `Pleine lune dans ${m.nextFull} j.` : `Nouvelle lune dans ${m.nextNew} j.`}</p>
+    <p>${tr`Éclairée à ${Math.round(m.illum * 100)} %, jour ${Math.floor(m.age) + 1} du cycle.`} ${m.p < 0.5 ? tr`Pleine lune dans ${m.nextFull} j.` : tr`Nouvelle lune dans ${m.nextNew} j.`}</p>
     ${win.lineHTML ? `<p class="sky-line">${win.lineHTML}</p>` : ""}${win.events.map((t) => `<p class="sky-line sky-event">${esc(t)}</p>`).join("")}
   </div></section>
   ${resumeSection()}
   <div class="two">
-    <section><h2>Aujourd'hui</h2><p class="hint">Trois choses. La forêt pousse très bien sans que tu la surveilles.</p>
+    <section><h2>${tr`Aujourd'hui`}</h2><p class="hint">${tr`Trois choses. La forêt pousse très bien sans que tu la surveilles.`}</p>
       <ul class="plain">
         ${tod.map(([id, t]) => taskHTML(id, t)).join("")}
-        ${alerts.map((a) => `<li class="item alert"><span></span><div>${a.text}</div>${a.actions ? `<div class="row">${a.actions}</div>` : a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">voir</a>` : ""}</li>`).join("")}
+        ${alerts.map((a) => `<li class="item alert"><span></span><div>${a.text}</div>${a.actions ? `<div class="row">${a.actions}</div>` : a.href ? `<a class="btn ghost sm" href="${esc(a.href)}">${tr`voir`}</a>` : ""}</li>`).join("")}
       </ul>
-      ${!tod.length ? taskModules().length ? `<p class="empty">Aucune tâche choisie. <button class="btn ghost sm" data-act="task-pick">Tirer une petite tâche au sort</button></p>` : `<p class="empty">Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.</p>` : ""}
+      ${!tod.length ? taskModules().length ? `<p class="empty">${tr`Aucune tâche choisie.`} <button class="btn ghost sm" data-act="task-pick">${tr`Tirer une petite tâche au sort`}</button></p>` : `<p class="empty">${tr`Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.`}</p>` : ""}
       ${agendaHTML()}
       ${dehorsLine()}
-      ${radarPlace() && radarWords(radarConf().words).length ? `<p class="hint radar-go"><button class="btn ghost sm" data-act="radar-open">Radar culturel</button> ce qui, près d'ici, parle de tes mots</p>` : ""}
+      ${radarPlace() && radarWords(radarConf().words).length ? `<p class="hint radar-go">${tr`${`<button class="btn ghost sm" data-act="radar-open">${tr`Radar culturel`}</button>`} ce qui, près d'ici, parle de tes mots`}</p>` : ""}
     </section>
-    <section class="capsec"><h2>Capturer</h2><p class="hint">Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.</p>
-      ${inbox ? `<div class="capture"><input id="capIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="Capture rapide"><button class="btn acc" data-act="cap-add">Garder</button></div>
-      ${pending ? `<p class="hint" style="margin-top:8px"><a href="#${esc(inbox)}">${pending} élément${pending > 1 ? "s" : ""} à trier</a></p>` : ""}` : `<p class="hint">Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans <a href="#reglages">Réglages</a>.</p>`}
+    <section class="capsec"><h2>${tr`Capturer`}</h2><p class="hint">${tr`Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.`}</p>
+      ${inbox ? `<div class="capture"><input id="capIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="${tr`Capture rapide`}"><button class="btn acc" data-act="cap-add">${tr`Garder`}</button></div>
+      ${pending ? `<p class="hint" style="margin-top:8px"><a href="#${esc(inbox)}">${trn(pending, "{0} élément à trier", "{0} éléments à trier")}</a></p>` : ""}` : `<p class="hint">${tr`Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans ${`<a href="#reglages">${tr`Réglages`}</a>`}.`}</p>`}
     </section>
   </div>
-  <section><div class="row" style="align-items:baseline"><h2>Où en sont les choses</h2><span class="spacer"></span><a class="btn ghost sm" href="#bilan">Bilan du ${bilanMode() === "mois" ? "mois" : "cycle"}</a></div>${rows}</section>
+  <section><div class="row" style="align-items:baseline"><h2>${tr`Où en sont les choses`}</h2><span class="spacer"></span><a class="btn ghost sm" href="#bilan">${bilanMode() === "mois" ? tr`Bilan du mois` : tr`Bilan du cycle`}</a></div>${rows}</section>
   ${sortesSection()}`;
   };
   var SUMMARY = {
     assistant: () => {
       const b = backend();
-      return b === "sample" ? "Branché via claude.ai" : b === "api" ? "Branché via ta clé API" : "Pas encore branché";
+      return b === "sample" ? tr`Branché via claude.ai` : b === "api" ? tr`Branché via ta clé API` : tr`Pas encore branché`;
     }
   };
   function summaryFor(id) {
@@ -5231,14 +5349,14 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     const s = S(), drafts = pendingDrafts(), last = liveRecents()[0], lines = [];
     if (last) {
       const r = s.modules[last.id].resume, mine = drafts.filter((d) => d.view === last.id).map((d) => d.what);
-      if (r || mine.length) lines.push(`<li><a href="#${esc(last.id)}"><b>${esc(label(last.id))}</b></a>${r ? ` — ↳ ${esc(r.text)}` : ""}${mine.length ? ` · ${esc(mine.join(", "))} en cours` : ""} <span class="hint">· ${agoTime(last.at)}</span></li>`);
+      if (r || mine.length) lines.push(`<li><a href="#${esc(last.id)}"><b>${esc(label(last.id))}</b></a>${r ? ` — ↳ ${esc(r.text)}` : ""}${mine.length ? ` · ${esc(tr`${mine.join(", ")} en cours`)}` : ""} <span class="hint">· ${agoTime(last.at)}</span></li>`);
     }
     for (const d of drafts) {
       if (last && d.view === last.id) continue;
-      if (d.view === "sheet") lines.push(`<li>${d.what} en cours <button class="btn ghost sm" data-act="sheet-capture">reprendre</button></li>`);
-      else if (Object.hasOwn(s.modules, d.view) ? enabled(d.view) : d.view === "assistant" && enabled("assistant")) lines.push(`<li><a href="#${esc(d.view)}"><b>${esc(label(d.view))}</b></a> · ${d.what} en cours</li>`);
+      if (d.view === "sheet") lines.push(`<li>${esc(tr`${d.what} en cours`)} <button class="btn ghost sm" data-act="sheet-capture">${tr`reprendre`}</button></li>`);
+      else if (Object.hasOwn(s.modules, d.view) ? enabled(d.view) : d.view === "assistant" && enabled("assistant")) lines.push(`<li><a href="#${esc(d.view)}"><b>${esc(label(d.view))}</b></a> · ${esc(tr`${d.what} en cours`)}</li>`);
     }
-    return lines.length ? `<section class="resume-box" aria-label="Reprendre"><h3>Reprendre</h3><ul>${lines.join("")}</ul></section>` : "";
+    return lines.length ? `<section class="resume-box" aria-label="${trp("accueil", "Reprendre")}"><h3>${trp("accueil", "Reprendre")}</h3><ul>${lines.join("")}</ul></section>` : "";
   }
   CLICK["welcome-done"] = () => {
     S().config.welcome = false;
@@ -5360,70 +5478,70 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
 
   // src/app/views/reglages.js
   var langSelectHTML = (c) => langChoices().length < 2 ? "<span></span>" : `<label>${tr`Langue`}<select data-set="config.lang"><option value="" ${!c.lang ? "selected" : ""}>${tr`Langue de l'appareil`}</option>${langChoices().map(([k, n]) => `<option value="${k}" lang="${k}" ${c.lang === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></label>`;
-  var PALETTES = [["nigredo", "Nigredo, mousse", "#6f9a68"], ["albedo", "Albedo, lichen", "#aab7a6"], ["citrinitas", "Citrinitas, résine", "#c99a3c"], ["rubedo", "Rubedo, amanite", "#c0554a"]];
+  var PALETTES = [["nigredo", N_("Nigredo, mousse"), "#6f9a68"], ["albedo", N_("Albedo, lichen"), "#aab7a6"], ["citrinitas", N_("Citrinitas, résine"), "#c99a3c"], ["rubedo", N_("Rubedo, amanite"), "#c0554a"]];
   VIEWS.reglages = () => {
     const s = S(), c = s.config;
-    return `<h2>Réglages</h2><p class="hint">Tout ici s'applique immédiatement.</p>
-  <section><h3>Apparence</h3><p class="hint">Quatre étapes de l'Œuvre, prises dans le sous-bois.</p>
-    <div class="swatches">${PALETTES.map(([id, n, col]) => `<button class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}"><i style="background:${col}"></i>${n}</button>`).join("")}</div>
-    <div class="field-row" style="margin-top:14px"><label>Mode<select data-set="config.mode"><option value="auto" ${c.mode === "auto" ? "selected" : ""}>Suivre l'appareil</option><option value="dark" ${c.mode === "dark" ? "selected" : ""}>Toujours sombre</option><option value="light" ${c.mode === "light" ? "selected" : ""}>Toujours clair</option><option value="sun" ${c.mode === "sun" ? "selected" : ""}>Suivre le soleil</option></select></label>
-    <label>Nom affiché<input data-set="config.name" value="${esc(c.name)}"></label></div>
-    <div class="field-row" style="margin-top:12px"><label>Ouvrir sur (cet appareil)<select data-act="open-on"><option value="accueil" ${openOn() === "accueil" ? "selected" : ""}>L'accueil</option><option value="last" ${openOn() === "last" ? "selected" : ""}>Là où j'en étais</option></select></label>${langSelectHTML(c)}</div></section>
+    return `<h2>${tr`Réglages`}</h2><p class="hint">${tr`Tout ici s'applique immédiatement.`}</p>
+  <section><h3>${tr`Apparence`}</h3><p class="hint">${tr`Quatre étapes de l'Œuvre, prises dans le sous-bois.`}</p>
+    <div class="swatches">${PALETTES.map(([id, n, col]) => `<button class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}"><i style="background:${col}"></i>${tr(n)}</button>`).join("")}</div>
+    <div class="field-row" style="margin-top:14px"><label>${tr`Mode`}<select data-set="config.mode"><option value="auto" ${c.mode === "auto" ? "selected" : ""}>${tr`Suivre l'appareil`}</option><option value="dark" ${c.mode === "dark" ? "selected" : ""}>${tr`Toujours sombre`}</option><option value="light" ${c.mode === "light" ? "selected" : ""}>${tr`Toujours clair`}</option><option value="sun" ${c.mode === "sun" ? "selected" : ""}>${tr`Suivre le soleil`}</option></select></label>
+    <label>${tr`Nom affiché`}<input data-set="config.name" value="${esc(c.name)}"></label></div>
+    <div class="field-row" style="margin-top:12px"><label>${tr`Ouvrir sur (cet appareil)`}<select data-act="open-on"><option value="accueil" ${openOn() === "accueil" ? "selected" : ""}>${tr`L'accueil`}</option><option value="last" ${openOn() === "last" ? "selected" : ""}>${tr`Là où j'en étais`}</option></select></label>${langSelectHTML(c)}</div></section>
   ${notifySettingsHTML()}
   ${skySettingsHTML()}
   ${radarSettingsHTML()}
-  <section><h3>Modules</h3><p class="hint">Active, renomme, réordonne, range par domaine (Maison, Création… : la navigation les regroupe). Les modules personnalisés (marqués ✕) peuvent être supprimés définitivement.</p>
+  <section><h3>${tr`Modules`}</h3><p class="hint">${tr`Active, renomme, réordonne, range par domaine (Maison, Création… : la navigation les regroupe). Les modules personnalisés (marqués ✕) peuvent être supprimés définitivement.`}</p>
     <datalist id="domainList">${[...new Set(c.modules.map((m) => String(m.group || "").trim()).filter(Boolean))].map((g) => `<option value="${esc(g)}">`).join("")}</datalist>
-    ${c.modules.map((m, i) => `<div class="set mod" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="Activer ${esc(label(m.id))}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="Nom du module">${SYSTEM.includes(m.id) ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="Domaine" aria-label="Domaine de ${esc(label(m.id))}">`}<div class="row">${s.modules[m.id] ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="Supprimer définitivement" title="Supprimer définitivement">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="Monter">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="Descendre">↓</button></div></div>`).join("")}
-    <details style="margin-top:14px"><summary class="hint" style="cursor:pointer;margin:0">+ Créer un module</summary>
-      <div class="field-row" style="margin-top:10px"><label>Modèle ou type<select id="newModType"><optgroup label="Modèles">${MODULE_TEMPLATES.map((t) => `<option value="tpl:${esc(t.id)}">${esc(t.name)} — ${esc(t.hint)}</option>`).join("")}</optgroup><optgroup label="Types vides">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}">${esc(t.label)}</option>`).join("")}</optgroup></select></label>
-      <label>Nom<input id="newModName" placeholder="Nom du modèle si vide"></label></div>
-      <button class="btn sm" data-act="mod-add" style="margin-top:8px">Créer</button></details>
+    ${c.modules.map((m, i) => `<div class="set mod" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="${tr`Activer ${esc(label(m.id))}`}"><input data-act="mod-label" value="${esc(label(m.id))}" aria-label="${tr`Nom du module`}">${SYSTEM.includes(m.id) ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="${tr`Domaine`}" aria-label="${tr`Domaine de ${esc(label(m.id))}`}">`}<div class="row">${s.modules[m.id] ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="${tr`Supprimer définitivement`}" title="${tr`Supprimer définitivement`}">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="${tr`Descendre`}">↓</button></div></div>`).join("")}
+    <details style="margin-top:14px"><summary class="hint" style="cursor:pointer;margin:0">+ ${tr`Créer un module`}</summary>
+      <div class="field-row" style="margin-top:10px"><label>${tr`Modèle ou type`}<select id="newModType"><optgroup label="${tr`Modèles`}">${MODULE_TEMPLATES.map((t) => `<option value="tpl:${esc(t.id)}">${esc(t.name)} — ${esc(t.hint)}</option>`).join("")}</optgroup><optgroup label="${tr`Types vides`}">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}">${esc(t.label)}</option>`).join("")}</optgroup></select></label>
+      <label>${tr`Nom`}<input id="newModName" placeholder="${tr`Nom du modèle si vide`}"></label></div>
+      <button class="btn sm" data-act="mod-add" style="margin-top:8px">${tr`Créer`}</button></details>
   </section>
-  <section id="modreg"><h3>Réglages par module</h3><p class="hint">Un bloc par module actif, dans l'ordre de la navigation : ses réglages propres, et le regroupement en pourcentage quand il existe.</p>
+  <section id="modreg"><h3>${tr`Réglages par module`}</h3><p class="hint">${tr`Un bloc par module actif, dans l'ordre de la navigation : ses réglages propres, et le regroupement en pourcentage quand il existe.`}</p>
     ${c.modules.filter((m) => enabled(m.id) && (s.modules[m.id] || grouperFor(m.id))).map((m) => `<details id="mreg-${esc(m.id)}" data-mod="${esc(m.id)}" style="border-top:1px solid var(--rule);padding:12px 0">
         <summary style="cursor:pointer;font-size:1.05rem;font-weight:600">${esc(label(m.id))}</summary>
         <div style="margin-top:10px">${moduleSettingsHTML(m.id)}</div>
       </details>`).join("")}
   </section>
-  ${enabled("assistant") ? `<section id="assistant-cfg"><h3>Assistant</h3><p class="hint">Claude dans le tableau de bord. Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.</p>
-    <div class="field-row">${hosted() ? `<label>Clé API Anthropic${assistantKnown()?.cle ? ` (enregistrée : ${esc(assistantKnown().indice || "")})` : ""}<input type="password" data-act="as-key" value="" placeholder="${assistantKnown()?.cle ? "Coller une autre clé pour la remplacer" : "sk-ant-…"}" autocomplete="off"></label>` : ""}
-    <label>Modèle<select data-act="as-model">${[["claude-haiku-4-5-20251001", "Haiku 4.5, rapide et peu cher"], ["claude-sonnet-5", "Sonnet 5, équilibré"], ["claude-opus-5-5", "Opus 5.5, le plus capable"]].map(([k, l]) => `<option value="${k}" ${s.config.assistant.model === k ? "selected" : ""}>${l}</option>`).join("")}</select></label></div>
-    <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" data-act="as-actions" ${s.config.assistant.actions ? "checked" : ""}>Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)</label>
-    <p class="hint" style="margin:12px 0 4px">Ce que Claude peut lire :</p><div class="row">${Object.keys(s.config.assistant.share).filter(enabled).map((k) => `<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" data-act="as-share" data-k="${esc(k)}" ${s.config.assistant.share[k] ? "checked" : ""}>${esc(label(k))}</label>`).join("")}</div>
-    ${hosted() && assistantKnown()?.cle ? `<button class="btn ghost sm" data-act="as-forget" style="margin-top:10px">Oublier la clé (sur tous tes appareils)</button>` : ""}</section>` : ""}
-  ${hosted() && authReady() && authSession ? `<section><h3>Compte</h3><p class="hint">Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.</p>
-    <button class="btn ghost" data-act="auth-out">Se déconnecter</button>
-    <details id="auth-delete" style="margin-top:16px"><summary class="hint" style="cursor:pointer;margin:0">Supprimer mon compte</summary>
-      <p class="hint" style="margin-top:8px">Définitif : ton compte, tout ton tableau de bord sur le serveur et ta clé d'assistant sont effacés, puis cet appareil est vidé. Tes autres appareils perdent l'accès. Exporte d'abord une sauvegarde (plus bas) si tu veux garder quelque chose. Politique de confidentialité : <a href="https://mariebonifacio.github.io/selene/confidentialite.html" target="_blank" rel="noopener">ce que Selene garde, et où</a>.</p>
-      <div class="field-row"><label>Tape « supprimer » pour confirmer<input id="authDelIn" autocomplete="off" autocapitalize="off" spellcheck="false"></label><span></span></div>
-      <button class="btn sm" data-act="auth-delete" style="margin-top:8px;color:var(--alarm)">Supprimer définitivement</button></details></section>` : ""}
+  ${enabled("assistant") ? `<section id="assistant-cfg"><h3>${tr`Assistant`}</h3><p class="hint">${tr`Claude dans le tableau de bord. Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.`}</p>
+    <div class="field-row">${hosted() ? `<label>${assistantKnown()?.cle ? tr`Clé API Anthropic (enregistrée : ${esc(assistantKnown().indice || "")})` : tr`Clé API Anthropic`}<input type="password" data-act="as-key" value="" placeholder="${assistantKnown()?.cle ? tr`Coller une autre clé pour la remplacer` : "sk-ant-…"}" autocomplete="off"></label>` : ""}
+    <label>${tr`Modèle`}<select data-act="as-model">${[["claude-haiku-4-5-20251001", tr`Haiku 4.5, rapide et peu cher`], ["claude-sonnet-5", tr`Sonnet 5, équilibré`], ["claude-opus-5-5", tr`Opus 5.5, le plus capable`]].map(([k, l]) => `<option value="${k}" ${s.config.assistant.model === k ? "selected" : ""}>${l}</option>`).join("")}</select></label></div>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" data-act="as-actions" ${s.config.assistant.actions ? "checked" : ""}>${tr`Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)`}</label>
+    <p class="hint" style="margin:12px 0 4px">${tr`Ce que Claude peut lire :`}</p><div class="row">${Object.keys(s.config.assistant.share).filter(enabled).map((k) => `<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" data-act="as-share" data-k="${esc(k)}" ${s.config.assistant.share[k] ? "checked" : ""}>${esc(label(k))}</label>`).join("")}</div>
+    ${hosted() && assistantKnown()?.cle ? `<button class="btn ghost sm" data-act="as-forget" style="margin-top:10px">${tr`Oublier la clé (sur tous tes appareils)`}</button>` : ""}</section>` : ""}
+  ${hosted() && authReady() && authSession ? `<section><h3>${tr`Compte`}</h3><p class="hint">${tr`Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.`}</p>
+    <button class="btn ghost" data-act="auth-out">${tr`Se déconnecter`}</button>
+    <details id="auth-delete" style="margin-top:16px"><summary class="hint" style="cursor:pointer;margin:0">${tr`Supprimer mon compte`}</summary>
+      <p class="hint" style="margin-top:8px">${tr`Définitif : ton compte, tout ton tableau de bord sur le serveur et ta clé d'assistant sont effacés, puis cet appareil est vidé. Tes autres appareils perdent l'accès. Exporte d'abord une sauvegarde (plus bas) si tu veux garder quelque chose. Politique de confidentialité : ${`<a href="https://mariebonifacio.github.io/selene/confidentialite.html" target="_blank" rel="noopener">${tr`ce que Selene garde, et où`}</a>`}.`}</p>
+      <div class="field-row"><label>${tr`Tape « ${deleteWord()} » pour confirmer`}<input id="authDelIn" autocomplete="off" autocapitalize="off" spellcheck="false"></label><span></span></div>
+      <button class="btn sm" data-act="auth-delete" style="margin-top:8px;color:var(--alarm)">${tr`Supprimer définitivement`}</button></details></section>` : ""}
   ${hosted() ? shareSettingsHTML() : ""}
   ${hosted() && authReady() && authSession ? passeurSettingsHTML() : ""}
   ${hosted() && authReady() && authSession ? agendaSettingsHTML() : ""}
   ${hosted() ? zotSettingsHTML() : ""}
-  <section><h3>Sauvegarde</h3><p class="hint">Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.</p>
-    <div class="row"><button class="btn" data-act="exp">Exporter</button><label class="btn" style="display:inline-block;font-weight:500">Importer<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label></div></section>
-  <p class="hint" style="margin-top:24px"><a href="https://mariebonifacio.github.io/selene/confidentialite.html" target="_blank" rel="noopener">Confidentialité</a> : aucun traceur, aucune publicité ; ce que Selene garde, où, et comment tout effacer.</p>`;
+  <section><h3>${tr`Sauvegarde`}</h3><p class="hint">${tr`Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.`}</p>
+    <div class="row"><button class="btn" data-act="exp">${tr`Exporter`}</button><label class="btn" style="display:inline-block;font-weight:500">${tr`Importer`}<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label></div></section>
+  <p class="hint" style="margin-top:24px">${tr`${`<a href="https://mariebonifacio.github.io/selene/confidentialite.html" target="_blank" rel="noopener">${tr`Confidentialité`}</a>`} : aucun traceur, aucune publicité ; ce que Selene garde, où, et comment tout effacer.`}</p>`;
   };
   function moduleSettingsHTML(mod) {
     const s = S(), inst = s.modules[mod], G = grouperFor(mod), g = G ? gcfg(mod) : null, by = G ? groupBy(mod) : null;
     const names = G && G.renamable.includes(by) ? [...new Set(G.items().map((it) => it[by]).filter(Boolean))].sort(collate) : [];
     return `${sigilPicker(mod)}
         ${inst ? TYPE_UI[inst.type].settings(mod, inst) : ""}
-        ${G ? `<div class="row" style="margin-top:0"><label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="grp-on" ${g.on ? "checked" : ""}>Regrouper en pourcentage</label></div>
+        ${G ? `<div class="row" style="margin-top:0"><label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="grp-on" ${g.on ? "checked" : ""}>${tr`Regrouper en pourcentage`}</label></div>
           ${g.on ? `<div class="field-row" style="margin-top:8px">
-            <label>Regrouper par<select data-act="grp-by">${Object.entries(G.fields).map(([k, l]) => `<option value="${esc(k)}" ${by === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
-            <label>Trier par<select data-act="grp-sort"><option value="name" ${g.sort === "name" ? "selected" : ""}>Ordre naturel</option><option value="pct" ${g.sort === "pct" ? "selected" : ""}>Le plus avancé d'abord</option><option value="left" ${g.sort === "left" ? "selected" : ""}>Le plus en retard d'abord</option></select></label></div>
-            <div class="field-row" style="margin-top:8px"><label>Titre du bloc<input data-act="grp-title" value="${esc(g.title)}" placeholder="Par ${esc(G.fields[by].toLowerCase())}"></label>
-            <label style="display:flex;gap:8px;align-items:center;align-self:end;padding-bottom:10px"><input type="checkbox" data-act="grp-hide" ${g.hideDone ? "checked" : ""}>Masquer les groupes à 100 %</label></div>
-            ${names.length ? `<details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">Renommer ou fusionner des ${esc(G.fields[by].toLowerCase())}s</summary><p class="hint" style="margin:6px 0">Donne le même nom à deux groupes pour les fusionner.</p>${names.map((n) => `<div class="set" style="grid-template-columns:1fr"><input data-act="grp-rename" data-old="${esc(n)}" value="${esc(n)}" aria-label="Renommer ${esc(n)}"></div>`).join("")}</details>` : ""}
+            <label>${tr`Regrouper par`}<select data-act="grp-by">${Object.entries(G.fields).map(([k, l]) => `<option value="${esc(k)}" ${by === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
+            <label>${tr`Trier par`}<select data-act="grp-sort"><option value="name" ${g.sort === "name" ? "selected" : ""}>${tr`Ordre naturel`}</option><option value="pct" ${g.sort === "pct" ? "selected" : ""}>${tr`Le plus avancé d'abord`}</option><option value="left" ${g.sort === "left" ? "selected" : ""}>${tr`Le plus en retard d'abord`}</option></select></label></div>
+            <div class="field-row" style="margin-top:8px"><label>${tr`Titre du bloc`}<input data-act="grp-title" value="${esc(g.title)}" placeholder="${tr`Par ${esc(G.fields[by].toLowerCase())}`}"></label>
+            <label style="display:flex;gap:8px;align-items:center;align-self:end;padding-bottom:10px"><input type="checkbox" data-act="grp-hide" ${g.hideDone ? "checked" : ""}>${tr`Masquer les groupes à 100 %`}</label></div>
+            ${names.length ? `<details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">${tr`Renommer ou fusionner les groupes par ${esc(G.fields[by].toLowerCase())}`}</summary><p class="hint" style="margin:6px 0">${tr`Donne le même nom à deux groupes pour les fusionner.`}</p>${names.map((n) => `<div class="set" style="grid-template-columns:1fr"><input data-act="grp-rename" data-old="${esc(n)}" value="${esc(n)}" aria-label="${tr`Renommer ${esc(n)}`}"></div>`).join("")}</details>` : ""}
            ` : ""}` : ""}`;
   }
   CLICK["mod-add"] = () => {
     const choice = $("#newModType").value, tpl = MODULE_TEMPLATES.find((t) => "tpl:" + t.id === choice);
     const name = $("#newModName").value.trim() || (tpl ? tpl.name : "");
-    if (!name) return toast("Donne un nom au module.");
+    if (!name) return toast(tr`Donne un nom au module.`);
     addModule(tpl || { type: choice }, name);
   };
   CLICK["tpl-add"] = (el) => {
@@ -5432,8 +5550,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   };
   CLICK["mod-del"] = (el) => {
     const id = el.dataset.mod, name = label(id);
-    openForm(`Supprimer « ${name} »`, [{ n: "confirm", l: `Retape « ${name} » pour confirmer la suppression définitive de ses données.`, req: true }], {}, (v) => {
-      if (v.confirm !== name) return toast("Nom incorrect, rien n'a été supprimé.");
+    openForm(tr`Supprimer « ${name} »`, [{ n: "confirm", l: tr`Retape « ${name} » pour confirmer la suppression définitive de ses données.`, req: true }], {}, (v) => {
+      if (v.confirm !== name) return toast(tr`Nom incorrect, rien n'a été supprimé.`);
       const s = S();
       deleteModuleInstance(s.modules, s.config.modules, id);
       delete s.config.labels[id];
@@ -5441,10 +5559,10 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       delete s.config.assistant.share[id];
       site.save();
       render();
-      toast(`« ${name} » supprimé.`);
+      toast(tr`« ${name} » supprimé.`);
     });
   };
-  CLICK["exp"] = () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, site.data), "application/json", "Sauvegarde Selene");
+  CLICK["exp"] = () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, site.data), "application/json", tr`Sauvegarde Selene`);
   CLICK["pal"] = (el) => {
     S().config.palette = el.dataset.p;
     site.save();
@@ -8638,13 +8756,13 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   });
 
   // src/app/state/drafts.js
-  var DRAFT_WHAT = { scrapIn: "un fragment", noteIn: "une note", rapNote: "une observation", chatIn: "un message", capSheetIn: "une capture" };
+  var DRAFT_WHAT = { scrapIn: N_("un fragment"), noteIn: N_("une note"), rapNote: N_("une observation"), chatIn: N_("un message"), capSheetIn: N_("une capture") };
   function pendingDrafts() {
     const out = [];
     for (const k of platform.storage.keys()) {
       if (!k.startsWith(DRAFT_PREFIX)) continue;
       const [view, field] = k.slice(DRAFT_PREFIX.length).split(":");
-      if (view !== "accueil") out.push({ view, what: DRAFT_WHAT[field] || "un texte" });
+      if (view !== "accueil") out.push({ view, what: tr(DRAFT_WHAT[field] || N_("un texte")) });
     }
     return out;
   }
