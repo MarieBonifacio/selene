@@ -6,8 +6,10 @@ import { CLICK, TYPE_UI, VIEWS } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { downloadFile } from "../lib/download.js";
 import { todayISO } from "../lib/format.js";
-import { N_, collate, langChoices, tr } from "../i18n/index.js";
+import { N_, collate, langChoices, tr, uiLang } from "../i18n/index.js";
 import { localTemplate } from "../lib/labels.js";
+// La politique de confidentialité, dans la langue de l'interface quand elle existe (confidentialite.html, privacy.html).
+const privacyUrl = () => `https://mariebonifacio.github.io/selene/${uiLang() === "en" ? "privacy" : "confidentialite"}.html`;
 import { agendaSettingsHTML } from "../features/agenda.js";
 import { assistantKnown } from "../features/assistant.js";
 import { notifySettingsHTML } from "../features/digest.js";
@@ -64,7 +66,7 @@ VIEWS.reglages = () => {
   ${hosted() && authReady() && authSession ? `<section><h3>${tr`Compte`}</h3><p class="hint">${tr`Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.`}</p>
     <button class="btn ghost" data-act="auth-out">${tr`Se déconnecter`}</button>
     <details id="auth-delete" style="margin-top:16px"><summary class="hint" style="cursor:pointer;margin:0">${tr`Supprimer mon compte`}</summary>
-      <p class="hint" style="margin-top:8px">${tr`Définitif : ton compte, tout ton tableau de bord sur le serveur et ta clé d'assistant sont effacés, puis cet appareil est vidé. Tes autres appareils perdent l'accès. Exporte d'abord une sauvegarde (plus bas) si tu veux garder quelque chose. Politique de confidentialité : ${`<a href="https://mariebonifacio.github.io/selene/confidentialite.html" target="_blank" rel="noopener">${tr`ce que Selene garde, et où`}</a>`}.`}</p>
+      <p class="hint" style="margin-top:8px">${tr`Définitif : ton compte, tout ton tableau de bord sur le serveur et ta clé d'assistant sont effacés, puis cet appareil est vidé. Tes autres appareils perdent l'accès. Exporte d'abord une sauvegarde (plus bas) si tu veux garder quelque chose. Politique de confidentialité : ${`<a href="${privacyUrl()}" target="_blank" rel="noopener">${tr`ce que Selene garde, et où`}</a>`}.`}</p>
       <div class="field-row"><label>${tr`Tape « ${deleteWord()} » pour confirmer`}<input id="authDelIn" autocomplete="off" autocapitalize="off" spellcheck="false"></label><span></span></div>
       <button class="btn sm" data-act="auth-delete" style="margin-top:8px;color:var(--alarm)">${tr`Supprimer définitivement`}</button></details></section>` : ""}
   ${hosted() ? shareSettingsHTML() : ""}
@@ -73,7 +75,7 @@ VIEWS.reglages = () => {
   ${hosted() ? zotSettingsHTML() : ""}
   <section><h3>${tr`Sauvegarde`}</h3><p class="hint">${tr`Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.`}</p>
     <div class="row"><button class="btn" data-act="exp">${tr`Exporter`}</button><label class="btn" style="display:inline-block;font-weight:500">${tr`Importer`}<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label></div></section>
-  <p class="hint" style="margin-top:24px">${tr`${`<a href="https://mariebonifacio.github.io/selene/confidentialite.html" target="_blank" rel="noopener">${tr`Confidentialité`}</a>`} : aucun traceur, aucune publicité ; ce que Selene garde, où, et comment tout effacer.`}</p>`;
+  <p class="hint" style="margin-top:24px">${tr`${`<a href="${privacyUrl()}" target="_blank" rel="noopener">${tr`Confidentialité`}</a>`} : aucun traceur, aucune publicité ; ce que Selene garde, où, et comment tout effacer.`}</p>`;
 };
 /* Les réglages propres d'un module (son sigil, ceux de son type, son regroupement en pourcentage) : dans la page
    Réglages, et dans la feuille qu'ouvre « régler » depuis le module lui-même. */

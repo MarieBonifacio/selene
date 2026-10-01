@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Selene — privacy</title>
+<style>
+:root { --bg: #f4f1ea; --ink: #1d231f; --muted: #5b655e; --rule: #d6d0c3; --acc: #4f7a49; }
+@media (prefers-color-scheme: dark) { :root { --bg: #0e1310; --ink: #e4e8e1; --muted: #9aa69c; --rule: #2a332d; --acc: #8fbf87; } }
+body { background: var(--bg); color: var(--ink); font: 17px/1.6 Georgia, "Iowan Old Style", serif; margin: 0; padding: 32px 16px 64px; }
+main { max-width: 42rem; margin: 0 auto; }
+h1 { font-weight: 400; font-size: 2rem; margin: 0 0 4px; }
+h2 { font-weight: 600; font-size: 1.1rem; margin: 32px 0 8px; border-top: 1px solid var(--rule); padding-top: 20px; }
+p, li { margin: 0 0 10px; }
+.meta { color: var(--muted); font-size: .9rem; }
+a { color: var(--acc); }
+code { font-size: .9em; }
+</style>
+</head>
+<body><main>
+<h1>Selene and your data</h1>
+<p class="meta">Privacy policy of Selene (website, Android, iOS and Windows apps). Last updated: 30 September 2026.
+<a href="confidentialite.html" hreflang="fr" lang="fr">En français</a>.</p>
+
+<p>The short version: Selene sells nothing, measures nothing, shows no advertising and has no trackers. What you write
+in it stays on your device, and on a server only if you create an account, so you can find it on your other devices.</p>
+
+<h2>Without an account</h2>
+<p>Everything stays on your device: in the browser (IndexedDB) for the website, in the app's private folder for the
+apps. Nothing is sent to Selene. The keys you enter (OpenAlex, Zotero, calendar address) are kept on the device, in the
+system keychain for the apps.</p>
+
+<h2>With an account</h2>
+<ul>
+<li><b>What is kept</b>: your email address and your password (hashed, by Supabase Auth), and your dashboard (tasks,
+notes, modules, settings, including the place chosen for the sky) for synchronisation. Nothing else.</li>
+<li><b>Where</b>: at <a href="https://supabase.com/privacy">Supabase</a>, the database host, in a table where each
+account can only read its own row.</li>
+<li><b>The Anthropic API key</b>, if you turn on the assistant: checked, encrypted (AES-GCM) and tied to your account on
+the server; it never comes back into the page. Your questions to the assistant, with what you chose to let it read, go
+to <a href="https://www.anthropic.com/legal/privacy">Anthropic</a> on behalf of your key; Selene's server keeps neither
+the questions nor the answers.</li>
+<li><b>The relay</b> (reading feeds and pages the browser cannot read on its own) fetches the addresses you give it and
+keeps nothing.</li>
+</ul>
+
+<h2>The services Selene calls for you</h2>
+<p>Only when you use the feature concerned, directly from your device:</p>
+<ul>
+<li>Open-Meteo (weather and place search: the coordinates or the name of the chosen place);</li>
+<li>Crossref, OpenAlex, Zotero (bibliographic references: what you search for, and your Zotero key if you give one);</li>
+<li>MusicBrainz and Cover Art Archive (records: what you search for);</li>
+<li>Microlink (preview of a link you save: the address of the link);</li>
+<li>Google Fonts (the website's typefaces: your IP address, as for any web page);</li>
+<li>the open data of the Métropole européenne de Lille (cultural outings, if you turn on this module).</li>
+</ul>
+<p>The device's location is only requested if you press “My location” for the home sky. It is immediately rounded to
+a tenth of a degree (about ten kilometres), kept in your settings like a place chosen by hand (so synchronised with your
+account, if you have one) and sent to Open-Meteo for the weather. Nothing more precise leaves the device.</p>
+
+<h2>Notifications</h2>
+<p>The mobile apps' morning summary is scheduled by the phone itself: no notification goes through a server.</p>
+
+<h2>Your rights</h2>
+<ul>
+<li><b>Export</b>: Settings → Backup → Export, your whole state in one file.</li>
+<li><b>Delete</b>: Settings → Account → Delete my account. Your account, your dashboard on the server and your assistant
+key are erased at once, then the device is emptied.</li>
+<li><b>Without an account</b>: uninstalling the app, or clearing the website's data in the browser, erases everything.</li>
+</ul>
+
+<h2>Contact</h2>
+<p>A question, a request: <a href="https://github.com/MarieBonifacio/selene/issues">open an issue</a> on the project's
+repository. Selene's code is public: everything written here can be checked there.</p>
+</main></body>
+</html>

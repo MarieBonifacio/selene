@@ -76,7 +76,7 @@ if sys.argv[1:2] == ["--dist"]:
     for rel, content in files.items():
         (dist / rel).parent.mkdir(parents=True, exist_ok=True)
         (dist / rel).write_text(content, encoding="utf-8")
-    for name in ["sw.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "confidentialite.html"]:
+    for name in ["sw.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "confidentialite.html", "privacy.html"]:
         shutil.copyfile(ROOT / name, dist / "web" / name)
     print(f"{dist.relative_to(ROOT) if dist.is_relative_to(ROOT) else dist}: web, artifact, native built")
 elif sys.argv[1:] == ["--check"]:
