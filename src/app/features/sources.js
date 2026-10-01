@@ -5,7 +5,7 @@ import { bareSource, crossrefToSource, findDoi, findUrl, microlinkToSource, sour
 import { CLICK } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { fmt, todayISO, uid } from "../lib/format.js";
-import { uiLocale } from "../i18n/index.js";
+import { tr, trp, uiLocale } from "../i18n/index.js";
 import { citeBar } from "./cites.js";
 import { dehorsFeeds } from "./dehors.js";
 import { excerpt, refFind, thoughtItems } from "./links.js";
@@ -37,7 +37,7 @@ export function srcMeta(e) {
   const x = e.src; if (!x) return "";
   const url = x.url && /^https?:\/\//i.test(x.url) ? x.url : "";
   return [x.site && `<span>${esc(x.site)}</span>`, x.date && `<span>${esc(pubDate(x.date))}</span>`, x.doi && `<span>doi:${esc(x.doi)}</span>`,
-    url && `<a class="src-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">ouvrir ↗</a>`,
+    url && `<a class="src-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${tr`ouvrir ↗`}</a>`,
     e.zot && e.zot.l && /^https:\/\/www\.zotero\.org\//.test(e.zot.l) && `<a class="src-link" href="${esc(e.zot.l)}" target="_blank" rel="noopener noreferrer">Zotero ↗</a>`].filter(Boolean).join("");
 }
 async function fetchSource(raw) {
@@ -86,21 +86,21 @@ export function keepSource(mod, x, origin) {
 }
 export function sourceBar(id) {
   const p = srcPreview[id], d = p && p.data;
-  const prev = !p ? "" : p.busy ? `<p class="hint" role="status">Recherche…</p>` : `<div class="src-prev" role="status">
+  const prev = !p ? "" : p.busy ? `<p class="hint" role="status">${tr`Recherche…`}</p>` : `<div class="src-prev" role="status">
     <b>${esc(d.title)}</b>${d.authors ? `<div>${esc(d.authors)}</div>` : ""}
     <div class="meta">${[d.site, pubDate(d.date), d.kind].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("")}${d.doi ? `<span>doi:${esc(d.doi)}</span>` : ""}</div>
     ${d.abstract ? `<p class="note">${esc(d.abstract)}</p>` : ""}
-    ${d.feeds && d.feeds.length ? `<p class="hint">Ce site publie un flux : ${d.feeds.map(f => `<span class="tag">${esc(f.title || f.url)}</span>`).join(" ")}${passeurPret() && !dehorsFeeds().some(x => sourceKey({ url: x.url }) === sourceKey({ url: d.feeds[0].url })) ? ` <button class="btn ghost sm" data-act="dehors-follow" data-url="${esc(d.feeds[0].url)}">le suivre dans Dehors</button>` : ""}</p>` : ""}
-    ${d.partial ? `<p class="hint">Métadonnées indisponibles (hors ligne, service muet ou quota du jour atteint) : elle sera gardée avec son adresse seule.</p>` : ""}
-    ${p.dup ? `<p class="hint">Déjà gardée${p.dup.mod !== id ? ` dans ${esc(label(p.dup.mod))}` : ""} : <a href="#${esc(p.dup.mod)}/${esc(p.dup.e.id)}">« ${esc(excerpt(p.dup.e, 60))} »</a>.</p>` : ""}
-    <div class="row"><button class="btn acc sm" data-act="src-keep" ${p.dup ? "disabled" : ""}>Garder</button><button class="btn ghost sm" data-act="src-cancel">Annuler</button></div></div>`;
-  return `<div class="capture src-bar"><input id="srcIn" inputmode="url" autocomplete="off" placeholder="Un lien ou un DOI…" aria-label="Lien ou DOI"><button class="btn" data-act="src-fetch">Chercher</button></div>
-  <p class="hint" style="margin:4px 0 12px">Un DOI est complété par Crossref ; une page, ${passeurPret() ? "par ton passeur (sinon Microlink, qui voit l'adresse demandée, 25 par jour)" : "par Microlink, qui voit l'adresse demandée (25 par jour)"}.</p>${prev}${zotBar(id)}${citeBar()}`;
+    ${d.feeds && d.feeds.length ? `<p class="hint">${tr`Ce site publie un flux : ${d.feeds.map(f => `<span class="tag">${esc(f.title || f.url)}</span>`).join(" ")}`}${passeurPret() && !dehorsFeeds().some(x => sourceKey({ url: x.url }) === sourceKey({ url: d.feeds[0].url })) ? ` <button class="btn ghost sm" data-act="dehors-follow" data-url="${esc(d.feeds[0].url)}">${tr`le suivre dans Dehors`}</button>` : ""}</p>` : ""}
+    ${d.partial ? `<p class="hint">${tr`Métadonnées indisponibles (hors ligne, service muet ou quota du jour atteint) : elle sera gardée avec son adresse seule.`}</p>` : ""}
+    ${p.dup ? `<p class="hint">${p.dup.mod !== id ? tr`Déjà gardée dans ${esc(label(p.dup.mod))} : ${`<a href="#${esc(p.dup.mod)}/${esc(p.dup.e.id)}">${tr`« ${esc(excerpt(p.dup.e, 60))} »`}</a>`}.` : tr`Déjà gardée : ${`<a href="#${esc(p.dup.mod)}/${esc(p.dup.e.id)}">${tr`« ${esc(excerpt(p.dup.e, 60))} »`}</a>`}.`}</p>` : ""}
+    <div class="row"><button class="btn acc sm" data-act="src-keep" ${p.dup ? "disabled" : ""}>${tr`Garder`}</button><button class="btn ghost sm" data-act="src-cancel">${trp("formulaire", "Annuler")}</button></div></div>`;
+  return `<div class="capture src-bar"><input id="srcIn" inputmode="url" autocomplete="off" placeholder="${tr`Un lien ou un DOI…`}" aria-label="${tr`Lien ou DOI`}"><button class="btn" data-act="src-fetch">${tr`Chercher`}</button></div>
+  <p class="hint" style="margin:4px 0 12px">${passeurPret() ? tr`Un DOI est complété par Crossref ; une page, par ton passeur (sinon Microlink, qui voit l'adresse demandée, 25 par jour).` : tr`Un DOI est complété par Crossref ; une page, par Microlink, qui voit l'adresse demandée (25 par jour).`}</p>${prev}${zotBar(id)}${citeBar()}`;
 }
 CLICK["src-fetch"] = async el => {
   const id = modOf(el), inp = $("#srcIn"), raw = inp ? inp.value.trim() : "";
   if (!raw) return;
-  if (!findDoi(raw) && !findUrl(raw)) return toast("Ni lien ni DOI reconnu. Un lien commence par https://, un DOI par 10.");
+  if (!findDoi(raw) && !findUrl(raw)) return toast(tr`Ni lien ni DOI reconnu. Un lien commence par https://, un DOI par 10.`);
   srcPreview[id] = { busy: true }; render();
   const data = await fetchSource(raw);
   if (!srcPreview[id] || !srcPreview[id].busy) return; // annulé entre-temps
@@ -110,35 +110,35 @@ CLICK["src-keep"] = el => {
   const id = modOf(el), p = srcPreview[id]; if (!p || !p.data || p.dup) return;
   const e = keepSource(id, p.data); delete srcPreview[id];
   const inp = $("#srcIn"); if (inp) inp.value = "";
-  site.save(); render(); toast(`Gardée : « ${excerpt(e, 50)} ».`);
+  site.save(); render(); toast(tr`Gardée : « ${excerpt(e, 50)} ».`);
 };
 CLICK["src-cancel"] = el => { delete srcPreview[modOf(el)]; render(); };
 /* Une note de la boîte qui contient un lien ou un DOI devient une source, avec sa provenance ; ses liens la suivent. */
 CLICK["note-source"] = async el => {
   const from = modOf(el), to = sourcesModule(), nid = idOf(el), note = S().modules[from].entries.find(x => x.id === nid);
   if (!note || !to) return;
-  el.disabled = true; el.textContent = "Recherche…";
+  el.disabled = true; el.textContent = tr`Recherche…`;
   const data = await fetchSource(note.text);
   const box = S().modules[from], n = box && box.entries.find(x => x.id === nid); // relu : une synchro a pu passer
   if (!n || !data) return render();
   const dup = findSourceDup(data);
-  if (dup) { render(); return toast(`Déjà gardée dans ${label(dup.mod)}. La note reste où elle est.`); }
+  if (dup) { render(); return toast(tr`Déjà gardée dans ${label(dup.mod)}. La note reste où elle est.`); }
   const e = keepSource(to, data, n.origin || { from: label(from), text: n.text, date: n.date });
   retargetLinks(S().modules, `${from}/${n.id}`, `${to}/${e.id}`);
   box.entries = box.entries.filter(x => x !== n); site.save(); render();
-  toast(data.partial ? `Rangée dans ${label(to)}, avec son adresse seule : métadonnées indisponibles pour l'instant.` : `Rangée dans ${label(to)} : « ${excerpt(e, 50)} ».`);
+  toast(data.partial ? tr`Rangée dans ${label(to)}, avec son adresse seule : métadonnées indisponibles pour l'instant.` : tr`Rangée dans ${label(to)} : « ${excerpt(e, 50)} ».`);
 };
 /* ---- une Source documente une note ou un fragment ---- */
 function sourceLinkForm(mod, id) {
   const choices = thoughtItems().sort((a, b) => (b.e.date || "").localeCompare(a.e.date || "")).slice(0, 300);
-  if (!choices.length) return toast("Aucune note ni aucun fragment à documenter pour l'instant.");
-  openForm("Cette source documente…", [
-    { n: "to", l: "…quelle note ou quel fragment", t: "select", o: choices.map(x => [x.ref, `${label(x.mod)} · ${x.e.date ? fmt(x.e.date) + " · " : ""}${excerpt(x.e, 70)}`]) }
+  if (!choices.length) return toast(tr`Aucune note ni aucun fragment à documenter pour l'instant.`);
+  openForm(tr`Cette source documente…`, [
+    { n: "to", l: tr`…quelle note ou quel fragment`, t: "select", o: choices.map(x => [x.ref, `${label(x.mod)} · ${x.e.date ? fmt(x.e.date) + " · " : ""}${excerpt(x.e, 70)}`]) }
   ], {}, v => {
-    const hit = refFind(`${mod}/${id}`); if (!hit) return toast("Cette source a disparu entre-temps.");
-    if (!addLink(hit.e, v.to, "documente", uid(), todayISO())) return toast("Déjà reliée ainsi.");
+    const hit = refFind(`${mod}/${id}`); if (!hit) return toast(tr`Cette source a disparu entre-temps.`);
+    if (!addLink(hit.e, v.to, "documente", uid(), todayISO())) return toast(tr`Déjà reliée ainsi.`);
     sortesForget(hit.e); // elle n'est plus oubliée
-    site.save(); render(); toast("Reliée. Elle apparaît en marge de ce qu'elle documente.");
+    site.save(); render(); toast(tr`Reliée. Elle apparaît en marge de ce qu'elle documente.`);
   });
 }
 CLICK["src-link"] = el => { const ref = el.dataset.ref; if (ref) { const [m, i] = ref.split("/"); return sourceLinkForm(m, i); } sourceLinkForm(modOf(el), idOf(el)); };

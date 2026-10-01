@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-BsXk+spJwJz6sk2I0YzSlYFAmt3iyYHRCbRmZVREdTA=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-FKlvUHwZV0cr4uWSCYUXjJBOrcUqpjF6rDCsp7050vY=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -1198,6 +1198,24 @@ var __selene = (() => {
 
   // src/app/i18n/en.js
   var en_default = {
+    // features/agenda.js
+    "ce n'est pas un calendrier iCal": "this isn't an iCal calendar",
+    "le calendrier répond {0}": "the calendar answers {0}",
+    "journée": "all day",
+    "Aujourd'hui, au calendrier": "Today, on the calendar",
+    "Calendrier": "Calendar",
+    "Un seul calendrier, dédié (crée-en un « Selene ») : aujourd'hui et demain s'affichent sous « Aujourd'hui ». Un titre « Chantier : plombier » se range sous Chantier. Google : paramètres de l'agenda → Intégrer l'agenda → Adresse secrète au format iCal. Apple : partager en public, lien webcal.": "A single, dedicated calendar (create one called “Selene”): today and tomorrow show under “Today”. A title like “Renovation: plumber” is filed under Renovation. Google: calendar settings → Integrate calendar → Secret address in iCal format. Apple: share publicly, webcal link.",
+    "Adresse iCal secrète": "Secret iCal address",
+    "Qui possède cette adresse lit tout le calendrier : elle reste dans ce navigateur, n'est jamais synchronisée, ne passe que par ton passeur (qui ne garde rien), et s'efface à la déconnexion. Si elle fuit, réinitialise-la dans l'agenda.": "Whoever holds this address can read the whole calendar: it stays in this browser, is never synced, only goes through your relay (which keeps nothing), and is erased when you sign out. If it leaks, reset it in the calendar.",
+    "Lecture…": "Reading…",
+    "Ne répond pas : {0}": "Not answering: {0}",
+    "Lu {1} : {0} événement à venir ou récurrent.": { one: "Read {1}: {0} upcoming or recurring event.", other: "Read {1}: {0} upcoming or recurring events." },
+    "Pas encore lu.": "Not read yet.",
+    "Relire": "Read again",
+    "oublier": "forget",
+    "Une adresse https:// (ou webcal://) est attendue.": "An https:// (or webcal://) address is expected.",
+    "Adresse gardée dans ce navigateur. Lecture…": "Address kept in this browser. Reading…",
+    "Calendrier oublié sur cet appareil.": "Calendar forgotten on this device.",
     // features/bridge.js
     "Le prochain geste, pour la prochaine fois…": "The next step, for next time…",
     "Prochain geste": "Next step",
@@ -1222,6 +1240,30 @@ var __selene = (() => {
     "Aucun lien entre ces étoiles.": "No links between these stars.",
     "Sans lien ici : {0}.": "Unlinked here: {0}.",
     "Masquer la carte": "Hide the map",
+    // features/cites.js
+    "OpenAlex injoignable (hors ligne ?).": "OpenAlex unreachable (offline?).",
+    "OpenAlex : quota du jour atteint (une clé gratuite, dans Réglages → Dehors, le décuple).": "OpenAlex: daily quota reached (a free key, in Settings → Outside, multiplies it tenfold).",
+    "OpenAlex répond {0}.": "OpenAlex answers {0}.",
+    "Lecture des bibliographies de tes sources…": "Reading your sources' bibliographies…",
+    "OpenAlex connaît {0} de tes {1} sources à DOI.": "OpenAlex knows {0} of your {1} sources with a DOI.",
+    "Rien en commun pour l'instant : tes sources ne citent pas les mêmes textes (ou OpenAlex ignore leurs bibliographies).": "Nothing in common yet: your sources don't cite the same texts (or OpenAlex doesn't know their bibliographies).",
+    "Cité par plusieurs de tes sources": "Cited by several of your sources",
+    "cité par {0} de tes sources : {1}": "cited by {0} of your sources: {1}",
+    "déjà gardée": "already kept",
+    "garder": "keep",
+    "Tes sources qui se parlent": "Your sources in conversation",
+    "{0} et {1} : {2} références en commun": "{0} and {1}: {2} references in common",
+    "Ces auteurs reviennent": "These authors keep coming back",
+    "{0}, dans {1} de tes sources": "{0}, in {1} of your sources",
+    "en veille": "being watched",
+    "suivre dans la veille": "follow in the watch",
+    "Ce que tes sources ont en commun": "What your sources have in common",
+    "OpenAlex reçoit les DOI de tes sources, rien d'autre.": "OpenAlex receives your sources' DOIs, nothing else.",
+    "Cité par tes sources": "Cited by your sources",
+    "cité par {0} de tes sources": "cited by {0} of your sources",
+    "Gardée : « {0} ».": "Kept: “{0}”.",
+    "Trente veilles, c'est une thèse. Retires-en avant d'en ajouter.": "Thirty watches is a thesis. Remove some before adding more.",
+    "En veille dans Dehors : {0}. Première lecture…": "Now watched in Outside: {0}. First reading…",
     // features/concordance.js
     "« {0} » est déjà un motif.": "“{0}” is already a motif.",
     "« {0} » devient un motif de {1}. On verra s'il revient.": "“{0}” becomes a motif of {1}. We'll see if it comes back.",
@@ -1305,6 +1347,49 @@ var __selene = (() => {
     "Test de Rayleigh sur {0} événement daté : ta lune éclaire-t-elle vraiment ton activité, ou est-ce une histoire qu'on se raconte ? Un seul test compte ici ; le refaire ailleurs sous d'autres formes userait sa valeur (tests multiples).": { one: "Rayleigh test on {0} dated event: does your moon really light up your activity, or is it a story we tell ourselves? Only one test counts here; repeating it elsewhere in other forms would wear down its value (multiple testing).", other: "Rayleigh test on {0} dated events: does your moon really light up your activity, or is it a story we tell ourselves? Only one test counts here; repeating it elsewhere in other forms would wear down its value (multiple testing)." },
     "Concentration autour de {0} (R = {1}, p = {2}). Ce n'est pas rien, mais ce n'est pas une preuve : une seule corrélation, jamais répétée ni contrôlée.": "Concentration around the {0} (R = {1}, p = {2}). It isn't nothing, but it isn't proof: a single correlation, never repeated or controlled.",
     "Rien de concentré (R = {0}, p = {1}) : la répartition ne se distingue pas de l'uniforme. La lune plaide non coupable, ce qui est aussi une réponse.": "Nothing concentrated (R = {0}, p = {1}): the distribution can't be told apart from a uniform one. The moon pleads not guilty, which is also an answer.",
+    // features/musique.js
+    "MusicBrainz ne répond pas (hors ligne, ou trop de demandes). Réessaie dans un instant.": "MusicBrainz isn't answering (offline, or too many requests). Try again in a moment.",
+    "Cet élément n'existe plus.": "This item no longer exists.",
+    "Discographie studio (albums et EP) selon MusicBrainz, base libre et collaborative.": "Studio discography (albums and EPs) according to MusicBrainz, a free and collaborative database.",
+    "Recherche…": "Searching…",
+    "Réessayer": "Try again",
+    "Aucun artiste de ce nom dans MusicBrainz. Vérifie l'orthographe du titre.": "No artist by that name in MusicBrainz. Check the spelling of the title.",
+    "Plusieurs artistes portent ce nom :": "Several artists have this name:",
+    "depuis {0}": "since {0}",
+    "choisir": "choose",
+    "Aucun album ni EP studio référencé pour cet artiste.": "No studio album or EP listed for this artist.",
+    "sans date": "no date",
+    "choisi": "chosen",
+    "remplacer": "replace",
+    "ajouter": "add",
+    "« {0} » : c'est noté.": "“{0}”: noted.",
+    "Ajouté : {0}, « {1} ».": "Added: {0}, “{1}”.",
+    "Ce que tes artistes reliés dans {0} ont publié depuis ta dernière vérification, selon MusicBrainz. Rien n'est vérifié sans toi.": "What your linked artists in {0} have released since your last check, according to MusicBrainz. Nothing is checked without you.",
+    "{0} sur {1} artistes…": "{0} of {1} artists…",
+    "déjà là": "already here",
+    "Rien de neuf. Le silence est aussi une nouvelle.": "Nothing new. Silence is news too.",
+    "{0} artiste sans réponse : réessaie plus tard.": { one: "{0} artist didn't answer: try again later.", other: "{0} artists didn't answer: try again later." },
+    // features/radar.js
+    "Le portail de la Métropole ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).": "The Métropole's portal can't be read directly by the browser: you need your relay (hosted version, signed in).",
+    "L'agenda de la Métropole répond {0} (le portail a peut-être changé). Réessaie plus tard.": "The Métropole's events calendar answers {0} (the portal may have changed). Try again later.",
+    "L'agenda de la Métropole répond par une erreur (le portail a peut-être changé). Réessaie plus tard.": "The Métropole's events calendar answers with an error (the portal may have changed). Try again later.",
+    "en cours, jusqu'au {0}": "ongoing, until {0}",
+    "du {0} au {1}": "from {0} to {1}",
+    "Autour de {0}, les deux semaines à venir, ce qui parle de : {1}. Cinq au plus ; le reste attendra que tu reviennes.": "Around {0}, over the next two weeks, what speaks of: {1}. Five at most; the rest will wait for you to come back.",
+    "Source : OpenAgenda, par l'open data de la Métropole européenne de Lille. Le portail voit la zone (arrondie) et les dates, jamais tes mots : le tri se fait ici.": "Source: OpenAgenda, through the open data of the Métropole européenne de Lille. The portal sees the area (rounded) and the dates, never your words: the sorting happens here.",
+    "Rien qui te ressemble, cette fois. La ville continuera sans toi, elle a l'habitude.": "Nothing that looks like you, this time. The city will carry on without you; it's used to it.",
+    "gardé": "kept",
+    "{0} autre correspond aussi : des mots plus précis choisiraient mieux.": { one: "{0} other also matches: more precise words would choose better.", other: "{0} others also match: more precise words would choose better." },
+    "L'agenda de la Métropole ne répond pas. Réessaie plus tard.": "The Métropole's events calendar isn't answering. Try again later.",
+    "Aucune boîte de réception où le garder. Crée un Carnet et fais-en ta boîte (Réglages).": "No inbox to keep it in. Create a Notebook and make it your inbox (Settings).",
+    "Gardé dans {0}.": "Kept in {0}.",
+    "Radar culturel · Métropole de Lille uniquement": "Cultural radar · Lille metropolitan area only",
+    "Couverture locale : changer de ville n’étend pas ce service à une autre région. Pour suivre des événements ailleurs, ajoute tes propres flux dans Dehors.": "Local coverage: changing city doesn't extend this service to another region. To follow events elsewhere, add your own feeds in Outside.",
+    "Sur demande, depuis l'accueil : les événements de la Métropole de Lille (OpenAgenda, open data de la MEL) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification.": "On request, from Today: events in the Lille metropolitan area (OpenAgenda, the MEL's open data) over the next two weeks that speak of your words. Five at most, never a notification.",
+    "Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)": "Your words, separated by commas (searched in the title, keywords, description and place)",
+    "poésie, jazz, photographie, lecture…": "poetry, jazz, photography, reading…",
+    "Le radar ne couvre que la Métropole de Lille : le lieu réglé ({0}) en est trop loin.": "The radar only covers the Lille metropolitan area: the place set ({0}) is too far from it.",
+    "Il lui faut un lieu près de Lille : règle-le dans Ciel, ci-dessus.": "It needs a place near Lille: set it in Sky, above.",
     // features/share.js
     "Lien reçu, mais aucune boîte de réception où le garder. Crée un Carnet et fais-en ta boîte (Réglages).": "Link received, but no inbox to keep it in. Create a Notebook and make it your inbox (Settings).",
     "Reçu dans {0} : « Garder comme source » le complétera.": "Received in {0}: “Keep as a source” will complete it.",
@@ -1335,6 +1420,26 @@ var __selene = (() => {
     "Retirer": "Draw again",
     "Tirer": "Draw",
     "Rien d'assez ancien à tirer. Reviens dans deux semaines.": "Nothing old enough to draw. Come back in two weeks.",
+    // features/sources.js
+    "Ce site publie un flux : {0}": "This site publishes a feed: {0}",
+    "le suivre dans Dehors": "follow it in Outside",
+    "Métadonnées indisponibles (hors ligne, service muet ou quota du jour atteint) : elle sera gardée avec son adresse seule.": "Metadata unavailable (offline, silent service or daily quota reached): it will be kept with its address only.",
+    "Déjà gardée dans {0} : {1}.": "Already kept in {0}: {1}.",
+    "Déjà gardée : {0}.": "Already kept: {0}.",
+    "Un lien ou un DOI…": "A link or a DOI…",
+    "Lien ou DOI": "Link or DOI",
+    "Un DOI est complété par Crossref ; une page, par ton passeur (sinon Microlink, qui voit l'adresse demandée, 25 par jour).": "A DOI is completed by Crossref; a page, by your relay (otherwise Microlink, which sees the requested address, 25 a day).",
+    "Un DOI est complété par Crossref ; une page, par Microlink, qui voit l'adresse demandée (25 par jour).": "A DOI is completed by Crossref; a page, by Microlink, which sees the requested address (25 a day).",
+    "Ni lien ni DOI reconnu. Un lien commence par https://, un DOI par 10.": "Neither a link nor a DOI recognized. A link starts with https://, a DOI with 10.",
+    "Déjà gardée dans {0}. La note reste où elle est.": "Already kept in {0}. The note stays where it is.",
+    "Rangée dans {0}, avec son adresse seule : métadonnées indisponibles pour l'instant.": "Filed in {0}, with its address only: metadata unavailable for now.",
+    "Rangée dans {0} : « {1} ».": "Filed in {0}: “{1}”.",
+    "Aucune note ni aucun fragment à documenter pour l'instant.": "No note or fragment to document yet.",
+    "Cette source documente…": "This source documents…",
+    "…quelle note ou quel fragment": "…which note or fragment",
+    "Cette source a disparu entre-temps.": "This source disappeared in the meantime.",
+    "Déjà reliée ainsi.": "Already linked this way.",
+    "Reliée. Elle apparaît en marge de ce qu'elle documente.": "Linked. It appears in the margin of what it documents.",
     // features/specimen.js
     "Cette entrée n'existe plus.": "This entry no longer exists.",
     "{0} : ": "{0}: ",
@@ -1367,6 +1472,34 @@ var __selene = (() => {
     "Vasculum : trier la boîte": "Vasculum: sort the inbox",
     "Vasculum · {0} sur {1}": "Vasculum · {0} of {1}",
     "Aucun espace ne sait encore recevoir une note.": "No space can receive a note yet.",
+    // features/zotero.js
+    "Pas de clé Zotero (Réglages → Zotero).": "No Zotero key (Settings → Zotero).",
+    "Zotero refuse cette clé (révoquée, ou sans accès à ta bibliothèque).": "Zotero refuses this key (revoked, or without access to your library).",
+    "Zotero répond {0}.": "Zotero answers {0}.",
+    "Zotero injoignable depuis le navigateur, et pas de passeur pour le relayer.": "Zotero unreachable from the browser, and no relay to pass it on.",
+    "Zotero injoignable.": "Zotero unreachable.",
+    "Réponse inattendue de Zotero.": "Unexpected answer from Zotero.",
+    "Cette clé n'a pas accès à ta bibliothèque personnelle (coche « Allow library access »).": "This key has no access to your personal library (tick “Allow library access”).",
+    "Recherche dans Zotero…": "Searching Zotero…",
+    "Rien de tel dans ta bibliothèque.": "Nothing like that in your library.",
+    "Dans ta bibliothèque Zotero : titre, auteur, année…": "In your Zotero library: title, author, year…",
+    "Chercher dans Zotero": "Search in Zotero",
+    "récents": "recent",
+    "Dans ta bibliothèque : « {0} »": "In your library: “{0}”",
+    "Les dix dernières fiches ajoutées à ta bibliothèque": "The last ten items added to your library",
+    "ta bibliothèque": "your library",
+    "Gardée, reliée à Zotero : « {0} ».": "Kept, linked to Zotero: “{0}”.",
+    "Ta bibliothèque Zotero, en lecture seule : dans un module de Sources, cherche une fiche (ou les dernières ajoutées) et garde-la comme Source, reliée à sa fiche Zotero. Zotero reste l'archive ; Selene, l'endroit où tu t'en sers.": "Your Zotero library, read-only: in a Sources module, search for an item (or the latest added) and keep it as a Source, linked to its Zotero item. Zotero stays the archive; Selene, the place where you use it.",
+    "Crée une clé sur {0} : sous « Personal Library », coche {1} seulement (ni « Allow write access », ni les groupes). Elle reste dans ce navigateur, n'est jamais synchronisée et s'efface à la déconnexion.": "Create a key at {0}: under “Personal Library”, tick {1} only (neither “Allow write access” nor groups). It stays in this browser, is never synced, and is erased when you sign out.",
+    "Clé API Zotero": "Zotero API key",
+    "colle ta clé": "paste your key",
+    "Bibliothèque de {0} : attention, cette clé peut écrire ; une clé en lecture seule suffit.": "{0}'s library: careful, this key can write; a read-only key is enough.",
+    "Bibliothèque de {0}, en lecture seule.": "{0}'s library, read-only.",
+    "Pas encore vérifiée.": "Not checked yet.",
+    "Vérifier": "Check",
+    "Zotero : bibliothèque de {0} (clé en écriture : préfère une clé en lecture seule).": "Zotero: {0}'s library (write key: prefer a read-only key).",
+    "Zotero : bibliothèque de {0}, lecture seule.": "Zotero: {0}'s library, read-only.",
+    "Clé Zotero oubliée sur cet appareil.": "Zotero key forgotten on this device.",
     // lib/dom.js
     "toastAnnuler": "Undo",
     "Voir les {0} suivants ({1} de plus)": "Show the next {0} ({1} more)",
@@ -4704,8 +4837,8 @@ var __selene = (() => {
       if (r.status >= 200 && r.status < 300 && typeof r.texte === "string") {
         const now = Date.now(), ev = icsParse(r.texte);
         c.events = ev.filter((e) => e.rrule || e.end > now - 864e5).slice(0, 800);
-        c.err = ev.length || /BEGIN:VCALENDAR/.test(r.texte) ? "" : "ce n'est pas un calendrier iCal";
-      } else c.err = r.erreur || `le calendrier répond ${r.status}`;
+        c.err = ev.length || /BEGIN:VCALENDAR/.test(r.texte) ? "" : tr`ce n'est pas un calendrier iCal`;
+      } else c.err = r.erreur || tr`le calendrier répond ${r.status}`;
     } catch (e) {
       c.err = e.message;
     }
@@ -4738,17 +4871,17 @@ var __selene = (() => {
       if (!occ.length) return "";
       return `<div class="agenda-day"><p class="hint" style="margin:10px 0 2px">${name}</p><ul class="plain">${occ.slice(0, 8).map((o) => {
         const r = agendaRoute(o.summary);
-        return `<li class="agenda-ev"><span class="when">${o.allDay ? "journée" : `${esc(hhmm(o.start))}${o.end - o.start > 0 && o.end - o.start < 864e5 ? `–${esc(hhmm(o.end))}` : ""}`}</span> ${r.mod ? `<a class="tag" href="#${esc(r.mod)}">${esc(label(r.mod))}</a> ` : ""}${esc(r.text)}${o.location ? ` <span class="hint" style="margin:0">· ${esc(o.location)}</span>` : ""}</li>`;
+        return `<li class="agenda-ev"><span class="when">${o.allDay ? tr`journée` : `${esc(hhmm(o.start))}${o.end - o.start > 0 && o.end - o.start < 864e5 ? `–${esc(hhmm(o.end))}` : ""}`}</span> ${r.mod ? `<a class="tag" href="#${esc(r.mod)}">${esc(label(r.mod))}</a> ` : ""}${esc(r.text)}${o.location ? ` <span class="hint" style="margin:0">· ${esc(o.location)}</span>` : ""}</li>`;
       }).join("")}</ul></div>`;
     };
-    return block(0, "Aujourd'hui, au calendrier") + block(1, "Demain");
+    return block(0, tr`Aujourd'hui, au calendrier`) + block(1, tr`Demain`);
   }
   function agendaSettingsHTML() {
     const c = icsCache(), has = !!icsUrl();
-    return `<section id="agenda"><h3>Calendrier</h3><p class="hint">Un seul calendrier, dédié (crée-en un « Selene ») : aujourd'hui et demain s'affichent sous « Aujourd'hui ». Un titre « Chantier : plombier » se range sous Chantier. Google : paramètres de l'agenda → Intégrer l'agenda → Adresse secrète au format iCal. Apple : partager en public, lien webcal.</p>
-    <label>Adresse iCal secrète<input type="password" data-act="ics-url" value="${has ? "••••••••" : ""}" autocomplete="off" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"></label>
-    <p class="hint" style="margin-top:6px">Qui possède cette adresse lit tout le calendrier : elle reste dans ce navigateur, n'est jamais synchronisée, ne passe que par ton passeur (qui ne garde rien), et s'efface à la déconnexion. Si elle fuit, réinitialise-la dans l'agenda.</p>
-    ${has ? `<p class="row" style="margin:0"><span>${esc(agendaBusy ? "Lecture…" : c.err ? `Ne répond pas : ${c.err}` : c.at ? `Lu ${dehorsWhen(c.at)} : ${c.events.length} événement${c.events.length > 1 ? "s" : ""} à venir ou récurrent${c.events.length > 1 ? "s" : ""}.` : "Pas encore lu.")}</span><button class="btn sm" data-act="ics-check">Relire</button><button class="btn ghost sm" data-act="ics-forget">oublier</button></p>` : ""}</section>`;
+    return `<section id="agenda"><h3>${tr`Calendrier`}</h3><p class="hint">${tr`Un seul calendrier, dédié (crée-en un « Selene ») : aujourd'hui et demain s'affichent sous « Aujourd'hui ». Un titre « Chantier : plombier » se range sous Chantier. Google : paramètres de l'agenda → Intégrer l'agenda → Adresse secrète au format iCal. Apple : partager en public, lien webcal.`}</p>
+    <label>${tr`Adresse iCal secrète`}<input type="password" data-act="ics-url" value="${has ? "••••••••" : ""}" autocomplete="off" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"></label>
+    <p class="hint" style="margin-top:6px">${tr`Qui possède cette adresse lit tout le calendrier : elle reste dans ce navigateur, n'est jamais synchronisée, ne passe que par ton passeur (qui ne garde rien), et s'efface à la déconnexion. Si elle fuit, réinitialise-la dans l'agenda.`}</p>
+    ${has ? `<p class="row" style="margin:0"><span>${esc(agendaBusy ? tr`Lecture…` : c.err ? tr`Ne répond pas : ${c.err}` : c.at ? trn(c.events.length, "Lu {1} : {0} événement à venir ou récurrent.", "Lu {1} : {0} événements à venir ou récurrents.", dehorsWhen(c.at)) : tr`Pas encore lu.`)}</span><button class="btn sm" data-act="ics-check">${tr`Relire`}</button><button class="btn ghost sm" data-act="ics-forget">${tr`oublier`}</button></p>` : ""}</section>`;
   }
   CHANGE["ics-url"] = (el) => {
     let v = el.value.trim();
@@ -4756,7 +4889,7 @@ var __selene = (() => {
     v = v.replace(/^webcal:\/\//i, "https://");
     if (v && !/^https:\/\//i.test(v)) {
       el.value = "";
-      return toast("Une adresse https:// (ou webcal://) est attendue.");
+      return toast(tr`Une adresse https:// (ou webcal://) est attendue.`);
     }
     try {
       if (v) platform.secrets.set(ICS_URL, v);
@@ -4767,7 +4900,7 @@ var __selene = (() => {
     el.blur();
     render();
     if (v) {
-      toast("Adresse gardée dans ce navigateur. Lecture…");
+      toast(tr`Adresse gardée dans ce navigateur. Lecture…`);
       agendaRefresh(true);
     }
   };
@@ -4776,7 +4909,7 @@ var __selene = (() => {
     platform.secrets.remove(ICS_URL);
     platform.storage.remove(ICS_CACHE);
     render();
-    toast("Calendrier oublié sur cet appareil.");
+    toast(tr`Calendrier oublié sur cet appareil.`);
   };
 
   // src/app/features/tensions.js
@@ -4931,8 +5064,8 @@ var __selene = (() => {
   };
   async function zotGet(path, viaPasseur = path) {
     const key = zotKey();
-    if (!key) throw new Error("Pas de clé Zotero (Réglages → Zotero).");
-    const refuse = (s) => new Error(s === 403 ? "Zotero refuse cette clé (révoquée, ou sans accès à ta bibliothèque)." : `Zotero répond ${s}.`);
+    if (!key) throw new Error(tr`Pas de clé Zotero (Réglages → Zotero).`);
+    const refuse = (s) => new Error(s === 403 ? tr`Zotero refuse cette clé (révoquée, ou sans accès à ta bibliothèque).` : tr`Zotero répond ${s}.`);
     const ac = new AbortController(), t = setTimeout(() => ac.abort(), 1e4);
     let r = null;
     try {
@@ -4945,17 +5078,17 @@ var __selene = (() => {
       if (!r.ok) throw refuse(r.status);
       return r.json();
     }
-    if (!passeurPret()) throw new Error("Zotero injoignable depuis le navigateur, et pas de passeur pour le relayer.");
+    if (!passeurPret()) throw new Error(tr`Zotero injoignable depuis le navigateur, et pas de passeur pour le relayer.`);
     const q = await passeurFetch(`${ZOT_API}${viaPasseur}${viaPasseur.includes("?") ? "&" : "?"}key=${encodeURIComponent(key)}`, "json");
-    if (q.status !== 200 || typeof q.texte !== "string") throw q.status ? refuse(q.status) : new Error(q.erreur || "Zotero injoignable.");
+    if (q.status !== 200 || typeof q.texte !== "string") throw q.status ? refuse(q.status) : new Error(q.erreur || tr`Zotero injoignable.`);
     return JSON.parse(q.texte);
   }
   async function zotCheck() {
     const key = zotKey();
     if (!key) return null;
     const info = zotKeyInfo(await zotGet("/keys/current", `/keys/${encodeURIComponent(key)}`));
-    if (!info) throw new Error("Réponse inattendue de Zotero.");
-    if (!info.library) throw new Error("Cette clé n'a pas accès à ta bibliothèque personnelle (coche « Allow library access »).");
+    if (!info) throw new Error(tr`Réponse inattendue de Zotero.`);
+    if (!info.library) throw new Error(tr`Cette clé n'a pas accès à ta bibliothèque personnelle (coche « Allow library access »).`);
     try {
       platform.storage.set(ZOT_INFO, JSON.stringify(info));
     } catch {
@@ -4966,12 +5099,12 @@ var __selene = (() => {
   function zotBar(id) {
     if (!hosted() || !zotKey()) return "";
     const st = zotState[id];
-    const list = !st ? "" : st.busy ? `<p class="hint" role="status">Recherche dans Zotero…</p>` : st.err ? `<p class="hint" role="status">${esc(st.err)}</p>` : !st.items.length ? `<p class="empty">Rien de tel dans ta bibliothèque.</p>` : `<p class="hint" style="margin:6px 0 0">${esc(st.label)}</p><ul class="plain zot-list">${st.items.map((x, i) => {
+    const list = !st ? "" : st.busy ? `<p class="hint" role="status">${tr`Recherche dans Zotero…`}</p>` : st.err ? `<p class="hint" role="status">${esc(st.err)}</p>` : !st.items.length ? `<p class="empty">${tr`Rien de tel dans ta bibliothèque.`}</p>` : `<p class="hint" style="margin:6px 0 0">${esc(st.label)}</p><ul class="plain zot-list">${st.items.map((x, i) => {
       const dup = findSourceDup(x);
       return `<li class="item" data-zi="${i}"><span></span><div><b>${esc(x.title)}</b><div class="meta">${[x.authors, x.site, pubDate(x.date), x.kind].filter(Boolean).map((v) => `<span>${esc(v)}</span>`).join("")}</div></div>
-        <div class="row">${dup ? `<a class="hint" href="#${esc(dup.mod)}/${esc(dup.e.id)}">déjà gardée</a>` : `<button class="btn sm" data-act="zot-keep">garder</button>`}</div></li>`;
+        <div class="row">${dup ? `<a class="hint" href="#${esc(dup.mod)}/${esc(dup.e.id)}">${tr`déjà gardée`}</a>` : `<button class="btn sm" data-act="zot-keep">${tr`garder`}</button>`}</div></li>`;
     }).join("")}</ul>`;
-    return `<div class="zot-bar" style="margin:4px 0 14px"><div class="capture capture-wrap"><input id="zotIn" autocomplete="off" placeholder="Dans ta bibliothèque Zotero : titre, auteur, année…" aria-label="Chercher dans Zotero"><button class="btn" data-act="zot-search">Chercher</button><button class="btn ghost sm" data-act="zot-recent">récents</button></div>${list}</div>`;
+    return `<div class="zot-bar" style="margin:4px 0 14px"><div class="capture capture-wrap"><input id="zotIn" autocomplete="off" placeholder="${tr`Dans ta bibliothèque Zotero : titre, auteur, année…`}" aria-label="${tr`Chercher dans Zotero`}"><button class="btn" data-act="zot-search">${tr`Chercher`}</button><button class="btn ghost sm" data-act="zot-recent">${tr`récents`}</button></div>${list}</div>`;
   }
   async function zotList(id, path, label2) {
     zotState[id] = { busy: true, items: [], err: "", label: label2 };
@@ -4988,23 +5121,23 @@ var __selene = (() => {
   CLICK["zot-search"] = (el) => {
     const id = modOf(el), q = (($("#zotIn") || {}).value || "").trim().slice(0, 200);
     if (!q) return;
-    zotList(id, `/items/top?q=${encodeURIComponent(q)}&qmode=titleCreatorYear&limit=10&sort=dateModified&direction=desc&format=json`, `Dans ta bibliothèque : « ${q} »`);
+    zotList(id, `/items/top?q=${encodeURIComponent(q)}&qmode=titleCreatorYear&limit=10&sort=dateModified&direction=desc&format=json`, tr`Dans ta bibliothèque : « ${q} »`);
   };
-  CLICK["zot-recent"] = (el) => zotList(modOf(el), `/items/top?limit=10&sort=dateAdded&direction=desc&format=json`, "Les dix dernières fiches ajoutées à ta bibliothèque");
+  CLICK["zot-recent"] = (el) => zotList(modOf(el), `/items/top?limit=10&sort=dateAdded&direction=desc&format=json`, tr`Les dix dernières fiches ajoutées à ta bibliothèque`);
   CLICK["zot-keep"] = (el) => {
     const id = modOf(el), st = zotState[id], x = st && st.items[+el.closest("[data-zi]").dataset.zi];
     if (!x || findSourceDup(x)) return;
-    const e = keepSource(id, x, { from: "Zotero", text: (zotInfo() || {}).username || "ta bibliothèque", date: todayISO() });
+    const e = keepSource(id, x, { from: "Zotero", text: (zotInfo() || {}).username || tr`ta bibliothèque`, date: todayISO() });
     site.save();
     render();
-    toast(`Gardée, reliée à Zotero : « ${excerpt(e, 50)} ».`);
+    toast(tr`Gardée, reliée à Zotero : « ${excerpt(e, 50)} ».`);
   };
   function zotSettingsHTML() {
     const info = zotInfo(), has = !!zotKey();
-    return `<section id="zotero"><h3>Zotero</h3><p class="hint">Ta bibliothèque Zotero, en lecture seule : dans un module de Sources, cherche une fiche (ou les dernières ajoutées) et garde-la comme Source, reliée à sa fiche Zotero. Zotero reste l'archive ; Selene, l'endroit où tu t'en sers.</p>
-    <p class="hint">Crée une clé sur <a href="https://www.zotero.org/settings/keys/new" target="_blank" rel="noopener noreferrer">zotero.org/settings/keys/new</a> : sous « Personal Library », coche <b>Allow library access</b> seulement (ni « Allow write access », ni les groupes). Elle reste dans ce navigateur, n'est jamais synchronisée et s'efface à la déconnexion.</p>
-    <label>Clé API Zotero<input type="password" data-act="zot-key" value="${has ? "••••••••" : ""}" autocomplete="off" placeholder="colle ta clé"></label>
-    ${has ? `<p class="row" style="margin:6px 0 0"><span>${esc(info ? `Bibliothèque de ${info.username || "#" + info.userID}${info.write ? " : attention, cette clé peut écrire ; une clé en lecture seule suffit." : ", en lecture seule."}` : "Pas encore vérifiée.")}</span><button class="btn sm" data-act="zot-check">Vérifier</button><button class="btn ghost sm" data-act="zot-forget">oublier</button></p>` : ""}</section>`;
+    return `<section id="zotero"><h3>Zotero</h3><p class="hint">${tr`Ta bibliothèque Zotero, en lecture seule : dans un module de Sources, cherche une fiche (ou les dernières ajoutées) et garde-la comme Source, reliée à sa fiche Zotero. Zotero reste l'archive ; Selene, l'endroit où tu t'en sers.`}</p>
+    <p class="hint">${tr`Crée une clé sur ${`<a href="https://www.zotero.org/settings/keys/new" target="_blank" rel="noopener noreferrer">zotero.org/settings/keys/new</a>`} : sous « Personal Library », coche ${"<b>Allow library access</b>"} seulement (ni « Allow write access », ni les groupes). Elle reste dans ce navigateur, n'est jamais synchronisée et s'efface à la déconnexion.`}</p>
+    <label>${tr`Clé API Zotero`}<input type="password" data-act="zot-key" value="${has ? "••••••••" : ""}" autocomplete="off" placeholder="${tr`colle ta clé`}"></label>
+    ${has ? `<p class="row" style="margin:6px 0 0"><span>${esc(info ? info.write ? tr`Bibliothèque de ${info.username || "#" + info.userID} : attention, cette clé peut écrire ; une clé en lecture seule suffit.` : tr`Bibliothèque de ${info.username || "#" + info.userID}, en lecture seule.` : tr`Pas encore vérifiée.`)}</span><button class="btn sm" data-act="zot-check">${tr`Vérifier`}</button><button class="btn ghost sm" data-act="zot-forget">${tr`oublier`}</button></p>` : ""}</section>`;
   }
   CHANGE["zot-key"] = async (el) => {
     const v = el.value.trim();
@@ -5023,7 +5156,7 @@ var __selene = (() => {
     platform.storage.remove(ZOT_INFO);
     try {
       const i = await zotCheck();
-      toast(`Zotero : bibliothèque de ${i.username || "#" + i.userID}${i.write ? " (clé en écriture : préfère une clé en lecture seule)" : ", lecture seule"}.`);
+      toast(i.write ? tr`Zotero : bibliothèque de ${i.username || "#" + i.userID} (clé en écriture : préfère une clé en lecture seule).` : tr`Zotero : bibliothèque de ${i.username || "#" + i.userID}, lecture seule.`);
     } catch (e) {
       toast(e.message);
     }
@@ -5034,7 +5167,7 @@ var __selene = (() => {
     platform.storage.remove(ZOT_INFO);
     for (const k of Object.keys(zotState)) delete zotState[k];
     render();
-    toast("Clé Zotero oubliée sur cet appareil.");
+    toast(tr`Clé Zotero oubliée sur cet appareil.`);
   };
 
   // src/app/features/sources.js
@@ -5054,7 +5187,7 @@ var __selene = (() => {
       x.site && `<span>${esc(x.site)}</span>`,
       x.date && `<span>${esc(pubDate(x.date))}</span>`,
       x.doi && `<span>doi:${esc(x.doi)}</span>`,
-      url && `<a class="src-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">ouvrir ↗</a>`,
+      url && `<a class="src-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${tr`ouvrir ↗`}</a>`,
       e.zot && e.zot.l && /^https:\/\/www\.zotero\.org\//.test(e.zot.l) && `<a class="src-link" href="${esc(e.zot.l)}" target="_blank" rel="noopener noreferrer">Zotero ↗</a>`
     ].filter(Boolean).join("");
   }
@@ -5116,21 +5249,21 @@ var __selene = (() => {
   }
   function sourceBar(id) {
     const p = srcPreview[id], d = p && p.data;
-    const prev = !p ? "" : p.busy ? `<p class="hint" role="status">Recherche…</p>` : `<div class="src-prev" role="status">
+    const prev = !p ? "" : p.busy ? `<p class="hint" role="status">${tr`Recherche…`}</p>` : `<div class="src-prev" role="status">
     <b>${esc(d.title)}</b>${d.authors ? `<div>${esc(d.authors)}</div>` : ""}
     <div class="meta">${[d.site, pubDate(d.date), d.kind].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join("")}${d.doi ? `<span>doi:${esc(d.doi)}</span>` : ""}</div>
     ${d.abstract ? `<p class="note">${esc(d.abstract)}</p>` : ""}
-    ${d.feeds && d.feeds.length ? `<p class="hint">Ce site publie un flux : ${d.feeds.map((f) => `<span class="tag">${esc(f.title || f.url)}</span>`).join(" ")}${passeurPret() && !dehorsFeeds().some((x) => sourceKey({ url: x.url }) === sourceKey({ url: d.feeds[0].url })) ? ` <button class="btn ghost sm" data-act="dehors-follow" data-url="${esc(d.feeds[0].url)}">le suivre dans Dehors</button>` : ""}</p>` : ""}
-    ${d.partial ? `<p class="hint">Métadonnées indisponibles (hors ligne, service muet ou quota du jour atteint) : elle sera gardée avec son adresse seule.</p>` : ""}
-    ${p.dup ? `<p class="hint">Déjà gardée${p.dup.mod !== id ? ` dans ${esc(label(p.dup.mod))}` : ""} : <a href="#${esc(p.dup.mod)}/${esc(p.dup.e.id)}">« ${esc(excerpt(p.dup.e, 60))} »</a>.</p>` : ""}
-    <div class="row"><button class="btn acc sm" data-act="src-keep" ${p.dup ? "disabled" : ""}>Garder</button><button class="btn ghost sm" data-act="src-cancel">Annuler</button></div></div>`;
-    return `<div class="capture src-bar"><input id="srcIn" inputmode="url" autocomplete="off" placeholder="Un lien ou un DOI…" aria-label="Lien ou DOI"><button class="btn" data-act="src-fetch">Chercher</button></div>
-  <p class="hint" style="margin:4px 0 12px">Un DOI est complété par Crossref ; une page, ${passeurPret() ? "par ton passeur (sinon Microlink, qui voit l'adresse demandée, 25 par jour)" : "par Microlink, qui voit l'adresse demandée (25 par jour)"}.</p>${prev}${zotBar(id)}${citeBar()}`;
+    ${d.feeds && d.feeds.length ? `<p class="hint">${tr`Ce site publie un flux : ${d.feeds.map((f) => `<span class="tag">${esc(f.title || f.url)}</span>`).join(" ")}`}${passeurPret() && !dehorsFeeds().some((x) => sourceKey({ url: x.url }) === sourceKey({ url: d.feeds[0].url })) ? ` <button class="btn ghost sm" data-act="dehors-follow" data-url="${esc(d.feeds[0].url)}">${tr`le suivre dans Dehors`}</button>` : ""}</p>` : ""}
+    ${d.partial ? `<p class="hint">${tr`Métadonnées indisponibles (hors ligne, service muet ou quota du jour atteint) : elle sera gardée avec son adresse seule.`}</p>` : ""}
+    ${p.dup ? `<p class="hint">${p.dup.mod !== id ? tr`Déjà gardée dans ${esc(label(p.dup.mod))} : ${`<a href="#${esc(p.dup.mod)}/${esc(p.dup.e.id)}">${tr`« ${esc(excerpt(p.dup.e, 60))} »`}</a>`}.` : tr`Déjà gardée : ${`<a href="#${esc(p.dup.mod)}/${esc(p.dup.e.id)}">${tr`« ${esc(excerpt(p.dup.e, 60))} »`}</a>`}.`}</p>` : ""}
+    <div class="row"><button class="btn acc sm" data-act="src-keep" ${p.dup ? "disabled" : ""}>${tr`Garder`}</button><button class="btn ghost sm" data-act="src-cancel">${trp("formulaire", "Annuler")}</button></div></div>`;
+    return `<div class="capture src-bar"><input id="srcIn" inputmode="url" autocomplete="off" placeholder="${tr`Un lien ou un DOI…`}" aria-label="${tr`Lien ou DOI`}"><button class="btn" data-act="src-fetch">${tr`Chercher`}</button></div>
+  <p class="hint" style="margin:4px 0 12px">${passeurPret() ? tr`Un DOI est complété par Crossref ; une page, par ton passeur (sinon Microlink, qui voit l'adresse demandée, 25 par jour).` : tr`Un DOI est complété par Crossref ; une page, par Microlink, qui voit l'adresse demandée (25 par jour).`}</p>${prev}${zotBar(id)}${citeBar()}`;
   }
   CLICK["src-fetch"] = async (el) => {
     const id = modOf(el), inp = $("#srcIn"), raw = inp ? inp.value.trim() : "";
     if (!raw) return;
-    if (!findDoi(raw) && !findUrl(raw)) return toast("Ni lien ni DOI reconnu. Un lien commence par https://, un DOI par 10.");
+    if (!findDoi(raw) && !findUrl(raw)) return toast(tr`Ni lien ni DOI reconnu. Un lien commence par https://, un DOI par 10.`);
     srcPreview[id] = { busy: true };
     render();
     const data = await fetchSource(raw);
@@ -5147,7 +5280,7 @@ var __selene = (() => {
     if (inp) inp.value = "";
     site.save();
     render();
-    toast(`Gardée : « ${excerpt(e, 50)} ».`);
+    toast(tr`Gardée : « ${excerpt(e, 50)} ».`);
   };
   CLICK["src-cancel"] = (el) => {
     delete srcPreview[modOf(el)];
@@ -5157,35 +5290,35 @@ var __selene = (() => {
     const from = modOf(el), to = sourcesModule(), nid = idOf(el), note = S().modules[from].entries.find((x) => x.id === nid);
     if (!note || !to) return;
     el.disabled = true;
-    el.textContent = "Recherche…";
+    el.textContent = tr`Recherche…`;
     const data = await fetchSource(note.text);
     const box = S().modules[from], n = box && box.entries.find((x) => x.id === nid);
     if (!n || !data) return render();
     const dup = findSourceDup(data);
     if (dup) {
       render();
-      return toast(`Déjà gardée dans ${label(dup.mod)}. La note reste où elle est.`);
+      return toast(tr`Déjà gardée dans ${label(dup.mod)}. La note reste où elle est.`);
     }
     const e = keepSource(to, data, n.origin || { from: label(from), text: n.text, date: n.date });
     retargetLinks(S().modules, `${from}/${n.id}`, `${to}/${e.id}`);
     box.entries = box.entries.filter((x) => x !== n);
     site.save();
     render();
-    toast(data.partial ? `Rangée dans ${label(to)}, avec son adresse seule : métadonnées indisponibles pour l'instant.` : `Rangée dans ${label(to)} : « ${excerpt(e, 50)} ».`);
+    toast(data.partial ? tr`Rangée dans ${label(to)}, avec son adresse seule : métadonnées indisponibles pour l'instant.` : tr`Rangée dans ${label(to)} : « ${excerpt(e, 50)} ».`);
   };
   function sourceLinkForm(mod, id) {
     const choices = thoughtItems().sort((a, b) => (b.e.date || "").localeCompare(a.e.date || "")).slice(0, 300);
-    if (!choices.length) return toast("Aucune note ni aucun fragment à documenter pour l'instant.");
-    openForm("Cette source documente…", [
-      { n: "to", l: "…quelle note ou quel fragment", t: "select", o: choices.map((x) => [x.ref, `${label(x.mod)} · ${x.e.date ? fmt(x.e.date) + " · " : ""}${excerpt(x.e, 70)}`]) }
+    if (!choices.length) return toast(tr`Aucune note ni aucun fragment à documenter pour l'instant.`);
+    openForm(tr`Cette source documente…`, [
+      { n: "to", l: tr`…quelle note ou quel fragment`, t: "select", o: choices.map((x) => [x.ref, `${label(x.mod)} · ${x.e.date ? fmt(x.e.date) + " · " : ""}${excerpt(x.e, 70)}`]) }
     ], {}, (v) => {
       const hit = refFind(`${mod}/${id}`);
-      if (!hit) return toast("Cette source a disparu entre-temps.");
-      if (!addLink(hit.e, v.to, "documente", uid(), todayISO())) return toast("Déjà reliée ainsi.");
+      if (!hit) return toast(tr`Cette source a disparu entre-temps.`);
+      if (!addLink(hit.e, v.to, "documente", uid(), todayISO())) return toast(tr`Déjà reliée ainsi.`);
       sortesForget(hit.e);
       site.save();
       render();
-      toast("Reliée. Elle apparaît en marge de ce qu'elle documente.");
+      toast(tr`Reliée. Elle apparaît en marge de ce qu'elle documente.`);
     });
   }
   CLICK["src-link"] = (el) => {
@@ -5347,7 +5480,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
         clearTimeout(t);
       }
     }
-    if (!passeurPret()) throw new Error("Le portail de la Métropole ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).");
+    if (!passeurPret()) throw new Error(tr`Le portail de la Métropole ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).`);
     const q = await passeurFetch(url, "json");
     return { status: q.status || 0, json: q.status === 200 && typeof q.texte === "string" ? JSON.parse(q.texte) : null };
   }
@@ -5360,7 +5493,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     }
     let r = await radarGet(radarUrl(c, from, { lean: true }));
     if (r.status === 400) r = await radarGet(radarUrl(c, from, { lean: false }));
-    if (!r.json) throw new Error(`L'agenda de la Métropole répond ${r.status || "par une erreur"} (le portail a peut-être changé). Réessaie plus tard.`);
+    if (!r.json) throw new Error(r.status ? tr`L'agenda de la Métropole répond ${r.status} (le portail a peut-être changé). Réessaie plus tard.` : tr`L'agenda de la Métropole répond par une erreur (le portail a peut-être changé). Réessaie plus tard.`);
     const events = radarEvents(r.json);
     try {
       platform.storage.set(RADAR_KEY, JSON.stringify({ at: Date.now(), key, events }));
@@ -5371,23 +5504,23 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
   function radarWhen(x, today) {
     const dm = (d) => fmt(d, { day: "numeric", month: "long" });
     if (!x.from) return "";
-    if (x.from <= today) return x.to > today ? `en cours, jusqu'au ${dm(x.to)}` : "aujourd'hui";
+    if (x.from <= today) return x.to > today ? tr`en cours, jusqu'au ${dm(x.to)}` : tr`aujourd'hui`;
     if (x.to === x.from) return fmt(x.from, { weekday: "long", day: "numeric", month: "long" });
-    return `du ${dm(x.from)} au ${dm(x.to)}`;
+    return tr`du ${dm(x.from)} au ${dm(x.to)}`;
   }
   SHEETS.radar = () => {
     const st = radarState, c = radarPlace();
     if (!st) return "";
-    const head = `<h2 id="sheetTitle">Radar culturel</h2><p class="hint">Autour de ${esc(c ? c.name.split(",")[0] : "Lille")}, les deux semaines à venir, ce qui parle de : ${esc(st.words.map((w) => st.said[w] || w).join(", "))}. Cinq au plus ; le reste attendra que tu reviennes.</p>`;
-    const foot = `<p class="hint" style="margin-top:12px">Source : OpenAgenda, par l'open data de la Métropole européenne de Lille. Le portail voit la zone (arrondie) et les dates, jamais tes mots : le tri se fait ici.</p>`;
-    if (st.busy) return head + `<p class="hint" role="status">Recherche…</p>`;
-    if (st.err) return head + `<p class="hint" role="status">${esc(st.err)}</p><button class="btn sm" data-act="radar-open">Réessayer</button>` + foot;
-    if (!st.items.length) return head + `<p class="empty">Rien qui te ressemble, cette fois. La ville continuera sans toi, elle a l'habitude.</p>` + foot;
+    const head = `<h2 id="sheetTitle">${tr`Radar culturel`}</h2><p class="hint">${tr`Autour de ${esc(c ? c.name.split(",")[0] : "Lille")}, les deux semaines à venir, ce qui parle de : ${esc(st.words.map((w) => st.said[w] || w).join(", "))}. Cinq au plus ; le reste attendra que tu reviennes.`}</p>`;
+    const foot = `<p class="hint" style="margin-top:12px">${tr`Source : OpenAgenda, par l'open data de la Métropole européenne de Lille. Le portail voit la zone (arrondie) et les dates, jamais tes mots : le tri se fait ici.`}</p>`;
+    if (st.busy) return head + `<p class="hint" role="status">${tr`Recherche…`}</p>`;
+    if (st.err) return head + `<p class="hint" role="status">${esc(st.err)}</p><button class="btn sm" data-act="radar-open">${tr`Réessayer`}</button>` + foot;
+    if (!st.items.length) return head + `<p class="empty">${tr`Rien qui te ressemble, cette fois. La ville continuera sans toi, elle a l'habitude.`}</p>` + foot;
     const today = todayISO();
     return head + `<ul class="plain radar">${st.items.map((x) => `<li class="item" data-rid="${esc(x.id)}"><span></span><div><b>${esc(x.title)}</b>
       <div class="meta"><span>${esc(radarWhen(x, today))}</span>${x.place || x.city ? `<span>${esc([x.place, x.city].filter(Boolean).join(", "))}</span>` : ""}${x.on.map((w) => `<span class="tag">${esc(st.said[w] || w)}</span>`).join("")}</div>
       ${x.text ? `<p class="hint" style="margin:4px 0 0">${esc(x.text)}</p>` : ""}</div>
-      <div class="row">${/^https:\/\//.test(x.url) ? `<a class="btn ghost sm" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">voir</a>` : ""}${st.kept.has(x.id) ? `<span class="hint">gardé</span>` : `<button class="btn sm" data-act="radar-keep">garder</button>`}</div></li>`).join("")}</ul>` + (st.total > st.items.length ? `<p class="hint">${st.total - st.items.length} autre${st.total - st.items.length > 1 ? "s" : ""} correspond${st.total - st.items.length > 1 ? "ent" : ""} aussi : des mots plus précis choisiraient mieux.</p>` : "") + foot;
+      <div class="row">${/^https:\/\//.test(x.url) ? `<a class="btn ghost sm" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${tr`voir`}</a>` : ""}${st.kept.has(x.id) ? `<span class="hint">${tr`gardé`}</span>` : `<button class="btn sm" data-act="radar-keep">${tr`garder`}</button>`}</div></li>`).join("")}</ul>` + (st.total > st.items.length ? `<p class="hint">${trn(st.total - st.items.length, "{0} autre correspond aussi : des mots plus précis choisiraient mieux.", "{0} autres correspondent aussi : des mots plus précis choisiraient mieux.")}</p>` : "") + foot;
   };
   CLICK["radar-open"] = async () => {
     const c = radarPlace(), words = radarWords(radarConf().words);
@@ -5404,7 +5537,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     try {
       events = await radarFetch(c, todayISO());
     } catch (e) {
-      err = e.message || "L'agenda de la Métropole ne répond pas. Réessaie plus tard.";
+      err = e.message || tr`L'agenda de la Métropole ne répond pas. Réessaie plus tard.`;
     }
     const st = radarState;
     if (!st) return;
@@ -5414,19 +5547,19 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
   CLICK["radar-keep"] = (el) => {
     const st = radarState, x = st && st.items.find((i) => i.id === el.closest("[data-rid]").dataset.rid), box = inboxId(S().modules);
     if (!x) return;
-    if (!box) return toast("Aucune boîte de réception où le garder. Crée un Carnet et fais-en ta boîte (Réglages).");
+    if (!box) return toast(tr`Aucune boîte de réception où le garder. Crée un Carnet et fais-en ta boîte (Réglages).`);
     addNote(S().modules[box], [x.title, radarWhen(x, todayISO()), [x.place, x.city].filter(Boolean).join(", "), x.url].filter(Boolean).join(" — ").slice(0, 2e3));
     st.kept.add(x.id);
     site.save();
     render();
     $("#sheetBody").innerHTML = SHEETS.radar();
-    toast(`Gardé dans ${label(box)}.`);
+    toast(tr`Gardé dans ${label(box)}.`);
   };
   function radarSettingsHTML() {
     const c = skyConf(), near = radarPlace();
-    return `<section id="radar"><h3>Radar culturel · Métropole de Lille uniquement</h3><p class="hint">Couverture locale : changer de ville n’étend pas ce service à une autre région. Pour suivre des événements ailleurs, ajoute tes propres flux dans Dehors.</p><p class="hint">Sur demande, depuis l'accueil : les événements de la Métropole de Lille (OpenAgenda, open data de la MEL) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification.</p>
-    <label>Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)<input data-act="radar-words" value="${esc(radarConf().words)}" placeholder="poésie, jazz, photographie, lecture…" maxlength="300" autocomplete="off"></label>
-    ${near ? "" : `<p class="hint" style="margin-top:6px">${c ? `Le radar ne couvre que la Métropole de Lille : le lieu réglé (${esc(c.name)}) en est trop loin.` : "Il lui faut un lieu près de Lille : règle-le dans Ciel, ci-dessus."}</p>`}</section>`;
+    return `<section id="radar"><h3>${tr`Radar culturel · Métropole de Lille uniquement`}</h3><p class="hint">${tr`Couverture locale : changer de ville n’étend pas ce service à une autre région. Pour suivre des événements ailleurs, ajoute tes propres flux dans Dehors.`}</p><p class="hint">${tr`Sur demande, depuis l'accueil : les événements de la Métropole de Lille (OpenAgenda, open data de la MEL) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification.`}</p>
+    <label>${tr`Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)`}<input data-act="radar-words" value="${esc(radarConf().words)}" placeholder="${tr`poésie, jazz, photographie, lecture…`}" maxlength="300" autocomplete="off"></label>
+    ${near ? "" : `<p class="hint" style="margin-top:6px">${c ? tr`Le radar ne couvre que la Métropole de Lille : le lieu réglé (${esc(c.name)}) en est trop loin.` : tr`Il lui faut un lieu près de Lille : règle-le dans Ciel, ci-dessus.`}</p>`}</section>`;
   }
 
   // src/app/scene/forest.js
@@ -7206,27 +7339,27 @@ ${contextText()}`;
     $("#sheetBody").innerHTML = SHEETS.mb(mbState.ref);
     const j = await mbFetch(`/release-group?artist=${aid}&type=album|ep&limit=100`).catch(() => null);
     if (!mbState) return;
-    Object.assign(mbState, { busy: false, aid, albums: j ? mbAlbums(j) : null, err: j ? "" : "MusicBrainz ne répond pas (hors ligne, ou trop de demandes). Réessaie dans un instant." });
+    Object.assign(mbState, { busy: false, aid, albums: j ? mbAlbums(j) : null, err: j ? "" : tr`MusicBrainz ne répond pas (hors ligne, ou trop de demandes). Réessaie dans un instant.` });
     if ($("#sheet").open) $("#sheetBody").innerHTML = SHEETS.mb(mbState.ref);
   }
   SHEETS.mb = (ref) => {
     const hit = mbEntry(ref);
-    if (!hit || !mbState) return `<p class="empty">Cet élément n'existe plus.</p>`;
+    if (!hit || !mbState) return `<p class="empty">${tr`Cet élément n'existe plus.`}</p>`;
     const { mod, e } = hit, inst = S().modules[mod], st = mbState;
-    const head = `<h2 id="sheetTitle">${esc(e.title)}</h2><p class="hint">Discographie studio (albums et EP) selon MusicBrainz, base libre et collaborative.</p>`;
-    if (st.busy) return head + `<p class="hint" role="status">Recherche…</p>`;
-    if (st.err) return head + `<p class="hint" role="status">${esc(st.err)}</p><button class="btn sm" data-act="mb-retry">Réessayer</button>`;
+    const head = `<h2 id="sheetTitle">${esc(e.title)}</h2><p class="hint">${tr`Discographie studio (albums et EP) selon MusicBrainz, base libre et collaborative.`}</p>`;
+    if (st.busy) return head + `<p class="hint" role="status">${tr`Recherche…`}</p>`;
+    if (st.err) return head + `<p class="hint" role="status">${esc(st.err)}</p><button class="btn sm" data-act="mb-retry">${tr`Réessayer`}</button>`;
     if (st.step === "artist") {
-      if (!st.artists.length) return head + `<p class="empty">Aucun artiste de ce nom dans MusicBrainz. Vérifie l'orthographe du titre.</p>`;
-      return head + `<p>Plusieurs artistes portent ce nom :</p><ul class="plain">${st.artists.map((a) => `<li class="item"><span></span><div><b>${esc(a.name)}</b><div class="meta">${[a.note, a.country, a.begin && `depuis ${a.begin}`].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join("")}</div></div><button class="btn sm" data-act="mb-artist" data-a="${esc(a.id)}">choisir</button></li>`).join("")}</ul>`;
+      if (!st.artists.length) return head + `<p class="empty">${tr`Aucun artiste de ce nom dans MusicBrainz. Vérifie l'orthographe du titre.`}</p>`;
+      return head + `<p>${tr`Plusieurs artistes portent ce nom :`}</p><ul class="plain">${st.artists.map((a) => `<li class="item"><span></span><div><b>${esc(a.name)}</b><div class="meta">${[a.note, a.country, a.begin && tr`depuis ${a.begin}`].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join("")}</div></div><button class="btn sm" data-act="mb-artist" data-a="${esc(a.id)}">${tr`choisir`}</button></li>`).join("")}</ul>`;
     }
     const have = new Set(inst.entries.filter((x) => x.mb && x.mb.rg).map((x) => x.mb.rg));
     const haveTitle = new Set(inst.entries.filter((x) => fold(x.title) === fold(e.title) && x.subtitle).map((x) => fold(x.subtitle)));
-    if (!st.albums.length) return head + `<p class="empty">Aucun album ni EP studio référencé pour cet artiste.</p>`;
+    if (!st.albums.length) return head + `<p class="empty">${tr`Aucun album ni EP studio référencé pour cet artiste.`}</p>`;
     return head + `<ul class="plain mb-albums">${st.albums.map((a) => {
       const mine = e.mb && e.mb.rg === a.id, inList = have.has(a.id) || haveTitle.has(fold(a.title));
-      return `<li class="item" data-rg="${esc(a.id)}"><span>${coverImg(a.id)}</span><div><b>${esc(a.title)}</b><div class="meta"><span>${esc(a.date.slice(0, 4) || "sans date")}</span><span>${esc(a.type)}</span></div></div>
-      <div class="row">${mine ? `<span class="hint">choisi</span>` : `<button class="btn sm" data-act="mb-pick">${e.subtitle ? "remplacer" : "choisir"}</button>`}${inList ? "" : `<button class="btn ghost sm" data-act="mb-add">ajouter</button>`}</div></li>`;
+      return `<li class="item" data-rg="${esc(a.id)}"><span>${coverImg(a.id)}</span><div><b>${esc(a.title)}</b><div class="meta"><span>${esc(a.date.slice(0, 4) || tr`sans date`)}</span><span>${esc(a.type)}</span></div></div>
+      <div class="row">${mine ? `<span class="hint">${tr`choisi`}</span>` : `<button class="btn sm" data-act="mb-pick">${e.subtitle ? tr`remplacer` : tr`choisir`}</button>`}${inList ? "" : `<button class="btn ghost sm" data-act="mb-add">${tr`ajouter`}</button>`}</div></li>`;
     }).join("")}</ul>`;
   };
   async function mbOpen(ref) {
@@ -7237,7 +7370,7 @@ ${contextText()}`;
     if (hit.e.mb && hit.e.mb.a) return mbLoadAlbums(hit.e.mb.a);
     const j = await mbFetch(`/artist?query=${encodeURIComponent(mbArtistQuery(hit.e.title))}&limit=6`).catch(() => null);
     if (!mbState || mbState.ref !== ref) return;
-    Object.assign(mbState, { busy: false, artists: j ? mbArtists(j) : [], err: j ? "" : "MusicBrainz ne répond pas (hors ligne, ou trop de demandes). Réessaie dans un instant." });
+    Object.assign(mbState, { busy: false, artists: j ? mbArtists(j) : [], err: j ? "" : tr`MusicBrainz ne répond pas (hors ligne, ou trop de demandes). Réessaie dans un instant.` });
     if (mbState.artists.length === 1 && !mbState.err) return mbLoadAlbums(mbState.artists[0].id);
     if ($("#sheet").open) $("#sheetBody").innerHTML = SHEETS.mb(ref);
   }
@@ -7254,7 +7387,7 @@ ${contextText()}`;
     site.save();
     render();
     $("#sheetBody").innerHTML = SHEETS.mb(mbState.ref);
-    toast(`« ${a.title} » : c'est noté.`);
+    toast(tr`« ${a.title} » : c'est noté.`);
   };
   CLICK["mb-add"] = (el) => {
     const hit = mbState && mbEntry(mbState.ref), rg = el.closest("[data-rg]").dataset.rg, a = hit && mbState.albums.find((x) => x.id === rg);
@@ -7264,17 +7397,17 @@ ${contextText()}`;
     site.save();
     render();
     $("#sheetBody").innerHTML = SHEETS.mb(mbState.ref);
-    toast(`Ajouté : ${hit.e.title}, « ${a.title} ».`);
+    toast(tr`Ajouté : ${hit.e.title}, « ${a.title} ».`);
   };
   var MB_SEEN = "selene-mb-seen";
   var mbNews = null;
   SHEETS["mb-new"] = (mod) => {
     const n = mbNews, lab = esc(label(mod));
     if (!n) return "";
-    const head = `<h2 id="sheetTitle">Nouvelles sorties</h2><p class="hint">Ce que tes artistes reliés dans ${lab} ont publié depuis ta dernière vérification, selon MusicBrainz. Rien n'est vérifié sans toi.</p>`;
-    if (n.done < n.total) return head + `<p class="hint" role="status">${n.done} sur ${n.total} artistes…</p>`;
+    const head = `<h2 id="sheetTitle">${tr`Nouvelles sorties`}</h2><p class="hint">${tr`Ce que tes artistes reliés dans ${lab} ont publié depuis ta dernière vérification, selon MusicBrainz. Rien n'est vérifié sans toi.`}</p>`;
+    if (n.done < n.total) return head + `<p class="hint" role="status">${tr`${n.done} sur ${n.total} artistes…`}</p>`;
     const inst = S().modules[mod], have = new Set(inst.entries.filter((x) => x.mb && x.mb.rg).map((x) => x.mb.rg));
-    return head + (n.items.length ? `<ul class="plain mb-albums">${n.items.map((x) => `<li class="item" data-rg="${esc(x.album.id)}" data-a="${esc(x.aid)}"><span>${coverImg(x.album.id)}</span><div><b>${esc(x.album.title)}</b><div class="meta"><span>${esc(x.artist)}</span><span>${esc(x.album.date)}</span><span>${esc(x.album.type)}</span></div></div>${have.has(x.album.id) ? `<span class="hint">déjà là</span>` : `<button class="btn sm" data-act="mb-new-add">ajouter</button>`}</li>`).join("")}</ul>` : `<p class="empty">Rien de neuf. Le silence est aussi une nouvelle.</p>`) + (n.failed ? `<p class="hint">${n.failed} artiste${n.failed > 1 ? "s" : ""} sans réponse : réessaie plus tard.</p>` : "");
+    return head + (n.items.length ? `<ul class="plain mb-albums">${n.items.map((x) => `<li class="item" data-rg="${esc(x.album.id)}" data-a="${esc(x.aid)}"><span>${coverImg(x.album.id)}</span><div><b>${esc(x.album.title)}</b><div class="meta"><span>${esc(x.artist)}</span><span>${esc(x.album.date)}</span><span>${esc(x.album.type)}</span></div></div>${have.has(x.album.id) ? `<span class="hint">${tr`déjà là`}</span>` : `<button class="btn sm" data-act="mb-new-add">${tr`ajouter`}</button>`}</li>`).join("")}</ul>` : `<p class="empty">${tr`Rien de neuf. Le silence est aussi une nouvelle.`}</p>`) + (n.failed ? `<p class="hint">${trn(n.failed, "{0} artiste sans réponse : réessaie plus tard.", "{0} artistes sans réponse : réessaie plus tard.")}</p>` : "");
   };
   CLICK["mb-new"] = async (el) => {
     const mod = modOf(el), inst = S().modules[mod], artists = /* @__PURE__ */ new Map();
@@ -7312,7 +7445,7 @@ ${contextText()}`;
     site.save();
     render();
     $("#sheetBody").innerHTML = SHEETS["mb-new"](mbNews.mod);
-    toast(`Ajouté : ${x.artist}, « ${x.album.title} ».`);
+    toast(tr`Ajouté : ${x.artist}, « ${x.album.title} ».`);
   };
 
   // src/app/modules/collection.js
@@ -8533,12 +8666,12 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     try {
       r = await fetch(url, { signal: ac.signal });
     } catch {
-      throw new Error("OpenAlex injoignable (hors ligne ?).");
+      throw new Error(tr`OpenAlex injoignable (hors ligne ?).`);
     } finally {
       clearTimeout(t);
     }
-    if (r.status === 429) throw new Error("OpenAlex : quota du jour atteint (une clé gratuite, dans Réglages → Dehors, le décuple).");
-    if (!r.ok) throw Object.assign(new Error(`OpenAlex répond ${r.status}.`), { status: r.status });
+    if (r.status === 429) throw new Error(tr`OpenAlex : quota du jour atteint (une clé gratuite, dans Réglages → Dehors, le décuple).`);
+    if (!r.ok) throw Object.assign(new Error(tr`OpenAlex répond ${r.status}.`), { status: r.status });
     return r.json();
   }
   async function citeRun() {
@@ -8570,28 +8703,28 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     if (srcs.size < 2) return "";
     const st = citeState, name = (d) => {
       const x = srcs.get(d);
-      return x ? `<a href="#${esc(x.mod)}/${esc(x.e.id)}">« ${esc(excerpt(x.e, 50))} »</a>` : "";
+      return x ? `<a href="#${esc(x.mod)}/${esc(x.e.id)}">${tr`« ${esc(excerpt(x.e, 50))} »`}</a>` : "";
     };
     let body = "";
-    if (st && st.busy) body = `<p class="hint" role="status">Lecture des bibliographies de tes sources…</p>`;
+    if (st && st.busy) body = `<p class="hint" role="status">${tr`Lecture des bibliographies de tes sources…`}</p>`;
     else if (st && st.err) body = `<p class="hint" role="status">${esc(st.err)}</p>`;
     else if (st && st.res) {
       const r = st.res, followed = new Set(dehorsResearch().filter((x) => x.kind === "author").map((x) => x.q));
       const common = r.common.filter((x) => r.titles[x.id]);
-      body = `<p class="hint" style="margin:6px 0 0">OpenAlex connaît ${r.known} de tes ${r.total} sources à DOI.</p>`;
-      if (!common.length && !r.pairs.length && !r.authors.length) body += `<p class="empty">Rien en commun pour l'instant : tes sources ne citent pas les mêmes textes (ou OpenAlex ignore leurs bibliographies).</p>`;
-      if (common.length) body += `<h4>Cité par plusieurs de tes sources</h4><ul class="plain cite-list">${common.map((x) => {
+      body = `<p class="hint" style="margin:6px 0 0">${tr`OpenAlex connaît ${r.known} de tes ${r.total} sources à DOI.`}</p>`;
+      if (!common.length && !r.pairs.length && !r.authors.length) body += `<p class="empty">${tr`Rien en commun pour l'instant : tes sources ne citent pas les mêmes textes (ou OpenAlex ignore leurs bibliographies).`}</p>`;
+      if (common.length) body += `<h4>${tr`Cité par plusieurs de tes sources`}</h4><ul class="plain cite-list">${common.map((x) => {
         const w = r.titles[x.id], dup = findSourceDup({ doi: w.oa.doi, url: w.link });
         return `<li class="item" data-w="${esc(x.id)}"><span></span><div><b>${esc(w.title)}</b><div class="meta">${[w.oa.authors, w.oa.site, w.oa.day.slice(0, 4)].filter(Boolean).map((v) => `<span>${esc(v)}</span>`).join("")}</div>
-        <div class="hint">cité par ${x.by.length} de tes sources : ${x.by.map(name).filter(Boolean).join(", ")}</div></div>
-        <div class="row"><a class="src-link" href="${esc(w.link)}" target="_blank" rel="noopener noreferrer">ouvrir ↗</a>${dup ? `<a class="hint" href="#${esc(dup.mod)}/${esc(dup.e.id)}">déjà gardée</a>` : `<button class="btn sm" data-act="cite-keep">garder</button>`}</div></li>`;
+        <div class="hint">${tr`cité par ${x.by.length} de tes sources : ${x.by.map(name).filter(Boolean).join(", ")}`}</div></div>
+        <div class="row"><a class="src-link" href="${esc(w.link)}" target="_blank" rel="noopener noreferrer">${tr`ouvrir ↗`}</a>${dup ? `<a class="hint" href="#${esc(dup.mod)}/${esc(dup.e.id)}">${tr`déjà gardée`}</a>` : `<button class="btn sm" data-act="cite-keep">${tr`garder`}</button>`}</div></li>`;
       }).join("")}</ul>`;
-      if (r.pairs.length) body += `<h4>Tes sources qui se parlent</h4><ul class="plain cite-pairs">${r.pairs.map((p) => `<li>${name(p.a)} et ${name(p.b)} : ${p.n} références en commun</li>`).join("")}</ul>`;
-      if (r.authors.length) body += `<h4>Ces auteurs reviennent</h4><ul class="plain cite-authors">${r.authors.map((a) => `<li data-a="${esc(a.id)}"><b>${esc(a.name)}</b>, dans ${a.by.length} de tes sources
-      ${dehorsOn() ? followed.has(a.id) ? `<span class="hint">en veille</span>` : `<button class="btn ghost sm" data-act="cite-follow">suivre dans la veille</button>` : ""}</li>`).join("")}</ul>`;
+      if (r.pairs.length) body += `<h4>${tr`Tes sources qui se parlent`}</h4><ul class="plain cite-pairs">${r.pairs.map((p) => `<li>${tr`${name(p.a)} et ${name(p.b)} : ${p.n} références en commun`}</li>`).join("")}</ul>`;
+      if (r.authors.length) body += `<h4>${tr`Ces auteurs reviennent`}</h4><ul class="plain cite-authors">${r.authors.map((a) => `<li data-a="${esc(a.id)}">${tr`${`<b>${esc(a.name)}</b>`}, dans ${a.by.length} de tes sources`}
+      ${dehorsOn() ? followed.has(a.id) ? `<span class="hint">${tr`en veille`}</span>` : `<button class="btn ghost sm" data-act="cite-follow">${tr`suivre dans la veille`}</button>` : ""}</li>`).join("")}</ul>`;
     }
-    return `<div class="cite-bar" style="margin:0 0 14px"><div class="row"><button class="btn ghost sm" data-act="cite-run" ${st && st.busy ? "disabled" : ""}>Ce que tes sources ont en commun</button>
-    <span class="hint">OpenAlex reçoit les DOI de tes sources, rien d'autre.</span></div>${body}</div>`;
+    return `<div class="cite-bar" style="margin:0 0 14px"><div class="row"><button class="btn ghost sm" data-act="cite-run" ${st && st.busy ? "disabled" : ""}>${tr`Ce que tes sources ont en commun`}</button>
+    <span class="hint">${tr`OpenAlex reçoit les DOI de tes sources, rien d'autre.`}</span></div>${body}</div>`;
   }
   CLICK["cite-run"] = async () => {
     citeState = { busy: true };
@@ -8608,19 +8741,19 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     if (!w || !hit) return;
     const src = { title: w.title, url: w.link, doi: w.oa.doi || null, site: w.oa.site, date: w.oa.day, kind: w.oa.kind === "article" ? "article" : w.oa.kind || "article", authors: w.oa.authors, abstract: "" };
     if (findSourceDup(src)) return render();
-    const e = keepSource(modOf(el), src, { from: "Cité par tes sources", text: `cité par ${hit.by.length} de tes sources`, date: todayISO() });
+    const e = keepSource(modOf(el), src, { from: tr`Cité par tes sources`, text: tr`cité par ${hit.by.length} de tes sources`, date: todayISO() });
     site.save();
     render();
-    toast(`Gardée : « ${excerpt(e, 50)} ».`);
+    toast(tr`Gardée : « ${excerpt(e, 50)} ».`);
   };
   CLICK["cite-follow"] = (el) => {
     const r = citeState && citeState.res, a = r && r.authors.find((x) => x.id === el.closest("[data-a]").dataset.a), list = dehorsResearch();
     if (!a) return;
     if (list.some((x) => x.kind === "author" && x.q === a.id)) return render();
-    if (list.length >= 30) return toast("Trente veilles, c'est une thèse. Retires-en avant d'en ajouter.");
+    if (list.length >= 30) return toast(tr`Trente veilles, c'est une thèse. Retires-en avant d'en ajouter.`);
     dehorsSet({ research: [...list, { id: uid(), kind: "author", q: a.id, name: a.name, seen: Date.now() - 7 * 864e5 }] });
     render();
-    toast(`En veille dans Dehors : ${a.name}. Première lecture…`);
+    toast(tr`En veille dans Dehors : ${a.name}. Première lecture…`);
     dehorsRefresh();
   };
 

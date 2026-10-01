@@ -4,6 +4,7 @@ import { OA_DOI, oaCoupling, oaRefs, oaRefsUrls, oaTitlesUrls, oaWorks } from ".
 import { CLICK } from "../registry.js";
 import { esc, toast } from "../lib/dom.js";
 import { todayISO, uid } from "../lib/format.js";
+import { tr } from "../i18n/index.js";
 import { dehorsOn, dehorsRefresh, dehorsResearch, dehorsSet, oaKey } from "./dehors.js";
 import { excerpt, sourceItems } from "./links.js";
 import { findSourceDup, keepSource } from "./sources.js";
@@ -33,9 +34,9 @@ export function citeSources() {
 async function citeGet(url) {
   const ac = new AbortController(), t = setTimeout(() => ac.abort(), 12000);
   let r;
-  try { r = await fetch(url, { signal: ac.signal }); } catch { throw new Error("OpenAlex injoignable (hors ligne ?)."); } finally { clearTimeout(t); }
-  if (r.status === 429) throw new Error("OpenAlex : quota du jour atteint (une clé gratuite, dans Réglages → Dehors, le décuple).");
-  if (!r.ok) throw Object.assign(new Error(`OpenAlex répond ${r.status}.`), { status: r.status });
+  try { r = await fetch(url, { signal: ac.signal }); } catch { throw new Error(tr`OpenAlex injoignable (hors ligne ?).`); } finally { clearTimeout(t); }
+  if (r.status === 429) throw new Error(tr`OpenAlex : quota du jour atteint (une clé gratuite, dans Réglages → Dehors, le décuple).`);
+  if (!r.ok) throw Object.assign(new Error(tr`OpenAlex répond ${r.status}.`), { status: r.status });
   return r.json();
 }
 async function citeRun() {
@@ -57,25 +58,25 @@ async function citeRun() {
 }
 export function citeBar() {
   const srcs = citeSources(); if (srcs.size < 2) return "";
-  const st = citeState, name = d => { const x = srcs.get(d); return x ? `<a href="#${esc(x.mod)}/${esc(x.e.id)}">« ${esc(excerpt(x.e, 50))} »</a>` : ""; };
+  const st = citeState, name = d => { const x = srcs.get(d); return x ? `<a href="#${esc(x.mod)}/${esc(x.e.id)}">${tr`« ${esc(excerpt(x.e, 50))} »`}</a>` : ""; };
   let body = "";
-  if (st && st.busy) body = `<p class="hint" role="status">Lecture des bibliographies de tes sources…</p>`;
+  if (st && st.busy) body = `<p class="hint" role="status">${tr`Lecture des bibliographies de tes sources…`}</p>`;
   else if (st && st.err) body = `<p class="hint" role="status">${esc(st.err)}</p>`;
   else if (st && st.res) {
     const r = st.res, followed = new Set(dehorsResearch().filter(x => x.kind === "author").map(x => x.q));
     const common = r.common.filter(x => r.titles[x.id]);
-    body = `<p class="hint" style="margin:6px 0 0">OpenAlex connaît ${r.known} de tes ${r.total} sources à DOI.</p>`;
-    if (!common.length && !r.pairs.length && !r.authors.length) body += `<p class="empty">Rien en commun pour l'instant : tes sources ne citent pas les mêmes textes (ou OpenAlex ignore leurs bibliographies).</p>`;
-    if (common.length) body += `<h4>Cité par plusieurs de tes sources</h4><ul class="plain cite-list">${common.map(x => { const w = r.titles[x.id], dup = findSourceDup({ doi: w.oa.doi, url: w.link });
+    body = `<p class="hint" style="margin:6px 0 0">${tr`OpenAlex connaît ${r.known} de tes ${r.total} sources à DOI.`}</p>`;
+    if (!common.length && !r.pairs.length && !r.authors.length) body += `<p class="empty">${tr`Rien en commun pour l'instant : tes sources ne citent pas les mêmes textes (ou OpenAlex ignore leurs bibliographies).`}</p>`;
+    if (common.length) body += `<h4>${tr`Cité par plusieurs de tes sources`}</h4><ul class="plain cite-list">${common.map(x => { const w = r.titles[x.id], dup = findSourceDup({ doi: w.oa.doi, url: w.link });
       return `<li class="item" data-w="${esc(x.id)}"><span></span><div><b>${esc(w.title)}</b><div class="meta">${[w.oa.authors, w.oa.site, w.oa.day.slice(0, 4)].filter(Boolean).map(v => `<span>${esc(v)}</span>`).join("")}</div>
-        <div class="hint">cité par ${x.by.length} de tes sources : ${x.by.map(name).filter(Boolean).join(", ")}</div></div>
-        <div class="row"><a class="src-link" href="${esc(w.link)}" target="_blank" rel="noopener noreferrer">ouvrir ↗</a>${dup ? `<a class="hint" href="#${esc(dup.mod)}/${esc(dup.e.id)}">déjà gardée</a>` : `<button class="btn sm" data-act="cite-keep">garder</button>`}</div></li>`; }).join("")}</ul>`;
-    if (r.pairs.length) body += `<h4>Tes sources qui se parlent</h4><ul class="plain cite-pairs">${r.pairs.map(p => `<li>${name(p.a)} et ${name(p.b)} : ${p.n} références en commun</li>`).join("")}</ul>`;
-    if (r.authors.length) body += `<h4>Ces auteurs reviennent</h4><ul class="plain cite-authors">${r.authors.map(a => `<li data-a="${esc(a.id)}"><b>${esc(a.name)}</b>, dans ${a.by.length} de tes sources
-      ${dehorsOn() ? followed.has(a.id) ? `<span class="hint">en veille</span>` : `<button class="btn ghost sm" data-act="cite-follow">suivre dans la veille</button>` : ""}</li>`).join("")}</ul>`;
+        <div class="hint">${tr`cité par ${x.by.length} de tes sources : ${x.by.map(name).filter(Boolean).join(", ")}`}</div></div>
+        <div class="row"><a class="src-link" href="${esc(w.link)}" target="_blank" rel="noopener noreferrer">${tr`ouvrir ↗`}</a>${dup ? `<a class="hint" href="#${esc(dup.mod)}/${esc(dup.e.id)}">${tr`déjà gardée`}</a>` : `<button class="btn sm" data-act="cite-keep">${tr`garder`}</button>`}</div></li>`; }).join("")}</ul>`;
+    if (r.pairs.length) body += `<h4>${tr`Tes sources qui se parlent`}</h4><ul class="plain cite-pairs">${r.pairs.map(p => `<li>${tr`${name(p.a)} et ${name(p.b)} : ${p.n} références en commun`}</li>`).join("")}</ul>`;
+    if (r.authors.length) body += `<h4>${tr`Ces auteurs reviennent`}</h4><ul class="plain cite-authors">${r.authors.map(a => `<li data-a="${esc(a.id)}">${tr`${`<b>${esc(a.name)}</b>`}, dans ${a.by.length} de tes sources`}
+      ${dehorsOn() ? followed.has(a.id) ? `<span class="hint">${tr`en veille`}</span>` : `<button class="btn ghost sm" data-act="cite-follow">${tr`suivre dans la veille`}</button>` : ""}</li>`).join("")}</ul>`;
   }
-  return `<div class="cite-bar" style="margin:0 0 14px"><div class="row"><button class="btn ghost sm" data-act="cite-run" ${st && st.busy ? "disabled" : ""}>Ce que tes sources ont en commun</button>
-    <span class="hint">OpenAlex reçoit les DOI de tes sources, rien d'autre.</span></div>${body}</div>`;
+  return `<div class="cite-bar" style="margin:0 0 14px"><div class="row"><button class="btn ghost sm" data-act="cite-run" ${st && st.busy ? "disabled" : ""}>${tr`Ce que tes sources ont en commun`}</button>
+    <span class="hint">${tr`OpenAlex reçoit les DOI de tes sources, rien d'autre.`}</span></div>${body}</div>`;
 }
 CLICK["cite-run"] = async () => {
   citeState = { busy: true }; render();
@@ -86,13 +87,13 @@ CLICK["cite-keep"] = el => {
   const r = citeState && citeState.res, id = el.closest("[data-w]").dataset.w, w = r && r.titles[id], hit = r && r.common.find(x => x.id === id); if (!w || !hit) return;
   const src = { title: w.title, url: w.link, doi: w.oa.doi || null, site: w.oa.site, date: w.oa.day, kind: w.oa.kind === "article" ? "article" : w.oa.kind || "article", authors: w.oa.authors, abstract: "" };
   if (findSourceDup(src)) return render();
-  const e = keepSource(modOf(el), src, { from: "Cité par tes sources", text: `cité par ${hit.by.length} de tes sources`, date: todayISO() });
-  site.save(); render(); toast(`Gardée : « ${excerpt(e, 50)} ».`);
+  const e = keepSource(modOf(el), src, { from: tr`Cité par tes sources`, text: tr`cité par ${hit.by.length} de tes sources`, date: todayISO() }); // la provenance s'enregistre dans la langue du moment
+  site.save(); render(); toast(tr`Gardée : « ${excerpt(e, 50)} ».`);
 };
 CLICK["cite-follow"] = el => {
   const r = citeState && citeState.res, a = r && r.authors.find(x => x.id === el.closest("[data-a]").dataset.a), list = dehorsResearch(); if (!a) return;
   if (list.some(x => x.kind === "author" && x.q === a.id)) return render();
-  if (list.length >= 30) return toast("Trente veilles, c'est une thèse. Retires-en avant d'en ajouter.");
+  if (list.length >= 30) return toast(tr`Trente veilles, c'est une thèse. Retires-en avant d'en ajouter.`);
   dehorsSet({ research: [...list, { id: uid(), kind: "author", q: a.id, name: a.name, seen: Date.now() - 7 * 86400000 }] });
-  render(); toast(`En veille dans Dehors : ${a.name}. Première lecture…`); dehorsRefresh();
+  render(); toast(tr`En veille dans Dehors : ${a.name}. Première lecture…`); dehorsRefresh();
 };
