@@ -24,6 +24,9 @@ Selene, avec ce qu'un téléphone offre en plus.
 - **Un widget d'écran d'accueil** (appui long sur l'écran d'accueil → Widgets → Selene) : la lune du jour et les trois
   choses qui t'attendent (tâches du jour, rappels, échéances), et un « + » qui ouvre la capture. Il montre ce que Selene
   lui a dit à sa dernière ouverture : il ne se réveille pas seul, ne consomme rien et ne sort pas de l'appareil.
+- **Sa langue à part** (Android 13+) : Paramètres → Applications → Selene → Langue, français ou anglais, sans
+  changer celle du téléphone (`res/xml/locales_config.xml`). Le widget la suit ; la page la reçoit comme langue de
+  l'appareil, que le réglage de langue du compte, s'il est choisi, remplace (docs/i18n.md).
 
 Le code propre à Android tient en trois fichiers : `src/native/boot.js` (les coffres, le bouton retour),
 `native/android/app/src/main/java/.../MainActivity.java` (le partage) et le filtre `SEND` de l'`AndroidManifest.xml`.

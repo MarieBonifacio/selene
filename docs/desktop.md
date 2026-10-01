@@ -30,7 +30,8 @@ Versions publiées : l'installateur de chaque Release GitHub (docs/publication.m
 
 1. Onglet *Actions* du dépôt → *Desktop* → la dernière exécution verte → artefact **selene-windows** (un zip contenant
    `Selene_…_x64-setup.exe`).
-2. Lancer l'installateur. Il n'est pas encore signé : Windows (SmartScreen) avertira d'un « éditeur inconnu » ;
+2. Lancer l'installateur, en français ou en anglais selon la langue de Windows (le français sinon, comme le menu). Il
+   n'est pas encore signé : Windows (SmartScreen) avertira d'un « éditeur inconnu » ;
    *Informations complémentaires* → *Exécuter quand même*. La signature vient avec la publication (phase 14).
 
 ## Construire soi-même
