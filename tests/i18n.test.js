@@ -141,6 +141,14 @@ test('chaque erreur des fonctions serveur a son code, et chaque code sa traducti
   });
 });
 
+test('les genres de source du noyau sont tous dans la liste à traduire', () => {
+  const { SOURCE_KINDS, CROSSREF_KIND } = require('../src/core/sources.js');
+  const { ZOT_KIND } = require('../src/core/zotero.js');
+  for (const k of [...Object.values(CROSSREF_KIND), ...Object.values(ZOT_KIND), 'page', 'article', 'vidéo']) assert.ok(SOURCE_KINDS.includes(k), k);
+  const src = fs.readFileSync('src/app/services/passeur.js', 'utf8') + fs.readFileSync('src/core/sources.js', 'utf8');
+  for (const m of src.matchAll(/kind: (?:[^,]*\? )?"([^"]+)"/g)) assert.ok(SOURCE_KINDS.includes(m[1]), m[1]);
+});
+
 test('un modèle de module se crée dans la langue de l’interface ; les valeurs du code ne bougent pas', () => {
   const { MODULE_TEMPLATES, createFromTemplate } = require('../src/core/domain.js');
   const { localTemplate } = require('../src/app/lib/labels.js');

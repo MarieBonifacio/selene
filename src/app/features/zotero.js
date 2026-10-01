@@ -49,7 +49,7 @@ export function zotBar(id) {
   const list = !st ? "" : st.busy ? `<p class="hint" role="status">${tr`Recherche dans Zotero…`}</p>` : st.err ? `<p class="hint" role="status">${esc(st.err)}</p>`
     : !st.items.length ? `<p class="empty">${tr`Rien de tel dans ta bibliothèque.`}</p>`
     : `<p class="hint" style="margin:6px 0 0">${esc(st.label)}</p><ul class="plain zot-list">${st.items.map((x, i) => { const dup = findSourceDup(x);
-      return `<li class="item" data-zi="${i}"><span></span><div><b>${esc(x.title)}</b><div class="meta">${[x.authors, x.site, pubDate(x.date), x.kind].filter(Boolean).map(v => `<span>${esc(v)}</span>`).join("")}</div></div>
+      return `<li class="item" data-zi="${i}"><span></span><div><b>${esc(x.title)}</b><div class="meta">${[x.authors, x.site, pubDate(x.date), x.kind && tr(x.kind)].filter(Boolean).map(v => `<span>${esc(v)}</span>`).join("")}</div></div>
         <div class="row">${dup ? `<a class="hint" href="#${esc(dup.mod)}/${esc(dup.e.id)}">${tr`déjà gardée`}</a>` : `<button class="btn sm" data-act="zot-keep">${tr`garder`}</button>`}</div></li>`; }).join("")}</ul>`;
   return `<div class="zot-bar" style="margin:4px 0 14px"><div class="capture capture-wrap"><input id="zotIn" autocomplete="off" placeholder="${tr`Dans ta bibliothèque Zotero : titre, auteur, année…`}" aria-label="${tr`Chercher dans Zotero`}"><button class="btn" data-act="zot-search">${tr`Chercher`}</button><button class="btn ghost sm" data-act="zot-recent">${tr`récents`}</button></div>${list}</div>`;
 }

@@ -89,10 +89,12 @@ function taskForm(id, t) {
     site.save(); render();
   });
 }
-/* Enveloppe où vont les coûts d'un module de tâches : celle réglée, sinon une enveloppe « Travaux », sinon aucune. */
+/* Enveloppe où vont les coûts d'un module de tâches : celle réglée, sinon une enveloppe « Travaux » (ou « Rénovation »,
+   « Repairs », « Renovation », « Home improvement » : le nom choisi par la personne, dans sa langue), sinon aucune. */
+const WORKS = /\b(?:travaux|renovation|repairs?|home improvement)\b/;
 function costEnvelope(id, bud) {
   const c = S().modules[id].config, envs = bud ? S().modules[bud].config.envelopes : [];
-  return c.costEnvelope != null ? c.costEnvelope : ((envs.find(v => /travaux/i.test(v.name)) || {}).name || "");
+  return c.costEnvelope != null ? c.costEnvelope : ((envs.find(v => WORKS.test(fold(v.name))) || {}).name || "");
 }
 /* Tirage au sort : dans un module (sa page) ou parmi tous (accueil), plafond de trois respecté. */
 export function pickTask(only) {

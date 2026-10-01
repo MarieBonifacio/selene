@@ -95,6 +95,19 @@ export default {
   "Étiquette": "Tag",
   "Arc (étapes, où l'on place des fragments et des éléments d'autres modules)": "Arc (stages, where fragments and items from other modules are placed)",
 
+  // core/sources.js : genres de source (lus dans la table par scripts/i18n.mjs)
+  "article": "article",
+  "livre": "book",
+  "chapitre": "chapter",
+  "prépublication": "preprint",
+  "actes": "proceedings",
+  "thèse": "thesis",
+  "rapport": "report",
+  "notice": "entry",
+  "page": "page",
+  "vidéo": "video",
+  "podcast": "podcast",
+
   // features/agenda.js
   "ce n'est pas un calendrier iCal": "this isn't an iCal calendar",
   "le calendrier répond {0}": "the calendar answers {0}",

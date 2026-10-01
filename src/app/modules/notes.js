@@ -18,20 +18,21 @@ import { fold } from "../views/recherche.js";
 
 /* ---- notes : textes datés ; l'une des boîtes reçoit la capture rapide de l'accueil ---- */
 /* Trois motifs reconnus à la capture, pas davantage, pour rester prévisible :
-     « 12 € courses »          → une dépense dans le premier budget (enveloppe devinée d'après le texte)
-     « 25 min kundalini »      → une séance dans le protocole nommé
+     « 12 € courses »          → une dépense dans le premier budget (enveloppe devinée d'après le texte) ; la somme
+                                 s'écrit aussi à l'anglaise, « €12 groceries » (la monnaie reste l'euro)
+     « 25 min kundalini »      → une séance dans le protocole nommé (« mins », « minutes » aussi)
      « phidippus : une note »  → la note rangée dans le module nommé
    La note part toujours d'abord dans la boîte : reconnaître ne fait que proposer un rangement. */
 export function captureIntent(text) {
   const s = S(), t = String(text).trim();
   const mods = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id)).map(m => ({ id: m.id, inst: s.modules[m.id], name: fold(label(m.id)) }));
-  let m = t.match(/^(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur(?:os?)?\b)\s*(.*)$/i);
+  let m = t.match(/^(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur(?:os?)?\b)\s*(.*)$/i) || t.match(/^€\s*(\d+(?:[.,]\d{1,2})?)\b\s*(.*)$/);
   const bud = firstOfType("budget");
   if (m && bud && +m[1].replace(",", ".") > 0) {
     const amount = +m[1].replace(",", "."), rest = m[2].trim(), env = rest && s.modules[bud].config.envelopes.find(v => fold(rest).includes(fold(v.name)));
     return { to: bud, kind: "budget", amount, note: rest, cat: env ? env.name : "", say: tr`${money(amount)} en dépense dans ${label(bud)}` + (env ? ` (${env.name})` : "") };
   }
-  m = t.match(/^(\d+)\s*min(?:utes?)?\s+(.+)$/i);
+  m = t.match(/^(\d+)\s*min(?:s|utes?)?\s+(.+)$/i);
   if (m) {
     const target = mods.find(x => x.inst.type === "programme" && fold(m[2]).includes(x.name));
     if (target) return { to: target.id, kind: "minutes", value: +m[1], say: tr`${m[1]} min dans ${label(target.id)}` };

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xULPeR4LL2jAz2ucBQ4HCV1TLw7JudlgCa/EIu9Ohd8=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-btNBetyGZDEVwu2iG5MTu4TQdfqQN4Vmi8qtTtsryOA=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -823,6 +823,7 @@ var __selene = (() => {
     CORE_ERRORS: () => CORE_ERRORS,
     CORE_FIELDS: () => CORE_FIELDS,
     CORE_LABELS: () => CORE_LABELS,
+    CROSSREF_KIND: () => CROSSREF_KIND,
     DRAFT_PREFIX: () => DRAFT_PREFIX,
     ECLIPSE_TEXT: () => ECLIPSE_TEXT,
     EP_STATUS: () => EP_STATUS,
@@ -847,6 +848,7 @@ var __selene = (() => {
     SECTION_TO_MODULE: () => SECTION_TO_MODULE,
     SHEETS: () => SHEETS,
     SKY_LABELS: () => SKY_LABELS,
+    SOURCE_KINDS: () => SOURCE_KINDS,
     SUPABASE_ANON_KEY: () => SUPABASE_ANON_KEY,
     SUPABASE_URL: () => SUPABASE_URL,
     SYNODIC: () => SYNODIC,
@@ -857,6 +859,7 @@ var __selene = (() => {
     WEATHER: () => WEATHER,
     WIND_TEXT: () => WIND_TEXT,
     ZOT_API: () => ZOT_API,
+    ZOT_KIND: () => ZOT_KIND,
     addBudgetEntry: () => addBudgetEntry,
     addCapture: () => addCapture,
     addDaysTo: () => addDaysTo,
@@ -1164,6 +1167,7 @@ var __selene = (() => {
     taskHTML: () => taskHTML,
     taskModules: () => taskModules,
     tensionSection: () => tensionSection,
+    textLang: () => textLang,
     thoughtItems: () => thoughtItems,
     tick: () => tick,
     tierCurrent: () => tierCurrent,
@@ -1298,6 +1302,18 @@ var __selene = (() => {
     "À faire": "To do",
     "Étiquette": "Tag",
     "Arc (étapes, où l'on place des fragments et des éléments d'autres modules)": "Arc (stages, where fragments and items from other modules are placed)",
+    // core/sources.js : genres de source (lus dans la table par scripts/i18n.mjs)
+    "article": "article",
+    "livre": "book",
+    "chapitre": "chapter",
+    "prépublication": "preprint",
+    "actes": "proceedings",
+    "thèse": "thesis",
+    "rapport": "report",
+    "notice": "entry",
+    "page": "page",
+    "vidéo": "video",
+    "podcast": "podcast",
     // features/agenda.js
     "ce n'est pas un calendrier iCal": "this isn't an iCal calendar",
     "le calendrier répond {0}": "the calendar answers {0}",
@@ -4102,6 +4118,7 @@ var __selene = (() => {
     const u = src.url && normalizeUrl(src.url);
     return u ? "url:" + u.replace(/^https?:\/\/(www\.)?/, "") : null;
   }
+  var SOURCE_KINDS = ["article", "livre", "chapitre", "prépublication", "actes", "thèse", "rapport", "notice", "page", "vidéo", "podcast"];
   var CROSSREF_KIND = {
     "journal-article": "article",
     "book": "livre",
@@ -4184,11 +4201,11 @@ var __selene = (() => {
   }
   function oaAbstract(idx) {
     if (!idx || typeof idx !== "object") return "";
-    const words = [];
+    const words2 = [];
     for (const [w, pos] of Object.entries(idx)) if (Array.isArray(pos)) {
-      for (const i of pos) if (Number.isInteger(i) && i >= 0 && i < 5e3) words[i] = w;
+      for (const i of pos) if (Number.isInteger(i) && i >= 0 && i < 5e3) words2[i] = w;
     }
-    return words.filter(Boolean).join(" ");
+    return words2.filter(Boolean).join(" ");
   }
   var oaText = (v, n) => {
     const t = String(v ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -4610,10 +4627,10 @@ var __selene = (() => {
     return out;
   }
   var radarWords = (s) => [...new Set(String(s || "").split(",").map((w) => radarFold(w.trim())).filter((w) => w.length > 1))];
-  function radarMatch(events, words, n = 5) {
+  function radarMatch(events, words2, n = 5) {
     const hits = [];
     for (const e of events || []) {
-      const f = radarFold(`${e.title} ${e.kw.join(" ")} ${e.text} ${e.place}`), on = words.filter((w) => f.includes(w));
+      const f = radarFold(`${e.title} ${e.kw.join(" ")} ${e.text} ${e.place}`), on = words2.filter((w) => f.includes(w));
       if (on.length) hits.push({ ...e, on });
     }
     hits.sort((a, b) => (a.from || "9999").localeCompare(b.from || "9999") || a.title.localeCompare(b.title));
@@ -5672,7 +5689,7 @@ var __selene = (() => {
     const st = zotState[id];
     const list = !st ? "" : st.busy ? `<p class="hint" role="status">${tr`Recherche dans Zotero…`}</p>` : st.err ? `<p class="hint" role="status">${esc(st.err)}</p>` : !st.items.length ? `<p class="empty">${tr`Rien de tel dans ta bibliothèque.`}</p>` : `<p class="hint" style="margin:6px 0 0">${esc(st.label)}</p><ul class="plain zot-list">${st.items.map((x, i) => {
       const dup = findSourceDup(x);
-      return `<li class="item" data-zi="${i}"><span></span><div><b>${esc(x.title)}</b><div class="meta">${[x.authors, x.site, pubDate(x.date), x.kind].filter(Boolean).map((v) => `<span>${esc(v)}</span>`).join("")}</div></div>
+      return `<li class="item" data-zi="${i}"><span></span><div><b>${esc(x.title)}</b><div class="meta">${[x.authors, x.site, pubDate(x.date), x.kind && tr(x.kind)].filter(Boolean).map((v) => `<span>${esc(v)}</span>`).join("")}</div></div>
         <div class="row">${dup ? `<a class="hint" href="#${esc(dup.mod)}/${esc(dup.e.id)}">${tr`déjà gardée`}</a>` : `<button class="btn sm" data-act="zot-keep">${tr`garder`}</button>`}</div></li>`;
     }).join("")}</ul>`;
     return `<div class="zot-bar" style="margin:4px 0 14px"><div class="capture capture-wrap"><input id="zotIn" autocomplete="off" placeholder="${tr`Dans ta bibliothèque Zotero : titre, auteur, année…`}" aria-label="${tr`Chercher dans Zotero`}"><button class="btn" data-act="zot-search">${tr`Chercher`}</button><button class="btn ghost sm" data-act="zot-recent">${tr`récents`}</button></div>${list}</div>`;
@@ -5811,7 +5828,7 @@ var __selene = (() => {
     return null;
   }
   function keepSource(mod, x, origin) {
-    const e = saveCollectionItem(S().modules[mod], { title: x.title || x.url || x.doi, subtitle: x.authors || "", tag: x.kind || "", text: x.abstract || "" }, uid());
+    const e = saveCollectionItem(S().modules[mod], { title: x.title || x.url || x.doi, subtitle: x.authors || "", tag: x.kind ? tr(x.kind) : "", text: x.abstract || "" }, uid());
     e.src = Object.fromEntries(Object.entries({ url: x.url, doi: x.doi, site: x.site, date: x.date }).filter(([, v]) => v));
     if (x.zot) e.zot = { ...x.zot };
     e.kept = todayISO();
@@ -5822,7 +5839,7 @@ var __selene = (() => {
     const p = srcPreview[id], d = p && p.data;
     const prev = !p ? "" : p.busy ? `<p class="hint" role="status">${tr`Recherche…`}</p>` : `<div class="src-prev" role="status">
     <b>${esc(d.title)}</b>${d.authors ? `<div>${esc(d.authors)}</div>` : ""}
-    <div class="meta">${[d.site, pubDate(d.date), d.kind].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join("")}${d.doi ? `<span>doi:${esc(d.doi)}</span>` : ""}</div>
+    <div class="meta">${[d.site, pubDate(d.date), d.kind && tr(d.kind)].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join("")}${d.doi ? `<span>doi:${esc(d.doi)}</span>` : ""}</div>
     ${d.abstract ? `<p class="note">${esc(d.abstract)}</p>` : ""}
     ${d.feeds && d.feeds.length ? `<p class="hint">${tr`Ce site publie un flux : ${d.feeds.map((f) => `<span class="tag">${esc(f.title || f.url)}</span>`).join(" ")}`}${passeurPret() && !dehorsFeeds().some((x) => sourceKey({ url: x.url }) === sourceKey({ url: d.feeds[0].url })) ? ` <button class="btn ghost sm" data-act="dehors-follow" data-url="${esc(d.feeds[0].url)}">${tr`le suivre dans Dehors`}</button>` : ""}</p>` : ""}
     ${d.partial ? `<p class="hint">${tr`Métadonnées indisponibles (hors ligne, service muet ou quota du jour atteint) : elle sera gardée avec son adresse seule.`}</p>` : ""}
@@ -5905,13 +5922,13 @@ var __selene = (() => {
   function captureIntent(text) {
     const s = S(), t = String(text).trim();
     const mods = s.config.modules.filter((m2) => m2.on && Object.hasOwn(s.modules, m2.id)).map((m2) => ({ id: m2.id, inst: s.modules[m2.id], name: fold(label(m2.id)) }));
-    let m = t.match(/^(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur(?:os?)?\b)\s*(.*)$/i);
+    let m = t.match(/^(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur(?:os?)?\b)\s*(.*)$/i) || t.match(/^€\s*(\d+(?:[.,]\d{1,2})?)\b\s*(.*)$/);
     const bud = firstOfType("budget");
     if (m && bud && +m[1].replace(",", ".") > 0) {
       const amount = +m[1].replace(",", "."), rest = m[2].trim(), env = rest && s.modules[bud].config.envelopes.find((v) => fold(rest).includes(fold(v.name)));
       return { to: bud, kind: "budget", amount, note: rest, cat: env ? env.name : "", say: tr`${money(amount)} en dépense dans ${label(bud)}` + (env ? ` (${env.name})` : "") };
     }
-    m = t.match(/^(\d+)\s*min(?:utes?)?\s+(.+)$/i);
+    m = t.match(/^(\d+)\s*min(?:s|utes?)?\s+(.+)$/i);
     if (m) {
       const target = mods.find((x) => x.inst.type === "programme" && fold(m[2]).includes(x.name));
       if (target) return { to: target.id, kind: "minutes", value: +m[1], say: tr`${m[1]} min dans ${label(target.id)}` };
@@ -6094,14 +6111,14 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
       <div class="row">${/^https:\/\//.test(x.url) ? `<a class="btn ghost sm" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${tr`voir`}</a>` : ""}${st.kept.has(x.id) ? `<span class="hint">${tr`gardé`}</span>` : `<button class="btn sm" data-act="radar-keep">${tr`garder`}</button>`}</div></li>`).join("")}</ul>` + (st.total > st.items.length ? `<p class="hint">${trn(st.total - st.items.length, "{0} autre correspond aussi : des mots plus précis choisiraient mieux.", "{0} autres correspondent aussi : des mots plus précis choisiraient mieux.")}</p>` : "") + foot;
   };
   CLICK["radar-open"] = async () => {
-    const c = radarPlace(), words = radarWords(radarConf().words);
-    if (!c || !words.length) return;
+    const c = radarPlace(), words2 = radarWords(radarConf().words);
+    if (!c || !words2.length) return;
     const said = /* @__PURE__ */ Object.create(null);
     for (const w of radarConf().words.split(",")) {
       const t = w.trim();
       if (t.length > 1 && !said[radarFold(t)]) said[radarFold(t)] = t;
     }
-    radarState = { busy: true, err: "", items: [], total: 0, words, said, kept: /* @__PURE__ */ new Set() };
+    radarState = { busy: true, err: "", items: [], total: 0, words: words2, said, kept: /* @__PURE__ */ new Set() };
     if ($("#sheet").open && sheetKind === "radar") $("#sheetBody").innerHTML = SHEETS.radar();
     else openSheet("radar");
     let events = null, err = "";
@@ -6112,7 +6129,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     }
     const st = radarState;
     if (!st) return;
-    Object.assign(st, { busy: false, err }, events ? radarMatch(events, words, 5) : {});
+    Object.assign(st, { busy: false, err }, events ? radarMatch(events, words2, 5) : {});
     if ($("#sheet").open && sheetKind === "radar") $("#sheetBody").innerHTML = SHEETS.radar();
   };
   CLICK["radar-keep"] = (el) => {
@@ -6243,22 +6260,49 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
   // src/app/features/derive.js
   var DRIFT_REF = 6;
   var DRIFT_MIN_TEXTS = 5;
-  var STOPWORDS = new Set("les des une est pas que qui quoi dont par pour sur sous dans avec sans entre vers chez mais donc car comme aussi alors ainsi encore deja bien tres trop plus moins tout toute tous toutes rien cette ces cet son ses mon mes ton tes notre nos votre vos leur leurs elle elles ils nous vous lui eux meme autre autres cela ceci celui celle ceux celles quand puis apres avant depuis pendant jusqu ici etre avoir fait faire faut peut peux sont etait etaient ete suis sommes etes avons avez ont avait avaient sera seront serait aurait chaque aucun aucune quelque quelques parce lorsque oui non fois jour jours aujourd hui demain hier chose choses the and for with this that from are was have not but".split(" "));
+  var words = (s) => new Set(s.split(" "));
+  var STOPWORDS = {
+    fr: words("les des une est pas que qui quoi dont par pour sur sous dans avec sans entre vers chez mais donc car comme aussi alors ainsi encore deja bien tres trop plus moins tout toute tous toutes rien cette ces cet son ses mon mes ton tes notre nos votre vos leur leurs elle elles ils nous vous lui eux meme autre autres cela ceci celui celle ceux celles quand puis apres avant depuis pendant jusqu ici etre avoir fait faire faut peut peux sont etait etaient ete suis sommes etes avons avez ont avait avaient sera seront serait aurait chaque aucun aucune quelque quelques parce lorsque oui non fois jour jours aujourd hui demain hier chose choses"),
+    en: words("the and for with this that from are was were have has had not but you your yours they them their theirs there here what when where which who whom whose will would could should shall been being his her hers its our ours out about into over under just only also than then some any all can did does doing done how why very more most such these those each other both few own same too again once off upon yet nor still even ever never much many well back down after before while because since until today tomorrow yesterday day days thing things get got make made one two")
+  };
+  var MARKERS = {
+    fr: words("le la les de des du un une et est en que qui pas pour dans sur au aux ce cette il elle je tu nous vous ne se sa son ses mon ma mes avec mais ou donc"),
+    en: words("the of and to in is it that for with was be by this are not you at from have they which but his her we my its were has")
+  };
+  function textLang(keys, fallback = "fr") {
+    let best = fallback, top = 0, tie = false;
+    for (const [lang2, set] of Object.entries(MARKERS)) {
+      let n = 0;
+      for (const k of keys) if (set.has(k)) n++;
+      if (n > top) {
+        best = lang2;
+        top = n;
+        tie = false;
+      } else if (n && n === top) tie = true;
+    }
+    return top && !tie ? best : fallback;
+  }
+  var SINGULAR = {
+    fr: (k) => k.length > 4 && /[sx]$/.test(k) ? k.slice(0, -1) : k,
+    en: (k) => k.length > 4 && k.endsWith("ies") ? k.slice(0, -3) + "y" : k.endsWith("sses") || /(?:ch|sh|x|z)es$/.test(k) ? k.slice(0, -2) : k.length > 3 && /[^sui]s$/.test(k) ? k.slice(0, -1) : k
+  };
   var driftCache = /* @__PURE__ */ new Map();
   function driftWords(text) {
-    let out = driftCache.get(text);
+    const ui = Object.hasOwn(STOPWORDS, uiLang()) ? uiLang() : "fr", ck = ui + "\0" + text;
+    let out = driftCache.get(ck);
     if (!out) {
       out = /* @__PURE__ */ new Map();
       const sep = /[^\p{L}\p{N}]+/u, raws = String(text).toLowerCase().split(sep), keys = fold(text).split(sep);
+      const lang2 = textLang(keys, ui), stop = STOPWORDS[lang2], one = SINGULAR[lang2];
       for (let i = 0; i < raws.length; i++) {
         const raw = raws[i];
         let k = keys.length === raws.length ? keys[i] : fold(raw);
-        if (k.length < 3 || /\d/.test(k) || STOPWORDS.has(k)) continue;
-        if (k.length > 4 && /[sx]$/.test(k)) k = k.slice(0, -1);
+        if (k.length < 3 || /\d/.test(k) || stop.has(k)) continue;
+        k = one(k);
         if (!out.has(k)) out.set(k, raw);
       }
       if (driftCache.size >= 2e4) driftCache.clear();
-      driftCache.set(text, out);
+      driftCache.set(ck, out);
     }
     return out;
   }
@@ -6984,8 +7028,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   }
   function outdoorRain(c, t) {
     if (t.done) return "";
-    const words = String(c.outdoor || "").split(",").map((w2) => fold(w2.trim())).filter((w2) => w2.length > 1), f = fold(`${t.title} ${t.room || ""}`);
-    if (!words.some((w2) => f.includes(w2))) return "";
+    const words2 = String(c.outdoor || "").split(",").map((w2) => fold(w2.trim())).filter((w2) => w2.length > 1), f = fold(`${t.title} ${t.room || ""}`);
+    if (!words2.some((w2) => f.includes(w2))) return "";
     const sc = skyConf(), w = sc && sc.weather !== false ? freshWeather(sc) : null;
     if (!w || !Array.isArray(w.days) || !w.days.length) return "";
     const today = todayISO(), rain = rainDays(w.days, today, 5), day = (d) => fmt(d, { weekday: "short", day: "numeric" });
@@ -7032,9 +7076,10 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       render();
     });
   }
+  var WORKS = /\b(?:travaux|renovation|repairs?|home improvement)\b/;
   function costEnvelope(id, bud) {
     const c = S().modules[id].config, envs = bud ? S().modules[bud].config.envelopes : [];
-    return c.costEnvelope != null ? c.costEnvelope : (envs.find((v) => /travaux/i.test(v.name)) || {}).name || "";
+    return c.costEnvelope != null ? c.costEnvelope : (envs.find((v) => WORKS.test(fold(v.name))) || {}).name || "";
   }
   function pickTask(only) {
     if (todayTasks().length >= 3) return toast(tr`Aujourd'hui est plein. Le hasard respecte les plafonds.`);
@@ -8892,8 +8937,8 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     return q && Object.keys(EP_STATUS).find((k) => fold(EP_STATUS[k]).startsWith(q) || fold(epLabel(k)).startsWith(q)) || null;
   };
   function searchAll(q) {
-    const words = fold(q).split(/\s+/).filter(Boolean), st = words.find(isEpWord), want = st ? epQuery(st) : null;
-    const terms = words.filter((w) => !isEpWord(w)), out = [];
+    const words2 = fold(q).split(/\s+/).filter(Boolean), st = words2.find(isEpWord), want = st ? epQuery(st) : null;
+    const terms = words2.filter((w) => !isEpWord(w)), out = [];
     if (st && !want || !terms.length && !want) return out;
     for (const m of S().config.modules) {
       const inst = Object.hasOwn(S().modules, m.id) ? S().modules[m.id] : null, ui = inst && TYPE_UI[inst.type];
@@ -8994,10 +9039,11 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     }
     return w;
   }
+  var pluralForms = (v) => [v, v + "s", v + "x", v + "es", .../[^aeiou]y$/.test(v) ? [v.slice(0, -1) + "ies"] : []];
   function motifForms(e) {
     const vs = [e.title, ...String(e.subtitle || "").split(",")].map((v) => fold(v.trim())).filter((v) => v.length >= 2);
     const single = vs.filter((v) => !/[^\p{L}\p{N}]/u.test(v)), multi = vs.filter((v) => !single.includes(v));
-    return { single, re: multi.length ? new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${multi.map((v) => reEscape(v).replace(/\s+/g, "\\s+")).join("|")})(?:s|x)?(?=$|[^\\p{L}\\p{N}])`, "u") : null };
+    return { single, re: multi.length ? new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${multi.map((v) => reEscape(v).replace(/\s+/g, "\\s+")).join("|")})(?:s|x|es)?(?=$|[^\\p{L}\\p{N}])`, "u") : null };
   }
   var concordance = (inst) => memoInRender(inst, () => computeConcordance(inst));
   function computeConcordance(inst) {
@@ -9012,7 +9058,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     const forms = /* @__PURE__ */ new Map(), multi = [], hits = inst.entries.map(() => []), near = inst.entries.map(() => /* @__PURE__ */ new Map());
     inst.entries.forEach((e, i) => {
       const m = motifForms(e);
-      for (const v of m.single) for (const f of [v, v + "s", v + "x"]) {
+      for (const v of m.single) for (const f of pluralForms(v)) {
         if (!forms.has(f)) forms.set(f, /* @__PURE__ */ new Set());
         forms.get(f).add(i);
       }
@@ -9070,7 +9116,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   });
   function motifHit(m, text) {
     const f = fold(text), w = wordsOf(f);
-    return m.single.some((v) => w.has(v) || w.has(v + "s") || w.has(v + "x")) || !!(m.re && m.re.test(f));
+    return m.single.some((v) => pluralForms(v).some((x) => w.has(x))) || !!(m.re && m.re.test(f));
   }
   function motifsOf(text) {
     return motifIndex().filter(({ m }) => motifHit(m, text)).map(({ id, e }) => ({ id, e }));

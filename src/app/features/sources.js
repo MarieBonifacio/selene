@@ -77,7 +77,7 @@ export function findSourceDup(src) {
   return null;
 }
 export function keepSource(mod, x, origin) {
-  const e = saveCollectionItem(S().modules[mod], { title: x.title || x.url || x.doi, subtitle: x.authors || "", tag: x.kind || "", text: x.abstract || "" }, uid());
+  const e = saveCollectionItem(S().modules[mod], { title: x.title || x.url || x.doi, subtitle: x.authors || "", tag: x.kind ? tr(x.kind) : "", text: x.abstract || "" }, uid());
   e.src = Object.fromEntries(Object.entries({ url: x.url, doi: x.doi, site: x.site, date: x.date }).filter(([, v]) => v));
   if (x.zot) e.zot = { ...x.zot }; // reliée à sa fiche Zotero
   e.kept = todayISO(); // le jour où elle a été gardée : les Sortes savent ainsi depuis quand elle attend
@@ -88,7 +88,7 @@ export function sourceBar(id) {
   const p = srcPreview[id], d = p && p.data;
   const prev = !p ? "" : p.busy ? `<p class="hint" role="status">${tr`Recherche…`}</p>` : `<div class="src-prev" role="status">
     <b>${esc(d.title)}</b>${d.authors ? `<div>${esc(d.authors)}</div>` : ""}
-    <div class="meta">${[d.site, pubDate(d.date), d.kind].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("")}${d.doi ? `<span>doi:${esc(d.doi)}</span>` : ""}</div>
+    <div class="meta">${[d.site, pubDate(d.date), d.kind && tr(d.kind)].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("")}${d.doi ? `<span>doi:${esc(d.doi)}</span>` : ""}</div>
     ${d.abstract ? `<p class="note">${esc(d.abstract)}</p>` : ""}
     ${d.feeds && d.feeds.length ? `<p class="hint">${tr`Ce site publie un flux : ${d.feeds.map(f => `<span class="tag">${esc(f.title || f.url)}</span>`).join(" ")}`}${passeurPret() && !dehorsFeeds().some(x => sourceKey({ url: x.url }) === sourceKey({ url: d.feeds[0].url })) ? ` <button class="btn ghost sm" data-act="dehors-follow" data-url="${esc(d.feeds[0].url)}">${tr`le suivre dans Dehors`}</button>` : ""}</p>` : ""}
     ${d.partial ? `<p class="hint">${tr`Métadonnées indisponibles (hors ligne, service muet ou quota du jour atteint) : elle sera gardée avec son adresse seule.`}</p>` : ""}

@@ -56,6 +56,9 @@ const { MODULE_TEMPLATES, MODULE_TYPES, localizeConfig } = await import(pathToFi
 const fromCore = s => { note(s, "src/core/domain.js (modèles et types de module)"); return s; };
 for (const t of MODULE_TEMPLATES) { fromCore(t.name); fromCore(t.hint); localizeConfig(JSON.parse(JSON.stringify(t.config || {})), fromCore); }
 for (const t of Object.values(MODULE_TYPES)) { fromCore(t.label); localizeConfig(t.defaults().config, fromCore); }
+// Les genres de source (core/sources.js) : l'étiquette d'une source gardée.
+const { SOURCE_KINDS } = await import(pathToFileURL(path.join(root, "src", "core", "sources.js")).href);
+for (const k of SOURCE_KINDS) note(k, "src/core/sources.js (genres de source)");
 
 const holes = s => [...new Set(String(s).match(/\{\d+\}/g) || [])].sort().join(" ");
 const shown = k => k.replace("\u0004", " ▸ ");

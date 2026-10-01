@@ -17,7 +17,7 @@ CLICK["motif-add"] = el => {
   toast(tr`« ${word} » devient un motif de ${label(el.dataset.mod)}. On verra s'il revient.`);
 };
 /* ---- concordance : une collection de motifs, comptés dans les textes de tous les autres modules ----
-   Mot entier (« lune » ne trouve pas « lunettes »), sans accents ni casse, pluriel en s/x toléré ; les variantes
+   Mot entier (« lune » ne trouve pas « lunettes »), sans accents ni casse, pluriel toléré (voir pluralForms) ; les variantes
    (sous-titre, séparées par des virgules) comptent comme le motif. Tout est calculé à la lecture, sur l'historique
    existant : rien n'est enregistré, donc rien à migrer ni à synchroniser. */
 export const isConcordance = inst => inst.type === "collection" && !!inst.config.concordance;
@@ -29,12 +29,17 @@ function wordsOf(f) {
   if (!w) { w = new Set(f.split(/[^\p{L}\p{N}]+/u)); if (wordsCache.size >= 20000) wordsCache.clear(); wordsCache.set(f, w); }
   return w;
 }
-/* Un motif et ses variantes, repliés : celles d'un seul mot (cherchées dans l'ensemble des mots d'un texte,
-   pluriel en s/x compris) et, pour celles de plusieurs mots, une expression régulière au mot entier. */
+/* Les formes d'un mot au pluriel, en français et en anglais à la fois : -s, -x, -es (« box », « boxes »), -y → -ies
+   (« story », « stories »). Engendrées depuis le motif, jamais repliées depuis le texte : une forme qui n'existe pas ne
+   trouve rien, donc mêler les deux langues ne fusionne pas deux mots (là où replier le texte, comme la dérive, le ferait :
+   « parties » n'est pas « party »). */
+const pluralForms = v => [v, v + "s", v + "x", v + "es", ...(/[^aeiou]y$/.test(v) ? [v.slice(0, -1) + "ies"] : [])];
+/* Un motif et ses variantes, repliés : celles d'un seul mot (cherchées dans l'ensemble des mots d'un texte, avec leurs
+   pluriels) et, pour celles de plusieurs mots, une expression régulière au mot entier. */
 export function motifForms(e) {
   const vs = [e.title, ...String(e.subtitle || "").split(",")].map(v => fold(v.trim())).filter(v => v.length >= 2);
   const single = vs.filter(v => !/[^\p{L}\p{N}]/u.test(v)), multi = vs.filter(v => !single.includes(v));
-  return { single, re: multi.length ? new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${multi.map(v => reEscape(v).replace(/\s+/g, "\\s+")).join("|")})(?:s|x)?(?=$|[^\\p{L}\\p{N}])`, "u") : null };
+  return { single, re: multi.length ? new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${multi.map(v => reEscape(v).replace(/\s+/g, "\\s+")).join("|")})(?:s|x|es)?(?=$|[^\\p{L}\\p{N}])`, "u") : null };
 }
 /* Pour chaque motif : les textes où il apparaît ({ mod, date }), et ses voisins (motifs présents dans les mêmes textes). */
 export const concordance = inst => memoInRender(inst, () => computeConcordance(inst));
@@ -49,7 +54,7 @@ function computeConcordance(inst) {
   const forms = new Map(), multi = [], hits = inst.entries.map(() => []), near = inst.entries.map(() => new Map());
   inst.entries.forEach((e, i) => {
     const m = motifForms(e);
-    for (const v of m.single) for (const f of [v, v + "s", v + "x"]) { if (!forms.has(f)) forms.set(f, new Set()); forms.get(f).add(i); }
+    for (const v of m.single) for (const f of pluralForms(v)) { if (!forms.has(f)) forms.set(f, new Set()); forms.get(f).add(i); }
     if (m.re) multi.push([i, m.re]);
   });
   for (const d of corpus) {
@@ -105,7 +110,7 @@ const motifIndex = () => memoInRender("motifIndex", () => {
 /* Un texte contient-il ce motif (ses formes, motifForms) ? Au pluriel près, sans accents. */
 export function motifHit(m, text) {
   const f = fold(text), w = wordsOf(f);
-  return m.single.some(v => w.has(v) || w.has(v + "s") || w.has(v + "x")) || !!(m.re && m.re.test(f));
+  return m.single.some(v => pluralForms(v).some(x => w.has(x))) || !!(m.re && m.re.test(f));
 }
 export function motifsOf(text) {
   return motifIndex().filter(({ m }) => motifHit(m, text)).map(({ id, e }) => ({ id, e }));

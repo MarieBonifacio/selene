@@ -1,7 +1,7 @@
 /* La dérive lexicale : les mots qui montent et qui s'effacent dans tes textes, d'une période à l'autre. */
 import { TYPE_UI } from "../registry.js";
 import { esc } from "../lib/dom.js";
-import { tr, trn } from "../i18n/index.js";
+import { tr, trn, uiLang } from "../i18n/index.js";
 import { isConcordance } from "./concordance.js";
 import { memoInRender } from "../shell/render.js";
 import { S, enabled } from "../state/site.js";
@@ -13,31 +13,65 @@ import { fold } from "../views/recherche.js";
    les textes datés de tous les modules. Un mot compte une fois par texte (fréquence documentaire) : un texte
    qui répète « lune » dix fois ne fait pas une obsession. Rien n'est enregistré ; tout est recalculé. */
 const DRIFT_REF = 6, DRIFT_MIN_TEXTS = 5;
-// Mots vides (repliés, sans accents) : ceux qui ne disent rien du sujet. Les mots de moins de 3 lettres sont écartés d'office.
-const STOPWORDS = new Set(("les des une est pas que qui quoi dont par pour sur sous dans avec sans entre vers chez mais donc car comme aussi alors ainsi " +
-  "encore deja bien tres trop plus moins tout toute tous toutes rien cette ces cet son ses mon mes ton tes notre nos votre vos leur leurs " +
-  "elle elles ils nous vous lui eux meme autre autres cela ceci celui celle ceux celles quand puis apres avant depuis pendant jusqu ici " +
-  "etre avoir fait faire faut peut peux sont etait etaient ete suis sommes etes avons avez ont avait avaient sera seront serait aurait " +
-  "chaque aucun aucune quelque quelques parce lorsque oui non fois jour jours aujourd hui demain hier chose choses the and for with this " +
-  "that from are was have not but").split(" "));
-/* Les mots d'un texte, sous leur forme repliée (clé) et telle qu'écrite (pour l'afficher), pluriel en s/x ramené au singulier. */
+// Les mots d'une langue, repliés (sans accents ni majuscules).
+const words = s => new Set(s.split(" "));
+/* Mots vides, par langue : ceux qui ne disent rien du sujet (les mots de moins de 3 lettres sont écartés d'office). */
+const STOPWORDS = {
+  fr: words("les des une est pas que qui quoi dont par pour sur sous dans avec sans entre vers chez mais donc car comme aussi alors ainsi " +
+    "encore deja bien tres trop plus moins tout toute tous toutes rien cette ces cet son ses mon mes ton tes notre nos votre vos leur leurs " +
+    "elle elles ils nous vous lui eux meme autre autres cela ceci celui celle ceux celles quand puis apres avant depuis pendant jusqu ici " +
+    "etre avoir fait faire faut peut peux sont etait etaient ete suis sommes etes avons avez ont avait avaient sera seront serait aurait " +
+    "chaque aucun aucune quelque quelques parce lorsque oui non fois jour jours aujourd hui demain hier chose choses"),
+  en: words("the and for with this that from are was were have has had not but you your yours they them their theirs there here what when " +
+    "where which who whom whose will would could should shall been being his her hers its our ours out about into over under just only also " +
+    "than then some any all can did does doing done how why very more most such these those each other both few own same too again once off " +
+    "upon yet nor still even ever never much many well back down after before while because since until today tomorrow yesterday day days " +
+    "thing things get got make made one two")
+};
+/* Les mots-outils les plus fréquents, courts compris : la langue d'un texte se devine à eux (celle qui en compte le plus ;
+   à égalité, ou sans aucun, la langue de l'interface). Un corpus peut mêler les langues : chaque texte garde la sienne.
+   Écartés : les mots-outils des deux langues à la fois (« on », « as », « an », « or »). */
+const MARKERS = {
+  fr: words("le la les de des du un une et est en que qui pas pour dans sur au aux ce cette il elle je tu nous vous ne se sa son ses mon ma mes avec mais ou donc"),
+  en: words("the of and to in is it that for with was be by this are not you at from have they which but his her we my its were has")
+};
+export function textLang(keys, fallback = "fr") {
+  let best = fallback, top = 0, tie = false;
+  for (const [lang, set] of Object.entries(MARKERS)) {
+    let n = 0; for (const k of keys) if (set.has(k)) n++;
+    if (n > top) { best = lang; top = n; tie = false; } else if (n && n === top) tie = true;
+  }
+  return top && !tie ? best : fallback;
+}
+/* Le pluriel ramené au singulier, dans la langue du texte. Une clé seulement : l'affichage garde le mot tel qu'écrit,
+   donc une racine imparfaite (« analysi ») ne se voit pas ; seule compte la constance. En anglais, le premier pas du
+   raciniseur de Porter (1980), réduit : -ies → -y, -sses → -ss, -ches, -shes, -xes, -zes → sans -es, -s → rien (sauf
+   -ss, -us, -is : « glass », « virus », « analysis »). En français, -s et -x finaux au-delà de quatre lettres. */
+const SINGULAR = {
+  fr: k => k.length > 4 && /[sx]$/.test(k) ? k.slice(0, -1) : k,
+  en: k => k.length > 4 && k.endsWith("ies") ? k.slice(0, -3) + "y" : k.endsWith("sses") || /(?:ch|sh|x|z)es$/.test(k) ? k.slice(0, -2)
+    : k.length > 3 && /[^sui]s$/.test(k) ? k.slice(0, -1) : k
+};
+/* Les mots d'un texte, sous leur forme repliée (clé) et telle qu'écrite (pour l'afficher), pluriel ramené au singulier. */
 const driftCache = new Map();
 export function driftWords(text) {
-  let out = driftCache.get(text);
+  const ui = Object.hasOwn(STOPWORDS, uiLang()) ? uiLang() : "fr", ck = ui + "\u0000" + text; // la langue de l'interface départage
+  let out = driftCache.get(ck);
   if (!out) {
     out = new Map();
     // Replié une seule fois (un fold par mot remplirait son cache de mots isolés et en chasserait les textes) ;
     // fold garde lettres et séparateurs à leur place, donc les deux découpages se correspondent mot pour mot.
     const sep = /[^\p{L}\p{N}]+/u, raws = String(text).toLowerCase().split(sep), keys = fold(text).split(sep);
+    const lang = textLang(keys, ui), stop = STOPWORDS[lang], one = SINGULAR[lang];
     for (let i = 0; i < raws.length; i++) {
       const raw = raws[i];
       let k = keys.length === raws.length ? keys[i] : fold(raw);
-      if (k.length < 3 || /\d/.test(k) || STOPWORDS.has(k)) continue;
-      if (k.length > 4 && /[sx]$/.test(k)) k = k.slice(0, -1);
+      if (k.length < 3 || /\d/.test(k) || stop.has(k)) continue;
+      k = one(k);
       if (!out.has(k)) out.set(k, raw);
     }
     if (driftCache.size >= 20000) driftCache.clear();
-    driftCache.set(text, out);
+    driftCache.set(ck, out);
   }
   return out;
 }
