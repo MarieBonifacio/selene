@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-FKlvUHwZV0cr4uWSCYUXjJBOrcUqpjF6rDCsp7050vY=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xYAUlS0brU/RHLXLU8mt4spWMz0SPUZp9yW1TsDI2sA=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -1216,6 +1216,39 @@ var __selene = (() => {
     "Une adresse https:// (ou webcal://) est attendue.": "An https:// (or webcal://) address is expected.",
     "Adresse gardée dans ce navigateur. Lecture…": "Address kept in this browser. Reading…",
     "Calendrier oublié sur cet appareil.": "Calendar forgotten on this device.",
+    // features/assistant.js
+    "L'assistant hébergé demande d'être connectée à ton compte.": "The hosted assistant requires you to be signed in to your account.",
+    "Session expirée : reconnecte-toi.": "Session expired: sign in again.",
+    "Claude met trop de temps à répondre.": "Claude is taking too long to answer.",
+    "Assistant injoignable (hors ligne, ou pas encore déployé).": "Assistant unreachable (offline, or not deployed yet).",
+    "Assistant non déployé (voir docs/assistant.md).": "Assistant not deployed (see docs/assistant.md).",
+    "Assistant non configuré.": "Assistant not configured.",
+    "erreur {0}": "error {0}",
+    "réponse inattendue de l'API": "unexpected answer from the API",
+    "(pas de réponse)": "(no answer)",
+    "L'assistant n'est pas branché. Voir Réglages.": "The assistant isn't connected. See Settings.",
+    "Accès refusé à Claude pour cette page.": "Access to Claude refused for this page.",
+    "Trop de demandes, réessaie dans un moment.": "Too many requests, try again in a moment.",
+    "Erreur inconnue.": "Unknown error.",
+    "Propose trois idées pour {0}": "Suggest three ideas for {0}",
+    "Branché via claude.ai : aucune clé requise, la première question te demandera ton accord.": "Connected through claude.ai: no key needed, the first question will ask for your consent.",
+    "Branché via ta clé API, modèle {0}. Chaque échange est facturé sur ton compte.": "Connected through your API key, model {0}. Each exchange is billed to your account.",
+    "Pas encore branché. Colle ta clé API dans {0}.": "Not connected yet. Paste your API key in {0}.",
+    "Indisponible dans cette vue.": "Unavailable in this view.",
+    "rien": "nothing",
+    "Effacer la conversation": "Clear the conversation",
+    "Données partagées : {0}.": "Shared data: {0}.",
+    "Peut agir sur le tableau de bord.": "Can act on the dashboard.",
+    "Lecture seule.": "Read-only.",
+    "Qu'est-ce que je fais aujourd'hui ?": "What am I doing today?",
+    "Fais le point sur {0}": "Give me an update on {0}",
+    "Où en est mon budget ce mois-ci ?": "How is my budget doing this month?",
+    "Écris à Claude…": "Write to Claude…",
+    "Message": "Message",
+    "Envoyer": "Send",
+    "Effacer la conversation ?": "Clear the conversation?",
+    "Clé effacée du serveur.": "Key erased from the server.",
+    "Clé non effacée : {0}": "Key not erased: {0}",
     // features/bridge.js
     "Le prochain geste, pour la prochaine fois…": "The next step, for next time…",
     "Prochain geste": "Next step",
@@ -1280,6 +1313,85 @@ var __selene = (() => {
     "Aucun motif. Ajoute un mot qui revient ; l'app comptera ses retours.": "No motifs. Add a word that keeps coming back; the app will count its returns.",
     "{0} motif": { one: "{0} motif", other: "{0} motifs" },
     "{0} en jachère": "{0} lying fallow",
+    // features/dehors-feed.js
+    "motif : {0}": "motif: {0}",
+    "aussi dans {0}": "also in {0}",
+    // features/dehors.js
+    "Sorties de tes artistes": "New releases from your artists",
+    "Veille : {0}": "Watch: {0}",
+    "auteur de tes sources : {1}": { one: "author of your sources: {1}", other: "authors of your sources: {1}" },
+    "cite {0}, de tes sources": "cites {0}, from your sources",
+    "ce n'est plus un flux lisible": "no longer a readable feed",
+    "le site répond {0}": "the site answers {0}",
+    "quota du jour atteint (une clé OpenAlex gratuite le décuple)": "daily quota reached (a free OpenAlex key multiplies it tenfold)",
+    "OpenAlex répond {0}": "OpenAlex answers {0}",
+    "OpenAlex injoignable": "OpenAlex unreachable",
+    "{0} artiste sans réponse de MusicBrainz": { one: "{0} artist with no answer from MusicBrainz", other: "{0} artists with no answer from MusicBrainz" },
+    "Ce n'est pas une adresse.": "That's not an address.",
+    "Le site répond {0}.": "The site answers {0}.",
+    "Aucun flux à cette adresse, ni annoncé par la page.": "No feed at this address, and none announced by the page.",
+    "La page annonce un flux, mais il est illisible.": "The page announces a feed, but it can't be read.",
+    "Ce flux est déjà suivi.": "This feed is already followed.",
+    "Cent flux, c'est déjà un kiosque. Retire-en avant d'en ajouter.": "A hundred feeds is already a newsstand. Remove some before adding more.",
+    "Dehors : {0} nouveauté": { one: "Outside: {0} new item", other: "Outside: {0} new items" },
+    "aujourd'hui, {0}": "today, {0}",
+    "Ce qui est paru depuis ta dernière visite, dans les flux que tu suis. Douze au plus : le reste attend, rien ne défile. Ce qui croise ce que tu gardes (un motif, un auteur de tes sources, une de tes sources citée, un lien paru dans deux flux) passe devant, et dit pourquoi. Garde ce qui compte, le reste s'efface en un mois.": "What has come out since your last visit, in the feeds you follow. Twelve at most: the rest waits, nothing scrolls. What crosses what you keep (a motif, an author of your sources, one of your sources being cited, a link that appeared in two feeds) comes first, and says why. Keep what matters; the rest fades away within a month.",
+    "Dehors passe par le passeur : il n'existe que dans la version hébergée, connectée à ton compte.": "Outside goes through the relay: it only exists in the hosted version, signed in to your account.",
+    "parce que : {0}": "because: {0}",
+    "déjà dans {0}": "already in {0}",
+    "ajouter à {0}": "add to {0}",
+    "vers une note": "to a note",
+    "Écarter": "Dismiss",
+    "vu": "seen",
+    "Aucun flux suivi. Colle ci-dessous l'adresse d'un site, d'une revue, d'une chaîne : Selene trouve son flux.": "No feed followed. Paste below the address of a site, a journal, a channel: Selene finds its feed.",
+    "Lecture des flux…": "Reading the feeds…",
+    "Rien de neuf. Le monde a pu se passer de toi, et toi de lui.": "Nothing new. The world managed without you, and you without it.",
+    "Sans projet": "No project",
+    "Et {0} autre, qui attendra.": { one: "And {0} more, which will wait.", other: "And {0} more, which will wait." },
+    "Tout marquer comme vu": "Mark all as seen",
+    "pas encore lu": "not read yet",
+    "ne répond pas : {0}": "not answering: {0}",
+    "lu {0}": "read {0}",
+    "Flux relus {0}.": "Feeds reread {0}.",
+    "Relire maintenant": "Reread now",
+    "Suivre": "Follow",
+    "L'adresse d'un site ou d'un flux…": "The address of a site or a feed…",
+    "Adresse à suivre": "Address to follow",
+    "Projet": "Project",
+    "Les sorties de mes artistes : MusicBrainz, une fois par semaine, pour {0} artiste relié (trente au plus)": { one: "New releases from my artists: MusicBrainz, once a week, for {0} linked artist (thirty at most)", other: "New releases from my artists: MusicBrainz, once a week, for {0} linked artists (thirty at most)" },
+    "Une newsletter : abonne-toi avec une adresse de {0}, puis suis le flux Atom qu'il te donne (il garde les lettres chez lui : pas pour une correspondance privée).": "A newsletter: subscribe with an address from {0}, then follow the Atom feed it gives you (it keeps the letters on its side: not for private correspondence).",
+    "Veille de recherche": "Research watch",
+    "Une recherche (« biodiversity », « renewable energy ») ou un auteur (identifiant OpenAlex ou ORCID) : chaque semaine, ce qui vient de paraître, selon OpenAlex. Elle ne trie pas selon ce qui te donnerait raison ; les liens, c'est toi qui les poses.": "A search (“biodiversity”, “renewable energy”) or an author (OpenAlex or ORCID identifier): every week, what has just come out, according to OpenAlex. It doesn't sort by what would prove you right; the links are yours to make.",
+    "Une recherche, un ORCID, un identifiant OpenAlex…": "A search, an ORCID, an OpenAlex identifier…",
+    "Recherche ou auteur à suivre": "Search or author to follow",
+    "Veiller": "Watch",
+    "auteur": "author",
+    "recherche": "search",
+    "pas encore lue": "not read yet",
+    "lue {0}": "read {0}",
+    "Projet de cette veille": "Project for this watch",
+    "Clé OpenAlex (facultative)": "OpenAlex key (optional)",
+    "Sans clé, OpenAlex répond dans une petite limite quotidienne ; une clé gratuite ({0}) la décuple. Elle reste dans ce navigateur, n'est jamais synchronisée, et s'efface à la déconnexion.": "Without a key, OpenAlex answers within a small daily limit; a free key ({0}) multiplies it tenfold. It stays in this browser, is never synced, and is erased when you sign out.",
+    "Clé API OpenAlex": "OpenAlex API key",
+    "Flux suivis ({0})": "Followed feeds ({0})",
+    "Seulement ce qui touche mes motifs": "Only what touches my motifs",
+    "Projet de ce flux": "Project for this feed",
+    "Suivi : {0}.": "Following: {0}.",
+    "Tout est vu. Dehors se tait jusqu'à la prochaine parution.": "All seen. Outside falls silent until the next publication.",
+    "Dans {0}.": "In {0}.",
+    "Déjà gardée dans {0}.": "Already kept in {0}.",
+    "Veille": "Watch",
+    "Gardée dans {0} : « {1} ».": "Kept in {0}: “{1}”.",
+    "Ne plus suivre « {0} » ?": "Stop following “{0}”?",
+    "Suivi dans Dehors : {0}.": "Followed in Outside: {0}.",
+    "Artist Watch : première vérification, une seconde par artiste.": "Artist Watch: first check, one second per artist.",
+    "Une recherche de deux cents caractères au plus, ou un auteur.": "A search of two hundred characters at most, or an author.",
+    "Déjà en veille.": "Already watched.",
+    "En veille : {0}. Première lecture…": "Watching: {0}. First reading…",
+    "Arrêter la veille « {0} » ?": "Stop watching “{0}”?",
+    "Clé OpenAlex gardée dans ce navigateur.": "OpenAlex key kept in this browser.",
+    "Clé OpenAlex oubliée.": "OpenAlex key forgotten.",
+    "Ajouté à {0} : {1}, « {2} ».": "Added to {0}: {1}, “{2}”.",
     // features/derive.js
     "{0} texte": { one: "{0} text", other: "{0} texts" },
     "Vocabulaire": "Vocabulary",
@@ -6618,9 +6730,9 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
   };
   var assistantPret = () => hosted() && authReady() && !!authSession && assistantEtat !== "absent";
   async function assistantCall(corps, delai = 15e3) {
-    if (!assistantPret()) throw new Error("L'assistant hébergé demande d'être connectée à ton compte.");
+    if (!assistantPret()) throw new Error(tr`L'assistant hébergé demande d'être connectée à ton compte.`);
     const s = await authRefreshIfNeeded();
-    if (!s) throw new Error("Session expirée : reconnecte-toi.");
+    if (!s) throw new Error(tr`Session expirée : reconnecte-toi.`);
     const ac = new AbortController(), t = setTimeout(() => ac.abort(), delai);
     let r;
     try {
@@ -6631,17 +6743,17 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
         body: JSON.stringify(corps)
       });
     } catch {
-      throw new Error(ac.signal.aborted ? "Claude met trop de temps à répondre." : "Assistant injoignable (hors ligne, ou pas encore déployé).");
+      throw new Error(ac.signal.aborted ? tr`Claude met trop de temps à répondre.` : tr`Assistant injoignable (hors ligne, ou pas encore déployé).`);
     } finally {
       clearTimeout(t);
     }
     const j = await r.json().catch(() => ({}));
     if (r.status === 404 || r.status === 503) {
       assistantEtat = "absent";
-      throw new Error(r.status === 404 ? "Assistant non déployé (voir docs/assistant.md)." : j.erreur || "Assistant non configuré.");
+      throw new Error(r.status === 404 ? tr`Assistant non déployé (voir docs/assistant.md).` : j.erreur || tr`Assistant non configuré.`);
     }
     if (j && j.code === "sans-cle") assistantCle = { cle: false };
-    if (!r.ok) throw new Error(j.erreur || `erreur ${r.status}`);
+    if (!r.ok) throw new Error(j.erreur || tr`erreur ${r.status}`);
     assistantEtat = "ok";
     return j;
   }
@@ -6776,7 +6888,7 @@ ${contextText()}`;
     let out = "";
     for (let round = 0; round < 5; round++) {
       const data = await assistantCall({ action: "message", requete: { model: a.model, max_tokens: 1500, system: instructions(), messages: msgs, ...tools.length ? { tools } : {} } }, 7e4);
-      if (!Array.isArray(data.content)) throw new Error("réponse inattendue de l'API");
+      if (!Array.isArray(data.content)) throw new Error(tr`réponse inattendue de l'API`);
       const txt = data.content.filter((b) => b.type === "text").map((b) => b.text).join("\n");
       if (txt) out += (out ? "\n\n" : "") + txt;
       if (data.stop_reason !== "tool_use") break;
@@ -6793,7 +6905,7 @@ ${contextText()}`;
       }
       msgs.push({ role: "user", content: results });
     }
-    return out || "(pas de réponse)";
+    return out || tr`(pas de réponse)`;
   }
   async function askSample(history, onText) {
     const input = [{ role: "user", content: instructions() }, ...history];
@@ -6813,7 +6925,7 @@ ${contextText()}`;
   async function sendChat(text) {
     if (chatBusy || !text.trim()) return;
     const b = backend();
-    if (b !== "sample" && b !== "api") return toast("L'assistant n'est pas branché. Voir Réglages.");
+    if (b !== "sample" && b !== "api") return toast(tr`L'assistant n'est pas branché. Voir Réglages.`);
     const log = chatLog.get();
     log.push({ role: "user", content: text.trim().slice(0, 4e3) });
     chatLog.set(log);
@@ -6832,7 +6944,7 @@ ${contextText()}`;
       l2.push({ role: "assistant", content: reply });
       chatLog.set(l2);
     } catch (e) {
-      const code = e && e.code, msg = code === "not_granted" ? "Accès refusé à Claude pour cette page." : code === "rate_limited" ? "Trop de demandes, réessaie dans un moment." : e && e.message || "Erreur inconnue.";
+      const code = e && e.code, msg = code === "not_granted" ? tr`Accès refusé à Claude pour cette page.` : code === "rate_limited" ? tr`Trop de demandes, réessaie dans un moment.` : e && e.message || tr`Erreur inconnue.`;
       toast(msg);
     }
     chatBusy = false;
@@ -6842,17 +6954,17 @@ ${contextText()}`;
   }
   var ideaChip = () => {
     const id = Object.keys(S().modules).find((k) => S().modules[k].type === "collection" && S().modules[k].config.display === "colonnes" && enabled(k));
-    return id ? [`Propose trois idées pour ${label(id)}`] : [];
+    return id ? [tr`Propose trois idées pour ${label(id)}`] : [];
   };
   VIEWS.assistant = () => {
     const b = backend(), a = S().config.assistant, log = chatLog.get();
-    const status = b === "sample" ? "Branché via claude.ai : aucune clé requise, la première question te demandera ton accord." : b === "api" ? `Branché via ta clé API, modèle ${esc(a.model)}. Chaque échange est facturé sur ton compte.` : hosted() ? `Pas encore branché. Colle ta clé API dans <a href="#reglages">Réglages</a>.` : "Indisponible dans cette vue.";
-    const shared = Object.entries(a.share).filter(([k, v]) => v && enabled(k)).map(([k]) => label(k)).join(", ") || "rien";
-    return `<div class="row"><h2 style="margin:0">${esc(label("assistant"))}</h2><span class="spacer"></span>${log.length ? `<button class="btn ghost sm" data-act="chat-clear">Effacer la conversation</button>` : ""}</div>
-  <p class="status">${status}<br>Données partagées : ${esc(shared)}. ${a.actions ? "Peut agir sur le tableau de bord." : "Lecture seule."}</p>
+    const status = b === "sample" ? tr`Branché via claude.ai : aucune clé requise, la première question te demandera ton accord.` : b === "api" ? tr`Branché via ta clé API, modèle ${esc(a.model)}. Chaque échange est facturé sur ton compte.` : hosted() ? tr`Pas encore branché. Colle ta clé API dans ${`<a href="#reglages">${tr`Réglages`}</a>`}.` : tr`Indisponible dans cette vue.`;
+    const shared = Object.entries(a.share).filter(([k, v]) => v && enabled(k)).map(([k]) => label(k)).join(", ") || tr`rien`;
+    return `<div class="row"><h2 style="margin:0">${esc(label("assistant"))}</h2><span class="spacer"></span>${log.length ? `<button class="btn ghost sm" data-act="chat-clear">${tr`Effacer la conversation`}</button>` : ""}</div>
+  <p class="status">${status}<br>${tr`Données partagées : ${esc(shared)}.`} ${a.actions ? tr`Peut agir sur le tableau de bord.` : tr`Lecture seule.`}</p>
   <div class="chat">${log.map((m) => `<div class="msg ${m.role === "user" ? "user" : "claude"}">${m.role === "user" ? esc(m.content) : mdLite(m.content)}</div>`).join("")}${chatBusy ? `<div class="msg claude" id="pending">…</div>` : ""}</div>
-  ${!log.length ? `<div class="chips">${["Qu'est-ce que je fais aujourd'hui ?", ...firstOfType("taches") ? [`Fais le point sur ${label(firstOfType("taches"))}`] : [], "Où en est mon budget ce mois-ci ?", ...ideaChip()].map((q) => `<button class="btn sm" data-act="chat-chip">${esc(q)}</button>`).join("")}</div>` : ""}
-  <div class="capture"><textarea id="chatIn" data-draft rows="2" placeholder="Écris à Claude…" aria-label="Message" ${b === "sample" || b === "api" ? "" : "disabled"}></textarea><button class="btn acc" data-act="chat-send" ${chatBusy ? "disabled" : ""}>Envoyer</button></div>`;
+  ${!log.length ? `<div class="chips">${[tr`Qu'est-ce que je fais aujourd'hui ?`, ...firstOfType("taches") ? [tr`Fais le point sur ${label(firstOfType("taches"))}`] : [], tr`Où en est mon budget ce mois-ci ?`, ...ideaChip()].map((q) => `<button class="btn sm" data-act="chat-chip">${esc(q)}</button>`).join("")}</div>` : ""}
+  <div class="capture"><textarea id="chatIn" data-draft rows="2" placeholder="${tr`Écris à Claude…`}" aria-label="${tr`Message`}" ${b === "sample" || b === "api" ? "" : "disabled"}></textarea><button class="btn acc" data-act="chat-send" ${chatBusy ? "disabled" : ""}>${tr`Envoyer`}</button></div>`;
   };
   CLICK["chat-send"] = () => {
     const t = $("#chatIn").value;
@@ -6860,7 +6972,7 @@ ${contextText()}`;
   };
   CLICK["chat-chip"] = (el) => sendChat(el.textContent);
   CLICK["chat-clear"] = async () => {
-    if (await ask("Effacer la conversation ?")) {
+    if (await ask(tr`Effacer la conversation ?`)) {
       chatLog.set([]);
       render();
     }
@@ -6868,9 +6980,9 @@ ${contextText()}`;
   CLICK["as-forget"] = async () => {
     try {
       assistantSetCle(await assistantCall({ action: "oublier" }));
-      toast("Clé effacée du serveur.");
+      toast(tr`Clé effacée du serveur.`);
     } catch (e) {
-      toast("Clé non effacée : " + e.message);
+      toast(tr`Clé non effacée : ${e.message}`);
     }
     render();
   };
@@ -8851,7 +8963,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
         all.push(it);
       }
     }
-    for (const it of all) it.why = [...it.motifs.length ? [`motif : ${it.motifs.join(", ")}`] : [], ...it.also.length ? [`aussi dans ${it.also.join(", ")}`] : [], ...it.extra];
+    for (const it of all) it.why = [...it.motifs.length ? [tr`motif : ${it.motifs.join(", ")}`] : [], ...it.also.length ? [tr`aussi dans ${it.also.join(", ")}`] : [], ...it.extra];
     all.sort((a, b) => b.why.length - a.why.length || b.t - a.t);
     return { items: all.slice(0, max), total: all.length };
   }
@@ -8886,8 +8998,8 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   }
   var dehorsAll = () => [
     ...dehorsFeeds(),
-    ...dehorsConf().artists ? [{ id: MB_WATCH, title: "Sorties de tes artistes", mod: musicMods()[0] || "", seen: dehorsConf().artistsSeen || 0, watch: true }] : [],
-    ...dehorsResearch().map((r) => ({ id: "oa-" + r.id, title: `Veille : ${r.name || r.q}`, mod: r.mod || "", seen: r.seen || 0, research: r }))
+    ...dehorsConf().artists ? [{ id: MB_WATCH, title: tr`Sorties de tes artistes`, mod: musicMods()[0] || "", seen: dehorsConf().artistsSeen || 0, watch: true }] : [],
+    ...dehorsResearch().map((r) => ({ id: "oa-" + r.id, title: tr`Veille : ${r.name || r.q}`, mod: r.mod || "", seen: r.seen || 0, research: r }))
   ];
   var dehorsOn = () => hosted() && authReady() && !!authSession;
   function dehorsCache() {
@@ -8921,11 +9033,11 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     const r = [];
     if (x.oa && !(f.research && f.research.kind === "author")) {
       const A = sourceAuthors(), hit = String(x.oa.authors || "").replace(/ et al\.$/, "").split(", ").map((n) => n.trim()).filter((n) => A.has(fold(n)));
-      if (hit.length) r.push(`auteur${hit.length > 1 ? "s" : ""} de tes sources : ${hit.join(", ")}`);
+      if (hit.length) r.push(trn(hit.length, "auteur de tes sources : {1}", "auteurs de tes sources : {1}", hit.join(", ")));
     }
     if (x.oa && Array.isArray(x.oa.cites) && x.oa.cites.length) {
-      const srcs = citeSources(), names = x.oa.cites.map((d) => srcs.get(d)).filter(Boolean).map((s) => `« ${excerpt(s.e, 50)} »`);
-      if (names.length) r.push(`cite ${names.join(", ")}, de tes sources`);
+      const srcs = citeSources(), names = x.oa.cites.map((d) => srcs.get(d)).filter(Boolean).map((s) => tr`« ${excerpt(s.e, 50)} »`);
+      if (names.length) r.push(tr`cite ${names.join(", ")}, de tes sources`);
     }
     return r;
   }
@@ -8951,14 +9063,14 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
             if (r.status === 304) fc.err = "";
             else if (r.status >= 200 && r.status < 300 && typeof r.texte === "string") {
               const pf = parseFeed(r.texte, r.url || f.url);
-              if (!pf) fc.err = "ce n'est plus un flux lisible";
+              if (!pf) fc.err = tr`ce n'est plus un flux lisible`;
               else {
                 fc.items = feedMerge(fc.items, pf.items, Date.now());
                 fc.etag = r.etag || "";
                 fc.modifie = r.modifie || "";
                 fc.err = "";
               }
-            } else fc.err = r.erreur || `le site répond ${r.status}`;
+            } else fc.err = r.erreur || tr`le site répond ${r.status}`;
           } catch (e) {
             fc.err = e.message;
           }
@@ -8984,8 +9096,8 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     const ac = new AbortController(), t = setTimeout(() => ac.abort(), 1e4);
     try {
       const res = await fetch(oaUrl(r, since, oaKey()), { signal: ac.signal });
-      if (res.status === 429) fc.err = "quota du jour atteint (une clé OpenAlex gratuite le décuple)";
-      else if (!res.ok) fc.err = `OpenAlex répond ${res.status}`;
+      if (res.status === 429) fc.err = tr`quota du jour atteint (une clé OpenAlex gratuite le décuple)`;
+      else if (!res.ok) fc.err = tr`OpenAlex répond ${res.status}`;
       else {
         const own = citeOwn();
         const got = oaWorks(await res.json()).map(({ refs, ...x }) => {
@@ -8996,7 +9108,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
         fc.err = "";
       }
     } catch {
-      fc.err = "OpenAlex injoignable";
+      fc.err = tr`OpenAlex injoignable`;
     } finally {
       clearTimeout(t);
     }
@@ -9039,28 +9151,28 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     const c = dehorsCache(), fc = c.feeds[MB_WATCH] || { items: [] };
     fc.items = feedMerge(fc.items, got, Date.now());
     fc.at = Date.now();
-    fc.err = failed ? `${failed} artiste${failed > 1 ? "s" : ""} sans réponse de MusicBrainz` : "";
+    fc.err = failed ? trn(failed, "{0} artiste sans réponse de MusicBrainz", "{0} artistes sans réponse de MusicBrainz") : "";
     c.feeds[MB_WATCH] = fc;
     dehorsStore(c);
   }
   async function dehorsFind(raw) {
     const url = normalizeUrl(raw) || normalizeUrl("https://" + String(raw).replace(/^\/+/, ""));
-    if (!url) throw new Error("Ce n'est pas une adresse.");
+    if (!url) throw new Error(tr`Ce n'est pas une adresse.`);
     const r = await passeurFetch(url, "feed");
-    if (r.status >= 300 || typeof r.texte !== "string") throw new Error(r.erreur || `Le site répond ${r.status}.`);
+    if (r.status >= 300 || typeof r.texte !== "string") throw new Error(r.erreur || tr`Le site répond ${r.status}.`);
     const pf = parseFeed(r.texte, r.url || url);
     if (pf) return { url: r.url || url, title: pf.title, items: pf.items, etag: r.etag, modifie: r.modifie };
     const found = pageToSource(r.texte, r.url || url).feeds[0];
-    if (!found) throw new Error("Aucun flux à cette adresse, ni annoncé par la page.");
+    if (!found) throw new Error(tr`Aucun flux à cette adresse, ni annoncé par la page.`);
     const r2 = await passeurFetch(found.url, "feed"), pf2 = r2.status < 300 && typeof r2.texte === "string" ? parseFeed(r2.texte, r2.url || found.url) : null;
-    if (!pf2) throw new Error("La page annonce un flux, mais il est illisible.");
+    if (!pf2) throw new Error(tr`La page annonce un flux, mais il est illisible.`);
     return { url: r2.url || found.url, title: pf2.title || found.title, items: pf2.items, etag: r2.etag, modifie: r2.modifie };
   }
   async function dehorsFollow(raw, mod) {
     const got = await dehorsFind(raw);
     const feeds = dehorsFeeds();
-    if (feeds.some((f2) => sourceKey({ url: f2.url }) === sourceKey({ url: got.url }))) throw new Error("Ce flux est déjà suivi.");
-    if (feeds.length >= 100) throw new Error("Cent flux, c'est déjà un kiosque. Retire-en avant d'en ajouter.");
+    if (feeds.some((f2) => sourceKey({ url: f2.url }) === sourceKey({ url: got.url }))) throw new Error(tr`Ce flux est déjà suivi.`);
+    if (feeds.length >= 100) throw new Error(tr`Cent flux, c'est déjà un kiosque. Retire-en avant d'en ajouter.`);
     const f = { id: uid(), url: got.url, title: clip(got.title || new URL(got.url).hostname, 200), mod: mod && Object.hasOwn(S().modules, mod) ? mod : "", seen: Date.now() - 7 * 864e5 };
     dehorsSet({ feeds: [...feeds, f] });
     const c = dehorsCache();
@@ -9071,16 +9183,16 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   function dehorsLine() {
     if (!dehorsOn() || !dehorsAll().length) return "";
     const n = dehorsNow().total;
-    return n ? `<p class="hint dehors-go"><a href="#dehors">Dehors : ${n} nouveauté${n > 1 ? "s" : ""}</a></p>` : "";
+    return n ? `<p class="hint dehors-go"><a href="#dehors">${trn(n, "Dehors : {0} nouveauté", "Dehors : {0} nouveautés")}</a></p>` : "";
   }
   var dehorsWhen = (t) => {
     const d = new Date(t), days = Math.round((Date.now() - t) / 864e5);
-    return days < 1 ? `aujourd'hui, ${hm(t)}` : days < 7 ? d.toLocaleDateString(uiLocale(), { weekday: "long" }) : fmt(d.toISOString().slice(0, 10));
+    return days < 1 ? tr`aujourd'hui, ${hm(t)}` : days < 7 ? d.toLocaleDateString(uiLocale(), { weekday: "long" }) : fmt(d.toISOString().slice(0, 10));
   };
   VIEWS.dehors = () => {
     const feeds = dehorsFeeds(), mods = S().config.modules.filter((m) => m.on && Object.hasOwn(S().modules, m.id) && !SYSTEM.includes(m.id)).map((m) => m.id);
-    const head = `<h2>Dehors</h2><p class="hint">Ce qui est paru depuis ta dernière visite, dans les flux que tu suis. Douze au plus : le reste attend, rien ne défile. Ce qui croise ce que tu gardes (un motif, un auteur de tes sources, une de tes sources citée, un lien paru dans deux flux) passe devant, et dit pourquoi. Garde ce qui compte, le reste s'efface en un mois.</p>`;
-    if (!dehorsOn()) return head + `<p class="empty">Dehors passe par le passeur : il n'existe que dans la version hébergée, connectée à ton compte.</p>`;
+    const head = `<h2>${tr`Dehors`}</h2><p class="hint">${tr`Ce qui est paru depuis ta dernière visite, dans les flux que tu suis. Douze au plus : le reste attend, rien ne défile. Ce qui croise ce que tu gardes (un motif, un auteur de tes sources, une de tes sources citée, un lien paru dans deux flux) passe devant, et dit pourquoi. Garde ce qui compte, le reste s'efface en un mois.`}</p>`;
+    if (!dehorsOn()) return head + `<p class="empty">${tr`Dehors passe par le passeur : il n'existe que dans la version hébergée, connectée à ton compte.`}</p>`;
     const cache = dehorsCache(), { items, total } = dehorsNow(), byMod = /* @__PURE__ */ new Map();
     for (const it of items) {
       const k = it.f.mod && Object.hasOwn(S().modules, it.f.mod) ? it.f.mod : "";
@@ -9090,33 +9202,33 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     const itemHTML = ({ f, x, t, why }) => `<li class="item" data-feed="${esc(f.id)}" data-item="${esc(x.id)}"><span></span><div>
       ${x.link ? `<a class="t-title" href="${esc(x.link)}" target="_blank" rel="noopener noreferrer">${esc(x.title)} ↗</a>` : `<b>${esc(x.title)}</b>`}
       <div class="meta"><span>${esc(f.title)}</span><span>${esc(dehorsWhen(t))}</span></div>
-      ${why.length ? `<p class="why">parce que : ${why.map(esc).join(" · ")}</p>` : ""}
+      ${why.length ? `<p class="why">${tr`parce que : ${why.map(esc).join(" · ")}`}</p>` : ""}
       ${x.text ? `<p class="hint" style="margin:4px 0 0">${esc(x.text)}</p>` : ""}</div>
-    <div class="row">${x.mb ? Object.hasOwn(S().modules, x.mb.mod) && S().modules[x.mb.mod].entries.some((e) => e.mb && e.mb.rg === x.mb.rg) ? `<span class="hint">déjà dans ${esc(label(x.mb.mod))}</span>` : Object.hasOwn(S().modules, x.mb.mod) ? `<button class="btn sm" data-act="dehors-mb-add">ajouter à ${esc(label(x.mb.mod))}</button>` : "" : sourcesModule() && x.link ? findSourceDup({ url: x.link, doi: x.oa && x.oa.doi || findDoi(x.link) }) ? `<span class="hint">déjà gardée</span>` : `<button class="btn sm" data-act="dehors-keep">garder</button>` : ""}${inboxId(S().modules) ? `<button class="btn ghost sm" data-act="dehors-note">vers une note</button>` : ""}<button class="btn ghost sm" data-act="dehors-hide" aria-label="Écarter">vu</button></div></li>`;
-    const list = !dehorsAll().length ? `<p class="empty">Aucun flux suivi. Colle ci-dessous l'adresse d'un site, d'une revue, d'une chaîne : Selene trouve son flux.</p>` : !items.length ? `<p class="empty">${dehorsBusy ? "Lecture des flux…" : "Rien de neuf. Le monde a pu se passer de toi, et toi de lui."}</p>` : [...byMod].map(([k, its]) => `<h3>${esc(k ? label(k) : "Sans projet")}</h3><ul class="plain dehors">${its.map(itemHTML).join("")}</ul>`).join("") + `<div class="row" style="margin-top:12px">${total > items.length ? `<span class="hint" style="margin:0">Et ${total - items.length} autre${total - items.length > 1 ? "s" : ""}, qui attendront.</span>` : ""}<span class="spacer"></span><button class="btn sm" data-act="dehors-seen">Tout marquer comme vu</button></div>`;
-    const opts = (sel) => `<option value="">Sans projet</option>${mods.map((m) => `<option value="${esc(m)}" ${sel === m ? "selected" : ""}>${esc(label(m))}</option>`).join("")}`;
+    <div class="row">${x.mb ? Object.hasOwn(S().modules, x.mb.mod) && S().modules[x.mb.mod].entries.some((e) => e.mb && e.mb.rg === x.mb.rg) ? `<span class="hint">${tr`déjà dans ${esc(label(x.mb.mod))}`}</span>` : Object.hasOwn(S().modules, x.mb.mod) ? `<button class="btn sm" data-act="dehors-mb-add">${tr`ajouter à ${esc(label(x.mb.mod))}`}</button>` : "" : sourcesModule() && x.link ? findSourceDup({ url: x.link, doi: x.oa && x.oa.doi || findDoi(x.link) }) ? `<span class="hint">${tr`déjà gardée`}</span>` : `<button class="btn sm" data-act="dehors-keep">${tr`garder`}</button>` : ""}${inboxId(S().modules) ? `<button class="btn ghost sm" data-act="dehors-note">${tr`vers une note`}</button>` : ""}<button class="btn ghost sm" data-act="dehors-hide" aria-label="${tr`Écarter`}">${tr`vu`}</button></div></li>`;
+    const list = !dehorsAll().length ? `<p class="empty">${tr`Aucun flux suivi. Colle ci-dessous l'adresse d'un site, d'une revue, d'une chaîne : Selene trouve son flux.`}</p>` : !items.length ? `<p class="empty">${dehorsBusy ? tr`Lecture des flux…` : tr`Rien de neuf. Le monde a pu se passer de toi, et toi de lui.`}</p>` : [...byMod].map(([k, its]) => `<h3>${esc(k ? label(k) : tr`Sans projet`)}</h3><ul class="plain dehors">${its.map(itemHTML).join("")}</ul>`).join("") + `<div class="row" style="margin-top:12px">${total > items.length ? `<span class="hint" style="margin:0">${trn(total - items.length, "Et {0} autre, qui attendra.", "Et {0} autres, qui attendront.")}</span>` : ""}<span class="spacer"></span><button class="btn sm" data-act="dehors-seen">${tr`Tout marquer comme vu`}</button></div>`;
+    const opts = (sel) => `<option value="">${tr`Sans projet`}</option>${mods.map((m) => `<option value="${esc(m)}" ${sel === m ? "selected" : ""}>${esc(label(m))}</option>`).join("")}`;
     const state = (f) => {
       const fc = cache.feeds[f.id];
-      return !fc ? "pas encore lu" : fc.err ? `ne répond pas : ${fc.err}` : `lu ${dehorsWhen(fc.at)}`;
+      return !fc ? tr`pas encore lu` : fc.err ? tr`ne répond pas : ${fc.err}` : tr`lu ${dehorsWhen(fc.at)}`;
     };
-    return `<div class="dehors-view">` + head + `<div class="row" style="margin:-4px 0 12px"><span class="hint" style="margin:0">${dehorsBusy ? "Lecture des flux…" : cache.at ? `Flux relus ${esc(dehorsWhen(cache.at))}.` : ""}</span><span class="spacer"></span>${dehorsAll().length ? `<button class="btn ghost sm" data-act="dehors-refresh" ${dehorsBusy ? "disabled" : ""}>Relire maintenant</button>` : ""}</div>
+    return `<div class="dehors-view">` + head + `<div class="row" style="margin:-4px 0 12px"><span class="hint" style="margin:0">${dehorsBusy ? tr`Lecture des flux…` : cache.at ? tr`Flux relus ${esc(dehorsWhen(cache.at))}.` : ""}</span><span class="spacer"></span>${dehorsAll().length ? `<button class="btn ghost sm" data-act="dehors-refresh" ${dehorsBusy ? "disabled" : ""}>${tr`Relire maintenant`}</button>` : ""}</div>
     ${list}
-    <h3 style="margin-top:28px">Suivre</h3>
-    <div class="capture capture-wrap"><input id="dehorsIn" inputmode="url" autocomplete="off" placeholder="L'adresse d'un site ou d'un flux…" aria-label="Adresse à suivre"><select id="dehorsMod" aria-label="Projet">${opts("")}</select><button class="btn" data-act="dehors-add">Suivre</button></div>
-    ${watchedArtists().length || dehorsConf().artists ? `<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:8px 0 4px"><input type="checkbox" data-act="dehors-artists" ${dehorsConf().artists ? "checked" : ""}>Les sorties de mes artistes : MusicBrainz, une fois par semaine, pour ${watchedArtists().length} artiste${watchedArtists().length > 1 ? "s" : ""} relié${watchedArtists().length > 1 ? "s" : ""} (trente au plus)</label>` : ""}
-    <p class="hint" style="margin:4px 0 10px">Une newsletter : abonne-toi avec une adresse de <a href="https://kill-the-newsletter.com/" target="_blank" rel="noopener noreferrer">Kill the Newsletter</a>, puis suis le flux Atom qu'il te donne (il garde les lettres chez lui : pas pour une correspondance privée).</p>
-    <h3 style="margin-top:28px">Veille de recherche</h3>
-    <p class="hint" style="margin:0 0 8px">Une recherche (« biodiversity », « renewable energy ») ou un auteur (identifiant OpenAlex ou ORCID) : chaque semaine, ce qui vient de paraître, selon OpenAlex. Elle ne trie pas selon ce qui te donnerait raison ; les liens, c'est toi qui les poses.</p>
-    <div class="capture capture-wrap"><input id="oaIn" autocomplete="off" placeholder="Une recherche, un ORCID, un identifiant OpenAlex…" aria-label="Recherche ou auteur à suivre"><select id="oaMod" aria-label="Projet">${opts("")}</select><button class="btn" data-act="oa-add">Veiller</button></div>
+    <h3 style="margin-top:28px">${tr`Suivre`}</h3>
+    <div class="capture capture-wrap"><input id="dehorsIn" inputmode="url" autocomplete="off" placeholder="${tr`L'adresse d'un site ou d'un flux…`}" aria-label="${tr`Adresse à suivre`}"><select id="dehorsMod" aria-label="${tr`Projet`}">${opts("")}</select><button class="btn" data-act="dehors-add">${tr`Suivre`}</button></div>
+    ${watchedArtists().length || dehorsConf().artists ? `<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:8px 0 4px"><input type="checkbox" data-act="dehors-artists" ${dehorsConf().artists ? "checked" : ""}>${trn(watchedArtists().length, "Les sorties de mes artistes : MusicBrainz, une fois par semaine, pour {0} artiste relié (trente au plus)", "Les sorties de mes artistes : MusicBrainz, une fois par semaine, pour {0} artistes reliés (trente au plus)")}</label>` : ""}
+    <p class="hint" style="margin:4px 0 10px">${tr`Une newsletter : abonne-toi avec une adresse de ${`<a href="https://kill-the-newsletter.com/" target="_blank" rel="noopener noreferrer">Kill the Newsletter</a>`}, puis suis le flux Atom qu'il te donne (il garde les lettres chez lui : pas pour une correspondance privée).`}</p>
+    <h3 style="margin-top:28px">${tr`Veille de recherche`}</h3>
+    <p class="hint" style="margin:0 0 8px">${tr`Une recherche (« biodiversity », « renewable energy ») ou un auteur (identifiant OpenAlex ou ORCID) : chaque semaine, ce qui vient de paraître, selon OpenAlex. Elle ne trie pas selon ce qui te donnerait raison ; les liens, c'est toi qui les poses.`}</p>
+    <div class="capture capture-wrap"><input id="oaIn" autocomplete="off" placeholder="${tr`Une recherche, un ORCID, un identifiant OpenAlex…`}" aria-label="${tr`Recherche ou auteur à suivre`}"><select id="oaMod" aria-label="${tr`Projet`}">${opts("")}</select><button class="btn" data-act="oa-add">${tr`Veiller`}</button></div>
     ${dehorsResearch().length ? `<ul class="plain dehors-cfg">${dehorsResearch().map((r) => {
       const fc = cache.feeds["oa-" + r.id];
-      return `<li class="item" data-oa="${esc(r.id)}"><span></span><div><b>${esc(r.name || r.q)}</b><div class="meta"><span>${r.kind === "author" ? "auteur" : "recherche"}</span><span>${esc(!fc ? "pas encore lue" : fc.err ? `ne répond pas : ${fc.err}` : `lue ${dehorsWhen(fc.at)}`)}</span></div></div>
-      <div class="row"><select data-act="oa-mod" aria-label="Projet de cette veille">${opts(r.mod || "")}</select><button class="btn ghost sm" data-act="oa-del">retirer</button></div></li>`;
+      return `<li class="item" data-oa="${esc(r.id)}"><span></span><div><b>${esc(r.name || r.q)}</b><div class="meta"><span>${r.kind === "author" ? tr`auteur` : tr`recherche`}</span><span>${esc(!fc ? tr`pas encore lue` : fc.err ? tr`ne répond pas : ${fc.err}` : tr`lue ${dehorsWhen(fc.at)}`)}</span></div></div>
+      <div class="row"><select data-act="oa-mod" aria-label="${tr`Projet de cette veille`}">${opts(r.mod || "")}</select><button class="btn ghost sm" data-act="oa-del">${tr`retirer`}</button></div></li>`;
     }).join("")}</ul>` : ""}
-    <details style="margin-top:8px"><summary class="hint">Clé OpenAlex (facultative)</summary>
-      <p class="hint" style="margin:6px 0">Sans clé, OpenAlex répond dans une petite limite quotidienne ; une clé gratuite (<a href="https://openalex.org/settings/api" target="_blank" rel="noopener noreferrer">openalex.org</a>) la décuple. Elle reste dans ce navigateur, n'est jamais synchronisée, et s'efface à la déconnexion.</p>
-      <label>Clé API OpenAlex<input type="password" data-act="oa-key" value="${oaKey() ? "••••••••" : ""}" autocomplete="off" placeholder="colle ta clé"></label></details>
-    ${feeds.length ? `<details class="dehors-feeds"><summary>Flux suivis (${feeds.length})</summary>
+    <details style="margin-top:8px"><summary class="hint">${tr`Clé OpenAlex (facultative)`}</summary>
+      <p class="hint" style="margin:6px 0">${tr`Sans clé, OpenAlex répond dans une petite limite quotidienne ; une clé gratuite (${`<a href="https://openalex.org/settings/api" target="_blank" rel="noopener noreferrer">openalex.org</a>`}) la décuple. Elle reste dans ce navigateur, n'est jamais synchronisée, et s'efface à la déconnexion.`}</p>
+      <label>${tr`Clé API OpenAlex`}<input type="password" data-act="oa-key" value="${oaKey() ? "••••••••" : ""}" autocomplete="off" placeholder="${tr`colle ta clé`}"></label></details>
+    ${feeds.length ? `<details class="dehors-feeds"><summary>${tr`Flux suivis (${feeds.length})`}</summary>
       <ul class="plain dehors-cfg">${feeds.map((f) => `<li class="item" data-feed="${esc(f.id)}"><span></span><div><b>${esc(f.title)}</b><div class="meta"><span>${esc((() => {
       try {
         return new URL(f.url).hostname.replace(/^www\./, "");
@@ -9124,8 +9236,8 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
         return "";
       }
     })())}</span><span>${esc(state(f))}</span></div>
-        <label style="display:flex;gap:6px;align-items:center;font-weight:400;margin-top:4px"><input type="checkbox" data-act="dehors-motifs" ${f.motifs ? "checked" : ""}>Seulement ce qui touche mes motifs</label></div>
-        <div class="row"><select data-act="dehors-mod" aria-label="Projet de ce flux">${opts(f.mod)}</select><button class="btn ghost sm" data-act="dehors-del">retirer</button></div></li>`).join("")}</ul>
+        <label style="display:flex;gap:6px;align-items:center;font-weight:400;margin-top:4px"><input type="checkbox" data-act="dehors-motifs" ${f.motifs ? "checked" : ""}>${tr`Seulement ce qui touche mes motifs`}</label></div>
+        <div class="row"><select data-act="dehors-mod" aria-label="${tr`Projet de ce flux`}">${opts(f.mod)}</select><button class="btn ghost sm" data-act="dehors-del">${tr`retirer`}</button></div></li>`).join("")}</ul>
     </details>` : ""}</div>`;
   };
   var dehorsHit = (el) => {
@@ -9143,11 +9255,11 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     const inp = $("#dehorsIn"), raw = inp ? inp.value.trim() : "";
     if (!raw) return;
     el.disabled = true;
-    el.textContent = "Recherche…";
+    el.textContent = tr`Recherche…`;
     try {
       const f = await dehorsFollow(raw, ($("#dehorsMod") || {}).value || "");
       if (inp) inp.value = "";
-      toast(`Suivi : ${f.title}.`);
+      toast(tr`Suivi : ${f.title}.`);
     } catch (e) {
       toast(e.message);
     }
@@ -9161,7 +9273,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     c.hidden = [];
     dehorsStore(c);
     render();
-    toast("Tout est vu. Dehors se tait jusqu'à la prochaine parution.");
+    toast(tr`Tout est vu. Dehors se tait jusqu'à la prochaine parution.`);
   };
   CLICK["dehors-hide"] = (el) => {
     const { f, x } = dehorsHit(el);
@@ -9176,7 +9288,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     dehorsHideItem(f, x);
     site.save();
     render();
-    toast(`Dans ${label(box)}.`);
+    toast(tr`Dans ${label(box)}.`);
   };
   CLICK["dehors-keep"] = (el) => {
     const { f, x } = dehorsHit(el), to = sourcesModule();
@@ -9186,17 +9298,17 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     if (dup) {
       dehorsHideItem(f, x);
       render();
-      return toast(`Déjà gardée dans ${label(dup.mod)}.`);
+      return toast(tr`Déjà gardée dans ${label(dup.mod)}.`);
     }
-    const e = keepSource(to, src, { from: f.research ? "Veille" : "Dehors", text: f.research ? f.research.name || f.research.q : f.title, date: todayISO() });
+    const e = keepSource(to, src, { from: f.research ? tr`Veille` : tr`Dehors`, text: f.research ? f.research.name || f.research.q : f.title, date: todayISO() });
     dehorsHideItem(f, x);
     site.save();
     render();
-    toast(`Gardée dans ${label(to)} : « ${excerpt(e, 50)} ».`);
+    toast(tr`Gardée dans ${label(to)} : « ${excerpt(e, 50)} ».`);
   };
   CLICK["dehors-del"] = async (el) => {
     const { f } = dehorsHit(el);
-    if (!f || !await ask(`Ne plus suivre « ${f.title} » ?`)) return;
+    if (!f || !await ask(tr`Ne plus suivre « ${f.title} » ?`)) return;
     dehorsSet({ feeds: dehorsFeeds().filter((x) => x.id !== f.id) });
     dehorsStore(dehorsCache());
     render();
@@ -9205,7 +9317,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     el.disabled = true;
     try {
       const f = await dehorsFollow(el.dataset.url, "");
-      toast(`Suivi dans Dehors : ${f.title}.`);
+      toast(tr`Suivi dans Dehors : ${f.title}.`);
     } catch (e) {
       toast(e.message);
       el.disabled = false;
@@ -9228,26 +9340,26 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     dehorsStore(dehorsCache());
     render();
     if (el.checked) {
-      toast("Artist Watch : première vérification, une seconde par artiste.");
+      toast(tr`Artist Watch : première vérification, une seconde par artiste.`);
       dehorsRefresh();
     }
   };
   CLICK["oa-add"] = () => {
     const inp = $("#oaIn"), w = oaWatch(inp ? inp.value : "");
-    if (!w) return toast("Une recherche de deux cents caractères au plus, ou un auteur.");
+    if (!w) return toast(tr`Une recherche de deux cents caractères au plus, ou un auteur.`);
     const list = dehorsResearch();
-    if (list.some((r) => r.kind === w.kind && fold(r.q) === fold(w.q))) return toast("Déjà en veille.");
-    if (list.length >= 30) return toast("Trente veilles, c'est une thèse. Retires-en avant d'en ajouter.");
+    if (list.some((r) => r.kind === w.kind && fold(r.q) === fold(w.q))) return toast(tr`Déjà en veille.`);
+    if (list.length >= 30) return toast(tr`Trente veilles, c'est une thèse. Retires-en avant d'en ajouter.`);
     const mod = ($("#oaMod") || {}).value || "";
     dehorsSet({ research: [...list, { id: uid(), kind: w.kind, q: w.q, ...mod && Object.hasOwn(S().modules, mod) ? { mod } : {}, seen: Date.now() - 7 * 864e5 }] });
     if (inp) inp.value = "";
     render();
-    toast(`En veille : ${w.q}. Première lecture…`);
+    toast(tr`En veille : ${w.q}. Première lecture…`);
     dehorsRefresh();
   };
   CLICK["oa-del"] = async (el) => {
     const id = el.closest("[data-oa]").dataset.oa, r = dehorsResearch().find((x) => x.id === id);
-    if (!r || !await ask(`Arrêter la veille « ${r.name || r.q} » ?`)) return;
+    if (!r || !await ask(tr`Arrêter la veille « ${r.name || r.q} » ?`)) return;
     dehorsSet({ research: dehorsResearch().filter((x) => x.id !== id) });
     dehorsStore(dehorsCache());
     render();
@@ -9267,7 +9379,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     }
     el.blur();
     render();
-    toast(v ? "Clé OpenAlex gardée dans ce navigateur." : "Clé OpenAlex oubliée.");
+    toast(v ? tr`Clé OpenAlex gardée dans ce navigateur.` : tr`Clé OpenAlex oubliée.`);
   };
   CLICK["dehors-mb-add"] = (el) => {
     const { f, x } = dehorsHit(el);
@@ -9277,7 +9389,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     dehorsHideItem(f, x);
     site.save();
     render();
-    toast(`Ajouté à ${label(x.mb.mod)} : ${x.mb.artist}, « ${x.mb.album} ».`);
+    toast(tr`Ajouté à ${label(x.mb.mod)} : ${x.mb.artist}, « ${x.mb.album} ».`);
   };
 
   // src/app/shell/render.js
