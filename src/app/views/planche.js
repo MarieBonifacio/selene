@@ -4,7 +4,8 @@ import { CLICK, TYPE_UI } from "../registry.js";
 import { esc } from "../lib/dom.js";
 import { downloadFile } from "../lib/download.js";
 import { addDaysTo, fmt, iso, todayISO } from "../lib/format.js";
-import { LANGS, uiLang } from "../i18n/index.js";
+import { LANGS, N_, sameText, tr, trn, uiLang } from "../i18n/index.js";
+import { epLabel } from "../lib/labels.js";
 import { concordance, isConcordance } from "../features/concordance.js";
 import { lexicalDrift } from "../features/derive.js";
 import { epCounts, excerpt, sourceItems } from "../features/links.js";
@@ -22,8 +23,8 @@ import { bilanMode, bilanOffset, periodOf } from "./bilan.js";
    de neuf : chaque chiffre vient du bilan (review, lexicalDrift, concordance, epCounts, openTensions). Son style vit
    ici, en chaîne, pour servir aussi la planche téléchargée, qui doit se suffire à elle-même. */
 let plancheOffset = 0;
-const OUTSIDE = ["Dehors", "Veille", "Cité par tes sources", "Zotero"];
- // les provenances qui viennent du dehors (origin.from)
+// Les provenances qui viennent du dehors (origin.from). Enregistrées dans la langue du moment : reconnues dans toutes.
+const OUTSIDE = [N_("Dehors"), N_("Veille"), N_("Cité par tes sources"), "Zotero"], FROM_NOTE = N_("depuis une note"), BY_HAND = N_("à la main");
 const datedItems = inst => [...(inst.entries || []), ...(inst.scraps || [])].filter(x => x && typeof x.date === "string");
 function plancheData(offset, now = Date.now()) {
   const cur = periodOf("lune", offset, now), prev = periodOf("lune", offset + 1, now), s = S(), len = SYNODIC * 86400000;
@@ -48,7 +49,7 @@ function plancheData(offset, now = Date.now()) {
   // Dehors ne date pas ses « vu », et une planche n'a pas à tenir le registre de ce qu'on a eu raison d'ignorer.
   const kept = [];
   for (const { e } of sourceItems()) if (typeof e.kept === "string" && e.kept >= cur.from && e.kept < cur.to)
-    kept.push({ title: excerpt(e, 60), from: e.origin && OUTSIDE.includes(e.origin.from) ? e.origin.from : e.origin ? "depuis une note" : "à la main" });
+    kept.push({ title: excerpt(e, 60), from: e.origin ? OUTSIDE.find(f => sameText(f, e.origin.from)) || FROM_NOTE : BY_HAND });
   const drift = lexicalDrift("lune", offset);
   return { k: cur.k, kept, from: cur.from, to: cur.to, days, total, rows, quarters, appeared, n: total.reduce((a, b) => a + b, 0),
     rising: drift.enough ? drift.rising.slice(0, 12).map(x => ({ w: drift.word(x.k), n: x.n })) : null,
@@ -67,27 +68,27 @@ function rulerSVG(p) {
   // L'étiquette d'un quartier au bord de la règle s'y aligne au lieu d'en déborder.
   const q = p.quarters.map(x => { const cx = x.i * 10 + 5, anchor = cx < 20 ? "start" : cx > W - 20 ? "end" : "middle";
     return `${sh(x.f, cx)}<text x="${anchor === "start" ? 0 : anchor === "end" ? W : cx}" y="66" text-anchor="${anchor}">${esc(fmt(x.date, { day: "numeric", month: "short" }))}</text>`; }).join("");
-  return `<svg viewBox="0 0 ${W} 70" role="img" aria-label="Règle de lunaison : entrées datées par jour, ${p.n} en tout"><g fill="currentColor" opacity=".85">${bars}</g><path d="M0,52.5H${W}" stroke="currentColor" stroke-width=".5"/>${p.days.map((d, i) => `<path d="M${i * 10 + 5},53v${i % 7 ? 2 : 4}" stroke="currentColor" stroke-width=".4"/>`).join("")}<g font-size="6" fill="currentColor">${q}</g></svg>`;
+  return `<svg viewBox="0 0 ${W} 70" role="img" aria-label="${tr`Règle de lunaison : entrées datées par jour, ${p.n} en tout`}"><g fill="currentColor" opacity=".85">${bars}</g><path d="M0,52.5H${W}" stroke="currentColor" stroke-width=".5"/>${p.days.map((d, i) => `<path d="M${i * 10 + 5},53v${i % 7 ? 2 : 4}" stroke="currentColor" stroke-width=".4"/>`).join("")}<g font-size="6" fill="currentColor">${q}</g></svg>`;
 }
 const sparkSVG = (vals, max) => `<svg viewBox="0 0 ${vals.length * 4} 20" preserveAspectRatio="none" aria-hidden="true"><path d="M0,19.5H${vals.length * 4}" stroke="currentColor" stroke-width=".4"/><g fill="currentColor">${vals.map((v, i) => v ? `<rect x="${i * 4 + .6}" y="${(19.5 - 18 * v / max).toFixed(1)}" width="2.8" height="${(18 * v / max).toFixed(1)}"/>` : "").join("")}</g></svg>`;
 function plancheHTML(p) {
   const long = d => fmt(d, { day: "numeric", month: "long", year: "numeric" }), max = Math.max(1, ...p.rows.flatMap(r => r.spark));
   const eps = Object.keys(EP_STATUS).filter(k => p.ep[k]);
   return `<article class="planche" aria-labelledby="plTitle">
-  <header class="pl-head"><p class="pl-no">Planche ${p.k}</p><h2 id="plTitle">Lunaison du ${esc(long(p.from))} au ${esc(long(addDaysTo(p.to, -1)))}</h2>
-    <p class="pl-sub">${p.n} entrée${p.n > 1 ? "s" : ""} datée${p.n > 1 ? "s" : ""} · lunaison n° ${p.k} de Meeus</p></header>
-  <figure class="pl-regle">${rulerSVG(p)}<figcaption>Règle de lunaison : un trait par jour, haut comme le nombre d'entrées datées ; les phases aux quartiers.</figcaption></figure>
-  <table class="pl-mods"><caption class="sr">Par espace : la ligne du cycle, celle du précédent, l'activité jour par jour</caption><tbody>
-    ${p.rows.map(r => `<tr><th scope="row">${sigil(r.id)}${esc(label(r.id))}</th><td>${esc(r.review || "—")}<small>avant : ${esc(r.before || "—")}</small></td><td class="pl-spark">${sparkSVG(r.spark, max)}</td></tr>`).join("") || `<tr><td>Aucun espace à résumer.</td></tr>`}
+  <header class="pl-head"><p class="pl-no">${tr`Planche ${p.k}`}</p><h2 id="plTitle">${tr`Lunaison du ${esc(long(p.from))} au ${esc(long(addDaysTo(p.to, -1)))}`}</h2>
+    <p class="pl-sub">${trn(p.n, "{0} entrée datée · lunaison n° {1} de Meeus", "{0} entrées datées · lunaison n° {1} de Meeus", p.k)}</p></header>
+  <figure class="pl-regle">${rulerSVG(p)}<figcaption>${tr`Règle de lunaison : un trait par jour, haut comme le nombre d'entrées datées ; les phases aux quartiers.`}</figcaption></figure>
+  <table class="pl-mods"><caption class="sr">${tr`Par espace : la ligne du cycle, celle du précédent, l'activité jour par jour`}</caption><tbody>
+    ${p.rows.map(r => `<tr><th scope="row">${sigil(r.id)}${esc(label(r.id))}</th><td>${esc(r.review || "—")}<small>${tr`avant : ${esc(r.before || "—")}`}</small></td><td class="pl-spark">${sparkSVG(r.spark, max)}</td></tr>`).join("") || `<tr><td>${tr`Aucun espace à résumer.`}</td></tr>`}
   </tbody></table>
   <div class="pl-cols">
-    <section><h3>Mots émergents</h3>${p.rising == null ? `<p class="pl-muted">Pas assez de textes pour en parler.</p>` : p.rising.length ? `<ul>${p.rising.map(x => `<li>${esc(x.w)} <span>${x.n}</span></li>`).join("")}</ul>` : `<p class="pl-muted">Aucun ne se détache.</p>`}</section>
-    <section><h3>Motifs apparus</h3>${p.appeared.length ? `<ul>${p.appeared.map(x => `<li>${esc(x.name)} <span>${x.n}</span></li>`).join("")}</ul>` : `<p class="pl-muted">Aucun motif neuf.</p>`}</section>
-    <section><h3>Statut des idées</h3>${eps.length ? `<ul>${eps.map(k => `<li>${esc(EP_STATUS[k])} <span>${p.ep[k]}</span></li>`).join("")}</ul>` : `<p class="pl-muted">Aucune idée qualifiée.</p>`}</section>
-    <section><h3>Tensions ouvertes</h3><p>${p.tensions ? `${p.tensions} à ce jour, nées avant la fin du cycle.` : `Aucune.`}</p></section>
-    <section class="pl-wide"><h3>Venu du dehors</h3>${p.kept.length ? `<p>${p.kept.length} source${p.kept.length > 1 ? "s" : ""} gardée${p.kept.length > 1 ? "s" : ""} (${[...OUTSIDE, "depuis une note", "à la main"].map(f => [f, p.kept.filter(x => x.from === f).length]).filter(([, n]) => n).map(([f, n]) => `${esc(f)} ${n}`).join(" · ")}) : <span class="pl-muted">${p.kept.slice(0, 5).map(x => `« ${esc(x.title)} »`).join(", ")}${p.kept.length > 5 ? `, et ${p.kept.length - 5} autre${p.kept.length - 5 > 1 ? "s" : ""}` : ""}.</span></p>` : `<p class="pl-muted">Rien gardé du dehors.</p>`}</section>
+    <section><h3>${tr`Mots émergents`}</h3>${p.rising == null ? `<p class="pl-muted">${tr`Pas assez de textes pour en parler.`}</p>` : p.rising.length ? `<ul>${p.rising.map(x => `<li>${esc(x.w)} <span>${x.n}</span></li>`).join("")}</ul>` : `<p class="pl-muted">${tr`Aucun ne se détache.`}</p>`}</section>
+    <section><h3>${tr`Motifs apparus`}</h3>${p.appeared.length ? `<ul>${p.appeared.map(x => `<li>${esc(x.name)} <span>${x.n}</span></li>`).join("")}</ul>` : `<p class="pl-muted">${tr`Aucun motif neuf.`}</p>`}</section>
+    <section><h3>${tr`Statut des idées`}</h3>${eps.length ? `<ul>${eps.map(k => `<li>${esc(epLabel(k))} <span>${p.ep[k]}</span></li>`).join("")}</ul>` : `<p class="pl-muted">${tr`Aucune idée qualifiée.`}</p>`}</section>
+    <section><h3>${tr`Tensions ouvertes`}</h3><p>${p.tensions ? trn(p.tensions, "{0} à ce jour, née avant la fin du cycle.", "{0} à ce jour, nées avant la fin du cycle.") : tr`Aucune.`}</p></section>
+    <section class="pl-wide"><h3>${tr`Venu du dehors`}</h3>${p.kept.length ? `<p>${trn(p.kept.length, "{0} source gardée ({1}) :", "{0} sources gardées ({1}) :", [...OUTSIDE, FROM_NOTE, BY_HAND].map(f => [f, p.kept.filter(x => x.from === f).length]).filter(([, n]) => n).map(([f, n]) => `${esc(tr(f))} ${n}`).join(" · "))} <span class="pl-muted">${p.kept.slice(0, 5).map(x => tr`« ${esc(x.title)} »`).join(", ")}${p.kept.length > 5 ? trn(p.kept.length - 5, ", et {0} autre", ", et {0} autres") : ""}.</span></p>` : `<p class="pl-muted">${tr`Rien gardé du dehors.`}</p>`}</section>
   </div>
-  <footer class="pl-foot">${esc(S().config.name || "Selene")} · planche tirée le ${esc(long(todayISO()))}</footer></article>`;
+  <footer class="pl-foot">${esc(S().config.name || "Selene")} · ${tr`planche tirée le ${esc(long(todayISO()))}`}</footer></article>`;
 }
 const PLANCHE_CSS = `.planche{max-width:820px;margin:0 auto;padding:26px 30px;border:1px solid var(--rule);color:var(--ink)}
 .pl-head{text-align:center;border-bottom:1px solid var(--rule);padding-bottom:10px;margin-bottom:12px}
@@ -123,18 +124,18 @@ function ensurePlancheCss() {
 }
 export function plancheView() {
   ensurePlancheCss();
-  return `<div class="pl-tools row" style="margin-bottom:14px"><a class="btn ghost sm" href="#bilan">‹ Bilan</a><span class="spacer"></span><button class="btn ghost" data-act="planche-nav" data-d="1" aria-label="Lunaison précédente">‹</button>${plancheOffset ? `<button class="btn ghost" data-act="planche-nav" data-d="-1" aria-label="Lunaison suivante">›</button>` : ""}<button class="btn sm" data-act="planche-print">Imprimer ou enregistrer en PDF</button><button class="btn ghost sm" data-act="planche-dl" title="Un fichier .html autonome, si l'impression est bloquée">Télécharger</button></div>
+  return `<div class="pl-tools row" style="margin-bottom:14px"><a class="btn ghost sm" href="#bilan">‹ ${tr`Bilan`}</a><span class="spacer"></span><button class="btn ghost" data-act="planche-nav" data-d="1" aria-label="${tr`Lunaison précédente`}">‹</button>${plancheOffset ? `<button class="btn ghost" data-act="planche-nav" data-d="-1" aria-label="${tr`Lunaison suivante`}">›</button>` : ""}<button class="btn sm" data-act="planche-print">${tr`Imprimer ou enregistrer en PDF`}</button><button class="btn ghost sm" data-act="planche-dl" title="${tr`Un fichier .html autonome, si l'impression est bloquée`}">${tr`Télécharger`}</button></div>
   ${plancheHTML(plancheData(plancheOffset))}`;
 }
 /* La planche téléchargée : un .html autonome, en clair, qui s'imprime tel quel (utile là où window.print est bloqué). */
 function plancheFile() {
   const p = plancheData(plancheOffset);
-  const doc = `<!doctype html><html lang="${LANGS[uiLang()].tag}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Planche ${p.k}</title>
+  const doc = `<!doctype html><html lang="${LANGS[uiLang()].tag}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(tr`Planche ${p.k}`)}</title>
 <style>:root{--ink:#141a16;--muted:#4a524d;--rule:#a9b0aa}body{margin:0;padding:24px 12px;background:#fbfaf6;color:var(--ink);font-family:Georgia,"Times New Roman",serif}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .sig{width:1.05em;height:1.05em;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.14em;margin-right:.5em}
 ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
-  return downloadFile(`planche-${p.k}.html`, doc, "text/html", `Planche ${p.k}`);
+  return downloadFile(`planche-${p.k}.html`, doc, "text/html", tr`Planche ${p.k}`);
 }
 CLICK["planche-open"] = () => { plancheOffset = bilanMode() === "lune" ? bilanOffset : 0; location.hash = "bilan/planche"; };
 CLICK["planche-nav"] = el => { plancheOffset = Math.max(0, plancheOffset + +el.dataset.d); render(); };

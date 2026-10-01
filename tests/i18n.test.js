@@ -95,6 +95,31 @@ test('les libellés du noyau (statuts, liens) sont tous marqués pour la traduct
   assert.deepEqual([...CORE_LABELS].sort(), [...Object.values(EP_STATUS), ...Object.values(LINK_TYPES)].sort());
 });
 
+test('le ciel du noyau est couvert : temps, pluies d’étoiles, éclipses (2026-2030, depuis Lille), vents', () => {
+  const { WEATHER, skyEvents, windName } = require('../src/core/sky.js');
+  const { ECLIPSE_TEXT, SKY_LABELS, WIND_TEXT } = require('../src/app/lib/labels.js');
+  const words = new Set(Object.values(WEATHER)), eclipses = new Set();
+  for (let t = Date.parse('2026-01-01T12:00:00Z'); t < Date.parse('2031-01-01T12:00:00Z'); t += 86400000) {
+    for (const ev of skyEvents(new Date(t).toISOString().slice(0, 10), { lat: 50.6, lon: 3.1 })) {
+      if (ev.kind === 'shower') words.add(ev.name); else { eclipses.add(`${ev.body}/${ev.type}`); if (ev.note) words.add(ev.note); }
+    }
+  }
+  assert.deepEqual([...words].sort(), [...SKY_LABELS].sort());
+  for (const k of eclipses) assert.ok(Object.hasOwn(ECLIPSE_TEXT, k), k);
+  for (let d = 0; d < 360; d += 45) assert.ok(Object.hasOwn(WIND_TEXT, windName(d)), windName(d));
+});
+
+test('un texte enregistré dans une langue se reconnaît dans toutes (provenances)', () => {
+  const { sameText } = require('../src/app/i18n/index.js');
+  withKeys({ 'Dehors d’essai': 'Outside test' }, () => {
+    assert.ok(sameText('Dehors d’essai', 'Dehors d’essai'));
+    assert.ok(sameText('Dehors d’essai', 'Outside test'));
+    applyLang('qps', BOTH);
+    assert.ok(sameText('Dehors d’essai', tr('Dehors d’essai')));
+    assert.ok(!sameText('Dehors d’essai', 'Veille'));
+  });
+});
+
 test('les noms tr, trp, trn et N_ sont réservés dans src/app : aucune variable ne les masque', async () => {
   const { parse } = await import('espree');
   const { analyze } = await import('eslint-scope');

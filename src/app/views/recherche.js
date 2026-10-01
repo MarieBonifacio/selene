@@ -2,7 +2,9 @@
 import { EP_STATUS } from "../../core/domain.js";
 import { CLICK, TYPE_UI, VIEWS } from "../registry.js";
 import { esc } from "../lib/dom.js";
-import { fmt, plural } from "../lib/format.js";
+import { fmt } from "../lib/format.js";
+import { epLabel } from "../lib/labels.js";
+import { tr, trn, trp } from "../i18n/index.js";
 import { dossierFile } from "../features/dossier.js";
 import { epGlyph, thoughtItems } from "../features/links.js";
 import { render } from "../shell/render.js";
@@ -31,12 +33,14 @@ export const fold = s => {
   }
   return f;
 };
-/* « statut:hypothèse » (ou « statut:hyp ») ne garde que ce qui porte ce statut ; seul, il les liste tous.
-   Un statut inconnu ou vide ne trouve rien, plutôt que d'être ignoré en silence. */
-const epQuery = w => { const q = w.slice("statut:".length); return (q && Object.keys(EP_STATUS).find(k => fold(EP_STATUS[k]).startsWith(q))) || null; };
+/* « statut:hypothèse » (ou « statut:hyp ») ne garde que ce qui porte ce statut ; seul, il les liste tous. « status: »,
+   ou le mot de la langue en vigueur, vaut « statut: », et le libellé se dit en français ou dans cette langue
+   (« status:hypothesis »). Un statut inconnu ou vide ne trouve rien, plutôt que d'être ignoré en silence. */
+const isEpWord = w => /^statu[ts]:/.test(w) || w.startsWith(fold(trp("recherche", "statut")) + ":");
+const epQuery = w => { const q = w.slice(w.indexOf(":") + 1); return (q && Object.keys(EP_STATUS).find(k => fold(EP_STATUS[k]).startsWith(q) || fold(epLabel(k)).startsWith(q))) || null; };
 export function searchAll(q) {
-  const words = fold(q).split(/\s+/).filter(Boolean), st = words.find(w => w.startsWith("statut:")), want = st ? epQuery(st) : null;
-  const terms = words.filter(w => !w.startsWith("statut:")), out = [];
+  const words = fold(q).split(/\s+/).filter(Boolean), st = words.find(isEpWord), want = st ? epQuery(st) : null;
+  const terms = words.filter(w => !isEpWord(w)), out = [];
   if ((st && !want) || (!terms.length && !want)) return out;
   for (const m of S().config.modules) {
     const inst = Object.hasOwn(S().modules, m.id) ? S().modules[m.id] : null, ui = inst && TYPE_UI[inst.type];
@@ -47,7 +51,7 @@ export function searchAll(q) {
 }
 export function highlight(text, q) {
   const f = fold(text), marks = [];
-  for (const w of fold(q).split(/\s+/).filter(w => w && !w.startsWith("statut:"))) { let i = f.indexOf(w); while (i >= 0) { marks.push([i, i + w.length]); i = f.indexOf(w, i + w.length); } }
+  for (const w of fold(q).split(/\s+/).filter(w => w && !isEpWord(w))) { let i = f.indexOf(w); while (i >= 0) { marks.push([i, i + w.length]); i = f.indexOf(w, i + w.length); } }
   marks.sort((a, b) => a[0] - b[0]);
   let html = "", pos = 0;
   for (const [a, b] of marks) { if (a < pos) continue; html += esc(text.slice(pos, a)) + `<mark>${esc(text.slice(a, b))}</mark>`; pos = b; }
@@ -68,19 +72,19 @@ VIEWS.recherche = () => {
   const byMod = facetFilter(all, "mod"), byPer = facetFilter(all, "period"), byEp = facetFilter(all, "ep");
   const mods = s.config.modules.map(m => m.id).filter(id => byMod.some(h => h.id === id));
   const facets = all.length ? `<div class="facets">
-    <div class="row">${chip("mod", "", "Tous les espaces", byMod.length)}${mods.map(id => chip("mod", id, `${sigil(id)}${esc(label(id))}`, byMod.filter(h => h.id === id).length)).join("")}</div>
-    <div class="row">${[["", "Toute date"], ["lune", "Cette lunaison"], ["mois", "Ce mois-ci"]].map(([v, t]) => chip("period", v, t, v ? byPer.filter(h => { const p = facetPeriod(v); return h.date && h.date >= p.from && h.date < p.to; }).length : byPer.length)).join("")}
-      ${Object.keys(EP_STATUS).some(k => byEp.some(h => h.ep === k)) ? `<span class="spacer"></span>${chip("ep", "", "Tout statut", null)}${Object.keys(EP_STATUS).filter(k => byEp.some(h => h.ep === k)).map(k => chip("ep", k, `${epGlyph(k)}${esc(EP_STATUS[k])}`, byEp.filter(h => h.ep === k).length)).join("")}` : ""}</div></div>` : "";
+    <div class="row">${chip("mod", "", tr`Tous les espaces`, byMod.length)}${mods.map(id => chip("mod", id, `${sigil(id)}${esc(label(id))}`, byMod.filter(h => h.id === id).length)).join("")}</div>
+    <div class="row">${[["", tr`Toute date`], ["lune", tr`Cette lunaison`], ["mois", tr`Ce mois-ci`]].map(([v, t]) => chip("period", v, t, v ? byPer.filter(h => { const p = facetPeriod(v); return h.date && h.date >= p.from && h.date < p.to; }).length : byPer.length)).join("")}
+      ${Object.keys(EP_STATUS).some(k => byEp.some(h => h.ep === k)) ? `<span class="spacer"></span>${chip("ep", "", tr`Tout statut`, null)}${Object.keys(EP_STATUS).filter(k => byEp.some(h => h.ep === k)).map(k => chip("ep", k, `${epGlyph(k)}${esc(epLabel(k))}`, byEp.filter(h => h.ep === k).length)).join("")}` : ""}</div></div>` : "";
   // Groupés par espace, dans l'ordre de la navigation ; 80 résultats au plus, les plus récents d'abord dans chaque espace.
   let budget = 80;
   const groups = s.config.modules.map(m => m.id).map(id => [id, hits.filter(h => h.id === id).sort((a, b) => (b.date || "").localeCompare(a.date || ""))]).filter(([, l]) => l.length).map(([id, l]) => {
     const shown = l.slice(0, Math.max(0, budget)); budget -= shown.length;
-    return shown.length ? `<p class="grp search-grp ${tintOf(id)}">${sigil(id)}${esc(label(id))} <span>${l.length}</span></p><ul class="plain">${shown.map(h => `<li class="item"><span class="jdate">${h.date ? fmt(h.date) : ""}</span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}${h.ep ? `<div class="meta"><span>${epGlyph(h.ep)}${esc(EP_STATUS[h.ep])}</span></div>` : ""}</div><a class="btn ghost sm" href="#${esc(h.id)}${h.eid ? "/" + esc(h.eid) : ""}">ouvrir</a></li>`).join("")}</ul>` : "";
+    return shown.length ? `<p class="grp search-grp ${tintOf(id)}">${sigil(id)}${esc(label(id))} <span>${l.length}</span></p><ul class="plain">${shown.map(h => `<li class="item"><span class="jdate">${h.date ? fmt(h.date) : ""}</span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}${h.ep ? `<div class="meta"><span>${epGlyph(h.ep)}${esc(epLabel(h.ep))}</span></div>` : ""}</div><a class="btn ghost sm" href="#${esc(h.id)}${h.eid ? "/" + esc(h.eid) : ""}">${tr`ouvrir`}</a></li>`).join("")}</ul>` : "";
   }).join("");
   const filtered = hits.length !== all.length;
-  return `<h2>Chercher</h2><p class="hint">Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « statut:hypothèse » ne garde que les hypothèses (de même pour observé, interprétation, inexpliqué). Touche « / » pour venir ici.</p>
-  <input id="searchIn" type="search" value="${esc(searchQuery)}" placeholder="Un mot, un bout de phrase…" aria-label="Chercher" autocomplete="off" style="max-width:520px">
-  ${searchQuery.trim() ? `<div class="row" style="margin-top:12px"><p class="hint" style="margin:0">${hits.length ? `${plural(hits.length, "résultat")}${filtered ? ` sur ${all.length}` : ""}` : all.length ? "Rien avec ces filtres." : "Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire."}</p>${hits.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="search-dossier" title="Les résultats affichés, avec dates, statuts, provenance et liens, pour une lecture assistée">Exporter en dossier</button>` : ""}</div>
+  return `<h2>${tr`Chercher`}</h2><p class="hint">${tr`Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « ${`${trp("recherche", "statut")}:${epLabel("hyp")}`} » ne garde que les hypothèses (de même pour ${["obs", "int", "inx"].map(epLabel).join(", ")}). Touche « / » pour venir ici.`}</p>
+  <input id="searchIn" type="search" value="${esc(searchQuery)}" placeholder="${tr`Un mot, un bout de phrase…`}" aria-label="${tr`Chercher`}" autocomplete="off" style="max-width:520px">
+  ${searchQuery.trim() ? `<div class="row" style="margin-top:12px"><p class="hint" style="margin:0">${hits.length ? filtered ? trn(hits.length, "{0} résultat sur {1}", "{0} résultats sur {1}", all.length) : trn(hits.length, "{0} résultat", "{0} résultats") : all.length ? tr`Rien avec ces filtres.` : tr`Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire.`}</p>${hits.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="search-dossier" title="${tr`Les résultats affichés, avec dates, statuts, provenance et liens, pour une lecture assistée`}">${tr`Exporter en dossier`}</button>` : ""}</div>
   ${facets}${groups}` : ""}`;
 };
 // Tous les résultats (pas seulement les 80 affichés), dans l'ordre du temps ; un fragment ou une note garde ses
@@ -89,7 +93,7 @@ CLICK["search-dossier"] = () => {
   const q = searchQuery.trim(), thoughts = thoughtItems();
   const items = facetFilter(searchAll(q)).map(h => ({ mod: h.id, text: h.text, date: h.date, e: (thoughts.find(x => x.mod === h.id && x.e.text === h.text) || {}).e }))
     .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-  if (items.length) dossierFile(`Recherche — ${q}`, `Résultats de la recherche « ${q} »`, items);
+  if (items.length) dossierFile(tr`Recherche — ${q}`, tr`Résultats de la recherche « ${q} »`, items);
 };
 CLICK["facet"] = el => { const k = el.dataset.k; if (Object.hasOwn(searchFacets, k)) { searchFacets[k] = searchFacets[k] === el.dataset.v ? "" : el.dataset.v; render(); } };
 CLICK["search-for"] = el => { searchQuery = el.dataset.q; Object.assign(searchFacets, { mod: "", period: "", ep: "" }); if (location.hash === "#recherche") render(); else location.hash = "recherche"; };

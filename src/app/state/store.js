@@ -11,6 +11,7 @@
 import { platform } from "../../platform.js";
 import { SCHEMA_VERSION } from "../../core/domain.js";
 import { deepEqual, mergeDocs } from "../../core/sync.js";
+import { tr } from "../i18n/index.js";
 
 // Une copie profonde d'un document JSON (ce que le stockage et le serveur échangent).
 export const clone = o => JSON.parse(JSON.stringify(o));
@@ -69,8 +70,8 @@ export function makeStore(key, path, seed, normalize = d => d, { onRemoteChange 
         onStatus("");
         return true;
       } catch (e) {
-        onStatus(e.stale ? "Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser"
-          : "Non synchronisé — enregistré sur cet appareil seulement");
+        onStatus(e.stale ? tr`Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser`
+          : tr`Non synchronisé — enregistré sur cet appareil seulement`);
         return false;
       } finally { s.syncing = null; }
     })();
@@ -79,7 +80,7 @@ export function makeStore(key, path, seed, normalize = d => d, { onRemoteChange 
   s.save = () => {
     s.data.updatedAt = Date.now(); saveLS();
     if (!s.db) return;
-    onStatus("Enregistrement…"); clearTimeout(s.timer);
+    onStatus(tr`Enregistrement…`); clearTimeout(s.timer);
     s.timer = setTimeout(() => { s.timer = null; s.sync(); }, 900);
   };
   /* Fermeture ou mise en arrière-plan : pas le temps de relire, donc une seule écriture conditionnelle

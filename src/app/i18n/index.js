@@ -74,6 +74,9 @@ export function trn(n, one, other, ...vals) {
 /* N_("Pleine lune") : marque un texte à traduire sans le traduire tout de suite (une table évaluée une fois, au
    chargement, et traduite à l'affichage par tr(…)). Le nom vient de gettext (gettext_noop). */
 export const N_ = s => s;
+/* Un texte enregistré dans la langue du moment (une provenance : « Dehors », « Veille »…) se reconnaît ensuite quelle
+   que soit la langue : le français, sa traduction dans chaque dictionnaire, ou sa pseudo-traduction. */
+export const sameText = (key, s) => s === key || s === pseudo(key) || Object.values(LANGS).some(l => l.dict && l.dict[key] === s);
 /* Tri alphabétique dans la langue en vigueur (« é » avec « e », « œ » avec « oe ») : un seul Intl.Collator, gardé
    (localeCompare en construit un par comparaison). */
 export function collate(a, b) {

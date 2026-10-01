@@ -32,7 +32,8 @@ const demo = JSON.parse(fixture());
   check(/^⟦/.test(await p.getAttribute('#miniMoon svg', 'aria-label')), 'l’étiquette de la petite lune aussi (lecteurs d’écran)');
   // La charpente : navigation, barre du bas, minuteur, et le squelette statique (shell.html), retraduit au changement.
   // Les textes restés nus (hors ⟦ ⟧) ; raccourcis clavier (kbd) et marques de navigation (.nx) mis de côté.
-  const marked = sel => p.$$eval(sel, els => els.map(el => { const c = el.cloneNode(true); c.querySelectorAll('kbd, .nx').forEach(k => k.remove()); return c.textContent.trim(); }).filter(t => t && !/^⟦[^]*⟧$/.test(t)));
+  // Les textes de l'interface sous `sel` qui ne sont pas passés par la traduction (raccourcis, compteurs, à part : `strip`).
+  const marked = (sel, strip = 'kbd, .nx') => p.$$eval(sel, (els, strip) => els.map(el => { const c = el.cloneNode(true); c.querySelectorAll(strip).forEach(k => k.remove()); return c.textContent.trim(); }).filter(t => t && !/^⟦[^]*⟧$/.test(t)), strip);
   const navNaked = await marked('#nav a[href="#accueil"], #nav a[href="#bilan"], #nav a[href="#recherche"], #nav a[href="#reglages"], #nav .pal-hint');
   check(!navNaked.length, 'navigation latérale traduite' + (navNaked.length ? ' : ' + navNaked.join(' | ') : ''));
   check(!(await marked('#bar a span, #bar button span')).length, 'barre du bas traduite');
@@ -57,9 +58,23 @@ const demo = JSON.parse(fixture());
   const homeNaked = await marked('.two h2, #main section > .row > h2, .hero .txt > p:not(.sky-line)'); // les Sortes ont leur lot
   check(!homeNaked.length, 'accueil : titres et phrase de la lune traduits' + (homeNaked.length ? ' : ' + homeNaked.join(' | ') : ''));
   await p.evaluate(() => location.hash = 'reglages'); await p.waitForTimeout(200);
-  const nakedH3 = await marked('#main h2, #main h3');
-  check(!nakedH3.some(t => ['Réglages', 'Apparence', 'Modules', 'Réglages par module', 'Sauvegarde'].includes(t)), 'réglages : leurs propres sections traduites');
+  const nakedH3 = await marked('#main > h2, #main section > h3');
+  check(!nakedH3.length, 'réglages : toutes les sections traduites' + (nakedH3.length ? ' : ' + nakedH3.join(' | ') : ''));
   check(!(await marked('.swatch, select[data-set="config.mode"] option')).length, 'réglages : palettes et modes traduits');
+  const skyNaked = await marked('#ciel .hint, #ciel button, #ciel label');
+  check(!skyNaked.length, 'réglages → Ciel traduit' + (skyNaked.length ? ' : ' + skyNaked.join(' | ') : ''));
+  await p.evaluate(() => location.hash = 'bilan'); await p.waitForTimeout(250);
+  const bilanNaked = await marked('#main h2, #main h3, #main p.hint, #main .btn.sm, #main .over em');
+  check(!bilanNaked.length, 'bilan : titres, explications, boutons et « avant » traduits' + (bilanNaked.length ? ' : ' + bilanNaked.join(' | ') : ''));
+  await p.click('[data-act="planche-open"]'); await p.waitForTimeout(250);
+  const plNaked = await marked('.planche h2, .planche h3, .pl-no, .pl-sub, .pl-regle figcaption, .pl-tools button:not([data-act="planche-nav"]), .pl-mods small, .pl-cols p');
+  check(!plNaked.length && (await p.$('.planche')), 'planche de lunaison traduite' + (plNaked.length ? ' : ' + plNaked.join(' | ') : ''));
+  check(/⟦.+⟧$/.test(await p.textContent('.pl-foot')) && /^‹ ⟦/.test(await p.textContent('.pl-tools a')), 'planche : pied et retour au bilan aussi (le nom choisi, lui, reste tel quel)');
+  await p.evaluate(() => location.hash = 'recherche'); await p.waitForTimeout(200);
+  await p.fill('#searchIn', 'e'); await p.waitForTimeout(250);
+  const searchNaked = await marked('#main > h2, #main > p.hint, #main .row p.hint, .chip-f[data-k="period"], .chip-f[data-v=""], #main [data-act="search-dossier"], #main .item a.btn', 'span');
+  check(!searchNaked.length && (await p.$$('.chip-f')).length, 'recherche : explication, compte, facettes et boutons traduits' + (searchNaked.length ? ' : ' + searchNaked.join(' | ') : ''));
+  check(/^⟦/.test(await p.getAttribute('#searchIn', 'placeholder')), 'recherche : le champ aussi');
   await p.evaluate(() => location.hash = 'accueil'); await p.waitForTimeout(200);
 
   console.log('retour à la langue de l’appareil, par le réglage générique, sans recharger');

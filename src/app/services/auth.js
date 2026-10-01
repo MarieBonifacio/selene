@@ -43,10 +43,10 @@ function authTimeout(ms = 10000) { const c = new AbortController(); setTimeout((
 async function authApi(path, opts = {}) {
   let res;
   try { res = await fetch(`${SUPABASE_URL}/auth/v1${path}`, { ...opts, signal: authTimeout(), headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, ...opts.headers } }); }
-  catch { throw new Error("Impossible de joindre le serveur. Vérifie ta connexion."); } // pas de .status : panne réseau
+  catch { throw new Error(tr`Impossible de joindre le serveur. Vérifie ta connexion.`); } // pas de .status : panne réseau
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(body.msg || body.error_description || body.error || "Erreur d'authentification.");
+    const err = new Error(body.msg || body.error_description || body.error || tr`Erreur d'authentification.`);
     err.status = res.status;
     throw err;
   }
@@ -87,7 +87,7 @@ const supabaseDb = {
     return {
       async get() {
         const res = await fetch(`${table}?user_id=eq.${authSession.user.id}&select=${col}`, { signal: authTimeout(), headers: headers() });
-        if (!res.ok) throw new Error("Lecture Supabase impossible.");
+        if (!res.ok) throw new Error(tr`Lecture Supabase impossible.`);
         const rows = await res.json();
         const v = rows[0] && rows[0][col];
         return { exists: !!(v && Object.keys(v).length), data: () => v };
@@ -104,7 +104,7 @@ const supabaseDb = {
             headers: headers({ "Content-Type": "application/json", Prefer: "return=representation" }),
             body: JSON.stringify({ [col]: value, updated_at: new Date().toISOString() })
           });
-          if (!res.ok) throw new Error("Écriture Supabase impossible.");
+          if (!res.ok) throw new Error(tr`Écriture Supabase impossible.`);
           return (await res.json()).length > 0;
         };
         if (await patch()) return true;
@@ -114,7 +114,7 @@ const supabaseDb = {
         const ins = await fetch(table, { method: "POST", signal: authTimeout(),
           headers: headers({ "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" }),
           body: JSON.stringify([{ user_id: uid }]) });
-        if (!ins.ok) throw new Error("Écriture Supabase impossible.");
+        if (!ins.ok) throw new Error(tr`Écriture Supabase impossible.`);
         return patch();
       },
       onSnapshot(cb, errCb) {
@@ -178,7 +178,7 @@ export async function authSignOut() {
   // Pousser d'abord ce qui attend encore : la déconnexion efface le local. Hors ligne, prévenir avant de perdre.
   for (const st of [board, site]) { clearTimeout(st.timer); st.timer = null; if (st.db) await st.sync(); }
   if ([board, site].some(st => st.unsynced()) &&
-      !await ask("Des modifications n'ont pas pu être envoyées (hors ligne ?). Elles seront perdues si tu te déconnectes maintenant. Te déconnecter quand même ?")) return;
+      !await ask(tr`Des modifications n'ont pas pu être envoyées (hors ligne ?). Elles seront perdues si tu te déconnectes maintenant. Te déconnecter quand même ?`)) return;
   try { if (authSession) await authApi("/logout", { method: "POST", headers: { Authorization: `Bearer ${authSession.access_token}` } }); } catch {}
   clearInterval(authRefreshTimer);
   board.disconnect(); site.disconnect(); // coupe aussi les pollers de 30 s
@@ -190,16 +190,16 @@ export async function authSignOut() {
    d'assistant, puis le compte lui-même ; ensuite, comme une déconnexion, l'appareil est vidé. Rien n'est poussé avant :
    ce qui attend encore n'a plus nulle part où aller. */
 export async function authDeleteAccount() {
-  const s = await authRefreshIfNeeded(); if (!s) throw new Error("Session expirée : reconnecte-toi, puis recommence.");
+  const s = await authRefreshIfNeeded(); if (!s) throw new Error(tr`Session expirée : reconnecte-toi, puis recommence.`);
   let r;
   try {
     r = await fetch(`${SUPABASE_URL}/functions/v1/compte`, { method: "POST", signal: authTimeout(20000),
       headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${s.access_token}` },
       body: JSON.stringify({ action: "supprimer", confirmation: "supprimer" }) });
-  } catch { throw new Error("Impossible de joindre le serveur. Vérifie ta connexion."); }
+  } catch { throw new Error(tr`Impossible de joindre le serveur. Vérifie ta connexion.`); }
   const j = await r.json().catch(() => ({}));
-  if (r.status === 404) throw new Error("La suppression n'est pas encore installée sur le serveur (docs/compte.md).");
-  if (!r.ok || !j.supprime) throw new Error(j.erreur || `erreur ${r.status}`);
+  if (r.status === 404) throw new Error(tr`La suppression n'est pas encore installée sur le serveur (docs/compte.md).`);
+  if (!r.ok || !j.supprime) throw new Error(j.erreur || tr`erreur ${r.status}`);
   clearInterval(authRefreshTimer);
   for (const st of [board, site]) { clearTimeout(st.timer); st.timer = null; }
   board.disconnect(); site.disconnect();
@@ -214,20 +214,20 @@ async function authSubmit() {
   try {
     if (authMode === "signup") {
       const needsConfirm = await authSignUp(email, pw);
-      if (needsConfirm) { err.style.color = "var(--ok)"; err.textContent = "Compte créé. Vérifie ta boîte mail pour confirmer, puis connecte-toi."; }
+      if (needsConfirm) { err.style.color = "var(--ok)"; err.textContent = tr`Compte créé. Vérifie ta boîte mail pour confirmer, puis connecte-toi.`; }
     } else await authSignIn(email, pw);
-  } catch (e) { err.textContent = e.message || "Connexion impossible."; }
+  } catch (e) { err.textContent = e.message || tr`Connexion impossible.`; }
   authBusy = false;
   render();
 }
 export function authView() {
   return `<div class="wrap" style="max-width:420px;margin:60px auto 0"><h2>Selene</h2>
-    <p class="hint">${authMode === "signup" ? "Crée ton compte pour retrouver tes données sur n'importe quel appareil." : "Connecte-toi pour retrouver tes données."}</p>
+    <p class="hint">${authMode === "signup" ? tr`Crée ton compte pour retrouver tes données sur n'importe quel appareil.` : tr`Connecte-toi pour retrouver tes données.`}</p>
     <form id="authForm" style="display:grid;gap:12px">
-      <label>E-mail<input type="email" id="authEmail" required autocomplete="email"></label>
-      <label>Mot de passe<input type="password" id="authPw" required minlength="6" autocomplete="${authMode === "signup" ? "new-password" : "current-password"}"></label>
-      <div class="row"><button class="btn acc" type="submit">${authMode === "signup" ? "Créer le compte" : "Se connecter"}</button>
-      <button class="btn ghost" type="button" data-act="auth-switch">${authMode === "signup" ? "J'ai déjà un compte" : "Créer un compte"}</button></div>
+      <label>${tr`E-mail`}<input type="email" id="authEmail" required autocomplete="email"></label>
+      <label>${tr`Mot de passe`}<input type="password" id="authPw" required minlength="6" autocomplete="${authMode === "signup" ? "new-password" : "current-password"}"></label>
+      <div class="row"><button class="btn acc" type="submit">${authMode === "signup" ? tr`Créer le compte` : tr`Se connecter`}</button>
+      <button class="btn ghost" type="button" data-act="auth-switch">${authMode === "signup" ? tr`J'ai déjà un compte` : tr`Créer un compte`}</button></div>
       <p class="hint" id="authErr" style="margin:0"></p>
     </form></div>`;
 }

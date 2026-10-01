@@ -5,7 +5,9 @@
      trn(n, "une forme", "des formes") → pluriel rangé sous la forme singulière ;
    - échoue (code 1) sur : une traduction orpheline (son texte français a changé ou disparu : la retraduire), un type
      inattendu (pluriel contre texte simple), des valeurs {n} perdues ou inventées, un texte manquant dans une langue
-     proposée (READY_LANGS), un trp, trn ou N_ dont le texte n'est pas écrit en toutes lettres ;
+     proposée (READY_LANGS), un trp, trn ou N_ dont le texte n'est pas écrit en toutes lettres, une traduction qui
+     introduit un caractère de HTML (" < > &) absent du français : elle entre telle quelle dans le balisage, souvent
+     dans un attribut (title="…") qu'un guillemet droit refermerait ;
    - sinon, dit la couverture de chaque langue. `--missing` liste ce qui reste à traduire, avec son emplacement. */
 import { parse } from "espree";
 import fs from "node:fs";
@@ -66,6 +68,10 @@ for (const [code, L] of Object.entries(LANGS)) {
       }
     } else if (typeof v !== "string") errors.push(`${code} : « ${shown(key)} » est un texte simple : une chaîne attendue`);
     else if (holes(v) !== holes(key)) errors.push(`${code} : « ${shown(key)} » → « ${v} » : les valeurs {n} ne correspondent pas (${holes(key) || "aucune"} contre ${holes(v) || "aucune"})`);
+  }
+  for (const [key, v] of Object.entries(dict)) for (const form of typeof v === "string" ? [v] : v && typeof v === "object" ? Object.values(v) : []) {
+    const extra = ['"', "<", ">", "&"].filter(c => typeof form === "string" && form.includes(c) && !key.includes(c));
+    if (extra.length) errors.push(`${code} : « ${shown(key)} » → « ${form} » : caractère de HTML (${extra.join(" ")}) absent du français`);
   }
   for (const key of Object.keys(dict)) if (!used.has(key)) errors.push(`${code} : traduction orpheline « ${shown(key)} » (texte français changé ou disparu)`);
   if (READY_LANGS.includes(code) && missing.length) errors.push(`${code} est proposée (READY_LANGS) mais ${missing.length} texte(s) n'y sont pas traduits`);

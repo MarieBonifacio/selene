@@ -666,6 +666,9 @@ test('epistemic status: « ? » marks a hypothesis, changes are dated, search fi
   assert.deepEqual([...app.searchAll('soi statut:interp').map(h => h.text)], ['Le soi est symbolique']);
   assert.equal(app.searchAll('statut:nimportequoi').length, 0);
   assert.equal(app.searchAll('statut:').length, 0);
+  // « status: » vaut « statut: » (l'anglais, quelle que soit la langue de l'interface).
+  assert.deepEqual([...app.searchAll('Status:Hyp').map(h => h.text)], ['Le DMN fabrique le sentiment de soi']);
+  assert.equal(app.searchAll('status:').length, 0);
   // Bilan : le décompte par statut de la période.
   assert.deepEqual({ ...app.epCounts('2026-09-01', '2026-10-01') }, { hyp: 1, int: 1 });
   // Sauvegarde : un statut inconnu est refusé.

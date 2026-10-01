@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xYAUlS0brU/RHLXLU8mt4spWMz0SPUZp9yW1TsDI2sA=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-dUSyIiv5a3ffgndlUUlklRdV4p7WRFSKPAFkbBgTThI=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -822,6 +822,7 @@ var __selene = (() => {
     CLICK: () => CLICK,
     CORE_LABELS: () => CORE_LABELS,
     DRAFT_PREFIX: () => DRAFT_PREFIX,
+    ECLIPSE_TEXT: () => ECLIPSE_TEXT,
     EP_STATUS: () => EP_STATUS,
     ICONS: () => ICONS,
     LINK_BACK: () => LINK_BACK,
@@ -843,6 +844,7 @@ var __selene = (() => {
     SCHEMA_VERSION: () => SCHEMA_VERSION,
     SECTION_TO_MODULE: () => SECTION_TO_MODULE,
     SHEETS: () => SHEETS,
+    SKY_LABELS: () => SKY_LABELS,
     SUPABASE_ANON_KEY: () => SUPABASE_ANON_KEY,
     SUPABASE_URL: () => SUPABASE_URL,
     SYNODIC: () => SYNODIC,
@@ -851,6 +853,7 @@ var __selene = (() => {
     TYPE_UI: () => TYPE_UI,
     VIEWS: () => VIEWS,
     WEATHER: () => WEATHER,
+    WIND_TEXT: () => WIND_TEXT,
     ZOT_API: () => ZOT_API,
     addBudgetEntry: () => addBudgetEntry,
     addCapture: () => addCapture,
@@ -948,6 +951,7 @@ var __selene = (() => {
     downloadsNS: () => downloadsNS,
     driftSection: () => driftSection,
     driftWords: () => driftWords,
+    eclipseText: () => eclipseText,
     editFragmentText: () => editFragmentText,
     enabled: () => enabled,
     endAt: () => endAt,
@@ -1171,6 +1175,7 @@ var __selene = (() => {
     validDate: () => validDate,
     weatherState: () => weatherState,
     windName: () => windName,
+    windText: () => windText,
     within: () => within,
     zoned: () => zoned,
     zotBar: () => zotBar,
@@ -1632,6 +1637,34 @@ var __selene = (() => {
     "fait écho à": "echoes",
     "documente": "documents",
     "sans statut": "no status",
+    "dégagé": "clear",
+    "voilé": "hazy",
+    "couvert": "overcast",
+    "brume": "fog",
+    "pluie": "rain",
+    "neige": "snow",
+    "orage": "thunderstorm",
+    "Quadrantides": "Quadrantids",
+    "Lyrides": "Lyrids",
+    "Perséides": "Perseids",
+    "Orionides": "Orionids",
+    "Léonides": "Leonids",
+    "Géminides": "Geminids",
+    "90 % du Soleil masqué, maximum vers 20 h 14": "90% of the Sun covered, maximum around 20:14",
+    "Éclipse partielle de Soleil {0}": "Partial solar eclipse {0}",
+    "Éclipse annulaire de Soleil {0}": "Annular solar eclipse {0}",
+    "Éclipse totale de Soleil {0}": "Total solar eclipse {0}",
+    "Éclipse partielle de Lune {0}": "Partial lunar eclipse {0}",
+    "Éclipse totale de Lune {0}": "Total lunar eclipse {0}",
+    "Éclipse de Lune par la pénombre {0} : un voile léger, à peine perceptible": "Penumbral lunar eclipse {0}: a faint veil, barely noticeable",
+    "vent du nord {0} km/h": "north wind {0} km/h",
+    "vent du nord-est {0} km/h": "north-east wind {0} km/h",
+    "vent d'est {0} km/h": "east wind {0} km/h",
+    "vent du sud-est {0} km/h": "south-east wind {0} km/h",
+    "vent du sud {0} km/h": "south wind {0} km/h",
+    "vent du sud-ouest {0} km/h": "south-west wind {0} km/h",
+    "vent d'ouest {0} km/h": "west wind {0} km/h",
+    "vent du nord-ouest {0} km/h": "north-west wind {0} km/h",
     // modules/arc.js
     "Ajoute une étape avant de placer quoi que ce soit.": "Add a stage before placing anything.",
     "Rien à placer pour l'instant : un fragment ou un élément de collection, d'abord.": "Nothing to place yet: a fragment or a collection item first.",
@@ -1983,6 +2016,8 @@ var __selene = (() => {
     "Fait. {0} estimés : les passer au budget ({1}) ?": "Done. {0} estimated: add them to the budget ({1})?",
     "Fait. {0} estimés : les passer au budget ?": "Done. {0} estimated: add them to the budget?",
     "Ajouté à {0}. L'argent, lui, était déjà parti.": "Added to {0}. The money, for its part, was already gone.",
+    // scene/forest.js
+    "Lune au-dessus d'une lisière de sapins": "Moon above a fringe of fir trees",
     // scene/moon.js
     "Nouvelle lune": "New moon",
     "Premier croissant": "Waxing crescent",
@@ -1993,12 +2028,80 @@ var __selene = (() => {
     "Dernier quartier": "Last quarter",
     "Dernier croissant": "Waning crescent",
     "Phase de la lune": "Moon phase",
+    // scene/sky.js
+    "{0} {1} : jusqu'à {2} météores par heure sous un ciel parfaitement noir, bien moins en ville": "{0} {1}: up to {2} meteors an hour under a perfectly dark sky, far fewer in town",
+    "demain soir": "tomorrow night",
+    "cette nuit": "tonight",
+    " ; la lune en effacera la plupart": "; the moon will wash out most of them",
+    "demain": "tomorrow",
+    "dans {0} jours ({1})": "in {0} days ({1})",
+    ". Jamais sans lunettes d'éclipse.": ". Never without eclipse glasses.",
+    "lever {0}": "sunrise {0}",
+    "coucher {0}": "sunset {0}",
+    "la lune est sous l'horizon, lever vers {0}": "the moon is below the horizon, rising around {0}",
+    "la lune est sous l'horizon": "the moon is below the horizon",
+    "Ciel": "Sky",
+    "La scène de l'accueil montre le dehors réel : l'heure par le soleil, la lune à sa place, le temps qu'il fait. Sans lieu, l'heure est estimée d'après le fuseau horaire (à trois quarts d'heure près), et il n'y a pas de météo.": "The home scene shows the real outdoors: the time by the sun, the moon in its place, the weather. Without a place, the time is estimated from the time zone (to within three quarters of an hour), and there is no weather.",
+    "Lieu : {0}": "Place: {0}",
+    "({0} ; {1}, arrondis à une dizaine de kilomètres)": "({0}; {1}, rounded to about ten kilometres)",
+    "Changer de ville…": "Change city…",
+    "Une ville…": "A city…",
+    "Ville": "City",
+    "Utiliser ma position": "Use my location",
+    "Choisir": "Choose",
+    "Météo en direct": "Live weather",
+    "La lune à sa vraie place (sinon, toujours dans le ciel)": "The moon in its real place (otherwise, always in the sky)",
+    "Ciel vivant : nuages, brume, pluie ou neige bougent au rythme du vent mesuré (sur cet appareil ; immobile si le système demande moins d'animations)": "Living sky: clouds, mist, rain or snow move with the measured wind (on this device; still if the system asks for less animation)",
+    "La météo et la recherche de ville passent par Open-Meteo : le service voit ce lieu arrondi et l'adresse de l'appareil, rien d'autre.": "Weather and city search go through Open-Meteo: the service sees this rounded place and the device's network address, nothing else.",
+    "Lieu gardé. Le ciel de l'accueil est désormais celui d'ici.": "Place saved. The home sky is now the one from here.",
+    "Aucun lieu de ce nom. Une ville plus grande, à côté, fera l'affaire.": "No place by that name. A bigger city nearby will do.",
+    "Recherche impossible : hors ligne, ou le service ne répond pas.": "Search impossible: offline, or the service isn't answering.",
+    "Ce navigateur ne donne pas sa position. Une ville fera l'affaire.": "This browser doesn't give its location. A city will do.",
+    "Ma position": "My location",
+    "Position refusée ou indisponible. Une ville fera l'affaire.": "Location refused or unavailable. A city will do.",
+    "Lieu retiré : l'heure redevient estimée, sans météo.": "Place removed: the time is estimated again, without weather.",
     // services/auth.js
     "confirmationsupprimer": "delete",
     "Tape « {0} » pour confirmer.": "Type “{0}” to confirm.",
     "Supprimer ton compte et toutes ses données, sur le serveur et sur cet appareil ? C'est définitif.": "Delete your account and all its data, on the server and on this device? This is final.",
     "Compte supprimé. Il ne reste rien de toi ici, ce qui est plus que la plupart des services peuvent dire.": "Account deleted. Nothing of you is left here, which is more than most services can say.",
     "Compte non supprimé : {0}": "Account not deleted: {0}",
+    "Impossible de joindre le serveur. Vérifie ta connexion.": "Can't reach the server. Check your connection.",
+    "Erreur d'authentification.": "Authentication error.",
+    "Lecture Supabase impossible.": "Couldn't read from Supabase.",
+    "Écriture Supabase impossible.": "Couldn't write to Supabase.",
+    "Des modifications n'ont pas pu être envoyées (hors ligne ?). Elles seront perdues si tu te déconnectes maintenant. Te déconnecter quand même ?": "Some changes couldn't be sent (offline?). They will be lost if you sign out now. Sign out anyway?",
+    "Session expirée : reconnecte-toi, puis recommence.": "Session expired: sign in again, then start over.",
+    "La suppression n'est pas encore installée sur le serveur (docs/compte.md).": "Deletion isn't installed on the server yet (docs/compte.md).",
+    "Compte créé. Vérifie ta boîte mail pour confirmer, puis connecte-toi.": "Account created. Check your inbox to confirm, then sign in.",
+    "Connexion impossible.": "Couldn't sign in.",
+    "Crée ton compte pour retrouver tes données sur n'importe quel appareil.": "Create your account to find your data on any device.",
+    "Connecte-toi pour retrouver tes données.": "Sign in to find your data.",
+    "E-mail": "Email",
+    "Mot de passe": "Password",
+    "Créer le compte": "Create the account",
+    "Se connecter": "Sign in",
+    "J'ai déjà un compte": "I already have an account",
+    "Créer un compte": "Create an account",
+    // services/passeur.js
+    "Le passeur n'existe que dans la version hébergée, connectée à ton compte.": "The relay only exists in the hosted version, signed in to your account.",
+    "Passeur injoignable (hors ligne, ou pas encore déployé).": "Relay unreachable (offline, or not deployed yet).",
+    "Passeur non déployé (voir docs/passeur.md).": "Relay not deployed (see docs/passeur.md).",
+    "Passeur non configuré.": "Relay not configured.",
+    "refusé": "refused",
+    "Passeur : {0}.": "Relay: {0}.",
+    "accès refusé": "access refused",
+    "Déployé et ouvert à ton compte.": "Deployed and open to your account.",
+    "Pas encore déployé, ou pas encore configuré.": "Not deployed yet, or not configured yet.",
+    "Refusé : {0}.": "Refused: {0}.",
+    "Pas encore vérifié sur cet appareil.": "Not checked yet on this device.",
+    "Passeur": "Relay",
+    "Une petite fonction dans ton projet Supabase qui lit pour toi les pages, flux et calendriers que le navigateur ne peut pas lire seul. Elle ne sert que ton compte, refuse toute adresse privée et ne garde rien. Sans elle, les pages passent par Microlink.": "A small function in your Supabase project that reads for you the pages, feeds and calendars the browser can't read on its own. It serves only your account, refuses any private address and keeps nothing. Without it, pages go through Microlink.",
+    "Ton identifiant, à mettre dans le secret {0} : {1}. Mode d'emploi : {2}.": "Your identifier, to put in the {0} secret: {1}. Instructions: {2}.",
+    "copier": "copy",
+    "Passeur : il répond, et il te reconnaît.": "Relay: it answers, and it recognises you.",
+    "Identifiant copié.": "Identifier copied.",
+    "Copie impossible ici : sélectionne-le à la main.": "Can't copy here: select it by hand.",
     // shell/actions.js
     "Aucune boîte de réception : voir Réglages.": "No inbox: see Settings.",
     "Gardé. Tu peux oublier, c'est écrit.": "Kept. You can forget it now: it's written down.",
@@ -2102,6 +2205,10 @@ var __selene = (() => {
     "un message": "a message",
     "une capture": "a capture",
     "un texte": "a text",
+    // state/store.js
+    "Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser": "Selene was updated on another device: reload the page to sync",
+    "Non synchronisé — enregistré sur cet appareil seulement": "Not synced — saved on this device only",
+    "Enregistrement…": "Saving…",
     // ui/dialogs.js
     "Enregistrer": "Save",
     "formulaireAnnuler": "Cancel",
@@ -2132,6 +2239,69 @@ var __selene = (() => {
     "{0} en cours": "{0} in progress",
     "reprendre": "pick up",
     "accueilReprendre": "Pick up where you left off",
+    // views/bilan.js
+    "{0} observé": { one: "{0} observed", other: "{0} observed" },
+    "{0} hypothèse": { one: "{0} hypothesis", other: "{0} hypotheses" },
+    "{0} interprétation": { one: "{0} interpretation", other: "{0} interpretations" },
+    "{0} inexpliqué": { one: "{0} unexplained", other: "{0} unexplained" },
+    "Cycle du {0} au {1}": "Cycle from {0} to {1}",
+    "avant : {0}": "before: {0}",
+    "recherchestatut": "status",
+    "Cycle lunaire": "Lunar cycle",
+    "Mois": "Month",
+    "Le cycle en planche A4, à imprimer ou enregistrer en PDF": "The cycle as an A4 plate, to print or save as PDF",
+    "Planche": "Plate",
+    "Période précédente": "Previous period",
+    "Période suivante": "Next period",
+    "Ce qui s'est passé dans chaque module pendant la période, et, en face, la période d'avant. Aucune note, aucun trophée : les chiffres suffisent à culpabiliser.": "What happened in each module during the period and, opposite, the period before. No grades, no trophies: the numbers are enough to make you feel guilty.",
+    "Aucun module à résumer.": "No module to summarise.",
+    "Statut des idées notées": "Status of the ideas noted",
+    "Ce qu'elles revendiquent de savoir. Une hypothèse n'est pas une faiblesse, c'est une dette à rembourser.": "What they claim to know. A hypothesis isn't a weakness, it's a debt to repay.",
+    // views/planche.js
+    "depuis une note": "from a note",
+    "à la main": "by hand",
+    "Règle de lunaison : entrées datées par jour, {0} en tout": "Lunation ruler: dated entries per day, {0} in all",
+    "Planche {0}": "Plate {0}",
+    "Lunaison du {0} au {1}": "Lunation from {0} to {1}",
+    "{0} entrée datée · lunaison n° {1} de Meeus": { one: "{0} dated entry · Meeus lunation no. {1}", other: "{0} dated entries · Meeus lunation no. {1}" },
+    "Règle de lunaison : un trait par jour, haut comme le nombre d'entrées datées ; les phases aux quartiers.": "Lunation ruler: one stroke per day, as tall as the number of dated entries; the phases at the quarters.",
+    "Par espace : la ligne du cycle, celle du précédent, l'activité jour par jour": "By space: the cycle's line, the previous one's, the day-by-day activity",
+    "Aucun espace à résumer.": "No space to summarise.",
+    "Mots émergents": "Emerging words",
+    "Pas assez de textes pour en parler.": "Not enough text to say anything.",
+    "Aucun ne se détache.": "None stands out.",
+    "Motifs apparus": "Motifs that appeared",
+    "Aucun motif neuf.": "No new motif.",
+    "Statut des idées": "Status of ideas",
+    "Aucune idée qualifiée.": "No idea qualified.",
+    "{0} à ce jour, née avant la fin du cycle.": { one: "{0} to date, born before the end of the cycle.", other: "{0} to date, born before the end of the cycle." },
+    "Aucune.": "None.",
+    "Venu du dehors": "From outside",
+    "{0} source gardée ({1}) :": { one: "{0} source kept ({1}):", other: "{0} sources kept ({1}):" },
+    ", et {0} autre": { one: ", and {0} more", other: ", and {0} more" },
+    "Rien gardé du dehors.": "Nothing kept from outside.",
+    "planche tirée le {0}": "plate printed on {0}",
+    "Lunaison précédente": "Previous lunation",
+    "Lunaison suivante": "Next lunation",
+    "Imprimer ou enregistrer en PDF": "Print or save as PDF",
+    "Un fichier .html autonome, si l'impression est bloquée": "A standalone .html file, if printing is blocked",
+    "Télécharger": "Download",
+    // views/recherche.js
+    "Tous les espaces": "All spaces",
+    "Toute date": "Any date",
+    "Cette lunaison": "This lunation",
+    "Tout statut": "Any status",
+    "ouvrir": "open",
+    "Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « {0} » ne garde que les hypothèses (de même pour {1}). Touche « / » pour venir ici.": "In all your modules: notes, fragments, tasks, captions, journals. Accents don't count. “{0}” keeps only hypotheses (likewise for {1}). Press “/” to come here.",
+    "Un mot, un bout de phrase…": "A word, a scrap of a sentence…",
+    "{0} résultat sur {1}": { one: "{0} result out of {1}", other: "{0} results out of {1}" },
+    "{0} résultat": { one: "{0} result", other: "{0} results" },
+    "Rien avec ces filtres.": "Nothing with these filters.",
+    "Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire.": "Nothing. Either it doesn't exist, or you thought it without writing it down.",
+    "Les résultats affichés, avec dates, statuts, provenance et liens, pour une lecture assistée": "The results shown, with dates, statuses, provenance and links, for assisted reading",
+    "Exporter en dossier": "Export as a dossier",
+    "Recherche — {0}": "Search — {0}",
+    "Résultats de la recherche « {0} »": "Results of the search “{0}”",
     // views/reglages.js
     "Langue": "Language",
     "Langue de l'appareil": "Device language",
@@ -2280,6 +2450,7 @@ var __selene = (() => {
     return fill(L.pseudo ? pseudo(form) : form, [n, ...vals]);
   }
   var N_ = (s) => s;
+  var sameText = (key, s) => s === key || s === pseudo(key) || Object.values(LANGS).some((l) => l.dict && l.dict[key] === s);
   function collate(a, b) {
     if (!collator) collator = new Intl.Collator(uiLocale());
     return collator.compare(a, b);
@@ -3046,20 +3217,6 @@ var __selene = (() => {
     if (i >= 0) moduleList.splice(i, 1);
   }
 
-  // src/app/lib/labels.js
-  var CORE_LABELS = [
-    N_("observé"),
-    N_("hypothèse"),
-    N_("interprétation"),
-    N_("inexpliqué"),
-    N_("dérive de"),
-    N_("contredit"),
-    N_("fait écho à"),
-    N_("documente")
-  ];
-  var epLabel = (k) => k ? tr(EP_STATUS[k] || k) : tr`sans statut`;
-  var linkLabel = (k) => tr(LINK_TYPES[k] || k);
-
   // src/core/sky.js
   var RAD = Math.PI / 180;
   var daysJ2000 = (t) => t / 864e5 - 10957.5;
@@ -3311,6 +3468,62 @@ var __selene = (() => {
   }
   var rainDays = (days, from, n = 5) => (days || []).filter((x) => x && x.d >= from && dayDiff(from, x.d) < n && ((+x.mm || 0) >= 1 || (+x.pp || 0) >= 60)).map((x) => x.d);
 
+  // src/app/lib/labels.js
+  var CORE_LABELS = [
+    N_("observé"),
+    N_("hypothèse"),
+    N_("interprétation"),
+    N_("inexpliqué"),
+    N_("dérive de"),
+    N_("contredit"),
+    N_("fait écho à"),
+    N_("documente")
+  ];
+  var epLabel = (k) => k ? tr(EP_STATUS[k] || k) : tr`sans statut`;
+  var linkLabel = (k) => tr(LINK_TYPES[k] || k);
+  var SKY_LABELS = [
+    N_("dégagé"),
+    N_("voilé"),
+    N_("couvert"),
+    N_("brume"),
+    N_("pluie"),
+    N_("neige"),
+    N_("orage"),
+    N_("Quadrantides"),
+    N_("Lyrides"),
+    N_("Perséides"),
+    N_("Orionides"),
+    N_("Léonides"),
+    N_("Géminides"),
+    N_("90 % du Soleil masqué, maximum vers 20 h 14")
+  ];
+  var ECLIPSE_TEXT = {
+    "soleil/partielle": (w) => tr`Éclipse partielle de Soleil ${w}`,
+    "soleil/annulaire": (w) => tr`Éclipse annulaire de Soleil ${w}`,
+    "soleil/totale": (w) => tr`Éclipse totale de Soleil ${w}`,
+    "lune/partielle": (w) => tr`Éclipse partielle de Lune ${w}`,
+    "lune/totale": (w) => tr`Éclipse totale de Lune ${w}`,
+    "lune/pénombre": (w) => tr`Éclipse de Lune par la pénombre ${w} : un voile léger, à peine perceptible`
+  };
+  var eclipseText = (body, type, when) => {
+    const k = `${body}/${type}`;
+    return Object.hasOwn(ECLIPSE_TEXT, k) ? ECLIPSE_TEXT[k](when) : `Éclipse ${type} de ${body} ${when}`;
+  };
+  var WIND_TEXT = {
+    "du nord": (n) => tr`vent du nord ${n} km/h`,
+    "du nord-est": (n) => tr`vent du nord-est ${n} km/h`,
+    "d'est": (n) => tr`vent d'est ${n} km/h`,
+    "du sud-est": (n) => tr`vent du sud-est ${n} km/h`,
+    "du sud": (n) => tr`vent du sud ${n} km/h`,
+    "du sud-ouest": (n) => tr`vent du sud-ouest ${n} km/h`,
+    "d'ouest": (n) => tr`vent d'ouest ${n} km/h`,
+    "du nord-ouest": (n) => tr`vent du nord-ouest ${n} km/h`
+  };
+  var windText = (dir, n) => {
+    const k = windName(dir);
+    return Object.hasOwn(WIND_TEXT, k) ? WIND_TEXT[k](n) : `vent ${k} ${n} km/h`;
+  };
+
   // src/core/sync.js
   var isRecord = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
   function deepEqual(a, b) {
@@ -3440,7 +3653,7 @@ var __selene = (() => {
           onStatus("");
           return true;
         } catch (e) {
-          onStatus(e.stale ? "Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser" : "Non synchronisé — enregistré sur cet appareil seulement");
+          onStatus(e.stale ? tr`Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser` : tr`Non synchronisé — enregistré sur cet appareil seulement`);
           return false;
         } finally {
           s.syncing = null;
@@ -3452,7 +3665,7 @@ var __selene = (() => {
       s.data.updatedAt = Date.now();
       saveLS();
       if (!s.db) return;
-      onStatus("Enregistrement…");
+      onStatus(tr`Enregistrement…`);
       clearTimeout(s.timer);
       s.timer = setTimeout(() => {
         s.timer = null;
@@ -4329,10 +4542,9 @@ var __selene = (() => {
     }
   }
   function skyEventText(ev, illum) {
-    if (ev.kind === "shower") return `${ev.name} ${ev.inDays ? "demain soir" : "cette nuit"} : jusqu'à ${ev.zhr} météores par heure sous un ciel parfaitement noir, bien moins en ville${illum > 0.6 ? " ; la lune en effacera la plupart" : ""}.`;
-    const when = ev.inDays === 0 ? "aujourd'hui" : ev.inDays === 1 ? "demain" : `dans ${ev.inDays} jours (${fmt(ev.date, { day: "numeric", month: "long" })})`;
-    const what = ev.type === "pénombre" ? `Éclipse de Lune par la pénombre ${when} : un voile léger, à peine perceptible` : `Éclipse ${ev.type} de ${ev.body === "soleil" ? "Soleil" : "Lune"} ${when}${ev.note ? ` : ${ev.note}` : ""}`;
-    return `${what}${ev.body === "soleil" ? ". Jamais sans lunettes d'éclipse." : "."}`;
+    if (ev.kind === "shower") return tr`${tr(ev.name)} ${ev.inDays ? tr`demain soir` : tr`cette nuit`} : jusqu'à ${ev.zhr} météores par heure sous un ciel parfaitement noir, bien moins en ville` + (illum > 0.6 ? tr` ; la lune en effacera la plupart` : "") + ".";
+    const when = ev.inDays === 0 ? tr`aujourd'hui` : ev.inDays === 1 ? tr`demain` : tr`dans ${ev.inDays} jours (${fmt(ev.date, { day: "numeric", month: "long" })})`;
+    return `${eclipseText(ev.body, ev.type, when)}${ev.note ? ` : ${tr(ev.note)}` : ""}${ev.body === "soleil" ? tr`. Jamais sans lunettes d'éclipse.` : "."}`;
   }
   var hm = (t) => {
     const loc = uiLocale(), s = new Date(t).toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" });
@@ -4345,16 +4557,16 @@ var __selene = (() => {
     const sc = skyScene({ sunAlt: sun.alt, illum: m.illum, weather, dark, season, frost }), facts = [];
     let moonAt;
     const mo = skyMotion(w ? { wind: w.wind, dir: w.dir, precip: w.precip, lat: place.lat } : { lat: place.lat });
-    if (weather) facts.push(`${Math.round(w.temp)} °C · ${WEATHER[weather]}`);
-    const wind = w && weather && Number.isFinite(w.dir) && w.wind >= 1 ? `vent ${windName(w.dir)} ${Math.round(w.wind)} km/h` : "";
+    if (weather) facts.push(`${Math.round(w.temp)} °C · ${tr(WEATHER[weather])}`);
+    const wind = w && weather && Number.isFinite(w.dir) && w.wind >= 1 ? windText(w.dir, Math.round(w.wind)) : "";
     if (c) {
       const ev = nextCrossing(sunPosition, t, place.lat, place.lon, -0.833);
-      if (ev) facts.push(`${ev.rising ? "lever" : "coucher"} ${hm(ev.at)}`);
+      if (ev) facts.push(ev.rising ? tr`lever ${hm(ev.at)}` : tr`coucher ${hm(ev.at)}`);
       if (c.realMoon !== false) {
         moonAt = moonPlacement(moonPosition(t, place.lat, place.lon), place.lat) || false;
         if (moonAt === false) {
           const r = nextCrossing(moonPosition, t, place.lat, place.lon, 0);
-          facts.push(`la lune est sous l'horizon${r ? `, lever vers ${hm(r.at)}` : ""}`);
+          facts.push(r ? tr`la lune est sous l'horizon, lever vers ${hm(r.at)}` : tr`la lune est sous l'horizon`);
         }
       }
     }
@@ -4369,14 +4581,14 @@ var __selene = (() => {
   var skyResults = [];
   function skySettingsHTML() {
     const c = skyConf(), f = (v) => (+v).toLocaleString(uiLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-    return `<section id="ciel"><h3>Ciel</h3><p class="hint">La scène de l'accueil montre le dehors réel : l'heure par le soleil, la lune à sa place, le temps qu'il fait. Sans lieu, l'heure est estimée d'après le fuseau horaire (à trois quarts d'heure près), et il n'y a pas de météo.</p>
-    ${c ? `<p class="row" style="margin:0 0 10px">Lieu : <b>${esc(c.name)}</b> <span class="hint" style="margin:0">(${f(c.lat)} ; ${f(c.lon)}, arrondis à une dizaine de kilomètres)</span><button class="btn ghost sm" data-act="sky-clear">retirer</button></p>` : ""}
-    <div class="row"><input id="skyCity" placeholder="${c ? "Changer de ville…" : "Une ville…"}" aria-label="Ville" autocomplete="off" style="max-width:260px"><button class="btn sm" data-act="sky-search">Chercher</button><button class="btn ghost sm" data-act="sky-locate">Utiliser ma position</button></div>
-    ${skyResults.length ? `<ul class="plain" style="margin-top:8px">${skyResults.map((r, i) => `<li class="item"><span></span><div>${esc(r.name)}</div><button class="btn sm" data-act="sky-pick" data-i="${i}">Choisir</button></li>`).join("")}</ul>` : ""}
-    ${c ? `<label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:400"><input type="checkbox" data-act="sky-weather" ${c.weather !== false ? "checked" : ""}>Météo en direct</label>
-    <label style="display:flex;gap:8px;align-items:center;margin-top:6px;font-weight:400"><input type="checkbox" data-act="sky-moon" ${c.realMoon !== false ? "checked" : ""}>La lune à sa vraie place (sinon, toujours dans le ciel)</label>` : ""}
-    <label style="display:flex;gap:8px;align-items:center;margin-top:6px;font-weight:400"><input type="checkbox" data-act="sky-live" ${skyLive() ? "checked" : ""}>Ciel vivant : nuages, brume, pluie ou neige bougent au rythme du vent mesuré (sur cet appareil ; immobile si le système demande moins d'animations)</label>
-    <p class="hint" style="margin-top:10px">La météo et la recherche de ville passent par Open-Meteo : le service voit ce lieu arrondi et l'adresse de l'appareil, rien d'autre.</p></section>`;
+    return `<section id="ciel"><h3>${tr`Ciel`}</h3><p class="hint">${tr`La scène de l'accueil montre le dehors réel : l'heure par le soleil, la lune à sa place, le temps qu'il fait. Sans lieu, l'heure est estimée d'après le fuseau horaire (à trois quarts d'heure près), et il n'y a pas de météo.`}</p>
+    ${c ? `<p class="row" style="margin:0 0 10px">${tr`Lieu : ${`<b>${esc(c.name)}</b>`}`} <span class="hint" style="margin:0">${tr`(${f(c.lat)} ; ${f(c.lon)}, arrondis à une dizaine de kilomètres)`}</span><button class="btn ghost sm" data-act="sky-clear">${tr`retirer`}</button></p>` : ""}
+    <div class="row"><input id="skyCity" placeholder="${c ? tr`Changer de ville…` : tr`Une ville…`}" aria-label="${tr`Ville`}" autocomplete="off" style="max-width:260px"><button class="btn sm" data-act="sky-search">${tr`Chercher`}</button><button class="btn ghost sm" data-act="sky-locate">${tr`Utiliser ma position`}</button></div>
+    ${skyResults.length ? `<ul class="plain" style="margin-top:8px">${skyResults.map((r, i) => `<li class="item"><span></span><div>${esc(r.name)}</div><button class="btn sm" data-act="sky-pick" data-i="${i}">${tr`Choisir`}</button></li>`).join("")}</ul>` : ""}
+    ${c ? `<label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:400"><input type="checkbox" data-act="sky-weather" ${c.weather !== false ? "checked" : ""}>${tr`Météo en direct`}</label>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:6px;font-weight:400"><input type="checkbox" data-act="sky-moon" ${c.realMoon !== false ? "checked" : ""}>${tr`La lune à sa vraie place (sinon, toujours dans le ciel)`}</label>` : ""}
+    <label style="display:flex;gap:8px;align-items:center;margin-top:6px;font-weight:400"><input type="checkbox" data-act="sky-live" ${skyLive() ? "checked" : ""}>${tr`Ciel vivant : nuages, brume, pluie ou neige bougent au rythme du vent mesuré (sur cet appareil ; immobile si le système demande moins d'animations)`}</label>
+    <p class="hint" style="margin-top:10px">${tr`La météo et la recherche de ville passent par Open-Meteo : le service voit ce lieu arrondi et l'adresse de l'appareil, rien d'autre.`}</p></section>`;
   }
   function setSky(name, lat, lon) {
     const old = skyConf() || {}, r1 = (v) => Math.round(v * 10) / 10;
@@ -4385,7 +4597,7 @@ var __selene = (() => {
     site.save();
     render();
     refreshWeather(true);
-    toast("Lieu gardé. Le ciel de l'accueil est désormais celui d'ici.");
+    toast(tr`Lieu gardé. Le ciel de l'accueil est désormais celui d'ici.`);
   }
   async function skySearch() {
     const q = ($("#skyCity") || {}).value;
@@ -4394,10 +4606,10 @@ var __selene = (() => {
       const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q.trim())}&count=5&language=${uiLocale().split("-")[0]}&format=json`);
       const j = r.ok ? await r.json() : {};
       skyResults = (j.results || []).filter((x) => Number.isFinite(+x.latitude) && Number.isFinite(+x.longitude)).slice(0, 5).map((x) => ({ name: [x.name, x.admin1, x.country].filter(Boolean).join(", ").slice(0, 80), lat: +x.latitude, lon: +x.longitude }));
-      if (!skyResults.length) toast("Aucun lieu de ce nom. Une ville plus grande, à côté, fera l'affaire.");
+      if (!skyResults.length) toast(tr`Aucun lieu de ce nom. Une ville plus grande, à côté, fera l'affaire.`);
       render();
     } catch {
-      toast("Recherche impossible : hors ligne, ou le service ne répond pas.");
+      toast(tr`Recherche impossible : hors ligne, ou le service ne répond pas.`);
     }
   }
   function heroStyle(sc, dark) {
@@ -4428,10 +4640,10 @@ var __selene = (() => {
     if (r) setSky(r.name, r.lat, r.lon);
   };
   CLICK["sky-locate"] = () => {
-    if (!navigator.geolocation) return toast("Ce navigateur ne donne pas sa position. Une ville fera l'affaire.");
+    if (!navigator.geolocation) return toast(tr`Ce navigateur ne donne pas sa position. Une ville fera l'affaire.`);
     navigator.geolocation.getCurrentPosition(
-      (p) => setSky("Ma position", p.coords.latitude, p.coords.longitude),
-      () => toast("Position refusée ou indisponible. Une ville fera l'affaire."),
+      (p) => setSky(tr`Ma position`, p.coords.latitude, p.coords.longitude),
+      () => toast(tr`Position refusée ou indisponible. Une ville fera l'affaire.`),
       { maximumAge: 36e5, timeout: 15e3 }
     );
   };
@@ -4440,7 +4652,7 @@ var __selene = (() => {
     platform.storage.remove(WEATHER_KEY);
     site.save();
     render();
-    toast("Lieu retiré : l'heure redevient estimée, sans météo.");
+    toast(tr`Lieu retiré : l'heure redevient estimée, sans météo.`);
   };
 
   // src/app/ui/dialogs.js
@@ -4532,11 +4744,11 @@ var __selene = (() => {
     try {
       res = await fetch(`${SUPABASE_URL}/auth/v1${path}`, { ...opts, signal: authTimeout(), headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, ...opts.headers } });
     } catch {
-      throw new Error("Impossible de joindre le serveur. Vérifie ta connexion.");
+      throw new Error(tr`Impossible de joindre le serveur. Vérifie ta connexion.`);
     }
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const err = new Error(body.msg || body.error_description || body.error || "Erreur d'authentification.");
+      const err = new Error(body.msg || body.error_description || body.error || tr`Erreur d'authentification.`);
       err.status = res.status;
       throw err;
     }
@@ -4577,7 +4789,7 @@ var __selene = (() => {
       return {
         async get() {
           const res = await fetch(`${table}?user_id=eq.${authSession.user.id}&select=${col}`, { signal: authTimeout(), headers: headers() });
-          if (!res.ok) throw new Error("Lecture Supabase impossible.");
+          if (!res.ok) throw new Error(tr`Lecture Supabase impossible.`);
           const rows = await res.json();
           const v = rows[0] && rows[0][col];
           return { exists: !!(v && Object.keys(v).length), data: () => v };
@@ -4596,7 +4808,7 @@ var __selene = (() => {
               headers: headers({ "Content-Type": "application/json", Prefer: "return=representation" }),
               body: JSON.stringify({ [col]: value, updated_at: (/* @__PURE__ */ new Date()).toISOString() })
             });
-            if (!res.ok) throw new Error("Écriture Supabase impossible.");
+            if (!res.ok) throw new Error(tr`Écriture Supabase impossible.`);
             return (await res.json()).length > 0;
           };
           if (await patch()) return true;
@@ -4607,7 +4819,7 @@ var __selene = (() => {
             headers: headers({ "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" }),
             body: JSON.stringify([{ user_id: uid2 }])
           });
-          if (!ins.ok) throw new Error("Écriture Supabase impossible.");
+          if (!ins.ok) throw new Error(tr`Écriture Supabase impossible.`);
           return patch();
         },
         onSnapshot(cb, errCb) {
@@ -4695,7 +4907,7 @@ var __selene = (() => {
       st.timer = null;
       if (st.db) await st.sync();
     }
-    if ([board, site].some((st) => st.unsynced()) && !await ask("Des modifications n'ont pas pu être envoyées (hors ligne ?). Elles seront perdues si tu te déconnectes maintenant. Te déconnecter quand même ?")) return;
+    if ([board, site].some((st) => st.unsynced()) && !await ask(tr`Des modifications n'ont pas pu être envoyées (hors ligne ?). Elles seront perdues si tu te déconnectes maintenant. Te déconnecter quand même ?`)) return;
     try {
       if (authSession) await authApi("/logout", { method: "POST", headers: { Authorization: `Bearer ${authSession.access_token}` } });
     } catch {
@@ -4709,7 +4921,7 @@ var __selene = (() => {
   }
   async function authDeleteAccount() {
     const s = await authRefreshIfNeeded();
-    if (!s) throw new Error("Session expirée : reconnecte-toi, puis recommence.");
+    if (!s) throw new Error(tr`Session expirée : reconnecte-toi, puis recommence.`);
     let r;
     try {
       r = await fetch(`${SUPABASE_URL}/functions/v1/compte`, {
@@ -4719,11 +4931,11 @@ var __selene = (() => {
         body: JSON.stringify({ action: "supprimer", confirmation: "supprimer" })
       });
     } catch {
-      throw new Error("Impossible de joindre le serveur. Vérifie ta connexion.");
+      throw new Error(tr`Impossible de joindre le serveur. Vérifie ta connexion.`);
     }
     const j = await r.json().catch(() => ({}));
-    if (r.status === 404) throw new Error("La suppression n'est pas encore installée sur le serveur (docs/compte.md).");
-    if (!r.ok || !j.supprime) throw new Error(j.erreur || `erreur ${r.status}`);
+    if (r.status === 404) throw new Error(tr`La suppression n'est pas encore installée sur le serveur (docs/compte.md).`);
+    if (!r.ok || !j.supprime) throw new Error(j.erreur || tr`erreur ${r.status}`);
     clearInterval(authRefreshTimer);
     for (const st of [board, site]) {
       clearTimeout(st.timer);
@@ -4746,23 +4958,23 @@ var __selene = (() => {
         const needsConfirm = await authSignUp(email, pw);
         if (needsConfirm) {
           err.style.color = "var(--ok)";
-          err.textContent = "Compte créé. Vérifie ta boîte mail pour confirmer, puis connecte-toi.";
+          err.textContent = tr`Compte créé. Vérifie ta boîte mail pour confirmer, puis connecte-toi.`;
         }
       } else await authSignIn(email, pw);
     } catch (e) {
-      err.textContent = e.message || "Connexion impossible.";
+      err.textContent = e.message || tr`Connexion impossible.`;
     }
     authBusy = false;
     render();
   }
   function authView() {
     return `<div class="wrap" style="max-width:420px;margin:60px auto 0"><h2>Selene</h2>
-    <p class="hint">${authMode === "signup" ? "Crée ton compte pour retrouver tes données sur n'importe quel appareil." : "Connecte-toi pour retrouver tes données."}</p>
+    <p class="hint">${authMode === "signup" ? tr`Crée ton compte pour retrouver tes données sur n'importe quel appareil.` : tr`Connecte-toi pour retrouver tes données.`}</p>
     <form id="authForm" style="display:grid;gap:12px">
-      <label>E-mail<input type="email" id="authEmail" required autocomplete="email"></label>
-      <label>Mot de passe<input type="password" id="authPw" required minlength="6" autocomplete="${authMode === "signup" ? "new-password" : "current-password"}"></label>
-      <div class="row"><button class="btn acc" type="submit">${authMode === "signup" ? "Créer le compte" : "Se connecter"}</button>
-      <button class="btn ghost" type="button" data-act="auth-switch">${authMode === "signup" ? "J'ai déjà un compte" : "Créer un compte"}</button></div>
+      <label>${tr`E-mail`}<input type="email" id="authEmail" required autocomplete="email"></label>
+      <label>${tr`Mot de passe`}<input type="password" id="authPw" required minlength="6" autocomplete="${authMode === "signup" ? "new-password" : "current-password"}"></label>
+      <div class="row"><button class="btn acc" type="submit">${authMode === "signup" ? tr`Créer le compte` : tr`Se connecter`}</button>
+      <button class="btn ghost" type="button" data-act="auth-switch">${authMode === "signup" ? tr`J'ai déjà un compte` : tr`Créer un compte`}</button></div>
       <p class="hint" id="authErr" style="margin:0"></p>
     </form></div>`;
   }
@@ -4803,9 +5015,9 @@ var __selene = (() => {
   };
   var passeurPret = () => hosted() && authReady() && !!authSession && passeurEtat !== "absent";
   async function passeurFetch(url, genre, cond = {}) {
-    if (!hosted() || !authReady() || !authSession) throw new Error("Le passeur n'existe que dans la version hébergée, connectée à ton compte.");
+    if (!hosted() || !authReady() || !authSession) throw new Error(tr`Le passeur n'existe que dans la version hébergée, connectée à ton compte.`);
     const s = await authRefreshIfNeeded();
-    if (!s) throw new Error("Session expirée : reconnecte-toi.");
+    if (!s) throw new Error(tr`Session expirée : reconnecte-toi.`);
     const ac = new AbortController(), t = setTimeout(() => ac.abort(), 15e3);
     let r;
     try {
@@ -4816,20 +5028,20 @@ var __selene = (() => {
         body: JSON.stringify({ url, genre, ...cond.etag ? { etag: cond.etag } : {}, ...cond.modifie ? { modifie: cond.modifie } : {} })
       });
     } catch {
-      throw new Error("Passeur injoignable (hors ligne, ou pas encore déployé).");
+      throw new Error(tr`Passeur injoignable (hors ligne, ou pas encore déployé).`);
     } finally {
       clearTimeout(t);
     }
     const j = await r.json().catch(() => ({}));
     if (r.status === 404 || r.status === 503) {
       passeurEtat = "absent";
-      throw new Error(r.status === 404 ? "Passeur non déployé (voir docs/passeur.md)." : j.erreur || "Passeur non configuré.");
+      throw new Error(r.status === 404 ? tr`Passeur non déployé (voir docs/passeur.md).` : j.erreur || tr`Passeur non configuré.`);
     }
     if (r.status === 401 || r.status === 403) {
-      passeurEtat = j.erreur || "refusé";
-      throw new Error(`Passeur : ${j.erreur || "accès refusé"}.`);
+      passeurEtat = j.erreur || tr`refusé`;
+      throw new Error(tr`Passeur : ${j.erreur || tr`accès refusé`}.`);
     }
-    if (!r.ok) throw new Error(`Passeur : ${j.erreur || `erreur ${r.status}`}.`);
+    if (!r.ok) throw new Error(tr`Passeur : ${j.erreur || tr`erreur ${r.status}`}.`);
     passeurEtat = "ok";
     return j;
   }
@@ -4900,17 +5112,17 @@ var __selene = (() => {
     };
   }
   function passeurSettingsHTML() {
-    const st = passeurEtat === "ok" ? "Déployé et ouvert à ton compte." : passeurEtat === "absent" ? "Pas encore déployé, ou pas encore configuré." : passeurEtat ? `Refusé : ${passeurEtat}.` : "Pas encore vérifié sur cet appareil.";
-    return `<section id="passeur"><h3>Passeur</h3><p class="hint">Une petite fonction dans ton projet Supabase qui lit pour toi les pages, flux et calendriers que le navigateur ne peut pas lire seul. Elle ne sert que ton compte, refuse toute adresse privée et ne garde rien. Sans elle, les pages passent par Microlink.</p>
-    <p class="row" style="margin:0 0 8px"><span data-passeur-etat>${esc(st)}</span><button class="btn sm" data-act="passeur-check">Vérifier</button></p>
-    <p class="hint">Ton identifiant, à mettre dans le secret <code>PASSEUR_USERS</code> : <code style="word-break:break-all">${esc(authSession.user.id)}</code> <button class="btn ghost sm" data-act="passeur-copy">copier</button>. Mode d'emploi : <a href="https://github.com/MarieBonifacio/selene/blob/main/docs/passeur.md" target="_blank" rel="noopener noreferrer">docs/passeur.md</a>.</p></section>`;
+    const st = passeurEtat === "ok" ? tr`Déployé et ouvert à ton compte.` : passeurEtat === "absent" ? tr`Pas encore déployé, ou pas encore configuré.` : passeurEtat ? tr`Refusé : ${passeurEtat}.` : tr`Pas encore vérifié sur cet appareil.`;
+    return `<section id="passeur"><h3>${tr`Passeur`}</h3><p class="hint">${tr`Une petite fonction dans ton projet Supabase qui lit pour toi les pages, flux et calendriers que le navigateur ne peut pas lire seul. Elle ne sert que ton compte, refuse toute adresse privée et ne garde rien. Sans elle, les pages passent par Microlink.`}</p>
+    <p class="row" style="margin:0 0 8px"><span data-passeur-etat>${esc(st)}</span><button class="btn sm" data-act="passeur-check">${tr`Vérifier`}</button></p>
+    <p class="hint">${tr`Ton identifiant, à mettre dans le secret ${"<code>PASSEUR_USERS</code>"} : ${`<code style="word-break:break-all">${esc(authSession.user.id)}</code> <button class="btn ghost sm" data-act="passeur-copy">${tr`copier`}</button>`}. Mode d'emploi : ${`<a href="https://github.com/MarieBonifacio/selene/blob/main/docs/passeur.md" target="_blank" rel="noopener noreferrer">docs/passeur.md</a>`}.`}</p></section>`;
   }
   CLICK["passeur-check"] = async (el) => {
     el.disabled = true;
     passeurReset();
     try {
       await passeurFetch(location.origin + location.pathname, "page");
-      toast("Passeur : il répond, et il te reconnaît.");
+      toast(tr`Passeur : il répond, et il te reconnaît.`);
     } catch (e) {
       toast(e.message);
     }
@@ -4919,9 +5131,9 @@ var __selene = (() => {
   CLICK["passeur-copy"] = async () => {
     try {
       await navigator.clipboard.writeText(authSession.user.id);
-      toast("Identifiant copié.");
+      toast(tr`Identifiant copié.`);
     } catch {
-      toast("Copie impossible ici : sélectionne-le à la main.");
+      toast(tr`Copie impossible ici : sélectionne-le à la main.`);
     }
   };
 
@@ -5757,7 +5969,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     const r = 46, c = 50, rx = Math.abs(Math.cos(2 * Math.PI * p)) * r;
     const lit = p < 0.5 ? `M${c},${c - r} A${r},${r} 0 0 1 ${c},${c + r} A${rx},${r} 0 0 ${p < 0.25 ? 0 : 1} ${c},${c - r}Z` : `M${c},${c - r} A${r},${r} 0 0 0 ${c},${c + r} A${rx},${r} 0 0 ${p < 0.75 ? 0 : 1} ${c},${c - r}Z`;
     const place = at ? `left:${at.x.toFixed(1)}%;top:${at.y.toFixed(1)}%;` : "";
-    return `<svg class="scene" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" role="img" aria-label="Lune au-dessus d'une lisière de sapins">
+    return `<svg class="scene" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" role="img" aria-label="${tr`Lune au-dessus d'une lisière de sapins`}">
     <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--sky-top)"/><stop offset="1" stop-color="var(--sky-bot)"/></linearGradient></defs>
     <rect width="1000" height="300" fill="url(#sky)"/>
     <g fill="var(--moon)" opacity="var(--star)" style="opacity:var(--star)">${TREES.stars}</g>
@@ -5872,7 +6084,9 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
 
   // src/app/views/planche.js
   var plancheOffset = 0;
-  var OUTSIDE = ["Dehors", "Veille", "Cité par tes sources", "Zotero"];
+  var OUTSIDE = [N_("Dehors"), N_("Veille"), N_("Cité par tes sources"), "Zotero"];
+  var FROM_NOTE = N_("depuis une note");
+  var BY_HAND = N_("à la main");
   var datedItems = (inst) => [...inst.entries || [], ...inst.scraps || []].filter((x) => x && typeof x.date === "string");
   function plancheData(offset, now = Date.now()) {
     const cur = periodOf("lune", offset, now), prev = periodOf("lune", offset + 1, now), s = S(), len = SYNODIC * 864e5;
@@ -5907,7 +6121,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     }
     const kept = [];
     for (const { e } of sourceItems()) if (typeof e.kept === "string" && e.kept >= cur.from && e.kept < cur.to)
-      kept.push({ title: excerpt(e, 60), from: e.origin && OUTSIDE.includes(e.origin.from) ? e.origin.from : e.origin ? "depuis une note" : "à la main" });
+      kept.push({ title: excerpt(e, 60), from: e.origin ? OUTSIDE.find((f) => sameText(f, e.origin.from)) || FROM_NOTE : BY_HAND });
     const drift = lexicalDrift("lune", offset);
     return {
       k: cur.k,
@@ -5938,27 +6152,27 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
       const cx = x.i * 10 + 5, anchor = cx < 20 ? "start" : cx > W - 20 ? "end" : "middle";
       return `${sh(x.f, cx)}<text x="${anchor === "start" ? 0 : anchor === "end" ? W : cx}" y="66" text-anchor="${anchor}">${esc(fmt(x.date, { day: "numeric", month: "short" }))}</text>`;
     }).join("");
-    return `<svg viewBox="0 0 ${W} 70" role="img" aria-label="Règle de lunaison : entrées datées par jour, ${p.n} en tout"><g fill="currentColor" opacity=".85">${bars}</g><path d="M0,52.5H${W}" stroke="currentColor" stroke-width=".5"/>${p.days.map((d, i) => `<path d="M${i * 10 + 5},53v${i % 7 ? 2 : 4}" stroke="currentColor" stroke-width=".4"/>`).join("")}<g font-size="6" fill="currentColor">${q}</g></svg>`;
+    return `<svg viewBox="0 0 ${W} 70" role="img" aria-label="${tr`Règle de lunaison : entrées datées par jour, ${p.n} en tout`}"><g fill="currentColor" opacity=".85">${bars}</g><path d="M0,52.5H${W}" stroke="currentColor" stroke-width=".5"/>${p.days.map((d, i) => `<path d="M${i * 10 + 5},53v${i % 7 ? 2 : 4}" stroke="currentColor" stroke-width=".4"/>`).join("")}<g font-size="6" fill="currentColor">${q}</g></svg>`;
   }
   var sparkSVG = (vals, max) => `<svg viewBox="0 0 ${vals.length * 4} 20" preserveAspectRatio="none" aria-hidden="true"><path d="M0,19.5H${vals.length * 4}" stroke="currentColor" stroke-width=".4"/><g fill="currentColor">${vals.map((v, i) => v ? `<rect x="${i * 4 + 0.6}" y="${(19.5 - 18 * v / max).toFixed(1)}" width="2.8" height="${(18 * v / max).toFixed(1)}"/>` : "").join("")}</g></svg>`;
   function plancheHTML(p) {
     const long = (d) => fmt(d, { day: "numeric", month: "long", year: "numeric" }), max = Math.max(1, ...p.rows.flatMap((r) => r.spark));
     const eps = Object.keys(EP_STATUS).filter((k) => p.ep[k]);
     return `<article class="planche" aria-labelledby="plTitle">
-  <header class="pl-head"><p class="pl-no">Planche ${p.k}</p><h2 id="plTitle">Lunaison du ${esc(long(p.from))} au ${esc(long(addDaysTo(p.to, -1)))}</h2>
-    <p class="pl-sub">${p.n} entrée${p.n > 1 ? "s" : ""} datée${p.n > 1 ? "s" : ""} · lunaison n° ${p.k} de Meeus</p></header>
-  <figure class="pl-regle">${rulerSVG(p)}<figcaption>Règle de lunaison : un trait par jour, haut comme le nombre d'entrées datées ; les phases aux quartiers.</figcaption></figure>
-  <table class="pl-mods"><caption class="sr">Par espace : la ligne du cycle, celle du précédent, l'activité jour par jour</caption><tbody>
-    ${p.rows.map((r) => `<tr><th scope="row">${sigil(r.id)}${esc(label(r.id))}</th><td>${esc(r.review || "—")}<small>avant : ${esc(r.before || "—")}</small></td><td class="pl-spark">${sparkSVG(r.spark, max)}</td></tr>`).join("") || `<tr><td>Aucun espace à résumer.</td></tr>`}
+  <header class="pl-head"><p class="pl-no">${tr`Planche ${p.k}`}</p><h2 id="plTitle">${tr`Lunaison du ${esc(long(p.from))} au ${esc(long(addDaysTo(p.to, -1)))}`}</h2>
+    <p class="pl-sub">${trn(p.n, "{0} entrée datée · lunaison n° {1} de Meeus", "{0} entrées datées · lunaison n° {1} de Meeus", p.k)}</p></header>
+  <figure class="pl-regle">${rulerSVG(p)}<figcaption>${tr`Règle de lunaison : un trait par jour, haut comme le nombre d'entrées datées ; les phases aux quartiers.`}</figcaption></figure>
+  <table class="pl-mods"><caption class="sr">${tr`Par espace : la ligne du cycle, celle du précédent, l'activité jour par jour`}</caption><tbody>
+    ${p.rows.map((r) => `<tr><th scope="row">${sigil(r.id)}${esc(label(r.id))}</th><td>${esc(r.review || "—")}<small>${tr`avant : ${esc(r.before || "—")}`}</small></td><td class="pl-spark">${sparkSVG(r.spark, max)}</td></tr>`).join("") || `<tr><td>${tr`Aucun espace à résumer.`}</td></tr>`}
   </tbody></table>
   <div class="pl-cols">
-    <section><h3>Mots émergents</h3>${p.rising == null ? `<p class="pl-muted">Pas assez de textes pour en parler.</p>` : p.rising.length ? `<ul>${p.rising.map((x) => `<li>${esc(x.w)} <span>${x.n}</span></li>`).join("")}</ul>` : `<p class="pl-muted">Aucun ne se détache.</p>`}</section>
-    <section><h3>Motifs apparus</h3>${p.appeared.length ? `<ul>${p.appeared.map((x) => `<li>${esc(x.name)} <span>${x.n}</span></li>`).join("")}</ul>` : `<p class="pl-muted">Aucun motif neuf.</p>`}</section>
-    <section><h3>Statut des idées</h3>${eps.length ? `<ul>${eps.map((k) => `<li>${esc(EP_STATUS[k])} <span>${p.ep[k]}</span></li>`).join("")}</ul>` : `<p class="pl-muted">Aucune idée qualifiée.</p>`}</section>
-    <section><h3>Tensions ouvertes</h3><p>${p.tensions ? `${p.tensions} à ce jour, nées avant la fin du cycle.` : `Aucune.`}</p></section>
-    <section class="pl-wide"><h3>Venu du dehors</h3>${p.kept.length ? `<p>${p.kept.length} source${p.kept.length > 1 ? "s" : ""} gardée${p.kept.length > 1 ? "s" : ""} (${[...OUTSIDE, "depuis une note", "à la main"].map((f) => [f, p.kept.filter((x) => x.from === f).length]).filter(([, n]) => n).map(([f, n]) => `${esc(f)} ${n}`).join(" · ")}) : <span class="pl-muted">${p.kept.slice(0, 5).map((x) => `« ${esc(x.title)} »`).join(", ")}${p.kept.length > 5 ? `, et ${p.kept.length - 5} autre${p.kept.length - 5 > 1 ? "s" : ""}` : ""}.</span></p>` : `<p class="pl-muted">Rien gardé du dehors.</p>`}</section>
+    <section><h3>${tr`Mots émergents`}</h3>${p.rising == null ? `<p class="pl-muted">${tr`Pas assez de textes pour en parler.`}</p>` : p.rising.length ? `<ul>${p.rising.map((x) => `<li>${esc(x.w)} <span>${x.n}</span></li>`).join("")}</ul>` : `<p class="pl-muted">${tr`Aucun ne se détache.`}</p>`}</section>
+    <section><h3>${tr`Motifs apparus`}</h3>${p.appeared.length ? `<ul>${p.appeared.map((x) => `<li>${esc(x.name)} <span>${x.n}</span></li>`).join("")}</ul>` : `<p class="pl-muted">${tr`Aucun motif neuf.`}</p>`}</section>
+    <section><h3>${tr`Statut des idées`}</h3>${eps.length ? `<ul>${eps.map((k) => `<li>${esc(epLabel(k))} <span>${p.ep[k]}</span></li>`).join("")}</ul>` : `<p class="pl-muted">${tr`Aucune idée qualifiée.`}</p>`}</section>
+    <section><h3>${tr`Tensions ouvertes`}</h3><p>${p.tensions ? trn(p.tensions, "{0} à ce jour, née avant la fin du cycle.", "{0} à ce jour, nées avant la fin du cycle.") : tr`Aucune.`}</p></section>
+    <section class="pl-wide"><h3>${tr`Venu du dehors`}</h3>${p.kept.length ? `<p>${trn(p.kept.length, "{0} source gardée ({1}) :", "{0} sources gardées ({1}) :", [...OUTSIDE, FROM_NOTE, BY_HAND].map((f) => [f, p.kept.filter((x) => x.from === f).length]).filter(([, n]) => n).map(([f, n]) => `${esc(tr(f))} ${n}`).join(" · "))} <span class="pl-muted">${p.kept.slice(0, 5).map((x) => tr`« ${esc(x.title)} »`).join(", ")}${p.kept.length > 5 ? trn(p.kept.length - 5, ", et {0} autre", ", et {0} autres") : ""}.</span></p>` : `<p class="pl-muted">${tr`Rien gardé du dehors.`}</p>`}</section>
   </div>
-  <footer class="pl-foot">${esc(S().config.name || "Selene")} · planche tirée le ${esc(long(todayISO()))}</footer></article>`;
+  <footer class="pl-foot">${esc(S().config.name || "Selene")} · ${tr`planche tirée le ${esc(long(todayISO()))}`}</footer></article>`;
   }
   var PLANCHE_CSS = `.planche{max-width:820px;margin:0 auto;padding:26px 30px;border:1px solid var(--rule);color:var(--ink)}
 .pl-head{text-align:center;border-bottom:1px solid var(--rule);padding-bottom:10px;margin-bottom:12px}
@@ -6002,17 +6216,17 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
   }
   function plancheView() {
     ensurePlancheCss();
-    return `<div class="pl-tools row" style="margin-bottom:14px"><a class="btn ghost sm" href="#bilan">‹ Bilan</a><span class="spacer"></span><button class="btn ghost" data-act="planche-nav" data-d="1" aria-label="Lunaison précédente">‹</button>${plancheOffset ? `<button class="btn ghost" data-act="planche-nav" data-d="-1" aria-label="Lunaison suivante">›</button>` : ""}<button class="btn sm" data-act="planche-print">Imprimer ou enregistrer en PDF</button><button class="btn ghost sm" data-act="planche-dl" title="Un fichier .html autonome, si l'impression est bloquée">Télécharger</button></div>
+    return `<div class="pl-tools row" style="margin-bottom:14px"><a class="btn ghost sm" href="#bilan">‹ ${tr`Bilan`}</a><span class="spacer"></span><button class="btn ghost" data-act="planche-nav" data-d="1" aria-label="${tr`Lunaison précédente`}">‹</button>${plancheOffset ? `<button class="btn ghost" data-act="planche-nav" data-d="-1" aria-label="${tr`Lunaison suivante`}">›</button>` : ""}<button class="btn sm" data-act="planche-print">${tr`Imprimer ou enregistrer en PDF`}</button><button class="btn ghost sm" data-act="planche-dl" title="${tr`Un fichier .html autonome, si l'impression est bloquée`}">${tr`Télécharger`}</button></div>
   ${plancheHTML(plancheData(plancheOffset))}`;
   }
   function plancheFile() {
     const p = plancheData(plancheOffset);
-    const doc = `<!doctype html><html lang="${LANGS[uiLang()].tag}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Planche ${p.k}</title>
+    const doc = `<!doctype html><html lang="${LANGS[uiLang()].tag}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(tr`Planche ${p.k}`)}</title>
 <style>:root{--ink:#141a16;--muted:#4a524d;--rule:#a9b0aa}body{margin:0;padding:24px 12px;background:#fbfaf6;color:var(--ink);font-family:Georgia,"Times New Roman",serif}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .sig{width:1.05em;height:1.05em;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.14em;margin-right:.5em}
 ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
-    return downloadFile(`planche-${p.k}.html`, doc, "text/html", `Planche ${p.k}`);
+    return downloadFile(`planche-${p.k}.html`, doc, "text/html", tr`Planche ${p.k}`);
   }
   CLICK["planche-open"] = () => {
     plancheOffset = bilanMode() === "lune" ? bilanOffset : 0;
@@ -6033,6 +6247,12 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
 
   // src/app/views/bilan.js
   var bilanOffset = 0;
+  var EP_COUNT = {
+    obs: (n) => trn(n, "{0} observé", "{0} observés"),
+    hyp: (n) => trn(n, "{0} hypothèse", "{0} hypothèses"),
+    int: (n) => trn(n, "{0} interprétation", "{0} interprétations"),
+    inx: (n) => trn(n, "{0} inexpliqué", "{0} inexpliqués")
+  };
   var setBilanOffset = (n) => {
     bilanOffset = n;
   };
@@ -6049,22 +6269,22 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       return { from: iso(start2), to: iso(end2), name: start2.toLocaleDateString(uiLocale(), { month: "long", year: "numeric" }) };
     }
     const len = SYNODIC * 864e5, k = Math.floor((now - NEW_MOON_REF) / len) - offset, start = NEW_MOON_REF + k * len, end = start + len;
-    return { k, start, from: iso(new Date(start)), to: iso(new Date(end)), name: `Cycle du ${fmt(iso(new Date(start)), { day: "numeric", month: "long" })} au ${fmt(iso(new Date(end - 864e5)), { day: "numeric", month: "long" })}` };
+    return { k, start, from: iso(new Date(start)), to: iso(new Date(end)), name: tr`Cycle du ${fmt(iso(new Date(start)), { day: "numeric", month: "long" })} au ${fmt(iso(new Date(end - 864e5)), { day: "numeric", month: "long" })}` };
   }
   VIEWS.bilan = () => {
     if (routeOf().entry === "planche") return plancheView();
     const mode = bilanMode(), cur = periodOf(mode, bilanOffset), prev = periodOf(mode, bilanOffset + 1), s = S();
     const rows = s.config.modules.filter((m) => m.on && Object.hasOwn(s.modules, m.id) && TYPE_UI[s.modules[m.id].type].review).map((m) => {
       const inst = s.modules[m.id], review = TYPE_UI[inst.type].review, r = review(inst, cur.from, cur.to), p = review(inst, prev.from, prev.to);
-      return `<div class="over-wrap"><div class="over"><b>${esc(label(m.id))}</b><span>${esc(r || "—")}</span><em class="hint" style="margin:0">avant : ${esc(p || "—")}</em></div></div>`;
+      return `<div class="over-wrap"><div class="over"><b>${esc(label(m.id))}</b><span>${esc(r || "—")}</span><em class="hint" style="margin:0">${tr`avant : ${esc(p || "—")}`}</em></div></div>`;
     }).join("");
     const tab = (m, l) => `<button class="btn sm ${mode === m ? "acc" : "ghost"}" data-act="bilan-mode" data-m="${m}">${l}</button>`;
-    const eps = epCounts(cur.from, cur.to), epLine = Object.keys(EP_STATUS).filter((k) => eps[k]).map((k) => `<button class="btn ghost sm" data-act="search-for" data-q="statut:${esc(EP_STATUS[k])}">${plural(eps[k], EP_STATUS[k])}</button>`).join("");
-    return `<div class="row" style="margin-bottom:6px"><h2 style="margin:0">Bilan</h2><span class="spacer"></span>${tab("lune", "Cycle lunaire")}${tab("mois", "Mois")}<button class="btn ghost sm" data-act="planche-open" title="Le cycle en planche A4, à imprimer ou enregistrer en PDF">Planche</button></div>
-  <div class="row" style="margin-bottom:18px"><button class="btn ghost" data-act="bilan-nav" data-d="1" aria-label="Période précédente">‹</button><b style="text-transform:none">${esc(cur.name)}</b>${bilanOffset ? `<button class="btn ghost" data-act="bilan-nav" data-d="-1" aria-label="Période suivante">›</button>` : ""}</div>
-  <p class="hint">Ce qui s'est passé dans chaque module pendant la période, et, en face, la période d'avant. Aucune note, aucun trophée : les chiffres suffisent à culpabiliser.</p>
-  <section>${rows || `<p class="empty">Aucun module à résumer.</p>`}</section>
-  ${epLine ? `<section><h3>Statut des idées notées</h3><p class="hint">Ce qu'elles revendiquent de savoir. Une hypothèse n'est pas une faiblesse, c'est une dette à rembourser.</p><div class="row">${epLine}</div></section>` : ""}
+    const eps = epCounts(cur.from, cur.to), epLine = Object.keys(EP_STATUS).filter((k) => eps[k]).map((k) => `<button class="btn ghost sm" data-act="search-for" data-q="${esc(trp("recherche", "statut"))}:${esc(epLabel(k))}">${esc(EP_COUNT[k](eps[k]))}</button>`).join("");
+    return `<div class="row" style="margin-bottom:6px"><h2 style="margin:0">${tr`Bilan`}</h2><span class="spacer"></span>${tab("lune", tr`Cycle lunaire`)}${tab("mois", tr`Mois`)}<button class="btn ghost sm" data-act="planche-open" title="${tr`Le cycle en planche A4, à imprimer ou enregistrer en PDF`}">${tr`Planche`}</button></div>
+  <div class="row" style="margin-bottom:18px"><button class="btn ghost" data-act="bilan-nav" data-d="1" aria-label="${tr`Période précédente`}">‹</button><b style="text-transform:none">${esc(cur.name)}</b>${bilanOffset ? `<button class="btn ghost" data-act="bilan-nav" data-d="-1" aria-label="${tr`Période suivante`}">›</button>` : ""}</div>
+  <p class="hint">${tr`Ce qui s'est passé dans chaque module pendant la période, et, en face, la période d'avant. Aucune note, aucun trophée : les chiffres suffisent à culpabiliser.`}</p>
+  <section>${rows || `<p class="empty">${tr`Aucun module à résumer.`}</p>`}</section>
+  ${epLine ? `<section><h3>${tr`Statut des idées notées`}</h3><p class="hint">${tr`Ce qu'elles revendiquent de savoir. Une hypothèse n'est pas une faiblesse, c'est une dette à rembourser.`}</p><div class="row">${epLine}</div></section>` : ""}
   ${driftSection(mode, cur)}
   ${tensionSection()}
   ${lunarSection()}`;
@@ -8416,13 +8636,14 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     }
     return f;
   };
+  var isEpWord = (w) => /^statu[ts]:/.test(w) || w.startsWith(fold(trp("recherche", "statut")) + ":");
   var epQuery = (w) => {
-    const q = w.slice("statut:".length);
-    return q && Object.keys(EP_STATUS).find((k) => fold(EP_STATUS[k]).startsWith(q)) || null;
+    const q = w.slice(w.indexOf(":") + 1);
+    return q && Object.keys(EP_STATUS).find((k) => fold(EP_STATUS[k]).startsWith(q) || fold(epLabel(k)).startsWith(q)) || null;
   };
   function searchAll(q) {
-    const words = fold(q).split(/\s+/).filter(Boolean), st = words.find((w) => w.startsWith("statut:")), want = st ? epQuery(st) : null;
-    const terms = words.filter((w) => !w.startsWith("statut:")), out = [];
+    const words = fold(q).split(/\s+/).filter(Boolean), st = words.find(isEpWord), want = st ? epQuery(st) : null;
+    const terms = words.filter((w) => !isEpWord(w)), out = [];
     if (st && !want || !terms.length && !want) return out;
     for (const m of S().config.modules) {
       const inst = Object.hasOwn(S().modules, m.id) ? S().modules[m.id] : null, ui = inst && TYPE_UI[inst.type];
@@ -8436,7 +8657,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   }
   function highlight(text, q) {
     const f = fold(text), marks = [];
-    for (const w of fold(q).split(/\s+/).filter((w2) => w2 && !w2.startsWith("statut:"))) {
+    for (const w of fold(q).split(/\s+/).filter((w2) => w2 && !isEpWord(w2))) {
       let i = f.indexOf(w);
       while (i >= 0) {
         marks.push([i, i + w.length]);
@@ -8464,28 +8685,28 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     const byMod = facetFilter(all, "mod"), byPer = facetFilter(all, "period"), byEp = facetFilter(all, "ep");
     const mods = s.config.modules.map((m) => m.id).filter((id) => byMod.some((h) => h.id === id));
     const facets = all.length ? `<div class="facets">
-    <div class="row">${chip("mod", "", "Tous les espaces", byMod.length)}${mods.map((id) => chip("mod", id, `${sigil(id)}${esc(label(id))}`, byMod.filter((h) => h.id === id).length)).join("")}</div>
-    <div class="row">${[["", "Toute date"], ["lune", "Cette lunaison"], ["mois", "Ce mois-ci"]].map(([v, t]) => chip("period", v, t, v ? byPer.filter((h) => {
+    <div class="row">${chip("mod", "", tr`Tous les espaces`, byMod.length)}${mods.map((id) => chip("mod", id, `${sigil(id)}${esc(label(id))}`, byMod.filter((h) => h.id === id).length)).join("")}</div>
+    <div class="row">${[["", tr`Toute date`], ["lune", tr`Cette lunaison`], ["mois", tr`Ce mois-ci`]].map(([v, t]) => chip("period", v, t, v ? byPer.filter((h) => {
       const p = facetPeriod(v);
       return h.date && h.date >= p.from && h.date < p.to;
     }).length : byPer.length)).join("")}
-      ${Object.keys(EP_STATUS).some((k) => byEp.some((h) => h.ep === k)) ? `<span class="spacer"></span>${chip("ep", "", "Tout statut", null)}${Object.keys(EP_STATUS).filter((k) => byEp.some((h) => h.ep === k)).map((k) => chip("ep", k, `${epGlyph(k)}${esc(EP_STATUS[k])}`, byEp.filter((h) => h.ep === k).length)).join("")}` : ""}</div></div>` : "";
+      ${Object.keys(EP_STATUS).some((k) => byEp.some((h) => h.ep === k)) ? `<span class="spacer"></span>${chip("ep", "", tr`Tout statut`, null)}${Object.keys(EP_STATUS).filter((k) => byEp.some((h) => h.ep === k)).map((k) => chip("ep", k, `${epGlyph(k)}${esc(epLabel(k))}`, byEp.filter((h) => h.ep === k).length)).join("")}` : ""}</div></div>` : "";
     let budget = 80;
     const groups = s.config.modules.map((m) => m.id).map((id) => [id, hits.filter((h) => h.id === id).sort((a, b) => (b.date || "").localeCompare(a.date || ""))]).filter(([, l]) => l.length).map(([id, l]) => {
       const shown = l.slice(0, Math.max(0, budget));
       budget -= shown.length;
-      return shown.length ? `<p class="grp search-grp ${tintOf(id)}">${sigil(id)}${esc(label(id))} <span>${l.length}</span></p><ul class="plain">${shown.map((h) => `<li class="item"><span class="jdate">${h.date ? fmt(h.date) : ""}</span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}${h.ep ? `<div class="meta"><span>${epGlyph(h.ep)}${esc(EP_STATUS[h.ep])}</span></div>` : ""}</div><a class="btn ghost sm" href="#${esc(h.id)}${h.eid ? "/" + esc(h.eid) : ""}">ouvrir</a></li>`).join("")}</ul>` : "";
+      return shown.length ? `<p class="grp search-grp ${tintOf(id)}">${sigil(id)}${esc(label(id))} <span>${l.length}</span></p><ul class="plain">${shown.map((h) => `<li class="item"><span class="jdate">${h.date ? fmt(h.date) : ""}</span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}${h.ep ? `<div class="meta"><span>${epGlyph(h.ep)}${esc(epLabel(h.ep))}</span></div>` : ""}</div><a class="btn ghost sm" href="#${esc(h.id)}${h.eid ? "/" + esc(h.eid) : ""}">${tr`ouvrir`}</a></li>`).join("")}</ul>` : "";
     }).join("");
     const filtered = hits.length !== all.length;
-    return `<h2>Chercher</h2><p class="hint">Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « statut:hypothèse » ne garde que les hypothèses (de même pour observé, interprétation, inexpliqué). Touche « / » pour venir ici.</p>
-  <input id="searchIn" type="search" value="${esc(searchQuery)}" placeholder="Un mot, un bout de phrase…" aria-label="Chercher" autocomplete="off" style="max-width:520px">
-  ${searchQuery.trim() ? `<div class="row" style="margin-top:12px"><p class="hint" style="margin:0">${hits.length ? `${plural(hits.length, "résultat")}${filtered ? ` sur ${all.length}` : ""}` : all.length ? "Rien avec ces filtres." : "Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire."}</p>${hits.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="search-dossier" title="Les résultats affichés, avec dates, statuts, provenance et liens, pour une lecture assistée">Exporter en dossier</button>` : ""}</div>
+    return `<h2>${tr`Chercher`}</h2><p class="hint">${tr`Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « ${`${trp("recherche", "statut")}:${epLabel("hyp")}`} » ne garde que les hypothèses (de même pour ${["obs", "int", "inx"].map(epLabel).join(", ")}). Touche « / » pour venir ici.`}</p>
+  <input id="searchIn" type="search" value="${esc(searchQuery)}" placeholder="${tr`Un mot, un bout de phrase…`}" aria-label="${tr`Chercher`}" autocomplete="off" style="max-width:520px">
+  ${searchQuery.trim() ? `<div class="row" style="margin-top:12px"><p class="hint" style="margin:0">${hits.length ? filtered ? trn(hits.length, "{0} résultat sur {1}", "{0} résultats sur {1}", all.length) : trn(hits.length, "{0} résultat", "{0} résultats") : all.length ? tr`Rien avec ces filtres.` : tr`Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire.`}</p>${hits.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="search-dossier" title="${tr`Les résultats affichés, avec dates, statuts, provenance et liens, pour une lecture assistée`}">${tr`Exporter en dossier`}</button>` : ""}</div>
   ${facets}${groups}` : ""}`;
   };
   CLICK["search-dossier"] = () => {
     const q = searchQuery.trim(), thoughts = thoughtItems();
     const items = facetFilter(searchAll(q)).map((h) => ({ mod: h.id, text: h.text, date: h.date, e: (thoughts.find((x) => x.mod === h.id && x.e.text === h.text) || {}).e })).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-    if (items.length) dossierFile(`Recherche — ${q}`, `Résultats de la recherche « ${q} »`, items);
+    if (items.length) dossierFile(tr`Recherche — ${q}`, tr`Résultats de la recherche « ${q} »`, items);
   };
   CLICK["facet"] = (el) => {
     const k = el.dataset.k;
