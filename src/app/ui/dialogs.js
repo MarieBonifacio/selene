@@ -12,7 +12,7 @@ function fieldHTML(f, v) {
   let input;
   if (f.t === "textarea") input = `<textarea ${common} rows="${f.rows || 3}">${esc(val)}</textarea>`;
   else if (f.t === "select") input = `<select ${common}>${f.o.map(o => { const [k, l] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(k)}" ${String(val) === String(k) ? "selected" : ""}>${esc(l)}</option>`; }).join("")}</select>`;
-  else input = `<input type="${f.t || "text"}" ${common} value="${esc(val)}" ${f.list ? `list="${f.list}"` : ""} ${f.t === "number" ? `min="${esc(f.min ?? 0)}" step="${esc(f.step ?? 1)}" inputmode="${f.step && f.step < 1 ? "decimal" : "numeric"}"${f.max != null ? ` max="${esc(f.max)}"` : ""}` : ""}>`;
+  else input = `<input type="${f.t || "text"}" ${common} value="${esc(val)}" ${f.list ? `list="${f.list}"` : ""} ${f.t === "number" ? `min="${esc(f.min ?? 0)}" step="${esc(f.step ?? 1)}" inputmode="${f.step && f.step < 1 ? "decimal" : "numeric"}"${f.max != null ? ` max="${esc(f.max)}"` : ""}` : ""}${f.t === "date" && f.max ? ` max="${esc(f.max)}"` : ""}>`;
   return `<label>${esc(f.l)}${input}</label>`;
 }
 export function openForm(title, fields, values, cb, description = "") {

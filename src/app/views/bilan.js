@@ -42,7 +42,7 @@ export function periodOf(mode, offset, now = Date.now()) {
 VIEWS.bilan = () => {
   if (routeOf().entry === "planche") return plancheView();
   const mode = bilanMode(), cur = periodOf(mode, bilanOffset), prev = periodOf(mode, bilanOffset + 1), s = S();
-  const rows = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id) && TYPE_UI[s.modules[m.id].type].review).map(m => {
+  const rows = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id) && TYPE_UI[s.modules[m.id].type].review && !TYPE_UI[s.modules[m.id].type].sensitive).map(m => { // un suivi sensible n'a pas de ligne, même vide
     const inst = s.modules[m.id], review = TYPE_UI[inst.type].review, r = review(inst, cur.from, cur.to), p = review(inst, prev.from, prev.to);
     return `<div class="over-wrap"><div class="over"><b>${esc(label(m.id))}</b><span>${esc(r || "—")}</span><em class="hint" style="margin:0">${tr`avant : ${esc(p || "—")}`}</em></div></div>`;
   }).join("");
