@@ -3,8 +3,8 @@
 import { saveCollectionItem } from "../../core/domain.js";
 import { CLICK, TYPE_UI } from "../registry.js";
 import { esc, toast } from "../lib/dom.js";
-import { ago, diffDays, plural, todayISO, uid } from "../lib/format.js";
-import { collate } from "../i18n/index.js";
+import { ago, diffDays, todayISO, uid } from "../lib/format.js";
+import { collate, tr, trn } from "../i18n/index.js";
 import { SYNODIC } from "../scene/moon.js";
 import { memoInRender, render } from "../shell/render.js";
 import { S, enabled, label, site } from "../state/site.js";
@@ -12,9 +12,9 @@ import { fold } from "../views/recherche.js";
 
 CLICK["motif-add"] = el => {
   const inst = S().modules[el.dataset.mod], word = el.dataset.q; if (!inst || !word) return;
-  if (inst.entries.some(e => fold(e.title) === fold(word))) return toast(`« ${word} » est déjà un motif.`);
+  if (inst.entries.some(e => fold(e.title) === fold(word))) return toast(tr`« ${word} » est déjà un motif.`);
   saveCollectionItem(inst, { title: word }, uid()); site.save(); render();
-  toast(`« ${word} » devient un motif de ${label(el.dataset.mod)}. On verra s'il revient.`);
+  toast(tr`« ${word} » devient un motif de ${label(el.dataset.mod)}. On verra s'il revient.`);
 };
 /* ---- concordance : une collection de motifs, comptés dans les textes de tous les autres modules ----
    Mot entier (« lune » ne trouve pas « lunettes »), sans accents ni casse, pluriel en s/x toléré ; les variantes
@@ -75,20 +75,20 @@ export function concordanceView(id, inst, head) {
   const order = (a, b) => alive(inst, b.e) - alive(inst, a.e) || b.hits.length - a.hits.length || collate(a.e.title, b.e.title);
   const line = r => {
     const e = r.e, n = r.hits.length;
-    const where = r.last ? ` · dernière ${ago(r.last.date)} (${esc(label(r.last.mod))})` : n ? " · jamais daté" : "";
+    const where = r.last ? " · " + tr`dernière ${ago(r.last.date)} (${esc(label(r.last.mod))})` : n ? " · " + tr`jamais daté` : "";
     return `<li class="item motif" data-id="${esc(e.id)}"><span></span><div><b>${esc(e.title)}</b>${e.subtitle ? ` <i class="hint">${esc(e.subtitle)}</i>` : ""}${c.fields.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}
-      <div class="meta"><span>${n ? plural(n, "occurrence") : "jamais rencontré"}${where}</span>${fallow(inst, r) ? `<span class="late">en jachère</span>` : ""}</div>
-      ${r.neighbours.length ? `<div class="meta"><span>voisins : ${r.neighbours.map(x => `${esc(x.name)} (${x.n})`).join(", ")}</span></div>` : ""}
+      <div class="meta"><span>${n ? trn(n, "{0} occurrence", "{0} occurrences") : tr`jamais rencontré`}${where}</span>${fallow(inst, r) ? `<span class="late">${tr`en jachère`}</span>` : ""}</div>
+      ${r.neighbours.length ? `<div class="meta"><span>${tr`voisins : ${r.neighbours.map(x => `${esc(x.name)} (${x.n})`).join(", ")}`}</span></div>` : ""}
       ${c.fields.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}</div>
-      <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${n ? `<button class="btn ghost sm" data-act="search-for" data-q="${esc(e.title)}">voir</button><button class="btn ghost sm ra" data-act="carte" data-k="motif" data-v="${esc(id)}/${esc(e.id)}">carte</button>` : ""}<button class="btn ghost sm ra" data-act="specimen">fiche</button><button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></li>`;
+      <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${n ? `<button class="btn ghost sm" data-act="search-for" data-q="${esc(e.title)}">${tr`voir`}</button><button class="btn ghost sm ra" data-act="carte" data-k="motif" data-v="${esc(id)}/${esc(e.id)}">${tr`carte`}</button>` : ""}<button class="btn ghost sm ra" data-act="specimen">${tr`fiche`}</button><button class="btn ghost sm ra" data-act="col-edit">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="col-del">${tr`suppr.`}</button></div></li>`;
   };
   return `<div data-mod="${esc(id)}">${head}
-  ${sleeping.length ? `<section><h3>En jachère</h3><p class="hint">Vivants, mais absents depuis plus de ${esc(c.fallowDays)} jours. Reposés, pas perdus.</p><div class="row">${sleeping.map(r => `<button class="btn ghost sm" data-act="search-for" data-q="${esc(r.e.title)}">${esc(r.e.title)} · ${plural(moons(diffDays(todayISO(), r.last.date)), "lunaison")}</button>`).join("")}</div></section>` : ""}
-  <ul class="plain">${[...rows].sort(order).map(line).join("") || `<li class="empty">Aucun motif. Ajoute un mot qui revient ; l'app comptera ses retours.</li>`}</ul></div>`;
+  ${sleeping.length ? `<section><h3>${tr`En jachère`}</h3><p class="hint">${tr`Vivants, mais absents depuis plus de ${esc(c.fallowDays)} jours. Reposés, pas perdus.`}</p><div class="row">${sleeping.map(r => `<button class="btn ghost sm" data-act="search-for" data-q="${esc(r.e.title)}">${esc(r.e.title)} · ${trn(moons(diffDays(todayISO(), r.last.date)), "{0} lunaison", "{0} lunaisons")}</button>`).join("")}</div></section>` : ""}
+  <ul class="plain">${[...rows].sort(order).map(line).join("") || `<li class="empty">${tr`Aucun motif. Ajoute un mot qui revient ; l'app comptera ses retours.`}</li>`}</ul></div>`;
 }
 export function concordanceSummary(inst) {
   const sleeping = concordance(inst).filter(r => fallow(inst, r)).length;
-  return `${plural(inst.entries.length, "motif")}${sleeping ? `, ${sleeping} en jachère` : ""}`;
+  return trn(inst.entries.length, "{0} motif", "{0} motifs") + (sleeping ? ", " + tr`${sleeping} en jachère` : "");
 }
 /* Les motifs apparus dans une période, les plus fréquents d'abord : une ligne de bilan. */
 export function motifsIn(inst, from, to) {

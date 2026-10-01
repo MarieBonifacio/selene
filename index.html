@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-1OB9tx/5Q6qGwC7p8aOZm3P+RToBHtQsJ2lak0m7OZg=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-BsXk+spJwJz6sk2I0YzSlYFAmt3iyYHRCbRmZVREdTA=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://opendata.lillemetropole.fr https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -820,6 +820,7 @@ var __selene = (() => {
     CARTE_MAX: () => CARTE_MAX,
     CHANGE: () => CHANGE,
     CLICK: () => CLICK,
+    CORE_LABELS: () => CORE_LABELS,
     DRAFT_PREFIX: () => DRAFT_PREFIX,
     EP_STATUS: () => EP_STATUS,
     ICONS: () => ICONS,
@@ -953,6 +954,7 @@ var __selene = (() => {
     entryIds: () => entryIds,
     epCounts: () => epCounts,
     epGlyph: () => epGlyph,
+    epLabel: () => epLabel,
     epPrefix: () => epPrefix,
     epSelect: () => epSelect,
     esc: () => esc,
@@ -1003,6 +1005,7 @@ var __selene = (() => {
     lastView: () => lastView,
     left: () => left,
     lexicalDrift: () => lexicalDrift,
+    linkLabel: () => linkLabel,
     linksHTML: () => linksHTML,
     liveRecents: () => liveRecents,
     loadDraft: () => loadDraft,
@@ -1195,6 +1198,159 @@ var __selene = (() => {
 
   // src/app/i18n/en.js
   var en_default = {
+    // features/bridge.js
+    "Le prochain geste, pour la prochaine fois…": "The next step, for next time…",
+    "Prochain geste": "Next step",
+    "plus tard": "later",
+    "Reprendre :": "Pick up:",
+    "noté {0}": "noted {0}",
+    "Noté. La prochaine fois commencera ici.": "Noted. Next time will start here.",
+    "Pont levé.": "Bridge lifted.",
+    "Repris. Le pont est levé.": "Picked up. The bridge is lifted.",
+    // features/carte.js
+    "Voisinage de « {0} »": "Neighbourhood of “{0}”",
+    "Motif « {0} »": "Motif “{0}”",
+    "Cette entrée ou ce motif n'existe plus.": "This entry or motif no longer exists.",
+    "{0} étoile": { one: "{0} star", other: "{0} stars" },
+    "{0} lien": { one: "{0} link", other: "{0} links" },
+    "Carte : {0}, {1}": "Map: {0}, {1}",
+    "{0}, {1}. Le temps de gauche à droite, une bande par espace ; la taille d'une étoile dit son nombre de liens.": "{0}, {1}. Time runs left to right, one band per space; a star's size tells its number of links.",
+    "{0} étoiles au plus : au-delà, c'est une nébuleuse, pas une carte ; les plus proches sont gardées.": "{0} stars at most: beyond that it's a nebula, not a map; the closest ones are kept.",
+    "Voir la carte": "Show the map",
+    "tension ouverte": "open tension",
+    "Table des liaisons": "Table of links",
+    "Aucun lien entre ces étoiles.": "No links between these stars.",
+    "Sans lien ici : {0}.": "Unlinked here: {0}.",
+    "Masquer la carte": "Hide the map",
+    // features/concordance.js
+    "« {0} » est déjà un motif.": "“{0}” is already a motif.",
+    "« {0} » devient un motif de {1}. On verra s'il revient.": "“{0}” becomes a motif of {1}. We'll see if it comes back.",
+    "dernière {0} ({1})": "last {0} ({1})",
+    "jamais daté": "never dated",
+    "{0} occurrence": { one: "{0} occurrence", other: "{0} occurrences" },
+    "jamais rencontré": "never encountered",
+    "en jachère": "lying fallow",
+    "voisins : {0}": "neighbours: {0}",
+    "carte": "map",
+    "En jachère": "Lying fallow",
+    "Vivants, mais absents depuis plus de {0} jours. Reposés, pas perdus.": "Alive, but absent for more than {0} days. Resting, not lost.",
+    "{0} lunaison": { one: "{0} lunation", other: "{0} lunations" },
+    "Aucun motif. Ajoute un mot qui revient ; l'app comptera ses retours.": "No motifs. Add a word that keeps coming back; the app will count its returns.",
+    "{0} motif": { one: "{0} motif", other: "{0} motifs" },
+    "{0} en jachère": "{0} lying fallow",
+    // features/derive.js
+    "{0} texte": { one: "{0} text", other: "{0} texts" },
+    "Vocabulaire": "Vocabulary",
+    "Pas encore assez de textes datés pour parler de dérive : {0} dans la période, {1} dans les six mois d'avant ({2} de chaque côté au moins).": "Not enough dated texts yet to speak of drift: {0} in the period, {1} in the six months before (at least {2} on each side).",
+    "Pas encore assez de textes datés pour parler de dérive : {0} dans la période, {1} dans les six cycles d'avant ({2} de chaque côté au moins).": "Not enough dated texts yet to speak of drift: {0} in the period, {1} in the six cycles before (at least {2} on each side).",
+    "En faire un motif": "Make it a motif",
+    "Les mots propres à la période, comparés aux six mois d'avant ({0} contre {1}). Une piste, pas un diagnostic : deux occurrences ne font pas une obsession.": "The words specific to the period, compared with the six months before ({0} against {1}). A lead, not a diagnosis: two occurrences don't make an obsession.",
+    "Les mots propres à la période, comparés aux six cycles d'avant ({0} contre {1}). Une piste, pas un diagnostic : deux occurrences ne font pas une obsession.": "The words specific to the period, compared with the six cycles before ({0} against {1}). A lead, not a diagnosis: two occurrences don't make an obsession.",
+    "« + » en fait un motif.": "“+” makes it a motif.",
+    "Émergent": "Emerging",
+    "(avant {0})": "(before: {0})",
+    "Aucun mot ne se détache. Constance, ou routine.": "No word stands out. Constancy, or routine.",
+    "Absent cette fois, fréquent avant": "Absent this time, frequent before",
+    "{0} avant": "{0} before",
+    // features/digest.js
+    "Échéance : {0}": "Deadline: {0}",
+    "Selene : {0} chose ce jour": { one: "Selene: {0} thing that day", other: "Selene: {0} things that day" },
+    "Selene : {0} chose aujourd'hui": { one: "Selene: {0} thing today", other: "Selene: {0} things today" },
+    "et {0} de plus": "and {0} more",
+    "Notifications": "Notifications",
+    "Sur cet appareil : chaque matin, ce qui t'attend (rappels, échéances), programmé par le téléphone lui-même, même app fermée. Rien ne part sur un serveur. Les jours sans rien, silence.": "On this device: every morning, what's waiting for you (reminders, deadlines), scheduled by the phone itself, even with the app closed. Nothing goes to a server. On days with nothing, silence.",
+    "Résumé du matin": "Morning summary",
+    "Heure": "Time",
+    // features/dossier.js
+    "s. d.": "n.d.",
+    "Anonyme": "Anonymous",
+    "« {0} » (hors dossier)": "“{0}” (outside the dossier)",
+    "Provenance : {0}, {1} : « {2} »": "Provenance: {0}, {1}: “{2}”",
+    "Provenance : {0} : « {1} »": "Provenance: {0}: “{1}”",
+    "Référence : {0}": "Reference: {0}",
+    "Liens : {0}": "Links: {0}",
+    "Documenté par : {0}": "Documented by: {0}",
+    "Chaque entrée porte sa date, son module et, s'il est indiqué, son statut épistémique : *observé* (ce qui s'est présenté), *hypothèse* (une conjecture à tester), *interprétation* (une lecture, un cadre appliqué), *inexpliqué* (laissé ouvert à dessein). Ne pas traiter une hypothèse comme un fait, ni combler un inexpliqué. Les renvois [n] désignent les entrées de ce dossier ; les renvois [Sn], les références en fin de dossier (avec leur DOI quand il existe). Qu'une source documente une entrée ne la prouve pas.": "Each entry carries its date, its module and, when given, its epistemic status: *observed* (what presented itself), *hypothesis* (a conjecture to test), *interpretation* (a reading, an applied frame), *unexplained* (left open on purpose). Do not treat a hypothesis as a fact, nor fill in an unexplained. References [n] point to the entries of this dossier; references [Sn], to the references at the end of the dossier (with their DOI when there is one). That a source documents an entry does not prove it.",
+    "Chaque entrée porte sa date, son module et, s'il est indiqué, son statut épistémique : *observé* (ce qui s'est présenté), *hypothèse* (une conjecture à tester), *interprétation* (une lecture, un cadre appliqué), *inexpliqué* (laissé ouvert à dessein). Ne pas traiter une hypothèse comme un fait, ni combler un inexpliqué. Les renvois [n] désignent les entrées de ce dossier.": "Each entry carries its date, its module and, when given, its epistemic status: *observed* (what presented itself), *hypothesis* (a conjecture to test), *interpretation* (a reading, an applied frame), *unexplained* (left open on purpose). Do not treat a hypothesis as a fact, nor fill in an unexplained. References [n] point to the entries of this dossier.",
+    "Références": "References",
+    // features/links.js
+    "a donné": "gave rise to",
+    "contredit par": "contradicted by",
+    "écho de": "echo of",
+    "documenté par": "documented by",
+    "« {0} »": "“{0}”",
+    "dériver": "derive",
+    "lier…": "link…",
+    "modifié {0}": "edited {0}",
+    "motifs": "motifs",
+    "En marge": "In the margin",
+    "Synthèse de {0} et {1}": "Synthesis of {0} and {1}",
+    "Dérivé de {0}": "Derived from {0}",
+    "Rien d'autre à quoi le lier. Une pensée seule ne se contredit pas encore.": "Nothing else to link it to. A lone thought can't contradict itself yet.",
+    "Lier à une autre entrée": "Link to another entry",
+    "Cette entrée…": "This entry…",
+    "…quelle autre": "…which other",
+    "Cette entrée a disparu entre-temps.": "This entry disappeared in the meantime.",
+    "Déjà lié ainsi.": "Already linked this way.",
+    "Tension ouverte. Elle attendra sa synthèse.": "Tension opened. It will wait for its synthesis.",
+    "Lié.": "Linked.",
+    "Statut": "Status",
+    "statut…": "status…",
+    "L'une des deux entrées a disparu.": "One of the two entries has disappeared.",
+    "Tension — {0}": "Tension — {0}",
+    "« {0} » contredit « {1} », et leur voisinage": "“{0}” contradicts “{1}”, and their neighbourhood",
+    // features/lunar.js
+    "Lune": "Moon",
+    "Pas assez de matière pour un test honnête : {0} événement daté au lieu de {1} au moins. Reviens quand le corpus aura grandi.": { one: "Not enough material for an honest test: {0} dated event instead of at least {1}. Come back when the corpus has grown.", other: "Not enough material for an honest test: {0} dated events instead of at least {1}. Come back when the corpus has grown." },
+    "Test de Rayleigh sur {0} événement daté : ta lune éclaire-t-elle vraiment ton activité, ou est-ce une histoire qu'on se raconte ? Un seul test compte ici ; le refaire ailleurs sous d'autres formes userait sa valeur (tests multiples).": { one: "Rayleigh test on {0} dated event: does your moon really light up your activity, or is it a story we tell ourselves? Only one test counts here; repeating it elsewhere in other forms would wear down its value (multiple testing).", other: "Rayleigh test on {0} dated events: does your moon really light up your activity, or is it a story we tell ourselves? Only one test counts here; repeating it elsewhere in other forms would wear down its value (multiple testing)." },
+    "Concentration autour de {0} (R = {1}, p = {2}). Ce n'est pas rien, mais ce n'est pas une preuve : une seule corrélation, jamais répétée ni contrôlée.": "Concentration around the {0} (R = {1}, p = {2}). It isn't nothing, but it isn't proof: a single correlation, never repeated or controlled.",
+    "Rien de concentré (R = {0}, p = {1}) : la répartition ne se distingue pas de l'uniforme. La lune plaide non coupable, ce qui est aussi une réponse.": "Nothing concentrated (R = {0}, p = {1}): the distribution can't be told apart from a uniform one. The moon pleads not guilty, which is also an answer.",
+    // features/share.js
+    "Lien reçu, mais aucune boîte de réception où le garder. Crée un Carnet et fais-en ta boîte (Réglages).": "Link received, but no inbox to keep it in. Create a Notebook and make it your inbox (Settings).",
+    "Reçu dans {0} : « Garder comme source » le complétera.": "Received in {0}: “Keep as a source” will complete it.",
+    "Reçu dans {0}.": "Received in {0}.",
+    "Envoyer à Selene": "Send to Selene",
+    "Un lien lu ailleurs arrive dans ta boîte de réception, prêt à devenir une source. Rien ne part ailleurs que chez toi.": "A link read elsewhere lands in your inbox, ready to become a source. Nothing goes anywhere but to you.",
+    "Sur ordinateur : glisse ce bouton dans ta barre de favoris.": "On a computer: drag this button to your bookmarks bar.",
+    "Sur Android, une fois l'app installée : « Partager », puis Selene. Sur iPhone : app Raccourcis, un raccourci qui s'affiche dans la feuille de partage (URL), avec l'action « Ouvrir les URL » : {0} suivi de l'entrée du raccourci.": "On Android, once the app is installed: “Share”, then Selene. On iPhone: the Shortcuts app, a shortcut shown in the share sheet (URL), with the action “Open URLs”: {0} followed by the shortcut's input.",
+    "Glisse ce bouton dans la barre de favoris : c'est là qu'il sert, sur la page à garder.": "Drag this button to the bookmarks bar: that's where it works, on the page you want to keep.",
+    // features/sortes.js
+    "Tension ouverte": "Open tension",
+    "résoudre": "resolve",
+    "dossier": "dossier",
+    "Source oubliée, {0}": "Forgotten source, {0}",
+    "gardée il y a {0}, {1}": "kept {0} ago, {1}",
+    "{0} lunaisons": "{0} lunations",
+    "{0} jour": { one: "{0} day", other: "{0} days" },
+    "jamais relue": "never reread",
+    "reliée à rien": "linked to nothing",
+    "ouvrir ↗": "open ↗",
+    "Motif en jachère, {0}": "Fallow motif, {0}",
+    "chercher": "search",
+    "{0}, fragment endormi": "{0}, dormant fragment",
+    "{0}, note endormie": "{0}, dormant note",
+    "{0} jour sans y toucher": { one: "{0} day untouched", other: "{0} days untouched" },
+    "Tirer un sort": "Cast lots",
+    "Un fragment endormi, une note oubliée, une source gardée puis reliée à rien, une tension ouverte ou un motif en jachère — le hasard pondéré par l'oubli, dans ton seul matériau.": "A dormant fragment, a forgotten note, a source kept then linked to nothing, an open tension or a fallow motif — chance weighted by forgetting, in your own material only.",
+    "Retirer": "Draw again",
+    "Tirer": "Draw",
+    "Rien d'assez ancien à tirer. Reviens dans deux semaines.": "Nothing old enough to draw. Come back in two weeks.",
+    // features/specimen.js
+    "Cette entrée n'existe plus.": "This entry no longer exists.",
+    "{0} : ": "{0}: ",
+    "{0}, le {1}": "{0}, on {1}",
+    "Fiche de l'entrée": "Entry record",
+    "carte du voisinage": "neighbourhood map",
+    "Provenance": "Provenance",
+    "Liens": "Links",
+    "Motifs": "Motifs",
+    "Statut, au fil du temps": "Status, over time",
+    "Réexamens": "Reviews",
+    "Voir dans {0}": "See in {0}",
+    // features/tensions.js
+    "Tensions ouvertes": "Open tensions",
+    "Deux entrées qui se contredisent, en attente d'une synthèse qui dérive des deux. Aucune urgence : certaines contradictions sont plus fécondes que leurs solutions.": "Two entries that contradict each other, waiting for a synthesis derived from both. No hurry: some contradictions are more fertile than their solutions.",
+    "ouverte {0}": "opened {0}",
     // features/timer.js
     "Quinze minutes. Tu as le droit d'arrêter. Et celui de continuer.": "Fifteen minutes. You're allowed to stop. And to keep going.",
     "Pause": "Pause",
@@ -1203,6 +1359,14 @@ var __selene = (() => {
     "Lancer 15 min": "Start 15 min",
     "Quinze minutes, dans le halo de la lune.": "Fifteen minutes, in the moon's halo.",
     "Minuteur en pause.": "Timer paused.",
+    // features/vasculum.js
+    "Vasculum": "Vasculum",
+    "Aucune boîte de réception.": "No inbox.",
+    "La boîte est vide. Tout a trouvé sa place, ou presque.": "The inbox is empty. Everything has found its place, or nearly.",
+    "Fermer": "Close",
+    "Vasculum : trier la boîte": "Vasculum: sort the inbox",
+    "Vasculum · {0} sur {1}": "Vasculum · {0} of {1}",
+    "Aucun espace ne sait encore recevoir une note.": "No space can receive a note yet.",
     // lib/dom.js
     "toastAnnuler": "Undo",
     "Voir les {0} suivants ({1} de plus)": "Show the next {0} ({1} more)",
@@ -1213,6 +1377,16 @@ var __selene = (() => {
     "aujourd'hui": "today",
     "hier": "yesterday",
     "il y a {0} j": "{0} d ago",
+    // lib/labels.js
+    "observé": "observed",
+    "hypothèse": "hypothesis",
+    "interprétation": "interpretation",
+    "inexpliqué": "unexplained",
+    "dérive de": "derives from",
+    "contredit": "contradicts",
+    "fait écho à": "echoes",
+    "documente": "documents",
+    "sans statut": "no status",
     // modules/arc.js
     "Ajoute une étape avant de placer quoi que ce soit.": "Add a stage before placing anything.",
     "Rien à placer pour l'instant : un fragment ou un élément de collection, d'abord.": "Nothing to place yet: a fragment or a collection item first.",
@@ -2002,257 +2176,6 @@ var __selene = (() => {
   }
   var plural = (n, word) => `${n} ${word}${n > 1 ? "s" : ""}`;
 
-  // src/core/sky.js
-  var RAD = Math.PI / 180;
-  var daysJ2000 = (t) => t / 864e5 - 10957.5;
-  var clamp01 = (x) => Math.max(0, Math.min(1, x));
-  function toHorizon(ra, dec, d, lat, lon) {
-    const H = (280.46061837 + 360.98564736629 * d + lon) * RAD - ra, phi = lat * RAD;
-    const alt = Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H));
-    const azS = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi));
-    return { alt: alt / RAD, az: ((azS / RAD + 180) % 360 + 360) % 360 };
-  }
-  function sunPosition(t, lat, lon) {
-    const d = daysJ2000(t), g = (357.529 + 0.98560028 * d) * RAD, q = 280.459 + 0.98564736 * d;
-    const L = (q + 1.915 * Math.sin(g) + 0.02 * Math.sin(2 * g)) * RAD, e = (23.439 - 36e-8 * d) * RAD;
-    return toHorizon(Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L)), Math.asin(Math.sin(e) * Math.sin(L)), d, lat, lon);
-  }
-  function moonPosition(t, lat, lon) {
-    const d = daysJ2000(t), L = (218.316 + 13.176396 * d) * RAD, M = (134.963 + 13.064993 * d) * RAD, F = (93.272 + 13.22935 * d) * RAD;
-    const l = L + 6.289 * RAD * Math.sin(M), b = 5.128 * RAD * Math.sin(F), e = 23.4397 * RAD;
-    const ra = Math.atan2(Math.sin(l) * Math.cos(e) - Math.tan(b) * Math.sin(e), Math.cos(l));
-    const dec = Math.asin(Math.sin(b) * Math.cos(e) + Math.cos(b) * Math.sin(e) * Math.sin(l));
-    const p = toHorizon(ra, dec, d, lat, lon);
-    p.alt -= 0.95 * Math.cos(p.alt * RAD);
-    return p;
-  }
-  function nextCrossing(pos, t, lat, lon, h, hours = 26, step = 5) {
-    let prev = pos(t, lat, lon).alt - h;
-    for (let m = step; m <= hours * 60; m += step) {
-      const tt = t + m * 6e4, cur = pos(tt, lat, lon).alt - h;
-      if (prev < 0 !== cur < 0) return { at: tt - step * 6e4 * (cur / (cur - prev)), rising: cur > prev };
-      prev = cur;
-    }
-    return null;
-  }
-  function approxPlace(now = /* @__PURE__ */ new Date()) {
-    return { lat: 45, lon: -new Date(now.getFullYear(), 0, 1).getTimezoneOffset() / 4, approx: true };
-  }
-  function moonPlacement(p, lat) {
-    if (p.alt < -1) return null;
-    const rel = lat >= 0 ? p.az - 180 : (p.az + 180) % 360 - 180;
-    return { x: 50 + Math.max(-1, Math.min(1, rel / 90)) * 38, y: 62 - clamp01(p.alt / 60) * 52 };
-  }
-  var WEATHER = { clear: "dégagé", veiled: "voilé", overcast: "couvert", fog: "brume", rain: "pluie", snow: "neige", storm: "orage" };
-  function weatherState(code) {
-    if (code == null || code === "" || !Number.isFinite(+code)) return null;
-    const c = +code;
-    if (c === 0) return "clear";
-    if (c <= 2) return "veiled";
-    if (c === 45 || c === 48) return "fog";
-    if (c >= 51 && c <= 67 || c >= 80 && c <= 82) return "rain";
-    if (c >= 71 && c <= 77 || c === 85 || c === 86) return "snow";
-    if (c >= 95) return "storm";
-    return "overcast";
-  }
-  var hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-  var rgbHex = (c) => "#" + c.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, "0")).join("");
-  var mixHex = (a, b, f) => {
-    const x = hexRgb(a), y = hexRgb(b);
-    return rgbHex(x.map((v, i) => v + (y[i] - v) * f));
-  };
-  var lin = (v) => {
-    v /= 255;
-    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-  };
-  var luminance = (h) => {
-    const [r, g, b] = hexRgb(h);
-    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-  };
-  var contrast = (a, b) => {
-    const x = luminance(a), y = luminance(b);
-    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
-  };
-  var desaturate = (h, f) => {
-    const l = luminance(h) ** (1 / 2.2) * 255;
-    return mixHex(h, rgbHex([l, l, l]), f);
-  };
-  var SKY_KEYS = {
-    dark: [
-      [-18, "#070b10", "#132019", "#1d2b23", "#0a0f0c"],
-      // nuit
-      [-12, "#0a1220", "#1a2a2e", "#1f2e2a", "#0a100d"],
-      // crépuscule nautique
-      [-6, "#142033", "#3a4a55", "#26363a", "#0c1210"],
-      // heure bleue
-      [-1, "#1d2a3d", "#6a5a4e", "#2d3a36", "#0d1411"],
-      // horizon cuivré
-      [4, "#2a3a4a", "#86684a", "#3a4a40", "#111a14"],
-      // heure dorée
-      [12, "#3a4c58", "#6f7d78", "#45584e", "#16201a"],
-      // jour bas
-      [35, "#445866", "#7c8a86", "#4c5f55", "#18231c"]
-      // jour
-    ],
-    light: [
-      [-18, "#3a4656", "#7d8a8c", "#5d6d66", "#2f3d35"],
-      [-12, "#4d5b6c", "#98a3a2", "#66766e", "#314038"],
-      [-6, "#6d7c8e", "#b4b8b0", "#72827a", "#34443a"],
-      [-1, "#8a97a4", "#d9c7aa", "#7d8d84", "#37473d"],
-      [4, "#9fb0b8", "#e3d2b4", "#869a8d", "#394a3f"],
-      [12, "#b0c2c4", "#dfe5dc", "#8b9e91", "#3a4c40"],
-      [35, "#b9c7c0", "#dfe5dc", "#8fa294", "#3b4d40"]
-    ]
-  };
-  function skyAt(alt, dark) {
-    const keys = SKY_KEYS[dark ? "dark" : "light"];
-    if (alt <= keys[0][0]) return keys[0].slice(1);
-    if (alt >= keys.at(-1)[0]) return keys.at(-1).slice(1);
-    const i = keys.findIndex((k) => k[0] > alt), a = keys[i - 1], b = keys[i], f = (alt - a[0]) / (b[0] - a[0]);
-    return a.slice(1).map((c, j) => mixHex(c, b[j + 1], f));
-  }
-  var WEATHER_FX = {
-    clear: { desat: 0, dark: 1, veil: 0, stars: 1, clouds: 0 },
-    veiled: { desat: 0.25, dark: 0.97, veil: 0.25, stars: 0.5, clouds: 0.35 },
-    overcast: { desat: 0.7, dark: 0.9, veil: 0.75, stars: 0, clouds: 0.7 },
-    fog: { desat: 0.5, dark: 0.95, veil: 0.6, stars: 0, clouds: 0.3, fog: 1 },
-    rain: { desat: 0.6, dark: 0.82, veil: 0.8, stars: 0, clouds: 0.75, rain: 0.35 },
-    snow: { desat: 0.6, dark: 1, veil: 0.7, stars: 0, clouds: 0.6, snow: 0.8 },
-    storm: { desat: 0.5, dark: 0.65, veil: 0.9, stars: 0, clouds: 0.85, rain: 0.45, warm: 0.25 }
-  };
-  var INK_LIGHT = "#eceee6";
-  var INK_DARK = "#1a211b";
-  var LEAF_KEYS = [
-    [0, 0, "#6f5a3e"],
-    [100, 0, "#6f5a3e"],
-    [118, 0.55, "#9db36c"],
-    [140, 1, "#5d7a48"],
-    [250, 1, "#56703f"],
-    [278, 1, "#b08a3e"],
-    [298, 0.75, "#9c5b30"],
-    [318, 0.2, "#7d4c2c"],
-    [330, 0, "#6f5a3e"],
-    [367, 0, "#6f5a3e"]
-  ];
-  function seasonAt(t, lat = 45) {
-    const y = new Date(t).getUTCFullYear(), doy = (t - Date.UTC(y, 0, 1)) / 864e5;
-    const d = lat < 0 ? (doy + 182.5) % 365.25 : doy;
-    const i = LEAF_KEYS.findIndex((k) => k[0] > d), a = LEAF_KEYS[i - 1], b = LEAF_KEYS[i], f = (d - a[0]) / (b[0] - a[0]);
-    const leaf = Math.round((a[1] + (b[1] - a[1]) * f) * 1e3) / 1e3;
-    const phase2 = leaf < 0.05 ? "nu" : d < 140 ? "debourrement" : d < 262 ? "feuille" : d < 300 ? "rouille" : "chute";
-    return { leaf, color: mixHex(a[2], b[2], f), phase: phase2 };
-  }
-  function skyScene({ sunAlt, illum = 0.5, weather = null, dark = true, season = null, frost = false }) {
-    const fx = WEATHER_FX[weather] || WEATHER_FX.clear;
-    let [top, bot, far, near] = skyAt(sunAlt, dark);
-    const shade = (c) => {
-      const d = desaturate(c, fx.desat);
-      return fx.dark < 1 ? mixHex(d, "#000000", 1 - fx.dark) : d;
-    };
-    top = shade(top);
-    bot = shade(bot);
-    if (fx.warm) bot = mixHex(bot, "#6b4a2e", fx.warm);
-    if (fx.fog) far = mixHex(far, bot, 0.6);
-    if (weather === "snow") {
-      top = mixHex(top, "#dde3e0", dark ? 0.08 : 0.15);
-      bot = mixHex(bot, "#e6ebe8", dark ? 0.12 : 0.2);
-    }
-    const night = clamp01((-4 - sunAlt) / 11);
-    const star = night * (1 - 0.7 * illum) * fx.stars * (dark ? 0.85 : 0.45);
-    const glow = (dark ? 0.16 : 0.1) * clamp01((2 - sunAlt) / 10) * (1 - fx.veil * 0.5);
-    const moonOpacity = (1 - 0.85 * fx.veil) * (sunAlt > 0 ? 0.55 : 1);
-    const earthshine = illum < 0.4 ? 0.1 * (1 - illum / 0.4) * (sunAlt < -4 ? 1 : 0.3) : 0;
-    const se = season || { leaf: 1, color: "#56703f", phase: "feuille" }, vivid = 0.2 + 0.45 * (1 - night);
-    const leafColor = desaturate(mixHex(far, se.color, vivid), fx.desat * 0.5), wood = mixHex(far, near, 0.6);
-    const birch = mixHex(far, dark ? "#d8d8cf" : "#f1efe8", 0.2 + 0.35 * (1 - night));
-    const frostColor = frost ? mixHex(far, "#eef3f2", dark ? 0.55 : 0.75) : null;
-    const mistA = fx.fog ? 0.9 : dark ? 0.55 : 0.75, mistRgb = hexRgb(mixHex(bot, dark ? "#28392f" : "#e2e6de", 0.5));
-    const sample = mixHex(top, bot, 0.3);
-    const ink = contrast(INK_LIGHT, sample) >= contrast(INK_DARK, sample) ? INK_LIGHT : INK_DARK;
-    const scrimColor = ink === INK_LIGHT ? "#060907" : "#f2f3ee";
-    let scrim = 0;
-    while (scrim < 0.9 && contrast(ink, mixHex(sample, scrimColor, scrim)) < 4.8) scrim += 0.05;
-    return {
-      top,
-      bot,
-      far,
-      near,
-      star,
-      glow,
-      moonOpacity,
-      earthshine,
-      weather,
-      mist: `rgba(${mistRgb.join(",")},${mistA})`,
-      fog: !!fx.fog,
-      clouds: fx.clouds,
-      cloud: mixHex(bot, dark ? "#9aa3a3" : "#ffffff", 0.18),
-      rain: fx.rain || 0,
-      snow: fx.snow || 0,
-      leaf: leafColor,
-      leafO: se.leaf,
-      leaves: se.phase,
-      wood,
-      birch,
-      frost: frostColor,
-      ink,
-      scrim: Math.round(scrim * 100) / 100,
-      scrimColor,
-      sample
-    };
-  }
-  var WIND_NAMES = ["du nord", "du nord-est", "d'est", "du sud-est", "du sud", "du sud-ouest", "d'ouest", "du nord-ouest"];
-  var windName = (dir) => WIND_NAMES[Math.round((+dir % 360 + 360) % 360 / 45) % 8];
-  function skyMotion({ wind = 8, dir = 270, precip = 0, lat = 45 } = {}) {
-    const w = Number.isFinite(+wind) ? Math.max(0, +wind) : 8, from = Number.isFinite(+dir) ? +dir : 270;
-    const east = Math.sin((from + 180) * RAD), dx = (lat >= 0 ? -1 : 1) * east;
-    const eff = Math.max(3, w * Math.max(0.35, Math.abs(dx)));
-    const clouds = Math.round(Math.max(45, Math.min(600, 2400 / eff)));
-    const p = Number.isFinite(+precip) ? Math.max(0, +precip) : 0;
-    const fall = Math.max(70, Math.min(220, 70 + 25 * p));
-    return {
-      toRight: dx > 0,
-      clouds,
-      mist: Math.round(clouds * 1.8),
-      slant: Math.round(Math.max(-30, Math.min(30, dx * w * 0.9))),
-      // degrés : la pluie penche avec le vent
-      rain: +(24 / fall).toFixed(3),
-      snow: +(60 / Math.max(10, Math.min(30, 10 + w * 0.4))).toFixed(2)
-    };
-  }
-  var SHOWERS = [["Quadrantides", 1, 4, 110], ["Lyrides", 4, 22, 18], ["Perséides", 8, 12, 100], ["Orionides", 10, 21, 20], ["Léonides", 11, 17, 15], ["Géminides", 12, 14, 150]];
-  var ECLIPSES = [
-    ["2026-08-12", "soleil", "partielle", "90 % du Soleil masqué, maximum vers 20 h 14"],
-    ["2026-08-28", "lune", "partielle", ""],
-    ["2027-02-20", "lune", "pénombre", ""],
-    ["2027-08-02", "soleil", "partielle", ""],
-    ["2028-01-12", "lune", "partielle", ""],
-    ["2028-01-26", "soleil", "partielle", ""],
-    ["2028-07-06", "lune", "pénombre", ""],
-    ["2028-12-31", "lune", "totale", ""],
-    ["2029-06-26", "lune", "totale", ""],
-    ["2029-12-20", "lune", "totale", ""],
-    ["2030-06-01", "soleil", "partielle", ""],
-    ["2030-06-15", "lune", "pénombre", ""],
-    ["2030-12-09", "lune", "pénombre", ""]
-  ];
-  var nearLille = (lat, lon) => lat >= 48.5 && lat <= 52.5 && lon >= 0.5 && lon <= 6.5;
-  var dayDiff = (a, b) => Math.round((Date.parse(b + "T12:00:00Z") - Date.parse(a + "T12:00:00Z")) / 864e5);
-  function skyEvents(today, place) {
-    const out = [], y = +today.slice(0, 4);
-    for (const [name, m, d, zhr] of SHOWERS) {
-      for (const yy of [y, y + 1]) {
-        const peak = `${yy}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`, n = dayDiff(today, peak);
-        if (n === 0 || n === 1) out.push({ kind: "shower", name, zhr, inDays: n, date: peak });
-      }
-    }
-    if (place && nearLille(place.lat, place.lon)) for (const [date, body, type, note] of ECLIPSES) {
-      const n = dayDiff(today, date);
-      if (n >= 0 && n <= 7) out.push({ kind: "eclipse", body, type, note, inDays: n, date });
-    }
-    return out;
-  }
-  var rainDays = (days, from, n = 5) => (days || []).filter((x) => x && x.d >= from && dayDiff(from, x.d) < n && ((+x.mm || 0) >= 1 || (+x.pp || 0) >= 60)).map((x) => x.d);
-
   // src/core/domain.js
   var requireText = (value, label2, max) => {
     if (typeof value !== "string" || !value.trim()) throw new Error(`${label2} manquant`);
@@ -2878,6 +2801,271 @@ var __selene = (() => {
     if (i >= 0) moduleList.splice(i, 1);
   }
 
+  // src/app/lib/labels.js
+  var CORE_LABELS = [
+    N_("observé"),
+    N_("hypothèse"),
+    N_("interprétation"),
+    N_("inexpliqué"),
+    N_("dérive de"),
+    N_("contredit"),
+    N_("fait écho à"),
+    N_("documente")
+  ];
+  var epLabel = (k) => k ? tr(EP_STATUS[k] || k) : tr`sans statut`;
+  var linkLabel = (k) => tr(LINK_TYPES[k] || k);
+
+  // src/core/sky.js
+  var RAD = Math.PI / 180;
+  var daysJ2000 = (t) => t / 864e5 - 10957.5;
+  var clamp01 = (x) => Math.max(0, Math.min(1, x));
+  function toHorizon(ra, dec, d, lat, lon) {
+    const H = (280.46061837 + 360.98564736629 * d + lon) * RAD - ra, phi = lat * RAD;
+    const alt = Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H));
+    const azS = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi));
+    return { alt: alt / RAD, az: ((azS / RAD + 180) % 360 + 360) % 360 };
+  }
+  function sunPosition(t, lat, lon) {
+    const d = daysJ2000(t), g = (357.529 + 0.98560028 * d) * RAD, q = 280.459 + 0.98564736 * d;
+    const L = (q + 1.915 * Math.sin(g) + 0.02 * Math.sin(2 * g)) * RAD, e = (23.439 - 36e-8 * d) * RAD;
+    return toHorizon(Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L)), Math.asin(Math.sin(e) * Math.sin(L)), d, lat, lon);
+  }
+  function moonPosition(t, lat, lon) {
+    const d = daysJ2000(t), L = (218.316 + 13.176396 * d) * RAD, M = (134.963 + 13.064993 * d) * RAD, F = (93.272 + 13.22935 * d) * RAD;
+    const l = L + 6.289 * RAD * Math.sin(M), b = 5.128 * RAD * Math.sin(F), e = 23.4397 * RAD;
+    const ra = Math.atan2(Math.sin(l) * Math.cos(e) - Math.tan(b) * Math.sin(e), Math.cos(l));
+    const dec = Math.asin(Math.sin(b) * Math.cos(e) + Math.cos(b) * Math.sin(e) * Math.sin(l));
+    const p = toHorizon(ra, dec, d, lat, lon);
+    p.alt -= 0.95 * Math.cos(p.alt * RAD);
+    return p;
+  }
+  function nextCrossing(pos, t, lat, lon, h, hours = 26, step = 5) {
+    let prev = pos(t, lat, lon).alt - h;
+    for (let m = step; m <= hours * 60; m += step) {
+      const tt = t + m * 6e4, cur = pos(tt, lat, lon).alt - h;
+      if (prev < 0 !== cur < 0) return { at: tt - step * 6e4 * (cur / (cur - prev)), rising: cur > prev };
+      prev = cur;
+    }
+    return null;
+  }
+  function approxPlace(now = /* @__PURE__ */ new Date()) {
+    return { lat: 45, lon: -new Date(now.getFullYear(), 0, 1).getTimezoneOffset() / 4, approx: true };
+  }
+  function moonPlacement(p, lat) {
+    if (p.alt < -1) return null;
+    const rel = lat >= 0 ? p.az - 180 : (p.az + 180) % 360 - 180;
+    return { x: 50 + Math.max(-1, Math.min(1, rel / 90)) * 38, y: 62 - clamp01(p.alt / 60) * 52 };
+  }
+  var WEATHER = { clear: "dégagé", veiled: "voilé", overcast: "couvert", fog: "brume", rain: "pluie", snow: "neige", storm: "orage" };
+  function weatherState(code) {
+    if (code == null || code === "" || !Number.isFinite(+code)) return null;
+    const c = +code;
+    if (c === 0) return "clear";
+    if (c <= 2) return "veiled";
+    if (c === 45 || c === 48) return "fog";
+    if (c >= 51 && c <= 67 || c >= 80 && c <= 82) return "rain";
+    if (c >= 71 && c <= 77 || c === 85 || c === 86) return "snow";
+    if (c >= 95) return "storm";
+    return "overcast";
+  }
+  var hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  var rgbHex = (c) => "#" + c.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, "0")).join("");
+  var mixHex = (a, b, f) => {
+    const x = hexRgb(a), y = hexRgb(b);
+    return rgbHex(x.map((v, i) => v + (y[i] - v) * f));
+  };
+  var lin = (v) => {
+    v /= 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  var luminance = (h) => {
+    const [r, g, b] = hexRgb(h);
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  };
+  var contrast = (a, b) => {
+    const x = luminance(a), y = luminance(b);
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  };
+  var desaturate = (h, f) => {
+    const l = luminance(h) ** (1 / 2.2) * 255;
+    return mixHex(h, rgbHex([l, l, l]), f);
+  };
+  var SKY_KEYS = {
+    dark: [
+      [-18, "#070b10", "#132019", "#1d2b23", "#0a0f0c"],
+      // nuit
+      [-12, "#0a1220", "#1a2a2e", "#1f2e2a", "#0a100d"],
+      // crépuscule nautique
+      [-6, "#142033", "#3a4a55", "#26363a", "#0c1210"],
+      // heure bleue
+      [-1, "#1d2a3d", "#6a5a4e", "#2d3a36", "#0d1411"],
+      // horizon cuivré
+      [4, "#2a3a4a", "#86684a", "#3a4a40", "#111a14"],
+      // heure dorée
+      [12, "#3a4c58", "#6f7d78", "#45584e", "#16201a"],
+      // jour bas
+      [35, "#445866", "#7c8a86", "#4c5f55", "#18231c"]
+      // jour
+    ],
+    light: [
+      [-18, "#3a4656", "#7d8a8c", "#5d6d66", "#2f3d35"],
+      [-12, "#4d5b6c", "#98a3a2", "#66766e", "#314038"],
+      [-6, "#6d7c8e", "#b4b8b0", "#72827a", "#34443a"],
+      [-1, "#8a97a4", "#d9c7aa", "#7d8d84", "#37473d"],
+      [4, "#9fb0b8", "#e3d2b4", "#869a8d", "#394a3f"],
+      [12, "#b0c2c4", "#dfe5dc", "#8b9e91", "#3a4c40"],
+      [35, "#b9c7c0", "#dfe5dc", "#8fa294", "#3b4d40"]
+    ]
+  };
+  function skyAt(alt, dark) {
+    const keys = SKY_KEYS[dark ? "dark" : "light"];
+    if (alt <= keys[0][0]) return keys[0].slice(1);
+    if (alt >= keys.at(-1)[0]) return keys.at(-1).slice(1);
+    const i = keys.findIndex((k) => k[0] > alt), a = keys[i - 1], b = keys[i], f = (alt - a[0]) / (b[0] - a[0]);
+    return a.slice(1).map((c, j) => mixHex(c, b[j + 1], f));
+  }
+  var WEATHER_FX = {
+    clear: { desat: 0, dark: 1, veil: 0, stars: 1, clouds: 0 },
+    veiled: { desat: 0.25, dark: 0.97, veil: 0.25, stars: 0.5, clouds: 0.35 },
+    overcast: { desat: 0.7, dark: 0.9, veil: 0.75, stars: 0, clouds: 0.7 },
+    fog: { desat: 0.5, dark: 0.95, veil: 0.6, stars: 0, clouds: 0.3, fog: 1 },
+    rain: { desat: 0.6, dark: 0.82, veil: 0.8, stars: 0, clouds: 0.75, rain: 0.35 },
+    snow: { desat: 0.6, dark: 1, veil: 0.7, stars: 0, clouds: 0.6, snow: 0.8 },
+    storm: { desat: 0.5, dark: 0.65, veil: 0.9, stars: 0, clouds: 0.85, rain: 0.45, warm: 0.25 }
+  };
+  var INK_LIGHT = "#eceee6";
+  var INK_DARK = "#1a211b";
+  var LEAF_KEYS = [
+    [0, 0, "#6f5a3e"],
+    [100, 0, "#6f5a3e"],
+    [118, 0.55, "#9db36c"],
+    [140, 1, "#5d7a48"],
+    [250, 1, "#56703f"],
+    [278, 1, "#b08a3e"],
+    [298, 0.75, "#9c5b30"],
+    [318, 0.2, "#7d4c2c"],
+    [330, 0, "#6f5a3e"],
+    [367, 0, "#6f5a3e"]
+  ];
+  function seasonAt(t, lat = 45) {
+    const y = new Date(t).getUTCFullYear(), doy = (t - Date.UTC(y, 0, 1)) / 864e5;
+    const d = lat < 0 ? (doy + 182.5) % 365.25 : doy;
+    const i = LEAF_KEYS.findIndex((k) => k[0] > d), a = LEAF_KEYS[i - 1], b = LEAF_KEYS[i], f = (d - a[0]) / (b[0] - a[0]);
+    const leaf = Math.round((a[1] + (b[1] - a[1]) * f) * 1e3) / 1e3;
+    const phase2 = leaf < 0.05 ? "nu" : d < 140 ? "debourrement" : d < 262 ? "feuille" : d < 300 ? "rouille" : "chute";
+    return { leaf, color: mixHex(a[2], b[2], f), phase: phase2 };
+  }
+  function skyScene({ sunAlt, illum = 0.5, weather = null, dark = true, season = null, frost = false }) {
+    const fx = WEATHER_FX[weather] || WEATHER_FX.clear;
+    let [top, bot, far, near] = skyAt(sunAlt, dark);
+    const shade = (c) => {
+      const d = desaturate(c, fx.desat);
+      return fx.dark < 1 ? mixHex(d, "#000000", 1 - fx.dark) : d;
+    };
+    top = shade(top);
+    bot = shade(bot);
+    if (fx.warm) bot = mixHex(bot, "#6b4a2e", fx.warm);
+    if (fx.fog) far = mixHex(far, bot, 0.6);
+    if (weather === "snow") {
+      top = mixHex(top, "#dde3e0", dark ? 0.08 : 0.15);
+      bot = mixHex(bot, "#e6ebe8", dark ? 0.12 : 0.2);
+    }
+    const night = clamp01((-4 - sunAlt) / 11);
+    const star = night * (1 - 0.7 * illum) * fx.stars * (dark ? 0.85 : 0.45);
+    const glow = (dark ? 0.16 : 0.1) * clamp01((2 - sunAlt) / 10) * (1 - fx.veil * 0.5);
+    const moonOpacity = (1 - 0.85 * fx.veil) * (sunAlt > 0 ? 0.55 : 1);
+    const earthshine = illum < 0.4 ? 0.1 * (1 - illum / 0.4) * (sunAlt < -4 ? 1 : 0.3) : 0;
+    const se = season || { leaf: 1, color: "#56703f", phase: "feuille" }, vivid = 0.2 + 0.45 * (1 - night);
+    const leafColor = desaturate(mixHex(far, se.color, vivid), fx.desat * 0.5), wood = mixHex(far, near, 0.6);
+    const birch = mixHex(far, dark ? "#d8d8cf" : "#f1efe8", 0.2 + 0.35 * (1 - night));
+    const frostColor = frost ? mixHex(far, "#eef3f2", dark ? 0.55 : 0.75) : null;
+    const mistA = fx.fog ? 0.9 : dark ? 0.55 : 0.75, mistRgb = hexRgb(mixHex(bot, dark ? "#28392f" : "#e2e6de", 0.5));
+    const sample = mixHex(top, bot, 0.3);
+    const ink = contrast(INK_LIGHT, sample) >= contrast(INK_DARK, sample) ? INK_LIGHT : INK_DARK;
+    const scrimColor = ink === INK_LIGHT ? "#060907" : "#f2f3ee";
+    let scrim = 0;
+    while (scrim < 0.9 && contrast(ink, mixHex(sample, scrimColor, scrim)) < 4.8) scrim += 0.05;
+    return {
+      top,
+      bot,
+      far,
+      near,
+      star,
+      glow,
+      moonOpacity,
+      earthshine,
+      weather,
+      mist: `rgba(${mistRgb.join(",")},${mistA})`,
+      fog: !!fx.fog,
+      clouds: fx.clouds,
+      cloud: mixHex(bot, dark ? "#9aa3a3" : "#ffffff", 0.18),
+      rain: fx.rain || 0,
+      snow: fx.snow || 0,
+      leaf: leafColor,
+      leafO: se.leaf,
+      leaves: se.phase,
+      wood,
+      birch,
+      frost: frostColor,
+      ink,
+      scrim: Math.round(scrim * 100) / 100,
+      scrimColor,
+      sample
+    };
+  }
+  var WIND_NAMES = ["du nord", "du nord-est", "d'est", "du sud-est", "du sud", "du sud-ouest", "d'ouest", "du nord-ouest"];
+  var windName = (dir) => WIND_NAMES[Math.round((+dir % 360 + 360) % 360 / 45) % 8];
+  function skyMotion({ wind = 8, dir = 270, precip = 0, lat = 45 } = {}) {
+    const w = Number.isFinite(+wind) ? Math.max(0, +wind) : 8, from = Number.isFinite(+dir) ? +dir : 270;
+    const east = Math.sin((from + 180) * RAD), dx = (lat >= 0 ? -1 : 1) * east;
+    const eff = Math.max(3, w * Math.max(0.35, Math.abs(dx)));
+    const clouds = Math.round(Math.max(45, Math.min(600, 2400 / eff)));
+    const p = Number.isFinite(+precip) ? Math.max(0, +precip) : 0;
+    const fall = Math.max(70, Math.min(220, 70 + 25 * p));
+    return {
+      toRight: dx > 0,
+      clouds,
+      mist: Math.round(clouds * 1.8),
+      slant: Math.round(Math.max(-30, Math.min(30, dx * w * 0.9))),
+      // degrés : la pluie penche avec le vent
+      rain: +(24 / fall).toFixed(3),
+      snow: +(60 / Math.max(10, Math.min(30, 10 + w * 0.4))).toFixed(2)
+    };
+  }
+  var SHOWERS = [["Quadrantides", 1, 4, 110], ["Lyrides", 4, 22, 18], ["Perséides", 8, 12, 100], ["Orionides", 10, 21, 20], ["Léonides", 11, 17, 15], ["Géminides", 12, 14, 150]];
+  var ECLIPSES = [
+    ["2026-08-12", "soleil", "partielle", "90 % du Soleil masqué, maximum vers 20 h 14"],
+    ["2026-08-28", "lune", "partielle", ""],
+    ["2027-02-20", "lune", "pénombre", ""],
+    ["2027-08-02", "soleil", "partielle", ""],
+    ["2028-01-12", "lune", "partielle", ""],
+    ["2028-01-26", "soleil", "partielle", ""],
+    ["2028-07-06", "lune", "pénombre", ""],
+    ["2028-12-31", "lune", "totale", ""],
+    ["2029-06-26", "lune", "totale", ""],
+    ["2029-12-20", "lune", "totale", ""],
+    ["2030-06-01", "soleil", "partielle", ""],
+    ["2030-06-15", "lune", "pénombre", ""],
+    ["2030-12-09", "lune", "pénombre", ""]
+  ];
+  var nearLille = (lat, lon) => lat >= 48.5 && lat <= 52.5 && lon >= 0.5 && lon <= 6.5;
+  var dayDiff = (a, b) => Math.round((Date.parse(b + "T12:00:00Z") - Date.parse(a + "T12:00:00Z")) / 864e5);
+  function skyEvents(today, place) {
+    const out = [], y = +today.slice(0, 4);
+    for (const [name, m, d, zhr] of SHOWERS) {
+      for (const yy of [y, y + 1]) {
+        const peak = `${yy}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`, n = dayDiff(today, peak);
+        if (n === 0 || n === 1) out.push({ kind: "shower", name, zhr, inDays: n, date: peak });
+      }
+    }
+    if (place && nearLille(place.lat, place.lon)) for (const [date, body, type, note] of ECLIPSES) {
+      const n = dayDiff(today, date);
+      if (n >= 0 && n <= 7) out.push({ kind: "eclipse", body, type, note, inDays: n, date });
+    }
+    return out;
+  }
+  var rainDays = (days, from, n = 5) => (days || []).filter((x) => x && x.d >= from && dayDiff(from, x.d) < n && ((+x.mm || 0) >= 1 || (+x.pp || 0) >= 60)).map((x) => x.d);
+
   // src/core/sync.js
   var isRecord = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
   function deepEqual(a, b) {
@@ -3159,9 +3347,9 @@ var __selene = (() => {
   var bridgeStale = (r) => diffDays(todayISO(), r.at) > 14;
   function bridgeBar(id, inst) {
     const r = inst.resume, m = esc(id);
-    if (bridgeOpen === id) return `<div class="bridge"><input id="bridgeIn" data-mod="${m}" maxlength="200" value="${esc(r ? r.text : "")}" placeholder="Le prochain geste, pour la prochaine fois…" aria-label="Prochain geste"><button class="btn sm acc" data-act="bridge-save" data-mod="${m}">Garder</button><button class="btn ghost sm" data-act="bridge-close">plus tard</button></div>`;
-    if (r) return `<div class="bridge on ${bridgeStale(r) ? "stale" : ""}"><span>↳ <b>Reprendre :</b> ${esc(r.text)} <span class="hint">· noté ${ago(r.at)}</span></span><span class="acts"><button class="btn ghost sm" data-act="bridge-done" data-mod="${m}">fait</button><button class="btn ghost sm" data-act="bridge-edit" data-mod="${m}">modifier</button></span></div>`;
-    return `<div class="bridge off"><button class="btn ghost sm" data-act="bridge-edit" data-mod="${m}">Je m'arrête ici…</button></div>`;
+    if (bridgeOpen === id) return `<div class="bridge"><input id="bridgeIn" data-mod="${m}" maxlength="200" value="${esc(r ? r.text : "")}" placeholder="${tr`Le prochain geste, pour la prochaine fois…`}" aria-label="${tr`Prochain geste`}"><button class="btn sm acc" data-act="bridge-save" data-mod="${m}">${tr`Garder`}</button><button class="btn ghost sm" data-act="bridge-close">${tr`plus tard`}</button></div>`;
+    if (r) return `<div class="bridge on ${bridgeStale(r) ? "stale" : ""}"><span>↳ <b>${tr`Reprendre :`}</b> ${esc(r.text)} <span class="hint">· ${tr`noté ${ago(r.at)}`}</span></span><span class="acts"><button class="btn ghost sm" data-act="bridge-done" data-mod="${m}">${tr`fait`}</button><button class="btn ghost sm" data-act="bridge-edit" data-mod="${m}">${tr`modifier`}</button></span></div>`;
+    return `<div class="bridge off"><button class="btn ghost sm" data-act="bridge-edit" data-mod="${m}">${tr`Je m'arrête ici…`}</button></div>`;
   }
   function bridgeSave(id) {
     const inst = S().modules[id], inp = $("#bridgeIn");
@@ -3170,7 +3358,7 @@ var __selene = (() => {
     bridgeOpen = null;
     site.save();
     render();
-    toast(inst.resume ? "Noté. La prochaine fois commencera ici." : "Pont levé.");
+    toast(inst.resume ? tr`Noté. La prochaine fois commencera ici.` : tr`Pont levé.`);
   }
   CLICK["bridge-edit"] = (el) => {
     bridgeOpen = el.dataset.mod;
@@ -3189,7 +3377,7 @@ var __selene = (() => {
     setResume(inst, "", todayISO());
     site.save();
     render();
-    toastUndo("Repris. Le pont est levé.", () => {
+    toastUndo(tr`Repris. Le pont est levé.`, () => {
       const cur = S().modules[id];
       if (!cur || cur.resume) return;
       cur.resume = old;
@@ -3459,30 +3647,30 @@ var __selene = (() => {
   // src/app/features/dossier.js
   var yamlStr = (v) => `"${String(v).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ")}"`;
   function sourceCitation(e) {
-    const x = e.src || {}, one = (v) => String(v || "").replace(/\s+/g, " ").trim(), year = /^\d{4}/.test(x.date || "") ? x.date.slice(0, 4) : "s. d.";
+    const x = e.src || {}, one = (v) => String(v || "").replace(/\s+/g, " ").trim(), year = /^\d{4}/.test(x.date || "") ? x.date.slice(0, 4) : tr`s. d.`;
     const where = x.doi ? `https://doi.org/${x.doi}` : x.url && /^https?:\/\//i.test(x.url) ? x.url : "";
-    return [`${one(e.subtitle) || "Anonyme"} (${year}).`, `*${one(e.title) || "Sans titre"}*.`, x.site ? `${one(x.site)}.` : "", where].filter(Boolean).join(" ");
+    return [`${one(e.subtitle) || tr`Anonyme`} (${year}).`, `*${one(e.title) || tr`Sans titre`}*.`, x.site ? `${one(x.site)}.` : "", where].filter(Boolean).join(" ");
   }
   function dossierMarkdown(title, scope, items) {
     const num2 = new Map(items.map((it, i) => [it.e ? `${it.mod}/${it.e.id}` : "", i + 1]).filter(([k]) => k));
     const refText = (ref) => {
       if (num2.has(ref)) return `[${num2.get(ref)}]`;
       const hit = refFind(ref);
-      return hit ? `« ${excerpt(hit.e, 80)} » (hors dossier)` : "(supprimé)";
+      return hit ? tr`« ${excerpt(hit.e, 80)} » (hors dossier)` : tr`(supprimé)`;
     };
     const srcs = sourceItems(), refs = /* @__PURE__ */ new Map(), cite = (s) => {
       if (!refs.has(s.ref)) refs.set(s.ref, { n: refs.size + 1, e: s.e });
       return `[S${refs.get(s.ref).n}]`;
     };
     const body = items.map((it, i) => {
-      const e = it.e || {}, meta = [it.date ? fmt(it.date, { day: "numeric", month: "long", year: "numeric" }) : "", label(it.mod), e.ep ? EP_STATUS[e.ep] : ""].filter(Boolean).join(" · ");
+      const e = it.e || {}, meta = [it.date ? fmt(it.date, { day: "numeric", month: "long", year: "numeric" }) : "", label(it.mod), e.ep ? epLabel(e.ep) : ""].filter(Boolean).join(" · ");
       const lines = [`## ${i + 1}. ${meta}`, "", String(it.text).trim(), ""], ref = it.e ? `${it.mod}/${e.id}` : "";
-      if (e.origin && e.origin.text.trim() !== String(it.text).trim()) lines.push(`*Provenance : ${e.origin.from}${e.origin.date ? `, ${fmt(e.origin.date, { day: "numeric", month: "long", year: "numeric" })}` : ""} : « ${e.origin.text.trim()} »*`, "");
+      if (e.origin && e.origin.text.trim() !== String(it.text).trim()) lines.push(`*${e.origin.date ? tr`Provenance : ${e.origin.from}, ${fmt(e.origin.date, { day: "numeric", month: "long", year: "numeric" })} : « ${e.origin.text.trim()} »` : tr`Provenance : ${e.origin.from} : « ${e.origin.text.trim()} »`}*`, "");
       const self = ref && srcs.find((s) => s.ref === ref);
-      if (self) lines.push(`*Référence : ${cite(self)}*`, "");
-      if ((e.links || []).length) lines.push(`*Liens : ${e.links.map((l) => `${LINK_TYPES[l.type]} ${refText(l.to)}`).join(" ; ")}*`, "");
+      if (self) lines.push(`*${tr`Référence : ${cite(self)}`}*`, "");
+      if ((e.links || []).length) lines.push(`*${tr`Liens : ${e.links.map((l) => `${linkLabel(l.type)} ${refText(l.to)}`).join(" ; ")}`}*`, "");
       const by = ref ? srcs.filter((s) => s.ref !== ref && (s.e.links || []).some((l) => l.to === ref && l.type === "documente")) : [];
-      if (by.length) lines.push(`*Documenté par : ${by.map(cite).join(", ")}*`, "");
+      if (by.length) lines.push(`*${tr`Documenté par : ${by.map(cite).join(", ")}`}*`, "");
       return lines.join("\n");
     });
     const head = [
@@ -3497,10 +3685,11 @@ var __selene = (() => {
       "",
       `# ${title}`,
       "",
-      "> Chaque entrée porte sa date, son module et, s'il est indiqué, son statut épistémique : *observé* (ce qui s'est présenté), *hypothèse* (une conjecture à tester), *interprétation* (une lecture, un cadre appliqué), *inexpliqué* (laissé ouvert à dessein). Ne pas traiter une hypothèse comme un fait, ni combler un inexpliqué. Les renvois [n] désignent les entrées de ce dossier" + (refs.size ? " ; les renvois [Sn], les références en fin de dossier (avec leur DOI quand il existe). Qu'une source documente une entrée ne la prouve pas." : "."),
+      // Le préambule, pour un lecteur humain ou un modèle : comment lire les statuts, et ne pas prendre une hypothèse pour un fait.
+      "> " + (refs.size ? tr`Chaque entrée porte sa date, son module et, s'il est indiqué, son statut épistémique : *observé* (ce qui s'est présenté), *hypothèse* (une conjecture à tester), *interprétation* (une lecture, un cadre appliqué), *inexpliqué* (laissé ouvert à dessein). Ne pas traiter une hypothèse comme un fait, ni combler un inexpliqué. Les renvois [n] désignent les entrées de ce dossier ; les renvois [Sn], les références en fin de dossier (avec leur DOI quand il existe). Qu'une source documente une entrée ne la prouve pas.` : tr`Chaque entrée porte sa date, son module et, s'il est indiqué, son statut épistémique : *observé* (ce qui s'est présenté), *hypothèse* (une conjecture à tester), *interprétation* (une lecture, un cadre appliqué), *inexpliqué* (laissé ouvert à dessein). Ne pas traiter une hypothèse comme un fait, ni combler un inexpliqué. Les renvois [n] désignent les entrées de ce dossier.`),
       ""
     ];
-    const biblio = refs.size ? ["## Références", "", ...[...refs.values()].map((r) => `[S${r.n}] ${sourceCitation(r.e)}`).join("\n\n").split("\n")] : [];
+    const biblio = refs.size ? [`## ${tr`Références`}`, "", ...[...refs.values()].map((r) => `[S${r.n}] ${sourceCitation(r.e)}`).join("\n\n").split("\n")] : [];
     return [...head, ...body, ...biblio].join("\n").replace(/\n{3,}/g, "\n\n").trim() + "\n";
   }
   var dossierFile = (title, scope, items) => downloadFile(`dossier-${slugId(title, [])}-${todayISO()}.md`, dossierMarkdown(title, scope, items), "text/markdown", title);
@@ -4605,8 +4794,8 @@ var __selene = (() => {
   function tensionSection() {
     const ts = openTensions();
     if (!ts.length) return "";
-    return `<section><h3>Tensions ouvertes</h3><p class="hint">Deux entrées qui se contredisent, en attente d'une synthèse qui dérive des deux. Aucune urgence : certaines contradictions sont plus fécondes que leurs solutions.</p>
-    <ul class="plain">${ts.map((t) => `<li class="item"><span></span><div>${refHTML(t.a)} <span class="hint">contredit</span> ${refHTML(t.b)}${t.date ? `<div class="meta"><span>ouverte ${ago(t.date)}</span></div>` : ""}</div><div class="row"><button class="btn ghost sm" data-act="tension-resolve" data-a="${esc(t.a)}" data-b="${esc(t.b)}">résoudre</button><button class="btn ghost sm" data-act="tension-dossier" data-a="${esc(t.a)}" data-b="${esc(t.b)}">dossier</button></div></li>`).join("")}</ul></section>`;
+    return `<section><h3>${tr`Tensions ouvertes`}</h3><p class="hint">${tr`Deux entrées qui se contredisent, en attente d'une synthèse qui dérive des deux. Aucune urgence : certaines contradictions sont plus fécondes que leurs solutions.`}</p>
+    <ul class="plain">${ts.map((t) => `<li class="item"><span></span><div>${refHTML(t.a)} <span class="hint">${esc(linkLabel("contredit"))}</span> ${refHTML(t.b)}${t.date ? `<div class="meta"><span>${tr`ouverte ${ago(t.date)}`}</span></div>` : ""}</div><div class="row"><button class="btn ghost sm" data-act="tension-resolve" data-a="${esc(t.a)}" data-b="${esc(t.b)}">${tr`résoudre`}</button><button class="btn ghost sm" data-act="tension-dossier" data-a="${esc(t.a)}" data-b="${esc(t.b)}">${tr`dossier`}</button></div></li>`).join("")}</ul></section>`;
   }
 
   // src/app/features/sortes.js
@@ -4649,26 +4838,26 @@ var __selene = (() => {
     return pool.at(-1);
   }
   function sortesCard(x) {
-    if (x.kind === "tension") return `<div class="card"><span class="tag">Tension ouverte</span><p>${refHTML(x.a)} <span class="hint">contredit</span> ${refHTML(x.b)}</p><div class="row"><button class="btn ghost sm" data-act="tension-resolve" data-a="${esc(x.a)}" data-b="${esc(x.b)}">résoudre</button><button class="btn ghost sm" data-act="tension-dossier" data-a="${esc(x.a)}" data-b="${esc(x.b)}">dossier</button></div></div>`;
+    if (x.kind === "tension") return `<div class="card"><span class="tag">${tr`Tension ouverte`}</span><p>${refHTML(x.a)} <span class="hint">${esc(linkLabel("contredit"))}</span> ${refHTML(x.b)}</p><div class="row"><button class="btn ghost sm" data-act="tension-resolve" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${tr`résoudre`}</button><button class="btn ghost sm" data-act="tension-dossier" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${tr`dossier`}</button></div></div>`;
     if (x.kind === "source") {
       const st = S().modules[x.mod].config.statuses, fresh = x.e.status === st[0], lun = Math.floor(x.days / SYNODIC);
       const url = x.e.src && /^https?:\/\//i.test(x.e.src.url || "") ? x.e.src.url : "";
-      return `<div class="card"><span class="tag">Source oubliée, ${esc(label(x.mod))}</span><p><b>${esc(x.e.title)}</b>${x.e.subtitle ? `, <i>${esc(x.e.subtitle)}</i>` : ""}</p>
-      <div class="meta">${x.e.src && x.e.src.site ? `<span>${esc(x.e.src.site)}</span>` : ""}<span>gardée il y a ${lun >= 2 ? `${lun} lunaisons` : plural(x.days, "jour")}, ${fresh ? "jamais relue" : "reliée à rien"}</span></div>
-      <div class="row">${url ? `<a class="btn ghost sm" href="${esc(url)}" target="_blank" rel="noopener noreferrer">ouvrir ↗</a>` : ""}<a class="btn ghost sm" href="#${esc(x.mod)}/${esc(x.e.id)}">voir</a><button class="btn ghost sm" data-act="src-link" data-ref="${esc(x.mod)}/${esc(x.e.id)}">documente…</button></div></div>`;
+      return `<div class="card"><span class="tag">${tr`Source oubliée, ${esc(label(x.mod))}`}</span><p><b>${esc(x.e.title)}</b>${x.e.subtitle ? `, <i>${esc(x.e.subtitle)}</i>` : ""}</p>
+      <div class="meta">${x.e.src && x.e.src.site ? `<span>${esc(x.e.src.site)}</span>` : ""}<span>${tr`gardée il y a ${lun >= 2 ? tr`${lun} lunaisons` : trn(x.days, "{0} jour", "{0} jours")}, ${fresh ? tr`jamais relue` : tr`reliée à rien`}`}</span></div>
+      <div class="row">${url ? `<a class="btn ghost sm" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${tr`ouvrir ↗`}</a>` : ""}<a class="btn ghost sm" href="#${esc(x.mod)}/${esc(x.e.id)}">${tr`voir`}</a><button class="btn ghost sm" data-act="src-link" data-ref="${esc(x.mod)}/${esc(x.e.id)}">${tr`documente…`}</button></div></div>`;
     }
-    if (x.kind === "motif") return `<div class="card"><span class="tag">Motif en jachère, ${esc(label(x.mod))}</span><p><b>${esc(x.e.title)}</b></p><div class="row"><a class="btn ghost sm" href="#${esc(x.mod)}">voir</a><button class="btn ghost sm" data-act="search-for" data-q="${esc(x.e.title)}">chercher</button></div></div>`;
-    return `<div class="card"><span class="tag">${esc(label(x.mod))}, ${x.kind === "fragment" ? "fragment" : "note"} endormi</span><p style="white-space:pre-wrap">${esc(excerpt(x.e, 200))}</p><div class="meta"><span>${plural(x.days, "jour")} sans y toucher</span></div><div class="row"><a class="btn ghost sm" href="#${esc(x.mod)}">voir</a></div></div>`;
+    if (x.kind === "motif") return `<div class="card"><span class="tag">${tr`Motif en jachère, ${esc(label(x.mod))}`}</span><p><b>${esc(x.e.title)}</b></p><div class="row"><a class="btn ghost sm" href="#${esc(x.mod)}">${tr`voir`}</a><button class="btn ghost sm" data-act="search-for" data-q="${esc(x.e.title)}">${tr`chercher`}</button></div></div>`;
+    return `<div class="card"><span class="tag">${x.kind === "fragment" ? tr`${esc(label(x.mod))}, fragment endormi` : tr`${esc(label(x.mod))}, note endormie`}</span><p style="white-space:pre-wrap">${esc(excerpt(x.e, 200))}</p><div class="meta"><span>${trn(x.days, "{0} jour sans y toucher", "{0} jours sans y toucher")}</span></div><div class="row"><a class="btn ghost sm" href="#${esc(x.mod)}">${tr`voir`}</a></div></div>`;
   }
   function sortesSection() {
-    return `<section><h2>Tirer un sort</h2><p class="hint">Un fragment endormi, une note oubliée, une source gardée puis reliée à rien, une tension ouverte ou un motif en jachère — le hasard pondéré par l'oubli, dans ton seul matériau.</p>
+    return `<section><h2>${tr`Tirer un sort`}</h2><p class="hint">${tr`Un fragment endormi, une note oubliée, une source gardée puis reliée à rien, une tension ouverte ou un motif en jachère — le hasard pondéré par l'oubli, dans ton seul matériau.`}</p>
     ${sortesLast ? sortesCard(sortesLast) : ""}
-    <button class="btn ${sortesLast ? "ghost" : ""} sm" data-act="sortes-draw">${sortesLast ? "Retirer" : "Tirer"}</button></section>`;
+    <button class="btn ${sortesLast ? "ghost" : ""} sm" data-act="sortes-draw">${sortesLast ? tr`Retirer` : tr`Tirer`}</button></section>`;
   }
   CLICK["sortes-draw"] = () => {
     sortesLast = sortesDraw();
     render();
-    if (!sortesLast) toast("Rien d'assez ancien à tirer. Reviens dans deux semaines.");
+    if (!sortesLast) toast(tr`Rien d'assez ancien à tirer. Reviens dans deux semaines.`);
   };
 
   // src/core/zotero.js
@@ -5394,13 +5583,13 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
   }
   function driftSection(mode, cur) {
     const d = memoInRender("drift", () => lexicalDrift(mode, bilanOffset)), motifs = Object.keys(S().modules).find((k) => enabled(k) && isConcordance(S().modules[k]));
-    const unit = mode === "mois" ? "mois" : "cycles";
-    if (!d.enough) return `<section><h3>Vocabulaire</h3><p class="hint">Pas encore assez de textes datés pour parler de dérive : ${plural(d.nNow, "texte")} dans la période, ${plural(d.nBefore, "texte")} dans les six ${unit} d'avant (${DRIFT_MIN_TEXTS} de chaque côté au moins).</p></section>`;
+    const texts = (n) => trn(n, "{0} texte", "{0} textes"), month = mode === "mois";
+    if (!d.enough) return `<section><h3>${tr`Vocabulaire`}</h3><p class="hint">${month ? tr`Pas encore assez de textes datés pour parler de dérive : ${texts(d.nNow)} dans la période, ${texts(d.nBefore)} dans les six mois d'avant (${DRIFT_MIN_TEXTS} de chaque côté au moins).` : tr`Pas encore assez de textes datés pour parler de dérive : ${texts(d.nNow)} dans la période, ${texts(d.nBefore)} dans les six cycles d'avant (${DRIFT_MIN_TEXTS} de chaque côté au moins).`}</p></section>`;
     const known = motifs ? new Set(S().modules[motifs].entries.map((e) => fold(e.title))) : /* @__PURE__ */ new Set();
-    const chip = (k, extra) => `<span class="chip"><button class="btn ghost sm" data-act="search-for" data-q="${esc(d.word(k))}">${esc(d.word(k))}${extra}</button>${motifs && !known.has(fold(d.word(k))) ? `<button class="btn ghost sm" data-act="motif-add" data-mod="${esc(motifs)}" data-q="${esc(d.word(k))}" title="En faire un motif" aria-label="En faire un motif">+</button>` : ""}</span>`;
-    return `<section><h3>Vocabulaire</h3><p class="hint">Les mots propres à la période, comparés aux six ${unit} d'avant (${plural(d.nNow, "texte")} contre ${d.nBefore}). Une piste, pas un diagnostic : deux occurrences ne font pas une obsession.${motifs ? " « + » en fait un motif." : ""}</p>
-    ${d.rising.length ? `<p class="hint" style="margin:0 0 4px">Émergent</p><div class="row">${d.rising.map((x) => chip(x.k, ` · ${x.n}${x.before ? ` (avant ${x.before})` : ""}`)).join("")}</div>` : `<p class="empty">Aucun mot ne se détache. Constance, ou routine.</p>`}
-    ${d.fading.length ? `<p class="hint" style="margin:12px 0 4px">Absent cette fois, fréquent avant</p><div class="row">${d.fading.map((x) => chip(x.k, ` · ${x.n} avant`)).join("")}</div>` : ""}</section>`;
+    const chip = (k, extra) => `<span class="chip"><button class="btn ghost sm" data-act="search-for" data-q="${esc(d.word(k))}">${esc(d.word(k))}${extra}</button>${motifs && !known.has(fold(d.word(k))) ? `<button class="btn ghost sm" data-act="motif-add" data-mod="${esc(motifs)}" data-q="${esc(d.word(k))}" title="${tr`En faire un motif`}" aria-label="${tr`En faire un motif`}">+</button>` : ""}</span>`;
+    return `<section><h3>${tr`Vocabulaire`}</h3><p class="hint">${month ? tr`Les mots propres à la période, comparés aux six mois d'avant (${texts(d.nNow)} contre ${d.nBefore}). Une piste, pas un diagnostic : deux occurrences ne font pas une obsession.` : tr`Les mots propres à la période, comparés aux six cycles d'avant (${texts(d.nNow)} contre ${d.nBefore}). Une piste, pas un diagnostic : deux occurrences ne font pas une obsession.`}${motifs ? " " + tr`« + » en fait un motif.` : ""}</p>
+    ${d.rising.length ? `<p class="hint" style="margin:0 0 4px">${tr`Émergent`}</p><div class="row">${d.rising.map((x) => chip(x.k, ` · ${x.n}${x.before ? " " + tr`(avant ${x.before})` : ""}`)).join("")}</div>` : `<p class="empty">${tr`Aucun mot ne se détache. Constance, ou routine.`}</p>`}
+    ${d.fading.length ? `<p class="hint" style="margin:12px 0 4px">${tr`Absent cette fois, fréquent avant`}</p><div class="row">${d.fading.map((x) => chip(x.k, " · " + tr`${x.n} avant`)).join("")}</div>` : ""}</section>`;
   }
 
   // src/app/features/lunar.js
@@ -5430,10 +5619,10 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
   }
   function lunarSection() {
     const r = lunarTest();
-    if (!r.enough) return `<section><h3>Lune</h3><p class="hint">Pas assez de matière pour un test honnête : ${r.n} événement${r.n > 1 ? "s" : ""} daté${r.n > 1 ? "s" : ""} au lieu de ${LUNAR_MIN_N} au moins. Reviens quand le corpus aura grandi.</p></section>`;
+    if (!r.enough) return `<section><h3>${tr`Lune`}</h3><p class="hint">${trn(r.n, "Pas assez de matière pour un test honnête : {0} événement daté au lieu de {1} au moins. Reviens quand le corpus aura grandi.", "Pas assez de matière pour un test honnête : {0} événements datés au lieu de {1} au moins. Reviens quand le corpus aura grandi.", LUNAR_MIN_N)}</p></section>`;
     const sig = r.p < 0.05;
-    return `<section><h3>Lune</h3><p class="hint">Test de Rayleigh sur ${r.n} événement${r.n > 1 ? "s" : ""} daté${r.n > 1 ? "s" : ""} : ta lune éclaire-t-elle vraiment ton activité, ou est-ce une histoire qu'on se raconte ? Un seul test compte ici ; le refaire ailleurs sous d'autres formes userait sa valeur (tests multiples).</p>
-    <p>${sig ? `Concentration autour de ${esc(moonName(r.meanPhase).toLowerCase())} (R = ${r.R.toFixed(2)}, p = ${r.p.toFixed(3)}). Ce n'est pas rien, mais ce n'est pas une preuve : une seule corrélation, jamais répétée ni contrôlée.` : `Rien de concentré (R = ${r.R.toFixed(2)}, p = ${r.p.toFixed(3)}) : la répartition ne se distingue pas de l'uniforme. La lune plaide non coupable, ce qui est aussi une réponse.`}</p></section>`;
+    return `<section><h3>${tr`Lune`}</h3><p class="hint">${trn(r.n, "Test de Rayleigh sur {0} événement daté : ta lune éclaire-t-elle vraiment ton activité, ou est-ce une histoire qu'on se raconte ? Un seul test compte ici ; le refaire ailleurs sous d'autres formes userait sa valeur (tests multiples).", "Test de Rayleigh sur {0} événements datés : ta lune éclaire-t-elle vraiment ton activité, ou est-ce une histoire qu'on se raconte ? Un seul test compte ici ; le refaire ailleurs sous d'autres formes userait sa valeur (tests multiples).")}</p>
+    <p>${sig ? tr`Concentration autour de ${esc(moonName(r.meanPhase).toLowerCase())} (R = ${r.R.toFixed(2)}, p = ${r.p.toFixed(3)}). Ce n'est pas rien, mais ce n'est pas une preuve : une seule corrélation, jamais répétée ni contrôlée.` : tr`Rien de concentré (R = ${r.R.toFixed(2)}, p = ${r.p.toFixed(3)}) : la répartition ne se distingue pas de l'uniforme. La lune plaide non coupable, ce qui est aussi une réponse.`}</p></section>`;
   }
 
   // src/app/views/planche.js
@@ -5743,7 +5932,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) {
       for (const a of TYPE_UI[inst.type].alerts(id, inst, day)) if (a.actions) out.push(plainText(a.text));
     }
-    for (const [id, t] of allTasks()) if (enabled(id) && !t.done && t.due === day) out.push(`Échéance : ${t.title}`);
+    for (const [id, t] of allTasks()) if (enabled(id) && !t.done && t.due === day) out.push(tr`Échéance : ${t.title}`);
     return out;
   }
   function digestPlan(nowMs = Date.now(), days = 7) {
@@ -5760,8 +5949,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       plan.push({
         id: 100 + i,
         at: d.toISOString(),
-        title: `Selene : ${plural(items.length, "chose")} ${i ? "ce jour" : "aujourd'hui"}`,
-        body: items.slice(0, 3).join(" · ") + (items.length > 3 ? ` · et ${items.length - 3} de plus` : "")
+        title: i ? trn(items.length, "Selene : {0} chose ce jour", "Selene : {0} choses ce jour") : trn(items.length, "Selene : {0} chose aujourd'hui", "Selene : {0} choses aujourd'hui"),
+        body: items.slice(0, 3).join(" · ") + (items.length > 3 ? " · " + tr`et ${items.length - 3} de plus` : "")
       });
     }
     return plan;
@@ -5783,9 +5972,9 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   var notifySettingsHTML = () => {
     if (!platform.notifications.supported()) return "";
     const c = notifyConf();
-    return `<section id="notify-cfg"><h3>Notifications</h3><p class="hint">Sur cet appareil : chaque matin, ce qui t'attend (rappels, échéances), programmé par le téléphone lui-même, même app fermée. Rien ne part sur un serveur. Les jours sans rien, silence.</p>
-    <div class="field-row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-act="notify-on" ${c.on ? "checked" : ""}>Résumé du matin</label>
-    <label>Heure<input type="time" data-act="notify-at" value="${esc(c.at)}"></label></div></section>`;
+    return `<section id="notify-cfg"><h3>${tr`Notifications`}</h3><p class="hint">${tr`Sur cet appareil : chaque matin, ce qui t'attend (rappels, échéances), programmé par le téléphone lui-même, même app fermée. Rien ne part sur un serveur. Les jours sans rien, silence.`}</p>
+    <div class="field-row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-act="notify-on" ${c.on ? "checked" : ""}>${tr`Résumé du matin`}</label>
+    <label>${tr`Heure`}<input type="time" data-act="notify-at" value="${esc(c.at)}"></label></div></section>`;
   };
 
   // src/app/features/share.js
@@ -5817,25 +6006,25 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     sharePending = false;
     if (!p) return;
     const box = inboxId(S().modules);
-    if (!box) return toast("Lien reçu, mais aucune boîte de réception où le garder. Crée un Carnet et fais-en ta boîte (Réglages).");
+    if (!box) return toast(tr`Lien reçu, mais aucune boîte de réception où le garder. Crée un Carnet et fais-en ta boîte (Réglages).`);
     const url = String(p.url || "").trim(), text = String(p.text || "").trim(), title = String(p.title || "").trim();
     const parts = [title, text && text !== title ? text : "", url && !text.includes(url) ? url : ""].filter(Boolean);
     addNote(S().modules[box], parts.join(" — ").slice(0, 2e3));
     site.save();
     render();
-    toast(`Reçu dans ${label(box)}${findUrl(parts.join(" ")) || findDoi(parts.join(" ")) ? " : « Garder comme source » le complétera" : ""}.`);
+    toast(findUrl(parts.join(" ")) || findDoi(parts.join(" ")) ? tr`Reçu dans ${label(box)} : « Garder comme source » le complétera.` : tr`Reçu dans ${label(box)}.`);
   }
   takeShare();
   function shareSettingsHTML() {
     const base = location.origin + location.pathname;
     const bm = `javascript:(()=>{window.open('${base}?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title),'_blank')})()`;
-    return `<section><h3>Envoyer à Selene</h3><p class="hint">Un lien lu ailleurs arrive dans ta boîte de réception, prêt à devenir une source. Rien ne part ailleurs que chez toi.</p>
-    <p class="row" style="margin:0 0 8px"><a class="btn sm" href="${esc(bm)}" data-act="bookmarklet">Envoyer à Selene</a><span class="hint" style="margin:0">Sur ordinateur : glisse ce bouton dans ta barre de favoris.</span></p>
-    <p class="hint">Sur Android, une fois l'app installée : « Partager », puis Selene. Sur iPhone : app Raccourcis, un raccourci qui s'affiche dans la feuille de partage (URL), avec l'action « Ouvrir les URL » : <code>${esc(base)}?url=</code> suivi de l'entrée du raccourci.</p></section>`;
+    return `<section><h3>${tr`Envoyer à Selene`}</h3><p class="hint">${tr`Un lien lu ailleurs arrive dans ta boîte de réception, prêt à devenir une source. Rien ne part ailleurs que chez toi.`}</p>
+    <p class="row" style="margin:0 0 8px"><a class="btn sm" href="${esc(bm)}" data-act="bookmarklet">${tr`Envoyer à Selene`}</a><span class="hint" style="margin:0">${tr`Sur ordinateur : glisse ce bouton dans ta barre de favoris.`}</span></p>
+    <p class="hint">${tr`Sur Android, une fois l'app installée : « Partager », puis Selene. Sur iPhone : app Raccourcis, un raccourci qui s'affiche dans la feuille de partage (URL), avec l'action « Ouvrir les URL » : ${`<code>${esc(base)}?url=</code>`} suivi de l'entrée du raccourci.`}</p></section>`;
   }
   CLICK["bookmarklet"] = (el, e) => {
     e.preventDefault();
-    toast("Glisse ce bouton dans la barre de favoris : c'est là qu'il sert, sur la page à garder.");
+    toast(tr`Glisse ce bouton dans la barre de favoris : c'est là qu'il sert, sur la page à garder.`);
   };
 
   // src/app/views/reglages.js
@@ -8071,11 +8260,11 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   CLICK["motif-add"] = (el) => {
     const inst = S().modules[el.dataset.mod], word = el.dataset.q;
     if (!inst || !word) return;
-    if (inst.entries.some((e) => fold(e.title) === fold(word))) return toast(`« ${word} » est déjà un motif.`);
+    if (inst.entries.some((e) => fold(e.title) === fold(word))) return toast(tr`« ${word} » est déjà un motif.`);
     saveCollectionItem(inst, { title: word }, uid());
     site.save();
     render();
-    toast(`« ${word} » devient un motif de ${label(el.dataset.mod)}. On verra s'il revient.`);
+    toast(tr`« ${word} » devient un motif de ${label(el.dataset.mod)}. On verra s'il revient.`);
   };
   var isConcordance = (inst) => inst.type === "collection" && !!inst.config.concordance;
   var reEscape = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -8140,20 +8329,20 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     const order = (a, b) => alive(inst, b.e) - alive(inst, a.e) || b.hits.length - a.hits.length || collate(a.e.title, b.e.title);
     const line = (r) => {
       const e = r.e, n = r.hits.length;
-      const where = r.last ? ` · dernière ${ago(r.last.date)} (${esc(label(r.last.mod))})` : n ? " · jamais daté" : "";
+      const where = r.last ? " · " + tr`dernière ${ago(r.last.date)} (${esc(label(r.last.mod))})` : n ? " · " + tr`jamais daté` : "";
       return `<li class="item motif" data-id="${esc(e.id)}"><span></span><div><b>${esc(e.title)}</b>${e.subtitle ? ` <i class="hint">${esc(e.subtitle)}</i>` : ""}${c.fields.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}
-      <div class="meta"><span>${n ? plural(n, "occurrence") : "jamais rencontré"}${where}</span>${fallow(inst, r) ? `<span class="late">en jachère</span>` : ""}</div>
-      ${r.neighbours.length ? `<div class="meta"><span>voisins : ${r.neighbours.map((x) => `${esc(x.name)} (${x.n})`).join(", ")}</span></div>` : ""}
+      <div class="meta"><span>${n ? trn(n, "{0} occurrence", "{0} occurrences") : tr`jamais rencontré`}${where}</span>${fallow(inst, r) ? `<span class="late">${tr`en jachère`}</span>` : ""}</div>
+      ${r.neighbours.length ? `<div class="meta"><span>${tr`voisins : ${r.neighbours.map((x) => `${esc(x.name)} (${x.n})`).join(", ")}`}</span></div>` : ""}
       ${c.fields.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}</div>
-      <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map((st) => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${n ? `<button class="btn ghost sm" data-act="search-for" data-q="${esc(e.title)}">voir</button><button class="btn ghost sm ra" data-act="carte" data-k="motif" data-v="${esc(id)}/${esc(e.id)}">carte</button>` : ""}<button class="btn ghost sm ra" data-act="specimen">fiche</button><button class="btn ghost sm ra" data-act="col-edit">modifier</button><button class="btn ghost sm ra" data-act="col-del">suppr.</button></div></li>`;
+      <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map((st) => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${n ? `<button class="btn ghost sm" data-act="search-for" data-q="${esc(e.title)}">${tr`voir`}</button><button class="btn ghost sm ra" data-act="carte" data-k="motif" data-v="${esc(id)}/${esc(e.id)}">${tr`carte`}</button>` : ""}<button class="btn ghost sm ra" data-act="specimen">${tr`fiche`}</button><button class="btn ghost sm ra" data-act="col-edit">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="col-del">${tr`suppr.`}</button></div></li>`;
     };
     return `<div data-mod="${esc(id)}">${head}
-  ${sleeping.length ? `<section><h3>En jachère</h3><p class="hint">Vivants, mais absents depuis plus de ${esc(c.fallowDays)} jours. Reposés, pas perdus.</p><div class="row">${sleeping.map((r) => `<button class="btn ghost sm" data-act="search-for" data-q="${esc(r.e.title)}">${esc(r.e.title)} · ${plural(moons(diffDays(todayISO(), r.last.date)), "lunaison")}</button>`).join("")}</div></section>` : ""}
-  <ul class="plain">${[...rows].sort(order).map(line).join("") || `<li class="empty">Aucun motif. Ajoute un mot qui revient ; l'app comptera ses retours.</li>`}</ul></div>`;
+  ${sleeping.length ? `<section><h3>${tr`En jachère`}</h3><p class="hint">${tr`Vivants, mais absents depuis plus de ${esc(c.fallowDays)} jours. Reposés, pas perdus.`}</p><div class="row">${sleeping.map((r) => `<button class="btn ghost sm" data-act="search-for" data-q="${esc(r.e.title)}">${esc(r.e.title)} · ${trn(moons(diffDays(todayISO(), r.last.date)), "{0} lunaison", "{0} lunaisons")}</button>`).join("")}</div></section>` : ""}
+  <ul class="plain">${[...rows].sort(order).map(line).join("") || `<li class="empty">${tr`Aucun motif. Ajoute un mot qui revient ; l'app comptera ses retours.`}</li>`}</ul></div>`;
   }
   function concordanceSummary(inst) {
     const sleeping = concordance(inst).filter((r) => fallow(inst, r)).length;
-    return `${plural(inst.entries.length, "motif")}${sleeping ? `, ${sleeping} en jachère` : ""}`;
+    return trn(inst.entries.length, "{0} motif", "{0} motifs") + (sleeping ? ", " + tr`${sleeping} en jachère` : "");
   }
   function motifsIn(inst, from, to) {
     return concordance(inst).map((r) => ({ name: r.e.title, n: r.hits.filter((d) => d.date && d.date >= from && d.date < to).length })).filter((x) => x.n).sort((a, b) => b.n - a.n);
@@ -8213,31 +8402,31 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     for (const [mod, m] of Object.entries(S().modules)) if (m.type === "collection" && m.config.sources && enabled(mod)) for (const e of m.entries) out.push({ ref: `${mod}/${e.id}`, mod, e });
     return out;
   }
-  var LINK_BACK = { derive: "a donné", contredit: "contredit par", echo: "écho de", documente: "documenté par" };
+  var LINK_BACK = { derive: N_("a donné"), contredit: N_("contredit par"), echo: N_("écho de"), documente: N_("documenté par") };
   function refHTML(ref) {
     const hit = refFind(ref);
-    return hit ? `<a href="#${esc(hit.mod)}/${esc(hit.e.id)}">« ${esc(excerpt(hit.e))} »</a>` : `<i>(supprimé)</i>`;
+    return hit ? `<a href="#${esc(hit.mod)}/${esc(hit.e.id)}">${tr`« ${esc(excerpt(hit.e))} »`}</a>` : `<i>${tr`(supprimé)`}</i>`;
   }
   function linksHTML(mod) {
-    return `<span class="acts ra"><button class="btn ghost sm" data-act="specimen" data-mod="${esc(mod)}">fiche</button><button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></span>`;
+    return `<span class="acts ra"><button class="btn ghost sm" data-act="specimen" data-mod="${esc(mod)}">${tr`fiche`}</button><button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">${tr`dériver`}</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">${tr`lier…`}</button></span>`;
   }
   function margHTML(mod, e, text) {
-    const out = (e.links || []).map((l) => `<span>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</span>`);
-    const inc = (backlinks().get(`${mod}/${e.id}`) || []).map((b) => `<span>${esc(LINK_BACK[b.type])} ${refHTML(b.from)}</span>`);
+    const out = (e.links || []).map((l) => `<span>${esc(linkLabel(l.type))} ${refHTML(l.to)}</span>`);
+    const inc = (backlinks().get(`${mod}/${e.id}`) || []).map((b) => `<span>${esc(tr(LINK_BACK[b.type]))} ${refHTML(b.from)}</span>`);
     const motifs = motifsOf(text);
     const parts = [
-      e.editedAt ? `<span class="hint">modifié ${ago(e.editedAt)}</span>` : "",
+      e.editedAt ? `<span class="hint">${tr`modifié ${ago(e.editedAt)}`}</span>` : "",
       originHTML(e, text),
       out.length || inc.length ? `<span class="links">${[...out, ...inc].join("")}</span>` : "",
-      motifs.length ? `<span class="m-motifs"><span class="m-lab">motifs</span>${motifs.map((m) => `<button type="button" data-act="search-for" data-q="${esc(m.e.title)}">${esc(m.e.title)}</button>`).join("")}</span>` : ""
+      motifs.length ? `<span class="m-motifs"><span class="m-lab">${tr`motifs`}</span>${motifs.map((m) => `<button type="button" data-act="search-for" data-q="${esc(m.e.title)}">${esc(m.e.title)}</button>`).join("")}</span>` : ""
     ];
-    return `<aside class="marg" aria-label="En marge">${parts.join("")}</aside>`;
+    return `<aside class="marg" aria-label="${tr`En marge`}">${parts.join("")}</aside>`;
   }
   var deriveFrom = {};
   function deriveBanner(mod) {
     const refs = deriveFrom[mod];
     if (!refs || !refs.length) return "";
-    return `<div class="derive">${refs.length > 1 ? "Synthèse de" : "Dérivé de"} ${refs.map(refHTML).join(" et ")} <button class="btn ghost sm" data-act="derive-cancel" data-mod="${esc(mod)}">annuler</button></div>`;
+    return `<div class="derive">${refs.length > 1 ? tr`Synthèse de ${refHTML(refs[0])} et ${refHTML(refs[1])}` : tr`Dérivé de ${refHTML(refs[0])}`} <button class="btn ghost sm" data-act="derive-cancel" data-mod="${esc(mod)}">${tr`annuler`}</button></div>`;
   }
   function applyDerive(mod, item) {
     for (const ref of deriveFrom[mod] || []) if (ref !== `${mod}/${item.id}`) addLink(item, ref, "derive", uid(), todayISO());
@@ -8247,20 +8436,20 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   }
   function linkForm(mod, id) {
     const self = `${mod}/${id}`, choices = thoughtItems().filter((x) => x.ref !== self).sort((a, b) => (b.e.date || "").localeCompare(a.e.date || "")).slice(0, 300);
-    if (!choices.length) return toast("Rien d'autre à quoi le lier. Une pensée seule ne se contredit pas encore.");
-    openForm("Lier à une autre entrée", [
-      { n: "type", l: "Cette entrée…", t: "select", o: Object.entries(LINK_TYPES) },
-      { n: "to", l: "…quelle autre", t: "select", o: choices.map((x) => [x.ref, `${label(x.mod)} · ${x.e.date ? fmt(x.e.date) + " · " : ""}${excerpt(x.e, 70)}`]) }
+    if (!choices.length) return toast(tr`Rien d'autre à quoi le lier. Une pensée seule ne se contredit pas encore.`);
+    openForm(tr`Lier à une autre entrée`, [
+      { n: "type", l: tr`Cette entrée…`, t: "select", o: Object.keys(LINK_TYPES).map((k) => [k, linkLabel(k)]) },
+      { n: "to", l: tr`…quelle autre`, t: "select", o: choices.map((x) => [x.ref, `${label(x.mod)} · ${x.e.date ? fmt(x.e.date) + " · " : ""}${excerpt(x.e, 70)}`]) }
     ], { type: "echo" }, (v) => {
       const hit = refFind(self);
-      if (!hit) return toast("Cette entrée a disparu entre-temps.");
-      if (!addLink(hit.e, v.to, v.type, uid(), todayISO())) return toast("Déjà lié ainsi.");
+      if (!hit) return toast(tr`Cette entrée a disparu entre-temps.`);
+      if (!addLink(hit.e, v.to, v.type, uid(), todayISO())) return toast(tr`Déjà lié ainsi.`);
       site.save();
       render();
-      toast(v.type === "contredit" ? "Tension ouverte. Elle attendra sa synthèse." : "Lié.");
+      toast(v.type === "contredit" ? tr`Tension ouverte. Elle attendra sa synthèse.` : tr`Lié.`);
     });
   }
-  var epSelect = (id, e) => `<select class="ep ${e.ep ? "on" : "ra"}" data-act="ep-set" data-mod="${esc(id)}" aria-label="Statut">${[["", "statut…"], ...Object.entries(EP_STATUS)].map(([k, l]) => `<option value="${k}" ${(e.ep || "") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+  var epSelect = (id, e) => `<select class="ep ${e.ep ? "on" : "ra"}" data-act="ep-set" data-mod="${esc(id)}" aria-label="${tr`Statut`}">${[["", tr`statut…`], ...Object.keys(EP_STATUS).map((k) => [k, epLabel(k)])].map(([k, l]) => `<option value="${k}" ${(e.ep || "") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
   CLICK["derive-start"] = (el) => {
     const mod = el.dataset.mod, id = idOf(el);
     if (!refFind(`${mod}/${id}`)) return;
@@ -8293,8 +8482,8 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       if (refs.includes(l.to) && !seen.has(it.ref)) seen.add(it.ref);
     }
     const items = [...seen].map(refFind).filter(Boolean).map((h) => ({ mod: h.mod, text: h.e.text, date: h.e.date, e: h.e }));
-    if (items.length < 2) return toast("L'une des deux entrées a disparu.");
-    dossierFile(`Tension — ${excerpt(items[0].e, 40)}`, `« ${excerpt(items[0].e, 80)} » contredit « ${excerpt(items[1].e, 80)} », et leur voisinage`, items);
+    if (items.length < 2) return toast(tr`L'une des deux entrées a disparu.`);
+    dossierFile(tr`Tension — ${excerpt(items[0].e, 40)}`, tr`« ${excerpt(items[0].e, 80)} » contredit « ${excerpt(items[1].e, 80)} », et leur voisinage`, items);
   };
   CHANGE["ep-set"] = (el) => {
     const inst = S().modules[modOf(el)], id = idOf(el), item = inst && [...inst.entries, ...inst.scraps || []].find((x) => x.id === id);
@@ -9620,7 +9809,7 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
       if (!hit) return null;
       ({ refs, capped } = carteNeighbourhood(ref, adj, 2));
       center = ref;
-      title = `Voisinage de « ${excerpt(hit.e, 50)} »`;
+      title = tr`Voisinage de « ${excerpt(hit.e, 50)} »`;
     } else {
       const [mod, id] = ref.split("/"), inst = Object.hasOwn(S().modules, mod) ? S().modules[mod] : null, motif = inst && isConcordance(inst) && inst.entries.find((x) => x.id === id);
       if (!motif) return null;
@@ -9633,7 +9822,7 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
         else capped = true;
       }
       refs = [...set];
-      title = `Motif « ${motif.title} »`;
+      title = tr`Motif « ${motif.title} »`;
     }
     const inSet = new Set(refs), open = new Set(openTensions().map((t) => `${t.a}|${t.b}`)), edges = [];
     const nodes = refs.map((r) => byRef.get(r)).filter(Boolean).map((it) => ({ ref: it.ref, mod: it.mod, date: it.e.date, links: (adj.get(it.ref) || /* @__PURE__ */ new Set()).size }));
@@ -9644,13 +9833,14 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
   var lineSample = (type, open) => `<svg width="30" height="8" aria-hidden="true"><path class="ln ln-${type}${open ? " open" : ""}" d="M1,4H29"${LINE_DASH[type] ? ` stroke-dasharray="${LINE_DASH[type]}"` : ""}/></svg>`;
   SHEETS.carte = (arg) => {
     const c = carteData(arg);
-    if (!c) return `<p class="empty">Cette entrée ou ce motif n'existe plus.</p>`;
+    if (!c) return `<p class="empty">${tr`Cette entrée ou ce motif n'existe plus.`}</p>`;
     const L = c.layout, when = (d) => esc(fmt(d, { day: "numeric", month: "short", year: "numeric" }));
     const star = (s) => {
       const it = c.byRef.get(s.ref), e = it.e;
       return `<a href="#${esc(it.mod)}/${esc(e.id)}" class="${tintOf(it.mod)}${s.ref === c.center ? " center" : ""}"><title>${esc(excerpt(e, 90))} · ${esc(label(it.mod))}${e.date ? ` · ${when(e.date)}` : ""}</title><circle class="hit" cx="${s.x}" cy="${s.y}" r="12"/><circle cx="${s.x}" cy="${s.y}" r="${s.r}"/></a>`;
     };
-    const svg = `<svg viewBox="0 0 ${L.width} ${L.height}" class="carte-svg" role="group" aria-label="Carte : ${L.stars.length} étoile${L.stars.length > 1 ? "s" : ""}, ${L.lines.length} lien${L.lines.length > 1 ? "s" : ""}">
+    const stars = trn(L.stars.length, "{0} étoile", "{0} étoiles"), lines = trn(L.lines.length, "{0} lien", "{0} liens");
+    const svg = `<svg viewBox="0 0 ${L.width} ${L.height}" class="carte-svg" role="group" aria-label="${tr`Carte : ${stars}, ${lines}`}">
     ${L.bands.map((b, i) => `<g class="band"><rect x="0" y="${b.y}" width="${L.width}" height="64"${i % 2 ? ` class="odd"` : ""}/><text x="6" y="${b.y + 36}">${esc(label(b.mod).slice(0, 16))}</text></g>`).join("")}
     ${L.span && L.span.from !== L.span.to ? `<text class="axis" x="${L.span.x0}" y="${L.height - 3}">${when(L.span.from)}</text><text class="axis" x="${L.span.x1}" y="${L.height - 3}" text-anchor="end">${when(L.span.to)}</text>` : ""}
     <g>${L.lines.map((l) => `<path class="ln ln-${l.type}${l.open ? " open" : ""}" d="${l.d}"${LINE_DASH[l.type] ? ` stroke-dasharray="${LINE_DASH[l.type]}"` : ""}/>`).join("")}</g>
@@ -9658,48 +9848,47 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
     const linked = new Set(c.edges.flatMap((e) => [e.from, e.to])), lonely = L.stars.filter((s) => !linked.has(s.ref));
     return `<div class="carte">
     <h2 id="sheetTitle">${esc(c.title)}</h2>
-    <p class="hint">${L.stars.length} étoile${L.stars.length > 1 ? "s" : ""}, ${L.lines.length} lien${L.lines.length > 1 ? "s" : ""}. Le temps de gauche à droite, une bande par espace ; la taille d'une étoile dit son nombre de liens.${c.capped ? ` ${CARTE_MAX} étoiles au plus : au-delà, c'est une nébuleuse, pas une carte ; les plus proches sont gardées.` : ""}</p>
-    <button class="btn sm carte-toggle" data-act="carte-toggle" aria-expanded="false">Voir la carte</button>
+    <p class="hint">${tr`${stars}, ${lines}. Le temps de gauche à droite, une bande par espace ; la taille d'une étoile dit son nombre de liens.`}${c.capped ? " " + tr`${CARTE_MAX} étoiles au plus : au-delà, c'est une nébuleuse, pas une carte ; les plus proches sont gardées.` : ""}</p>
+    <button class="btn sm carte-toggle" data-act="carte-toggle" aria-expanded="false">${tr`Voir la carte`}</button>
     <div class="carte-sky">${svg}</div>
-    <p class="carte-legend">${Object.keys(LINK_TYPES).map((k) => `<span>${lineSample(k)}${esc(LINK_TYPES[k])}</span>`).join("")}<span>${lineSample("contredit", true)}tension ouverte</span></p>
-    <h3>Table des liaisons</h3>
-    <ul class="carte-table">${c.edges.map((e) => `<li>${refHTML(e.from)} <span class="hint">${esc(LINK_TYPES[e.type])}</span> ${refHTML(e.to)}${e.open ? ` <span class="late">tension ouverte</span>` : ""}</li>`).join("") || `<li class="empty">Aucun lien entre ces étoiles.</li>`}</ul>
-    ${lonely.length ? `<p class="hint" style="margin-top:10px">Sans lien ici : ${lonely.map((s) => refHTML(s.ref)).join(", ")}.</p>` : ""}
+    <p class="carte-legend">${Object.keys(LINK_TYPES).map((k) => `<span>${lineSample(k)}${esc(linkLabel(k))}</span>`).join("")}<span>${lineSample("contredit", true)}${tr`tension ouverte`}</span></p>
+    <h3>${tr`Table des liaisons`}</h3>
+    <ul class="carte-table">${c.edges.map((e) => `<li>${refHTML(e.from)} <span class="hint">${esc(linkLabel(e.type))}</span> ${refHTML(e.to)}${e.open ? ` <span class="late">${tr`tension ouverte`}</span>` : ""}</li>`).join("") || `<li class="empty">${tr`Aucun lien entre ces étoiles.`}</li>`}</ul>
+    ${lonely.length ? `<p class="hint" style="margin-top:10px">${tr`Sans lien ici : ${lonely.map((s) => refHTML(s.ref)).join(", ")}.`}</p>` : ""}
   </div>`;
   };
   CLICK["carte"] = (el) => openSheet("carte", `${el.dataset.k}:${el.dataset.v}`);
   CLICK["carte-toggle"] = (el) => {
     const on = el.closest(".carte").classList.toggle("show-sky");
     el.setAttribute("aria-expanded", on);
-    el.textContent = on ? "Masquer la carte" : "Voir la carte";
+    el.textContent = on ? tr`Masquer la carte` : tr`Voir la carte`;
   };
 
   // src/app/features/specimen.js
   SHEETS.specimen = (ref) => {
     const hit = refFind(ref);
-    if (!hit) return `<p class="empty">Cette entrée n'existe plus.</p>`;
+    if (!hit) return `<p class="empty">${tr`Cette entrée n'existe plus.`}</p>`;
     const { mod, e } = hit, inst = S().modules[mod], c = inst.config, text = String(e.text || e.note || "");
     const thought = inst.type === "notes" || inst.type === "cumul" && (inst.scraps || []).includes(e);
     const long = (d) => fmt(d, { day: "numeric", month: "long", year: "numeric" }), when = e.date || e.due || e.created;
     const chapter = inst.type === "cumul" && e.category ? (c.categories.find((x) => x.id === e.category) || {}).name : "";
-    const links = [...(e.links || []).map((l) => `<li>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</li>`), ...(backlinks().get(`${mod}/${e.id}`) || []).map((b) => `<li>${esc(LINK_BACK[b.type])} ${refHTML(b.from)}</li>`)];
+    const links = [...(e.links || []).map((l) => `<li>${esc(linkLabel(l.type))} ${refHTML(l.to)}</li>`), ...(backlinks().get(`${mod}/${e.id}`) || []).map((b) => `<li>${esc(tr(LINK_BACK[b.type]))} ${refHTML(b.from)}</li>`)];
     const motifs = motifsOf([e.title, e.subtitle, text].filter(Boolean).join(" "));
-    const statusOf = (k) => k ? EP_STATUS[k] : "sans statut";
-    const log = [...e.epLog || []].reverse().map((x) => `<li>${x.date ? long(x.date) + " : " : ""}${esc(statusOf(x.from))} → ${epGlyph(x.to)}${esc(statusOf(x.to))}</li>`);
-    const reviews = [...e.reviews || []].reverse().map((r) => `<li>${esc(r.verdict)}, le ${long(r.date)}</li>`);
+    const log = [...e.epLog || []].reverse().map((x) => `<li>${x.date ? tr`${long(x.date)} : ` : ""}${esc(epLabel(x.from))} → ${epGlyph(x.to)}${esc(epLabel(x.to))}</li>`);
+    const reviews = [...e.reviews || []].reverse().map((r) => `<li>${tr`${esc(r.verdict === "maintenue" ? tr`maintenue` : r.verdict)}, le ${long(r.date)}`}</li>`);
     return `<div class="spec ${tintOf(mod)}" data-mod="${esc(mod)}" data-id="${esc(e.id)}">
     <div class="plate">${sigil(mod)}<span class="pl">${esc(label(mod))}</span></div>
-    ${e.title ? `<h2 id="sheetTitle">${esc(e.title)}</h2>${e.subtitle ? `<p class="hint">${esc(e.subtitle)}</p>` : ""}` : `<h2 id="sheetTitle" class="sr">Fiche de l'entrée</h2>`}
+    ${e.title ? `<h2 id="sheetTitle">${esc(e.title)}</h2>${e.subtitle ? `<p class="hint">${esc(e.subtitle)}</p>` : ""}` : `<h2 id="sheetTitle" class="sr">${tr`Fiche de l'entrée`}</h2>`}
     ${text ? `<blockquote class="spec-text">${esc(text)}</blockquote>` : ""}
-    <p class="spec-label">${[when ? long(when) : "", chapter, e.tag, e.status].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join("")}${e.ep ? `<span>${epGlyph(e.ep)}${esc(EP_STATUS[e.ep])}</span>` : ""}</p>
-    ${thought ? `<div class="row">${epSelect(mod, e)}<span class="spacer"></span>${links.length ? `<button class="btn ghost sm" data-act="carte" data-k="ref" data-v="${esc(mod)}/${esc(e.id)}">carte du voisinage</button>` : ""}<button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></div>` : inst.type === "collection" && inst.config.sources ? `<div class="row"><span class="spacer"></span><button class="btn ghost sm" data-act="src-link" data-ref="${esc(mod)}/${esc(e.id)}">documente…</button></div>` : ""}
+    <p class="spec-label">${[when ? long(when) : "", chapter, e.tag, e.status].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join("")}${e.ep ? `<span>${epGlyph(e.ep)}${esc(epLabel(e.ep))}</span>` : ""}</p>
+    ${thought ? `<div class="row">${epSelect(mod, e)}<span class="spacer"></span>${links.length ? `<button class="btn ghost sm" data-act="carte" data-k="ref" data-v="${esc(mod)}/${esc(e.id)}">${tr`carte du voisinage`}</button>` : ""}<button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">${tr`dériver`}</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">${tr`lier…`}</button></div>` : inst.type === "collection" && inst.config.sources ? `<div class="row"><span class="spacer"></span><button class="btn ghost sm" data-act="src-link" data-ref="${esc(mod)}/${esc(e.id)}">${tr`documente…`}</button></div>` : ""}
     ${e.src ? `<p class="meta">${srcMeta(e)}</p>` : ""}
-    ${e.origin ? `<h3>Provenance</h3><p class="meta">${originHTML(e, text || e.title)}</p>` : ""}
-    ${links.length ? `<h3>Liens</h3><ul>${links.join("")}</ul>` : ""}
-    ${motifs.length ? `<h3>Motifs</h3><div class="row">${motifs.map((m) => `<button class="btn ghost sm" data-act="search-for" data-q="${esc(m.e.title)}">${esc(m.e.title)}</button>`).join("")}</div>` : ""}
-    ${log.length ? `<h3>Statut, au fil du temps</h3><ul class="meta" style="display:block">${log.join("")}</ul>` : ""}
-    ${reviews.length ? `<h3>Réexamens</h3><ul>${reviews.join("")}</ul>` : ""}
-    <div class="row" style="margin-top:18px"><a class="btn sm" href="#${esc(mod)}/${esc(e.id)}">Voir dans ${esc(label(mod))}</a>${inst.type === "collection" ? `<button class="btn ghost sm" data-act="col-edit">modifier</button>` : ""}</div>
+    ${e.origin ? `<h3>${tr`Provenance`}</h3><p class="meta">${originHTML(e, text || e.title)}</p>` : ""}
+    ${links.length ? `<h3>${tr`Liens`}</h3><ul>${links.join("")}</ul>` : ""}
+    ${motifs.length ? `<h3>${tr`Motifs`}</h3><div class="row">${motifs.map((m) => `<button class="btn ghost sm" data-act="search-for" data-q="${esc(m.e.title)}">${esc(m.e.title)}</button>`).join("")}</div>` : ""}
+    ${log.length ? `<h3>${tr`Statut, au fil du temps`}</h3><ul class="meta" style="display:block">${log.join("")}</ul>` : ""}
+    ${reviews.length ? `<h3>${tr`Réexamens`}</h3><ul>${reviews.join("")}</ul>` : ""}
+    <div class="row" style="margin-top:18px"><a class="btn sm" href="#${esc(mod)}/${esc(e.id)}">${tr`Voir dans ${esc(label(mod))}`}</a>${inst.type === "collection" ? `<button class="btn ghost sm" data-act="col-edit">${tr`modifier`}</button>` : ""}</div>
   </div>`;
   };
   CLICK["specimen"] = (el) => {
@@ -9711,17 +9900,17 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
   var vascSkip = 0;
   SHEETS.vasculum = () => {
     const s = S(), inbox = inboxId(s.modules);
-    if (!inbox) return `<h2 id="sheetTitle">Vasculum</h2><p class="empty">Aucune boîte de réception.</p>`;
+    if (!inbox) return `<h2 id="sheetTitle">${tr`Vasculum`}</h2><p class="empty">${tr`Aucune boîte de réception.`}</p>`;
     const list = s.modules[inbox].entries, n = list.length;
-    if (!n) return `<h2 id="sheetTitle">Vasculum</h2><p class="empty">La boîte est vide. Tout a trouvé sa place, ou presque.</p><div class="row"><button class="btn" data-act="sheet-close">Fermer</button></div>`;
+    if (!n) return `<h2 id="sheetTitle">${tr`Vasculum`}</h2><p class="empty">${tr`La boîte est vide. Tout a trouvé sa place, ou presque.`}</p><div class="row"><button class="btn" data-act="sheet-close">${tr`Fermer`}</button></div>`;
     const i = vascSkip % n, note = list[i], intent = captureIntent(note.text), targets = noteTargets(inbox);
-    return `<div class="vasc" data-mod="${esc(inbox)}" data-id="${esc(note.id)}"><h2 id="sheetTitle" class="sr">Vasculum : trier la boîte</h2>
-    <p class="vasc-count">Vasculum · ${i + 1} sur ${n}</p>
+    return `<div class="vasc" data-mod="${esc(inbox)}" data-id="${esc(note.id)}"><h2 id="sheetTitle" class="sr">${tr`Vasculum : trier la boîte`}</h2>
+    <p class="vasc-count">${tr`Vasculum · ${i + 1} sur ${n}`}</p>
     <blockquote class="spec-text">${esc(note.text)}</blockquote>
-    <p class="meta">${fmt(note.date)}${note.ep ? `<span>${epGlyph(note.ep)}${esc(EP_STATUS[note.ep])}</span>` : ""}</p>
-    ${intent && intent.to !== inbox ? `<button class="btn acc" data-act="note-file">Ranger : ${esc(intent.say)}</button>` : ""}
-    ${targets.length ? `<div class="vasc-targets">${targets.map((k) => `<button type="button" class="${tintOf(k)}" data-act="note-to" data-to="${esc(k)}">${sigil(k)}<span>${esc(label(k))}</span></button>`).join("")}</div>` : `<p class="hint">Aucun espace ne sait encore recevoir une note.</p>`}
-    <div class="row"><button class="btn ghost" data-act="vasc-skip">Plus tard</button><span class="spacer"></span><button class="btn ghost" data-act="note-del">Supprimer</button></div></div>`;
+    <p class="meta">${fmt(note.date)}${note.ep ? `<span>${epGlyph(note.ep)}${esc(epLabel(note.ep))}</span>` : ""}</p>
+    ${intent && intent.to !== inbox ? `<button class="btn acc" data-act="note-file">${tr`Ranger : ${esc(intent.say)}`}</button>` : ""}
+    ${targets.length ? `<div class="vasc-targets">${targets.map((k) => `<button type="button" class="${tintOf(k)}" data-act="note-to" data-to="${esc(k)}">${sigil(k)}<span>${esc(label(k))}</span></button>`).join("")}</div>` : `<p class="hint">${tr`Aucun espace ne sait encore recevoir une note.`}</p>`}
+    <div class="row"><button class="btn ghost" data-act="vasc-skip">${tr`Plus tard`}</button><span class="spacer"></span><button class="btn ghost" data-act="note-del">${tr`Supprimer`}</button></div></div>`;
   };
   CLICK["vasculum"] = () => {
     vascSkip = 0;

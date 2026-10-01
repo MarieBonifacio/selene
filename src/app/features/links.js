@@ -4,6 +4,8 @@ import { EP_STATUS, LINK_TYPES, addLink, setEpStatus } from "../../core/domain.j
 import { CHANGE, CLICK, TYPE_UI } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { ago, fmt, todayISO, uid } from "../lib/format.js";
+import { N_, tr } from "../i18n/index.js";
+import { epLabel, linkLabel } from "../lib/labels.js";
 import { motifsOf } from "./concordance.js";
 import { dossierFile } from "./dossier.js";
 import { modOf } from "../modules/collection.js";
@@ -51,34 +53,35 @@ export function sourceItems() {
   for (const [mod, m] of Object.entries(S().modules)) if (m.type === "collection" && m.config.sources && enabled(mod)) for (const e of m.entries) out.push({ ref: `${mod}/${e.id}`, mod, e });
   return out;
 }
-export const LINK_BACK = { derive: "a donné", contredit: "contredit par", echo: "écho de", documente: "documenté par" };
+// Le sens inverse des liens, vu depuis l'entrée visée ; traduit à l'affichage (tr).
+export const LINK_BACK = { derive: N_("a donné"), contredit: N_("contredit par"), echo: N_("écho de"), documente: N_("documenté par") };
 export function refHTML(ref) {
   const hit = refFind(ref);
-  return hit ? `<a href="#${esc(hit.mod)}/${esc(hit.e.id)}">« ${esc(excerpt(hit.e))} »</a>` : `<i>(supprimé)</i>`;
+  return hit ? `<a href="#${esc(hit.mod)}/${esc(hit.e.id)}">${tr`« ${esc(excerpt(hit.e))} »`}</a>` : `<i>${tr`(supprimé)`}</i>`;
 }
 /* Sur la ligne du statut : « fiche », « dériver » et « lier… » (les liens eux-mêmes sont dans la marge, margHTML). */
 export function linksHTML(mod) {
-  return `<span class="acts ra"><button class="btn ghost sm" data-act="specimen" data-mod="${esc(mod)}">fiche</button><button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">dériver</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">lier…</button></span>`;
+  return `<span class="acts ra"><button class="btn ghost sm" data-act="specimen" data-mod="${esc(mod)}">${tr`fiche`}</button><button class="btn ghost sm" data-act="derive-start" data-mod="${esc(mod)}">${tr`dériver`}</button><button class="btn ghost sm" data-act="link-form" data-mod="${esc(mod)}">${tr`lier…`}</button></span>`;
 }
 /* Les marginalia : ce qui accompagne une pensée sans en être (retouche, provenance, liens sortants et entrants,
    motifs présents), dans un <aside> rendu une seule fois. Le CSS seul le place : dans la marge droite, face au texte,
    sur un grand écran (notes latérales à la Tufte) ; sous le texte ailleurs. Rendu même vide, pour que la colonne de
    texte garde la même largeur d'une ligne à l'autre. */
 export function margHTML(mod, e, text) {
-  const out = (e.links || []).map(l => `<span>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</span>`);
-  const inc = (backlinks().get(`${mod}/${e.id}`) || []).map(b => `<span>${esc(LINK_BACK[b.type])} ${refHTML(b.from)}</span>`);
+  const out = (e.links || []).map(l => `<span>${esc(linkLabel(l.type))} ${refHTML(l.to)}</span>`);
+  const inc = (backlinks().get(`${mod}/${e.id}`) || []).map(b => `<span>${esc(tr(LINK_BACK[b.type]))} ${refHTML(b.from)}</span>`);
   const motifs = motifsOf(text);
-  const parts = [e.editedAt ? `<span class="hint">modifié ${ago(e.editedAt)}</span>` : "", originHTML(e, text),
+  const parts = [e.editedAt ? `<span class="hint">${tr`modifié ${ago(e.editedAt)}`}</span>` : "", originHTML(e, text),
     out.length || inc.length ? `<span class="links">${[...out, ...inc].join("")}</span>` : "",
-    motifs.length ? `<span class="m-motifs"><span class="m-lab">motifs</span>${motifs.map(m => `<button type="button" data-act="search-for" data-q="${esc(m.e.title)}">${esc(m.e.title)}</button>`).join("")}</span>` : ""];
-  return `<aside class="marg" aria-label="En marge">${parts.join("")}</aside>`;
+    motifs.length ? `<span class="m-motifs"><span class="m-lab">${tr`motifs`}</span>${motifs.map(m => `<button type="button" data-act="search-for" data-q="${esc(m.e.title)}">${esc(m.e.title)}</button>`).join("")}</span>` : ""];
+  return `<aside class="marg" aria-label="${tr`En marge`}">${parts.join("")}</aside>`;
 }
 /* Dérivation en cours, par module : la prochaine entrée écrite dérivera de ces références (une, ou deux pour
    résoudre une tension). Propre à l'appareil, oubliée si l'on quitte l'app. */
 const deriveFrom = {};
 export function deriveBanner(mod) {
   const refs = deriveFrom[mod]; if (!refs || !refs.length) return "";
-  return `<div class="derive">${refs.length > 1 ? "Synthèse de" : "Dérivé de"} ${refs.map(refHTML).join(" et ")} <button class="btn ghost sm" data-act="derive-cancel" data-mod="${esc(mod)}">annuler</button></div>`;
+  return `<div class="derive">${refs.length > 1 ? tr`Synthèse de ${refHTML(refs[0])} et ${refHTML(refs[1])}` : tr`Dérivé de ${refHTML(refs[0])}`} <button class="btn ghost sm" data-act="derive-cancel" data-mod="${esc(mod)}">${tr`annuler`}</button></div>`;
 }
 export function applyDerive(mod, item) {
   for (const ref of deriveFrom[mod] || []) if (ref !== `${mod}/${item.id}`) addLink(item, ref, "derive", uid(), todayISO());
@@ -87,19 +90,19 @@ export function applyDerive(mod, item) {
 }
 function linkForm(mod, id) {
   const self = `${mod}/${id}`, choices = thoughtItems().filter(x => x.ref !== self).sort((a, b) => (b.e.date || "").localeCompare(a.e.date || "")).slice(0, 300);
-  if (!choices.length) return toast("Rien d'autre à quoi le lier. Une pensée seule ne se contredit pas encore.");
-  openForm("Lier à une autre entrée", [
-    { n: "type", l: "Cette entrée…", t: "select", o: Object.entries(LINK_TYPES) },
-    { n: "to", l: "…quelle autre", t: "select", o: choices.map(x => [x.ref, `${label(x.mod)} · ${x.e.date ? fmt(x.e.date) + " · " : ""}${excerpt(x.e, 70)}`]) }
+  if (!choices.length) return toast(tr`Rien d'autre à quoi le lier. Une pensée seule ne se contredit pas encore.`);
+  openForm(tr`Lier à une autre entrée`, [
+    { n: "type", l: tr`Cette entrée…`, t: "select", o: Object.keys(LINK_TYPES).map(k => [k, linkLabel(k)]) },
+    { n: "to", l: tr`…quelle autre`, t: "select", o: choices.map(x => [x.ref, `${label(x.mod)} · ${x.e.date ? fmt(x.e.date) + " · " : ""}${excerpt(x.e, 70)}`]) }
   ], { type: "echo" }, v => {
-    const hit = refFind(self); if (!hit) return toast("Cette entrée a disparu entre-temps.");
-    if (!addLink(hit.e, v.to, v.type, uid(), todayISO())) return toast("Déjà lié ainsi.");
-    site.save(); render(); toast(v.type === "contredit" ? "Tension ouverte. Elle attendra sa synthèse." : "Lié.");
+    const hit = refFind(self); if (!hit) return toast(tr`Cette entrée a disparu entre-temps.`);
+    if (!addLink(hit.e, v.to, v.type, uid(), todayISO())) return toast(tr`Déjà lié ainsi.`);
+    site.save(); render(); toast(v.type === "contredit" ? tr`Tension ouverte. Elle attendra sa synthèse.` : tr`Lié.`);
   });
 }
 /* Le statut épistémique d'un fragment ou d'une note, modifiable sur place ; vide par défaut. Vide, c'est une action
    (discrète, comme les autres actions de ligne) ; posé, c'est une information, toujours visible. */
-export const epSelect = (id, e) => `<select class="ep ${e.ep ? "on" : "ra"}" data-act="ep-set" data-mod="${esc(id)}" aria-label="Statut">${[["", "statut…"], ...Object.entries(EP_STATUS)].map(([k, l]) => `<option value="${k}" ${(e.ep || "") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+export const epSelect = (id, e) => `<select class="ep ${e.ep ? "on" : "ra"}" data-act="ep-set" data-mod="${esc(id)}" aria-label="${tr`Statut`}">${[["", tr`statut…`], ...Object.keys(EP_STATUS).map(k => [k, epLabel(k)])].map(([k, l]) => `<option value="${k}" ${(e.ep || "") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
 /* Liaisons, communes aux fragments et aux notes (l'entrée est cherchée par sa référence « module/id »). */
 CLICK["derive-start"] = el => {
   const mod = el.dataset.mod, id = idOf(el); if (!refFind(`${mod}/${id}`)) return;
@@ -124,8 +127,8 @@ CLICK["tension-dossier"] = el => {
     if (refs.includes(l.to) && !seen.has(it.ref)) seen.add(it.ref);
   }
   const items = [...seen].map(refFind).filter(Boolean).map(h => ({ mod: h.mod, text: h.e.text, date: h.e.date, e: h.e }));
-  if (items.length < 2) return toast("L'une des deux entrées a disparu.");
-  dossierFile(`Tension — ${excerpt(items[0].e, 40)}`, `« ${excerpt(items[0].e, 80)} » contredit « ${excerpt(items[1].e, 80)} », et leur voisinage`, items);
+  if (items.length < 2) return toast(tr`L'une des deux entrées a disparu.`);
+  dossierFile(tr`Tension — ${excerpt(items[0].e, 40)}`, tr`« ${excerpt(items[0].e, 80)} » contredit « ${excerpt(items[1].e, 80)} », et leur voisinage`, items);
 };
 /* Statut épistémique, commun aux fragments et aux notes : l'élément est cherché dans les deux listes du module. */
 CHANGE["ep-set"] = el => {

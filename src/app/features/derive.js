@@ -1,7 +1,7 @@
 /* La dérive lexicale : les mots qui montent et qui s'effacent dans tes textes, d'une période à l'autre. */
 import { TYPE_UI } from "../registry.js";
 import { esc } from "../lib/dom.js";
-import { plural } from "../lib/format.js";
+import { tr, trn } from "../i18n/index.js";
 import { isConcordance } from "./concordance.js";
 import { memoInRender } from "../shell/render.js";
 import { S, enabled } from "../state/site.js";
@@ -65,11 +65,11 @@ export function lexicalDrift(mode, offset) {
 }
 export function driftSection(mode, cur) {
   const d = memoInRender("drift", () => lexicalDrift(mode, bilanOffset)), motifs = Object.keys(S().modules).find(k => enabled(k) && isConcordance(S().modules[k]));
-  const unit = mode === "mois" ? "mois" : "cycles";
-  if (!d.enough) return `<section><h3>Vocabulaire</h3><p class="hint">Pas encore assez de textes datés pour parler de dérive : ${plural(d.nNow, "texte")} dans la période, ${plural(d.nBefore, "texte")} dans les six ${unit} d'avant (${DRIFT_MIN_TEXTS} de chaque côté au moins).</p></section>`;
+  const texts = n => trn(n, "{0} texte", "{0} textes"), month = mode === "mois";
+  if (!d.enough) return `<section><h3>${tr`Vocabulaire`}</h3><p class="hint">${month ? tr`Pas encore assez de textes datés pour parler de dérive : ${texts(d.nNow)} dans la période, ${texts(d.nBefore)} dans les six mois d'avant (${DRIFT_MIN_TEXTS} de chaque côté au moins).` : tr`Pas encore assez de textes datés pour parler de dérive : ${texts(d.nNow)} dans la période, ${texts(d.nBefore)} dans les six cycles d'avant (${DRIFT_MIN_TEXTS} de chaque côté au moins).`}</p></section>`;
   const known = motifs ? new Set(S().modules[motifs].entries.map(e => fold(e.title))) : new Set();
-  const chip = (k, extra) => `<span class="chip"><button class="btn ghost sm" data-act="search-for" data-q="${esc(d.word(k))}">${esc(d.word(k))}${extra}</button>${motifs && !known.has(fold(d.word(k))) ? `<button class="btn ghost sm" data-act="motif-add" data-mod="${esc(motifs)}" data-q="${esc(d.word(k))}" title="En faire un motif" aria-label="En faire un motif">+</button>` : ""}</span>`;
-  return `<section><h3>Vocabulaire</h3><p class="hint">Les mots propres à la période, comparés aux six ${unit} d'avant (${plural(d.nNow, "texte")} contre ${d.nBefore}). Une piste, pas un diagnostic : deux occurrences ne font pas une obsession.${motifs ? " « + » en fait un motif." : ""}</p>
-    ${d.rising.length ? `<p class="hint" style="margin:0 0 4px">Émergent</p><div class="row">${d.rising.map(x => chip(x.k, ` · ${x.n}${x.before ? ` (avant ${x.before})` : ""}`)).join("")}</div>` : `<p class="empty">Aucun mot ne se détache. Constance, ou routine.</p>`}
-    ${d.fading.length ? `<p class="hint" style="margin:12px 0 4px">Absent cette fois, fréquent avant</p><div class="row">${d.fading.map(x => chip(x.k, ` · ${x.n} avant`)).join("")}</div>` : ""}</section>`;
+  const chip = (k, extra) => `<span class="chip"><button class="btn ghost sm" data-act="search-for" data-q="${esc(d.word(k))}">${esc(d.word(k))}${extra}</button>${motifs && !known.has(fold(d.word(k))) ? `<button class="btn ghost sm" data-act="motif-add" data-mod="${esc(motifs)}" data-q="${esc(d.word(k))}" title="${tr`En faire un motif`}" aria-label="${tr`En faire un motif`}">+</button>` : ""}</span>`;
+  return `<section><h3>${tr`Vocabulaire`}</h3><p class="hint">${month ? tr`Les mots propres à la période, comparés aux six mois d'avant (${texts(d.nNow)} contre ${d.nBefore}). Une piste, pas un diagnostic : deux occurrences ne font pas une obsession.` : tr`Les mots propres à la période, comparés aux six cycles d'avant (${texts(d.nNow)} contre ${d.nBefore}). Une piste, pas un diagnostic : deux occurrences ne font pas une obsession.`}${motifs ? " " + tr`« + » en fait un motif.` : ""}</p>
+    ${d.rising.length ? `<p class="hint" style="margin:0 0 4px">${tr`Émergent`}</p><div class="row">${d.rising.map(x => chip(x.k, ` · ${x.n}${x.before ? " " + tr`(avant ${x.before})` : ""}`)).join("")}</div>` : `<p class="empty">${tr`Aucun mot ne se détache. Constance, ou routine.`}</p>`}
+    ${d.fading.length ? `<p class="hint" style="margin:12px 0 4px">${tr`Absent cette fois, fréquent avant`}</p><div class="row">${d.fading.map(x => chip(x.k, " · " + tr`${x.n} avant`)).join("")}</div>` : ""}</section>`;
 }

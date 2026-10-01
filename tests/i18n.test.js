@@ -89,6 +89,12 @@ test('tri dans la langue : « é » se range avec « e », pas après « z »', 
   assert.deepEqual(['zèbre', 'été', 'Eau', 'fin'].sort(collate), ['Eau', 'été', 'fin', 'zèbre']);
 });
 
+test('les libellés du noyau (statuts, liens) sont tous marqués pour la traduction', () => {
+  const { EP_STATUS, LINK_TYPES } = require('../src/core/domain.js');
+  const { CORE_LABELS } = require('../src/app/lib/labels.js');
+  assert.deepEqual([...CORE_LABELS].sort(), [...Object.values(EP_STATUS), ...Object.values(LINK_TYPES)].sort());
+});
+
 test('les noms tr, trp, trn et N_ sont réservés dans src/app : aucune variable ne les masque', async () => {
   const { parse } = await import('espree');
   const { analyze } = await import('eslint-scope');
