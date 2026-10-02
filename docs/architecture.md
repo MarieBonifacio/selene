@@ -248,7 +248,9 @@ avec le serveur. `sync()` :
 4. adopte le résultat, en refusionnant par-dessus ce que l'utilisatrice a saisi pendant l'aller-retour.
 
 Une seule synchro à la fois par store. Déclencheurs : 900 ms après une modification, toutes les 30 s
-(onglet visible), au retour en ligne ou au premier plan. À la fermeture, une écriture conditionnelle
+(onglet visible), au retour en ligne ou au premier plan. La relecture des 30 s demande d'abord la seule date de la
+dernière écriture (`select=u:site->>updatedAt`, quelques octets) : si c'est celle de la base et que l'appareil n'a
+rien à envoyer, le document n'est pas relu. Sinon, relecture complète et fusion, comme avant. À la fermeture, une écriture conditionnelle
 `keepalive` sans relecture ; si elle échoue, les données restent locales et partent au lancement suivant.
 
 Sans base (premier contact d'un appareil) : un appareil vierge adopte le serveur, sinon on fusionne
@@ -367,6 +369,9 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
 - **Écarté** : Supabase Realtime (WebSocket, publication à configurer, reconnexions à gérer).
 - **Conséquences** : jusqu'à 30 s de délai entre deux appareils ouverts en même temps ; aucune pièce
   mobile supplémentaire.
+- **Révision (2 octobre 2026, audit T8)** : relire le document entier toutes les 30 s coûtait, pour un gros
+  historique, plusieurs gigaoctets par mois et par appareil ouvert. La relecture demande désormais la date de la
+  dernière écriture, et le document seulement si elle a changé (ou si l'appareil a des modifications à renvoyer).
 
 ### ADR 5 — Deux registres de types de module, un par couche
 

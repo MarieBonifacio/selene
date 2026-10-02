@@ -170,10 +170,24 @@ const supabaseDb = {
         if (!ins.ok) throw new Error(tr`Écriture Supabase impossible.`);
         return patch();
       },
-      onSnapshot(cb, errCb) {
+      /* La date de la dernière écriture, seule : quelques octets au lieu du document (PostgREST lit le champ JSON). */
+      async stamp() {
+        const res = await fetch(`${table}?user_id=eq.${authSession.user.id}&select=u:${col}->>updatedAt`, { signal: authTimeout(), headers: headers() });
+        if (!res.ok) throw new Error(tr`Lecture Supabase impossible.`);
+        const rows = await res.json();
+        return rows[0] && rows[0].u != null ? String(rows[0].u) : null;
+      },
+      /* Toutes les 30 s, page visible. `known()` : la date de la dernière version commune avec le serveur, si l'appareil
+         n'a rien à envoyer. Le serveur a la même : rien n'a bougé, le document n'est pas relu. Sinon, ou sans date
+         connue, on relit tout et le store fusionne (et renvoie ce qui attendait). */
+      onSnapshot(cb, errCb, known = () => null) {
         const timer = setInterval(async () => {
           if (document.visibilityState !== "visible" || !authSession) return;
-          try { cb(await this.get()); } catch (e) { errCb && errCb(e); }
+          try {
+            const k = known();
+            if (k != null && await this.stamp() === String(k)) return;
+            cb(await this.get());
+          } catch (e) { errCb && errCb(e); }
         }, 30000);
         return () => clearInterval(timer);
       }

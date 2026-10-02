@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-FmOYaQb1RRqwMDagvOo8vD6GXdv/QiRbN1FFck/Ylyw=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LDyELtwbYNrD1QdRq1KSeBNT5QiS15UUIBQ/KYZYpEQ=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -4844,7 +4844,7 @@ var __selene = (() => {
       }
       if (s.db !== db) return;
       const unsub = db.doc(path).onSnapshot((snap) => s.sync(snap), () => {
-      });
+      }, () => s.base && !s.timer && !s.unsynced() ? s.base.updatedAt : null);
       s.unsub = typeof unsub === "function" ? unsub : null;
     };
     s.disconnect = () => {
@@ -6745,10 +6745,22 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
           if (!ins.ok) throw new Error(tr`Écriture Supabase impossible.`);
           return patch();
         },
-        onSnapshot(cb, errCb) {
+        /* La date de la dernière écriture, seule : quelques octets au lieu du document (PostgREST lit le champ JSON). */
+        async stamp() {
+          const res = await fetch(`${table}?user_id=eq.${authSession.user.id}&select=u:${col}->>updatedAt`, { signal: authTimeout(), headers: headers() });
+          if (!res.ok) throw new Error(tr`Lecture Supabase impossible.`);
+          const rows = await res.json();
+          return rows[0] && rows[0].u != null ? String(rows[0].u) : null;
+        },
+        /* Toutes les 30 s, page visible. `known()` : la date de la dernière version commune avec le serveur, si l'appareil
+           n'a rien à envoyer. Le serveur a la même : rien n'a bougé, le document n'est pas relu. Sinon, ou sans date
+           connue, on relit tout et le store fusionne (et renvoie ce qui attendait). */
+        onSnapshot(cb, errCb, known = () => null) {
           const timer = setInterval(async () => {
             if (document.visibilityState !== "visible" || !authSession) return;
             try {
+              const k = known();
+              if (k != null && await this.stamp() === String(k)) return;
               cb(await this.get());
             } catch (e) {
               errCb && errCb(e);
