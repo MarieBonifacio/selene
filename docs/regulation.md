@@ -33,7 +33,7 @@ sans risque. Décision d'architecture : [ADR 26](architecture.md#adr-26--reprend
 |---|---|---|---|
 | Tabac | cigarettes | entier, 200 au plus par saisie | les substituts nicotiniques (patch, gomme, pastille, spray) ne se comptent pas : ce ne sont pas des cigarettes fumées |
 | Cannabis | grammes de produit | au centième, 100 au plus | une estimation, pas une dose de THC : la teneur varie, ces grammes ne mesurent ni l'effet ni le risque |
-| Alcool | verres standard français (10 g d'alcool pur) | au dixième, 100 au plus | ≈ 25 cl de bière à 5 %, 10 cl de vin à 12 %, 3 cl d'alcool fort à 40 % ; un verre servi peut en valoir plusieurs |
+| Alcool | verres standard français (10 g d'alcool pur) | au dixième, 100 au plus | ≈ 25 cl de bière à 5 % ou 10 cl de vin à 12 % (les deux exemples de la source officielle) ; un verre servi peut en valoir plusieurs |
 | Réseaux sociaux | minutes déclarées | entier, 1440 au plus par jour | saisies à la main (temps d'écran du téléphone, par exemple) ; Selene ne mesure ni ne bloque les autres applications |
 
 Les nombres s'écrivent « 1,5 » ou « 1.5 ». Les sommes sont calculées au pas de l'unité, sans flottant résiduel.
@@ -125,9 +125,14 @@ Sources (vérifiées le 1er octobre 2026) :
 
 Limite de cette vérification : depuis l'environnement de développement, le proxy réseau bloquait l'accès direct à ces
 sites ; leur contenu a été recoupé par les extraits d'un moteur de recherche (titres, résumés, numéros), pas lu page
-par page. L'exemple de l'alcool fort (3 cl à 40 %) n'a été retrouvé que dans des sources non
-officielles ; il est cohérent par le calcul (25 cl × 5 % × 0,8 g/ml = 10 g ; 10 cl × 12 % × 0,8 ≈ 9,6 g ;
-3 cl × 40 % × 0,8 ≈ 9,6 g). À relire avant une publication.
+par page. Les deux exemples gardés sont ceux de la page officielle et se vérifient par le calcul (25 cl × 5 % ×
+0,8 g/ml = 10 g ; 10 cl × 12 % × 0,8 ≈ 9,6 g) ; celui de l'alcool fort (3 cl à 40 %), retrouvé seulement dans des
+sources non officielles, a été retiré le 2 octobre 2026. À relire page par page avant une publication, depuis un réseau
+qui y accède.
+
+Les adresses citées ici et dans l'interface sont vérifiées chaque mois (`npm run liens`, workflow « Liens ») : une page
+disparue (404, 410, domaine inconnu) fait échouer la vérification ; un site qui refuse le robot (401, 403, 429, 5xx) est
+seulement signalé, puisqu'il dit qui refuse, pas ce qui manque.
 
 L'efficacité clinique de cette gamification n'est pas établie. La gestion des contingences étudiée en soin repose sur
 des comportements vérifiés et des renforcements tangibles, encadrés par des soignants ; elle ne valide pas des marques

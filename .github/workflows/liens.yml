@@ -1,0 +1,21 @@
+name: Liens
+# Les sources de santé citées par « Reprendre la main » (docs/regulation.md, et le lien de l'interface) : une adresse
+# disparue se voit ici, pas le jour où quelqu'un en a besoin. Une fois par mois, et à la demande (Run workflow).
+# Une page disparue (404, 410, domaine inexistant) fait échouer ; un site qui refuse le robot de GitHub (401, 403, 429,
+# 5xx, délai) est seulement signalé (annotation), à vérifier à la main. Aucune dépendance : Node et le dépôt suffisent.
+on:
+  schedule:
+    - cron: '17 6 3 * *' # le 3 de chaque mois, 6 h 17 UTC
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  liens:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+      - run: npm run liens

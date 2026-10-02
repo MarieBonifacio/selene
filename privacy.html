@@ -21,7 +21,7 @@ code { font-size: .9em; }
 </head>
 <body><main>
 <h1>Selene and your data</h1>
-<p class="meta">Privacy policy of Selene (website, Android, iOS and Windows apps). Last updated: 30 September 2026 (radar).
+<p class="meta">Privacy policy of Selene (website, Android, iOS and Windows apps). Last updated: 2 October 2026 (Taking back control).
 <a href="confidentialite.html" hreflang="fr" lang="fr">En français</a>.</p>
 
 <p>The short version: Selene sells nothing, measures nothing, shows no advertising and has no trackers. What you write
@@ -35,7 +35,8 @@ system keychain for the apps.</p>
 <h2>With an account</h2>
 <ul>
 <li><b>What is kept</b>: your email address and your password (hashed, by Supabase Auth), and your dashboard (tasks,
-notes, modules, settings, including the place chosen for the sky) for synchronisation. Nothing else.</li>
+notes, modules, settings, including the place chosen for the sky, and a “Taking back control” tracker if you create
+one, see below) for synchronisation. Nothing else.</li>
 <li><b>Where</b>: at <a href="https://supabase.com/privacy">Supabase</a>, the database host, in a table where each
 account can only read its own row.</li>
 <li><b>The Anthropic API key</b>, if you turn on the assistant: checked, encrypted (AES-GCM) and tied to your account on
@@ -44,6 +45,22 @@ to <a href="https://www.anthropic.com/legal/privacy">Anthropic</a> on behalf of 
 the questions nor the answers.</li>
 <li><b>The relay</b> (reading feeds and pages the browser cannot read on its own) fetches the addresses you give it and
 keeps nothing.</li>
+</ul>
+
+<h2>Taking back control: health data</h2>
+<p>This optional space lets you track tobacco, cannabis, alcohol or time spent on social media yourself. What you record
+in it (amounts, cravings, actions, goals, notes) is health data. It only exists if you create it.</p>
+<ul>
+<li><b>Where</b>: without an account, on your device only. With an account, it is synced like the rest of your
+dashboard, at Supabase, in the row only your account can read; it is not end-to-end encrypted there.</li>
+<li><b>What for</b>: showing it to you, on your devices, and nothing else. No advertising, no statistics, no resale, no
+cross-analysis with the rest of your dashboard (search, reviews, motifs).</li>
+<li><b>The assistant</b>: nothing is sent to it unless you choose to share this tracker. It then receives, with every
+question, the tracker's name and subject and a summary in numbers (days recorded, totals, goal), never your notes,
+cravings or triggers. Stopping sharing
+does not erase what has already been sent.</li>
+<li><b>Keeping or erasing</b>: it is included in your full backups and can be exported on its own; deleting the space
+erases it from your device, then from your account at the next sync.</li>
 </ul>
 
 <h2>The services Selene calls for you</h2>
