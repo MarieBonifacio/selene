@@ -96,6 +96,97 @@ alter table public.app_state add constraint app_state_taille
   check (octet_length(site::text) < 5000000 and octet_length(board::text) < 1000000) not valid;
 ```
 
+## Vérifier l'isolation entre comptes
+
+Chaque compte ne voit que sa propre ligne : ce sont les règles RLS de `supabase/schema.sql` qui l'imposent, dans la
+base. Les tests de Selene tournent contre une base simulée et ne prouvent rien sur les règles réellement posées dans un
+projet. `npm run isolation` le vérifie sur un vrai projet Supabase. À faire avant d'ouvrir l'app à d'autres personnes,
+puis après chaque changement de règles.
+
+Le script connecte deux comptes de test, A et B. Le compte A tente ensuite douze requêtes qui doivent toutes être
+refusées :
+
+| # | Requête de A | Réponse attendue |
+| - | ------------ | ---------------- |
+| 1 | lire la ligne de B | une liste vide |
+| 2 | lister toutes les lignes | sa propre ligne seulement |
+| 3 | modifier la ligne de B | une liste vide (rien de modifié) |
+| 4 | supprimer la ligne de B | une liste vide (rien de supprimé) |
+| 5 | créer une ligne au nom de B | `403`, code `42501` (refus de la règle RLS) |
+| 6 | écraser la ligne de B par fusion (upsert) | `403`, code `42501` |
+| 7 | donner sa propre ligne à B | `403`, code `42501` |
+| 8 | lire les clés d'assistant chiffrées | une liste vide |
+| 9 | écrire une clé d'assistant, même la sienne | `403`, code `42501` |
+| 10 | sans session : lire les lignes | une liste vide |
+| 11 | sans session : modifier la ligne de A | une liste vide |
+| 12 | lister les comptes (administration de Supabase Auth) | `403` |
+
+Avant ces douze requêtes, un *montage* vérifie que le test peut réellement échouer : chaque compte crée sa ligne, y
+inscrit une date propre à ce passage, puis la relit. Sans ce contrôle, une table absente ou des droits cassés pour tout
+le monde produiraient douze « refus » qui ne prouvent rien. Après les douze, B relit sa ligne : une écriture passée
+sans rien renvoyer se voit là, et la date unique la trahit même si la ligne a été supprimée puis recréée à l'identique.
+
+Les écritures à refuser (5, 6, 7, 9) demandent `return=minimal`, comme le ferait un compte malveillant. Avec
+`return=representation`, Postgres applique aussi la règle de *lecture* à la ligne renvoyée, et ce second refus
+masquerait une règle d'écriture trop large. Le script a été essayé contre PostgreSQL 16 et PostgREST 12 avec les
+règles de `schema.sql` : douze refus. Puis contre les mêmes, percées une à une : lecture ouverte, RLS désactivée,
+`assistant_keys` ouverte, montage cassé. Chaque trou fait échouer le test.
+
+**Où le lancer.** Sur un projet de *préproduction*, jamais sur celui de l'app : le script refuse l'adresse inscrite
+dans `src/app/services/auth.js`. Il écrit en effet une date dans la ligne de A et, si la base fuit, dans celle de B,
+ainsi qu'une fausse clé d'assistant pour A. Ces écritures n'ont rien à faire dans les données de quelqu'un.
+
+1. **Créer le projet de préproduction.** Sur supabase.com : *New project* (l'offre gratuite suffit). Ouvrir ensuite
+   *SQL Editor*, coller tout `supabase/schema.sql`, puis *Run*.
+2. **Créer deux comptes de test.** *Authentication → Users → Add user → Create new user*, deux fois. Prendre des
+   adresses qui ne servent qu'à ça et des mots de passe d'au moins 10 caractères. Laisser *Auto confirm user?* coché :
+   aucun e-mail n'est envoyé.
+3. **Relever l'adresse et la clé publique.** L'adresse est `https://<ref>.supabase.co`, où `<ref>` est l'identifiant
+   qui suit `/project/` dans l'adresse du tableau de bord. La clé est dans *Project Settings → API Keys →
+   Publishable key* (`sb_publishable_…`), la même sorte de clé que celle déjà publiée dans l'app.
+4. **Écrire `.env.isolation`** à la racine du dépôt. Ce fichier est ignoré par git : les mots de passe ne partent ni
+   dans le dépôt ni dans l'historique du terminal. Mettre une valeur entre guillemets si elle contient `#` ou une
+   espace. Jamais la clé secrète (`sb_secret_…`, ou `service_role`) : elle passe outre les règles, et le script la
+   refuse.
+
+   ```sh
+   ISOLATION_URL=https://<ref>.supabase.co
+   ISOLATION_CLE=sb_publishable_…
+   ISOLATION_A_EMAIL=…
+   ISOLATION_A_MOT_DE_PASSE=…
+   ISOLATION_B_EMAIL=…
+   ISOLATION_B_MOT_DE_PASSE=…
+   ```
+
+5. **Lancer** `npm run isolation` (Node 22). Rien de secret ne s'affiche : ni mot de passe, ni jeton, ni adresse
+   e-mail.
+
+Ce que dit le code de sortie :
+
+- **0** : douze refus, ligne de B intacte.
+- **1** : une requête au moins a été *acceptée* (marquée `✗`), ou la ligne de B a changé. C'est une fuite : ne rien
+  publier, et comparer les règles du projet à `supabase/schema.sql`.
+- **2** : impossible de conclure. Le montage a échoué (connexion, table absente, droits cassés), ou une réponse est
+  *douteuse* (marquée `?`). Par exemple, un `409` montre qu'une contrainte a arrêté l'écriture, pas la règle RLS.
+
+**Le projet de l'app a-t-il les mêmes règles ?** Le test prouve l'étanchéité de la préproduction, et la production
+n'est couverte que si ses règles sont identiques. Pour le vérifier, lancer cette lecture (elle ne modifie rien) dans
+le *SQL Editor* des deux projets et comparer les deux résultats ligne à ligne :
+
+```sql
+select c.relname, c.relrowsecurity, p.policyname, p.cmd, p.roles, p.qual, p.with_check
+from pg_class c left join pg_policies p on p.schemaname = 'public' and p.tablename = c.relname
+where c.relnamespace = 'public'::regnamespace and c.relkind = 'r' order by 1, 3;
+```
+
+Attendu : `relrowsecurity` vaut `true` pour chaque table. `app_state` a trois règles (*select*, *insert*, *update*),
+chacune limitée à `auth.uid() = user_id`. `assistant_keys` n'en a aucune.
+
+Les deux vérifications se complètent. Le script mesure ce qu'un compte obtient réellement par l'API. La requête SQL lit
+les règles elles-mêmes, y compris une règle trop large que les autres masquent encore. Par exemple, une règle *update*
+`with check (true)` ne laisse rien passer aujourd'hui, parce que la règle de lecture refuse aussi la ligne modifiée ;
+elle cède dès que quelqu'un élargit la lecture.
+
 ## Politique de confidentialité
 
 `confidentialite.html`, à la racine, publiée avec le site : <https://mariebonifacio.github.io/selene/confidentialite.html>.

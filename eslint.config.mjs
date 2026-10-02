@@ -27,6 +27,8 @@ export default [
   { files: ["scripts/store-screenshots.mjs"], languageOptions: { globals: { window: "readonly", document: "readonly", localStorage: "readonly" } } },
   // La vérification des sources de santé (npm run liens) interroge le réseau, avec un délai.
   { files: ["scripts/liens.mjs"], languageOptions: { globals: readonly(["fetch", "AbortController", "setTimeout", "clearTimeout"]) } },
+  // Le test d'isolation entre comptes (npm run isolation) interroge un projet Supabase de préproduction.
+  { files: ["scripts/isolation.mjs"], languageOptions: { globals: readonly(["fetch", "AbortSignal", "Buffer"]) } },
   // L'amorçage des coquilles natives (src/native/boot.js), posé seul avant Selene dans dist/native.
   { files: ["src/native/*.js"], languageOptions: { ecmaVersion: 2023, sourceType: "script",
     globals: { window: "readonly", history: "readonly", Event: "readonly", document: "readonly", sessionStorage: "readonly", URL: "readonly", CustomEvent: "readonly" } }, rules },
