@@ -14,6 +14,7 @@
     "test:syntax": "for f in src/*.js src/app/*.js src/native/*.js src/core/*.js scripts/*.mjs; do node --check \"$f\" || exit 1; done",
     "lint": "eslint src scripts sw.js",
     "i18n": "node scripts/i18n.mjs",
+    "liens": "node scripts/liens.mjs",
     "test:functions": "deno check --config supabase/functions/deno.json supabase/functions/*/index.ts && deno test --allow-env --config supabase/functions/deno.json supabase/functions/",
     "test:browser": "npm run build:dist && node tests/browser/run.js",
     "bench": "node tests/bench.js",

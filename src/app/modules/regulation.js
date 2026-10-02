@@ -24,7 +24,7 @@ const SUBJECTS = {
   cannabis: { name: () => tr`Cannabis`, unit: () => tr`grammes de produit`, qty: n => tr`${regNum(n)} g`, step: 0.01,
     about: () => tr`Une estimation en grammes de produit (herbe, résine…), pas une dose de THC : la teneur varie beaucoup d'un produit à l'autre, ces grammes ne mesurent donc ni l'effet ni le risque.` },
   alcool: { name: () => tr`Alcool`, unit: () => tr`verres standard`, qty: n => trn(n, "{1} verre standard", "{1} verres standard", regNum(n)), step: 0.1,
-    about: () => tr`Un verre standard contient 10 g d'alcool pur, soit environ 25 cl de bière à 5 %, 10 cl de vin à 12 % ou 3 cl d'alcool fort à 40 %. Un verre servi, surtout à la maison, est souvent plus grand : il peut valoir plusieurs verres standard.` },
+    about: () => tr`Un verre standard contient 10 g d'alcool pur, soit environ 25 cl de bière à 5 % ou 10 cl de vin à 12 %. Un verre servi, surtout à la maison, est souvent plus grand : il peut valoir plusieurs verres standard.` },
   reseaux: { name: () => tr`Réseaux sociaux`, unit: () => tr`minutes`, qty: n => trn(n, "{1} minute", "{1} minutes", regNum(n)), step: 1,
     about: () => tr`Des minutes que tu saisis toi-même, par exemple d'après le temps d'écran de ton téléphone. Selene ne mesure pas ton usage des autres applications et ne les bloque pas.` }
 };

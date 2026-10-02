@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-R43F4IyaP8/QJTIMkpvjaZW4lOk2xalK3CVuYHmL4Ck=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-EpWq00BtWfy/+EDxBm7x9CAnixUch1X9fga5QFCGtuY=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -2298,7 +2298,7 @@ var __selene = (() => {
     "Alcool": "Alcohol",
     "verres standard": "standard drinks",
     "{1} verre standard": { "one": "{1} standard drink", "other": "{1} standard drinks" },
-    "Un verre standard contient 10 g d'alcool pur, soit environ 25 cl de bière à 5 %, 10 cl de vin à 12 % ou 3 cl d'alcool fort à 40 %. Un verre servi, surtout à la maison, est souvent plus grand : il peut valoir plusieurs verres standard.": "A French standard drink holds 10 g of pure alcohol: about 25 cl of 5% beer, 10 cl of 12% wine or 3 cl of 40% spirits. A drink as poured, especially at home, is often bigger: it can count as several standard drinks.",
+    "Un verre standard contient 10 g d'alcool pur, soit environ 25 cl de bière à 5 % ou 10 cl de vin à 12 %. Un verre servi, surtout à la maison, est souvent plus grand : il peut valoir plusieurs verres standard.": "A French standard drink holds 10 g of pure alcohol: about 25 cl of 5% beer or 10 cl of 12% wine. A drink as poured, especially at home, is often bigger: it can count as several standard drinks.",
     "Réseaux sociaux": "Social media",
     "minutes": "minutes",
     "{1} minute": { "one": "{1} minute", "other": "{1} minutes" },
@@ -8645,7 +8645,7 @@ ${contextText()}`;
       unit: () => tr`verres standard`,
       qty: (n) => trn(n, "{1} verre standard", "{1} verres standard", regNum(n)),
       step: 0.1,
-      about: () => tr`Un verre standard contient 10 g d'alcool pur, soit environ 25 cl de bière à 5 %, 10 cl de vin à 12 % ou 3 cl d'alcool fort à 40 %. Un verre servi, surtout à la maison, est souvent plus grand : il peut valoir plusieurs verres standard.`
+      about: () => tr`Un verre standard contient 10 g d'alcool pur, soit environ 25 cl de bière à 5 % ou 10 cl de vin à 12 %. Un verre servi, surtout à la maison, est souvent plus grand : il peut valoir plusieurs verres standard.`
     },
     reseaux: {
       name: () => tr`Réseaux sociaux`,
