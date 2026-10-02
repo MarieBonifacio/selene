@@ -96,9 +96,9 @@ Deux documents JSON par personne, chacun géré par un store (`makeStore`) :
   toujours connecté **avant** le board : versées dans un site pas encore synchronisé, les tâches rendraient
   ses données de départ « non vierges » et la synchro les fusionnerait au lieu de les remplacer.
 
-`site.schemaVersion` vaut 7 (1 = anciennes sections `kundalini`, `ecriture`, `phidippus` à la racine ;
+`site.schemaVersion` vaut 8 (1 = anciennes sections `kundalini`, `ecriture`, `phidippus` à la racine ;
 2 = modules génériques ; 3 = october.moth et Musique deviennent des collections ; 4 = la Capture devient
-un module Notes ; 5 = le Budget devient générique ; 6 = le Chantier devient un module Tâches ; 7 = le suivi de régulation et ses objectifs versionnés). Chaque ancienne section
+un module Notes ; 5 = le Budget devient générique ; 6 = le Chantier devient un module Tâches ; 7 = le suivi de régulation et ses objectifs versionnés ; 8 = un suivi gardé sur un seul appareil, ADR 27). Chaque ancienne section
 est convertie par `SECTION_TO_MODULE` (`domain.js`) ; si une ancienne version de l'app la réécrit après
 coup, ses entrées absentes sont absorbées dans le module au lieu d'être perdues. Une version de l'app qui lit un numéro plus grand que le sien
 refuse de fusionner et d'écrire (« recharge la page ») ; un import plus récent est refusé.
@@ -796,3 +796,36 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   sauvegardes du compte, sans chiffrement de bout en bout, ce que l'espace dit lui-même. Tout futur parcours
   transversal qui lit les modules sans passer par un hook doit tester `sensitive` ; `tests/regulation.test.js` vérifie
   chaque surface existante. Fonctionnement, sources et limites : [regulation.md](regulation.md).
+
+### ADR 27 — Un suivi sensible gardé sur un seul appareil : un second document local, l'accord pour synchroniser
+
+- **Contexte** : dans les versions hébergées, un compte est obligatoire et tout le document du site est synchronisé :
+  un suivi « Reprendre la main » (des données de santé, RGPD art. 9) finissait donc toujours sur le serveur. Un
+  consentement seul aurait été décoratif : rien ne permettait de le refuser ou de le retirer (art. 7.3) sauf à
+  renoncer au module. Et la déconnexion vide l'appareil, sans danger tant que tout existe aussi sur le serveur.
+- **Décision** :
+  - un choix par suivi, à la configuration : « sur cet appareil seulement » (présélectionné, art. 25) ou « sur mon
+    compte » après un texte d'accord confirmé, daté et versionné (`config.consent`). Le retrait ramène le contenu sur
+    l'appareil ; un suivi d'avant la question affiche un bandeau, rien ne change en silence ;
+  - un **second document local** (`state/local.js`, `selene-local-v1`), tenu par le même `makeStore` que le site mais
+    jamais relié au serveur ; le site n'en garde qu'un talon (`regulationStub` : nom, présence, `holder`). Le module
+    lit son contenu par un accesseur ; ni le cœur de la synchronisation ni les autres types ne changent ;
+  - à l'entrée de chaque version du site, le détenteur reprend les saisies qu'un appareil resté hors ligne aurait
+    renvoyées dans le talon, et recrée un talon disparu ; les autres appareils ne voient que le nom et ne peuvent pas
+    supprimer ;
+  - une garde avant la déconnexion (exporter, synchroniser ou effacer) ; à un changement de compte, les suivis locaux
+    sont mis de côté pour leur propriétaire ; la sauvegarde complète les contient, la restauration fait de l'appareil
+    le détenteur ;
+  - pas de pont de reprise dans un espace sensible (son texte irait dans le document synchronisé) ;
+  - `SCHEMA_VERSION` 8 : une version 7 écrirait des saisies dans le talon.
+- **Écarté** : une projection sortante (un seul document, les données retirées avant chaque envoi et réinjectées après
+  chaque fusion) : aucun changement dans le module, mais le cœur de la synchronisation touché, et une suppression faite
+  ailleurs ne s'appliquerait plus (la copie locale diffère toujours de la base) ; le chiffrement de bout en bout (une
+  phrase secrète à gérer, perdue = données perdues, et des dates en clair qui trahiraient les jours d'activité) ; le
+  consentement seul ; un document local par compte en permanence (un appareil partagé garderait les suivis de l'autre
+  même après une déconnexion voulue).
+- **Conséquences** : un suivi gardé sur l'appareil n'existe que là (l'export régulier est la seule assurance) et n'est
+  pas chiffré au repos ; ses saisies ne sont ni sur le serveur ni dans les sauvegardes techniques de l'hébergeur. Tout
+  futur accès au contenu d'un type sensible passe par l'accesseur du module. `tests/regulation.test.js` (faux serveur)
+  et `tests/browser/regulation-appareil.js` (deux appareils) lisent le serveur pour vérifier qu'aucune saisie n'y
+  arrive. Détail : [regulation.md](regulation.md).

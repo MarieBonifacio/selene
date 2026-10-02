@@ -21,6 +21,7 @@ import { openPalette } from "./palette.js";
 import { rememberScroll, render } from "./render.js";
 import { closeSheet } from "./sheets.js";
 import { saveDraft } from "../state/drafts.js";
+import { local, splitLocal } from "../state/local.js";
 import { MODULE_DEFS, S, board, site } from "../state/site.js";
 import { ask, openForm } from "../ui/dialogs.js";
 
@@ -130,7 +131,7 @@ document.addEventListener("change", e => {
   }
   else if (act === "imp") {
     const f = el.files && el.files[0]; if (!f) return;
-    f.text().then(async t => { const d = parseBackup(t); if (!await ask(tr`Remplacer tout l'état actuel par celui du fichier ?`)) return; site.replaceAll(d.site); board.replaceAll(d.board); /* le site d'abord : les tâches d'une ancienne sauvegarde y sont versées */ render(); toast(tr`Sauvegarde importée.`); }).catch(e => toast(e && Object.hasOwn(CORE_ERRORS, e.code) ? errMsg(e) : tr`Fichier illisible ou pas une sauvegarde Selene.`)).finally(() => { el.value = ""; });
+    f.text().then(async t => { const d = parseBackup(t); if (!await ask(tr`Remplacer tout l'état actuel par celui du fichier ?`)) return; local.replaceAll(splitLocal(d.site)); site.replaceAll(d.site); board.replaceAll(d.board); /* le local d'abord (ADR 27) */ /* le site d'abord : les tâches d'une ancienne sauvegarde y sont versées */ render(); toast(tr`Sauvegarde importée.`); }).catch(e => toast(e && Object.hasOwn(CORE_ERRORS, e.code) ? errMsg(e) : tr`Fichier illisible ou pas une sauvegarde Selene.`)).finally(() => { el.value = ""; });
   }
   else if (act === "mod-group") {
     const m = S().config.modules[+el.closest("[data-i]").dataset.i], v = el.value.trim().slice(0, 40);

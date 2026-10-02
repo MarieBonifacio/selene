@@ -102,7 +102,7 @@ const { engine, BASE, launchOptions, check, storeJSON, storeSet } = require('./h
     check(prog.includes('1 marque') && prog.includes('RECOMPENSE_SECRETE') && prog.includes('atteinte'), 'deux actions le même jour : une marque ; récompense personnelle atteinte');
 
     console.log('confidentialité : rien hors de l’espace, partage confirmé');
-    await p.click('[data-act="bridge-edit"]'); await p.fill('#bridgeIn', 'PONT_SECRET'); await p.click('[data-act="bridge-save"]'); await settle();
+    check(await p.locator('[data-act="bridge-edit"]').count() === 0, 'pas de pont de reprise dans un espace sensible (son texte serait synchronisé)');
     const SECRET = /CONFIDENTIEL_BROWSER|TRIGGER_SECRET|PONT_SECRET|RECOMPENSE_SECRETE|Marcher quelques/;
     await go('accueil');
     check(!SECRET.test(await main()) && (await main()).includes('Reprendre la main'), 'accueil : le nom reste, aucun détail, aucun pont');

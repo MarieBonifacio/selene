@@ -70,7 +70,7 @@ export function contextText() {
   L.push(`Date : ${fmt(now, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}. Lune : ${m.name.toLowerCase()}, éclairée à ${Math.round(m.illum * 100)} %.`);
   for (const [id, inst] of Object.entries(s.modules)) {
     if (!sh[id] || !enabled(id)) continue;
-    L.push(TYPE_UI[inst.type].context(inst, label(id).toUpperCase()));
+    L.push(TYPE_UI[inst.type].context(inst, label(id).toUpperCase(), id));
   }
   return L.join("\n").slice(0, 14000);
 }

@@ -392,7 +392,7 @@ test('sauvegardes : un suivi complet se restaure ; un import invalide est refus�
   }
   const future = JSON.parse(backup(c, inst)); future.site.schemaVersion = c.SCHEMA_VERSION + 1;
   assert.throws(() => c.parseBackup(JSON.stringify(future)), { code: 'backup-too-new' });
-  assert.equal(c.SCHEMA_VERSION, 7);
+  assert.equal(c.SCHEMA_VERSION, 8);
 });
 
 /* ---------------- l'application assemblée : confidentialité de chaque surface ---------------- */
@@ -540,4 +540,183 @@ test('formulaire commun : un champ nombre garde ses bornes par défaut ; un cham
   assert.match(f, /name="b"\s+value=""\s+min="0.01" step="0.01" inputmode="decimal" max="100">/);
   assert.match(f, /name="c"\s+value=""\s+ max="2026-09-30">/);
   assert.match(f, /name="d"\s+value=""\s+>/);
+});
+
+/* ---------------- « sur cet appareil seulement » (ADR 27) : la version hébergée, connectée à un faux serveur ---------------- */
+
+const { fakeSupabase, launchHosted, settle } = require('./hosted-harness');
+const tick = () => new Promise(r => setTimeout(r, 0));
+const confirmBox = async (app, ok) => { await tick(); const d = app.$('#cdlg'); d.returnValue = ok ? 'ok' : 'cancel'; d.onclose(); await tick(); };
+const serverSite = server => server.rows.get('u1').site;
+/* Créer et configurer un suivi par les vrais formulaires : nom et sujet (et stockage), puis l'intention. */
+async function setupTracker(app, { storage = 'device', consent = true, name = 'Carnet du soir' } = {}) {
+  app.addModule(app.localTemplate(app.MODULE_TEMPLATES.find(t => t.id === 'regulation')), 'Reprendre la main');
+  const id = app.S().config.modules[app.S().config.modules.length - 1].id;
+  app.CLICK['rlm-setup']({ dataset: { mod: id } });
+  const first = app.form({ name, subject: 'alcool', storage });
+  if (storage === 'account') await confirmBox(app, consent);
+  await first;
+  if (storage === 'account' && !consent) return id;
+  app.form({ mode: 'reduire', limit: '2', date: app.todayISO() });
+  return id;
+}
+const addUse = (app, id, value = 1.5, note = 'NOTE_PRIVEE') => {
+  const inst = app.localCopy(id) || app.S().modules[id];
+  app.saveRegulationEvent(inst, { kind: 'use', date: app.todayISO(), value, note }, `u${Math.random().toString(36).slice(2, 8)}`, app.todayISO(), Date.now());
+  app.site.save(); app.local.save();
+};
+
+test('sur cet appareil seulement (choix par défaut) : le serveur ne reçoit que le talon, jamais le contenu', async () => {
+  const server = fakeSupabase(), app = launchHosted({ fetch: server.fetch }); await settle();
+  const id = await setupTracker(app);
+  addUse(app, id); await app.site.sync();
+  const stub = serverSite(server).modules[id];
+  assert.equal(stub.config.storage, 'device'); assert.equal(stub.config.holder, app.deviceId());
+  assert.equal(stub.config.subject, null, 'pas même le sujet'); assert.equal(stub.entries.length, 0); assert.equal(stub.goals.length, 0);
+  assert.doesNotMatch(JSON.stringify(serverSite(server)), /NOTE_PRIVEE|reduire|alcool/);
+  assert.equal(stub.label, 'Carnet du soir', 'le nom et la présence restent');
+  const copy = app.localCopy(id);
+  assert.equal(copy.config.subject, 'alcool'); assert.equal(copy.entries.length, 1); assert.equal(copy.goals.length, 1);
+  assert.match(app.TYPE_UI.regulation.view(id), /Alcool · au plus 2 verres standard/);
+  assert.match(app.TYPE_UI.regulation.view(id), /Sur cet appareil seulement/);
+  app.S().config.assistant.share[id] = true; app.S().config.modules.find(m => m.id === 'assistant').on = true;
+  assert.match(app.contextText(), /suivi personnel autodéclaratif \(alcool/, 'le résumé, partagé, se lit sur la copie locale');
+  assert.doesNotMatch(app.contextText(), /NOTE_PRIVEE/);
+  app.site.disconnect(); app.board.disconnect();
+});
+
+test('sur mon compte : seulement avec un accord daté et versionné ; refuser ne configure rien', async () => {
+  const server = fakeSupabase(), app = launchHosted({ fetch: server.fetch }); await settle();
+  const refused = await setupTracker(app, { storage: 'account', consent: false });
+  assert.equal(app.S().modules[refused].config.subject, null, 'pas d’accord : pas de configuration');
+  assert.equal(app.S().modules[refused].config.storage, undefined);
+  const id = await setupTracker(app, { storage: 'account', name: 'Synchronisé' });
+  assert.match(app.$('#cmsg').textContent, /données de santé.*sans chiffrement de bout en bout.*Confirmer vaut accord/s);
+  const c = app.S().modules[id].config;
+  assert.equal(c.storage, 'account'); assert.equal(c.consent.version, app.REGULATION_CONSENT_VERSION); assert.ok(c.consent.at > 0);
+  addUse(app, id); await app.site.sync();
+  assert.equal(serverSite(server).modules[id].entries.length, 1, 'avec l’accord, le contenu est synchronisé');
+  assert.equal(app.localCopy(id), null);
+  app.site.disconnect(); app.board.disconnect();
+});
+
+test('retirer l’accord : le contenu revient sur l’appareil, le serveur n’a plus que le talon ; et retour au compte', async () => {
+  const server = fakeSupabase(), app = launchHosted({ fetch: server.fetch }); await settle();
+  const id = await setupTracker(app, { storage: 'account' });
+  addUse(app, id); await app.site.sync();
+  const back = app.CLICK['rlm-device']({ dataset: { mod: id } });
+  assert.match(app.$('#cmsg').textContent, /sauvegardes techniques de l'hébergeur/);
+  await confirmBox(app, true); await back; await app.site.sync();
+  assert.equal(serverSite(server).modules[id].entries.length, 0); assert.equal(serverSite(server).modules[id].config.consent, undefined);
+  assert.equal(app.localCopy(id).entries.length, 1, 'rien de perdu');
+  const again = app.CLICK['rlm-account']({ dataset: { mod: id } }); await confirmBox(app, true); await again; await app.site.sync();
+  assert.equal(serverSite(server).modules[id].entries.length, 1); assert.equal(app.localCopy(id), null);
+  app.site.disconnect(); app.board.disconnect();
+});
+
+test('un suivi synchronisé d’avant la question : un bandeau demande le choix, rien ne change en silence', async () => {
+  const server = fakeSupabase(), app = launchHosted({ fetch: server.fetch }); await settle();
+  app.addModule({ type: 'regulation' }, 'Ancien');
+  const id = app.S().config.modules[app.S().config.modules.length - 1].id, inst = app.S().modules[id];
+  app.setupRegulation(inst, { subject: 'tabac', date: app.todayISO(), mode: 'observer' }, 'g', app.todayISO(), 1); // comme avant ce choix
+  assert.match(app.TYPE_UI.regulation.view(id), /data-act="rlm-device"[\s\S]*data-act="rlm-account"/);
+  assert.match(app.TYPE_UI.regulation.view(id), /Rien ne change tant que tu n'as pas choisi/);
+  assert.equal(app.S().modules[id].config.subject, 'tabac', 'les données restent où elles sont');
+  const artefact = launch(); // sans compte (artefact) : pas de question, rien à synchroniser
+  artefact.addModule({ type: 'regulation' }, 'Local');
+  const lid = artefact.S().config.modules[artefact.S().config.modules.length - 1].id;
+  artefact.setupRegulation(artefact.S().modules[lid], { subject: 'tabac', date: artefact.todayISO(), mode: 'observer' }, 'g', artefact.todayISO(), 1);
+  assert.doesNotMatch(artefact.TYPE_UI.regulation.view(lid), /rlm-choice|rlm-device/);
+  app.site.disconnect(); app.board.disconnect();
+});
+
+test('un autre appareil du compte : le nom seulement ; les données renvoyées reviennent au détenteur ; retirer le nom ailleurs', async () => {
+  const server = fakeSupabase(), a = launchHosted({ fetch: server.fetch }); await settle();
+  const id = await setupTracker(a); addUse(a, id); await a.site.sync();
+  const b = launchHosted({ fetch: server.fetch, storage: new Map([['selene-device-id', 'dB']]) }); await settle();
+  assert.ok(b.S().modules[id], 'le talon arrive'); assert.equal(b.localCopy(id), null);
+  assert.match(b.TYPE_UI.regulation.view(id), /gardé sur un autre de tes appareils/);
+  assert.doesNotMatch(b.TYPE_UI.regulation.view(id), /NOTE_PRIVEE|verre/);
+  // Un appareil resté hors ligne renvoie l'ancienne copie (des saisies dans le talon) : le détenteur les reprend.
+  const row = serverSite(server);
+  row.modules[id].entries.push({ id: 'tard', kind: 'use', date: a.todayISO(), at: Date.now(), zone: '', note: '', value: 1 }); row.updatedAt = Date.now() + 1000;
+  await a.site.sync(); await a.site.sync();
+  assert.ok(a.localCopy(id).entries.some(e => e.id === 'tard'), 'reprise par le détenteur');
+  assert.equal(serverSite(server).modules[id].entries.length, 0, 'le talon redevient vide sur le serveur');
+  // Retirer le nom depuis l'autre appareil (appareil perdu ? réinstallé ?) : possible, et la confirmation dit ce que
+  // cela fait. Le détenteur existe encore : il recrée le talon et ne perd rien.
+  const remove = async () => {
+    await b.site.sync();
+    b.CLICK['mod-del']({ dataset: { mod: id } });
+    assert.match(b.$('#form').innerHTML, /son contenu est gardé sur un autre appareil.*son nom reviendra/);
+    b.form({ confirm: b.label(id) }); assert.ok(!b.S().modules[id]); await b.site.sync();
+    assert.ok(!serverSite(server).modules[id], 'le nom est retiré du serveur');
+  };
+  await remove();
+  await a.site.sync(); await a.site.sync();
+  assert.ok(serverSite(server).modules[id], 'le détenteur recrée le talon'); assert.equal(a.localCopy(id).entries.length, 2, 'sans rien perdre');
+  // Le détenteur a perdu ses données (stockage effacé) : le retrait est alors définitif.
+  a.localErase(); await remove();
+  await a.site.sync(); await a.site.sync();
+  assert.ok(!serverSite(server).modules[id] && !a.S().modules[id], 'plus de nom impossible à effacer');
+  for (const x of [a, b]) { x.site.disconnect(); x.board.disconnect(); }
+});
+
+test('se déconnecter avec un suivi gardé ici : exporter, synchroniser ou effacer, jamais une perte silencieuse', async () => {
+  const server = fakeSupabase(), app = launchHosted({ fetch: server.fetch }); await settle();
+  const id = await setupTracker(app); addUse(app, id);
+  // Synchroniser avant de partir : l'accord, puis le contenu sur le serveur, puis la déconnexion.
+  let out = app.authSignOut(); await tick();
+  assert.ok(app.formOpen(), 'la garde s’ouvre avant tout effacement');
+  const done = app.form({ what: 'sync' }); await confirmBox(app, true); await done; await out;
+  assert.equal(serverSite(server).modules[id].entries.length, 1, 'synchronisé avant la déconnexion');
+  assert.equal(app.session(), null);
+  // Effacer : une confirmation de plus, puis plus rien sur l'appareil.
+  const app2 = launchHosted({ fetch: server.fetch }); await settle();
+  const id2 = await setupTracker(app2, { name: 'Éphémère' }); addUse(app2, id2);
+  out = app2.authSignOut(); await tick();
+  const erase = app2.form({ what: 'erase' }); await confirmBox(app2, true); await erase; await out;
+  assert.deepEqual(app2.localIds().length, 0); assert.equal(app2.session(), null);
+  assert.ok(![...app2.storage.keys()].some(k => k.startsWith('selene-local-v1:')), 'aucune copie mise de côté');
+  for (const x of [app, app2]) { x.site.disconnect(); x.board.disconnect(); }
+});
+
+test('changement de compte sur le même appareil : les suivis locaux suivent leur compte, jamais montrés à l’autre', async () => {
+  const server = fakeSupabase(), app = launchHosted({ fetch: server.fetch }); await settle();
+  const id = await setupTracker(app); addUse(app, id);
+  assert.equal(app.local.data.owner, 'u1');
+  app.localSwitch('u2');
+  assert.equal(app.localIds().length, 0, 'le compte suivant ne voit rien'); assert.ok(app.storage.has('selene-local-v1:u1'), 'mis de côté, pas effacé');
+  app.localSwitch('u1');
+  assert.equal(app.localCopy(id).entries.length, 1, 'retrouvé au retour du compte');
+  assert.ok(!app.storage.has('selene-local-v1:u1'));
+  app.site.disconnect(); app.board.disconnect();
+});
+
+test('sauvegarde complète : le contenu gardé sur l’appareil y est ; restauré ailleurs, cet appareil en devient le détenteur', async () => {
+  const server = fakeSupabase(), app = launchHosted({ fetch: server.fetch }); await settle();
+  const id = await setupTracker(app); addUse(app, id);
+  const file = app.createBackup(app.board.data, app.withLocal(app.site.data));
+  const parsed = app.parseBackup(file);
+  assert.equal(parsed.site.modules[id].entries.length, 1, 'la sauvegarde contient le suivi entier');
+  assert.equal(JSON.parse(app.createBackup(app.board.data, app.site.data)).site.modules[id].entries.length, 0, 'le site seul n’a que le talon');
+  const other = launchHosted({ fetch: fakeSupabase().fetch, storage: new Map([['selene-device-id', 'dNEW']]) }); await settle();
+  const loc = other.splitLocal(parsed.site);
+  assert.equal(loc.modules[id].config.holder, 'dNEW'); assert.equal(parsed.site.modules[id].entries.length, 0);
+  other.local.replaceAll(loc); other.site.replaceAll(parsed.site);
+  assert.equal(other.localCopy(id).entries.length, 1); assert.match(other.TYPE_UI.regulation.view(id), /Alcool/);
+  for (const x of [app, other]) { x.site.disconnect(); x.board.disconnect(); }
+});
+
+test('validation : stockage, appareil détenteur et accord ont une forme contrôlée', async () => {
+  const c = await core, inst = tracker(c);
+  inst.config.storage = 'account'; inst.config.consent = { at: 5, version: 1 };
+  assert.doesNotThrow(() => c.parseBackup(backup(c, inst)));
+  const stub = c.regulationStub(inst, 'dA');
+  assert.deepEqual([stub.config.subject, stub.config.storage, stub.config.holder, stub.entries.length, stub.config.supports.length > 0], [null, 'device', 'dA', 0, true]);
+  assert.doesNotThrow(() => c.parseBackup(backup(c, stub)));
+  for (const [what, mutate] of Object.entries({
+    'stockage inconnu': d => { d.config.storage = 'cloud'; }, 'détenteur': d => { d.config.holder = 'a b'; },
+    'accord sans date': d => { d.config.consent = { version: 1 }; }, 'accord sans version': d => { d.config.consent = { at: 1, version: 0 }; }
+  })) { const bad = JSON.parse(backup(c, inst)); mutate(bad.site.modules.suivi); assert.throws(() => c.parseBackup(JSON.stringify(bad)), undefined, what); }
 });

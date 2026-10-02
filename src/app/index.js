@@ -8,6 +8,7 @@ export * from "./lib/download.js";
 export * from "./lib/format.js";
 export * from "./lib/labels.js";
 export * from "./state/drafts.js";
+export * from "./state/local.js";
 export * from "./state/site.js";
 export * from "./state/store.js";
 export * from "./services/auth.js";

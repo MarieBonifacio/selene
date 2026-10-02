@@ -14,12 +14,15 @@ export const CHANGE = {};
    src/app/modules/ par type, qui s'enregistre par registerType. Ce qu'un type peut fournir :
      sensitive             suivi sensible (docs/regulation.md) : non partagé avec l'assistant à la création, partage confirmé
                            sur le résumé ; ignoré du bilan, de la planche, des liens, des ponts et de la reprise de l'accueil.
-                           Un parcours transversal qui lit les modules sans passer par un hook doit le tester.
+                           Un parcours transversal qui lit les modules sans passer par un hook doit le tester. Pas de
+                           pont de reprise (render.js). Un suivi peut être gardé sur un seul appareil (state/local.js).
      view(id)              écran du module
      settings(id, inst)    champs du bloc « Réglages par module »
      summary(id, inst)     ligne de l'accueil « Où en sont les choses » (HTML)
      alerts(id, inst, now) rappels du bloc « Aujourd'hui » : [{ text (HTML), actions? }]
-     context(inst, name)   paragraphe envoyé à l'assistant (texte brut)
+     context(inst, name, id) paragraphe envoyé à l'assistant (texte brut)
+     deleteNote(id)        précision ajoutée à la confirmation de suppression (texte), ou ""
+     onDelete(id)          à faire juste avant la suppression (oublier une copie gardée sur l'appareil)
      add(id, inst)         bouton « noter / ajouter » (data-act="entry-add")
      accept(id, inst, note) recevoir une note triée depuis un module Notes ; canAccept(inst) pour conditionner
      badge(inst)           nombre affiché à côté du nom dans la navigation

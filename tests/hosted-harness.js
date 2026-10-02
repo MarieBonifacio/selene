@@ -57,8 +57,8 @@ function launchHosted({ storage = new Map(), fetch, session = 'valid', bare = fa
   const element = id => {
     if (!nodes.has(id)) nodes.set(id, {
       id, dataset: {}, value: '', textContent: '', innerHTML: '', style: {},
-      classList: { add() {}, remove() {} }, addEventListener() {},
-      querySelectorAll() { return []; }, focus() {}
+      classList: { add() {}, remove() {}, toggle() {} }, addEventListener() {}, removeEventListener() {},
+      querySelectorAll() { return []; }, focus() {}, showModal() {} // n'ouvre rien pour de vrai : le formulaire reste testable
     });
     return nodes.get(id);
   };
@@ -81,7 +81,7 @@ function launchHosted({ storage = new Map(), fetch, session = 'valid', bare = fa
     navigator: {}, console, Date, Math, setTimeout: setTimeoutU, clearTimeout, AbortController, fetch,
     setInterval: fn => { intervals.set(++n, fn); return n; }, clearInterval: id => intervals.delete(id) };
   const instrumented = script.replace(/\}\);\s*\}\)\(\);\s*$/, // dans platform.ready
-    'globalThis.__test = { ...__selene, session: () => __selene.authSession };\n});\n})();');
+    'globalThis.__test = { ...__selene, session: () => __selene.authSession, form: v => __selene.formCb(v), formOpen: () => !!__selene.formCb };\n});\n})();'); // form : le formulaire ouvert à cet instant (formCb change)
   vm.runInNewContext(instrumented, context);
   const poll = () => Promise.all([...intervals.values()].map(fn => fn()));
   return { ...context.__test, nodes, storage, intervals, poll };

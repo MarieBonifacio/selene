@@ -44,7 +44,8 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
      l'app), et la position approximative (le lieu du ciel, arrondi à ~10 km, facultatif : fonctionnalité de l'app),
      liés au compte, non partagés, chiffrés en transit, supprimables par l'utilisateur (dans l'app). Depuis « Reprendre
      la main » (docs/regulation.md), aussi **Santé et forme → Informations de santé** : facultatif (seulement si un suivi
-     est créé, et collecté seulement s'il est synchronisé avec un compte), fonctionnalité de l'app, lié au compte, non
+     est créé, et collecté seulement si la personne choisit de le synchroniser avec son compte, par un accord explicite ;
+     par défaut, il reste sur l'appareil, le serveur n'en a que le nom), fonctionnalité de l'app, lié au compte, non
      partagé (le résumé envoyé à l'assistant part à la demande de la personne, avec sa propre clé), supprimable ;
    - Applications de santé : si la Console présente la déclaration des fonctionnalités de santé, y décrire un suivi
      personnel autodéclaratif (tabac, cannabis, alcool, réseaux sociaux), sans diagnostic, sans dispositif médical,

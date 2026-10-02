@@ -17,6 +17,9 @@ export const REGULATION_SUBJECTS = {
   reseaux: { fr: "réseaux sociaux", unit: "minutes déclarées", scale: 1, max: 1440, dayMax: 1440 }
 };
 export const REGULATION_MODES = ["observer", "reduire", "arreter"];
+export const REGULATION_STORAGES = ["account", "device"];
+/* La version du texte d'accord à la synchronisation (modules/regulation.js) : un texte changé la redemande. */
+export const REGULATION_CONSENT_VERSION = 1;
 export const REGULATION_OUTCOMES = ["utile", "neutre", "difficile"];
 /* Jalons fixes, annoncés d'avance : jamais tirés au sort, jamais retirés. */
 export const REGULATION_MILESTONES = [1, 3, 7, 14, 30];
@@ -30,6 +33,13 @@ export const regulationDefaults = () => ({
   config: { subject: null, supports: ["Marcher quelques minutes", "Dessiner", "Éloigner un déclencheur", "Contacter quelqu'un"], rewards: false, reward: "", rewardAt: 7 },
   goals: [], entries: []
 });
+/* Le talon synchronisé d'un suivi gardé sur un appareil : son nom et sa présence, et où il vit. Rien de ce qu'il
+   contient : ni sujet, ni appuis, ni récompense, ni objectifs, ni journal, ni pont de reprise. */
+export function regulationStub(inst, holder) {
+  const d = regulationDefaults();
+  return { type: inst.type, label: inst.label, config: { ...d.config, storage: "device", holder }, goals: [], entries: [] };
+}
+export const regulationOnDevice = inst => !!inst && !!inst.config && inst.config.storage === "device";
 /* Les champs ajoutés depuis la création d'un suivi, complétés à l'entrée des données (store, import). */
 export function normalizeRegulation(inst) {
   const def = regulationDefaults();
@@ -76,6 +86,11 @@ export function validateRegulation(inst, v) {
   if ((c.subject !== null && !Object.hasOwn(REGULATION_SUBJECTS, c.subject)) || !Array.isArray(c.supports) || c.supports.length > 30 ||
       c.supports.some(x => !shortText(x, 120)) || typeof c.rewards !== "boolean" || !shortText(c.reward, 200) ||
       !Number.isInteger(c.rewardAt) || c.rewardAt < 1 || c.rewardAt > 365) v.fail("réglages du suivi");
+  // Où vit le suivi (ADR 27) : « account » (synchronisé, avec l'accord daté `consent`) ou « device » (sur l'appareil
+  // `holder` seulement ; le document synchronisé n'en garde qu'un talon). Absent : un suivi d'avant ce choix.
+  if ((c.storage != null && !REGULATION_STORAGES.includes(c.storage)) || (c.holder != null && !identifier(c.holder)) ||
+      (c.consent != null && !(c.consent && typeof c.consent === "object" && finite(c.consent.at, 0, Infinity) && Number.isInteger(c.consent.version) && c.consent.version >= 1)))
+    v.fail("stockage du suivi");
   const goals = v.list(inst.goals, "objectifs");
   for (const g of goals) {
     if (!identifier(g.id) || !validDate(g.date) || !finite(g.at, 0, Infinity) || !REGULATION_MODES.includes(g.mode) ||

@@ -9,8 +9,9 @@ sans risque. Décision d'architecture : [ADR 26](architecture.md#adr-26--reprend
 
 1. **Créer** : modèle « Reprendre la main » (accueil, ou Réglages → Espaces → Créer ; il est proposé en dernier), ou
    type vide du même nom. Le suivi naît **non partagé avec l'assistant**.
-2. **Configurer** (deux formulaires courts) : le nom (libre, visible dans la navigation) et le sujet, puis l'intention,
-   la limite si l'on réduit, et la date d'effet. Pour l'alcool, une information sur le sevrage précède le choix (plus
+2. **Configurer** (deux formulaires courts) : le nom (libre, visible partout : un nom neutre ne dit rien du sujet), le
+   sujet et, connectée à un compte, **où le garder** (sur cet appareil seulement, présélectionné, ou synchronisé avec un
+   accord explicite : plus bas) ; puis l'intention, la limite si l'on réduit, et la date d'effet. Pour l'alcool, une information sur le sevrage précède le choix (plus
    bas). Le sujet, donc l'unité, ne change plus : un autre sujet, c'est un autre suivi.
 3. **Au quotidien**, quatre actions :
    - **J'ai une envie** : date, intensité 0-10 facultative, contexte ou déclencheur facultatif, un appui à essayer
@@ -147,7 +148,8 @@ Trois questions distinctes, à ne pas confondre :
   palette, motifs et concordance, dérive lexicale, test lunaire, statuts épistémiques), ni `alerts` (Aujourd'hui,
   résumé du matin, notifications), ni `badge`, ni `accept` (rangement depuis la boîte). `recent` est vide, `review`
   nul ; le bilan général et la planche de lunaison l'ignorent (`TYPE_UI[type].sensitive`), même pour compter des
-  événements ; le pont de reprise reste dans l'espace (ni sur sa ligne de l'accueil, ni dans « Reprendre ») ;
+  événements ; il n'a pas de pont de reprise (son texte partirait dans le document synchronisé, même pour un suivi
+  gardé sur l'appareil) ;
   `refFind` ne résout pas un lien vers ses entrées ; le widget ne lit que tâches et rappels. L'accueil n'en montre que
   « Suivi privé : ouvrir pour consulter ».
 - **Assistant.** Partage désactivé à la création, depuis le modèle comme depuis un type vide. Le partager (bouton de
@@ -157,13 +159,43 @@ Trois questions distinctes, à ne pas confondre :
   déclencheurs, appuis ni la récompense. Ce résumé est affiché en permanence dans « Confidentialité et données ».
   Arrêter le partage empêche les envois suivants ; ce qui a déjà été envoyé n'est pas retiré (la conversation se
   trouve dans l'Assistant, sur l'appareil).
-- **Stockage.** Ce n'est pas un coffre séparé : sans compte, les données restent sur l'appareil ; avec un compte, elles
-  sont synchronisées avec le serveur de Selene comme le reste du tableau de bord (chaque compte n'y lit que sa ligne),
-  **sans chiffrement de bout en bout**. Elles figurent dans la **sauvegarde complète**. L'**export dédié** (« Exporter ce
-  suivi ») est un JSON lisible, non chiffré, au nom neutre (`selene-suivi-AAAA-MM-JJ.json`) : nom, sujet, réglages,
-  versions d'objectif, journal complet avec les notes ; pour consulter ou garder, la restauration passant par la
-  sauvegarde complète. **Supprimer** le suivi (retaper son nom) l'efface de l'appareil puis, à la synchronisation
-  suivante, du compte et des autres appareils ; les fichiers déjà téléchargés restent où ils sont.
+- **Stockage (ADR 27).** Dans les versions hébergées (site, Android, iOS, Windows), un compte est obligatoire : sans le
+  choix qui suit, tout suivi serait sur le serveur. À la configuration, connectée, la personne choisit :
+  - **sur cet appareil seulement** (présélectionné, protection des données par défaut, RGPD art. 25) : le contenu vit
+    dans un second document local (`selene-local-v1`), jamais envoyé ; le document synchronisé n'en garde qu'un
+    **talon** (nom, présence, appareil détenteur `holder`), ni sujet, ni appuis, ni objectifs, ni journal ;
+  - **sur mon compte** : seulement après avoir confirmé un texte d'accord (données de santé, serveur de Selene chez
+    Supabase, lisible par le seul compte, sans chiffrement de bout en bout, retrait possible) ; l'accord est daté et
+    versionné (`config.consent`), un texte changé le redemandera.
+
+  On change d'avis dans « Confidentialité et données ». **Retirer l'accord** ramène le contenu sur l'appareil ; à la
+  synchronisation suivante, le serveur n'a plus que le talon (ses sauvegardes techniques suivent leur propre durée de
+  conservation, selon l'offre Supabase : à vérifier). Un suivi synchronisé d'avant cette question affiche un bandeau
+  de choix : rien ne change tant que la personne n'a pas choisi. Sans compte (artefact claude.ai), rien n'est envoyé :
+  pas de question.
+  - **Autres appareils du compte** : le talon seulement (« gardé sur un autre de tes appareils »), sans contenu. Un
+    appareil resté hors ligne qui renvoie l'ancienne copie : le détenteur reprend ses saisies (la plus récente gagne) et
+    le talon redevient vide (`absorbDeviceTrackers`). Supprimer le suivi depuis un autre appareil ne retire que son nom,
+    et la confirmation le dit (`deleteNote`) : si le détenteur existe encore, il recrée le talon et ne perd rien (un
+    appareil ne peut pas effacer ce qu'il ne voit pas) ; s'il est perdu, ou si Selene y a été réinstallée (nouvel
+    identifiant d'appareil), le retrait est définitif. Sans cela, un appareil perdu laisserait un nom impossible à
+    effacer.
+  - **Déconnexion** (qui vide l'appareil) : une garde demande quoi faire de ce qui n'existe qu'ici — télécharger une
+    sauvegarde complète puis l'effacer, le synchroniser (avec l'accord), ou l'effacer (confirmé) ; annuler ne déconnecte
+    pas. **Changement de compte** sur le même appareil : les suivis locaux du compte précédent sont mis de côté
+    (`selene-local-v1:<compte>`), jamais montrés au suivant, retrouvés à son retour. **Suppression du compte** : effacés.
+  - **Sauvegarde complète** : elle contient aussi le contenu gardé sur l'appareil (c'est un fichier que la personne
+    télécharge). **Restaurée** sur un appareil, celui-ci en devient le détenteur ; un talon sans contenu (sauvegarde
+    faite ailleurs) reste un talon.
+  - **Limites** : « sur cet appareil » n'est pas un coffre chiffré (quiconque ouvre l'appareil déverrouillé peut lire
+    le stockage du navigateur ou de l'app) ; perdre l'appareil, c'est perdre le suivi (l'export régulier est la seule
+    assurance) ; le nom reste visible partout, d'où le conseil d'un nom neutre.
+
+  L'**export dédié** (« Exporter ce suivi ») est un JSON lisible, non chiffré, au nom neutre
+  (`selene-suivi-AAAA-MM-JJ.json`) : nom, sujet, réglages, versions d'objectif, journal complet avec les notes ; pour
+  consulter ou garder, la restauration passant par la sauvegarde complète. **Supprimer** le suivi (retaper son nom)
+  l'efface de l'appareil (copie locale comprise) puis, à la synchronisation suivante, du compte et des autres
+  appareils ; les fichiers déjà téléchargés restent où ils sont.
 
 ## Données et architecture
 
@@ -171,7 +203,9 @@ Trois questions distinctes, à ne pas confondre :
   (`coreError`, traduites par `lib/labels.js`). `MODULE_TYPES.regulation` (`core/domain.js`) : défauts,
   normalisation, validation. `src/app/modules/regulation.js` : l'écran, les formulaires (`openForm`), les actions
   `rlm-*`, enregistrés par `registerType` ; `sensitive: true`.
-- Instance : `config` (`subject` — nul tant que non configuré —, `supports` : appuis, `rewards`, `reward`, `rewardAt`),
+- Instance : `config` (`subject` — nul tant que non configuré —, `supports` : appuis, `rewards`, `reward`, `rewardAt`,
+  `storage` : `account` | `device` | absent pour un suivi d'avant le choix, `holder` : l'appareil détenteur,
+  `consent` : `{ at, version }`),
   `goals[]` (`id`, `date` d'effet, `at`, `mode` : `observer` | `reduire` | `arreter`, `limit` : null | 0 | > 0,
   `subject`), `entries[]` :
   - `use` : `value`, `declared` (total déclaré, pour un complément) ;
@@ -179,9 +213,14 @@ Trois questions distinctes, à ne pas confondre :
   - `action` : `strategy`, `urge` (l'envie, pour « Je l'ai fait », identifiant `act-<envie>`) ;
   - `day` : identifiant `day-AAAA-MM-JJ`, `goalId` (null sans objectif), `snapshot` ;
   - communs : `id`, `kind`, `date`, `at`, `zone`, `note`, `editedAt` (correction).
-- **Format 7** (`SCHEMA_VERSION`, 6 sur main avant ce changement) : une version antérieure ne sait ni afficher ni
-  valider ce type ; la garde existante lui interdit de fusionner ou d'écrire (« recharge la page »), et refuse
-  l'import d'une sauvegarde plus récente. Aucune migration de données : le type est nouveau.
+- **Format 8** (`SCHEMA_VERSION`) : 7 a introduit le type (une version antérieure ne sait ni l'afficher ni le
+  valider) ; 8, le stockage sur l'appareil (une version 7 écrirait des saisies dans le talon). La garde existante
+  interdit à une version plus ancienne de fusionner ou d'écrire (« recharge la page ») et refuse l'import d'une
+  sauvegarde plus récente. Aucune migration de données.
+- **Stockage local** (`src/app/state/local.js`) : un second `makeStore`, jamais connecté ; l'identité de l'appareil
+  (`selene-device-id`, non personnelle, gardée à la déconnexion), le propriétaire du document (`owner`), la
+  réconciliation à l'entrée du site, la sauvegarde (`withLocal`) et la restauration (`splitLocal`). Le module lit son
+  contenu par un accesseur (la copie locale, sinon le document synchronisé).
 - **Fusion** : celle du store, à trois voies, entrée par entrée (`id`). Les marques et les confirmations sont dérivées
   ou à identifiant déterministe : pas de double gain, une confirmation par date. Deux appareils hors ligne qui
   commencent le même suivi avec deux sujets : un seul sujet est gardé, l'espace le **signale**
@@ -200,9 +239,14 @@ Trois questions distinctes, à ne pas confondre :
   inconnues, complètes, rouvertes, confirmation refusée si l'instantané a changé, total quotidien, versions d'objectif,
   début du suivi, comparabilité, envies et « je l'ai fait » idempotent, marques, appuis et récompense, pause,
   corrections, fusions entre appareils (marques, confirmation, quantité tardive, suppression, conflit de sujet),
-  sauvegardes (restauration, 21 imports invalides, version trop récente), et, dans l'app assemblée, chaque surface :
+  sauvegardes (restauration, 21 imports invalides, version trop récente) ; le stockage sur l'appareil, sur un faux
+  serveur (le talon seul arrive au serveur, l'accord daté, refusé ou retiré, le bandeau des anciens suivis, l'autre
+  appareil, la reprise des saisies renvoyées, la garde de déconnexion, le changement de compte, la sauvegarde et la
+  restauration, la forme des nouveaux champs) ; et, dans l'app assemblée, chaque surface :
   assistant, recherche, accueil, bilan, planche, widget, résumé du matin, test lunaire, dérive, statuts, liens,
   sortes, arc, rangement de notes, motifs ; partage confirmé depuis les Réglages ; échappement HTML ; formulaire commun.
+- `tests/browser/regulation-appareil.js` : deux appareils du même compte sur un faux Supabase, en lisant le serveur :
+  choix par défaut, talon seul, autre appareil, accord refusé puis donné puis retiré, garde de déconnexion.
 - `tests/browser/regulation.js` : le parcours complet sur téléphone (Chromium et WebKit en CI), dont la modification
   arrivée d'un autre onglet pendant la confirmation, la pause au rechargement, le partage depuis les Réglages ; puis
   ordinateur, clavier, libellés et anglais.
@@ -222,3 +266,6 @@ Trois questions distinctes, à ne pas confondre :
 7. Accueil, Chercher (une note saisie), Bilan, planche : aucun détail. « Confidentialité et données » : lire le résumé ;
    « Partager… » montre le même texte avant de partager.
 8. Créer un second suivi **Tabac** : pas d'avertissement alcool ; « 1.5 » cigarette est refusé.
+9. Connectée à un compte (version hébergée), sur deux appareils : un suivi créé « sur cet appareil » n'affiche que son
+   nom sur l'autre ; « Synchroniser avec mon compte… » demande l'accord ; « Garder sur cet appareil seulement… » le
+   retire ; se déconnecter demande quoi faire du suivi.

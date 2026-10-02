@@ -9,7 +9,9 @@ import { $, setSaving, toast } from "../lib/dom.js";
 import { tr, trp } from "../i18n/index.js";
 import { serverError } from "./erreurs.js";
 import { render } from "../shell/render.js";
+import { deviceSignOutGuard } from "../modules/regulation.js";
 import { DRAFT_PREFIX } from "../state/drafts.js";
+import { localErase, localSwitch } from "../state/local.js";
 import { board, site, siteSeed } from "../state/site.js";
 import { ask } from "../ui/dialogs.js";
 
@@ -33,7 +35,10 @@ const LAST_UID_KEY = "selene-auth-last-uid";
    ni ses données, ni sa conversation avec l'assistant, ni sa clé API (facturée à elle). */
 const PERSONAL_KEYS = ["selene-chat", "selene-recent", "selene-dehors", "selene-mb-seen", "selene-radar", "selene-ics", "selene-zotero", "selene-cites"]; // selene-recent : les derniers espaces ouverts ; puis ce que le dehors a apporté
 const PERSONAL_SECRETS = platform.secretKeys.filter(k => k !== AUTH_KEY); // platform.secrets (la session a son propre sort)
-function authResetLocal() {
+/* `erase` : une déconnexion voulue ou une suppression de compte efface aussi ce qui n'existait que sur cet appareil (après
+   la garde de la déconnexion) ; un changement de compte le met de côté pour son propriétaire (localSwitch, déjà fait). */
+function authResetLocal(erase = true) {
+  if (erase) localErase();
   board.reset({ updatedAt: 0, tasks: [] });
   site.reset(siteSeed());
   for (const k of PERSONAL_KEYS) platform.storage.remove(k);
@@ -132,7 +137,8 @@ async function authConnectStores() {
   const uid = authSession.user.id;
   let last = null;
   try { last = platform.storage.get(LAST_UID_KEY); } catch {}
-  if (last && last !== uid) authResetLocal();
+  if (last !== uid) localSwitch(uid); // les suivis gardés sur cet appareil suivent leur compte (ADR 27)
+  if (last && last !== uid) authResetLocal(false);
   platform.storage.set(LAST_UID_KEY, uid);
   // Ne (re)connecte que les stores déconnectés : un store déjà branché a son propre poller, pas de doublon.
   // L'un après l'autre, le site d'abord : le board verse ses tâches dans un site déjà synchronisé (voir absorbBoard).
@@ -176,6 +182,9 @@ async function authSignUp(email, password) {
   return !s;
 }
 export async function authSignOut() {
+  // Ce qui n'existe que sur cet appareil (un suivi « Reprendre la main » non synchronisé) : l'exporter, le synchroniser
+  // ou l'effacer, au choix, avant que la déconnexion n'efface l'appareil. Annuler ne déconnecte pas.
+  if (!await deviceSignOutGuard()) return;
   // Pousser d'abord ce qui attend encore : la déconnexion efface le local. Hors ligne, prévenir avant de perdre.
   for (const st of [board, site]) { clearTimeout(st.timer); st.timer = null; if (st.db) await st.sync(); }
   if ([board, site].some(st => st.unsynced()) &&
