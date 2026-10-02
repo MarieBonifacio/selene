@@ -3,7 +3,9 @@
    voies → écriture conditionnelle. La « base » (dernier état commun connu avec le
    serveur) est gardée à côté, sous `${key}-base` : c'est elle qui permet de savoir qui
    a modifié quoi, donc de ne rien écraser.
-   Contrat de `db.doc(path)` : get() → {exists, data()} ; onSnapshot(cb, err) → désabonnement ;
+   Contrat de `db.doc(path)` : get() → {exists, data()} ; onSnapshot(cb, err, connu) → désabonnement, où `connu()` donne
+   la date (updatedAt) de la dernière version commune quand l'appareil n'a rien à envoyer (null sinon) : une base qui
+   relit par intervalles peut s'épargner le document quand le serveur a la même (facultatif) ;
    et soit replace(value, attendu, {keepalive}) → booléen (écriture conditionnelle, false = le
    serveur a changé entre-temps), soit à défaut set(value) (écriture inconditionnelle).
    `normalize(doc)` remet un document dans la forme attendue ; il est appliqué à tout ce qui entre
@@ -109,7 +111,7 @@ export function makeStore(key, path, seed, normalize = d => d, { onRemoteChange 
     s.db = db;
     if (!await s.sync()) { if (s.db === db) s.db = null; return; } // hors ligne, jeton expiré… : on reste en local
     if (s.db !== db) return;
-    const unsub = db.doc(path).onSnapshot(snap => s.sync(snap), () => {});
+    const unsub = db.doc(path).onSnapshot(snap => s.sync(snap), () => {}, () => s.base && !s.timer && !s.unsynced() ? s.base.updatedAt : null);
     s.unsub = typeof unsub === "function" ? unsub : null;
   };
   s.disconnect = () => {

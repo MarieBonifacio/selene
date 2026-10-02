@@ -16,7 +16,7 @@ const sessionBody = { access_token: 'new', refresh_token: 'new-r', expires_in: 3
 /* Imite PostgREST pour ce que l'app utilise : GET filtré, POST ignore-duplicates,
    PATCH conditionnel sur `col->>champ` avec Prefer: return=representation. */
 function fakeSupabase() {
-  const server = { rows: new Map(), calls: [], offline: false, beforePatch: null };
+  const server = { rows: new Map(), calls: [], selects: [], offline: false, beforePatch: null };
   server.fetch = async (url, opts = {}) => {
     if (server.offline) throw new TypeError('Failed to fetch');
     const u = new URL(url), method = opts.method || 'GET';
@@ -25,7 +25,12 @@ function fakeSupabase() {
     if (u.pathname === '/auth/v1/logout') return reply(204, {});
     if (u.pathname !== '/rest/v1/app_state') return reply(404, {});
     const uid = (u.searchParams.get('user_id') || '').replace(/^eq\./, ''), row = server.rows.get(uid);
-    if (method === 'GET') { const col = u.searchParams.get('select'); return reply(200, row ? [{ [col]: clone(row[col]) }] : []); }
+    if (method === 'GET') {
+      server.selects.push(u.searchParams.get('select'));
+      const col = u.searchParams.get('select'), stamp = col.match(/^u:(\w+)->>updatedAt$/); // la date seule (polling)
+      if (stamp) return reply(200, row ? [{ u: row[stamp[1]] && row[stamp[1]].updatedAt != null ? String(row[stamp[1]].updatedAt) : null }] : []);
+      return reply(200, row ? [{ [col]: clone(row[col]) }] : []);
+    }
     if (method === 'POST') {
       for (const r of JSON.parse(opts.body)) if (!server.rows.has(r.user_id)) server.rows.set(r.user_id, { board: {}, site: {}, ...r });
       return reply(201, null);

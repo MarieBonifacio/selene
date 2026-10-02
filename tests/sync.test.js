@@ -109,6 +109,30 @@ test('polling brings remote changes without writing anything back', async () => 
   assert.equal(server.calls.filter(c => c.startsWith('PATCH')).length, patches, 'a read-only poll must not write');
 });
 
+test('an idle poll reads only the date of the last write, not the document', async () => {
+  const { server, a, b } = await twoDevices();
+  server.selects.length = 0;
+  await b.poll(); await a.poll();
+  assert.ok(server.selects.length === 4 && server.selects.every(s => /^u:(site|board)->>updatedAt$/.test(s)), `nothing changed: dates only (${server.selects.join(', ')})`);
+  await edit(a, 'site', d => d.modules.chantier.entries.push(task('t1', 'Velux')));
+  server.selects.length = 0;
+  await b.poll();
+  same(titles(b), ['Velux']);
+  assert.deepEqual([...server.selects].sort(), ['site', 'u:board->>updatedAt', 'u:site->>updatedAt'], 'the changed document only is read again');
+});
+
+test('a poll still pushes edits that could not be sent, even when the server has nothing new', async () => {
+  const { server, a } = await twoDevices();
+  server.offline = true;
+  a.site.data.modules.chantier.entries.push(task('t2', 'Gouttière')); a.site.save();
+  clearTimeout(a.site.timer); a.site.timer = null;
+  assert.equal(await a.site.sync(), false);
+  server.offline = false;
+  await a.poll(); await settle(); // le polling lance la synchro sans l'attendre
+  assert.equal(a.site.unsynced(), false);
+  assert.ok(JSON.stringify(server.rows.get('u1').site).includes('Gouttière'), 'the pending edit reached the server');
+});
+
 test('signing out pushes pending edits first, then stops every poller', async () => {
   const { server, a } = await twoDevices();
   a.site.data.modules.chantier.entries.push(task('t1', 'Velux')); a.site.save(); // reste dans le délai de 900 ms
