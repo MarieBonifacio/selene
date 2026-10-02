@@ -194,3 +194,30 @@ C'est l'adresse à donner à l'App Store et à Google Play. Sa version anglaise,
 (<https://mariebonifacio.github.io/selene/privacy.html>), dit la même chose ; les Réglages lient celle de la langue de
 l'interface. Elles doivent suivre le code : un nouveau service appelé, une nouvelle donnée gardée, et les deux changent
 avec (`build.test.js` vérifie qu'elles ont les mêmes sections, les mêmes liens, la même date, et nomment chaque service).
+
+Elle remplit l'article 13 du RGPD, et `build.test.js` le vérifie dans les deux langues :
+- la responsable du traitement : Marie Bonifacio, personne physique ;
+- une adresse de contact privée (jamais un ticket public) ;
+- une base légale par usage : le contrat (6.1.b), le consentement explicite pour la santé synchronisée (9.2.a),
+  l'intérêt légitime pour la sécurité (6.1.f) ;
+- les durées de conservation ;
+- les transferts hors de l'Union ;
+- le droit de réclamation auprès de la CNIL.
+
+Ce qu'elle promet, et qu'il faut tenir à la main :
+
+- **Sauvegardes : 30 jours au plus.** Les sauvegardes de l'offre Pro de Supabase (7 jours) le respectent. Une copie
+  manuelle (`supabase db dump`) doit être effacée au bout de 30 jours, sinon une donnée supprimée y survit.
+- **E-mails reçus à l'adresse de contact : un an au plus** après le dernier échange.
+- **Réponse à une demande de droits sous un mois.** La demande doit venir de l'adresse du compte concerné.
+- **La base reste à Paris** (eu-west-3). Un projet déplacé dans une autre région change la section « Hors de l'Union
+  européenne ».
+
+Elle change avec ce qui s'ajoute :
+- **Brancher Brevo** (SMTP) : nommer Brevo parmi les services, puisque les e-mails du compte passent alors par lui.
+- **Un statut d'entreprise** (micro-entreprise) : le nom commercial et le numéro SIREN remplacent « personne
+  physique ».
+- **Un nouveau service, une nouvelle donnée gardée** : les deux versions changent ensemble, avec une nouvelle date.
+
+**L'accord de traitement des données (DPA) de Supabase** est à demander à <https://supabase.com/legal/dpa>. C'est le
+contrat de sous-traitance que l'article 28 du RGPD exige entre la responsable du traitement et son hébergeur.

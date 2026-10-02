@@ -58,6 +58,22 @@ test('politique de confidentialité : publiée avec le site (en français et en 
   assert.match(fs.readFileSync('src/app/views/reglages.js', 'utf8'), /privacy\.html/);
 });
 
+test('politique de confidentialité : ce que demande l’article 13 du RGPD, dans les deux langues', () => {
+  const versions = [
+    [read('web/confidentialite.html'), ['Qui en est responsable', 'Pourquoi, et sur quelle base', 'Combien de temps', "Hors de l'Union européenne", 'Tes droits']],
+    [read('web/privacy.html'), ['Who is responsible', 'Why, and on what basis', 'How long', 'Outside the European Union', 'Your rights']]
+  ];
+  for (const [x, sections] of versions) {
+    for (const s of sections) assert.ok(x.includes(`<h2>${s}</h2>`), `section « ${s} »`);
+    assert.match(x, /Marie Bonifacio/, 'la responsable du traitement, nommée');
+    assert.match(x, /href="mailto:mariebonifacio\.pro@gmail\.com"/, 'une adresse de contact privée');
+    assert.doesNotMatch(x, /\/issues/, 'jamais une demande sur ses données par ticket public');
+    for (const base of [/6[.(]1[.)]?\(?b/, /9[.(]2[.)]?\(?a/, /6[.(]1[.)]?\(?f/]) assert.match(x, base, `base légale ${base}`);
+    assert.match(x, /Paris/, 'où sont les données du compte');
+    assert.match(x, /href="https:\/\/www\.cnil\.fr\/fr\/plaintes"/, 'le droit de réclamation auprès de la CNIL');
+  }
+});
+
 test('le script produit ne dépend pas de la machine : aucun chemin absolu', () => {
   for (const f of ['selene.html', 'index.html']) assert.doesNotMatch(fs.readFileSync(f, 'utf8'), new RegExp(process.cwd().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
