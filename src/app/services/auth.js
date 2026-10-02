@@ -5,7 +5,7 @@
    ne sont pas renseignées, donc jamais actif dans l'artefact claude.ai. */
 import { hosted, platform } from "../../platform.js";
 import { CLICK } from "../registry.js";
-import { $, setSaving, toast } from "../lib/dom.js";
+import { $, esc, setSaving, toast } from "../lib/dom.js";
 import { tr, trp } from "../i18n/index.js";
 import { serverError } from "./erreurs.js";
 import { render } from "../shell/render.js";
@@ -21,7 +21,28 @@ export const authReady = () => hosted() && !SUPABASE_URL.includes("YOUR-PROJECT-
 
 const AUTH_KEY = "selene-auth-session";
 export let authSession = null, authMode = "signin", authBusy = false, authRefreshTimer = null;
-export const authToggleMode = () => { authMode = authMode === "signup" ? "signin" : "signup"; };
+/* Le message sous le formulaire (une erreur, ou une confirmation : ok) et l'adresse tapée : gardés ici, puisque chaque
+   rendu redessine l'écran de connexion. */
+let authNote = { text: "", ok: false }, authEmail = "";
+const authSay = (text, ok = false) => { authNote = { text, ok }; };
+export const authToggleMode = () => { authMode = authMode === "signup" ? "signin" : "signup"; authSay(""); };
+/* Le lien d'un e-mail de Supabase (mot de passe oublié : type=recovery ; invitation : type=invite) ramène ici avec, après
+   le #, un jeton qui ouvre la session le temps de choisir un mot de passe, ou l'erreur d'un lien expiré. On le lit avant
+   le premier rendu et on l'efface aussitôt de l'adresse (ni l'historique ni un favori ne doivent le garder) ; il ne vit
+   qu'en mémoire. Le texte d'erreur du lien n'est jamais affiché : n'importe qui peut fabriquer un lien. */
+let authLink = null, authLinkBad = false;
+function takeAuthLink() {
+  try {
+    const h = new window.URLSearchParams(location.hash.slice(1)), type = h.get("type");
+    if (!h.get("access_token") && !h.get("error_code") && !h.get("error")) return;
+    if (h.get("access_token") && (type === "recovery" || type === "invite")) {
+      authLink = { type, access_token: h.get("access_token"), refresh_token: h.get("refresh_token") || "", expires_in: +h.get("expires_in") || 3600 };
+      authMode = "reset";
+    } else if (!h.get("access_token")) authLinkBad = true;
+    window.history.replaceState(null, "", location.pathname + location.search + "#accueil");
+  } catch {}
+}
+if (authReady()) takeAuthLink();
 
 function authLoad() {
   try { const v = platform.secrets.get(AUTH_KEY); return v ? JSON.parse(v) : null; } catch { return null; }
@@ -53,7 +74,7 @@ async function authApi(path, opts = {}) {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = new Error(body.msg || body.error_description || body.error || tr`Erreur d'authentification.`);
-    err.status = res.status;
+    err.status = res.status; err.code = body.error_code || "";
     throw err;
   }
   return body;
@@ -162,16 +183,47 @@ window.addEventListener("online", () => { if (authReady()) authKeepAlive(); });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && authReady()) authKeepAlive(); });
 export async function authBoot() {
   if (!authReady()) return null;
+  if (authLink) return null; // le mot de passe d'abord : la session gardée sur cet appareil attend (ou cède la place)
   authSession = authLoad();
   if (authSession) {
     const s = await authRefreshIfNeeded();
     if (s) { await authConnectStores(); authScheduleRefresh(); }
+  }
+  if (authLinkBad) {
+    authLinkBad = false;
+    const msg = tr`Ce lien ne fonctionne plus : il a expiré, ou il a déjà servi. Demande-en un autre.`;
+    if (authSession) toast(msg); else { authMode = "recover"; authSay(msg); }
   }
   return authSession;
 }
 async function authSignIn(email, password) {
   const body = await authApi("/token?grant_type=password", { method: "POST", body: JSON.stringify({ email, password }) });
   authPersist(toSession(body));
+  await authConnectStores();
+  authScheduleRefresh();
+}
+/* Mot de passe oublié : Supabase envoie un lien, et répond pareil que l'adresse ait un compte ou non (personne ne peut
+   s'en servir pour savoir qui est inscrit). Le lien ramène à cette page si elle figure parmi les adresses autorisées du
+   projet (Authentication → URL Configuration), sinon à l'adresse du site. Les apps n'en donnent pas : le lien s'ouvre
+   dans le navigateur, on y choisit le mot de passe, puis on se connecte dans l'app. */
+async function authRecover(email) {
+  const back = platform.runtime() === "web" ? `?redirect_to=${encodeURIComponent(location.origin + location.pathname)}` : "";
+  try { await authApi(`/recover${back}`, { method: "POST", body: JSON.stringify({ email }) }); }
+  catch (e) { throw e.status === 429 ? new Error(tr`Trop de demandes : le serveur limite les e-mails qu'il envoie. Réessaie dans un moment.`) : e; }
+}
+/* Le nouveau mot de passe, avec le jeton du lien. Supabase répond par le compte : le jeton devient la session. */
+async function authSetPassword(password) {
+  const link = authLink;
+  let user;
+  try { user = await authApi("/user", { method: "PUT", headers: { Authorization: `Bearer ${link.access_token}` }, body: JSON.stringify({ password }) }); }
+  catch (e) {
+    if (e.code === "same_password") throw new Error(tr`C'est déjà ton mot de passe : choisis-en un autre.`);
+    if (e.status !== 401 && e.status !== 403) throw e;
+    authLink = null; authMode = link.type === "invite" ? "signin" : "recover";
+    throw new Error(link.type === "invite" ? tr`Cette invitation a expiré, ou elle a déjà servi : demande qu'on te la renvoie.` : tr`Ce lien ne fonctionne plus : il a expiré, ou il a déjà servi. Demande-en un autre.`);
+  }
+  authLink = null; authMode = "signin";
+  authPersist(toSession({ ...link, user }));
   await authConnectStores();
   authScheduleRefresh();
 }
@@ -218,31 +270,57 @@ export async function authDeleteAccount() {
   render();
 }
 async function authSubmit() {
-  const email = $("#authEmail").value.trim(), pw = $("#authPw").value, err = $("#authErr");
   if (authBusy) return;
-  authBusy = true; err.style.color = "var(--alarm)"; err.textContent = "";
+  const field = id => { const el = $(id); return el ? el.value : ""; };
+  const email = field("#authEmail").trim(), pw = field("#authPw");
+  if (email) authEmail = email;
+  authBusy = true; authSay("");
   try {
-    if (authMode === "signup") {
+    if (authMode === "recover") {
+      await authRecover(email);
+      authSay(platform.runtime() === "web" ? tr`Si un compte existe à cette adresse, un e-mail vient de partir : son lien te ramène ici pour choisir un nouveau mot de passe. Regarde aussi dans les indésirables.`
+        : tr`Si un compte existe à cette adresse, un e-mail vient de partir. Son lien s'ouvre dans ton navigateur : choisis-y ton nouveau mot de passe, puis reviens te connecter ici. Regarde aussi dans les indésirables.`, true);
+    } else if (authMode === "reset") {
+      if (pw !== field("#authPw2")) throw new Error(tr`Les deux mots de passe ne sont pas identiques.`);
+      await authSetPassword(pw);
+      toast(tr`Mot de passe enregistré.`);
+    } else if (authMode === "signup") {
       const needsConfirm = await authSignUp(email, pw);
-      if (needsConfirm) { err.style.color = "var(--ok)"; err.textContent = tr`Compte créé. Vérifie ta boîte mail pour confirmer, puis connecte-toi.`; }
+      if (needsConfirm) authSay(tr`Compte créé. Vérifie ta boîte mail pour confirmer, puis connecte-toi.`, true);
     } else await authSignIn(email, pw);
-  } catch (e) { err.textContent = e.message || tr`Connexion impossible.`; }
+  } catch (e) { authSay(e.message || tr`Connexion impossible.`); }
   authBusy = false;
   render();
 }
 export function authView() {
-  return `<div class="wrap" style="max-width:420px;margin:60px auto 0"><h2>Selene</h2>
-    <p class="hint">${authMode === "signup" ? tr`Crée ton compte pour retrouver tes données sur n'importe quel appareil.` : tr`Connecte-toi pour retrouver tes données.`}</p>
-    <form id="authForm" style="display:grid;gap:12px">
-      <label>${tr`E-mail`}<input type="email" id="authEmail" required autocomplete="email"></label>
-      <label>${tr`Mot de passe`}<input type="password" id="authPw" required minlength="6" autocomplete="${authMode === "signup" ? "new-password" : "current-password"}"></label>
-      <div class="row"><button class="btn acc" type="submit">${authMode === "signup" ? tr`Créer le compte` : tr`Se connecter`}</button>
-      <button class="btn ghost" type="button" data-act="auth-switch">${authMode === "signup" ? tr`J'ai déjà un compte` : tr`Créer un compte`}</button></div>
-      <p class="hint" id="authErr" style="margin:0"></p>
-    </form></div>`;
+  const note = `<p class="hint" id="authErr" role="status" style="margin:0${authNote.text ? `;color:var(${authNote.ok ? "--ok" : "--alarm"})` : ""}">${esc(authNote.text)}</p>`;
+  const email = `<label>${tr`E-mail`}<input type="email" id="authEmail" required autocomplete="email" value="${esc(authEmail)}"></label>`;
+  const page = (intro, fields, buttons) => `<div class="wrap" style="max-width:420px;margin:60px auto 0"><h2>Selene</h2>
+    <p class="hint">${intro}</p>
+    <form id="authForm" style="display:grid;gap:12px">${fields}<div class="row">${buttons}</div>${note}</form></div>`;
+  if (authMode === "reset") return page(authLink && authLink.type === "invite" ? tr`Bienvenue. Choisis le mot de passe de ton compte.` : tr`Choisis un nouveau mot de passe.`,
+    `<label>${tr`Nouveau mot de passe`}<input type="password" id="authPw" required minlength="6" autocomplete="new-password"></label>
+      <label>${tr`Le même, une seconde fois`}<input type="password" id="authPw2" required minlength="6" autocomplete="new-password"></label>`,
+    `<button class="btn acc" type="submit">${tr`Enregistrer et me connecter`}</button><button class="btn ghost" type="button" data-act="auth-back">${trp("formulaire", "Annuler")}</button>`);
+  if (authMode === "recover") return page(tr`Indique l'adresse de ton compte : tu recevras un lien pour choisir un nouveau mot de passe.`, email,
+    `<button class="btn acc" type="submit">${tr`Envoyer le lien`}</button><button class="btn ghost" type="button" data-act="auth-back">${tr`Revenir à la connexion`}</button>`);
+  return page(authMode === "signup" ? tr`Crée ton compte pour retrouver tes données sur n'importe quel appareil.` : tr`Connecte-toi pour retrouver tes données.`,
+    `${email}
+      <label>${tr`Mot de passe`}<input type="password" id="authPw" required minlength="6" autocomplete="${authMode === "signup" ? "new-password" : "current-password"}"></label>`,
+    `<button class="btn acc" type="submit">${authMode === "signup" ? tr`Créer le compte` : tr`Se connecter`}</button>
+      <button class="btn ghost" type="button" data-act="auth-switch">${authMode === "signup" ? tr`J'ai déjà un compte` : tr`Créer un compte`}</button>
+      ${authMode === "signin" ? `<button class="btn ghost" type="button" data-act="auth-forgot">${tr`Mot de passe oublié ?`}</button>` : ""}`);
 }
 document.addEventListener("submit", e => { if (e.target.id === "authForm") { e.preventDefault(); authSubmit(); } });
-CLICK["auth-switch"] = () => { authToggleMode(); render(); };
+const keepEmail = () => { const el = $("#authEmail"); if (el && el.value.trim()) authEmail = el.value.trim(); };
+CLICK["auth-switch"] = () => { keepEmail(); authToggleMode(); render(); };
+CLICK["auth-forgot"] = () => { keepEmail(); authMode = "recover"; authSay(""); render(); const el = $("#authEmail"); if (el) el.focus(); };
+/* Revenir à la connexion ; depuis le nouveau mot de passe, le lien est abandonné et la session gardée reprend, s'il y en a une. */
+CLICK["auth-back"] = async () => {
+  keepEmail(); authSay(""); authMode = "signin";
+  if (authLink) { authLink = null; try { await authBoot(); } catch {} }
+  render();
+};
 CLICK["auth-out"] = () => authSignOut();
 /* Le mot à taper pour supprimer son compte : celui de la langue de l'interface, ou « supprimer » dans toutes. Le serveur,
    lui, reçoit toujours la constante du protocole (confirmation: "supprimer"), qui ne se traduit pas. */

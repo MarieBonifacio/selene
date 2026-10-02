@@ -28,6 +28,28 @@ l'assistant et le passeur. Tant qu'elle n'est pas déployée, le bouton le dit (
 Premier essai conseillé : créer un compte jetable, le supprimer depuis l'app, vérifier dans Supabase
 (Authentication → Users) qu'il a disparu.
 
+## Mot de passe oublié, invitation
+
+Écran de connexion → *Mot de passe oublié ?* : on donne son adresse et Supabase envoie un lien
+(`POST /auth/v1/recover`). La réponse est la même, que l'adresse ait un compte ou non : personne ne peut s'en servir
+pour savoir qui est inscrit. Le lien ramène à Selene avec un jeton après le `#`. Selene l'efface aussitôt de
+l'adresse (ni l'historique ni un favori ne le gardent), le garde en mémoire et demande le nouveau mot de passe deux
+fois (`PUT /auth/v1/user`) : le jeton devient alors la session. Un lien expiré ou déjà utilisé le dit, sans jamais
+afficher le texte d'erreur porté par le lien (n'importe qui peut en fabriquer un). Une invitation (Authentication →
+Users → *Invite user*) suit le même chemin : son lien demande de choisir le mot de passe du compte. C'est ce qui permet
+de fermer les inscriptions publiques et d'inviter les comptes un par un.
+
+À régler une fois dans le projet Supabase :
+
+- *Authentication → URL Configuration* : **Site URL** = `https://mariebonifacio.github.io/selene/`, et la même adresse
+  dans **Redirect URLs**. Le site demande à revenir sur la page ouverte (`redirect_to`) ; une adresse absente de la
+  liste est ignorée au profit de la Site URL. Les apps n'en demandent pas : le lien s'ouvre dans le navigateur, sur le
+  site, puis on se connecte dans l'app avec le nouveau mot de passe.
+- *Authentication → Emails* : traduire les modèles *Reset password* et *Invite user*.
+- L'envoi d'e-mails intégré à Supabase n'autorise que quelques messages par heure, pour tout le projet : brancher un
+  SMTP (même page, *SMTP Settings*) avant d'ouvrir Selene à d'autres. Au-delà de la limite, Selene répond « Trop de
+  demandes ».
+
 ## Politique de confidentialité
 
 `confidentialite.html`, à la racine, publiée avec le site : <https://mariebonifacio.github.io/selene/confidentialite.html>.
