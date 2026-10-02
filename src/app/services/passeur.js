@@ -2,7 +2,7 @@
    Les flux RSS, la plupart des pages et les calendriers n'envoient pas d'en-tête CORS : la page ne peut pas lire leur
    réponse. Le passeur (supabase/functions/passeur, docs/passeur.md) va les chercher pour toi seule, avec ta session.
    Ici : l'appel, et la lecture d'une page (métadonnées, flux annoncés), faite par DOMParser, qui n'exécute rien. */
-import { hosted } from "../../platform.js";
+import { hosted, platform } from "../../platform.js";
 import { clip, findDoi, normalizeUrl } from "../../core/sources.js";
 import { CLICK } from "../registry.js";
 import { esc, toast } from "../lib/dom.js";
@@ -11,25 +11,64 @@ import { serverError, serverMsg } from "./erreurs.js";
 import { SUPABASE_ANON_KEY, SUPABASE_URL, authReady, authRefreshIfNeeded, authSession } from "./auth.js";
 import { render } from "../shell/render.js";
 
-export let passeurEtat = "";
-export const passeurReset = () => { passeurEtat = ""; }; // redemander, après un refus ou une absence // "" inconnu, "ok", "absent" (non déployé ou non configuré : on n'insiste pas), ou un message
-export const passeurPret = () => hosted() && authReady() && !!authSession && passeurEtat !== "absent";
+export let passeurEtat = ""; // "" inconnu, "ok", "absent" (non déployé ou non configuré : on n'insiste pas), ou un message
+/* L'accès au passeur, retenu par compte et par appareil pour un jour : « ok », « refuse » (le compte n'est pas dans
+   PASSEUR_USERS, ou l'origine n'est pas admise) ou « absent » (non déployé, non configuré). Un compte que le passeur ne
+   sert pas ne le sollicite plus à chaque page lue, et Dehors dit d'emblée ce qu'il peut faire sans lui. */
+const ACCES_KEY = "selene-passeur-acces", ACCES_TTL = 24 * 3600000, ACCES = ["ok", "refuse", "absent"];
+export function passeurAcces() {
+  try {
+    const x = JSON.parse(platform.storage.get(ACCES_KEY) || "null");
+    return x && authSession && x.uid === authSession.user.id && Date.now() - x.at < ACCES_TTL && ACCES.includes(x.etat) ? x.etat : "";
+  } catch { return ""; }
+}
+function accesNote(etat) {
+  if (!authSession || passeurAcces() === etat) return;
+  try { platform.storage.set(ACCES_KEY, JSON.stringify({ uid: authSession.user.id, etat, at: Date.now() })); } catch {}
+}
+/* Ce que dit une réponse du passeur sur l'accès : il vérifie l'origine, sa configuration, la session puis la liste des
+   comptes avant de lire la demande ; toute autre réponse veut donc dire qu'il est ouvert. Un 503 sans son code est
+   une panne passagère de la plateforme, pas un passeur absent ; un 401, une session à refaire : rien n'est retenu. */
+const accesDe = (r, j) => r.status === 404 || (r.status === 503 && j.code === "passeur-non-configure") ? "absent"
+  : r.status === 403 ? "refuse" : r.status === 401 || r.status >= 500 ? "" : "ok";
+let sondage = null, sondeApres = 0;
+export const passeurFerme = () => { const a = passeurAcces(); return a === "refuse" || a === "absent"; };
+export const passeurReset = () => { passeurEtat = ""; sondeApres = 0; try { platform.storage.remove(ACCES_KEY); } catch {} }; // redemander, après un refus ou une absence
+export const passeurPret = () => hosted() && authReady() && !!authSession && passeurEtat !== "absent" && !passeurFerme();
+const passeurPost = (s, body, signal) => fetch(`${SUPABASE_URL}/functions/v1/passeur`, { method: "POST", signal,
+  headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${s.access_token}` }, body: JSON.stringify(body) });
 export async function passeurFetch(url, genre, cond = {}) {
   if (!hosted() || !authReady() || !authSession) throw new Error(tr`Le passeur n'existe que dans la version hébergée, connectée à ton compte.`);
   const s = await authRefreshIfNeeded(); if (!s) throw new Error(tr`Session expirée : reconnecte-toi.`);
   const ac = new AbortController(), t = setTimeout(() => ac.abort(), 15000);
   let r;
   try {
-    r = await fetch(`${SUPABASE_URL}/functions/v1/passeur`, { method: "POST", signal: ac.signal,
-      headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${s.access_token}` },
-      body: JSON.stringify({ url, genre, ...(cond.etag ? { etag: cond.etag } : {}), ...(cond.modifie ? { modifie: cond.modifie } : {}) }) });
+    r = await passeurPost(s, { url, genre, ...(cond.etag ? { etag: cond.etag } : {}), ...(cond.modifie ? { modifie: cond.modifie } : {}) }, ac.signal);
   } catch { throw new Error(tr`Passeur injoignable (hors ligne, ou pas encore déployé).`); } finally { clearTimeout(t); }
   const j = await r.json().catch(() => ({}));
+  { const a = accesDe(r, j); if (a) accesNote(a); }
   if (r.status === 404 || r.status === 503) { passeurEtat = "absent"; throw r.status === 404 ? new Error(tr`Passeur non déployé (voir docs/passeur.md).`) : serverError(j, tr`Passeur non configuré.`); }
   if (r.status === 401 || r.status === 403) { passeurEtat = serverMsg(j, tr`refusé`); throw Object.assign(new Error(tr`Passeur : ${serverMsg(j, tr`accès refusé`)}.`), { code: j.code || "" }); }
   if (!r.ok) throw Object.assign(new Error(tr`Passeur : ${serverMsg(j, tr`erreur ${r.status}`)}.`), { code: j.code || "" });
   passeurEtat = "ok";
   return j;
+}
+/* Le passeur est-il ouvert à ce compte ? Une demande vide suffit : il la refuse (« genre inconnu ») après avoir tout
+   vérifié, sans rien aller chercher. Au plus une sonde à la fois, une fois par jour (la réponse est retenue), et pas
+   avant dix minutes après une panne. Rend la promesse d'une nouvelle sonde (vrai si l'accès est désormais connu), ou
+   null s'il n'y a pas lieu d'en lancer une. */
+export function passeurSonder() {
+  if (sondage || !hosted() || !authReady() || !authSession || passeurAcces() || Date.now() < sondeApres) return null;
+  sondage = (async () => {
+    const s = await authRefreshIfNeeded(); if (!s) return false;
+    const ac = new AbortController(), t = setTimeout(() => ac.abort(), 15000);
+    let a = "";
+    try { const r = await passeurPost(s, {}, ac.signal); a = accesDe(r, await r.json().catch(() => ({}))); }
+    catch {} finally { clearTimeout(t); }
+    if (!a) { sondeApres = Date.now() + 600000; return false; }
+    accesNote(a); return true;
+  })().finally(() => { sondage = null; });
+  return sondage;
 }
 /* L'adresse canonique annoncée par une page, seulement si elle reste sur le même site (une page ne décide pas
    qu'elle est un article d'ailleurs). */
@@ -72,7 +111,8 @@ export function pageToSource(html, base) {
 }
 /* Réglages → Passeur : son état, ton identifiant (pour le secret PASSEUR_USERS), une vérification à la demande. */
 export function passeurSettingsHTML() {
-  const st = passeurEtat === "ok" ? tr`Déployé et ouvert à ton compte.` : passeurEtat === "absent" ? tr`Pas encore déployé, ou pas encore configuré.` : passeurEtat ? tr`Refusé : ${passeurEtat}.` : tr`Pas encore vérifié sur cet appareil.`;
+  const e = passeurEtat || passeurAcces();
+  const st = e === "ok" ? tr`Déployé et ouvert à ton compte.` : e === "absent" ? tr`Pas encore déployé, ou pas encore configuré.` : e === "refuse" ? tr`Refusé à ce compte : son identifiant n'est pas dans PASSEUR_USERS, ou cette adresse n'est pas admise.` : e ? tr`Refusé : ${e}.` : tr`Pas encore vérifié sur cet appareil.`;
   return `<section id="passeur"><h4>${tr`Passeur`}</h4><p class="hint">${tr`Une petite fonction dans ton projet Supabase qui lit pour toi les pages, flux et calendriers que le navigateur ne peut pas lire seul. Elle ne sert que ton compte, refuse toute adresse privée et ne garde rien. Sans elle, les pages passent par Microlink.`}</p>
     <p class="row" style="margin:0 0 8px"><span data-passeur-etat>${esc(st)}</span><button class="btn sm" data-act="passeur-check">${tr`Vérifier`}</button></p>
     <p class="hint">${tr`Ton identifiant, à mettre dans le secret ${"<code>PASSEUR_USERS</code>"} : ${`<code style="word-break:break-all">${esc(authSession.user.id)}</code> <button class="btn ghost sm" data-act="passeur-copy">${tr`copier`}</button>`}. Mode d'emploi : ${`<a href="https://github.com/MarieBonifacio/selene/blob/main/docs/passeur.md" target="_blank" rel="noopener noreferrer">docs/passeur.md</a>`}.`}</p></section>`;

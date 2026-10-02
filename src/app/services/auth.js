@@ -54,7 +54,7 @@ function authPersist(s) {
 const LAST_UID_KEY = "selene-auth-last-uid";
 /* Déconnexion ou changement de compte : rien de la personne précédente ne doit rester sur l'appareil —
    ni ses données, ni sa conversation avec l'assistant, ni sa clé API (facturée à elle). */
-const PERSONAL_KEYS = ["selene-chat", "selene-recent", "selene-dehors", "selene-mb-seen", "selene-radar", "selene-ics", "selene-zotero", "selene-cites"]; // selene-recent : les derniers espaces ouverts ; puis ce que le dehors a apporté
+const PERSONAL_KEYS = ["selene-chat", "selene-recent", "selene-dehors", "selene-mb-seen", "selene-radar", "selene-ics", "selene-zotero", "selene-cites", "selene-passeur-acces"]; // selene-recent : les derniers espaces ouverts ; puis ce que le dehors a apporté
 const PERSONAL_SECRETS = platform.secretKeys.filter(k => k !== AUTH_KEY); // platform.secrets (la session a son propre sort)
 /* `erase` : une déconnexion voulue ou une suppression de compte efface aussi ce qui n'existait que sur cet appareil (après
    la garde de la déconnexion) ; un changement de compte le met de côté pour son propriétaire (localSwitch, déjà fait). */

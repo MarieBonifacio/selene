@@ -81,6 +81,10 @@ Coût : l'offre gratuite de Supabase compte 500 000 invocations par mois ; un us
   sauté avec un avis (le dépôt reste vert) ; pour redéployer, un nouveau jeton, le secret recréé, puis *Run workflow*.
 
 - Retirer un compte : `npx supabase secrets set PASSEUR_USERS=…` sans lui (ou vide : plus personne).
+  Selene retient la réponse un jour, par compte et par appareil (`selene-passeur-acces`) : un compte refusé ne
+  sollicite plus le passeur, et Dehors lui dit d'emblée qu'il ne peut pas suivre de site (la veille de recherche et
+  celle des artistes restent). Après un changement de `PASSEUR_USERS`, *Vérifier* (Réglages → Passeur, ou dans
+  Dehors) relit l'accès aussitôt.
 - Tout arrêter : `npx supabase functions delete passeur`. Selene revient à Microlink pour les pages.
 
 Recommandé en plus (voir `supabase/schema.sql`) : fermer les inscriptions publiques et inviter les comptes.
