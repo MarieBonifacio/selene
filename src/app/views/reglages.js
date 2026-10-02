@@ -18,7 +18,7 @@ import { shareSettingsHTML } from "../features/share.js";
 import { zotSettingsHTML } from "../features/zotero.js";
 import { gcfg, groupBy, grouperFor } from "../modules/groups.js";
 import { skySettingsHTML } from "../scene/sky.js";
-import { authReady, authSession, deleteWord } from "../services/auth.js";
+import { authReady, authSession, deleteWord, passwordSettingsHTML } from "../services/auth.js";
 import { passeurSettingsHTML } from "../services/passeur.js";
 import { addModule, moveMod } from "../shell/actions.js";
 import { SYSTEM, openOn, routeOf } from "../shell/nav.js";
@@ -131,7 +131,8 @@ function compteHTML() {
   return `<section>${sub(tr`Sauvegarde`)}<p class="hint">${tr`Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.`}</p>
     <div class="row"><button class="btn" data-act="exp">${tr`Exporter`}</button><label class="btn" style="display:inline-block;font-weight:500">${tr`Importer`}<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label>${tip(TIPS.importer, about(tr`Importer`))}</div></section>
   ${signedIn() ? `<section>${sub(tr`Compte`)}<p class="hint">${tr`Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.`}</p>
-    <button class="btn ghost" data-act="auth-out">${tr`Se déconnecter`}</button></section>
+    ${passwordSettingsHTML()}
+    <button class="btn ghost" data-act="auth-out" style="margin-top:12px">${tr`Se déconnecter`}</button></section>
   <section class="danger">${sub(TEXTS.danger)}
     <details id="auth-delete"><summary class="hint">${tr`Supprimer mon compte`}</summary>
       <p class="hint" style="margin-top:8px">${tr`Définitif : ton compte, tout ton tableau de bord sur le serveur et ta clé d'assistant sont effacés, puis cet appareil est vidé. Tes autres appareils perdent l'accès. Exporte d'abord une sauvegarde (plus haut) si tu veux garder quelque chose. Politique de confidentialité : ${`<a href="${privacyUrl()}" target="_blank" rel="noopener">${tr`ce que Selene garde, et où`}</a>`}.`}</p>

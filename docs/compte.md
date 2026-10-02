@@ -55,6 +55,27 @@ inscriptions fermées, l'écran de connexion ne propose plus de créer un compte
 - *Authentication → Emails → Templates* : traduire *Reset password* et *Invite user*. Sur l'offre gratuite, les
   modèles ne se modifient qu'une fois le SMTP branché.
 
+## Mots de passe
+
+Un nouveau mot de passe (inscription, lien de l'e-mail, changement) compte **10 caractères au moins** (`PW_MIN`,
+`services/auth.js`) ; le formulaire le dit, et le navigateur refuse plus court avant tout envoi. La connexion n'impose
+rien : un compte plus ancien, au mot de passe plus court, entre toujours. Le serveur le signale alors
+(`weak_password` dans la réponse) ; Selene le dit et ouvre *Réglages → Compte → Changer mon mot de passe*.
+
+Changer de mot de passe demande toujours le mot de passe actuel. Selene le vérifie par une connexion fraîche
+(`POST /token`), qui remplace la session de l'appareil, puis envoie `PUT /user` avec `password` et `current_password` :
+un appareil laissé ouvert ne suffit pas, et les deux options de sécurité du serveur ci-dessous sont satisfaites.
+Chaque refus du serveur est traduit : trop court (avec la longueur qu'il demande), caractères exigés, mot de passe
+connu des fuites, mot de passe inchangé.
+
+À régler dans Supabase, *Authentication → Sign In / Providers → Email* :
+
+- **Minimum password length** : `10`. C'est le serveur qui fait foi ; `PW_MIN` le suit.
+- **Require current password when updating** : activé.
+- **Secure password change** : au choix ; la connexion fraîche le satisfait.
+- **Password requirements** : au choix (Selene traduit le refus).
+- *Authentication → Attack Protection → Prevent use of leaked passwords* (HaveIBeenPwned) : offre Pro seulement.
+
 ## Politique de confidentialité
 
 `confidentialite.html`, à la racine, publiée avec le site : <https://mariebonifacio.github.io/selene/confidentialite.html>.

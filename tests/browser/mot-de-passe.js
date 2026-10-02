@@ -18,11 +18,19 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
       if (u.pathname === '/auth/v1/recover') return trop ? json(route, 429, { code: 429, error_code: 'over_email_send_rate_limit', msg: 'email rate limit exceeded' })
         : nonAutorise ? json(route, 400, { code: 400, error_code: 'email_address_not_authorized', msg: 'Email address "iris@exemple.org" cannot be used as it is not authorized' }) : json(route, 200, {});
       if (u.pathname === '/auth/v1/user' && req.method() === 'PUT') {
-        if (req.headers().authorization !== 'Bearer jeton-lien') return json(route, 403, { code: 403, error_code: 'bad_jwt', msg: 'invalid JWT: token is expired' });
-        if (JSON.parse(req.postData()).password === 'ancien-mdp') return json(route, 422, { code: 422, error_code: 'same_password', msg: 'New password should be different from the old password.' });
+        if (!['Bearer jeton-lien', 'Bearer jeton-frais'].includes(req.headers().authorization)) return json(route, 403, { code: 403, error_code: 'bad_jwt', msg: 'invalid JWT: token is expired' });
+        const pw = JSON.parse(req.postData()).password;
+        if (pw === 'ancien-mdp') return json(route, 422, { code: 422, error_code: 'same_password', msg: 'New password should be different from the old password.' });
+        if (pw === 'mot-de-passe-fuite') return json(route, 422, { code: 422, error_code: 'weak_password', msg: 'Password is known to be weak and easy to guess, please choose a different one.', weak_password: { reasons: ['pwned'] } });
         return json(route, 200, { id: UID, email: 'iris@exemple.org' });
       }
-      if (u.pathname === '/auth/v1/token') return json(route, 400, { error: 'invalid_grant', error_description: 'Invalid login credentials' });
+      if (u.pathname === '/auth/v1/token') {
+        // Le vrai serveur : un mot de passe juste entre, même plus court que ses règles actuelles (il le signale).
+        const pw = (JSON.parse(req.postData() || '{}')).password, ses = (jeton, extra = {}) => json(route, 200, { access_token: jeton, refresh_token: 'r2', expires_in: 3600, user: { id: UID, email: 'iris@exemple.org' }, ...extra });
+        if (pw === 'court1') return ses('jeton-court', { weak_password: { message: 'Password should be at least 10 characters.', reasons: ['length'] } });
+        if (pw === 'mot-de-passe-actuel') return ses('jeton-frais');
+        return json(route, 400, { code: 400, error_code: 'invalid_credentials', msg: 'Invalid login credentials' });
+      }
       if (u.pathname.startsWith('/functions/')) return route.fulfill({ status: 404, body: '' });
       if (req.method() === 'GET') return json(route, 200, []);
       return route.fulfill({ status: 201, body: '' });
@@ -98,6 +106,34 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
   ok(await d.isVisible('#authPw2') && !d.calls.some(c => c.path === '/rest/v1/app_state'), 'déjà connectée à un autre compte : le lien passe d’abord, la session gardée attend');
   await d.click('[data-act="auth-back"]'); await d.waitForTimeout(500);
   ok(!(await d.$('#authForm')) && d.calls.some(c => c.path === '/rest/v1/app_state' && c.auth === 'Bearer jeton-garde'), 'annuler : la session gardée reprend');
+
+  console.log('longueur minimale, mots de passe refusés');
+  const m = await open();
+  ok(!(await m.getAttribute('#authPw', 'minlength')), 'la connexion n’impose aucune longueur : un ancien mot de passe court entre toujours');
+  await m.click('[data-act="auth-switch"]');
+  ok((await m.getAttribute('#authPw', 'minlength')) === '10' && (await m.textContent('#authForm')).includes('10 caractères au moins'), 'à l’inscription : dix caractères au moins, et c’est écrit');
+  const c = await open(lien('recovery'));
+  await c.fill('#authPw', 'court'); await c.fill('#authPw2', 'court'); await submit(c);
+  ok(!c.calls.some(x => x.path === '/auth/v1/user') && (await c.getAttribute('#authPw', 'minlength')) === '10', 'nouveau mot de passe trop court : refusé avant tout envoi');
+  await c.fill('#authPw', 'mot-de-passe-fuite'); await c.fill('#authPw2', 'mot-de-passe-fuite'); await submit(c);
+  ok((await note(c)).includes('fuites de données connues'), 'refusé par le serveur (weak_password, pwned) : la raison, en français');
+
+  console.log('changer de mot de passe');
+  const w = await open();
+  await w.fill('#authEmail', 'iris@exemple.org'); await w.fill('#authPw', 'court1'); await submit(w);
+  ok(!(await w.$('#authForm')) && (await w.textContent('#toast')).includes('plus court que ce que le serveur demande'), 'connexion avec un mot de passe devenu trop court : on entre, et Selene le dit');
+  await w.evaluate(() => { location.hash = 'reglages'; }); await w.waitForTimeout(300);
+  await w.evaluate(() => document.querySelectorAll('details').forEach(d => { if (d.id !== 'auth-delete') d.open = true; }));
+  ok(await w.isVisible('#authPwForm') && (await w.textContent('#auth-pw')).includes('choisis-en un nouveau'), 'Réglages, Compte : le changement est proposé, ouvert');
+  const change = async (cur, pw) => { await w.fill('#authCurPw', cur); await w.fill('#authNewPw', pw); await w.fill('#authNewPw2', pw); await w.click('#authPwForm button[type="submit"]'); await w.waitForTimeout(400); };
+  await change('mauvais-mot-de-passe', 'une-phrase-de-saison');
+  ok((await w.textContent('#toast')).includes("actuel n'est pas le bon") && !w.calls.some(x => x.path === '/auth/v1/user'), 'mot de passe actuel faux : rien ne change');
+  await w.evaluate(() => document.querySelectorAll('details').forEach(d => { if (d.id !== 'auth-delete') d.open = true; }));
+  await change('mot-de-passe-actuel', 'une-phrase-de-saison');
+  const sent = w.calls.filter(x => x.path === '/auth/v1/user' && x.method === 'PUT').pop();
+  const body = sent && JSON.parse(sent.body), saved = JSON.parse(await storeGet(w, 'selene-auth-session') || '{}');
+  ok(sent && sent.auth === 'Bearer jeton-frais' && body.password === 'une-phrase-de-saison' && body.current_password === 'mot-de-passe-actuel', 'vérifié par une connexion fraîche, puis envoyé avec le mot de passe actuel');
+  ok((await w.textContent('#toast')).includes('Mot de passe changé') && saved.access_token === 'jeton-frais' && !(await w.textContent('#auth-pw')).includes('choisis-en un nouveau'), 'changé : la session fraîche est gardée, l’avertissement disparaît');
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
