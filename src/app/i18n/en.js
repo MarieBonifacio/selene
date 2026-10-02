@@ -1143,6 +1143,8 @@ export default {
   "Synchroniser avec mon compte…": "Sync with my account…",
   "Garder sur cet appareil seulement…": "Keep on this device only…",
   "Ce suivi est gardé sur un autre appareil : supprime-le depuis celui-ci.": "This tracker is kept on another device: delete it from there.",
+  "Ce suivi est gardé sur un autre appareil : ses réglages se changent là-bas.": "This tracker is kept on another device: its settings are changed there.",
+  "Sauvegarde non téléchargée : rien n'a été effacé.": "Backup not downloaded: nothing was erased.",
   // modules/taches.js
   "Fait. Le monde s'effondre un peu moins vite.": "Done. The world is collapsing a little less quickly.",
   "Un de moins. L'entropie note ta résistance.": "One fewer. Entropy notes your resistance.",

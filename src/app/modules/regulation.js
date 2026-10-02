@@ -142,7 +142,8 @@ function actionForm(id, old = null) {
   }, inst.config.rewards ? tr`Une action concrète de ton plan, faite pour de vrai, même un jour où tu as consommé. Une marque au plus par journée, quel que soit le nombre d'actions.` : tr`Une action concrète de ton plan, faite pour de vrai, même un jour où tu as consommé.`);
 }
 function planForm(id) {
-  const c = T(id).config;
+  const inst = T(id); if (!inst) return toast(tr`Ce suivi est gardé sur un autre appareil : ses réglages se changent là-bas.`);
+  const c = inst.config;
   openForm(tr`Mes appuis et mes récompenses`, [
     { n: "supports", l: tr`Mes appuis, une action par ligne`, t: "textarea", rows: 5 },
     { n: "rewards", l: tr`Marques et jalons`, t: "select", o: [["", tr`Masqués`], ["on", tr`Affichés dans cet espace`]] },
@@ -180,7 +181,9 @@ export function deviceSignOutGuard() {
     openForm(tr`Avant de te déconnecter`, [{ n: "what", l: tr`Que faire de ce qui n'existe que sur cet appareil ?`, t: "select", o: [
       ["export", tr`Télécharger une sauvegarde complète, puis l'effacer d'ici`], ["sync", tr`Le synchroniser avec mon compte (avec mon accord)`], ["erase", tr`L'effacer définitivement`]] }], { what: "export" },
     async v => {
-      if (v.what === "export") { await exportBackup(); return resolve(true); }
+      if (v.what === "export") { // un téléchargement qui échoue ne déconnecte pas : rien n'est encore effacé
+        try { await exportBackup(); return resolve(true); } catch (e) { toast(errMsg(e, tr`Sauvegarde non téléchargée : rien n'a été effacé.`)); return resolve(false); }
+      }
       if (v.what === "sync") { for (const id of ids) if (!await chooseAccount(id)) return resolve(false); return resolve(true); }
       resolve(await ask(tr`Effacer définitivement ${names} ? Il n'en existe aucune autre copie.`));
     }, tr`${names} : gardé sur cet appareil seulement, nulle part ailleurs. Se déconnecter vide cet appareil.`);
@@ -390,7 +393,7 @@ function viewHTML(id) {
 const TYPE = {
   sensitive: true,
   view: viewHTML,
-  settings: id => `<p class="hint">${tr`Suivi privé : partage avec l'assistant désactivé à la création, détails exclus des vues générales. Son nom reste visible.`}</p><div class="row"><button class="btn sm" data-act="rlm-plan" data-mod="${esc(id)}">${tr`Appuis et récompenses`}</button><a class="btn ghost sm" href="#${esc(id)}">${tr`Ouvrir le suivi`}</a></div>`,
+  settings: id => `<p class="hint">${tr`Suivi privé : partage avec l'assistant désactivé à la création, détails exclus des vues générales. Son nom reste visible.`}</p><div class="row">${T(id) ? `<button class="btn sm" data-act="rlm-plan" data-mod="${esc(id)}">${tr`Appuis et récompenses`}</button>` : ""}<a class="btn ghost sm" href="#${esc(id)}">${tr`Ouvrir le suivi`}</a></div>`,
   summary: () => tr`Suivi privé : ouvrir pour consulter`,
   // Pour l'assistant (consigne en français, docs/i18n.md) : le résumé explicite, rien de ce qui est écrit à la main.
   // `id` : pour lire la copie locale d'un suivi gardé sur cet appareil (le document synchronisé n'en a que le talon).

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-O3mp+PWm0k04BUk2YBKH/5vFXz8Wmi9jvd0Teb2nMrU=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-JCUEgOyuXurRMFzcF6zq0GLriUuxPGZppIlBmjcg1pM=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -2544,6 +2544,8 @@ var __selene = (() => {
     "Synchroniser avec mon compte…": "Sync with my account…",
     "Garder sur cet appareil seulement…": "Keep on this device only…",
     "Ce suivi est gardé sur un autre appareil : supprime-le depuis celui-ci.": "This tracker is kept on another device: delete it from there.",
+    "Ce suivi est gardé sur un autre appareil : ses réglages se changent là-bas.": "This tracker is kept on another device: its settings are changed there.",
+    "Sauvegarde non téléchargée : rien n'a été effacé.": "Backup not downloaded: nothing was erased.",
     // modules/taches.js
     "Fait. Le monde s'effondre un peu moins vite.": "Done. The world is collapsing a little less quickly.",
     "Un de moins. L'entropie note ta résistance.": "One fewer. Entropy notes your resistance.",
@@ -6134,7 +6136,9 @@ ${sub2.about()}`);
     }, inst.config.rewards ? tr`Une action concrète de ton plan, faite pour de vrai, même un jour où tu as consommé. Une marque au plus par journée, quel que soit le nombre d'actions.` : tr`Une action concrète de ton plan, faite pour de vrai, même un jour où tu as consommé.`);
   }
   function planForm(id) {
-    const c = T(id).config;
+    const inst = T(id);
+    if (!inst) return toast(tr`Ce suivi est gardé sur un autre appareil : ses réglages se changent là-bas.`);
+    const c = inst.config;
     openForm(tr`Mes appuis et mes récompenses`, [
       { n: "supports", l: tr`Mes appuis, une action par ligne`, t: "textarea", rows: 5 },
       { n: "rewards", l: tr`Marques et jalons`, t: "select", o: [["", tr`Masqués`], ["on", tr`Affichés dans cet espace`]] },
@@ -6188,8 +6192,13 @@ ${sub2.about()}`);
         { what: "export" },
         async (v) => {
           if (v.what === "export") {
-            await exportBackup();
-            return resolve(true);
+            try {
+              await exportBackup();
+              return resolve(true);
+            } catch (e) {
+              toast(errMsg(e, tr`Sauvegarde non téléchargée : rien n'a été effacé.`));
+              return resolve(false);
+            }
           }
           if (v.what === "sync") {
             for (const id of ids2) if (!await chooseAccount(id)) return resolve(false);
@@ -6416,7 +6425,7 @@ ${tr`Notes, envies, déclencheurs et appuis restent ici. Arrêter le partage plu
   var TYPE = {
     sensitive: true,
     view: viewHTML,
-    settings: (id) => `<p class="hint">${tr`Suivi privé : partage avec l'assistant désactivé à la création, détails exclus des vues générales. Son nom reste visible.`}</p><div class="row"><button class="btn sm" data-act="rlm-plan" data-mod="${esc(id)}">${tr`Appuis et récompenses`}</button><a class="btn ghost sm" href="#${esc(id)}">${tr`Ouvrir le suivi`}</a></div>`,
+    settings: (id) => `<p class="hint">${tr`Suivi privé : partage avec l'assistant désactivé à la création, détails exclus des vues générales. Son nom reste visible.`}</p><div class="row">${T(id) ? `<button class="btn sm" data-act="rlm-plan" data-mod="${esc(id)}">${tr`Appuis et récompenses`}</button>` : ""}<a class="btn ghost sm" href="#${esc(id)}">${tr`Ouvrir le suivi`}</a></div>`,
     summary: () => tr`Suivi privé : ouvrir pour consulter`,
     // Pour l'assistant (consigne en français, docs/i18n.md) : le résumé explicite, rien de ce qui est écrit à la main.
     // `id` : pour lire la copie locale d'un suivi gardé sur cet appareil (le document synchronisé n'en a que le talon).
