@@ -22,6 +22,8 @@ create policy "own row insert" on public.app_state
 create policy "own row update" on public.app_state
   for update using (auth.uid() = user_id);
 
+-- Ces règles se vérifient sur un vrai projet (de préproduction) : npm run isolation, docs/compte.md.
+
 -- Projet créé avant le 2 octobre 2026 : ajouter le plafond (NOT VALID : les lignes existantes ne sont pas relues ;
 -- une ligne déjà plus lourde ne pourrait plus être modifiée, d'où la vérification d'abord, voir docs/compte.md).
 --   select user_id, octet_length(site::text) as site, octet_length(board::text) as board from public.app_state order by 2 desc;
