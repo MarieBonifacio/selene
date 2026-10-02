@@ -17,6 +17,18 @@ import { tr } from "../i18n/index.js";
 
 // Une copie profonde d'un document JSON (ce que le stockage et le serveur échangent).
 export const clone = o => JSON.parse(JSON.stringify(o));
+/* Ce que pèse un document envoyé au serveur : ses octets en UTF-8 (sans TextEncoder, absent de certains bancs d'essai).
+   Le serveur refuse un espace de plus de DOC_MAX (contrainte app_state_taille, supabase/schema.sql) ; Réglages prévient
+   à partir de DOC_WARN. */
+export const DOC_MAX = 5e6, DOC_WARN = 3e6;
+export function utf8Bytes(str) {
+  let n = 0;
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    if (c < 0x80) n += 1; else if (c < 0x800) n += 2; else if (c >= 0xd800 && c < 0xdc00) { n += 4; i++; } else n += 3;
+  }
+  return n;
+}
 /* `onRemoteChange` : une synchronisation a changé le document (la page se redessine) ; `onStatus(message)` : l'état de
    l'enregistrement à montrer ("" quand tout est parti). Le store ne connaît pas l'interface : elle s'y abonne. */
 export function makeStore(key, path, seed, normalize = d => d, { onRemoteChange = () => {}, onStatus = () => {} } = {}) {
@@ -73,6 +85,7 @@ export function makeStore(key, path, seed, normalize = d => d, { onRemoteChange 
         return true;
       } catch (e) {
         onStatus(e.stale ? tr`Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser`
+          : e.tooBig ? tr`Trop volumineux pour le serveur : enregistré sur cet appareil seulement (Réglages, Sauvegarde)`
           : tr`Non synchronisé — enregistré sur cet appareil seulement`);
         return false;
       } finally { s.syncing = null; }

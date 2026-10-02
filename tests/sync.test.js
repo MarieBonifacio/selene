@@ -133,6 +133,16 @@ test('a poll still pushes edits that could not be sent, even when the server has
   assert.ok(JSON.stringify(server.rows.get('u1').site).includes('Gouttière'), 'the pending edit reached the server');
 });
 
+test('a document the server refuses as too large stays local, and the status says why', async () => {
+  const { server, a } = await twoDevices();
+  server.maxBytes = 2000; // la contrainte de taille, à l'échelle du test
+  a.site.data.modules.chantier.entries.push(task('t3', 'x'.repeat(5000))); a.site.save();
+  clearTimeout(a.site.timer); a.site.timer = null;
+  assert.equal(await a.site.sync(), false);
+  assert.match(a.nodes.get('#saving').textContent, /Trop volumineux pour le serveur/);
+  assert.equal(a.site.unsynced(), true, 'kept on the device, not lost');
+});
+
 test('signing out pushes pending edits first, then stops every poller', async () => {
   const { server, a } = await twoDevices();
   a.site.data.modules.chantier.entries.push(task('t1', 'Velux')); a.site.save(); // reste dans le délai de 900 ms

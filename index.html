@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LDyELtwbYNrD1QdRq1KSeBNT5QiS15UUIBQ/KYZYpEQ=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7+YumIVvbih5L07w+vRco8xyc41NQk803bsopdWZUR0=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -985,6 +985,8 @@ var __selene = (() => {
     CORE_FIELDS: () => CORE_FIELDS,
     CORE_LABELS: () => CORE_LABELS,
     CROSSREF_KIND: () => CROSSREF_KIND,
+    DOC_MAX: () => DOC_MAX,
+    DOC_WARN: () => DOC_WARN,
     DRAFT_PREFIX: () => DRAFT_PREFIX,
     ECLIPSE_TEXT: () => ECLIPSE_TEXT,
     EP_STATUS: () => EP_STATUS,
@@ -1410,6 +1412,7 @@ var __selene = (() => {
     trackBack: () => trackBack,
     uid: () => uid,
     urgeActionId: () => urgeActionId,
+    utf8Bytes: () => utf8Bytes,
     validDate: () => validDate,
     validateRegulation: () => validateRegulation,
     weatherState: () => weatherState,
@@ -2923,6 +2926,7 @@ var __selene = (() => {
     // state/store.js
     "Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser": "Selene was updated on another device: reload the page to sync",
     "Non synchronisé — enregistré sur cet appareil seulement": "Not synced — saved on this device only",
+    "Trop volumineux pour le serveur : enregistré sur cet appareil seulement (Réglages, Sauvegarde)": "Too large for the server: saved on this device only (Settings, Backup)",
     "Enregistrement…": "Saving…",
     // ui/dialogs.js
     "Enregistrer": "Save",
@@ -3138,6 +3142,10 @@ var __selene = (() => {
     "Tape « {0} » pour confirmer": "Type “{0}” to confirm",
     "Sauvegarde": "Backup",
     "Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.": "Your whole state in a JSON file, to move from claude.ai to GitHub Pages or from one browser to another. The API key is never in it.",
+    "{0} Ko": "{0} KB",
+    "{0} Mo": "{0} MB",
+    "Ton espace pèse {0} ; le serveur en garde {1} au plus.": "Your space weighs {0}; the server keeps {1} at most.",
+    "Il approche de la limite : au-delà, il ne serait plus enregistré que sur cet appareil. Exporte une sauvegarde, puis allège les plus lourds : {0}.": "It is nearing the limit: beyond it, it would only be saved on this device. Export a backup, then lighten the heaviest: {0}.",
     "Exporter": "Export",
     "Importer": "Import",
     "{0} : aucun traceur, aucune publicité ; ce que Selene garde, où, et comment tout effacer.": "{0}: no trackers, no ads; what Selene keeps, where, and how to erase it all.",
@@ -4707,6 +4715,21 @@ var __selene = (() => {
 
   // src/app/state/store.js
   var clone = (o) => JSON.parse(JSON.stringify(o));
+  var DOC_MAX = 5e6;
+  var DOC_WARN = 3e6;
+  function utf8Bytes(str) {
+    let n = 0;
+    for (let i = 0; i < str.length; i++) {
+      const c = str.charCodeAt(i);
+      if (c < 128) n += 1;
+      else if (c < 2048) n += 2;
+      else if (c >= 55296 && c < 56320) {
+        n += 4;
+        i++;
+      } else n += 3;
+    }
+    return n;
+  }
   function makeStore(key, path, seed2, normalize = (d) => d, { onRemoteChange = () => {
   }, onStatus = () => {
   } } = {}) {
@@ -4787,7 +4810,7 @@ var __selene = (() => {
           onStatus("");
           return true;
         } catch (e) {
-          onStatus(e.stale ? tr`Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser` : tr`Non synchronisé — enregistré sur cet appareil seulement`);
+          onStatus(e.stale ? tr`Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser` : e.tooBig ? tr`Trop volumineux pour le serveur : enregistré sur cet appareil seulement (Réglages, Sauvegarde)` : tr`Non synchronisé — enregistré sur cet appareil seulement`);
           return false;
         } finally {
           s.syncing = null;
@@ -5050,8 +5073,12 @@ var __selene = (() => {
     for (const [id, inst] of Object.entries(d.modules)) if (inst.type === "notes" && inst.config.inbox && id !== inbox) inst.config.inbox = false;
     return d;
   }
-  var storeHooks = { onRemoteChange: () => render(), onStatus: (m) => setSaving(m) };
-  var site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite, storeHooks);
+  var saving = {};
+  var storeHooks = (name) => ({ onRemoteChange: () => render(), onStatus: (m) => {
+    saving[name] = m;
+    setSaving(saving.site || saving.board || "");
+  } });
+  var site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite, storeHooks("site"));
   function absorbBoard(d) {
     if (!Array.isArray(d.tasks)) d.tasks = [];
     if (!d.tasks.length) return d;
@@ -5064,7 +5091,7 @@ var __selene = (() => {
     site.save();
     return d;
   }
-  var board = makeStore("selene-board-v1", "board/state", () => ({ updatedAt: 0, tasks: [] }), absorbBoard, storeHooks);
+  var board = makeStore("selene-board-v1", "board/state", () => ({ updatedAt: 0, tasks: [] }), absorbBoard, storeHooks("board"));
   var S = () => site.data;
   var label = (id) => {
     const s = S();
@@ -6705,6 +6732,10 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       return authSession;
     }
   }
+  async function writeError(res) {
+    const j = await res.json().catch(() => ({}));
+    return Object.assign(new Error(tr`Écriture Supabase impossible.`), { tooBig: res.status === 413 || j.code === "23514" });
+  }
   var supabaseDb = {
     doc(path) {
       const col = path === "board/state" ? "board" : "site", table = `${SUPABASE_URL}/rest/v1/app_state`;
@@ -6731,7 +6762,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
               headers: headers({ "Content-Type": "application/json", Prefer: "return=representation" }),
               body: JSON.stringify({ [col]: value, updated_at: (/* @__PURE__ */ new Date()).toISOString() })
             });
-            if (!res.ok) throw new Error(tr`Écriture Supabase impossible.`);
+            if (!res.ok) throw await writeError(res);
             return (await res.json()).length > 0;
           };
           if (await patch()) return true;
@@ -6742,7 +6773,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
             headers: headers({ "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" }),
             body: JSON.stringify([{ user_id: uid2 }])
           });
-          if (!ins.ok) throw new Error(tr`Écriture Supabase impossible.`);
+          if (!ins.ok) throw await writeError(ins);
           return patch();
         },
         /* La date de la dernière écriture, seule : quelques octets au lieu du document (PostgREST lit le champ JSON). */
@@ -8947,9 +8978,17 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     if (!hosted()) return `<p class="empty">${esc(TEXTS.artifactOnly)}</p>`;
     return `${shareSettingsHTML()}${zotSettingsHTML()}${signedIn() ? passeurSettingsHTML() + agendaSettingsHTML() : ""}`;
   }
+  function sizeHTML() {
+    const bytes = (o) => utf8Bytes(JSON.stringify(o)), total = bytes(S());
+    const fmt2 = (n) => n < 1e6 ? tr`${Math.max(1, Math.round(n / 1e3))} Ko` : tr`${(n / 1e6).toLocaleString(uiLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Mo`;
+    const line = tr`Ton espace pèse ${fmt2(total)} ; le serveur en garde ${fmt2(DOC_MAX)} au plus.`;
+    if (total < DOC_WARN) return `<p class="hint" id="reg-size">${line}</p>`;
+    const heavy = Object.entries(S().modules).map(([k, m]) => [k, bytes(m)]).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${esc(label(k))} (${fmt2(n)})`).join(", ");
+    return `<p class="hint" id="reg-size" style="color:var(--warn)">${line} ${tr`Il approche de la limite : au-delà, il ne serait plus enregistré que sur cet appareil. Exporte une sauvegarde, puis allège les plus lourds : ${heavy}.`}</p>`;
+  }
   function compteHTML() {
     return `<section>${sub(tr`Sauvegarde`)}<p class="hint">${tr`Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.`}</p>
-    <div class="row"><button class="btn" data-act="exp">${tr`Exporter`}</button><label class="btn" style="display:inline-block;font-weight:500">${tr`Importer`}<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label>${tip(TIPS.importer, about(tr`Importer`))}</div></section>
+    <div class="row"><button class="btn" data-act="exp">${tr`Exporter`}</button><label class="btn" style="display:inline-block;font-weight:500">${tr`Importer`}<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label>${tip(TIPS.importer, about(tr`Importer`))}</div>${signedIn() ? sizeHTML() : ""}</section>
   ${signedIn() ? `<section>${sub(tr`Compte`)}<p class="hint">${tr`Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.`}</p>
     ${passwordSettingsHTML()}
     <button class="btn ghost" data-act="auth-out" style="margin-top:12px">${tr`Se déconnecter`}</button></section>

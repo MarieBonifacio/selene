@@ -133,6 +133,12 @@ async function authRefreshNow() {
   }
 }
 
+/* Un refus d'écriture. Trop volumineux : la passerelle (413) ou la contrainte de taille de app_state (code Postgres
+   23514, supabase/schema.sql). Le store le dit à part : sinon, « non synchronisé » sans fin, et sans raison. */
+async function writeError(res) {
+  const j = await res.json().catch(() => ({}));
+  return Object.assign(new Error(tr`Écriture Supabase impossible.`), { tooBig: res.status === 413 || j.code === "23514" });
+}
 const supabaseDb = {
   doc(path) {
     const col = path === "board/state" ? "board" : "site", table = `${SUPABASE_URL}/rest/v1/app_state`;
@@ -157,7 +163,7 @@ const supabaseDb = {
             headers: headers({ "Content-Type": "application/json", Prefer: "return=representation" }),
             body: JSON.stringify({ [col]: value, updated_at: new Date().toISOString() })
           });
-          if (!res.ok) throw new Error(tr`Écriture Supabase impossible.`);
+          if (!res.ok) throw await writeError(res);
           return (await res.json()).length > 0;
         };
         if (await patch()) return true;
@@ -167,7 +173,7 @@ const supabaseDb = {
         const ins = await fetch(table, { method: "POST", signal: authTimeout(),
           headers: headers({ "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" }),
           body: JSON.stringify([{ user_id: uid }]) });
-        if (!ins.ok) throw new Error(tr`Écriture Supabase impossible.`);
+        if (!ins.ok) throw await writeError(ins);
         return patch();
       },
       /* La date de la dernière écriture, seule : quelques octets au lieu du document (PostgREST lit le champ JSON). */

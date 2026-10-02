@@ -6,7 +6,9 @@ create table public.app_state (
   user_id uuid primary key references auth.users(id) on delete cascade,
   board jsonb not null default '{}'::jsonb,
   site jsonb not null default '{}'::jsonb,
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  -- Un plafond par ligne : un compte ne remplit pas la base à lui seul (Selene prévient à 3 Mo et dit le refus).
+  constraint app_state_taille check (octet_length(site::text) < 5000000 and octet_length(board::text) < 1000000)
 );
 
 alter table public.app_state enable row level security;
@@ -19,6 +21,12 @@ create policy "own row insert" on public.app_state
 
 create policy "own row update" on public.app_state
   for update using (auth.uid() = user_id);
+
+-- Projet créé avant le 2 octobre 2026 : ajouter le plafond (NOT VALID : les lignes existantes ne sont pas relues ;
+-- une ligne déjà plus lourde ne pourrait plus être modifiée, d'où la vérification d'abord, voir docs/compte.md).
+--   select user_id, octet_length(site::text) as site, octet_length(board::text) as board from public.app_state order by 2 desc;
+--   alter table public.app_state add constraint app_state_taille
+--     check (octet_length(site::text) < 5000000 and octet_length(board::text) < 1000000) not valid;
 
 -- Pas de Realtime : l'app relit la ligne toutes les 30 s et écrit par PATCH conditionnel
 -- (filtre `board->>updatedAt=eq.<valeur lue>`), ce qui ne demande aucune colonne ni fonction
