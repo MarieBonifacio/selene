@@ -164,8 +164,8 @@ try {
     const dir = path.join(root, "dist", "store", lang, device);
     await mkdir(dir, { recursive: true });
     const ctx = await browser.newContext({ ...opts, isMobile: true, hasTouch: true, colorScheme: "dark", locale: LOCALES[lang], timezoneId: "Europe/Paris", serviceWorkers: "block", reducedMotion: "reduce" });
-    // Rien ne sort, sauf les polices de la page (Google Fonts) : pas de météo, pas de radar.
-    await ctx.route(/^https?:\/\/(?!127\.0\.0\.1|fonts\.googleapis\.com|fonts\.gstatic\.com)/, r => r.abort());
+    // Rien ne sort (les polices sont servies par le site) : pas de météo, pas de radar.
+    await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
     await ctx.addInitScript(doc => { window.claude = { use: async () => null }; if (!localStorage.getItem("selene-site-v1")) localStorage.setItem("selene-site-v1", doc); }, JSON.stringify(site));
     const page = await ctx.newPage(), errors = [];
     page.on("pageerror", e => errors.push(e.message));

@@ -10,7 +10,15 @@ import sys
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "src"
 shell = (SOURCE / "shell.html").read_text(encoding="utf-8")
-assert shell.count("<!-- SELENE_SCRIPT -->") == 1
+assert shell.count("<!-- SELENE_SCRIPT -->") == 1 and shell.count("<!-- SELENE_FONTS -->") == 1
+# Les polices. Le site et les apps les servent eux-mêmes (fonts/, sous licence OFL : voir fonts/LISEZMOI.md) : aucune
+# adresse IP ne part chez Google à l'ouverture. L'artefact claude.ai, un seul fichier, garde Google Fonts, la seule
+# source de feuilles de style que claude.ai admette.
+FONTS_SELF = "<style>\n" + (ROOT / "fonts" / "polices.css").read_text(encoding="utf-8") + "</style>\n"
+FONTS_GOOGLE = """<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Spectral+SC:wght@500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+"""
 # Deux assemblages esbuild (scripts/bundle.mjs) : la plateforme (src/platform.js), évaluée d'abord, puis l'application
 # (src/app, modules ES, noyau compris), évaluée dans platform.ready : aussitôt sur le web, après l'ouverture
 # d'IndexedDB ou l'hydratation des coffres d'une coquille native.
@@ -23,7 +31,7 @@ js = parts["platform"] + "__platform.platform.ready(() => {\n" + parts["app"] + 
 assert "</script" not in js.lower(), "« </script » dans le JavaScript : l'écrire en deux morceaux"
 code = "\n(() => {\n" + js + "})();\n"
 script = "<script>" + code + "</script>"
-standalone = shell.replace("<!-- SELENE_SCRIPT -->", script)
+standalone = shell.replace("<!-- SELENE_FONTS -->\n", FONTS_GOOGLE).replace("<!-- SELENE_SCRIPT -->", script)
 
 sw_code = 'if ("serviceWorker" in navigator && !window.claude) navigator.serviceWorker.register("sw.js").catch(() => {});'
 sw = "<script>" + sw_code + "</script>\n"
@@ -31,7 +39,7 @@ sw = "<script>" + sw_code + "</script>\n"
 # (calculée sur le texte exact entre <script> et </script>). Un script injecté, ou un attribut onclick=…, est refusé.
 def csp_hash(text):
     return "'sha256-" + base64.b64encode(hashlib.sha256(text.encode("utf-8")).digest()).decode("ascii") + "'"
-CONNECT = ("'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com "
+CONNECT = ("'self' https://*.supabase.co https://api.open-meteo.com "
            "https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org "
            "https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org")
 # Les coquilles de bureau (Tauri) parlent à leur cœur par le protocole ipc (http://ipc.localhost sous Windows).
@@ -39,7 +47,7 @@ IPC = " ipc: http://ipc.localhost"
 def csp(scripts, pwa):
     # Les styles gardent 'unsafe-inline' : l'interface pose des attributs style="…", qu'une empreinte ne couvre pas.
     return ("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'self'; script-src " + " ".join(["'self'"] + [csp_hash(x) for x in scripts])
-            + "; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; "
+            + "; style-src 'self' 'unsafe-inline'; font-src 'self'; "
             + "img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src " + CONNECT + ("" if pwa else IPC) + "; "
             + ("worker-src 'self'; manifest-src 'self'; " if pwa else "") + "base-uri 'none'; form-action 'none'\">\n")
 THEME = """<meta name="theme-color" content="#0e1310" media="(prefers-color-scheme: dark)">
@@ -63,8 +71,9 @@ native_head = csp([boot_code, code], pwa=False) + THEME
 # Les ajouts de la version hébergée se font dans le squelette, avant d'y poser le script : le JavaScript peut contenir
 # « <title> » ou « </body> » dans ses chaînes (la planche téléchargée en a), et un remplacement ne doit jamais l'atteindre.
 assert shell.count("<title>") == 1 and shell.count("</body>") == 1
-hosted = shell.replace("<title>", head + "<title>", 1).replace("</body>", sw + "</body>", 1).replace("<!-- SELENE_SCRIPT -->", script)
-native = shell.replace("<title>", native_head + "<title>", 1).replace("<!-- SELENE_SCRIPT -->", "<script>" + boot_code + "</script>\n" + script)
+own = shell.replace("<!-- SELENE_FONTS -->\n", FONTS_SELF)
+hosted = own.replace("<title>", head + "<title>", 1).replace("</body>", sw + "</body>", 1).replace("<!-- SELENE_SCRIPT -->", script)
+native = own.replace("<title>", native_head + "<title>", 1).replace("<!-- SELENE_SCRIPT -->", "<script>" + boot_code + "</script>\n" + script)
 
 outputs = {"selene.html": standalone, "index.html": hosted}
 if sys.argv[1:2] == ["--dist"]:
@@ -78,6 +87,8 @@ if sys.argv[1:2] == ["--dist"]:
         (dist / rel).write_text(content, encoding="utf-8")
     for name in ["sw.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "confidentialite.html", "privacy.html"]:
         shutil.copyfile(ROOT / name, dist / "web" / name)
+    for out in ["web", "native"]:  # les polices, avec leurs licences
+        shutil.copytree(ROOT / "fonts", dist / out / "fonts", dirs_exist_ok=True)
     print(f"{dist.relative_to(ROOT) if dist.is_relative_to(ROOT) else dist}: web, artifact, native built")
 elif sys.argv[1:] == ["--check"]:
     stale = [name for name, content in outputs.items() if not (ROOT / name).exists() or (ROOT / name).read_text(encoding="utf-8") != content]

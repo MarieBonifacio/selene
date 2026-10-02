@@ -6,7 +6,7 @@
 import { hosted, platform } from "../../platform.js";
 import { CLICK } from "../registry.js";
 import { $, esc, setSaving, toast } from "../lib/dom.js";
-import { tr, trp } from "../i18n/index.js";
+import { tr, trn, trp } from "../i18n/index.js";
 import { serverError } from "./erreurs.js";
 import { render } from "../shell/render.js";
 import { deviceSignOutGuard } from "../modules/regulation.js";
@@ -18,6 +18,11 @@ import { ask } from "../ui/dialogs.js";
 export const SUPABASE_URL = "https://pxnrzrmzritezftefdlj.supabase.co";
 export const SUPABASE_ANON_KEY = "sb_publishable_vC_zBX0TN4jZqi1GRIvo2A_nD2WFW9T";
 export const authReady = () => hosted() && !SUPABASE_URL.includes("YOUR-PROJECT-REF");
+/* Longueur minimale d'un nouveau mot de passe, à régler aussi dans Supabase (Authentication → Sign In / Providers →
+   Email → Minimum password length) : c'est le serveur qui fait foi. La connexion n'impose rien : un compte plus ancien,
+   au mot de passe plus court, entre toujours, et Selene lui propose d'en changer. */
+export const PW_MIN = 10;
+const pwHint = () => trn(PW_MIN, "{0} caractère au moins. Une courte phrase fait un bon mot de passe, facile à retenir.", "{0} caractères au moins. Une courte phrase fait un bon mot de passe, facile à retenir.");
 
 const AUTH_KEY = "selene-auth-session";
 export let authSession = null, authMode = "signin", authBusy = false, authRefreshTimer = null;
@@ -87,11 +92,18 @@ async function authApi(path, opts = {}) {
   catch { throw new Error(tr`Impossible de joindre le serveur. Vérifie ta connexion.`); } // pas de .status : panne réseau
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(body.msg || body.error_description || body.error || tr`Erreur d'authentification.`);
+    const err = new Error(body.error_code === "weak_password" ? weakText(body) : body.msg || body.error_description || body.error || tr`Erreur d'authentification.`);
     err.status = res.status; err.code = body.error_code || "";
     throw err;
   }
   return body;
+}
+/* Un mot de passe que le serveur refuse (weak_password) : la raison, en français, avec la longueur qu'il demande. */
+function weakText(body) {
+  const why = (body.weak_password || {}).reasons || [], n = +(String(body.msg || "").match(/at least (\d+) characters/) || [])[1] || PW_MIN;
+  return why.includes("pwned") ? tr`Ce mot de passe figure dans des fuites de données connues : choisis-en un autre.`
+    : why.includes("characters") ? tr`Le serveur demande des caractères de plusieurs sortes (minuscules, majuscules, chiffres, symboles).`
+    : trn(n, "Mot de passe trop court : {0} caractère au moins.", "Mot de passe trop court : {0} caractères au moins.");
 }
 function toSession(body) {
   if (!body.access_token) return null;
@@ -211,8 +223,10 @@ export async function authBoot() {
   }
   return authSession;
 }
+let authWeak = false; // le serveur a signalé, à la connexion, un mot de passe plus faible que ses règles actuelles
 async function authSignIn(email, password) {
   const body = await authApi("/token?grant_type=password", { method: "POST", body: JSON.stringify({ email, password }) });
+  authWeak = !!body.weak_password;
   authPersist(toSession(body));
   await authConnectStores();
   authScheduleRefresh();
@@ -307,7 +321,10 @@ async function authSubmit() {
     } else if (authMode === "signup") {
       const needsConfirm = await authSignUp(email, pw);
       if (needsConfirm) authSay(tr`Compte créé. Vérifie ta boîte mail pour confirmer, puis connecte-toi.`, true);
-    } else await authSignIn(email, pw);
+    } else {
+      await authSignIn(email, pw);
+      if (authWeak) toast(tr`Ton mot de passe est plus court que ce que le serveur demande désormais : change-le dans Réglages, Compte.`);
+    }
   } catch (e) {
     if (e.code === "signup_disabled") { authSignupOpen = false; authMode = "signin"; }
     authSay(e.code === "signup_disabled" ? tr`Les inscriptions sont fermées : Selene n'ouvre de compte que sur invitation.` : e.message || tr`Connexion impossible.`);
@@ -323,19 +340,58 @@ export function authView() {
     <p class="hint">${intro}</p>
     <form id="authForm" style="display:grid;gap:12px">${fields}<div class="row">${buttons}</div>${note}</form></div>`;
   if (authMode === "reset") return page(authLink && authLink.type === "invite" ? tr`Bienvenue. Choisis le mot de passe de ton compte.` : tr`Choisis un nouveau mot de passe.`,
-    `<label>${tr`Nouveau mot de passe`}<input type="password" id="authPw" required minlength="6" autocomplete="new-password"></label>
-      <label>${tr`Le même, une seconde fois`}<input type="password" id="authPw2" required minlength="6" autocomplete="new-password"></label>`,
+    `<label>${tr`Nouveau mot de passe`}<input type="password" id="authPw" required minlength="${PW_MIN}" autocomplete="new-password"></label>
+      <label>${tr`Le même, une seconde fois`}<input type="password" id="authPw2" required minlength="${PW_MIN}" autocomplete="new-password"></label>
+      <p class="hint" style="margin:0">${pwHint()}</p>`,
     `<button class="btn acc" type="submit">${tr`Enregistrer et me connecter`}</button><button class="btn ghost" type="button" data-act="auth-back">${trp("formulaire", "Annuler")}</button>`);
   if (authMode === "recover") return page(tr`Indique l'adresse de ton compte : tu recevras un lien pour choisir un nouveau mot de passe.`, email,
     `<button class="btn acc" type="submit">${tr`Envoyer le lien`}</button><button class="btn ghost" type="button" data-act="auth-back">${tr`Revenir à la connexion`}</button>`);
   return page(authMode === "signup" ? tr`Crée ton compte pour retrouver tes données sur n'importe quel appareil.` : authSignupOpen ? tr`Connecte-toi pour retrouver tes données.` : tr`Connecte-toi pour retrouver tes données. Selene n'ouvre de compte que sur invitation.`,
     `${email}
-      <label>${tr`Mot de passe`}<input type="password" id="authPw" required minlength="6" autocomplete="${authMode === "signup" ? "new-password" : "current-password"}"></label>`,
+      <label>${tr`Mot de passe`}<input type="password" id="authPw" required ${authMode === "signup" ? `minlength="${PW_MIN}" autocomplete="new-password"` : `autocomplete="current-password"`}></label>
+      ${authMode === "signup" ? `<p class="hint" style="margin:0">${pwHint()}</p>` : ""}`,
     `<button class="btn acc" type="submit">${authMode === "signup" ? tr`Créer le compte` : tr`Se connecter`}</button>
       ${authSignupOpen || authMode === "signup" ? `<button class="btn ghost" type="button" data-act="auth-switch">${authMode === "signup" ? tr`J'ai déjà un compte` : tr`Créer un compte`}</button>` : ""}
       ${authMode === "signin" ? `<button class="btn ghost" type="button" data-act="auth-forgot">${tr`Mot de passe oublié ?`}</button>` : ""}`);
 }
-document.addEventListener("submit", e => { if (e.target.id === "authForm") { e.preventDefault(); authSubmit(); } });
+/* Réglages → Compte : changer de mot de passe. Le mot de passe actuel est toujours demandé, et vérifié par une connexion
+   fraîche (POST /token) : un appareil laissé ouvert ne suffit pas à le changer, et une session de moins de 24 heures
+   passe l'option « Secure password change » du serveur. Il part aussi avec la demande (current_password), pour
+   l'option « Require current password when updating ». La session fraîche remplace l'ancienne. */
+export function passwordSettingsHTML() {
+  return `<details id="auth-pw"${authWeak ? " open" : ""}><summary class="hint">${tr`Changer mon mot de passe`}</summary>
+    ${authWeak ? `<p class="hint" style="margin:8px 0 0;color:var(--warn)">${tr`Ton mot de passe est plus court que ce que le serveur demande désormais : choisis-en un nouveau.`}</p>` : ""}
+    <form id="authPwForm" style="display:grid;gap:10px;margin-top:8px;max-width:420px">
+      <input type="email" autocomplete="username" value="${esc(authSession.user.email)}" hidden>
+      <label>${tr`Mot de passe actuel`}<input type="password" id="authCurPw" required autocomplete="current-password"></label>
+      <label>${tr`Nouveau mot de passe`}<input type="password" id="authNewPw" required minlength="${PW_MIN}" autocomplete="new-password"></label>
+      <label>${tr`Le même, une seconde fois`}<input type="password" id="authNewPw2" required minlength="${PW_MIN}" autocomplete="new-password"></label>
+      <p class="hint" style="margin:0">${pwHint()}</p>
+      <div class="row"><button class="btn" type="submit">${tr`Changer le mot de passe`}</button></div>
+    </form></details>`;
+}
+async function authChangePassword() {
+  const val = id => ($(id) || {}).value || "", cur = val("#authCurPw"), pw = val("#authNewPw"), btn = $("#authPwForm button[type=submit]");
+  if (pw !== val("#authNewPw2")) return toast(tr`Les deux mots de passe ne sont pas identiques.`);
+  if (btn) btn.disabled = true;
+  try {
+    let fresh;
+    try { fresh = await authApi("/token?grant_type=password", { method: "POST", body: JSON.stringify({ email: authSession.user.email, password: cur }) }); }
+    catch (e) { throw e.code === "invalid_credentials" || e.status === 400 ? new Error(tr`Le mot de passe actuel n'est pas le bon.`) : e; }
+    authPersist(toSession(fresh));
+    await authApi("/user", { method: "PUT", headers: { Authorization: `Bearer ${authSession.access_token}` }, body: JSON.stringify({ password: pw, current_password: cur }) });
+    authWeak = false;
+    toast(tr`Mot de passe changé.`);
+    render();
+  } catch (e) {
+    toast(e.code === "same_password" ? tr`C'est déjà ton mot de passe : choisis-en un autre.` : e.message || tr`Mot de passe inchangé.`);
+    if (btn) btn.disabled = false;
+  }
+}
+document.addEventListener("submit", e => {
+  if (e.target.id === "authForm") { e.preventDefault(); authSubmit(); }
+  else if (e.target.id === "authPwForm") { e.preventDefault(); authChangePassword(); }
+});
 const keepEmail = () => { const el = $("#authEmail"); if (el && el.value.trim()) authEmail = el.value.trim(); };
 CLICK["auth-switch"] = () => { keepEmail(); authToggleMode(); render(); };
 CLICK["auth-forgot"] = () => { keepEmail(); authMode = "recover"; authSay(""); render(); const el = $("#authEmail"); if (el) el.focus(); };

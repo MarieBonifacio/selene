@@ -970,6 +970,7 @@ var __selene = (() => {
     NOTIFY_KEY: () => NOTIFY_KEY,
     OA_DOI: () => OA_DOI,
     PAGE: () => PAGE,
+    PW_MIN: () => PW_MIN,
     RADAR_KEY: () => RADAR_KEY,
     REGULATION_COMPARE_GAP: () => REGULATION_COMPARE_GAP,
     REGULATION_COMPARE_MIN: () => REGULATION_COMPARE_MIN,
@@ -1247,6 +1248,7 @@ var __selene = (() => {
     passeurReset: () => passeurReset,
     passeurSettingsHTML: () => passeurSettingsHTML,
     passeurSonder: () => passeurSonder,
+    passwordSettingsHTML: () => passwordSettingsHTML,
     pendingDrafts: () => pendingDrafts,
     periodOf: () => periodOf,
     pickTask: () => pickTask,
@@ -2686,6 +2688,18 @@ var __selene = (() => {
     "J'ai déjà un compte": "I already have an account",
     "Créer un compte": "Create an account",
     "Mot de passe oublié ?": "Forgot your password?",
+    "{0} caractère au moins. Une courte phrase fait un bon mot de passe, facile à retenir.": { one: "At least {0} character. A short phrase makes a good password, and an easy one to remember.", other: "At least {0} characters. A short phrase makes a good password, and an easy one to remember." },
+    "Mot de passe trop court : {0} caractère au moins.": { one: "Password too short: at least {0} character.", other: "Password too short: at least {0} characters." },
+    "Ce mot de passe figure dans des fuites de données connues : choisis-en un autre.": "This password appears in known data breaches: choose another one.",
+    "Le serveur demande des caractères de plusieurs sortes (minuscules, majuscules, chiffres, symboles).": "The server asks for several kinds of characters (lowercase, uppercase, digits, symbols).",
+    "Ton mot de passe est plus court que ce que le serveur demande désormais : change-le dans Réglages, Compte.": "Your password is shorter than the server now requires: change it in Settings, Account.",
+    "Changer mon mot de passe": "Change my password",
+    "Ton mot de passe est plus court que ce que le serveur demande désormais : choisis-en un nouveau.": "Your password is shorter than the server now requires: choose a new one.",
+    "Mot de passe actuel": "Current password",
+    "Changer le mot de passe": "Change the password",
+    "Le mot de passe actuel n'est pas le bon.": "The current password isn't the right one.",
+    "Mot de passe changé.": "Password changed.",
+    "Mot de passe inchangé.": "Password unchanged.",
     "Connecte-toi pour retrouver tes données. Selene n'ouvre de compte que sur invitation.": "Sign in to find your data. Selene only opens accounts by invitation.",
     "Les inscriptions sont fermées : Selene n'ouvre de compte que sur invitation.": "Sign-ups are closed: Selene only opens accounts by invitation.",
     "Le serveur ne sait pas encore envoyer d'e-mail à cette adresse : son envoi n'est pas configuré. Préviens la personne qui gère Selene.": "The server can't send email to this address yet: its email sending isn't set up. Let the person who runs Selene know.",
@@ -6533,6 +6547,8 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   var SUPABASE_URL = "https://pxnrzrmzritezftefdlj.supabase.co";
   var SUPABASE_ANON_KEY = "sb_publishable_vC_zBX0TN4jZqi1GRIvo2A_nD2WFW9T";
   var authReady = () => hosted() && !SUPABASE_URL.includes("YOUR-PROJECT-REF");
+  var PW_MIN = 10;
+  var pwHint = () => trn(PW_MIN, "{0} caractère au moins. Une courte phrase fait un bon mot de passe, facile à retenir.", "{0} caractères au moins. Une courte phrase fait un bon mot de passe, facile à retenir.");
   var AUTH_KEY = "selene-auth-session";
   var authSession = null;
   var authMode = "signin";
@@ -6617,12 +6633,16 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     }
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const err = new Error(body.msg || body.error_description || body.error || tr`Erreur d'authentification.`);
+      const err = new Error(body.error_code === "weak_password" ? weakText(body) : body.msg || body.error_description || body.error || tr`Erreur d'authentification.`);
       err.status = res.status;
       err.code = body.error_code || "";
       throw err;
     }
     return body;
+  }
+  function weakText(body) {
+    const why = (body.weak_password || {}).reasons || [], n = +(String(body.msg || "").match(/at least (\d+) characters/) || [])[1] || PW_MIN;
+    return why.includes("pwned") ? tr`Ce mot de passe figure dans des fuites de données connues : choisis-en un autre.` : why.includes("characters") ? tr`Le serveur demande des caractères de plusieurs sortes (minuscules, majuscules, chiffres, symboles).` : trn(n, "Mot de passe trop court : {0} caractère au moins.", "Mot de passe trop court : {0} caractères au moins.");
   }
   function toSession(body) {
     if (!body.access_token) return null;
@@ -6767,8 +6787,10 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     }
     return authSession;
   }
+  var authWeak = false;
   async function authSignIn(email, password) {
     const body = await authApi("/token?grant_type=password", { method: "POST", body: JSON.stringify({ email, password }) });
+    authWeak = !!body.weak_password;
     authPersist(toSession(body));
     await authConnectStores();
     authScheduleRefresh();
@@ -6879,7 +6901,10 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       } else if (authMode === "signup") {
         const needsConfirm = await authSignUp(email, pw);
         if (needsConfirm) authSay(tr`Compte créé. Vérifie ta boîte mail pour confirmer, puis connecte-toi.`, true);
-      } else await authSignIn(email, pw);
+      } else {
+        await authSignIn(email, pw);
+        if (authWeak) toast(tr`Ton mot de passe est plus court que ce que le serveur demande désormais : change-le dans Réglages, Compte.`);
+      }
     } catch (e) {
       if (e.code === "signup_disabled") {
         authSignupOpen = false;
@@ -6899,8 +6924,9 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     <form id="authForm" style="display:grid;gap:12px">${fields}<div class="row">${buttons}</div>${note}</form></div>`;
     if (authMode === "reset") return page(
       authLink && authLink.type === "invite" ? tr`Bienvenue. Choisis le mot de passe de ton compte.` : tr`Choisis un nouveau mot de passe.`,
-      `<label>${tr`Nouveau mot de passe`}<input type="password" id="authPw" required minlength="6" autocomplete="new-password"></label>
-      <label>${tr`Le même, une seconde fois`}<input type="password" id="authPw2" required minlength="6" autocomplete="new-password"></label>`,
+      `<label>${tr`Nouveau mot de passe`}<input type="password" id="authPw" required minlength="${PW_MIN}" autocomplete="new-password"></label>
+      <label>${tr`Le même, une seconde fois`}<input type="password" id="authPw2" required minlength="${PW_MIN}" autocomplete="new-password"></label>
+      <p class="hint" style="margin:0">${pwHint()}</p>`,
       `<button class="btn acc" type="submit">${tr`Enregistrer et me connecter`}</button><button class="btn ghost" type="button" data-act="auth-back">${trp("formulaire", "Annuler")}</button>`
     );
     if (authMode === "recover") return page(
@@ -6911,16 +6937,53 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     return page(
       authMode === "signup" ? tr`Crée ton compte pour retrouver tes données sur n'importe quel appareil.` : authSignupOpen ? tr`Connecte-toi pour retrouver tes données.` : tr`Connecte-toi pour retrouver tes données. Selene n'ouvre de compte que sur invitation.`,
       `${email}
-      <label>${tr`Mot de passe`}<input type="password" id="authPw" required minlength="6" autocomplete="${authMode === "signup" ? "new-password" : "current-password"}"></label>`,
+      <label>${tr`Mot de passe`}<input type="password" id="authPw" required ${authMode === "signup" ? `minlength="${PW_MIN}" autocomplete="new-password"` : `autocomplete="current-password"`}></label>
+      ${authMode === "signup" ? `<p class="hint" style="margin:0">${pwHint()}</p>` : ""}`,
       `<button class="btn acc" type="submit">${authMode === "signup" ? tr`Créer le compte` : tr`Se connecter`}</button>
       ${authSignupOpen || authMode === "signup" ? `<button class="btn ghost" type="button" data-act="auth-switch">${authMode === "signup" ? tr`J'ai déjà un compte` : tr`Créer un compte`}</button>` : ""}
       ${authMode === "signin" ? `<button class="btn ghost" type="button" data-act="auth-forgot">${tr`Mot de passe oublié ?`}</button>` : ""}`
     );
   }
+  function passwordSettingsHTML() {
+    return `<details id="auth-pw"${authWeak ? " open" : ""}><summary class="hint">${tr`Changer mon mot de passe`}</summary>
+    ${authWeak ? `<p class="hint" style="margin:8px 0 0;color:var(--warn)">${tr`Ton mot de passe est plus court que ce que le serveur demande désormais : choisis-en un nouveau.`}</p>` : ""}
+    <form id="authPwForm" style="display:grid;gap:10px;margin-top:8px;max-width:420px">
+      <input type="email" autocomplete="username" value="${esc(authSession.user.email)}" hidden>
+      <label>${tr`Mot de passe actuel`}<input type="password" id="authCurPw" required autocomplete="current-password"></label>
+      <label>${tr`Nouveau mot de passe`}<input type="password" id="authNewPw" required minlength="${PW_MIN}" autocomplete="new-password"></label>
+      <label>${tr`Le même, une seconde fois`}<input type="password" id="authNewPw2" required minlength="${PW_MIN}" autocomplete="new-password"></label>
+      <p class="hint" style="margin:0">${pwHint()}</p>
+      <div class="row"><button class="btn" type="submit">${tr`Changer le mot de passe`}</button></div>
+    </form></details>`;
+  }
+  async function authChangePassword() {
+    const val = (id) => ($(id) || {}).value || "", cur = val("#authCurPw"), pw = val("#authNewPw"), btn = $("#authPwForm button[type=submit]");
+    if (pw !== val("#authNewPw2")) return toast(tr`Les deux mots de passe ne sont pas identiques.`);
+    if (btn) btn.disabled = true;
+    try {
+      let fresh;
+      try {
+        fresh = await authApi("/token?grant_type=password", { method: "POST", body: JSON.stringify({ email: authSession.user.email, password: cur }) });
+      } catch (e) {
+        throw e.code === "invalid_credentials" || e.status === 400 ? new Error(tr`Le mot de passe actuel n'est pas le bon.`) : e;
+      }
+      authPersist(toSession(fresh));
+      await authApi("/user", { method: "PUT", headers: { Authorization: `Bearer ${authSession.access_token}` }, body: JSON.stringify({ password: pw, current_password: cur }) });
+      authWeak = false;
+      toast(tr`Mot de passe changé.`);
+      render();
+    } catch (e) {
+      toast(e.code === "same_password" ? tr`C'est déjà ton mot de passe : choisis-en un autre.` : e.message || tr`Mot de passe inchangé.`);
+      if (btn) btn.disabled = false;
+    }
+  }
   document.addEventListener("submit", (e) => {
     if (e.target.id === "authForm") {
       e.preventDefault();
       authSubmit();
+    } else if (e.target.id === "authPwForm") {
+      e.preventDefault();
+      authChangePassword();
     }
   });
   var keepEmail = () => {
@@ -8843,7 +8906,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     return `<section>${sub(tr`Sauvegarde`)}<p class="hint">${tr`Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.`}</p>
     <div class="row"><button class="btn" data-act="exp">${tr`Exporter`}</button><label class="btn" style="display:inline-block;font-weight:500">${tr`Importer`}<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label>${tip(TIPS.importer, about(tr`Importer`))}</div></section>
   ${signedIn() ? `<section>${sub(tr`Compte`)}<p class="hint">${tr`Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.`}</p>
-    <button class="btn ghost" data-act="auth-out">${tr`Se déconnecter`}</button></section>
+    ${passwordSettingsHTML()}
+    <button class="btn ghost" data-act="auth-out" style="margin-top:12px">${tr`Se déconnecter`}</button></section>
   <section class="danger">${sub(TEXTS.danger)}
     <details id="auth-delete"><summary class="hint">${tr`Supprimer mon compte`}</summary>
       <p class="hint" style="margin-top:8px">${tr`Définitif : ton compte, tout ton tableau de bord sur le serveur et ta clé d'assistant sont effacés, puis cet appareil est vidé. Tes autres appareils perdent l'accès. Exporte d'abord une sauvegarde (plus haut) si tu veux garder quelque chose. Politique de confidentialité : ${`<a href="${privacyUrl()}" target="_blank" rel="noopener">${tr`ce que Selene garde, et où`}</a>`}.`}</p>

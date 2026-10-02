@@ -12,7 +12,7 @@ const file = (name, data) => ({ name, mimeType: 'application/json', buffer: Buff
   const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, timezoneId: 'Europe/Paris' }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
-  p.on('request', r => { if (!r.url().startsWith(BASE) && !/fonts\.(googleapis|gstatic)\.com/.test(r.url())) errs.push('appel réseau : ' + r.url()); });
+  p.on('request', r => { if (!r.url().startsWith(BASE)) errs.push('appel réseau : ' + r.url()); });
   await ctx.addInitScript(d => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, fixture());
   await p.goto(BASE + '/index.html#reglages'); await p.waitForTimeout(400);
   const input = '[data-act="col-ig"][data-mod="moth"]';

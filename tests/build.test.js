@@ -17,8 +17,22 @@ const hash = text => `'sha256-${crypto.createHash('sha256').update(text, 'utf8')
 test('web et artefact : exactement les fichiers versionnés (vérifiés par build.py --check)', () => {
   assert.equal(read('web/index.html'), fs.readFileSync('index.html', 'utf8'));
   assert.equal(read('artifact/selene.html'), fs.readFileSync('selene.html', 'utf8'));
-  assert.deepEqual(fs.readdirSync(path.join(dist, 'web')).sort(), ['apple-touch-icon.png', 'confidentialite.html', 'icon-192.png', 'icon-512.png', 'index.html', 'manifest.webmanifest', 'privacy.html', 'sw.js']);
+  assert.deepEqual(fs.readdirSync(path.join(dist, 'web')).sort(), ['apple-touch-icon.png', 'confidentialite.html', 'fonts', 'icon-192.png', 'icon-512.png', 'index.html', 'manifest.webmanifest', 'privacy.html', 'sw.js']);
   assert.ok(fs.readFileSync(path.join(dist, 'web/icon-512.png')).equals(fs.readFileSync('icon-512.png')), 'icônes copiées telles quelles');
+});
+
+test('polices : servies par le site et les apps, avec leurs licences ; Google Fonts dans l’artefact seulement', () => {
+  for (const out of ['web', 'native']) {
+    const html = read(`${out}/index.html`);
+    assert.doesNotMatch(html, /googleapis|gstatic/, `${out} : rien chez Google`);
+    assert.match(html, /font-src 'self';/, `${out} : la CSP n'admet que les polices du site`);
+    const urls = [...html.matchAll(/url\((fonts\/[^)]+\.woff2)\)/g)].map(m => m[1]);
+    assert.equal(urls.length, 24, `${out} : douze faces, en latin et latin étendu`);
+    for (const u of urls) assert.ok(fs.statSync(path.join(dist, out, u)).size > 1000, `${out} : ${u} présent`);
+    for (const f of ['cormorant-garamond', 'spectral', 'spectral-sc', 'ibm-plex-sans']) assert.match(read(`${out}/fonts/OFL-${f}.txt`), /SIL Open Font License/);
+  }
+  assert.match(read('artifact/selene.html'), /fonts\.googleapis\.com\/css2\?family=Cormorant\+Garamond/, 'l’artefact claude.ai : Google Fonts, seule source de styles admise');
+  assert.doesNotMatch(fs.readFileSync('sw.js', 'utf8'), /googleapis|gstatic/, 'le service worker ne met plus Google en cache');
 });
 
 test('politique de confidentialité : publiée avec le site (en français et en anglais), sans script ni ressource extérieure, et liée depuis les Réglages', () => {
@@ -33,7 +47,7 @@ test('politique de confidentialité : publiée avec le site (en français et en 
   assert.equal(day(en), day(p), 'les deux versions ont la même date de mise à jour');
   // Chaque service appelé par la page (sa CSP) est nommé dans la politique : l'une ne change pas sans l'autre.
   const csp = fs.readFileSync('build.py', 'utf8').match(/CONNECT = \(([\s\S]*?)\)\n/)[1];
-  const services = { 'open-meteo': 'Open-Meteo', crossref: 'Crossref', microlink: 'Microlink', musicbrainz: 'MusicBrainz', opendatasoft: 'OpenAgenda', openalex: 'OpenAlex', zotero: 'Zotero', supabase: 'Supabase', googleapis: 'Google Fonts', gstatic: 'Google Fonts' };
+  const services = { 'open-meteo': 'Open-Meteo', crossref: 'Crossref', microlink: 'Microlink', musicbrainz: 'MusicBrainz', opendatasoft: 'OpenAgenda', openalex: 'OpenAlex', zotero: 'Zotero', supabase: 'Supabase' };
   for (const host of csp.match(/https:\/\/[^\s"']+/g)) {
     const k = Object.keys(services).find(x => host.includes(x));
     assert.ok(k, `service sans nom dans la politique : ${host}`);
