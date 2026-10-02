@@ -48,9 +48,11 @@ function normalizeSite(d) {
   for (const [id, inst] of Object.entries(d.modules)) if (inst.type === "notes" && inst.config.inbox && id !== inbox) inst.config.inbox = false;
   return d;
 }
-// Ce que les deux documents disent à la page : redessiner après une synchronisation, l'état de l'enregistrement.
-const storeHooks = { onRemoteChange: () => render(), onStatus: m => setSaving(m) };
-export const site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite, storeHooks);
+// Ce que les deux documents disent à la page : redessiner après une synchronisation, l'état de l'enregistrement. Chacun
+// garde le sien et la page montre le premier qui a quelque chose à dire : le succès de l'un n'efface pas l'échec de l'autre.
+const saving = {};
+const storeHooks = name => ({ onRemoteChange: () => render(), onStatus: m => { saving[name] = m; setSaving(saving.site || saving.board || ""); } });
+export const site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite, storeHooks("site"));
 /* L'ancien document « board » (tâches du Chantier jusqu'au format 5) n'est plus qu'un point d'entrée :
    ce qu'il contient est versé dans le module Chantier du site, puis il est vidé, et le vidage part au
    serveur à la synchro suivante (sinon chaque nouvel appareil ressusciterait les tâches supprimées).
@@ -66,7 +68,7 @@ function absorbBoard(d) {
   site.save();
   return d;
 }
-export const board = makeStore("selene-board-v1", "board/state", () => ({ updatedAt: 0, tasks: [] }), absorbBoard, storeHooks);
+export const board = makeStore("selene-board-v1", "board/state", () => ({ updatedAt: 0, tasks: [] }), absorbBoard, storeHooks("board"));
 export const S = () => site.data;
  // lecture seule : la normalisation a lieu à l'entrée des données, pas ici
 export const label = id => { const s = S(); return s.config.labels[id] || (s.modules[id] && s.modules[id].label) || (Object.hasOwn(MODULE_DEFS, id) ? tr(MODULE_DEFS[id]) : undefined); };

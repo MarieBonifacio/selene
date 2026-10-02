@@ -8,7 +8,7 @@ import { CLICK, TYPE_UI, VIEWS } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { downloadFile } from "../lib/download.js";
 import { todayISO } from "../lib/format.js";
-import { N_, collate, langChoices, tr, uiLang } from "../i18n/index.js";
+import { N_, collate, langChoices, tr, uiLang, uiLocale } from "../i18n/index.js";
 import { localTemplate } from "../lib/labels.js";
 import { agendaSettingsHTML } from "../features/agenda.js";
 import { assistantKnown } from "../features/assistant.js";
@@ -25,6 +25,7 @@ import { SYSTEM, openOn, routeOf } from "../shell/nav.js";
 import { render } from "../shell/render.js";
 import { roman, sigil, sigilPicker, tintOf } from "../shell/sigils.js";
 import { withLocal } from "../state/local.js";
+import { DOC_MAX, DOC_WARN, utf8Bytes } from "../state/store.js";
 import { S, board, enabled, label, site } from "../state/site.js";
 import { openForm } from "../ui/dialogs.js";
 import { tip } from "../ui/tips.js";
@@ -127,9 +128,19 @@ function connexionsHTML() {
 }
 
 /* ---- VI. Compte et données : la sauvegarde d'abord, l'irréversible en dernier ---- */
+/* Ce que pèse l'espace sur le serveur, et sa limite ; près d'elle, les modules les plus lourds. Calculé à l'affichage
+   des Réglages seulement. */
+function sizeHTML() {
+  const bytes = o => utf8Bytes(JSON.stringify(o)), total = bytes(S());
+  const fmt = n => n < 1e6 ? tr`${Math.max(1, Math.round(n / 1e3))} Ko` : tr`${(n / 1e6).toLocaleString(uiLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Mo`;
+  const line = tr`Ton espace pèse ${fmt(total)} ; le serveur en garde ${fmt(DOC_MAX)} au plus.`;
+  if (total < DOC_WARN) return `<p class="hint" id="reg-size">${line}</p>`;
+  const heavy = Object.entries(S().modules).map(([k, m]) => [k, bytes(m)]).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${esc(label(k))} (${fmt(n)})`).join(", ");
+  return `<p class="hint" id="reg-size" style="color:var(--warn)">${line} ${tr`Il approche de la limite : au-delà, il ne serait plus enregistré que sur cet appareil. Exporte une sauvegarde, puis allège les plus lourds : ${heavy}.`}</p>`;
+}
 function compteHTML() {
   return `<section>${sub(tr`Sauvegarde`)}<p class="hint">${tr`Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.`}</p>
-    <div class="row"><button class="btn" data-act="exp">${tr`Exporter`}</button><label class="btn" style="display:inline-block;font-weight:500">${tr`Importer`}<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label>${tip(TIPS.importer, about(tr`Importer`))}</div></section>
+    <div class="row"><button class="btn" data-act="exp">${tr`Exporter`}</button><label class="btn" style="display:inline-block;font-weight:500">${tr`Importer`}<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label>${tip(TIPS.importer, about(tr`Importer`))}</div>${signedIn() ? sizeHTML() : ""}</section>
   ${signedIn() ? `<section>${sub(tr`Compte`)}<p class="hint">${tr`Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.`}</p>
     ${passwordSettingsHTML()}
     <button class="btn ghost" data-act="auth-out" style="margin-top:12px">${tr`Se déconnecter`}</button></section>

@@ -1499,6 +1499,7 @@ export default {
   // state/store.js
   "Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser": "Selene was updated on another device: reload the page to sync",
   "Non synchronisé — enregistré sur cet appareil seulement": "Not synced — saved on this device only",
+  "Trop volumineux pour le serveur : enregistré sur cet appareil seulement (Réglages, Sauvegarde)": "Too large for the server: saved on this device only (Settings, Backup)",
   "Enregistrement…": "Saving…",
 
   // ui/dialogs.js
@@ -1719,6 +1720,10 @@ export default {
   "Tape « {0} » pour confirmer": "Type “{0}” to confirm",
   "Sauvegarde": "Backup",
   "Tout ton état dans un fichier JSON, pour passer de claude.ai à GitHub Pages ou d'un navigateur à l'autre. La clé API n'y figure jamais.": "Your whole state in a JSON file, to move from claude.ai to GitHub Pages or from one browser to another. The API key is never in it.",
+  "{0} Ko": "{0} KB",
+  "{0} Mo": "{0} MB",
+  "Ton espace pèse {0} ; le serveur en garde {1} au plus.": "Your space weighs {0}; the server keeps {1} at most.",
+  "Il approche de la limite : au-delà, il ne serait plus enregistré que sur cet appareil. Exporte une sauvegarde, puis allège les plus lourds : {0}.": "It is nearing the limit: beyond it, it would only be saved on this device. Export a backup, then lighten the heaviest: {0}.",
   "Exporter": "Export",
   "Importer": "Import",
   "{0} : aucun traceur, aucune publicité ; ce que Selene garde, où, et comment tout effacer.": "{0}: no trackers, no ads; what Selene keeps, where, and how to erase it all.",

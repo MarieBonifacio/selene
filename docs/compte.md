@@ -76,6 +76,26 @@ connu des fuites, mot de passe inchangé.
 - **Password requirements** : au choix (Selene traduit le refus).
 - *Authentication → Attack Protection → Prevent use of leaked passwords* (HaveIBeenPwned) : offre Pro seulement.
 
+## Taille d'un espace
+
+Le serveur garde un espace de **5 Mo au plus** (le document `site`, en JSON ; 1 Mo pour l'ancien document `board`) :
+contrainte `app_state_taille` de `supabase/schema.sql`. Un compte ne remplit pas la base à lui seul, et un historique
+qui grossit se voit avant de casser.
+
+- *Réglages → Sauvegarde* dit ce que pèse l'espace. À partir de 3 Mo, la ligne passe en alerte et nomme les trois
+  modules les plus lourds.
+- Au-delà de la limite, le serveur refuse l'écriture (code Postgres `23514`, ou `413` de la passerelle) : l'indicateur
+  d'enregistrement dit « Trop volumineux pour le serveur », et tout reste sur l'appareil.
+
+Pour un projet créé avant le 2 octobre 2026, ajouter la contrainte dans l'éditeur SQL de Supabase, **après** avoir
+vérifié qu'aucune ligne ne la dépasse (une ligne plus lourde ne pourrait plus être modifiée) :
+
+```sql
+select user_id, octet_length(site::text) as site, octet_length(board::text) as board from public.app_state order by 2 desc;
+alter table public.app_state add constraint app_state_taille
+  check (octet_length(site::text) < 5000000 and octet_length(board::text) < 1000000) not valid;
+```
+
 ## Politique de confidentialité
 
 `confidentialite.html`, à la racine, publiée avec le site : <https://mariebonifacio.github.io/selene/confidentialite.html>.
