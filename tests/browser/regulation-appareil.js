@@ -1,7 +1,7 @@
 /* Scénario de navigateur : « Reprendre la main », gardé sur cet appareil seulement (ADR 27). Deux appareils du même
    compte sur un faux Supabase (interception réseau), comme sync-deux-appareils.js. On lit le serveur lui-même :
    - choix par défaut à la configuration : sur l'appareil ; le serveur ne reçoit que le talon (nom, présence) ;
-   - l'autre appareil voit le nom, pas le contenu, et ne peut pas le supprimer ;
+   - l'autre appareil voit le nom, pas le contenu ; le supprimer de là prévient qu'il ne retire que le nom ;
    - synchroniser exige l'accord (texte lu, confirmé) ; le retirer rend le talon au serveur ;
    - se déconnecter avec un suivi gardé ici : la garde demande quoi en faire ; effacer vide l'appareil.
    Lancé par tests/browser/run.js. */
@@ -61,8 +61,10 @@ async function device(browser, errs) {
     const tb = await q.textContent('#main');
     check(tb.includes('gardé sur un autre de tes appareils') && !/NOTE_PRIVEE|verre/.test(tb), 'B voit le nom, pas le contenu');
     await go('reglages', q); await q.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
-    await q.locator('.set.mod:has(input[data-act="mod-label"][value="Carnet du soir"]) [data-act="mod-del"]').click(); await settle(q);
-    check((await q.textContent('#toast')).includes('supprime-le depuis celui-ci'), 'B ne peut pas le supprimer');
+    await q.locator('.set.mod:has(input[data-act="mod-label"][value="Carnet du soir"]) [data-act="mod-del"]').click();
+    await q.waitForFunction(() => document.querySelector('#dlg').open);
+    check((await q.textContent('#form')).includes('son nom reviendra'), 'B : supprimer prévient qu’il ne retire que le nom');
+    await q.click('#form button[value="cancel"]'); await settle(q);
 
     console.log('accord, puis retrait');
     await go('reprendre-la-main');

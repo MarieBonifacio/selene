@@ -335,7 +335,7 @@ function elsewhereHTML(id) {
   const mine = S().modules[id].config.holder === deviceId();
   return `<div data-mod="${esc(id)}" class="rlm"><h2>${esc(label(id))}</h2><section><p>${mine
     ? tr`Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi.`
-    : tr`Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là.`}</p></section></div>`;
+    : tr`Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là. Appareil perdu, ou Selene réinstallée ? Tu peux retirer ce nom dans les réglages.`}</p></section></div>`;
 }
 /* Un suivi synchronisé depuis avant la question : rien ne change tant que la personne n'a pas choisi. */
 const choiceHTML = id => synced() && !S().modules[id].config.storage ? `<section class="rlm-choice" aria-labelledby="rlmChoiceH"><h3 id="rlmChoiceH">${tr`Où garder ce suivi ?`}</h3>
@@ -408,9 +408,10 @@ const TYPE = {
   },
   recent: () => [],
   review: () => null,
-  // Un suivi gardé sur un autre appareil ne se supprime pas d'ici (cet appareil n'en voit que le nom) ; celui gardé ici
-  // emporte sa copie locale.
-  cannotDelete: id => { const inst = S().modules[id]; return regulationOnDevice(inst) && inst.config.holder !== deviceId() ? tr`Ce suivi est gardé sur un autre appareil : supprime-le depuis celui-ci.` : ""; },
+  // Supprimer ailleurs que chez le détenteur ne retire que le talon : possible (appareil perdu ou réinstallé : sinon, un
+  // nom impossible à effacer) ; si le détenteur existe encore, il le recrée (state/local.js) et ne perd rien. Supprimer
+  // chez le détenteur emporte la copie locale.
+  deleteNote: id => { const inst = S().modules[id]; return regulationOnDevice(inst) && inst.config.holder !== deviceId() ? tr`Ici, il n'y a que le nom de ce suivi : son contenu est gardé sur un autre appareil. Si cet appareil existe encore, le suivi y reste entier et son nom reviendra : supprime-le plutôt depuis celui-ci. S'il est perdu, ou si Selene y a été réinstallée, retirer ce nom est définitif.` : ""; },
   onDelete: id => forgetLocal(id),
   // Pas de hook texts, ni alerts, ni badge, ni accept : voir l'en-tête.
   click: {

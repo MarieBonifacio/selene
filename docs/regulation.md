@@ -173,10 +173,13 @@ Trois questions distinctes, à ne pas confondre :
   conservation, selon l'offre Supabase : à vérifier). Un suivi synchronisé d'avant cette question affiche un bandeau
   de choix : rien ne change tant que la personne n'a pas choisi. Sans compte (artefact claude.ai), rien n'est envoyé :
   pas de question.
-  - **Autres appareils du compte** : le talon seulement (« gardé sur un autre de tes appareils »), ni contenu, ni
-    suppression (`cannotDelete`). Un appareil resté hors ligne qui renvoie l'ancienne copie : le détenteur reprend ses
-    saisies (la plus récente gagne) et le talon redevient vide (`absorbDeviceTrackers`). Un talon disparu revient : un
-    appareil ne peut pas effacer ce qu'il ne voit pas.
+  - **Autres appareils du compte** : le talon seulement (« gardé sur un autre de tes appareils »), sans contenu. Un
+    appareil resté hors ligne qui renvoie l'ancienne copie : le détenteur reprend ses saisies (la plus récente gagne) et
+    le talon redevient vide (`absorbDeviceTrackers`). Supprimer le suivi depuis un autre appareil ne retire que son nom,
+    et la confirmation le dit (`deleteNote`) : si le détenteur existe encore, il recrée le talon et ne perd rien (un
+    appareil ne peut pas effacer ce qu'il ne voit pas) ; s'il est perdu, ou si Selene y a été réinstallée (nouvel
+    identifiant d'appareil), le retrait est définitif. Sans cela, un appareil perdu laisserait un nom impossible à
+    effacer.
   - **Déconnexion** (qui vide l'appareil) : une garde demande quoi faire de ce qui n'existe qu'ici — télécharger une
     sauvegarde complète puis l'effacer, le synchroniser (avec l'accord), ou l'effacer (confirmé) ; annuler ne déconnecte
     pas. **Changement de compte** sur le même appareil : les suivis locaux du compte précédent sont mis de côté

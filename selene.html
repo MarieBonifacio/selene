@@ -2527,13 +2527,13 @@ var __selene = (() => {
     "Synchronisé avec ton compte depuis ton accord du {0} : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Tu peux retirer cet accord : le suivi reviendra sur cet appareil seulement.": "Synced with your account since your consent on {0}: on Selene's server (hosted by Supabase), readable by your account only, not end-to-end encrypted. You can withdraw this consent: the tracker will go back to this device only.",
     "Synchronisé avec ton compte, sans accord enregistré : ce suivi date d'avant la question. Choisis ci-dessus où le garder.": "Synced with your account, with no recorded consent: this tracker predates the question. Choose above where to keep it.",
     "Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi.": "This tracker was meant to be kept on this device, but its data is no longer here (browser or app storage cleared?). A full backup made here can restore it; otherwise, you can remove this tracker.",
-    "Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là.": "This tracker is kept on another of your devices, and only there: its content does not go through your account. Open it on that device.",
+    "Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là. Appareil perdu, ou Selene réinstallée ? Tu peux retirer ce nom dans les réglages.": "This tracker is kept on another of your devices, and only there: its content does not go through your account. Open it on that device. Device lost, or Selene reinstalled? You can remove this name in settings.",
     "Ce suivi est synchronisé avec ton compte depuis sa création, avant que Selene ne te demande ton accord. Il contient des données de santé : choisis où le garder. Rien ne change tant que tu n'as pas choisi.": "This tracker has been synced with your account since it was created, before Selene asked for your consent. It contains health data: choose where to keep it. Nothing changes until you choose.",
     "Le garder sur cet appareil seulement…": "Keep it on this device only…",
     "Le garder synchronisé (avec mon accord)…": "Keep it synced (with my consent)…",
     "Synchroniser avec mon compte…": "Sync with my account…",
     "Garder sur cet appareil seulement…": "Keep on this device only…",
-    "Ce suivi est gardé sur un autre appareil : supprime-le depuis celui-ci.": "This tracker is kept on another device: delete it from there.",
+    "Ici, il n'y a que le nom de ce suivi : son contenu est gardé sur un autre appareil. Si cet appareil existe encore, le suivi y reste entier et son nom reviendra : supprime-le plutôt depuis celui-ci. S'il est perdu, ou si Selene y a été réinstallée, retirer ce nom est définitif.": "Only this tracker's name is here: its content is kept on another device. If that device still exists, the tracker stays there intact and its name will come back: delete it from there instead. If it is lost, or Selene was reinstalled on it, removing this name is final.",
     "Ce suivi est gardé sur un autre appareil : ses réglages se changent là-bas.": "This tracker is kept on another device: its settings are changed there.",
     "Sauvegarde non téléchargée : rien n'a été effacé.": "Backup not downloaded: nothing was erased.",
     // modules/taches.js
@@ -6359,7 +6359,7 @@ ${tr`Notes, envies, déclencheurs et appuis restent ici. Arrêter le partage plu
   }
   function elsewhereHTML(id) {
     const mine = S().modules[id].config.holder === deviceId();
-    return `<div data-mod="${esc(id)}" class="rlm"><h2>${esc(label(id))}</h2><section><p>${mine ? tr`Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi.` : tr`Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là.`}</p></section></div>`;
+    return `<div data-mod="${esc(id)}" class="rlm"><h2>${esc(label(id))}</h2><section><p>${mine ? tr`Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi.` : tr`Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là. Appareil perdu, ou Selene réinstallée ? Tu peux retirer ce nom dans les réglages.`}</p></section></div>`;
   }
   var choiceHTML = (id) => synced() && !S().modules[id].config.storage ? `<section class="rlm-choice" aria-labelledby="rlmChoiceH"><h3 id="rlmChoiceH">${tr`Où garder ce suivi ?`}</h3>
     <p>${tr`Ce suivi est synchronisé avec ton compte depuis sa création, avant que Selene ne te demande ton accord. Il contient des données de santé : choisis où le garder. Rien ne change tant que tu n'as pas choisi.`}</p>
@@ -6433,11 +6433,12 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     },
     recent: () => [],
     review: () => null,
-    // Un suivi gardé sur un autre appareil ne se supprime pas d'ici (cet appareil n'en voit que le nom) ; celui gardé ici
-    // emporte sa copie locale.
-    cannotDelete: (id) => {
+    // Supprimer ailleurs que chez le détenteur ne retire que le talon : possible (appareil perdu ou réinstallé : sinon, un
+    // nom impossible à effacer) ; si le détenteur existe encore, il le recrée (state/local.js) et ne perd rien. Supprimer
+    // chez le détenteur emporte la copie locale.
+    deleteNote: (id) => {
       const inst = S().modules[id];
-      return regulationOnDevice(inst) && inst.config.holder !== deviceId() ? tr`Ce suivi est gardé sur un autre appareil : supprime-le depuis celui-ci.` : "";
+      return regulationOnDevice(inst) && inst.config.holder !== deviceId() ? tr`Ici, il n'y a que le nom de ce suivi : son contenu est gardé sur un autre appareil. Si cet appareil existe encore, le suivi y reste entier et son nom reviendra : supprime-le plutôt depuis celui-ci. S'il est perdu, ou si Selene y a été réinstallée, retirer ce nom est définitif.` : "";
     },
     onDelete: (id) => forgetLocal(id),
     // Pas de hook texts, ni alerts, ni badge, ni accept : voir l'en-tête.
@@ -8712,8 +8713,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   };
   CLICK["mod-del"] = (el) => {
     const id = el.dataset.mod, name = label(id), ui = Object.hasOwn(S().modules, id) ? TYPE_UI[S().modules[id].type] : null;
-    const why = ui && ui.cannotDelete ? ui.cannotDelete(id) : "";
-    if (why) return toast(why);
+    const note = ui && ui.deleteNote ? ui.deleteNote(id) : "";
     openForm(tr`Supprimer « ${name} »`, [{ n: "confirm", l: tr`Retape « ${name} » pour confirmer la suppression définitive de ses données.`, req: true }], {}, (v) => {
       if (v.confirm !== name) return toast(tr`Nom incorrect, rien n'a été supprimé.`);
       const s = S();
@@ -8725,7 +8725,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       site.save();
       render();
       toast(tr`« ${name} » supprimé.`);
-    });
+    }, note);
   };
   CLICK["exp"] = () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, withLocal(site.data)), "application/json", tr`Sauvegarde Selene`);
   CLICK["pal"] = (el) => {

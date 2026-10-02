@@ -630,21 +630,35 @@ test('un suivi synchronisé d’avant la question : un bandeau demande le choix,
   app.site.disconnect(); app.board.disconnect();
 });
 
-test('un autre appareil du compte : le nom seulement, ni contenu ni suppression ; les données renvoyées reviennent au détenteur', async () => {
+test('un autre appareil du compte : le nom seulement ; les données renvoyées reviennent au détenteur ; retirer le nom ailleurs', async () => {
   const server = fakeSupabase(), a = launchHosted({ fetch: server.fetch }); await settle();
   const id = await setupTracker(a); addUse(a, id); await a.site.sync();
   const b = launchHosted({ fetch: server.fetch, storage: new Map([['selene-device-id', 'dB']]) }); await settle();
   assert.ok(b.S().modules[id], 'le talon arrive'); assert.equal(b.localCopy(id), null);
   assert.match(b.TYPE_UI.regulation.view(id), /gardé sur un autre de tes appareils/);
   assert.doesNotMatch(b.TYPE_UI.regulation.view(id), /NOTE_PRIVEE|verre/);
-  b.CLICK['mod-del']({ dataset: { mod: id } });
-  assert.match(b.$('#toast').textContent, /supprime-le depuis celui-ci/); assert.ok(b.S().modules[id], 'pas supprimé');
   // Un appareil resté hors ligne renvoie l'ancienne copie (des saisies dans le talon) : le détenteur les reprend.
   const row = serverSite(server);
   row.modules[id].entries.push({ id: 'tard', kind: 'use', date: a.todayISO(), at: Date.now(), zone: '', note: '', value: 1 }); row.updatedAt = Date.now() + 1000;
   await a.site.sync(); await a.site.sync();
   assert.ok(a.localCopy(id).entries.some(e => e.id === 'tard'), 'reprise par le détenteur');
   assert.equal(serverSite(server).modules[id].entries.length, 0, 'le talon redevient vide sur le serveur');
+  // Retirer le nom depuis l'autre appareil (appareil perdu ? réinstallé ?) : possible, et la confirmation dit ce que
+  // cela fait. Le détenteur existe encore : il recrée le talon et ne perd rien.
+  const remove = async () => {
+    await b.site.sync();
+    b.CLICK['mod-del']({ dataset: { mod: id } });
+    assert.match(b.$('#form').innerHTML, /son contenu est gardé sur un autre appareil.*son nom reviendra/);
+    b.form({ confirm: b.label(id) }); assert.ok(!b.S().modules[id]); await b.site.sync();
+    assert.ok(!serverSite(server).modules[id], 'le nom est retiré du serveur');
+  };
+  await remove();
+  await a.site.sync(); await a.site.sync();
+  assert.ok(serverSite(server).modules[id], 'le détenteur recrée le talon'); assert.equal(a.localCopy(id).entries.length, 2, 'sans rien perdre');
+  // Le détenteur a perdu ses données (stockage effacé) : le retrait est alors définitif.
+  a.localErase(); await remove();
+  await a.site.sync(); await a.site.sync();
+  assert.ok(!serverSite(server).modules[id] && !a.S().modules[id], 'plus de nom impossible à effacer');
   for (const x of [a, b]) { x.site.disconnect(); x.board.disconnect(); }
 });
 

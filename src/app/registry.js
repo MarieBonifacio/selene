@@ -21,7 +21,8 @@ export const CHANGE = {};
      summary(id, inst)     ligne de l'accueil « Où en sont les choses » (HTML)
      alerts(id, inst, now) rappels du bloc « Aujourd'hui » : [{ text (HTML), actions? }]
      context(inst, name, id) paragraphe envoyé à l'assistant (texte brut)
-     cannotDelete(id)      raison de refuser la suppression (texte), ou "" ; onDelete(id) : à faire avant de supprimer
+     deleteNote(id)        précision ajoutée à la confirmation de suppression (texte), ou ""
+     onDelete(id)          à faire juste avant la suppression (oublier une copie gardée sur l'appareil)
      add(id, inst)         bouton « noter / ajouter » (data-act="entry-add")
      accept(id, inst, note) recevoir une note triée depuis un module Notes ; canAccept(inst) pour conditionner
      badge(inst)           nombre affiché à côté du nom dans la navigation

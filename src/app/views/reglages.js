@@ -202,7 +202,7 @@ CLICK["mod-add"] = () => {
 CLICK["tpl-add"] = el => { const found = MODULE_TEMPLATES.find(t => t.id === el.dataset.tpl); if (found) { const tpl = localTemplate(found); addModule(tpl, tpl.name); } };
 CLICK["mod-del"] = el => {
   const id = el.dataset.mod, name = label(id), ui = Object.hasOwn(S().modules, id) ? TYPE_UI[S().modules[id].type] : null;
-  const why = ui && ui.cannotDelete ? ui.cannotDelete(id) : ""; if (why) return toast(why);
+  const note = ui && ui.deleteNote ? ui.deleteNote(id) : "";
   openForm(tr`Supprimer « ${name} »`, [{ n: "confirm", l: tr`Retape « ${name} » pour confirmer la suppression définitive de ses données.`, req: true }], {}, v => {
     if (v.confirm !== name) return toast(tr`Nom incorrect, rien n'a été supprimé.`);
     const s = S();
@@ -210,7 +210,7 @@ CLICK["mod-del"] = el => {
     deleteModuleInstance(s.modules, s.config.modules, id);
     delete s.config.labels[id]; delete s.config.groups[id]; delete s.config.assistant.share[id];
     site.save(); render(); toast(tr`« ${name} » supprimé.`);
-  });
+  }, note);
 };
 // La sauvegarde complète contient aussi ce qui n'est gardé que sur cet appareil (ADR 27) : c'est un fichier, il doit tout avoir.
 CLICK["exp"] = () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, withLocal(site.data)), "application/json", tr`Sauvegarde Selene`);
