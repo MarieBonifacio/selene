@@ -39,16 +39,19 @@ afficher le texte d'erreur porté par le lien (n'importe qui peut en fabriquer u
 Users → *Invite user*) suit le même chemin : son lien demande de choisir le mot de passe du compte. C'est ce qui permet
 de fermer les inscriptions publiques et d'inviter les comptes un par un.
 
-À régler une fois dans le projet Supabase :
+À régler une fois dans le projet Supabase, dans cet ordre :
 
-- *Authentication → URL Configuration* : **Site URL** = `https://mariebonifacio.github.io/selene/`, et la même adresse
-  dans **Redirect URLs**. Le site demande à revenir sur la page ouverte (`redirect_to`) ; une adresse absente de la
-  liste est ignorée au profit de la Site URL. Les apps n'en demandent pas : le lien s'ouvre dans le navigateur, sur le
-  site, puis on se connecte dans l'app avec le nouveau mot de passe.
-- *Authentication → Emails* : traduire les modèles *Reset password* et *Invite user*.
-- L'envoi d'e-mails intégré à Supabase n'autorise que quelques messages par heure, pour tout le projet : brancher un
-  SMTP (même page, *SMTP Settings*) avant d'ouvrir Selene à d'autres. Au-delà de la limite, Selene répond « Trop de
-  demandes ».
+- **SMTP d'abord** (*Authentication → Emails → SMTP Settings → Enable custom SMTP*). Sans lui, Supabase n'envoie
+  que 2 e-mails par heure, et **seulement aux membres de l'équipe du projet** (Organization settings → Team) : pour
+  tout autre compte, la demande de lien échoue (« Email address not authorized »). Une fois branché, la limite passe à
+  30 par heure (*Authentication → Rate Limits* pour la relever).
+- *Authentication → URL Configuration* : **Site URL** = `https://mariebonifacio.github.io/selene/` ; dans **Redirect
+  URLs**, cette adresse et `https://mariebonifacio.github.io/selene/index.html` (Selene demande à revenir sur la page
+  ouverte, `redirect_to`, et l'app installée s'ouvre sur la première). Une adresse absente de la liste est ignorée au
+  profit de la Site URL. Les apps n'en demandent pas : le lien s'ouvre dans le navigateur, sur le site, puis on se
+  connecte dans l'app avec le nouveau mot de passe.
+- *Authentication → Emails → Templates* : traduire *Reset password* et *Invite user*. Sur l'offre gratuite, les
+  modèles ne se modifient qu'une fois le SMTP branché.
 
 ## Politique de confidentialité
 
