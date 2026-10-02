@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-lbCRMwobhI5cAhePsFHMrS4Ea+k57M6De/dFdpI3KnQ=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LfX+5F1qafngbeElPMbJO6hXt4eUf5RmVJGAQvyK9w8=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -1249,11 +1249,14 @@ var __selene = (() => {
     parseBackup: () => parseBackup,
     parseFeed: () => parseFeed,
     parseQuantity: () => parseQuantity,
+    passeurAcces: () => passeurAcces,
     passeurEtat: () => passeurEtat,
+    passeurFerme: () => passeurFerme,
     passeurFetch: () => passeurFetch,
     passeurPret: () => passeurPret,
     passeurReset: () => passeurReset,
     passeurSettingsHTML: () => passeurSettingsHTML,
+    passeurSonder: () => passeurSonder,
     pendingDrafts: () => pendingDrafts,
     periodOf: () => periodOf,
     pickTask: () => pickTask,
@@ -1676,6 +1679,10 @@ var __selene = (() => {
     "Écarter": "Dismiss",
     "vu": "seen",
     "Aucun flux suivi. Colle ci-dessous l'adresse d'un site, d'une revue, d'une chaîne : Selene trouve son flux.": "No feed followed. Paste below the address of a site, a journal, a channel: Selene finds its feed.",
+    "Rien de suivi pour l'instant. La veille de recherche, plus bas, t'apporte chaque semaine ce qui vient de paraître.": "Nothing followed yet. The research watch, below, brings you what has just come out, every week.",
+    "Suivre un site passe par le passeur, une fonction du serveur de Selene qui lit les flux à ta place. Il n'est pas installé sur ce serveur ; la veille de recherche, plus bas, fonctionne sans lui.": "Following a site goes through the relay, a function on Selene's server that reads feeds for you. It isn't installed on this server; the research watch, below, works without it.",
+    "Suivre un site passe par le passeur, une fonction du serveur de Selene qui lit les flux à ta place. Il n'est pas ouvert à ce compte ; la veille de recherche, plus bas, fonctionne sans lui.": "Following a site goes through the relay, a function on Selene's server that reads feeds for you. It isn't open to this account; the research watch, below, works without it.",
+    "Vérifier à nouveau": "Check again",
     "Lecture des flux…": "Reading the feeds…",
     "Rien de neuf. Le monde a pu se passer de toi, et toi de lui.": "Nothing new. The world managed without you, and you without it.",
     "Sans projet": "No project",
@@ -2688,6 +2695,26 @@ var __selene = (() => {
     "Se connecter": "Sign in",
     "J'ai déjà un compte": "I already have an account",
     "Créer un compte": "Create an account",
+    "Mot de passe oublié ?": "Forgot your password?",
+    "Connecte-toi pour retrouver tes données. Selene n'ouvre de compte que sur invitation.": "Sign in to find your data. Selene only opens accounts by invitation.",
+    "Les inscriptions sont fermées : Selene n'ouvre de compte que sur invitation.": "Sign-ups are closed: Selene only opens accounts by invitation.",
+    "Le serveur ne sait pas encore envoyer d'e-mail à cette adresse : son envoi n'est pas configuré. Préviens la personne qui gère Selene.": "The server can't send email to this address yet: its email sending isn't set up. Let the person who runs Selene know.",
+    "Indique l'adresse de ton compte : tu recevras un lien pour choisir un nouveau mot de passe.": "Enter your account's email address: you'll receive a link to choose a new password.",
+    "Envoyer le lien": "Send the link",
+    "Revenir à la connexion": "Back to sign in",
+    "Si un compte existe à cette adresse, un e-mail vient de partir : son lien te ramène ici pour choisir un nouveau mot de passe. Regarde aussi dans les indésirables.": "If an account exists for this address, an email is on its way: its link brings you back here to choose a new password. Check your spam folder too.",
+    "Si un compte existe à cette adresse, un e-mail vient de partir. Son lien s'ouvre dans ton navigateur : choisis-y ton nouveau mot de passe, puis reviens te connecter ici. Regarde aussi dans les indésirables.": "If an account exists for this address, an email is on its way. Its link opens in your browser: choose your new password there, then come back and sign in here. Check your spam folder too.",
+    "Trop de demandes : le serveur limite les e-mails qu'il envoie. Réessaie dans un moment.": "Too many requests: the server limits the emails it sends. Try again in a while.",
+    "Choisis un nouveau mot de passe.": "Choose a new password.",
+    "Bienvenue. Choisis le mot de passe de ton compte.": "Welcome. Choose the password for your account.",
+    "Nouveau mot de passe": "New password",
+    "Le même, une seconde fois": "The same, once more",
+    "Enregistrer et me connecter": "Save and sign in",
+    "Les deux mots de passe ne sont pas identiques.": "The two passwords don't match.",
+    "Mot de passe enregistré.": "Password saved.",
+    "C'est déjà ton mot de passe : choisis-en un autre.": "That's already your password: choose another one.",
+    "Ce lien ne fonctionne plus : il a expiré, ou il a déjà servi. Demande-en un autre.": "This link no longer works: it has expired or has already been used. Ask for a new one.",
+    "Cette invitation a expiré, ou elle a déjà servi : demande qu'on te la renvoie.": "This invitation has expired or has already been used: ask for it to be sent again.",
     // services/passeur.js
     "Le passeur n'existe que dans la version hébergée, connectée à ton compte.": "The relay only exists in the hosted version, signed in to your account.",
     "Passeur injoignable (hors ligne, ou pas encore déployé).": "Relay unreachable (offline, or not deployed yet).",
@@ -2698,6 +2725,7 @@ var __selene = (() => {
     "accès refusé": "access refused",
     "Déployé et ouvert à ton compte.": "Deployed and open to your account.",
     "Pas encore déployé, ou pas encore configuré.": "Not deployed yet, or not configured yet.",
+    "Refusé à ce compte : son identifiant n'est pas dans PASSEUR_USERS, ou cette adresse n'est pas admise.": "Refused for this account: its identifier isn't in PASSEUR_USERS, or this address isn't allowed.",
     "Refusé : {0}.": "Refused: {0}.",
     "Pas encore vérifié sur cet appareil.": "Not checked yet on this device.",
     "Passeur": "Relay",
@@ -6520,9 +6548,44 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   var authMode = "signin";
   var authBusy = false;
   var authRefreshTimer = null;
+  var authNote = { text: "", ok: false };
+  var authEmail = "";
+  var authSignupOpen = true;
+  var authSignupAsked = false;
+  var authBooted = false;
+  async function authAskSignup() {
+    authSignupAsked = true;
+    try {
+      const open = !(await authApi("/settings")).disable_signup;
+      if (open === authSignupOpen) return;
+      authSignupOpen = open;
+      if (!open && authMode === "signup") authMode = "signin";
+      if (!authSession) render();
+    } catch {
+    }
+  }
+  var authSay = (text, ok = false) => {
+    authNote = { text, ok };
+  };
   var authToggleMode = () => {
     authMode = authMode === "signup" ? "signin" : "signup";
+    authSay("");
   };
+  var authLink = null;
+  var authLinkBad = false;
+  function takeAuthLink() {
+    try {
+      const h = new window.URLSearchParams(location.hash.slice(1)), type = h.get("type");
+      if (!h.get("access_token") && !h.get("error_code") && !h.get("error")) return;
+      if (h.get("access_token") && (type === "recovery" || type === "invite")) {
+        authLink = { type, access_token: h.get("access_token"), refresh_token: h.get("refresh_token") || "", expires_in: +h.get("expires_in") || 3600 };
+        authMode = "reset";
+      } else if (!h.get("access_token")) authLinkBad = true;
+      window.history.replaceState(null, "", location.pathname + location.search + "#accueil");
+    } catch {
+    }
+  }
+  if (authReady()) takeAuthLink();
   function authLoad() {
     try {
       const v = platform.secrets.get(AUTH_KEY);
@@ -6540,7 +6603,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     }
   }
   var LAST_UID_KEY2 = "selene-auth-last-uid";
-  var PERSONAL_KEYS = ["selene-chat", "selene-recent", "selene-dehors", "selene-mb-seen", "selene-radar", "selene-ics", "selene-zotero", "selene-cites"];
+  var PERSONAL_KEYS = ["selene-chat", "selene-recent", "selene-dehors", "selene-mb-seen", "selene-radar", "selene-ics", "selene-zotero", "selene-cites", "selene-passeur-acces"];
   var PERSONAL_SECRETS = platform.secretKeys.filter((k) => k !== AUTH_KEY);
   function authResetLocal(erase = true) {
     if (erase) localErase();
@@ -6566,6 +6629,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     if (!res.ok) {
       const err = new Error(body.msg || body.error_description || body.error || tr`Erreur d'authentification.`);
       err.status = res.status;
+      err.code = body.error_code || "";
       throw err;
     }
     return body;
@@ -6692,6 +6756,8 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   });
   async function authBoot() {
     if (!authReady()) return null;
+    authBooted = true;
+    if (authLink) return null;
     authSession = authLoad();
     if (authSession) {
       const s = await authRefreshIfNeeded();
@@ -6700,11 +6766,48 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
         authScheduleRefresh();
       }
     }
+    if (authLinkBad) {
+      authLinkBad = false;
+      const msg = tr`Ce lien ne fonctionne plus : il a expiré, ou il a déjà servi. Demande-en un autre.`;
+      if (authSession) toast(msg);
+      else {
+        authMode = "recover";
+        authSay(msg);
+      }
+    }
     return authSession;
   }
   async function authSignIn(email, password) {
     const body = await authApi("/token?grant_type=password", { method: "POST", body: JSON.stringify({ email, password }) });
     authPersist(toSession(body));
+    await authConnectStores();
+    authScheduleRefresh();
+  }
+  async function authRecover(email) {
+    const back = platform.runtime() === "web" ? `?redirect_to=${encodeURIComponent(location.origin + location.pathname)}` : "";
+    try {
+      await authApi(`/recover${back}`, { method: "POST", body: JSON.stringify({ email }) });
+    } catch (e) {
+      if (e.status === 429) throw new Error(tr`Trop de demandes : le serveur limite les e-mails qu'il envoie. Réessaie dans un moment.`);
+      if (e.code === "email_address_not_authorized") throw new Error(tr`Le serveur ne sait pas encore envoyer d'e-mail à cette adresse : son envoi n'est pas configuré. Préviens la personne qui gère Selene.`);
+      throw e;
+    }
+  }
+  async function authSetPassword(password) {
+    const link = authLink;
+    let user;
+    try {
+      user = await authApi("/user", { method: "PUT", headers: { Authorization: `Bearer ${link.access_token}` }, body: JSON.stringify({ password }) });
+    } catch (e) {
+      if (e.code === "same_password") throw new Error(tr`C'est déjà ton mot de passe : choisis-en un autre.`);
+      if (e.status !== 401 && e.status !== 403) throw e;
+      authLink = null;
+      authMode = link.type === "invite" ? "signin" : "recover";
+      throw new Error(link.type === "invite" ? tr`Cette invitation a expiré, ou elle a déjà servi : demande qu'on te la renvoie.` : tr`Ce lien ne fonctionne plus : il a expiré, ou il a déjà servi. Demande-en un autre.`);
+    }
+    authLink = null;
+    authMode = "signin";
+    authPersist(toSession({ ...link, user }));
     await authConnectStores();
     authScheduleRefresh();
   }
@@ -6766,35 +6869,63 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     render();
   }
   async function authSubmit() {
-    const email = $("#authEmail").value.trim(), pw = $("#authPw").value, err = $("#authErr");
     if (authBusy) return;
+    const field2 = (id) => {
+      const el = $(id);
+      return el ? el.value : "";
+    };
+    const email = field2("#authEmail").trim(), pw = field2("#authPw");
+    if (email) authEmail = email;
     authBusy = true;
-    err.style.color = "var(--alarm)";
-    err.textContent = "";
+    authSay("");
     try {
-      if (authMode === "signup") {
+      if (authMode === "recover") {
+        await authRecover(email);
+        authSay(platform.runtime() === "web" ? tr`Si un compte existe à cette adresse, un e-mail vient de partir : son lien te ramène ici pour choisir un nouveau mot de passe. Regarde aussi dans les indésirables.` : tr`Si un compte existe à cette adresse, un e-mail vient de partir. Son lien s'ouvre dans ton navigateur : choisis-y ton nouveau mot de passe, puis reviens te connecter ici. Regarde aussi dans les indésirables.`, true);
+      } else if (authMode === "reset") {
+        if (pw !== field2("#authPw2")) throw new Error(tr`Les deux mots de passe ne sont pas identiques.`);
+        await authSetPassword(pw);
+        toast(tr`Mot de passe enregistré.`);
+      } else if (authMode === "signup") {
         const needsConfirm = await authSignUp(email, pw);
-        if (needsConfirm) {
-          err.style.color = "var(--ok)";
-          err.textContent = tr`Compte créé. Vérifie ta boîte mail pour confirmer, puis connecte-toi.`;
-        }
+        if (needsConfirm) authSay(tr`Compte créé. Vérifie ta boîte mail pour confirmer, puis connecte-toi.`, true);
       } else await authSignIn(email, pw);
     } catch (e) {
-      err.textContent = e.message || tr`Connexion impossible.`;
+      if (e.code === "signup_disabled") {
+        authSignupOpen = false;
+        authMode = "signin";
+      }
+      authSay(e.code === "signup_disabled" ? tr`Les inscriptions sont fermées : Selene n'ouvre de compte que sur invitation.` : e.message || tr`Connexion impossible.`);
     }
     authBusy = false;
     render();
   }
   function authView() {
-    return `<div class="wrap" style="max-width:420px;margin:60px auto 0"><h2>Selene</h2>
-    <p class="hint">${authMode === "signup" ? tr`Crée ton compte pour retrouver tes données sur n'importe quel appareil.` : tr`Connecte-toi pour retrouver tes données.`}</p>
-    <form id="authForm" style="display:grid;gap:12px">
-      <label>${tr`E-mail`}<input type="email" id="authEmail" required autocomplete="email"></label>
-      <label>${tr`Mot de passe`}<input type="password" id="authPw" required minlength="6" autocomplete="${authMode === "signup" ? "new-password" : "current-password"}"></label>
-      <div class="row"><button class="btn acc" type="submit">${authMode === "signup" ? tr`Créer le compte` : tr`Se connecter`}</button>
-      <button class="btn ghost" type="button" data-act="auth-switch">${authMode === "signup" ? tr`J'ai déjà un compte` : tr`Créer un compte`}</button></div>
-      <p class="hint" id="authErr" style="margin:0"></p>
-    </form></div>`;
+    if (authBooted && !authSignupAsked) authAskSignup();
+    const note = `<p class="hint" id="authErr" role="status" style="margin:0${authNote.text ? `;color:var(${authNote.ok ? "--ok" : "--alarm"})` : ""}">${esc(authNote.text)}</p>`;
+    const email = `<label>${tr`E-mail`}<input type="email" id="authEmail" required autocomplete="email" value="${esc(authEmail)}"></label>`;
+    const page = (intro, fields, buttons) => `<div class="wrap" style="max-width:420px;margin:60px auto 0"><h2>Selene</h2>
+    <p class="hint">${intro}</p>
+    <form id="authForm" style="display:grid;gap:12px">${fields}<div class="row">${buttons}</div>${note}</form></div>`;
+    if (authMode === "reset") return page(
+      authLink && authLink.type === "invite" ? tr`Bienvenue. Choisis le mot de passe de ton compte.` : tr`Choisis un nouveau mot de passe.`,
+      `<label>${tr`Nouveau mot de passe`}<input type="password" id="authPw" required minlength="6" autocomplete="new-password"></label>
+      <label>${tr`Le même, une seconde fois`}<input type="password" id="authPw2" required minlength="6" autocomplete="new-password"></label>`,
+      `<button class="btn acc" type="submit">${tr`Enregistrer et me connecter`}</button><button class="btn ghost" type="button" data-act="auth-back">${trp("formulaire", "Annuler")}</button>`
+    );
+    if (authMode === "recover") return page(
+      tr`Indique l'adresse de ton compte : tu recevras un lien pour choisir un nouveau mot de passe.`,
+      email,
+      `<button class="btn acc" type="submit">${tr`Envoyer le lien`}</button><button class="btn ghost" type="button" data-act="auth-back">${tr`Revenir à la connexion`}</button>`
+    );
+    return page(
+      authMode === "signup" ? tr`Crée ton compte pour retrouver tes données sur n'importe quel appareil.` : authSignupOpen ? tr`Connecte-toi pour retrouver tes données.` : tr`Connecte-toi pour retrouver tes données. Selene n'ouvre de compte que sur invitation.`,
+      `${email}
+      <label>${tr`Mot de passe`}<input type="password" id="authPw" required minlength="6" autocomplete="${authMode === "signup" ? "new-password" : "current-password"}"></label>`,
+      `<button class="btn acc" type="submit">${authMode === "signup" ? tr`Créer le compte` : tr`Se connecter`}</button>
+      ${authSignupOpen || authMode === "signup" ? `<button class="btn ghost" type="button" data-act="auth-switch">${authMode === "signup" ? tr`J'ai déjà un compte` : tr`Créer un compte`}</button>` : ""}
+      ${authMode === "signin" ? `<button class="btn ghost" type="button" data-act="auth-forgot">${tr`Mot de passe oublié ?`}</button>` : ""}`
+    );
   }
   document.addEventListener("submit", (e) => {
     if (e.target.id === "authForm") {
@@ -6802,8 +6933,34 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       authSubmit();
     }
   });
+  var keepEmail = () => {
+    const el = $("#authEmail");
+    if (el && el.value.trim()) authEmail = el.value.trim();
+  };
   CLICK["auth-switch"] = () => {
+    keepEmail();
     authToggleMode();
+    render();
+  };
+  CLICK["auth-forgot"] = () => {
+    keepEmail();
+    authMode = "recover";
+    authSay("");
+    render();
+    const el = $("#authEmail");
+    if (el) el.focus();
+  };
+  CLICK["auth-back"] = async () => {
+    keepEmail();
+    authSay("");
+    authMode = "signin";
+    if (authLink) {
+      authLink = null;
+      try {
+        await authBoot();
+      } catch {
+      }
+    }
     render();
   };
   CLICK["auth-out"] = () => authSignOut();
@@ -6828,10 +6985,46 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
 
   // src/app/services/passeur.js
   var passeurEtat = "";
+  var ACCES_KEY = "selene-passeur-acces";
+  var ACCES_TTL = 24 * 36e5;
+  var ACCES = ["ok", "refuse", "absent"];
+  function passeurAcces() {
+    try {
+      const x = JSON.parse(platform.storage.get(ACCES_KEY) || "null");
+      return x && authSession && x.uid === authSession.user.id && Date.now() - x.at < ACCES_TTL && ACCES.includes(x.etat) ? x.etat : "";
+    } catch {
+      return "";
+    }
+  }
+  function accesNote(etat) {
+    if (!authSession || passeurAcces() === etat) return;
+    try {
+      platform.storage.set(ACCES_KEY, JSON.stringify({ uid: authSession.user.id, etat, at: Date.now() }));
+    } catch {
+    }
+  }
+  var accesDe = (r, j) => r.status === 404 || r.status === 503 && j.code === "passeur-non-configure" ? "absent" : r.status === 403 ? "refuse" : r.status === 401 || r.status >= 500 ? "" : "ok";
+  var sondage = null;
+  var sondeApres = 0;
+  var passeurFerme = () => {
+    const a = passeurAcces();
+    return a === "refuse" || a === "absent";
+  };
   var passeurReset = () => {
     passeurEtat = "";
+    sondeApres = 0;
+    try {
+      platform.storage.remove(ACCES_KEY);
+    } catch {
+    }
   };
-  var passeurPret = () => hosted() && authReady() && !!authSession && passeurEtat !== "absent";
+  var passeurPret = () => hosted() && authReady() && !!authSession && passeurEtat !== "absent" && !passeurFerme();
+  var passeurPost = (s, body, signal) => fetch(`${SUPABASE_URL}/functions/v1/passeur`, {
+    method: "POST",
+    signal,
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${s.access_token}` },
+    body: JSON.stringify(body)
+  });
   async function passeurFetch(url, genre, cond = {}) {
     if (!hosted() || !authReady() || !authSession) throw new Error(tr`Le passeur n'existe que dans la version hébergée, connectée à ton compte.`);
     const s = await authRefreshIfNeeded();
@@ -6839,18 +7032,17 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     const ac = new AbortController(), t = setTimeout(() => ac.abort(), 15e3);
     let r;
     try {
-      r = await fetch(`${SUPABASE_URL}/functions/v1/passeur`, {
-        method: "POST",
-        signal: ac.signal,
-        headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${s.access_token}` },
-        body: JSON.stringify({ url, genre, ...cond.etag ? { etag: cond.etag } : {}, ...cond.modifie ? { modifie: cond.modifie } : {} })
-      });
+      r = await passeurPost(s, { url, genre, ...cond.etag ? { etag: cond.etag } : {}, ...cond.modifie ? { modifie: cond.modifie } : {} }, ac.signal);
     } catch {
       throw new Error(tr`Passeur injoignable (hors ligne, ou pas encore déployé).`);
     } finally {
       clearTimeout(t);
     }
     const j = await r.json().catch(() => ({}));
+    {
+      const a = accesDe(r, j);
+      if (a) accesNote(a);
+    }
     if (r.status === 404 || r.status === 503) {
       passeurEtat = "absent";
       throw r.status === 404 ? new Error(tr`Passeur non déployé (voir docs/passeur.md).`) : serverError(j, tr`Passeur non configuré.`);
@@ -6862,6 +7054,31 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     if (!r.ok) throw Object.assign(new Error(tr`Passeur : ${serverMsg(j, tr`erreur ${r.status}`)}.`), { code: j.code || "" });
     passeurEtat = "ok";
     return j;
+  }
+  function passeurSonder() {
+    if (sondage || !hosted() || !authReady() || !authSession || passeurAcces() || Date.now() < sondeApres) return null;
+    sondage = (async () => {
+      const s = await authRefreshIfNeeded();
+      if (!s) return false;
+      const ac = new AbortController(), t = setTimeout(() => ac.abort(), 15e3);
+      let a = "";
+      try {
+        const r = await passeurPost(s, {}, ac.signal);
+        a = accesDe(r, await r.json().catch(() => ({})));
+      } catch {
+      } finally {
+        clearTimeout(t);
+      }
+      if (!a) {
+        sondeApres = Date.now() + 6e5;
+        return false;
+      }
+      accesNote(a);
+      return true;
+    })().finally(() => {
+      sondage = null;
+    });
+    return sondage;
   }
   function sameSite(u, base) {
     const h = (x) => {
@@ -6930,7 +7147,8 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     };
   }
   function passeurSettingsHTML() {
-    const st = passeurEtat === "ok" ? tr`Déployé et ouvert à ton compte.` : passeurEtat === "absent" ? tr`Pas encore déployé, ou pas encore configuré.` : passeurEtat ? tr`Refusé : ${passeurEtat}.` : tr`Pas encore vérifié sur cet appareil.`;
+    const e = passeurEtat || passeurAcces();
+    const st = e === "ok" ? tr`Déployé et ouvert à ton compte.` : e === "absent" ? tr`Pas encore déployé, ou pas encore configuré.` : e === "refuse" ? tr`Refusé à ce compte : son identifiant n'est pas dans PASSEUR_USERS, ou cette adresse n'est pas admise.` : e ? tr`Refusé : ${e}.` : tr`Pas encore vérifié sur cet appareil.`;
     return `<section id="passeur"><h4>${tr`Passeur`}</h4><p class="hint">${tr`Une petite fonction dans ton projet Supabase qui lit pour toi les pages, flux et calendriers que le navigateur ne peut pas lire seul. Elle ne sert que ton compte, refuse toute adresse privée et ne garde rien. Sans elle, les pages passent par Microlink.`}</p>
     <p class="row" style="margin:0 0 8px"><span data-passeur-etat>${esc(st)}</span><button class="btn sm" data-act="passeur-check">${tr`Vérifier`}</button></p>
     <p class="hint">${tr`Ton identifiant, à mettre dans le secret ${"<code>PASSEUR_USERS</code>"} : ${`<code style="word-break:break-all">${esc(authSession.user.id)}</code> <button class="btn ghost sm" data-act="passeur-copy">${tr`copier`}</button>`}. Mode d'emploi : ${`<a href="https://github.com/MarieBonifacio/selene/blob/main/docs/passeur.md" target="_blank" rel="noopener noreferrer">docs/passeur.md</a>`}.`}</p></section>`;
@@ -11597,6 +11815,13 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     const feeds = dehorsFeeds(), mods = S().config.modules.filter((m) => m.on && Object.hasOwn(S().modules, m.id) && !SYSTEM.includes(m.id)).map((m) => m.id);
     const head = `<h2>${tr`Dehors`}</h2><p class="hint">${tr`Ce qui est paru depuis ta dernière visite, dans les flux que tu suis. Douze au plus : le reste attend, rien ne défile. Ce qui croise ce que tu gardes (un motif, un auteur de tes sources, une de tes sources citée, un lien paru dans deux flux) passe devant, et dit pourquoi. Garde ce qui compte, le reste s'efface en un mois.`}</p>`;
     if (!dehorsOn()) return head + `<p class="empty">${tr`Dehors passe par le passeur : il n'existe que dans la version hébergée, connectée à ton compte.`}</p>`;
+    {
+      const p = passeurSonder();
+      if (p) p.then((n) => {
+        if (n && routeOf().view === "dehors") render();
+      });
+    }
+    const ferme = passeurFerme();
     const cache = dehorsCache(), { items, total } = dehorsNow(), byMod = /* @__PURE__ */ new Map();
     for (const it of items) {
       const k = it.f.mod && Object.hasOwn(S().modules, it.f.mod) ? it.f.mod : "";
@@ -11609,7 +11834,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       ${why.length ? `<p class="why">${tr`parce que : ${why.map(esc).join(" · ")}`}</p>` : ""}
       ${x.text ? `<p class="hint" style="margin:4px 0 0">${esc(x.text)}</p>` : ""}</div>
     <div class="row">${x.mb ? Object.hasOwn(S().modules, x.mb.mod) && S().modules[x.mb.mod].entries.some((e) => e.mb && e.mb.rg === x.mb.rg) ? `<span class="hint">${tr`déjà dans ${esc(label(x.mb.mod))}`}</span>` : Object.hasOwn(S().modules, x.mb.mod) ? `<button class="btn sm" data-act="dehors-mb-add">${tr`ajouter à ${esc(label(x.mb.mod))}`}</button>` : "" : sourcesModule() && x.link ? findSourceDup({ url: x.link, doi: x.oa && x.oa.doi || findDoi(x.link) }) ? `<span class="hint">${tr`déjà gardée`}</span>` : `<button class="btn sm" data-act="dehors-keep">${tr`garder`}</button>` : ""}${inboxId(S().modules) ? `<button class="btn ghost sm" data-act="dehors-note">${tr`vers une note`}</button>` : ""}<button class="btn ghost sm" data-act="dehors-hide" aria-label="${tr`Écarter`}">${tr`vu`}</button></div></li>`;
-    const list = !dehorsAll().length ? `<p class="empty">${tr`Aucun flux suivi. Colle ci-dessous l'adresse d'un site, d'une revue, d'une chaîne : Selene trouve son flux.`}</p>` : !items.length ? `<p class="empty">${dehorsBusy ? tr`Lecture des flux…` : tr`Rien de neuf. Le monde a pu se passer de toi, et toi de lui.`}</p>` : [...byMod].map(([k, its]) => `<h3>${esc(k ? label(k) : tr`Sans projet`)}</h3><ul class="plain dehors">${its.map(itemHTML).join("")}</ul>`).join("") + `<div class="row" style="margin-top:12px">${total > items.length ? `<span class="hint" style="margin:0">${trn(total - items.length, "Et {0} autre, qui attendra.", "Et {0} autres, qui attendront.")}</span>` : ""}<span class="spacer"></span><button class="btn sm" data-act="dehors-seen">${tr`Tout marquer comme vu`}</button></div>`;
+    const list = !dehorsAll().length ? `<p class="empty">${ferme ? tr`Rien de suivi pour l'instant. La veille de recherche, plus bas, t'apporte chaque semaine ce qui vient de paraître.` : tr`Aucun flux suivi. Colle ci-dessous l'adresse d'un site, d'une revue, d'une chaîne : Selene trouve son flux.`}</p>` : !items.length ? `<p class="empty">${dehorsBusy ? tr`Lecture des flux…` : tr`Rien de neuf. Le monde a pu se passer de toi, et toi de lui.`}</p>` : [...byMod].map(([k, its]) => `<h3>${esc(k ? label(k) : tr`Sans projet`)}</h3><ul class="plain dehors">${its.map(itemHTML).join("")}</ul>`).join("") + `<div class="row" style="margin-top:12px">${total > items.length ? `<span class="hint" style="margin:0">${trn(total - items.length, "Et {0} autre, qui attendra.", "Et {0} autres, qui attendront.")}</span>` : ""}<span class="spacer"></span><button class="btn sm" data-act="dehors-seen">${tr`Tout marquer comme vu`}</button></div>`;
     const opts = (sel) => `<option value="">${tr`Sans projet`}</option>${mods.map((m) => `<option value="${esc(m)}" ${sel === m ? "selected" : ""}>${esc(label(m))}</option>`).join("")}`;
     const state = (f) => {
       const fc = cache.feeds[f.id];
@@ -11618,9 +11843,9 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     return `<div class="dehors-view">` + head + `<div class="row" style="margin:-4px 0 12px"><span class="hint" style="margin:0">${dehorsBusy ? tr`Lecture des flux…` : cache.at ? tr`Flux relus ${esc(dehorsWhen(cache.at))}.` : ""}</span><span class="spacer"></span>${dehorsAll().length ? `<button class="btn ghost sm" data-act="dehors-refresh" ${dehorsBusy ? "disabled" : ""}>${tr`Relire maintenant`}</button>` : ""}</div>
     ${list}
     <h3 style="margin-top:28px">${tr`Suivre`}</h3>
-    <div class="capture capture-wrap"><input id="dehorsIn" inputmode="url" autocomplete="off" placeholder="${tr`L'adresse d'un site ou d'un flux…`}" aria-label="${tr`Adresse à suivre`}"><select id="dehorsMod" aria-label="${tr`Projet`}">${opts("")}</select><button class="btn" data-act="dehors-add">${tr`Suivre`}</button></div>
+    ${ferme ? `<p class="hint dehors-ferme" style="margin:0 0 8px">${passeurAcces() === "absent" ? tr`Suivre un site passe par le passeur, une fonction du serveur de Selene qui lit les flux à ta place. Il n'est pas installé sur ce serveur ; la veille de recherche, plus bas, fonctionne sans lui.` : tr`Suivre un site passe par le passeur, une fonction du serveur de Selene qui lit les flux à ta place. Il n'est pas ouvert à ce compte ; la veille de recherche, plus bas, fonctionne sans lui.`} <button class="btn ghost sm" data-act="passeur-check">${tr`Vérifier à nouveau`}</button></p>` : `<div class="capture capture-wrap"><input id="dehorsIn" inputmode="url" autocomplete="off" placeholder="${tr`L'adresse d'un site ou d'un flux…`}" aria-label="${tr`Adresse à suivre`}"><select id="dehorsMod" aria-label="${tr`Projet`}">${opts("")}</select><button class="btn" data-act="dehors-add">${tr`Suivre`}</button></div>`}
     ${watchedArtists().length || dehorsConf().artists ? `<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:8px 0 4px"><input type="checkbox" data-act="dehors-artists" ${dehorsConf().artists ? "checked" : ""}>${trn(watchedArtists().length, "Les sorties de mes artistes : MusicBrainz, une fois par semaine, pour {0} artiste relié (trente au plus)", "Les sorties de mes artistes : MusicBrainz, une fois par semaine, pour {0} artistes reliés (trente au plus)")}</label>` : ""}
-    <p class="hint" style="margin:4px 0 10px">${tr`Une newsletter : abonne-toi avec une adresse de ${`<a href="https://kill-the-newsletter.com/" target="_blank" rel="noopener noreferrer">Kill the Newsletter</a>`}, puis suis le flux Atom qu'il te donne (il garde les lettres chez lui : pas pour une correspondance privée).`}</p>
+    ${ferme ? "" : `<p class="hint" style="margin:4px 0 10px">${tr`Une newsletter : abonne-toi avec une adresse de ${`<a href="https://kill-the-newsletter.com/" target="_blank" rel="noopener noreferrer">Kill the Newsletter</a>`}, puis suis le flux Atom qu'il te donne (il garde les lettres chez lui : pas pour une correspondance privée).`}</p>`}
     <h3 style="margin-top:28px">${tr`Veille de recherche`}</h3>
     <p class="hint" style="margin:0 0 8px">${tr`Une recherche (« biodiversity », « renewable energy ») ou un auteur (identifiant OpenAlex ou ORCID) : chaque semaine, ce qui vient de paraître, selon OpenAlex. Elle ne trie pas selon ce qui te donnerait raison ; les liens, c'est toi qui les poses.`}</p>
     <div class="capture capture-wrap"><input id="oaIn" autocomplete="off" placeholder="${tr`Une recherche, un ORCID, un identifiant OpenAlex…`}" aria-label="${tr`Recherche ou auteur à suivre`}"><select id="oaMod" aria-label="${tr`Projet`}">${opts("")}</select><button class="btn" data-act="oa-add">${tr`Veiller`}</button></div>

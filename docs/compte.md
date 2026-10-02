@@ -28,6 +28,33 @@ l'assistant et le passeur. Tant qu'elle n'est pas déployée, le bouton le dit (
 Premier essai conseillé : créer un compte jetable, le supprimer depuis l'app, vérifier dans Supabase
 (Authentication → Users) qu'il a disparu.
 
+## Mot de passe oublié, invitation
+
+Écran de connexion → *Mot de passe oublié ?* : on donne son adresse et Supabase envoie un lien
+(`POST /auth/v1/recover`). La réponse est la même, que l'adresse ait un compte ou non : personne ne peut s'en servir
+pour savoir qui est inscrit. Le lien ramène à Selene avec un jeton après le `#`. Selene l'efface aussitôt de
+l'adresse (ni l'historique ni un favori ne le gardent), le garde en mémoire et demande le nouveau mot de passe deux
+fois (`PUT /auth/v1/user`) : le jeton devient alors la session. Un lien expiré ou déjà utilisé le dit, sans jamais
+afficher le texte d'erreur porté par le lien (n'importe qui peut en fabriquer un). Une invitation (Authentication →
+Users → *Add user* → *Send invitation*) suit le même chemin : son lien demande de choisir le mot de passe du compte.
+C'est ce qui permet de fermer les inscriptions publiques (*Authentication → Sign In / Providers → Allow new users to
+sign up*) et d'inviter les comptes un par un. Selene le lit sur le serveur (`GET /auth/v1/settings`, `disable_signup`) :
+inscriptions fermées, l'écran de connexion ne propose plus de créer un compte et dit que l'on entre sur invitation.
+
+À régler une fois dans le projet Supabase, dans cet ordre :
+
+- **SMTP d'abord** (*Authentication → Emails → SMTP Settings → Enable custom SMTP*). Sans lui, Supabase n'envoie
+  que 2 e-mails par heure, et **seulement aux membres de l'équipe du projet** (Organization settings → Team) : pour
+  tout autre compte, la demande de lien échoue (« Email address not authorized »). Une fois branché, la limite passe à
+  30 par heure (*Authentication → Rate Limits* pour la relever).
+- *Authentication → URL Configuration* : **Site URL** = `https://mariebonifacio.github.io/selene/` ; dans **Redirect
+  URLs**, cette adresse et `https://mariebonifacio.github.io/selene/index.html` (Selene demande à revenir sur la page
+  ouverte, `redirect_to`, et l'app installée s'ouvre sur la première). Une adresse absente de la liste est ignorée au
+  profit de la Site URL. Les apps n'en demandent pas : le lien s'ouvre dans le navigateur, sur le site, puis on se
+  connecte dans l'app avec le nouveau mot de passe.
+- *Authentication → Emails → Templates* : traduire *Reset password* et *Invite user*. Sur l'offre gratuite, les
+  modèles ne se modifient qu'une fois le SMTP branché.
+
 ## Politique de confidentialité
 
 `confidentialite.html`, à la racine, publiée avec le site : <https://mariebonifacio.github.io/selene/confidentialite.html>.

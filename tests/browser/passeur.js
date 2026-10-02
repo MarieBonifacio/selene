@@ -73,6 +73,11 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   await a.click('[data-act="src-cancel"]'); await search(a, 'https://www.lisieres.fr/autre');
   ok(a.passeur.length === 1 && a.microlink === 2, 'et on n’insiste pas auprès d’un passeur absent');
   ok((await a.textContent('.src-bar + .hint')).includes('par Microlink'), 'le texte d’aide le dit');
+  const rf = await open('refus');
+  await search(rf, 'https://www.lisieres.fr/phalenes');
+  ok(rf.passeur.length === 1 && rf.microlink === 1, 'compte non autorisé (403) : Microlink prend le relais');
+  await rf.click('[data-act="src-cancel"]'); await search(rf, 'https://www.lisieres.fr/autre');
+  ok(rf.passeur.length === 1 && rf.microlink === 2 && (await rf.textContent('.src-bar + .hint')).includes('par Microlink'), 'le refus est retenu : plus d’appel au passeur, et l’aide le dit');
 
   console.log('réglages');
   const r = await open('ok', '/index.html#reglages');

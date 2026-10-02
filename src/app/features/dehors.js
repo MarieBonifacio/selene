@@ -19,7 +19,7 @@ import { findSourceDup, keepSource, pubDate, sourcesModule } from "./sources.js"
 import { addNote } from "../modules/notes.js";
 import { hm } from "../scene/sky.js";
 import { authReady, authSession } from "../services/auth.js";
-import { pageToSource, passeurEtat, passeurFetch, passeurPret } from "../services/passeur.js";
+import { pageToSource, passeurAcces, passeurEtat, passeurFerme, passeurFetch, passeurPret, passeurSonder } from "../services/passeur.js";
 import { SYSTEM, routeOf } from "../shell/nav.js";
 import { memoInRender, render } from "../shell/render.js";
 import { S, enabled, label, site } from "../state/site.js";
@@ -194,6 +194,9 @@ VIEWS.dehors = () => {
   const feeds = dehorsFeeds(), mods = S().config.modules.filter(m => m.on && Object.hasOwn(S().modules, m.id) && !SYSTEM.includes(m.id)).map(m => m.id);
   const head = `<h2>${tr`Dehors`}</h2><p class="hint">${tr`Ce qui est paru depuis ta dernière visite, dans les flux que tu suis. Douze au plus : le reste attend, rien ne défile. Ce qui croise ce que tu gardes (un motif, un auteur de tes sources, une de tes sources citée, un lien paru dans deux flux) passe devant, et dit pourquoi. Garde ce qui compte, le reste s'efface en un mois.`}</p>`;
   if (!dehorsOn()) return head + `<p class="empty">${tr`Dehors passe par le passeur : il n'existe que dans la version hébergée, connectée à ton compte.`}</p>`;
+  // Suivre un site demande le passeur ; la veille de recherche et celle des artistes s'en passent. Fermé à ce compte : on le dit.
+  { const p = passeurSonder(); if (p) p.then(n => { if (n && routeOf().view === "dehors") render(); }); }
+  const ferme = passeurFerme();
   const cache = dehorsCache(), { items, total } = dehorsNow(), byMod = new Map();
   for (const it of items) { const k = it.f.mod && Object.hasOwn(S().modules, it.f.mod) ? it.f.mod : ""; if (!byMod.has(k)) byMod.set(k, []); byMod.get(k).push(it); }
   const itemHTML = ({ f, x, t, why }) => `<li class="item" data-feed="${esc(f.id)}" data-item="${esc(x.id)}"><span></span><div>
@@ -203,7 +206,7 @@ VIEWS.dehors = () => {
       ${x.text ? `<p class="hint" style="margin:4px 0 0">${esc(x.text)}</p>` : ""}</div>
     <div class="row">${x.mb ? (Object.hasOwn(S().modules, x.mb.mod) && S().modules[x.mb.mod].entries.some(e => e.mb && e.mb.rg === x.mb.rg) ? `<span class="hint">${tr`déjà dans ${esc(label(x.mb.mod))}`}</span>` : Object.hasOwn(S().modules, x.mb.mod) ? `<button class="btn sm" data-act="dehors-mb-add">${tr`ajouter à ${esc(label(x.mb.mod))}`}</button>` : "")
       : sourcesModule() && x.link ? (findSourceDup({ url: x.link, doi: (x.oa && x.oa.doi) || findDoi(x.link) }) ? `<span class="hint">${tr`déjà gardée`}</span>` : `<button class="btn sm" data-act="dehors-keep">${tr`garder`}</button>`) : ""}${inboxId(S().modules) ? `<button class="btn ghost sm" data-act="dehors-note">${tr`vers une note`}</button>` : ""}<button class="btn ghost sm" data-act="dehors-hide" aria-label="${tr`Écarter`}">${tr`vu`}</button></div></li>`;
-  const list = !dehorsAll().length ? `<p class="empty">${tr`Aucun flux suivi. Colle ci-dessous l'adresse d'un site, d'une revue, d'une chaîne : Selene trouve son flux.`}</p>`
+  const list = !dehorsAll().length ? `<p class="empty">${ferme ? tr`Rien de suivi pour l'instant. La veille de recherche, plus bas, t'apporte chaque semaine ce qui vient de paraître.` : tr`Aucun flux suivi. Colle ci-dessous l'adresse d'un site, d'une revue, d'une chaîne : Selene trouve son flux.`}</p>`
     : !items.length ? `<p class="empty">${dehorsBusy ? tr`Lecture des flux…` : tr`Rien de neuf. Le monde a pu se passer de toi, et toi de lui.`}</p>`
     : [...byMod].map(([k, its]) => `<h3>${esc(k ? label(k) : tr`Sans projet`)}</h3><ul class="plain dehors">${its.map(itemHTML).join("")}</ul>`).join("")
       + `<div class="row" style="margin-top:12px">${total > items.length ? `<span class="hint" style="margin:0">${trn(total - items.length, "Et {0} autre, qui attendra.", "Et {0} autres, qui attendront.")}</span>` : ""}<span class="spacer"></span><button class="btn sm" data-act="dehors-seen">${tr`Tout marquer comme vu`}</button></div>`;
@@ -212,9 +215,10 @@ VIEWS.dehors = () => {
   return `<div class="dehors-view">` + head + `<div class="row" style="margin:-4px 0 12px"><span class="hint" style="margin:0">${dehorsBusy ? tr`Lecture des flux…` : cache.at ? tr`Flux relus ${esc(dehorsWhen(cache.at))}.` : ""}</span><span class="spacer"></span>${dehorsAll().length ? `<button class="btn ghost sm" data-act="dehors-refresh" ${dehorsBusy ? "disabled" : ""}>${tr`Relire maintenant`}</button>` : ""}</div>
     ${list}
     <h3 style="margin-top:28px">${tr`Suivre`}</h3>
-    <div class="capture capture-wrap"><input id="dehorsIn" inputmode="url" autocomplete="off" placeholder="${tr`L'adresse d'un site ou d'un flux…`}" aria-label="${tr`Adresse à suivre`}"><select id="dehorsMod" aria-label="${tr`Projet`}">${opts("")}</select><button class="btn" data-act="dehors-add">${tr`Suivre`}</button></div>
+    ${ferme ? `<p class="hint dehors-ferme" style="margin:0 0 8px">${passeurAcces() === "absent" ? tr`Suivre un site passe par le passeur, une fonction du serveur de Selene qui lit les flux à ta place. Il n'est pas installé sur ce serveur ; la veille de recherche, plus bas, fonctionne sans lui.` : tr`Suivre un site passe par le passeur, une fonction du serveur de Selene qui lit les flux à ta place. Il n'est pas ouvert à ce compte ; la veille de recherche, plus bas, fonctionne sans lui.`} <button class="btn ghost sm" data-act="passeur-check">${tr`Vérifier à nouveau`}</button></p>`
+      : `<div class="capture capture-wrap"><input id="dehorsIn" inputmode="url" autocomplete="off" placeholder="${tr`L'adresse d'un site ou d'un flux…`}" aria-label="${tr`Adresse à suivre`}"><select id="dehorsMod" aria-label="${tr`Projet`}">${opts("")}</select><button class="btn" data-act="dehors-add">${tr`Suivre`}</button></div>`}
     ${watchedArtists().length || dehorsConf().artists ? `<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:8px 0 4px"><input type="checkbox" data-act="dehors-artists" ${dehorsConf().artists ? "checked" : ""}>${trn(watchedArtists().length, "Les sorties de mes artistes : MusicBrainz, une fois par semaine, pour {0} artiste relié (trente au plus)", "Les sorties de mes artistes : MusicBrainz, une fois par semaine, pour {0} artistes reliés (trente au plus)")}</label>` : ""}
-    <p class="hint" style="margin:4px 0 10px">${tr`Une newsletter : abonne-toi avec une adresse de ${`<a href="https://kill-the-newsletter.com/" target="_blank" rel="noopener noreferrer">Kill the Newsletter</a>`}, puis suis le flux Atom qu'il te donne (il garde les lettres chez lui : pas pour une correspondance privée).`}</p>
+    ${ferme ? "" : `<p class="hint" style="margin:4px 0 10px">${tr`Une newsletter : abonne-toi avec une adresse de ${`<a href="https://kill-the-newsletter.com/" target="_blank" rel="noopener noreferrer">Kill the Newsletter</a>`}, puis suis le flux Atom qu'il te donne (il garde les lettres chez lui : pas pour une correspondance privée).`}</p>`}
     <h3 style="margin-top:28px">${tr`Veille de recherche`}</h3>
     <p class="hint" style="margin:0 0 8px">${tr`Une recherche (« biodiversity », « renewable energy ») ou un auteur (identifiant OpenAlex ou ORCID) : chaque semaine, ce qui vient de paraître, selon OpenAlex. Elle ne trie pas selon ce qui te donnerait raison ; les liens, c'est toi qui les poses.`}</p>
     <div class="capture capture-wrap"><input id="oaIn" autocomplete="off" placeholder="${tr`Une recherche, un ORCID, un identifiant OpenAlex…`}" aria-label="${tr`Recherche ou auteur à suivre`}"><select id="oaMod" aria-label="${tr`Projet`}">${opts("")}</select><button class="btn" data-act="oa-add">${tr`Veiller`}</button></div>

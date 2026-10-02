@@ -31,11 +31,19 @@ const PAGES = {
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
   const calls = [];
   const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+  /* Le faux passeur répond comme le vrai : une demande sans genre (la sonde d'accès de Dehors) est refusée après les
+     vérifications d'accès ; mode « refus » : le compte n'est pas dans PASSEUR_USERS. */
+  const probes = { n: 0 }; let mode = 'ok';
+  const access = (route, q) => { // la réponse d'accès, ou null : la demande est à servir
+    if (!q.genre) probes.n++;
+    if (mode === 'refus') return json(route, 403, { erreur: "ce compte n'est pas autorisé à utiliser ce passeur", code: 'compte-non-autorise' });
+    return q.genre ? null : json(route, 400, { erreur: 'genre inconnu', code: 'genre-inconnu' });
+  };
   await ctx.route('https://*.supabase.co/**', route => {
     const req = route.request(), u = new URL(req.url());
     if (u.pathname.startsWith('/auth/')) return json(route, 200, {});
     if (u.pathname === '/functions/v1/passeur') {
-      const q = req.postDataJSON(); calls.push(q);
+      const q = req.postDataJSON(), a = access(route, q); if (a) return a; calls.push(q);
       const pg = PAGES[q.url];
       if (!pg) return json(route, 200, { status: 404, url: q.url, erreur: 'le site répond 404' });
       if (pg.etag && q.etag === pg.etag) return json(route, 200, { status: 304, url: q.url, etag: pg.etag });
@@ -54,6 +62,8 @@ const PAGES = {
 
   console.log('suivre, découvrir');
   ok(await p.isVisible('#nav a[href="#dehors"]') && (await p.textContent('#main')).includes('Aucun flux suivi'), 'une porte dans la navigation ; rien encore');
+  await until(() => probes.n === 1);
+  ok(probes.n === 1 && (await storeJSON(p, 'selene-passeur-acces')).etat === 'ok' && await p.isVisible('#dehorsIn'), 'une sonde : le passeur est ouvert à ce compte, on peut suivre un site');
   await follow('revue.example', 'ecriture'); await until(() => calls.length >= 2); // la page, puis le flux qu'elle annonce
   // Les deux premiers appels : le rafraîchissement lancé après le démarrage peut relire le flux tout juste suivi.
   ok(calls.slice(0, 2).map(c => c.url).join(' ') === 'https://revue.example/ https://revue.example/feed.xml' && calls.every(c => c.genre === 'feed'), 'une adresse de site : sa page annonce le flux, qui est suivi');
@@ -110,6 +120,32 @@ const PAGES = {
   { const c = await storeJSON(p, 'selene-dehors'); c.at = 0; await storeSet(p, 'selene-dehors', JSON.stringify(c)); }
   await p.reload(); await p.waitForTimeout(2500);
   ok(calls.length === 3, 'rouvert plus tard : les flux sont relus, un par un');
+
+  console.log('passeur fermé à ce compte');
+  {
+    mode = 'refus'; probes.n = 0;
+    const ctx3 = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
+    await ctx3.route('https://*.supabase.co/**', route => {
+      const req = route.request(), u = new URL(req.url());
+      if (u.pathname === '/functions/v1/passeur') { const q = req.postDataJSON(); return access(route, q) || json(route, 200, { status: 200, url: q.url, type: 'text/html', texte: '<html></html>' }); }
+      if (u.pathname.startsWith('/auth/')) return json(route, 200, {});
+      return req.method() === 'GET' ? json(route, 200, []) : route.fulfill({ status: 201, body: '' });
+    });
+    await ctx3.addInitScript(([d, s, uid]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); } }, [JSON.stringify(demo), session, UID]);
+    const f = await ctx3.newPage(); f.on('pageerror', e => errs.push(e.message));
+    await f.goto(BASE + '/index.html#dehors'); await until(() => probes.n === 1); await f.waitForTimeout(300);
+    const m = (await f.textContent('#main')).replace(/\s+/g, ' ');
+    ok(m.includes("Il n'est pas ouvert à ce compte") && !(await f.$('#dehorsIn')) && !m.includes('Kill the Newsletter'), 'le passeur refuse ce compte : Dehors le dit, et ne propose plus de suivre un site');
+    ok(m.includes("Rien de suivi pour l'instant") && await f.isVisible('#oaIn'), 'la veille de recherche, qui s’en passe, reste là');
+    const acc = await storeJSON(f, 'selene-passeur-acces');
+    ok(acc.etat === 'refuse' && acc.uid === UID, 'l’accès est retenu pour ce compte');
+    await f.reload(); await f.waitForTimeout(800);
+    ok(probes.n === 1 && !(await f.$('#dehorsIn')), 'rouvert : aucune nouvelle sonde (retenu un jour)');
+    mode = 'ok';
+    await f.click('.dehors-ferme [data-act="passeur-check"]'); await f.waitForTimeout(500);
+    ok(await f.isVisible('#dehorsIn') && (await storeJSON(f, 'selene-passeur-acces')).etat === 'ok', '« Vérifier à nouveau » : ouvert depuis, le champ revient');
+    await ctx3.close();
+  }
 
   console.log('retirer, hors version hébergée');
   await p.goto(BASE + '/index.html#dehors'); await p.waitForTimeout(400);
