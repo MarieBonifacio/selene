@@ -36,8 +36,10 @@ pour savoir qui est inscrit. Le lien ramène à Selene avec un jeton après le `
 l'adresse (ni l'historique ni un favori ne le gardent), le garde en mémoire et demande le nouveau mot de passe deux
 fois (`PUT /auth/v1/user`) : le jeton devient alors la session. Un lien expiré ou déjà utilisé le dit, sans jamais
 afficher le texte d'erreur porté par le lien (n'importe qui peut en fabriquer un). Une invitation (Authentication →
-Users → *Invite user*) suit le même chemin : son lien demande de choisir le mot de passe du compte. C'est ce qui permet
-de fermer les inscriptions publiques et d'inviter les comptes un par un.
+Users → *Add user* → *Send invitation*) suit le même chemin : son lien demande de choisir le mot de passe du compte.
+C'est ce qui permet de fermer les inscriptions publiques (*Authentication → Sign In / Providers → Allow new users to
+sign up*) et d'inviter les comptes un par un. Selene le lit sur le serveur (`GET /auth/v1/settings`, `disable_signup`) :
+inscriptions fermées, l'écran de connexion ne propose plus de créer un compte et dit que l'on entre sur invitation.
 
 À régler une fois dans le projet Supabase, dans cet ordre :
 

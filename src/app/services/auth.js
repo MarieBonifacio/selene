@@ -24,6 +24,20 @@ export let authSession = null, authMode = "signin", authBusy = false, authRefres
 /* Le message sous le formulaire (une erreur, ou une confirmation : ok) et l'adresse tapée : gardés ici, puisque chaque
    rendu redessine l'écran de connexion. */
 let authNote = { text: "", ok: false }, authEmail = "";
+/* Les inscriptions : ouvertes tant que le serveur ne dit pas le contraire (GET /settings, public : disable_signup). Une
+   fois fermées (Authentication → Sign In / Providers), Selene ne propose plus de créer un compte : on y entre par
+   invitation. Demandé une fois, quand l'écran de connexion s'affiche après le démarrage. */
+let authSignupOpen = true, authSignupAsked = false, authBooted = false;
+async function authAskSignup() {
+  authSignupAsked = true;
+  try {
+    const open = !(await authApi("/settings")).disable_signup;
+    if (open === authSignupOpen) return;
+    authSignupOpen = open;
+    if (!open && authMode === "signup") authMode = "signin";
+    if (!authSession) render();
+  } catch {} // hors ligne, ou serveur ancien : on garde le bouton, et le refus du serveur le dira
+}
 const authSay = (text, ok = false) => { authNote = { text, ok }; };
 export const authToggleMode = () => { authMode = authMode === "signup" ? "signin" : "signup"; authSay(""); };
 /* Le lien d'un e-mail de Supabase (mot de passe oublié : type=recovery ; invitation : type=invite) ramène ici avec, après
@@ -183,6 +197,7 @@ window.addEventListener("online", () => { if (authReady()) authKeepAlive(); });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && authReady()) authKeepAlive(); });
 export async function authBoot() {
   if (!authReady()) return null;
+  authBooted = true;
   if (authLink) return null; // le mot de passe d'abord : la session gardée sur cet appareil attend (ou cède la place)
   authSession = authLoad();
   if (authSession) {
@@ -209,7 +224,12 @@ async function authSignIn(email, password) {
 async function authRecover(email) {
   const back = platform.runtime() === "web" ? `?redirect_to=${encodeURIComponent(location.origin + location.pathname)}` : "";
   try { await authApi(`/recover${back}`, { method: "POST", body: JSON.stringify({ email }) }); }
-  catch (e) { throw e.status === 429 ? new Error(tr`Trop de demandes : le serveur limite les e-mails qu'il envoie. Réessaie dans un moment.`) : e; }
+  catch (e) {
+    if (e.status === 429) throw new Error(tr`Trop de demandes : le serveur limite les e-mails qu'il envoie. Réessaie dans un moment.`);
+    // Le SMTP intégré de Supabase n'écrit qu'aux membres de l'équipe du projet : il faut en brancher un (docs/compte.md).
+    if (e.code === "email_address_not_authorized") throw new Error(tr`Le serveur ne sait pas encore envoyer d'e-mail à cette adresse : son envoi n'est pas configuré. Préviens la personne qui gère Selene.`);
+    throw e;
+  }
 }
 /* Le nouveau mot de passe, avec le jeton du lien. Supabase répond par le compte : le jeton devient la session. */
 async function authSetPassword(password) {
@@ -288,11 +308,15 @@ async function authSubmit() {
       const needsConfirm = await authSignUp(email, pw);
       if (needsConfirm) authSay(tr`Compte créé. Vérifie ta boîte mail pour confirmer, puis connecte-toi.`, true);
     } else await authSignIn(email, pw);
-  } catch (e) { authSay(e.message || tr`Connexion impossible.`); }
+  } catch (e) {
+    if (e.code === "signup_disabled") { authSignupOpen = false; authMode = "signin"; }
+    authSay(e.code === "signup_disabled" ? tr`Les inscriptions sont fermées : Selene n'ouvre de compte que sur invitation.` : e.message || tr`Connexion impossible.`);
+  }
   authBusy = false;
   render();
 }
 export function authView() {
+  if (authBooted && !authSignupAsked) authAskSignup();
   const note = `<p class="hint" id="authErr" role="status" style="margin:0${authNote.text ? `;color:var(${authNote.ok ? "--ok" : "--alarm"})` : ""}">${esc(authNote.text)}</p>`;
   const email = `<label>${tr`E-mail`}<input type="email" id="authEmail" required autocomplete="email" value="${esc(authEmail)}"></label>`;
   const page = (intro, fields, buttons) => `<div class="wrap" style="max-width:420px;margin:60px auto 0"><h2>Selene</h2>
@@ -304,11 +328,11 @@ export function authView() {
     `<button class="btn acc" type="submit">${tr`Enregistrer et me connecter`}</button><button class="btn ghost" type="button" data-act="auth-back">${trp("formulaire", "Annuler")}</button>`);
   if (authMode === "recover") return page(tr`Indique l'adresse de ton compte : tu recevras un lien pour choisir un nouveau mot de passe.`, email,
     `<button class="btn acc" type="submit">${tr`Envoyer le lien`}</button><button class="btn ghost" type="button" data-act="auth-back">${tr`Revenir à la connexion`}</button>`);
-  return page(authMode === "signup" ? tr`Crée ton compte pour retrouver tes données sur n'importe quel appareil.` : tr`Connecte-toi pour retrouver tes données.`,
+  return page(authMode === "signup" ? tr`Crée ton compte pour retrouver tes données sur n'importe quel appareil.` : authSignupOpen ? tr`Connecte-toi pour retrouver tes données.` : tr`Connecte-toi pour retrouver tes données. Selene n'ouvre de compte que sur invitation.`,
     `${email}
       <label>${tr`Mot de passe`}<input type="password" id="authPw" required minlength="6" autocomplete="${authMode === "signup" ? "new-password" : "current-password"}"></label>`,
     `<button class="btn acc" type="submit">${authMode === "signup" ? tr`Créer le compte` : tr`Se connecter`}</button>
-      <button class="btn ghost" type="button" data-act="auth-switch">${authMode === "signup" ? tr`J'ai déjà un compte` : tr`Créer un compte`}</button>
+      ${authSignupOpen || authMode === "signup" ? `<button class="btn ghost" type="button" data-act="auth-switch">${authMode === "signup" ? tr`J'ai déjà un compte` : tr`Créer un compte`}</button>` : ""}
       ${authMode === "signin" ? `<button class="btn ghost" type="button" data-act="auth-forgot">${tr`Mot de passe oublié ?`}</button>` : ""}`);
 }
 document.addEventListener("submit", e => { if (e.target.id === "authForm") { e.preventDefault(); authSubmit(); } });

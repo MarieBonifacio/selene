@@ -6,14 +6,17 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
 (async () => {
   const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
-  const open = async (hash = '', { session = null, trop = false } = {}) => {
+  const open = async (hash = '', { session = null, trop = false, fermees = false, nonAutorise = false } = {}) => {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
     p.calls = [];
     const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
     await ctx.route('https://*.supabase.co/**', route => {
       const req = route.request(), u = new URL(req.url());
       p.calls.push({ method: req.method(), path: u.pathname, search: u.search, body: req.postData(), auth: req.headers().authorization });
-      if (u.pathname === '/auth/v1/recover') return trop ? json(route, 429, { code: 429, error_code: 'over_email_send_rate_limit', msg: 'email rate limit exceeded' }) : json(route, 200, {});
+      if (u.pathname === '/auth/v1/settings') return json(route, 200, { disable_signup: fermees, external: { email: true } });
+      if (u.pathname === '/auth/v1/signup') return json(route, 422, { code: 422, error_code: 'signup_disabled', msg: 'Signups not allowed for this instance' });
+      if (u.pathname === '/auth/v1/recover') return trop ? json(route, 429, { code: 429, error_code: 'over_email_send_rate_limit', msg: 'email rate limit exceeded' })
+        : nonAutorise ? json(route, 400, { code: 400, error_code: 'email_address_not_authorized', msg: 'Email address "iris@exemple.org" cannot be used as it is not authorized' }) : json(route, 200, {});
       if (u.pathname === '/auth/v1/user' && req.method() === 'PUT') {
         if (req.headers().authorization !== 'Bearer jeton-lien') return json(route, 403, { code: 403, error_code: 'bad_jwt', msg: 'invalid JWT: token is expired' });
         if (JSON.parse(req.postData()).password === 'ancien-mdp') return json(route, 422, { code: 422, error_code: 'same_password', msg: 'New password should be different from the old password.' });
@@ -50,6 +53,17 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
   const t = await open('', { trop: true });
   await t.click('[data-act="auth-forgot"]'); await t.fill('#authEmail', 'iris@exemple.org'); await submit(t);
   ok((await note(t)).includes('Trop de demandes'), 'trop de demandes (429) : dit, en clair');
+  const na = await open('', { nonAutorise: true });
+  await na.click('[data-act="auth-forgot"]'); await na.fill('#authEmail', 'iris@exemple.org'); await submit(na);
+  ok((await note(na)).includes('ne sait pas encore envoyer') && !(await note(na)).includes('not authorized'), 'envoi non configuré (SMTP intégré de Supabase) : dit, en français');
+
+  console.log('inscriptions fermées');
+  ok(p.calls.filter(c => c.path === '/auth/v1/settings').length === 1, 'les inscriptions sont demandées une fois au serveur');
+  const f = await open('', { fermees: true });
+  ok(!(await f.$('[data-act="auth-switch"]')) && (await f.textContent('#main')).includes('que sur invitation') && await f.isVisible('[data-act="auth-forgot"]'), 'fermées : plus de « Créer un compte », l’invitation est dite ; le mot de passe oublié reste');
+  const s2 = await open();
+  await s2.click('[data-act="auth-switch"]'); await s2.fill('#authEmail', 'nouvelle@exemple.org'); await s2.fill('#authPw', 'un-mot-de-passe'); await submit(s2);
+  ok((await note(s2)).includes('Les inscriptions sont fermées') && !(await s2.$('[data-act="auth-switch"]')) && await s2.isVisible('[data-act="auth-forgot"]'), 'fermées entre-temps : le refus du serveur est traduit, et l’écran revient à la connexion');
 
   console.log('le lien de l’e-mail');
   const r = await open(lien('recovery'));
