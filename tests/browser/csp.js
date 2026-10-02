@@ -13,6 +13,9 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   // Version hébergée pour de vrai (pas de window.claude) : écran de connexion, et le script du service worker,
   // le second script de la page, doit s'exécuter (espion sur register, posé avant tout script de la page).
   const h = await b.newPage(); h.on('pageerror', e => errs.push(e.message));
+  const outside = [], fontsLoaded = [];
+  h.on('request', r => { if (/googleapis|gstatic/.test(r.url())) outside.push(r.url()); });
+  h.on('response', r => { if (/\/fonts\/[^/]+\.woff2$/.test(r.url()) && r.ok()) fontsLoaded.push(r.url()); });
   await h.addInitScript(watch);
   await h.addInitScript(() => { if (navigator.serviceWorker) { const r = navigator.serviceWorker.register.bind(navigator.serviceWorker); navigator.serviceWorker.register = (...a) => { window.__swRegister = true; return r(...a); }; } });
   await h.goto(BASE + '/index.html'); await h.waitForTimeout(500);
@@ -20,6 +23,9 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   const scriptSrc = csp.split(';').map(d => d.trim()).find(d => d.startsWith('script-src '));
   check(!scriptSrc.includes("'unsafe-inline'") && (scriptSrc.match(/'sha256-/g) || []).length === 2, 'script-src : deux empreintes, pas de \'unsafe-inline\'');
   check((await h.textContent('body')).includes('Connecte-toi'), 'hébergé : le script principal s’exécute (écran de connexion)');
+  await h.evaluate(() => document.fonts.ready);
+  check(!outside.length && fontsLoaded.length > 0 && await h.evaluate(() => document.fonts.check('500 16px "IBM Plex Sans"') && [...document.fonts].some(f => f.family.replace(/"/g, '') === 'Spectral' && f.status === 'loaded')),
+    'hébergé : les polices viennent du site, rien ne part chez Google' + (outside.length ? ' : ' + outside.join(' ') : ''));
   check(await h.evaluate(() => !navigator.serviceWorker || window.__swRegister === true), 'hébergé : le script du service worker s’exécute aussi');
   const seenH = await h.evaluate(() => window.__csp.slice());
   check(!seenH.length, 'hébergé : aucune violation de CSP' + (seenH.length ? ' : ' + seenH.join(' | ') : ''));
