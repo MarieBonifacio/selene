@@ -7,12 +7,13 @@ import { authBoot, authReady } from "./services/auth.js";
 import { connectHost } from "./services/host.js";
 import { focusEntry, liveRecents, openOn, routeOf } from "./shell/nav.js";
 import { render } from "./shell/render.js";
+import { local } from "./state/local.js";
 import { S, board, site } from "./state/site.js";
 
 const flushAll = () => { board.flush(); site.flush(); platform.flush(); }; // serveur, puis coffre natif (s'il y en a un)
 window.addEventListener("pagehide", flushAll);
 document.addEventListener("visibilitychange", () => { if (document.hidden) flushAll(); });
-platform.storage.watch(k => { if ((k === board.key && board.reload()) | (k === site.key && site.reload())) render(); }); // un autre onglet
+platform.storage.watch(k => { if ((k === board.key && board.reload()) | (k === site.key && site.reload()) | (k === local.key && local.reload())) render(); }); // un autre onglet
 platform.persist();
 
 // « Ouvrir sur : là où j'en étais » : au premier chargement de la session seulement (la PWA démarre toujours sur #accueil).

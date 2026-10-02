@@ -64,10 +64,11 @@ export function addBudgetEntry(entries, input, id, defaultDate) {
    4 = la Capture devient un module Notes, 5 = le Budget devient un module générique,
    6 = le Chantier devient un module Tâches (ses tâches quittent le document « board »),
    7 = le type « regulation » (« Reprendre la main », docs/regulation.md) : une ancienne version ne saurait ni
-   l'afficher ni le valider.
+   l'afficher ni le valider, 8 = un suivi peut être gardé sur un seul appareil (ADR 27) : une version 7 écrirait
+   des saisies dans son talon synchronisé.
    Une version de l'app qui lit un numéro plus grand que le sien ne doit ni fusionner ni écrire :
    elle ne connaît pas la forme de ces données. */
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 /* Anciennes sections à la racine du document → instances de module. Chaque conversion reçoit l'ancienne
    section, le nom personnalisé et le réglage de regroupement éventuels. Sert aussi aux données de départ. */
 export const SECTION_TO_MODULE = {

@@ -24,6 +24,7 @@ import { addModule, moveMod } from "../shell/actions.js";
 import { SYSTEM, openOn, routeOf } from "../shell/nav.js";
 import { render } from "../shell/render.js";
 import { roman, sigil, sigilPicker, tintOf } from "../shell/sigils.js";
+import { withLocal } from "../state/local.js";
 import { S, board, enabled, label, site } from "../state/site.js";
 import { openForm } from "../ui/dialogs.js";
 import { tip } from "../ui/tips.js";
@@ -200,15 +201,18 @@ CLICK["mod-add"] = () => {
 };
 CLICK["tpl-add"] = el => { const found = MODULE_TEMPLATES.find(t => t.id === el.dataset.tpl); if (found) { const tpl = localTemplate(found); addModule(tpl, tpl.name); } };
 CLICK["mod-del"] = el => {
-  const id = el.dataset.mod, name = label(id);
+  const id = el.dataset.mod, name = label(id), ui = Object.hasOwn(S().modules, id) ? TYPE_UI[S().modules[id].type] : null;
+  const why = ui && ui.cannotDelete ? ui.cannotDelete(id) : ""; if (why) return toast(why);
   openForm(tr`Supprimer « ${name} »`, [{ n: "confirm", l: tr`Retape « ${name} » pour confirmer la suppression définitive de ses données.`, req: true }], {}, v => {
     if (v.confirm !== name) return toast(tr`Nom incorrect, rien n'a été supprimé.`);
     const s = S();
+    if (ui && ui.onDelete) ui.onDelete(id); // une copie gardée sur cet appareil (ADR 27) part avec le module
     deleteModuleInstance(s.modules, s.config.modules, id);
     delete s.config.labels[id]; delete s.config.groups[id]; delete s.config.assistant.share[id];
     site.save(); render(); toast(tr`« ${name} » supprimé.`);
   });
 };
-CLICK["exp"] = () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, site.data), "application/json", tr`Sauvegarde Selene`);
+// La sauvegarde complète contient aussi ce qui n'est gardé que sur cet appareil (ADR 27) : c'est un fichier, il doit tout avoir.
+CLICK["exp"] = () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, withLocal(site.data)), "application/json", tr`Sauvegarde Selene`);
 CLICK["pal"] = el => { S().config.palette = el.dataset.p; site.save(); render(); };
 CLICK["mod-up"] = el => moveMod(el, -1);

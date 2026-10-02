@@ -4,6 +4,7 @@ import { MODULE_TYPES, SCHEMA_VERSION, SECTION_TO_MODULE, inboxId, migrateModule
 import { setSaving } from "../lib/dom.js";
 import { N_, tr } from "../i18n/index.js";
 import { render } from "../shell/render.js";
+import { absorbDeviceTrackers } from "./local.js";
 import { makeStore } from "./store.js";
 
 
@@ -40,6 +41,9 @@ function normalizeSite(d) {
   for (const id of Object.keys(d.modules)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: true });
   for (const k of Object.keys(seed)) if (k !== "modules" && k !== "config" && typeof seed[k] === "object" && !Array.isArray(seed[k])) for (const f of Object.keys(seed[k])) if (d[k][f] == null) d[k][f] = seed[k][f];
   for (const inst of Object.values(d.modules)) if (Object.hasOwn(MODULE_TYPES, inst.type) && MODULE_TYPES[inst.type].normalize) MODULE_TYPES[inst.type].normalize(inst);
+  // Un suivi gardé sur cet appareil (ADR 27) : ses données renvoyées par un autre appareil reviennent ici ; un talon
+  // disparu revient (et retrouve sa place dans la navigation).
+  if (absorbDeviceTrackers(d)) for (const id of Object.keys(d.modules)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: true });
   const inbox = inboxId(d.modules); // une seule boîte de réception, même après une fusion entre appareils
   for (const [id, inst] of Object.entries(d.modules)) if (inst.type === "notes" && inst.config.inbox && id !== inbox) inst.config.inbox = false;
   return d;
