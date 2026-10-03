@@ -1,21 +1,46 @@
 /* Scénario de navigateur : « Reprendre la main » (docs/regulation.md). Lancé par tests/browser/run.js.
+   Hors de l'offre publique : sans compte, l'espace n'est pas proposé ; le compte personnel (marque selene_personnel,
+   sur un faux Supabase) le crée, gardé sur l'appareil (selene-local-v1), le serveur n'en ayant que le nom.
    Vrais formulaires sur téléphone : création privée, configuration (information alcool avant l'objectif), saisies
    décimales, total quotidien sans double compte, journée confirmée puis rouverte, modification arrivée pendant la boîte
    de confirmation (un autre onglet) refusée, envie et pause persistée au rechargement, « je l'ai fait », marques
    dédupliquées, partage avec l'assistant confirmé sur le résumé, aucune fuite vers l'accueil, la recherche, le bilan
    ou la planche. Puis l'ordinateur et l'anglais : pas de débordement, clavier, textes traduits. */
 const { engine, BASE, launchOptions, check, storeJSON, storeSet } = require('./helpers');
+/* Un faux Supabase réduit à la synchronisation (comme regulation-appareil.js) ; on y lit ce qui arrive au serveur. */
+const rows = new Map();
+const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+async function supabase(route) {
+  const req = route.request(), u = new URL(req.url()), m = req.method();
+  if (u.pathname.startsWith('/auth/')) return json(route, 200, {});
+  if (u.pathname !== '/rest/v1/app_state') return json(route, 404, {}); // fonctions (assistant, passeur) : absentes ici
+  const uid = (u.searchParams.get('user_id') || '').replace('eq.', ''), row = rows.get(uid);
+  if (m === 'GET') return json(route, 200, row ? [{ [u.searchParams.get('select')]: row[u.searchParams.get('select')] }] : []);
+  if (m === 'POST') { for (const r of req.postDataJSON()) if (!rows.has(r.user_id)) rows.set(r.user_id, { board: {}, site: {}, ...r }); return route.fulfill({ status: 201, body: '' }); }
+  if (m === 'PATCH') { if (!row) return json(route, 200, []); Object.assign(row, req.postDataJSON()); return json(route, 200, [{ user_id: uid }]); }
+}
+const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'u1', email: 'a@b.c', personnel: true } });
 (async () => {
   const b = await engine.launch(launchOptions);
-  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, timezoneId: 'Europe/Paris', hasTouch: true }), p = await ctx.newPage();
+  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, timezoneId: 'Europe/Paris', hasTouch: true, serviceWorkers: 'block' }), p = await ctx.newPage();
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   try {
-    await p.addInitScript(() => { window.claude = { use: async () => null }; });
+    console.log('hors de l’offre publique : sans compte (l’artefact claude.ai), l’espace n’est pas proposé');
+    const anon = await b.newContext({ viewport: { width: 390, height: 844 } }), a = await anon.newPage();
+    await a.addInitScript(() => { window.claude = { use: async () => null }; });
+    await a.goto(BASE + '/index.html'); await a.waitForSelector('[data-tpl="carnet"]');
+    check(!(await a.$('[data-tpl="regulation"]')), 'accueil : d’autres modèles, pas celui-ci');
+    await anon.close();
+
+    await ctx.route('https://*.supabase.co/**', supabase);
+    await p.addInitScript(s => { if (!localStorage.getItem('selene-auth-session')) { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', 'u1'); } }, session);
     await p.goto(BASE + '/index.html');
     await p.waitForSelector('[data-tpl="regulation"]');
     const main = async () => (await p.textContent('#main')).replace(/\s+/g, ' ');
     const site = () => storeJSON(p, 'selene-site-v1');
-    const id = 'reprendre-la-main', inst = async () => (await site()).modules[id];
+    // Le contenu du suivi vit dans le document local de l'appareil ; le site (synchronisé) n'en a que le talon.
+    const localDoc = () => storeJSON(p, 'selene-local-v1');
+    const id = 'reprendre-la-main', inst = async () => (await localDoc()).modules[id];
     const settle = () => p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     const go = async h => { await p.evaluate(x => { location.hash = x; }, h); await p.waitForFunction(x => location.hash === '#' + x, h); await settle(); };
     const submit = async () => { await p.click('#form button[value="save"]'); await p.waitForFunction(() => !document.querySelector('#dlg').open); await settle(); };
@@ -62,14 +87,14 @@ const { engine, BASE, launchOptions, check, storeJSON, storeSet } = require('./h
     // Le total déclaré propose la confirmation ; pendant qu'elle est ouverte, un autre onglet ajoute une quantité.
     await p.waitForSelector('#cdlg[open]');
     check((await p.textContent('#cmsg')).includes('3 verres standard au total'), 'total déclaré : 1 + complément 2, jamais 1 + 3');
-    let other = await site(); // l'écriture vers IndexedDB est asynchrone : attendre qu'elle porte le complément
-    for (let i = 0; i < 100 && !other.modules[id].entries.some(e => e.declared === 3); i++) { await p.waitForTimeout(50); other = await site(); }
+    let other = await localDoc(); // l'écriture vers IndexedDB est asynchrone : attendre qu'elle porte le complément
+    for (let i = 0; i < 100 && !other.modules[id].entries.some(e => e.declared === 3); i++) { await p.waitForTimeout(50); other = await localDoc(); }
     other.modules[id].entries.push({ id: 'autre-onglet', kind: 'use', date: yesterday, at: Date.now(), zone: '', note: '', value: 0.5 });
     other.updatedAt = Date.now() + 1000;
     // Un autre onglet du même appareil écrit : la page en est prévenue (événement storage ou BroadcastChannel), jamais
     // par sa propre écriture.
     const tab = await ctx.newPage(); await tab.goto(BASE + '/privacy.html');
-    await storeSet(tab, 'selene-site-v1', JSON.stringify(other)); await tab.close();
+    await storeSet(tab, 'selene-local-v1', JSON.stringify(other)); await tab.close();
     await p.waitForFunction(() => document.querySelector('#main').textContent.includes('3,5'));
     await ask(true);
     check((await toast()).includes('ont changé pendant la confirmation'), 'modification pendant la boîte : rien n’est validé en silence');
@@ -102,6 +127,9 @@ const { engine, BASE, launchOptions, check, storeJSON, storeSet } = require('./h
     check(prog.includes('1 marque') && prog.includes('RECOMPENSE_SECRETE') && prog.includes('atteinte'), 'deux actions le même jour : une marque ; récompense personnelle atteinte');
 
     console.log('confidentialité : rien hors de l’espace, partage confirmé');
+    await p.waitForTimeout(1200); // une synchronisation au moins
+    const onServer = JSON.stringify((rows.get('u1') || {}).site || {});
+    check(onServer.includes('Reprendre la main') && !/CONFIDENTIEL_BROWSER|TRIGGER_SECRET|RECOMPENSE_SECRETE/.test(onServer), 'le serveur a le nom du suivi, aucune saisie');
     check(await p.locator('[data-act="bridge-edit"]').count() === 0, 'pas de pont de reprise dans un espace sensible (son texte serait synchronisé)');
     const SECRET = /CONFIDENTIEL_BROWSER|TRIGGER_SECRET|PONT_SECRET|RECOMPENSE_SECRETE|Marcher quelques/;
     await go('accueil');

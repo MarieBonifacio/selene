@@ -836,3 +836,8 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   futur accès au contenu d'un type sensible passe par l'accesseur du module. `tests/regulation.test.js` (faux serveur)
   et `tests/browser/regulation-appareil.js` (deux appareils) lisent le serveur pour vérifier qu'aucune saisie n'y
   arrive. Détail : [regulation.md](regulation.md).
+- **Révision (3 octobre 2026, T3 de l'audit)** : le choix « sur mon compte » et son accord disparaissent. Un suivi
+  configuré connectée va sur l'appareil, sans question ; un suivi encore synchronisé est invité à y revenir, jamais
+  l'inverse ; la garde de déconnexion n'offre plus que l'export ou l'effacement. Le type sort de l'offre publique
+  (`MODULE_TYPES.regulation.personal`) : seul le compte marqué `selene_personnel` dans ses métadonnées serveur le voit
+  proposé. `config.consent` reste lu, pour dire d'où vient un suivi encore synchronisé.

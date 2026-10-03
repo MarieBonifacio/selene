@@ -1,9 +1,10 @@
 /* Scénario de navigateur : « Reprendre la main », gardé sur cet appareil seulement (ADR 27). Deux appareils du même
    compte sur un faux Supabase (interception réseau), comme sync-deux-appareils.js. On lit le serveur lui-même :
-   - choix par défaut à la configuration : sur l'appareil ; le serveur ne reçoit que le talon (nom, présence) ;
+   - le compte personnel (marque selene_personnel) se voit proposer l'espace ; un compte ordinaire, non ;
+   - à la configuration, aucun choix : sur l'appareil ; le serveur ne reçoit que le talon (nom, présence) ;
    - l'autre appareil voit le nom, pas le contenu ; le supprimer de là prévient qu'il ne retire que le nom ;
-   - synchroniser exige l'accord (texte lu, confirmé) ; le retirer rend le talon au serveur ;
-   - se déconnecter avec un suivi gardé ici : la garde demande quoi en faire ; effacer vide l'appareil.
+   - aucun bouton ne synchronise le suivi (un suivi encore synchronisé : tests/regulation.test.js) ;
+   - se déconnecter avec un suivi gardé ici : la garde propose l'export ou l'effacement ; effacer vide l'appareil.
    Lancé par tests/browser/run.js. */
 const { engine, BASE, launchOptions, check, storeJSON } = require('./helpers');
 const rows = new Map();
@@ -20,12 +21,12 @@ async function supabase(route) {
     Object.assign(row, req.postDataJSON()); return json(route, 200, [{ user_id: uid }]);
   }
 }
-const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'u1', email: 'a@b.c' } });
+const sessionFor = (personnel, id) => JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id, email: 'a@b.c', ...(personnel ? { personnel: true } : {}) } });
 const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
-async function device(browser, errs) {
+async function device(browser, errs, personnel = true, id = 'u1') {
   const ctx = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 1280, height: 900 } });
   await ctx.route('https://*.supabase.co/**', supabase);
-  await ctx.addInitScript(s => { if (!localStorage.getItem('selene-auth-session')) { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', 'u1'); } }, session);
+  await ctx.addInitScript(([s, id]) => { if (!localStorage.getItem('selene-auth-session')) { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', id); } }, [sessionFor(personnel, id), id]);
   const page = await ctx.newPage(); page.on('pageerror', e => errs.push(e.message));
   await page.goto(BASE + '/index.html'); await page.waitForTimeout(600);
   return { ctx, page };
@@ -40,11 +41,18 @@ async function device(browser, errs) {
     const ask = async (ok, q = p) => { await q.waitForSelector('#cdlg[open]'); const msg = await q.textContent('#cmsg'); await q.click(`#cdlg button[value="${ok ? 'ok' : 'cancel'}"]`); await settle(q); return msg; };
     const waitServer = async test => { for (let i = 0; i < 60 && !test(server()); i++) await p.waitForTimeout(100); return test(server()); };
 
-    console.log('configuration : sur cet appareil, par défaut');
+    console.log('hors de l’offre publique : proposé au seul compte personnel');
+    const O = await device(browser, errs, false, 'u2'); // un autre compte : sa propre ligne sur le faux serveur
+    check(!(await O.page.$('[data-tpl="regulation"]')), 'un compte ordinaire : l’espace n’est pas proposé à l’accueil');
+    await go('reglages', O.page);
+    check(!(await O.page.$('[data-tpl="regulation"]')) && !(await O.page.$('#newModType option[value="regulation"], #newModType option[value="tpl:regulation"]')), 'ni dans les Réglages');
+    await O.ctx.close();
+
+    console.log('configuration : sur cet appareil, sans question');
     await p.waitForSelector('[data-tpl="regulation"]');
     await p.click('[data-tpl="regulation"]'); await go('reprendre-la-main');
     await p.click('[data-act="rlm-setup"]');
-    check(await p.inputValue('#form [name="storage"]') === 'device', 'le stockage proposé par défaut : sur cet appareil seulement');
+    check(!(await p.$('#form [name="storage"]')) && (await p.textContent('#form')).includes('Selene ne synchronise pas les suivis de santé'), 'aucun choix de stockage : sur cet appareil, dit d’emblée');
     await p.fill('#form [name="name"]', 'Carnet du soir'); await p.selectOption('#form [name="subject"]', 'alcool');
     await p.click('#form button[value="save"]');
     await p.waitForFunction(() => document.querySelector('#form h2').textContent === 'Mon intention');
@@ -66,28 +74,19 @@ async function device(browser, errs) {
     check((await q.textContent('#form')).includes('son nom reviendra'), 'B : supprimer prévient qu’il ne retire que le nom');
     await q.click('#form button[value="cancel"]'); await settle(q);
 
-    console.log('accord, puis retrait');
+    console.log('aucun chemin vers le compte');
     await go('reprendre-la-main');
     await p.evaluate(() => { document.querySelector('.rlm-privacy').open = true; });
-    await p.click('[data-act="rlm-account"]');
-    const consent = await ask(false);
-    check(/données de santé/.test(consent) && /sans chiffrement de bout en bout/.test(consent) && /Confirmer vaut accord/.test(consent), 'l’accord dit ce qu’il engage');
+    check(!(await p.$('[data-act="rlm-account"]')) && !(await p.$('[data-act="rlm-device"]')), 'gardé ici : ni « synchroniser », ni bouton de stockage');
     await p.waitForTimeout(1200);
-    check(!server().includes('NOTE_PRIVEE'), 'refuser : rien n’est envoyé');
-    await p.evaluate(() => { document.querySelector('.rlm-privacy').open = true; });
-    await p.click('[data-act="rlm-account"]'); await ask(true);
-    check(await waitServer(s => s.includes('NOTE_PRIVEE') && s.includes('"consent"')), 'accepter : le contenu et l’accord daté partent au serveur');
-    await p.evaluate(() => { document.querySelector('.rlm-privacy').open = true; });
-    await p.click('[data-act="rlm-device"]');
-    check((await ask(true)).includes("sauvegardes techniques de l'hébergeur"), 'le retrait dit ce qu’il ne peut pas effacer');
-    check(await waitServer(s => !s.includes('NOTE_PRIVEE') && !s.includes('"consent"')), 'retirer l’accord : le serveur n’a plus que le talon');
-    check((await p.textContent('#main')).includes('1,5 verre standard'), 'rien de perdu sur l’appareil');
+    check(!server().includes('NOTE_PRIVEE'), 'le contenu n’est jamais parti au serveur');
+    check((await p.textContent('#main')).includes('1,5 verre standard'), 'tout est sur l’appareil');
 
     console.log('téléphone : nouveaux écrans sans débordement');
     const overflow = x => x.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
     for (const x of [p, q]) await x.setViewportSize({ width: 390, height: 844 });
     await go('reprendre-la-main'); await p.evaluate(() => { document.querySelector('.rlm-privacy').open = true; });
-    check(!(await overflow(p)), 'détenteur : section confidentialité et boutons de stockage');
+    check(!(await overflow(p)), 'détenteur : section confidentialité');
     await go('reprendre-la-main', q);
     check(!(await overflow(q)), 'autre appareil : la vue du talon');
     if (process.env.SHOTS) { await p.screenshot({ path: `${process.env.SHOTS}/appareil-detenteur.png`, fullPage: true }); await q.screenshot({ path: `${process.env.SHOTS}/appareil-autre.png`, fullPage: true }); }
@@ -97,6 +96,7 @@ async function device(browser, errs) {
     await go('reglages'); await p.click('[data-act="auth-out"]');
     await p.waitForFunction(() => document.querySelector('#dlg').open && document.querySelector('#form h2').textContent === 'Avant de te déconnecter');
     check((await p.textContent('#form')).includes('Carnet du soir'), 'la garde nomme ce qui n’existe qu’ici');
+    check(!(await p.$('#form [name="what"] option[value="sync"]')) && !!(await p.$('#form [name="what"] option[value="export"]')), 'partir : l’export ou l’effacement, plus de synchronisation');
     await p.click('#form button[value="cancel"]'); await settle(); await p.waitForTimeout(300);
     check(!!(await p.$('[data-act="auth-out"]')), 'annuler : toujours connectée, rien d’effacé');
     await p.click('[data-act="auth-out"]'); await p.waitForFunction(() => document.querySelector('#dlg').open);

@@ -22,9 +22,9 @@ lancé Selene. Avant chaque essai, recharger l'app une fois sur les appareils d�
 connaît pas le format 8 et refuse d'écrire.
 
 - [ ] **« Reprendre la main » sur deux appareils du même compte** : le
-  [parcours manuel](regulation.md#parcours-manuel-cinq-minutes), étapes 1 à 9. À voir en particulier : le choix
-  « sur cet appareil » proposé d'abord, l'autre appareil qui n'affiche que le nom, l'accord demandé avant de
-  synchroniser, la garde à la déconnexion.
+  [parcours manuel](regulation.md#parcours-manuel-cinq-minutes), étapes 1 à 9. À voir en particulier : l'espace
+  proposé au seul compte marqué personnel, aucun choix de stockage, l'autre appareil qui n'affiche que le nom, aucun
+  bouton vers le compte, la garde à la déconnexion.
 - [ ] **Android**, avec l'APK de la course *Android* : lancement à froid, hors ligne puis en ligne, partage depuis
   Chrome, bouton retour, rotation, clavier, synchronisation avec la PWA ([android.md](android.md#tester)).
 - [ ] **iPhone**, par TestFlight une fois le compte Apple ouvert : lancement à froid, hors ligne puis en ligne,
@@ -40,24 +40,25 @@ connaît pas le format 8 et refuse d'écrire.
   ([compte.md](compte.md#mot-de-passe-oublié-invitation)).
 - [ ] **La fonction `compte`** déployée (workflow *Compte*), puis un essai : créer un compte jetable, le supprimer
   depuis l'app, vérifier qu'il a disparu ([compte.md](compte.md#déployer)).
+- [ ] **Marquer le compte personnel**, une fois, dans l'éditeur SQL : sans cette marque, « Reprendre la main » n'est
+  proposé à personne ([regulation.md](regulation.md#hors-de-loffre-publique)). Ne pas se déconnecter pour l'obtenir
+  plus vite : la déconnexion vide l'appareil.
+- [ ] **Ramener sur un appareil un suivi encore synchronisé**, s'il en existe un : son bandeau « Ce suivi doit revenir
+  sur un appareil » le propose. Selene ne synchronise plus les suivis de santé depuis le 3 octobre 2026.
 - [ ] **Le test d'isolation entre comptes**, sur un projet de préproduction, puis la comparaison de ses règles avec
   celles de la production ([compte.md](compte.md#vérifier-lisolation-entre-comptes)).
 
 ## Publier dans les stores
 
-Le chemin complet (comptes, clés, secrets, premier envoi) est dans [publication.md](publication.md). Pour
-« Reprendre la main », qui contient des données de santé :
+Le chemin complet (comptes, clés, secrets, premier envoi) est dans [publication.md](publication.md).
+« Reprendre la main » est hors de l'offre publique depuis le 3 octobre 2026
+([regulation.md](regulation.md#hors-de-loffre-publique)) :
 
-- [ ] **Google Play, Contenu de l'application** : la sécurité des données (*Santé et forme → Informations de santé* :
-  facultatif, collecté seulement si la personne synchronise un suivi avec son accord), la déclaration des applications
-  de santé si la Console la présente, le questionnaire de classification (références au tabac, à l'alcool et aux
-  drogues), une fiche sans revendication médicale ([publication.md](publication.md#android--google-play), étape 5).
-- [ ] **App Store Connect** : la confidentialité de l'app (*Santé et forme → Santé*), la classification par âge, la
-  règle 1.4.3 ([publication.md](publication.md#ios--app-store), étape 6).
-- [ ] **En remplissant la sécurité des données**, vérifier dans l'aide de chaque console comment elle compte les
-  sauvegardes du système : un suivi gardé « sur cet appareil » peut être copié par la sauvegarde automatique d'Android
-  ou par iCloud, sous le compte Google ou Apple de la personne, sans que Selene le reçoive jamais
-  ([regulation.md](regulation.md#confidentialité), « Sauvegardes du système »).
+- [ ] **Exclure le type « Reprendre la main » des versions des stores**, à la construction, avant le premier envoi.
+  Le masquer ne suffit pas : la règle 2.3.1 d'Apple refuse les fonctions cachées.
+- [ ] **Google Play, Contenu de l'application**, et **App Store Connect** : les déclarations se remplissent alors sans
+  données de santé ni références au tabac, à l'alcool ou aux drogues ([publication.md](publication.md#android--google-play),
+  étape 5 ; [publication.md](publication.md#ios--app-store), étape 6).
 
 ## Conformité (RGPD)
 
@@ -65,13 +66,15 @@ La politique de confidentialité remplit l'article 13 : responsable, bases léga
 ([compte.md](compte.md#politique-de-confidentialité)). Restent les obligations qu'aucune page ne remplit :
 
 - [ ] **Le registre des activités de traitement** (article 30). La dispense des structures de moins de 250 personnes
-  ne s'applique pas quand le traitement porte sur des données de santé, ce qui est le cas dès qu'un suivi est
-  synchronisé. La CNIL publie un modèle. Y décrire : le compte et sa synchronisation, les suivis de santé synchronisés,
-  l'assistant, la sécurité, avec pour chacun les données, la base légale, la durée et les sous-traitants.
-- [ ] **L'analyse d'impact (AIPD, article 35)** : évaluer si elle est obligatoire (données de santé d'un côté, le
-  critère de « grande échelle » de l'autre) et écrire la conclusion avec ses raisons, même si elle est négative.
-- [ ] **L'hébergement de données de santé (HDS**, article L.1111-8 du Code de la santé publique) : faire confirmer par
-  un juriste qu'un carnet tenu par la personne elle-même, hors de tout cadre de soins, n'y est pas soumis.
+  ne s'applique pas à un traitement qui n'est pas occasionnel, comme un compte synchronisé en continu. La CNIL publie
+  un modèle. Y décrire : le compte et sa synchronisation, l'assistant, la sécurité, avec pour chacun les données, la
+  base légale, la durée et les sous-traitants ; et les suivis de santé encore synchronisés, tant qu'il en reste.
+- [ ] **L'analyse d'impact (AIPD, article 35)** : évaluer si elle est obligatoire, et écrire la conclusion avec ses
+  raisons, même négative. Depuis que les suivis de santé ne passent plus par le serveur, le critère des données
+  sensibles ne joue plus que pour ceux d'avant le 3 octobre 2026.
+- [ ] **L'hébergement de données de santé (HDS**, article L.1111-8 du Code de la santé publique) : la question ne se
+  pose plus une fois les derniers suivis synchronisés ramenés sur un appareil (plus haut). D'ici là, ou si la
+  synchronisation revenait, la faire trancher par un juriste.
 - [ ] **L'accord de sous-traitance de Supabase** (DPA, article 28), à demander sur
   <https://supabase.com/legal/dpa> ([compte.md](compte.md#politique-de-confidentialité)).
 

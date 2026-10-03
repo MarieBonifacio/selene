@@ -40,7 +40,10 @@ demo.config.modules.find(m => m.id === 'ecriture').group = 'Création';
   const m = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   await go(m, 'moth');
   ok(await m.evaluate(() => document.documentElement.scrollWidth) <= 390, 'le kanban défile dans son cadre : la page ne s’élargit pas (sinon iOS dézoome tout)');
-  await m.tap('[data-act="col-new"]'); await m.waitForTimeout(350);
+  // La feuille monte en 260 ms (--t-3), plus sous une CI chargée : on la mesure une fois son animation finie, pas après
+  // un délai fixe (WebKit en CI la trouvait parfois encore en chemin).
+  await m.tap('[data-act="col-new"]'); await m.waitForSelector('#dlg[open]');
+  await m.$eval('#dlg', el => Promise.all(el.getAnimations().map(a => a.finished)));
   const box = await m.$eval('#dlg', el => { const r = el.getBoundingClientRect(); return { bottom: r.bottom, width: r.width }; });
   ok(Math.abs(box.bottom - 844) < 2 && box.width >= 389, 'sur téléphone, un formulaire monte du bas, pleine largeur');
 

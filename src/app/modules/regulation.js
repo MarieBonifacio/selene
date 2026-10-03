@@ -6,7 +6,7 @@
 import { REGULATION_COMPARE_MIN, REGULATION_SUBJECTS, addDays, addRegulationGoal, closeRegulationDay, markUrgeDone, regulationComparable,
   regulationDay, regulationGoal, regulationGoalHistory, regulationNextGoal, regulationPause, regulationPeriod, regulationProgress, regulationRemaining,
   regulationSnapshot, regulationStart, regulationSubjectConflict, regulationSupports, saveRegulationEvent, saveRegulationTotal, setRegulationPlan, setupRegulation,
-  startRegulationPause, stopRegulationPause, urgeActionId, REGULATION_CONSENT_VERSION, regulationOnDevice } from "../../core/regulation.js";
+  startRegulationPause, stopRegulationPause, urgeActionId, regulationOnDevice } from "../../core/regulation.js";
 import { createBackup } from "../../core/backup.js";
 import { hosted } from "../../platform.js";
 import { registerType } from "../registry.js";
@@ -17,7 +17,7 @@ import { N_, tr, trn, uiLocale } from "../i18n/index.js";
 import { errMsg, regNum } from "../lib/labels.js";
 import { authReady, authSession } from "../services/auth.js";
 import { render } from "../shell/render.js";
-import { deviceId, local, localCopy, localIds, moveToAccount, moveToDevice, forgetLocal, withLocal } from "../state/local.js";
+import { deviceId, local, localCopy, localIds, moveToDevice, forgetLocal, withLocal } from "../state/local.js";
 import { S, board, enabled, label, site } from "../state/site.js";
 import { ask, openForm } from "../ui/dialogs.js";
 
@@ -45,9 +45,10 @@ const save = () => { site.save(); local.save(); render(); };
 /* Le contenu d'un suivi : sa copie locale s'il est gardé sur cet appareil (ADR 27), sinon le document synchronisé. Null
    sur un appareil qui n'en a que le talon. */
 const T = id => { const inst = Object.hasOwn(S().modules, id) ? S().modules[id] : null; return regulationOnDevice(inst) ? localCopy(id) : inst; };
-// Connectée à un compte : le choix « sur cet appareil / sur mon compte » n'a de sens que là (l'artefact ne synchronise rien).
+// Connectée à un compte : seul cas où un suivi pourrait passer par le serveur (l'artefact ne synchronise rien). Selene ne
+// synchronise plus les suivis de santé (docs/regulation.md, « Hors de l'offre publique ») : un nouveau suivi est gardé
+// sur l'appareil, et un suivi encore synchronisé est invité à y revenir.
 const synced = () => hosted() && authReady() && !!authSession;
-const consentNow = () => ({ at: Date.now(), version: REGULATION_CONSENT_VERSION });
 /* L'information propre à l'alcool : avant tout objectif (dans le formulaire), et repliée dans l'espace ensuite, pas
    répétée à chaque saisie. Sources et date de vérification : docs/regulation.md. */
 const alcoholRisk = () => tr`En cas de dépendance à l'alcool (envie très difficile à contrôler, tremblements ou sueurs au réveil, besoin de boire pour aller bien), un arrêt brutal ou une réduction rapide peuvent être dangereux : le sevrage peut provoquer des convulsions ou un delirium tremens. Prépare ce changement avec un médecin ou un CSAPA (centre de soins, d'accompagnement et de prévention en addictologie, gratuit, où l'on peut rester anonyme). Selene ne propose ni calendrier de sevrage, ni dose, ni conseil de traitement.`;
@@ -58,19 +59,15 @@ const alcoholHelp = () => tr`Alcool Info Service : 0 980 980 930, de 8 h à 2 h,
 /* Premier réglage, en deux formulaires : le nom (libre) et le sujet, puis l'intention. Le nom est enregistré tout de
    suite ; le sujet, avec la première version d'objectif seulement (un formulaire abandonné ne fige rien). */
 function subjectForm(id) {
-  const where = synced() ? [{ n: "storage", l: tr`Où garder ce suivi ?`, t: "select", o: [["device", tr`Sur cet appareil seulement (recommandé)`], ["account", tr`Sur mon compte, synchronisé avec mes appareils`]] }] : [];
   const about = tr`Un suivi, un sujet, une unité : le tabac en cigarettes, le cannabis en grammes de produit, l'alcool en verres standard, les réseaux sociaux en minutes déclarées. Pour en suivre plusieurs, crée un suivi par sujet : leurs unités, objectifs et marques ne se mélangent pas. Le sujet ne change plus ensuite.`;
-  openForm(tr`Ce que je veux suivre`, [{ n: "name", l: tr`Nom du suivi, visible partout (navigation, compte) : un nom neutre ne dit rien du sujet`, req: true }, { n: "subject", l: tr`Sujet du suivi`, t: "select", o: Object.keys(SUBJECTS).map(k => [k, SUBJECTS[k].name()]) }, ...where], { name: label(id), subject: "tabac", storage: "device" },
-    async v => {
+  openForm(tr`Ce que je veux suivre`, [{ n: "name", l: tr`Nom du suivi, visible partout (navigation, compte) : un nom neutre ne dit rien du sujet`, req: true }, { n: "subject", l: tr`Sujet du suivi`, t: "select", o: Object.keys(SUBJECTS).map(k => [k, SUBJECTS[k].name()]) }], { name: label(id), subject: "tabac" },
+    v => {
       const inst = S().modules[id], name = v.name.trim().slice(0, 60);
       if (inst && name && name !== label(id)) { inst.label = name; delete S().config.labels[id]; save(); }
-      if (synced() && inst && !inst.config.storage) {
-        if (v.storage === "account") { if (!await chooseAccount(id)) return; } // pas d'accord : rien n'est configuré
-        else chooseDevice(id);
-      }
+      if (synced() && inst && !inst.config.storage) chooseDevice(id);
       goalForm(id, v.subject);
     },
-    synced() ? `${about}\n\n${tr`Sur cet appareil seulement : Selene ne l'envoie nulle part, ton compte n'en garde que le nom (seule la sauvegarde de ton appareil, Google ou iCloud, peut l'inclure si tu l'as activée). Sur ton compte : il est synchronisé sur le serveur de Selene, avec ton accord explicite, et retrouvé sur tes appareils. Tu pourras changer d'avis.`}` : about);
+    synced() ? `${about}\n\n${tr`Ce suivi reste sur cet appareil : Selene ne synchronise pas les suivis de santé, ton compte n'en garde que le nom. Seule la sauvegarde de ton appareil (Google ou iCloud), si tu l'as activée, peut l'inclure.`}` : about);
 }
 function goalForm(id, setupSubject = null) {
   const inst = T(id), subject = setupSubject || inst.config.subject, sub = SUBJECTS[subject], today = todayISO(), cur = regulationGoal(inst, today);
@@ -153,18 +150,9 @@ function planForm(id) {
     setRegulationPlan(cur, { ...v, rewards: v.rewards === "on" }); save(); toast(tr`Enregistré.`);
   }, tr`Des actions concrètes et à ta portée : marcher, dessiner, éloigner un déclencheur, appeler quelqu'un… Les marques sont facultatives : une par journée où tu déclares une action réalisée, jalons fixes à 1, 3, 7, 14 et 30. Aucune série à tenir, rien ne se perd après un écart. La récompense est la tienne, gratuite si tu veux.`);
 }
-/* ---- où vit le suivi (ADR 27) : l'accord à la synchronisation, son retrait ---- */
-/* Synchroniser avec le compte : seulement après avoir lu ce que cela veut dire. L'accord est daté et versionné. */
-async function chooseAccount(id) {
-  if (!await ask(tr`Synchroniser « ${label(id)} » avec ton compte ? Ce suivi contient des données de santé. Il sera enregistré sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte mais sans chiffrement de bout en bout, et retrouvé sur tes appareils. Tu pourras retirer cet accord à tout moment : le suivi reviendra alors sur un seul appareil. Confirmer vaut accord.`)) return false;
-  const s = S(), inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null; if (!inst) return false;
-  if (regulationOnDevice(inst)) { if (!localCopy(id)) return false; moveToAccount(s, id, consentNow()); }
-  else { inst.config.storage = "account"; inst.config.consent = consentNow(); delete inst.config.holder; }
-  save(); toast(tr`« ${label(id)} » est synchronisé avec ton compte.`);
-  return true;
-}
-/* Garder sur cet appareil seulement (choix de départ, ou retrait de l'accord) : le contenu passe dans le document local,
-   le compte n'en garde que le talon dès la synchronisation suivante. */
+/* ---- où vit le suivi (ADR 27) : sur l'appareil ---- */
+/* Garder sur cet appareil seulement (à la création, ou pour un suivi encore synchronisé) : le contenu passe dans le
+   document local, le compte n'en garde que le talon dès la synchronisation suivante. Aucun chemin ne fait l'inverse. */
 async function chooseDevice(id, confirm = false) {
   if (confirm && !await ask(tr`Garder « ${label(id)} » sur cet appareil seulement ? À la prochaine synchronisation, ses données quittent ton compte : tes autres appareils n'en verront plus que le nom. Les sauvegardes techniques de l'hébergeur peuvent encore le contenir 30 jours au plus. Cet appareil devient le seul à le garder : se déconnecter te demandera quoi en faire, et un export de temps en temps te protège d'une perte.`)) return false;
   const s = S(), inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null; if (!inst || regulationOnDevice(inst)) return false;
@@ -172,19 +160,18 @@ async function chooseDevice(id, confirm = false) {
   return true;
 }
 const exportBackup = () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, withLocal(site.data)), "application/json", tr`Sauvegarde Selene`);
-/* Avant une déconnexion (qui vide l'appareil) : ce qui n'existe qu'ici est exporté, synchronisé ou effacé, au choix.
+/* Avant une déconnexion (qui vide l'appareil) : ce qui n'existe qu'ici est exporté ou effacé, au choix.
    Rend faux si la personne annule : on ne se déconnecte pas. */
 export function deviceSignOutGuard() {
   const ids = localIds(); if (!ids.length) return Promise.resolve(true);
   const names = ids.map(id => `« ${label(id) || localCopy(id).label} »`).join(", ");
   return new Promise(resolve => {
     openForm(tr`Avant de te déconnecter`, [{ n: "what", l: tr`Que faire de ce qui n'existe que sur cet appareil ?`, t: "select", o: [
-      ["export", tr`Télécharger une sauvegarde complète, puis l'effacer d'ici`], ["sync", tr`Le synchroniser avec mon compte (avec mon accord)`], ["erase", tr`L'effacer définitivement`]] }], { what: "export" },
+      ["export", tr`Télécharger une sauvegarde complète, puis l'effacer d'ici`], ["erase", tr`L'effacer définitivement`]] }], { what: "export" },
     async v => {
       if (v.what === "export") { // un téléchargement qui échoue ne déconnecte pas : rien n'est encore effacé
         try { await exportBackup(); return resolve(true); } catch (e) { toast(errMsg(e, tr`Sauvegarde non téléchargée : rien n'a été effacé.`)); return resolve(false); }
       }
-      if (v.what === "sync") { for (const id of ids) if (!await chooseAccount(id)) return resolve(false); return resolve(true); }
       resolve(await ask(tr`Effacer définitivement ${names} ? Il n'en existe aucune autre copie.`));
     }, tr`${names} : gardé sur cet appareil seulement, nulle part ailleurs. Se déconnecter vide cet appareil.`);
     const d = $("#dlg"), onClose = () => { d.removeEventListener("close", onClose); if (d.returnValue !== "save") resolve(false); };
@@ -320,14 +307,14 @@ function entryHTML(inst, e) {
     `<button class="btn ghost sm ra" data-act="rlm-del">${e.kind === "day" ? tr`laisser inconnue` : tr`suppr.`}</button>`].join("");
   return `<li class="item" data-id="${esc(e.id)}"><span class="jdate">${fmt(e.date)}</span><div>${main}${e.note ? `<p class="note">${esc(e.note)}</p>` : ""}${e.editedAt ? `<div class="meta"><span>${tr`corrigé`}</span></div>` : ""}</div><div class="row">${acts}</div></li>`;
 }
-/* Où vit ce suivi, en une phrase : sur l'appareil (et rien que le nom sur le compte), synchronisé avec un accord daté,
-   synchronisé depuis avant la question, ou, sans compte, sur l'appareil tout court. */
+/* Où vit ce suivi, en une phrase : sur l'appareil (et rien que le nom sur le compte), encore synchronisé (avec un accord
+   daté, ou depuis sa création), ou, sans compte, sur l'appareil tout court. */
 function whereText(id) {
   const stub = S().modules[id], c = stub.config;
   if (!synced()) return tr`Sur cet appareil : sans compte, rien n'est envoyé au serveur de Selene.`;
   if (regulationOnDevice(stub)) return tr`Sur cet appareil seulement. Ton compte n'en garde que le nom, pour que tes autres appareils sachent qu'il existe : son contenu ne passe pas par le serveur. La sauvegarde de cet appareil (Google, iCloud…), si tu l'as activée, peut l'inclure : elle relève de ton compte Google ou Apple, pas de Selene. Ce n'est pas un coffre chiffré : quiconque ouvre cet appareil déverrouillé peut lire son stockage. Perdre l'appareil peut faire perdre le suivi : exporte-le de temps en temps.`;
-  if (c.consent) return tr`Synchronisé avec ton compte depuis ton accord du ${fmt(iso(new Date(c.consent.at)), { day: "numeric", month: "long", year: "numeric" })} : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Tu peux retirer cet accord : le suivi reviendra sur cet appareil seulement.`;
-  return tr`Synchronisé avec ton compte, sans accord enregistré : ce suivi date d'avant la question. Choisis ci-dessus où le garder.`;
+  if (c.consent) return tr`Encore synchronisé avec ton compte, selon ton accord du ${fmt(iso(new Date(c.consent.at)), { day: "numeric", month: "long", year: "numeric" })} : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.`;
+  return tr`Encore synchronisé avec ton compte, depuis sa création : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.`;
 }
 /* Un suivi gardé sur un autre appareil : ici, son nom seulement. Ou, sur l'appareil qui devait le garder, l'aveu que son
    stockage a été effacé (une sauvegarde complète faite ici peut le rendre). */
@@ -337,10 +324,11 @@ function elsewhereHTML(id) {
     ? tr`Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi.`
     : tr`Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là. Appareil perdu, ou Selene réinstallée ? Tu peux retirer ce nom dans les réglages.`}</p></section></div>`;
 }
-/* Un suivi synchronisé depuis avant la question : rien ne change tant que la personne n'a pas choisi. */
-const choiceHTML = id => synced() && !S().modules[id].config.storage ? `<section class="rlm-choice" aria-labelledby="rlmChoiceH"><h3 id="rlmChoiceH">${tr`Où garder ce suivi ?`}</h3>
-    <p>${tr`Ce suivi est synchronisé avec ton compte depuis sa création, avant que Selene ne te demande ton accord. Il contient des données de santé : choisis où le garder. Rien ne change tant que tu n'as pas choisi.`}</p>
-    <div class="row"><button class="btn acc" data-act="rlm-device">${tr`Le garder sur cet appareil seulement…`}</button><button class="btn" data-act="rlm-account">${tr`Le garder synchronisé (avec mon accord)…`}</button></div></section>` : "";
+/* Un suivi encore synchronisé (avec ou sans accord) : l'invitation à le garder sur un appareil. Rien ne change tant que
+   la personne n'a pas choisi lequel : Selene ne décide pas à sa place de l'appareil qui le gardera seul. */
+const choiceHTML = id => synced() && !regulationOnDevice(S().modules[id]) ? `<section class="rlm-choice" aria-labelledby="rlmChoiceH"><h3 id="rlmChoiceH">${tr`Ce suivi doit revenir sur un appareil`}</h3>
+    <p>${tr`Selene ne synchronise plus les suivis de santé. Celui-ci l'est encore : garde-le sur l'appareil de ton choix, et son contenu quittera ton compte. Tant que tu n'as pas choisi, rien ne change.`}</p>
+    <div class="row"><button class="btn acc" data-act="rlm-device">${tr`Le garder sur cet appareil seulement…`}</button></div></section>` : "";
 function privacyHTML(id, inst) {
   const shared = !!S().config.assistant.share[id];
   return `<details class="rlm-privacy" id="rlmPriv-${esc(id)}"><summary>${tr`Confidentialité et données`}</summary>
@@ -354,7 +342,7 @@ function privacyHTML(id, inst) {
       <li><b>${tr`Export de ce suivi.`}</b> ${tr`Un fichier JSON lisible, non chiffré : nom, sujet, objectifs et leur historique, journal complet avec les notes, appuis et récompense. Pour le consulter ou le garder ; une restauration passe par la sauvegarde complète.`}</li>
       <li><b>${tr`Suppression.`}</b> ${tr`Supprimer ce suivi efface ses données de cet appareil puis, à la synchronisation suivante, de ton compte et de tes autres appareils. Les sauvegardes et exports déjà téléchargés restent là où tu les as rangés.`}</li>
     </ul>
-    <div class="row">${synced() ? (regulationOnDevice(S().modules[id]) ? `<button class="btn sm" data-act="rlm-account">${tr`Synchroniser avec mon compte…`}</button>` : `<button class="btn sm" data-act="rlm-device">${tr`Garder sur cet appareil seulement…`}</button>`) : ""}<button class="btn sm" data-act="rlm-share">${shared ? tr`Ne plus partager avec l'assistant` : tr`Partager ce résumé avec l'assistant…`}</button><button class="btn sm" data-act="rlm-export">${tr`Exporter ce suivi`}</button><button class="btn ghost sm" data-act="mod-del" data-mod="${esc(id)}">${tr`Supprimer ce suivi…`}</button></div></details>`;
+    <div class="row">${synced() && !regulationOnDevice(S().modules[id]) ? `<button class="btn sm" data-act="rlm-device">${tr`Garder sur cet appareil seulement…`}</button>` : ""}<button class="btn sm" data-act="rlm-share">${shared ? tr`Ne plus partager avec l'assistant` : tr`Partager ce résumé avec l'assistant…`}</button><button class="btn sm" data-act="rlm-export">${tr`Exporter ce suivi`}</button><button class="btn ghost sm" data-act="mod-del" data-mod="${esc(id)}">${tr`Supprimer ce suivi…`}</button></div></details>`;
 }
 function setupHTML(id) {
   return `<section><p>${tr`Un espace pour observer, réduire ou arrêter le tabac, le cannabis, l'alcool ou les réseaux sociaux, à ton rythme. Tu notes ce que tu veux ; une journée ne compte que lorsque tu la confirmes.`}</p>
@@ -437,7 +425,6 @@ const TYPE = {
     "rlm-pause": el => { const id = modOf(el); startRegulationPause(T(id), entryOf(el), Date.now()); save(); },
     "rlm-pause-stop": el => { stopRegulationPause(T(modOf(el)), el.dataset.id); save(); },
     "rlm-device": el => chooseDevice(modOf(el), true),
-    "rlm-account": el => chooseAccount(modOf(el)),
     "rlm-share": el => {
       const id = modOf(el);
       if (!S().config.assistant.share[id]) return confirmSensitiveShare(id);

@@ -107,8 +107,14 @@ function weakText(body) {
 }
 function toSession(body) {
   if (!body.access_token) return null;
-  return { access_token: body.access_token, refresh_token: body.refresh_token, expires_at: Math.floor(Date.now() / 1000) + (body.expires_in || 3600), user: { id: body.user.id, email: body.user.email } };
+  const user = { id: body.user.id, email: body.user.email };
+  if (body.user.app_metadata?.selene_personnel === true) user.personnel = true;
+  return { access_token: body.access_token, refresh_token: body.refresh_token, expires_at: Math.floor(Date.now() / 1000) + (body.expires_in || 3600), user };
 }
+/* Le compte de l'éditrice : celui dont les métadonnées serveur (app_metadata, que seule la clé serveur écrit, jamais la
+   page) portent selene_personnel. Il voit les modules hors de l'offre publique (MODULE_TYPES, personal). La marque se
+   pose dans l'éditeur SQL de Supabase (docs/regulation.md) ; une session ouverte la reçoit au rafraîchissement suivant. */
+export const personalAccount = () => authSession?.user?.personnel === true;
 /* Marge > intervalle du minuteur (5 min) : sinon le jeton peut expirer entre deux vérifications. */
 const REFRESH_MARGIN_S = 600;
 let authRefreshing = null;

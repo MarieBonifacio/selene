@@ -17,6 +17,7 @@ import { addNote, afterCapture } from "../modules/notes.js";
 import { confirmSensitiveShare } from "../modules/regulation.js";
 import { taskFilters } from "../modules/taches.js";
 import { refreshWeather, skyConf, skySearch } from "../scene/sky.js";
+import { personalAccount } from "../services/auth.js";
 import { openPalette } from "./palette.js";
 import { rememberScroll, render } from "./render.js";
 import { closeSheet } from "./sheets.js";
@@ -49,7 +50,11 @@ CLICK["mod-down"] = el => moveMod(el, 1);
 /* Ajoute un module (depuis un modèle, déjà traduit par localTemplate, ou un type vide), actif. Il est partagé avec
    l'assistant, sauf un type sensible (TYPE_UI[type].sensitive) : son partage reste un geste explicite, dans les Réglages.
    Ses réglages de départ sont écrits dans la langue de l'interface. */
+/* Un type proposé à la création : tous, sauf ceux hors de l'offre publique (MODULE_TYPES, personal), réservés au compte
+   personnel. Rien ne disparaît : un module déjà créé reste ouvert. */
+export const offered = type => !MODULE_TYPES[type]?.personal || personalAccount();
 export function addModule(tpl, name) {
+  if (!offered(tpl.type)) return;
   if (tpl.type === "programme") {
     const defaults = { ...localizeConfig(MODULE_TYPES.programme.defaults().config, tr), ...tpl.config };
     return openForm(tr`Choisir ton sport ou ta pratique`, [
@@ -66,7 +71,9 @@ export function addModule(tpl, name) {
   }
   installModule(tpl, name);
 }
-function installModule(tpl, name) {
+/* Installe sans passer par le catalogue (offered) : la suite d'addModule, et l'installation d'un module qui existe
+   déjà ailleurs (les tests l'utilisent pour un suivi créé avant sa sortie de l'offre publique). */
+export function installModule(tpl, name) {
   try {
     const s = S(), id = slugId(name, [...s.config.modules.map(x => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
     createFromTemplate(s.modules, tpl, name, id, tr);
