@@ -3,7 +3,8 @@ import { platform } from "../../platform.js";
 import { MODULE_TEMPLATES, inboxId } from "../../core/domain.js";
 import { radarWords } from "../../core/radar.js";
 import { CLICK, TYPE_UI, VIEWS } from "../registry.js";
-import { esc } from "../lib/dom.js";
+import { esc, toast } from "../lib/dom.js";
+import { localTemplate } from "../lib/labels.js";
 import { ago, todayISO } from "../lib/format.js";
 import { tr, trn, trp } from "../i18n/index.js";
 import { agendaHTML } from "../features/agenda.js";
@@ -16,7 +17,7 @@ import { taskHTML, taskModules, todayTasks } from "../modules/taches.js";
 import { forestSVG } from "../scene/forest.js";
 import { moon } from "../scene/moon.js";
 import { heroStyle, sceneNow, skyLive } from "../scene/sky.js";
-import { offered } from "../shell/actions.js";
+import { installModules, offered } from "../shell/actions.js";
 import { agoTime, domains, liveRecents } from "../shell/nav.js";
 import { render } from "../shell/render.js";
 import { sigil, tintOf } from "../shell/sigils.js";
@@ -44,9 +45,7 @@ VIEWS.accueil = () => {
   const ds = domains().map(d => ({ ...d, ids: d.ids.filter(id => id !== inbox) })).filter(d => d.ids.length), named = ds.some(d => d.name);
   const rows = ds.map(d => `${named ? `<p class="grp over-grp">${esc(d.name || tr`Espaces`)}</p>` : ""}${d.ids.map(row).join("")}`).join("") + (enabled("assistant") ? row("assistant") : "");
   return `
-  ${s.config.welcome ? `<section><h2>${tr`Composer ton espace`}</h2><p class="hint">${tr`Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.`}</p>
-    ${MODULE_TEMPLATES.filter(t => offered(t.type)).map(t => `<div class="set" style="grid-template-columns:1fr auto"><div><b>${esc(tr(t.name))}</b><div class="hint" style="margin:2px 0 0">${esc(tr(t.hint))}</div></div><button class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}">${tr`Ajouter`}</button></div>`).join("")}
-    <div class="row" style="margin-top:12px"><button class="btn acc" data-act="welcome-done">${tr`C'est bon`}</button></div></section>` : ""}
+  ${s.config.welcome ? welcomeHTML() : ""}
   <section class="hero${HERO_COMPACT ? " compact" : ""}${win.right ? " txt-right" : ""}${skyLive() ? " live" : ""}" style="${heroStyle(win.sc, win.dark)}" data-weather="${win.sc.weather || ""}" data-leaves="${win.sc.leaves}" data-sun="${win.sun.alt.toFixed(1)}">${forestSVG(m.p, win.sc, win.moonAt, win.mo)}<div class="txt">
     <div class="phase">${m.name}</div>
     <p>${tr`Éclairée à ${Math.round(m.illum * 100)} %, jour ${Math.floor(m.age) + 1} du cycle.`} ${m.p < .5 ? tr`Pleine lune dans ${m.nextFull} j.` : tr`Nouvelle lune dans ${m.nextNew} j.`}</p>
@@ -93,4 +92,29 @@ function resumeSection() {
   }
   return lines.length ? `<section class="resume-box" aria-label="${trp("accueil", "Reprendre")}"><h3>${trp("accueil", "Reprendre")}</h3><ul>${lines.join("")}</ul></section>` : "";
 }
+/* Le premier accueil (U3 de l'audit) : une question plutôt que treize modèles de même poids (loi de Hick : le temps d'un
+   choix croît avec le nombre d'options). Chaque réponse installe trois espaces qui vont ensemble ; « Choisir moi-même »
+   garde la liste entière. Le premier chemin sert la promesse de Selene : un long projet d'écriture, ses sources. */
+export const WELCOME_PATHS = [
+  { id: "ecrire", name: () => tr`Un long texte`, hint: () => tr`Thèse, livre, mémoire : les mots écrits, les sources, ce qui reste à faire`, tpls: ["ecriture", "sources", "taches"] },
+  { id: "jours", name: () => tr`Mes journées`, hint: () => tr`Ce qui est à faire, ce qui me passe par la tête, ce qui revient`, tpls: ["taches", "carnet", "rappels"] },
+  { id: "culture", name: () => tr`Ce que je lis, écoute, regarde`, hint: () => tr`Ce qui attend d'être découvert, des disques, un carnet`, tpls: ["decouvertes", "musique", "carnet"] }
+];
+const tplOf = id => MODULE_TEMPLATES.find(t => t.id === id);
+function welcomeHTML() {
+  return `<section class="welcome"><h2>${tr`Composer ton espace`}</h2>
+    <p class="hint">${tr`Sur quoi travailles-tu ? Trois espaces pour commencer : tout se renomme, se règle ou se retire ensuite dans Réglages.`}</p>
+    <div class="paths">${WELCOME_PATHS.map(w => `<button type="button" class="path" data-act="welcome-path" data-path="${w.id}"><b>${esc(w.name())}</b><span>${esc(w.hint())}</span><small>${esc(w.tpls.map(id => tr(tplOf(id).name)).join(" · "))}</small></button>`).join("")}</div>
+    <details id="welcome-all" class="welcome-all"><summary>${tr`Choisir moi-même, parmi tous les modèles`}</summary>
+      <p class="hint">${tr`Ajoute ce que tu veux suivre, autant de fois que tu veux.`}</p>
+      ${MODULE_TEMPLATES.filter(t => offered(t.type)).map(t => `<div class="set" style="grid-template-columns:1fr auto"><div><b>${esc(tr(t.name))}</b><div class="hint" style="margin:2px 0 0">${esc(tr(t.hint))}</div></div><button class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}">${tr`Ajouter`}</button></div>`).join("")}
+    </details>
+    <div class="row" style="margin-top:12px"><button class="btn" data-act="welcome-done">${tr`C'est bon`}</button></div></section>`;
+}
+CLICK["welcome-path"] = el => {
+  const w = WELCOME_PATHS.find(x => x.id === el.dataset.path); if (!w) return;
+  S().config.welcome = false;
+  const made = installModules(w.tpls.map(id => localTemplate(tplOf(id))));
+  if (made.length) toast(tr`Pour commencer : ${made.join(", ")}. Tout se renomme ou se retire dans Réglages.`);
+};
 CLICK["welcome-done"] = () => { S().config.welcome = false; site.save(); render(); };

@@ -106,8 +106,10 @@ refuse de fusionner et d'écrire (« recharge la page ») ; un import plus réce
 ### Données de départ
 
 Un compte neuf part de `siteSeed()` : une boîte de réception, rien de personnel, et le drapeau
-`config.welcome` qui affiche sur l'accueil le bloc « Composer ton espace » (modèles `MODULE_TEMPLATES`,
-dans `domain.js`) jusqu'à « C'est bon ». Ce drapeau est exclu de la complétion des réglages manquants :
+`config.welcome` qui affiche sur l'accueil le bloc « Composer ton espace » jusqu'à « C'est bon ». Il pose une
+question, « Sur quoi travailles-tu ? », à trois réponses (`WELCOME_PATHS`, `views/accueil.js`) ; chacune installe
+trois modèles qui vont ensemble (`installModules`, un seul enregistrement) et referme le bloc. La liste entière
+(`MODULE_TEMPLATES`, dans `domain.js`) reste derrière « Choisir moi-même ». Ce drapeau est exclu de la complétion des réglages manquants :
 un compte existant ne le reçoit jamais. Les données de départ doivent rester « vierges » (`updatedAt` à 0,
 aucun identifiant aléatoire) pour qu'un appareil neuf adopte le serveur au lieu de fusionner.
 

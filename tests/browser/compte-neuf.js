@@ -9,9 +9,15 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   const nav = async () => (await p.textContent('#nav')).replace(/\s+/g, ' ');
   const ok = check;
   let t = await main();
-  ok(t.includes('Composer ton espace') && t.includes('Tableau de production') && t.includes('Rien de prévu'), 'compte neuf : modèles proposés, pas de tâche fictive');
+  ok(t.includes('Composer ton espace') && t.includes('Sur quoi travailles-tu') && t.includes('Rien de prévu'), 'compte neuf : une question, pas de tâche fictive');
   ok(!t.includes('Ulver') && !(await nav()).includes('Phidippus') && !(await nav()).includes('Kundalini'), 'aucun contenu personnel');
+  // U3 : trois réponses visibles, la liste entière repliée (elle n'ajoute pas treize décisions au premier écran).
+  ok(await p.locator('[data-act="welcome-path"]').count() === 3, 'trois réponses proposées');
+  ok(!await p.locator('[data-act="tpl-add"][data-tpl="tableau"]').isVisible(), 'les treize modèles, repliés derrière « Choisir moi-même »');
+  await p.click('.welcome-all > summary');
+  ok(await p.locator('[data-act="tpl-add"][data-tpl="tableau"]').isVisible(), '« Choisir moi-même » les montre tous');
   for (const tpl of ['taches', 'ecriture', 'decouvertes']) { await p.click(`[data-act="tpl-add"][data-tpl="${tpl}"]`); await p.waitForTimeout(150); }
+  ok(await p.locator('.welcome-all[open]').count() === 1, 'la liste reste dépliée d’un ajout à l’autre');
   const n3 = await nav(); ok(['Tâches', 'Écriture', 'À découvrir'].every(x => n3.includes(x)), 'trois modules ajoutés, visibles dans la navigation');
   ok((await main()).includes('Tirer une petite tâche au sort'), 'avec un module de tâches, le tirage au sort apparaît');
   await p.click('[data-act="tpl-add"][data-tpl="protocole"]');
@@ -36,6 +42,18 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   ok((await main()).includes('Idée') && (await main()).includes('Publié') && (await main()).includes('Nouvelle idée'), 'le modèle a réglé colonnes et bouton');
   await p.reload(); await p.waitForTimeout(300);
   ok(!(await main()).includes('Composer ton espace'), 'le bloc ne revient pas au rechargement');
+
+  console.log('une réponse à la question');
+  await p.evaluate(() => localStorage.clear()); await p.reload(); await p.waitForTimeout(300);
+  await p.click('[data-act="welcome-path"][data-path="ecrire"]'); await p.waitForTimeout(200);
+  const n = await nav(), apres = await main();
+  ok(['Écriture', 'Sources', 'Tâches'].every(x => n.includes(x)), '« Un long texte » installe Écriture, Sources et Tâches');
+  ok(!apres.includes('Composer ton espace'), 'et referme l’accueil');
+  ok((await p.textContent('#toast')).includes('Pour commencer : Écriture, Sources, Tâches'), 'en disant ce qu’il a fait');
+  const site = await p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')));
+  ok(site.config.welcome === false && Object.keys(site.modules).length === 4, 'trois espaces de plus que la Capture, enregistrés, accueil fermé');
+  await p.reload(); await p.waitForTimeout(300);
+  ok(!(await main()).includes('Composer ton espace'), 'la question ne revient pas');
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

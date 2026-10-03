@@ -572,6 +572,16 @@ input[type=checkbox],input[type=radio]{width:auto}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:480px){.field-row{grid-template-columns:1fr}}
 .set{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--rule)}
+/* Le premier accueil : trois réponses à une question, puis la liste entière repliée. */
+.paths{display:grid;gap:10px;margin:14px 0 10px}
+@media (min-width:760px){.paths{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.path{display:grid;gap:3px;align-content:start;text-align:left;padding:13px 15px;border:1px solid var(--rule-strong);border-radius:3px;background:var(--surface);color:var(--ink);font:inherit;cursor:pointer}
+.path b{font-family:var(--f-ui);font-weight:600;font-size:1rem}
+.path span{color:var(--ink-2);font-size:.9rem;line-height:1.4}
+.path small{color:var(--muted);font-family:var(--f-ui);font-size:.8rem;margin-top:4px}
+.path:hover,.path:focus-visible{border-color:var(--accent)}
+.welcome-all>summary{cursor:pointer;font-family:var(--f-ui);font-size:.9rem;color:var(--ink-2);padding:6px 0}
+@media (pointer:coarse){.welcome-all>summary{padding-block:11px}}
 .swatches{display:flex;gap:10px;flex-wrap:wrap}
 .swatch{display:flex;align-items:center;gap:8px;border:1px solid var(--rule);padding:8px 12px;cursor:pointer;background:var(--surface)}
 .swatch.on{border-color:var(--accent);outline:1px solid var(--accent)}
@@ -670,7 +680,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "6a8a7cb4cd";
+const SELENE_BUILD = "c772e17611";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1011,6 +1021,7 @@ var __selene = (() => {
     TYPE_UI: () => TYPE_UI,
     VIEWS: () => VIEWS,
     WEATHER: () => WEATHER,
+    WELCOME_PATHS: () => WELCOME_PATHS,
     WIND_TEXT: () => WIND_TEXT,
     ZOT_API: () => ZOT_API,
     ZOT_KIND: () => ZOT_KIND,
@@ -1174,6 +1185,7 @@ var __selene = (() => {
     inboxId: () => inboxId,
     instOf: () => instOf,
     installModule: () => installModule,
+    installModules: () => installModules,
     isConcordance: () => isConcordance,
     iso: () => iso,
     itemGroups: () => itemGroups,
@@ -2917,9 +2929,18 @@ var __selene = (() => {
     // views/accueil.js
     "Derniers éléments de {0}": "Latest items in {0}",
     "Composer ton espace": "Compose your space",
-    "Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.": "Add what you want to follow, as many times as you like. Everything can be renamed, adjusted or deleted later in Settings.",
+    "Sur quoi travailles-tu ? Trois espaces pour commencer : tout se renomme, se règle ou se retire ensuite dans Réglages.": "What are you working on? Three spaces to start with: everything can be renamed, adjusted or removed later in Settings.",
+    "Un long texte": "A long piece of writing",
+    "Thèse, livre, mémoire : les mots écrits, les sources, ce qui reste à faire": "Thesis, book, dissertation: the words written, the sources, what is left to do",
+    "Mes journées": "My days",
+    "Ce qui est à faire, ce qui me passe par la tête, ce qui revient": "What needs doing, what crosses my mind, what keeps coming back",
+    "Ce que je lis, écoute, regarde": "What I read, listen to, watch",
+    "Ce qui attend d'être découvert, des disques, un carnet": "What is waiting to be discovered, records, a notebook",
+    "Choisir moi-même, parmi tous les modèles": "Choose for myself, from all the templates",
+    "Ajoute ce que tu veux suivre, autant de fois que tu veux.": "Add what you want to follow, as many times as you like.",
     "Ajouter": "Add",
     "C'est bon": "Done",
+    "Pour commencer : {0}. Tout se renomme ou se retire dans Réglages.": "To start with: {0}. Everything can be renamed or removed in Settings.",
     "Éclairée à {0} %, jour {1} du cycle.": "{0}% lit, day {1} of the cycle.",
     "Pleine lune dans {0} j.": "Full moon in {0} d.",
     "Nouvelle lune dans {0} j.": "New moon in {0} d.",
@@ -8465,9 +8486,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     const ds = domains().map((d) => ({ ...d, ids: d.ids.filter((id) => id !== inbox) })).filter((d) => d.ids.length), named = ds.some((d) => d.name);
     const rows = ds.map((d) => `${named ? `<p class="grp over-grp">${esc(d.name || tr`Espaces`)}</p>` : ""}${d.ids.map(row).join("")}`).join("") + (enabled("assistant") ? row("assistant") : "");
     return `
-  ${s.config.welcome ? `<section><h2>${tr`Composer ton espace`}</h2><p class="hint">${tr`Ajoute ce que tu veux suivre, autant de fois que tu veux. Tout se renomme, se règle ou se supprime ensuite dans Réglages.`}</p>
-    ${MODULE_TEMPLATES.filter((t) => offered(t.type)).map((t) => `<div class="set" style="grid-template-columns:1fr auto"><div><b>${esc(tr(t.name))}</b><div class="hint" style="margin:2px 0 0">${esc(tr(t.hint))}</div></div><button class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}">${tr`Ajouter`}</button></div>`).join("")}
-    <div class="row" style="margin-top:12px"><button class="btn acc" data-act="welcome-done">${tr`C'est bon`}</button></div></section>` : ""}
+  ${s.config.welcome ? welcomeHTML() : ""}
   <section class="hero${HERO_COMPACT ? " compact" : ""}${win.right ? " txt-right" : ""}${skyLive() ? " live" : ""}" style="${heroStyle(win.sc, win.dark)}" data-weather="${win.sc.weather || ""}" data-leaves="${win.sc.leaves}" data-sun="${win.sun.alt.toFixed(1)}">${forestSVG(m.p, win.sc, win.moonAt, win.mo)}<div class="txt">
     <div class="phase">${m.name}</div>
     <p>${tr`Éclairée à ${Math.round(m.illum * 100)} %, jour ${Math.floor(m.age) + 1} du cycle.`} ${m.p < 0.5 ? tr`Pleine lune dans ${m.nextFull} j.` : tr`Nouvelle lune dans ${m.nextNew} j.`}</p>
@@ -8516,6 +8535,29 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     }
     return lines.length ? `<section class="resume-box" aria-label="${trp("accueil", "Reprendre")}"><h3>${trp("accueil", "Reprendre")}</h3><ul>${lines.join("")}</ul></section>` : "";
   }
+  var WELCOME_PATHS = [
+    { id: "ecrire", name: () => tr`Un long texte`, hint: () => tr`Thèse, livre, mémoire : les mots écrits, les sources, ce qui reste à faire`, tpls: ["ecriture", "sources", "taches"] },
+    { id: "jours", name: () => tr`Mes journées`, hint: () => tr`Ce qui est à faire, ce qui me passe par la tête, ce qui revient`, tpls: ["taches", "carnet", "rappels"] },
+    { id: "culture", name: () => tr`Ce que je lis, écoute, regarde`, hint: () => tr`Ce qui attend d'être découvert, des disques, un carnet`, tpls: ["decouvertes", "musique", "carnet"] }
+  ];
+  var tplOf = (id) => MODULE_TEMPLATES.find((t) => t.id === id);
+  function welcomeHTML() {
+    return `<section class="welcome"><h2>${tr`Composer ton espace`}</h2>
+    <p class="hint">${tr`Sur quoi travailles-tu ? Trois espaces pour commencer : tout se renomme, se règle ou se retire ensuite dans Réglages.`}</p>
+    <div class="paths">${WELCOME_PATHS.map((w) => `<button type="button" class="path" data-act="welcome-path" data-path="${w.id}"><b>${esc(w.name())}</b><span>${esc(w.hint())}</span><small>${esc(w.tpls.map((id) => tr(tplOf(id).name)).join(" · "))}</small></button>`).join("")}</div>
+    <details id="welcome-all" class="welcome-all"><summary>${tr`Choisir moi-même, parmi tous les modèles`}</summary>
+      <p class="hint">${tr`Ajoute ce que tu veux suivre, autant de fois que tu veux.`}</p>
+      ${MODULE_TEMPLATES.filter((t) => offered(t.type)).map((t) => `<div class="set" style="grid-template-columns:1fr auto"><div><b>${esc(tr(t.name))}</b><div class="hint" style="margin:2px 0 0">${esc(tr(t.hint))}</div></div><button class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}">${tr`Ajouter`}</button></div>`).join("")}
+    </details>
+    <div class="row" style="margin-top:12px"><button class="btn" data-act="welcome-done">${tr`C'est bon`}</button></div></section>`;
+  }
+  CLICK["welcome-path"] = (el) => {
+    const w = WELCOME_PATHS.find((x) => x.id === el.dataset.path);
+    if (!w) return;
+    S().config.welcome = false;
+    const made = installModules(w.tpls.map((id) => localTemplate(tplOf(id))));
+    if (made.length) toast(tr`Pour commencer : ${made.join(", ")}. Tout se renomme ou se retire dans Réglages.`);
+  };
   CLICK["welcome-done"] = () => {
     S().config.welcome = false;
     site.save();
@@ -9974,18 +10016,36 @@ ${contextText()}`;
     }
     installModule(tpl, name);
   }
+  function createModule(tpl, name) {
+    const s = S(), id = slugId(name, [...s.config.modules.map((x) => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
+    createFromTemplate(s.modules, tpl, name, id, tr);
+    s.config.modules.push({ id, on: true });
+    s.config.assistant.share[id] = !TYPE_UI[tpl.type]?.sensitive;
+    return id;
+  }
   function installModule(tpl, name) {
     try {
-      const s = S(), id = slugId(name, [...s.config.modules.map((x) => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
-      createFromTemplate(s.modules, tpl, name, id, tr);
-      s.config.modules.push({ id, on: true });
-      s.config.assistant.share[id] = !TYPE_UI[tpl.type]?.sensitive;
+      createModule(tpl, name);
       site.save();
       render();
       toast(tr`Module « ${name} » créé.`);
     } catch (e) {
       toast(errMsg(e));
     }
+  }
+  function installModules(tpls) {
+    const made = [];
+    try {
+      for (const tpl of tpls) if (offered(tpl.type) && tpl.type !== "programme") {
+        createModule(tpl, tpl.name);
+        made.push(tpl.name);
+      }
+    } catch (e) {
+      toast(errMsg(e));
+    }
+    site.save();
+    render();
+    return made;
   }
   function moveMod(el, d) {
     const ms = S().config.modules, i = +el.closest("[data-i]").dataset.i, j = i + d;

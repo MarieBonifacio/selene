@@ -570,6 +570,16 @@ input[type=checkbox],input[type=radio]{width:auto}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:480px){.field-row{grid-template-columns:1fr}}
 .set{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--rule)}
+/* Le premier accueil : trois réponses à une question, puis la liste entière repliée. */
+.paths{display:grid;gap:10px;margin:14px 0 10px}
+@media (min-width:760px){.paths{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.path{display:grid;gap:3px;align-content:start;text-align:left;padding:13px 15px;border:1px solid var(--rule-strong);border-radius:3px;background:var(--surface);color:var(--ink);font:inherit;cursor:pointer}
+.path b{font-family:var(--f-ui);font-weight:600;font-size:1rem}
+.path span{color:var(--ink-2);font-size:.9rem;line-height:1.4}
+.path small{color:var(--muted);font-family:var(--f-ui);font-size:.8rem;margin-top:4px}
+.path:hover,.path:focus-visible{border-color:var(--accent)}
+.welcome-all>summary{cursor:pointer;font-family:var(--f-ui);font-size:.9rem;color:var(--ink-2);padding:6px 0}
+@media (pointer:coarse){.welcome-all>summary{padding-block:11px}}
 .swatches{display:flex;gap:10px;flex-wrap:wrap}
 .swatch{display:flex;align-items:center;gap:8px;border:1px solid var(--rule);padding:8px 12px;cursor:pointer;background:var(--surface)}
 .swatch.on{border-color:var(--accent);outline:1px solid var(--accent)}
