@@ -2,7 +2,8 @@
 
 Tout ce qui peut être automatisé l'est : **pousser une étiquette `v1.2.3` construit, signe et publie** (workflow
 *Publication*, `.github/workflows/release.yml`). Ce qui reste, ce sont les comptes, les clés et les formulaires des
-stores : des démarches qu'aucun robot ne peut faire à ta place, et c'est heureux.
+stores : des démarches qu'aucun robot ne peut faire à ta place, et c'est heureux. La liste de tout ce qui reste à
+faire à la main, stores compris, est dans [a-faire.md](a-faire.md).
 
 ```sh
 git tag v1.0.0 && git push origin v1.0.0

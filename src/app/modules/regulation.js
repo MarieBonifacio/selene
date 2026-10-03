@@ -67,7 +67,7 @@ function subjectForm(id) {
       if (synced() && inst && !inst.config.storage) chooseDevice(id);
       goalForm(id, v.subject);
     },
-    synced() ? `${about}\n\n${tr`Ce suivi reste sur cet appareil : ton compte n'en garde que le nom, son contenu ne passe pas par le serveur. Selene ne synchronise pas les suivis de santé.`}` : about);
+    synced() ? `${about}\n\n${tr`Ce suivi reste sur cet appareil : Selene ne synchronise pas les suivis de santé, ton compte n'en garde que le nom. Seule la sauvegarde de ton appareil (Google ou iCloud), si tu l'as activée, peut l'inclure.`}` : about);
 }
 function goalForm(id, setupSubject = null) {
   const inst = T(id), subject = setupSubject || inst.config.subject, sub = SUBJECTS[subject], today = todayISO(), cur = regulationGoal(inst, today);
@@ -154,7 +154,7 @@ function planForm(id) {
 /* Garder sur cet appareil seulement (à la création, ou pour un suivi encore synchronisé) : le contenu passe dans le
    document local, le compte n'en garde que le talon dès la synchronisation suivante. Aucun chemin ne fait l'inverse. */
 async function chooseDevice(id, confirm = false) {
-  if (confirm && !await ask(tr`Garder « ${label(id)} » sur cet appareil seulement ? À la prochaine synchronisation, ses données quittent ton compte : tes autres appareils n'en verront plus que le nom. Les sauvegardes techniques de l'hébergeur suivent leur propre durée de conservation. Cet appareil devient le seul à le garder : se déconnecter te demandera quoi en faire, et un export de temps en temps te protège d'une perte.`)) return false;
+  if (confirm && !await ask(tr`Garder « ${label(id)} » sur cet appareil seulement ? À la prochaine synchronisation, ses données quittent ton compte : tes autres appareils n'en verront plus que le nom. Les sauvegardes techniques de l'hébergeur peuvent encore le contenir 30 jours au plus. Cet appareil devient le seul à le garder : se déconnecter te demandera quoi en faire, et un export de temps en temps te protège d'une perte.`)) return false;
   const s = S(), inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null; if (!inst || regulationOnDevice(inst)) return false;
   moveToDevice(s, id); save(); toast(tr`« ${label(id)} » est gardé sur cet appareil seulement.`);
   return true;
@@ -312,7 +312,7 @@ function entryHTML(inst, e) {
 function whereText(id) {
   const stub = S().modules[id], c = stub.config;
   if (!synced()) return tr`Sur cet appareil : sans compte, rien n'est envoyé au serveur de Selene.`;
-  if (regulationOnDevice(stub)) return tr`Sur cet appareil seulement. Ton compte n'en garde que le nom, pour que tes autres appareils sachent qu'il existe : son contenu ne passe pas par le serveur. Ce n'est pas un coffre chiffré : quiconque ouvre cet appareil déverrouillé peut lire son stockage. Perdre l'appareil, c'est perdre le suivi : exporte-le de temps en temps.`;
+  if (regulationOnDevice(stub)) return tr`Sur cet appareil seulement. Ton compte n'en garde que le nom, pour que tes autres appareils sachent qu'il existe : son contenu ne passe pas par le serveur. La sauvegarde de cet appareil (Google, iCloud…), si tu l'as activée, peut l'inclure : elle relève de ton compte Google ou Apple, pas de Selene. Ce n'est pas un coffre chiffré : quiconque ouvre cet appareil déverrouillé peut lire son stockage. Perdre l'appareil peut faire perdre le suivi : exporte-le de temps en temps.`;
   if (c.consent) return tr`Encore synchronisé avec ton compte, selon ton accord du ${fmt(iso(new Date(c.consent.at)), { day: "numeric", month: "long", year: "numeric" })} : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.`;
   return tr`Encore synchronisé avec ton compte, depuis sa création : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.`;
 }

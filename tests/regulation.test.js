@@ -591,6 +591,8 @@ test('sur cet appareil seulement, sans question : le serveur ne reçoit que le t
   assert.equal(copy.config.subject, 'alcool'); assert.equal(copy.entries.length, 1); assert.equal(copy.goals.length, 1);
   assert.match(app.TYPE_UI.regulation.view(id), /Alcool · au plus 2 verres standard/);
   assert.match(app.TYPE_UI.regulation.view(id), /Sur cet appareil seulement/);
+  // « Sur cet appareil » : Selene n'envoie rien, mais la sauvegarde du système peut l'inclure, et le texte le dit.
+  assert.match(app.TYPE_UI.regulation.view(id), /La sauvegarde de cet appareil \(Google, iCloud…\), si tu l'as activée, peut l'inclure/);
   app.S().config.assistant.share[id] = true; app.S().config.modules.find(m => m.id === 'assistant').on = true;
   assert.match(app.contextText(), /suivi personnel autodéclaratif \(alcool/, 'le résumé, partagé, se lit sur la copie locale');
   assert.doesNotMatch(app.contextText(), /NOTE_PRIVEE/);

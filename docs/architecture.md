@@ -668,8 +668,9 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   la transparence).
 - **Écarté** : fastlane (une chaîne Ruby de plus pour trois commandes) ; l'envoi automatique à Google Play (un compte
   de service de plus, et le premier envoi est manuel de toute façon).
-- **Conséquences** : docs/publication.md liste ce qui reste à faire à la main (comptes, clés, formulaires) ; le chemin
-  iOS n'est éprouvé qu'à la première course avec un compte Apple.
+- **Conséquences** : docs/publication.md liste ce qui reste à faire pour publier (comptes, clés, formulaires), et
+  docs/a-faire.md tout ce qui reste à faire à la main ; le chemin iOS n'est éprouvé qu'à la première course avec un
+  compte Apple.
 
 ### ADR 22 — Tout en modules ES : fin de la portée partagée
 
@@ -830,7 +831,8 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   consentement seul ; un document local par compte en permanence (un appareil partagé garderait les suivis de l'autre
   même après une déconnexion voulue).
 - **Conséquences** : un suivi gardé sur l'appareil n'existe que là (l'export régulier est la seule assurance) et n'est
-  pas chiffré au repos ; ses saisies ne sont ni sur le serveur ni dans les sauvegardes techniques de l'hébergeur. Tout
+  pas chiffré au repos ; ses saisies ne sont ni sur le serveur ni dans les sauvegardes techniques de l'hébergeur (la
+  sauvegarde du système de l'appareil, Google ou iCloud, peut les inclure : gardée et dite, 3 octobre 2026). Tout
   futur accès au contenu d'un type sensible passe par l'accesseur du module. `tests/regulation.test.js` (faux serveur)
   et `tests/browser/regulation-appareil.js` (deux appareils) lisent le serveur pour vérifier qu'aucune saisie n'y
   arrive. Détail : [regulation.md](regulation.md).

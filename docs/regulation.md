@@ -190,15 +190,16 @@ Trois questions distinctes, à ne pas confondre :
   trouve dans l'Assistant, sur l'appareil).
 - **Stockage (ADR 27).** Dans les versions hébergées (site, Android, iOS, Windows), un compte est obligatoire, et tout
   le reste du site est synchronisé. Un suivi configuré par une personne connectée est gardé **sur cet appareil
-  seulement** : son contenu vit dans un second document local (`selene-local-v1`), jamais envoyé ; le document
-  synchronisé n'en garde qu'un **talon** (nom, présence, appareil détenteur `holder`), ni sujet, ni appuis, ni
-  objectifs, ni journal. Il n'y a plus de choix « sur mon compte » (voir « Hors de l'offre publique »).
+  seulement** : son contenu vit dans un second document local (`selene-local-v1`), que Selene n'envoie jamais (la
+  sauvegarde du système de l'appareil peut l'inclure : voir *Limites*) ; le document synchronisé n'en garde qu'un
+  **talon** (nom, présence, appareil détenteur `holder`), ni sujet, ni appuis, ni objectifs, ni journal. Il n'y a plus
+  de choix « sur mon compte » (voir « Hors de l'offre publique »).
 
   Un suivi **encore synchronisé** (un accord daté `config.consent` donné avant le 3 octobre 2026, ou un suivi d'avant
   la question) affiche un bandeau et, dans « Confidentialité et données », le bouton qui le garde sur cet appareil ; à
-  la synchronisation suivante, le serveur n'a plus que le talon (ses sauvegardes, 30 jours au plus, voir la politique
-  de confidentialité). Rien ne change tant que la personne n'a pas choisi. Sans compte (artefact claude.ai), rien n'est
-  envoyé : pas de question.
+  la synchronisation suivante, le serveur n'a plus que le talon (ses sauvegardes techniques peuvent encore contenir le
+  suivi 30 jours au plus, la durée annoncée par la politique de confidentialité). Rien ne change tant que la personne
+  n'a pas choisi. Sans compte (artefact claude.ai), rien n'est envoyé : pas de question.
   - **Autres appareils du compte** : le talon seulement (« gardé sur un autre de tes appareils »), sans contenu. Un
     appareil resté hors ligne qui renvoie l'ancienne copie : le détenteur reprend ses saisies (la plus récente gagne) et
     le talon redevient vide (`absorbDeviceTrackers`). Supprimer le suivi depuis un autre appareil ne retire que son nom,
@@ -213,8 +214,16 @@ Trois questions distinctes, à ne pas confondre :
     télécharge). **Restaurée** sur un appareil, celui-ci en devient le détenteur ; un talon sans contenu (sauvegarde
     faite ailleurs) reste un talon.
   - **Limites** : « sur cet appareil » n'est pas un coffre chiffré (quiconque ouvre l'appareil déverrouillé peut lire
-    le stockage du navigateur ou de l'app) ; perdre l'appareil, c'est perdre le suivi (l'export régulier est la seule
-    assurance) ; le nom reste visible partout, d'où le conseil d'un nom neutre.
+    le stockage du navigateur ou de l'app) ; perdre l'appareil peut faire perdre le suivi (l'export régulier est la
+    seule assurance que Selene donne) ; le nom reste visible partout, d'où le conseil d'un nom neutre.
+  - **Sauvegardes du système** (choix du 3 octobre 2026 : les garder, et le dire) : Selene n'exclut pas ses fichiers
+    des sauvegardes de l'appareil. Sous Android, la sauvegarde automatique (`android:allowBackup="true"`) copie les
+    fichiers privés de l'app dans le Google Drive de la personne, chiffrés par le code de verrouillage de l'écran
+    depuis Android 9 quand il y en a un ; sous iOS, le dossier de données de l'app suit la sauvegarde iCloud, chiffrée
+    de bout en bout seulement avec la Protection avancée des données ; sur ordinateur, les sauvegardes de la machine.
+    Ces copies relèvent du compte Google ou Apple de la personne, pas de Selene : elles la protègent d'une perte, et
+    les textes le disent (configuration, « Confidentialité et données », politique de confidentialité). Les exclure
+    (règles d'exclusion Android, marque iOS posée par du code natif) reste possible si l'arbitrage change.
 
   L'**export dédié** (« Exporter ce suivi ») est un JSON lisible, non chiffré, au nom neutre
   (`selene-suivi-AAAA-MM-JJ.json`) : nom, sujet, réglages, versions d'objectif, journal complet avec les notes ; pour
@@ -294,5 +303,6 @@ Trois questions distinctes, à ne pas confondre :
 7. Accueil, Chercher (une note saisie), Bilan, planche : aucun détail. « Confidentialité et données » : lire le résumé ;
    « Partager… » montre le même texte avant de partager.
 8. Créer un second suivi **Tabac** : pas d'avertissement alcool ; « 1.5 » cigarette est refusé.
-9. Sur deux appareils du même compte : le suivi n'affiche que son nom sur l'autre ; aucun bouton ne le synchronise ;
-   se déconnecter demande quoi en faire (export ou effacement).
+9. Sur deux appareils du même compte : le suivi n'affiche que son nom sur l'autre, et le supprimer de là prévient qu'on
+   ne retire que le nom ; « Confidentialité et données » dit que la sauvegarde de l'appareil peut l'inclure ; aucun
+   bouton ne le synchronise ; se déconnecter demande quoi en faire (export ou effacement).

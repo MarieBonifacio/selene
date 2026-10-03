@@ -6,6 +6,8 @@ Aucune dépendance de production, aucun client vendorisé : le build hébergé (
 
 Vérification locale (Node 22, Python 3) : `npm ci` une fois, puis `npm run check` (build, tests unitaires, syntaxe, eslint, passeur) ; les parcours dans un vrai navigateur : `npx playwright install chromium` une fois, puis `npm run test:browser` (`npm run test:browser -- budget` n'en lance qu'un ; `SELENE_BROWSER=webkit` pour WebKit, après `npx playwright install webkit`). Liste des scripts : [docs/architecture.md](docs/architecture.md#vérification). App Android (Capacitor) : [docs/android.md](docs/android.md). App Windows (Tauri) : [docs/desktop.md](docs/desktop.md). App iOS (Capacitor) : [docs/ios.md](docs/ios.md). Performances sur un gros historique : `npm run bench`. Fonctionnement interne, synchronisation et décisions d'architecture : [docs/architecture.md](docs/architecture.md). Évolution de l'interface (principes, système visuel, vagues à venir) : [docs/evolution-ui.md](docs/evolution-ui.md). Langues de l'interface (écrire un texte traduisible, compléter une traduction, état du chantier) : [docs/i18n.md](docs/i18n.md).
 
+Ce qui reste à faire à la main (essais sur de vrais appareils, réglages Supabase, stores, obligations RGPD) : [docs/a-faire.md](docs/a-faire.md).
+
 ## Publier avec GitHub Pages
 
 1. Pousser ce dépôt sur GitHub.
