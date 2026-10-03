@@ -21,11 +21,19 @@ code { font-size: .9em; }
 </head>
 <body><main>
 <h1>Selene and your data</h1>
-<p class="meta">Privacy policy of Selene (website, Android, iOS and Windows apps). Last updated: 2 October 2026 (fonts served by the site).
+<p class="meta">Privacy policy of Selene (website, Android, iOS and Windows apps). Last updated: 2 October 2026 (controller, legal bases, retention, transfers, rights).
 <a href="confidentialite.html" hreflang="fr" lang="fr">En français</a>.</p>
 
 <p>The short version: Selene sells nothing, measures nothing, shows no advertising and has no trackers. What you write
 in it stays on your device, and on a server only if you create an account, so you can find it on your other devices.</p>
+
+<h2>Who is responsible</h2>
+<p>Selene is published by Marie Bonifacio, developer (a natural person). She is the controller of your data within the
+meaning of the GDPR: every question or request goes to her, at
+<a href="mailto:mariebonifacio.pro@gmail.com">mariebonifacio.pro@gmail.com</a>.</p>
+<p>The website is hosted by GitHub Pages (GitHub, Inc., United States), which logs the IP address of every visit for
+its security, under <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">its
+own policy</a>. The apps do not depend on it: they contain the whole of Selene.</p>
 
 <h2>Without an account</h2>
 <p>Everything stays on your device: in the browser (IndexedDB) for the website, in the app's private folder for the
@@ -37,8 +45,9 @@ system keychain for the apps.</p>
 <li><b>What is kept</b>: your email address and your password (hashed, by Supabase Auth), and your dashboard (tasks,
 notes, modules, settings, including the place chosen for the sky, and a “Taking back control” tracker if you create
 one, see below) for synchronisation. Nothing else.</li>
-<li><b>Where</b>: at <a href="https://supabase.com/privacy">Supabase</a>, the database host, in a table where each
-account can only read its own row.</li>
+<li><b>Where</b>: at <a href="https://supabase.com/privacy">Supabase</a>, the database host, in its Paris (France)
+data centre, in a table where each account can only read its own row. The server functions (assistant, relay, account
+deletion) run at Supabase, in the data centre closest to you.</li>
 <li><b>The Anthropic API key</b>, if you turn on the assistant: checked, encrypted (AES-GCM) and tied to your account on
 the server; it never comes back into the page. Your questions to the assistant, with what you chose to let it read, go
 to <a href="https://www.anthropic.com/legal/privacy">Anthropic</a> on behalf of your key; Selene's server keeps neither
@@ -82,16 +91,61 @@ account, if you have one) and sent to Open-Meteo for the weather. Nothing more p
 <h2>Notifications</h2>
 <p>The mobile apps' morning summary is scheduled by the phone itself: no notification goes through a server.</p>
 
+<h2>Why, and on what basis</h2>
+<p>The GDPR asks to state, for each use, what allows it:</p>
+<ul>
+<li><b>Your account and its synchronisation</b> (email address, hashed password, dashboard, encrypted assistant key):
+the service you ask for by creating an account (performance of a contract, article 6(1)(b) GDPR).</li>
+<li><b>A “Taking back control” tracker on your account</b>: your explicit, dated consent (article 9(2)(a)), which you
+can withdraw at any time; the tracker then goes back to a single device.</li>
+<li><b>The assistant, the relay and the services called for you</b>: your request, when you use the feature
+(article 6(1)(b)).</li>
+<li><b>Security</b> (technical logs, limited number of attempts): the legitimate interest in protecting the service and
+the accounts (article 6(1)(f)).</li>
+</ul>
+<p>No automated decisions, no profiling, no advertising.</p>
+
+<h2>How long</h2>
+<ul>
+<li><b>Your account and your dashboard</b>: as long as your account exists. Deleting it erases them from the server at
+once.</li>
+<li><b>Your assistant key</b>: until you remove it or delete your account.</li>
+<li><b>Database backups</b>: erased data may remain in them for 30 days at most, until they are replaced.</li>
+<li><b>Technical logs</b> (IP address, date, request): 1 to 7 days at Supabase, depending on the plan; at GitHub, under
+its own policy.</li>
+<li><b>An email sent to the contact address</b>: as long as it takes to reply, then one year at most after the last
+exchange.</li>
+</ul>
+
+<h2>Outside the European Union</h2>
+<ul>
+<li><b>Your account</b> stays in the Union: the database is in Paris. Supabase, Inc. is an American company; its
+<a href="https://supabase.com/legal/dpa">data processing agreement</a> governs its role as a processor.</li>
+<li><b>The website</b> is served by GitHub, in the United States: your IP address goes through it on every visit.</li>
+<li><b>The assistant</b>: your questions go to Anthropic, in the United States, under your own key and your own
+contract with Anthropic.</li>
+<li><b>The services called for you</b>: several are based in the United States (Crossref, OpenAlex, Zotero,
+MusicBrainz, Cover Art Archive). They only receive your search, from your device.</li>
+<li><b>The server functions</b> run in the Supabase data centre closest to you: in Europe if you are there, elsewhere
+otherwise. They keep nothing.</li>
+</ul>
+
 <h2>Your rights</h2>
 <ul>
 <li><b>Export</b>: Settings → Backup → Export, your whole state in one file.</li>
 <li><b>Delete</b>: Settings → Account → Delete my account. Your account, your dashboard on the server and your assistant
 key are erased at once, then the device is emptied.</li>
 <li><b>Without an account</b>: uninstalling the app, or clearing the website's data in the browser, erases everything.</li>
+<li><b>Everything else</b> (access, rectification, restriction, objection, withdrawing a consent): write to
+<a href="mailto:mariebonifacio.pro@gmail.com">mariebonifacio.pro@gmail.com</a> from your account's address, which
+shows the request comes from you. Reply within one month.</li>
+<li><b>Complaint</b>: if the reply does not satisfy you, you can refer the matter to the
+<a href="https://www.cnil.fr/fr/plaintes">CNIL</a> (in French), the French data protection authority.</li>
 </ul>
 
 <h2>Contact</h2>
-<p>A question, a request: <a href="https://github.com/MarieBonifacio/selene/issues">open an issue</a> on the project's
-repository. Selene's code is public: everything written here can be checked there.</p>
+<p>A question, a request: <a href="mailto:mariebonifacio.pro@gmail.com">mariebonifacio.pro@gmail.com</a>. Selene's code is
+public, <a href="https://github.com/MarieBonifacio/selene">on GitHub</a>: everything written here can be checked
+there.</p>
 </main></body>
 </html>

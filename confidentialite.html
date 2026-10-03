@@ -21,11 +21,19 @@ code { font-size: .9em; }
 </head>
 <body><main>
 <h1>Selene et tes données</h1>
-<p class="meta">Politique de confidentialité de Selene (site, apps Android, iOS et Windows). Dernière mise à jour : 2 octobre 2026 (les polices servies par le site).
+<p class="meta">Politique de confidentialité de Selene (site, apps Android, iOS et Windows). Dernière mise à jour : 2 octobre 2026 (responsable, bases légales, durées, transferts, droits).
 <a href="privacy.html" hreflang="en" lang="en">In English</a>.</p>
 
 <p>Version courte : Selene ne vend rien, ne mesure rien, ne montre aucune publicité et n'a aucun traceur. Ce que tu y écris
 reste sur ton appareil, et sur un serveur seulement si tu crées un compte, pour le retrouver sur tes autres appareils.</p>
+
+<h2>Qui en est responsable</h2>
+<p>Selene est éditée par Marie Bonifacio, développeuse (personne physique). Elle est la responsable du traitement de tes
+données au sens du RGPD : toute question ou demande s'adresse à elle, à
+<a href="mailto:mariebonifacio.pro@gmail.com">mariebonifacio.pro@gmail.com</a>.</p>
+<p>Le site est hébergé par GitHub Pages (GitHub, Inc., États-Unis), qui enregistre l'adresse IP de chaque visite pour
+sa sécurité, selon <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">sa
+propre politique</a>. Les apps n'en dépendent pas : elles contiennent Selene entière.</p>
 
 <h2>Sans compte</h2>
 <p>Tout reste sur ton appareil : dans le navigateur (IndexedDB) pour le site, dans le dossier privé de l'app pour les
@@ -37,8 +45,10 @@ dans le trousseau du système pour les apps.</p>
 <li><b>Ce qui est gardé</b> : ton adresse e-mail et ton mot de passe (haché, par Supabase Auth), et ton tableau de bord
 (tâches, notes, modules, réglages, dont le lieu choisi pour le ciel, et un éventuel suivi « Reprendre la main », plus bas)
 pour la synchronisation. Rien d'autre.</li>
-<li><b>Où</b> : chez <a href="https://supabase.com/privacy">Supabase</a>, hébergeur de la base, dans une table où chaque
-compte ne peut lire que sa propre ligne.</li>
+<li><b>Où</b> : chez <a href="https://supabase.com/privacy">Supabase</a>, hébergeur de la base, dans son centre de
+données de Paris (France), dans une table où chaque compte ne peut lire que sa propre ligne. Les fonctions du serveur
+(assistant, passeur, suppression du compte) s'exécutent chez Supabase, dans le centre de données le plus proche de
+toi.</li>
 <li><b>La clé d'API Anthropic</b>, si tu actives l'assistant : vérifiée, chiffrée (AES-GCM) et liée à ton compte sur le
 serveur ; elle ne revient jamais dans la page. Tes questions à l'assistant, avec ce que tu as choisi de lui laisser lire,
 partent chez <a href="https://www.anthropic.com/legal/privacy">Anthropic</a> au nom de ta clé ; le serveur de Selene ne
@@ -85,16 +95,62 @@ quitte l'appareil.</p>
 <p>Le résumé du matin des apps mobiles est programmé par le téléphone lui-même : aucune notification ne passe par un
 serveur.</p>
 
+<h2>Pourquoi, et sur quelle base</h2>
+<p>Le RGPD demande de dire, pour chaque usage, ce qui l'autorise :</p>
+<ul>
+<li><b>Ton compte et sa synchronisation</b> (adresse e-mail, mot de passe haché, tableau de bord, clé d'assistant
+chiffrée) : le service que tu demandes en créant un compte (exécution du contrat, article 6.1.b du RGPD).</li>
+<li><b>Un suivi « Reprendre la main » sur ton compte</b> : ton consentement explicite et daté (article 9.2.a), que tu
+peux retirer à tout moment ; le suivi revient alors sur un seul appareil.</li>
+<li><b>L'assistant, le passeur et les services appelés pour toi</b> : ta demande, au moment où tu utilises la fonction
+(article 6.1.b).</li>
+<li><b>La sécurité</b> (journaux techniques, nombre d'essais limité) : l'intérêt légitime à protéger le service et les
+comptes (article 6.1.f).</li>
+</ul>
+<p>Aucune décision automatisée, aucun profilage, aucune publicité.</p>
+
+<h2>Combien de temps</h2>
+<ul>
+<li><b>Ton compte et ton tableau de bord</b> : tant que ton compte existe. Le supprimer les efface aussitôt du
+serveur.</li>
+<li><b>Ta clé d'assistant</b> : jusqu'à ce que tu la retires ou que tu supprimes ton compte.</li>
+<li><b>Les sauvegardes de la base</b> : une donnée effacée peut y subsister 30 jours au plus, le temps qu'elles soient
+remplacées.</li>
+<li><b>Les journaux techniques</b> (adresse IP, date, requête) : de 1 à 7 jours chez Supabase, selon l'offre ; chez
+GitHub, selon sa propre politique.</li>
+<li><b>Un e-mail envoyé à l'adresse de contact</b> : le temps de répondre, puis un an au plus après le dernier
+échange.</li>
+</ul>
+
+<h2>Hors de l'Union européenne</h2>
+<ul>
+<li><b>Ton compte</b> reste dans l'Union : la base est à Paris. Supabase, Inc. est une entreprise américaine ; son
+<a href="https://supabase.com/legal/dpa">accord de traitement des données</a> encadre son rôle de sous-traitant.</li>
+<li><b>Le site</b> est servi par GitHub, aux États-Unis : ton adresse IP y passe à chaque visite.</li>
+<li><b>L'assistant</b> : tes questions partent chez Anthropic, aux États-Unis, sous ta propre clé et selon ton contrat
+avec Anthropic.</li>
+<li><b>Les services appelés pour toi</b> : plusieurs sont établis aux États-Unis (Crossref, OpenAlex, Zotero,
+MusicBrainz, Cover Art Archive). Ils ne reçoivent que ta recherche, depuis ton appareil.</li>
+<li><b>Les fonctions du serveur</b> s'exécutent dans le centre de données de Supabase le plus proche de toi : en Europe
+si tu y es, ailleurs sinon. Elles ne gardent rien.</li>
+</ul>
+
 <h2>Tes droits</h2>
 <ul>
 <li><b>Exporter</b> : Réglages → Sauvegarde → Exporter, tout ton état dans un fichier.</li>
 <li><b>Supprimer</b> : Réglages → Compte → Supprimer mon compte. Ton compte, ton tableau de bord sur le serveur et ta
 clé d'assistant sont effacés aussitôt, puis l'appareil est vidé.</li>
 <li><b>Sans compte</b> : désinstaller l'app, ou effacer les données du site dans le navigateur, efface tout.</li>
+<li><b>Tout le reste</b> (accès, rectification, limitation, opposition, retrait d'un consentement) : écris à
+<a href="mailto:mariebonifacio.pro@gmail.com">mariebonifacio.pro@gmail.com</a> depuis l'adresse de ton compte, ce qui
+prouve que la demande vient de toi. Réponse sous un mois.</li>
+<li><b>Réclamation</b> : si la réponse ne te convient pas, tu peux saisir la
+<a href="https://www.cnil.fr/fr/plaintes">CNIL</a>, l'autorité française de protection des données.</li>
 </ul>
 
 <h2>Contact</h2>
-<p>Une question, une demande : <a href="https://github.com/MarieBonifacio/selene/issues">ouvrir un ticket</a> sur le dépôt
-du projet. Le code de Selene est public : tout ce qui est écrit ici peut y être vérifié.</p>
+<p>Une question, une demande : <a href="mailto:mariebonifacio.pro@gmail.com">mariebonifacio.pro@gmail.com</a>. Le code de
+Selene est public, <a href="https://github.com/MarieBonifacio/selene">sur GitHub</a> : tout ce qui est écrit ici peut y
+être vérifié.</p>
 </main></body>
 </html>
