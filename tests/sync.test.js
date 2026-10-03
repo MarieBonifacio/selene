@@ -143,6 +143,24 @@ test('a document the server refuses as too large stays local, and the status say
   assert.equal(a.site.unsynced(), true, 'kept on the device, not lost');
 });
 
+test('closing the page: a small document leaves in one keepalive write; past 64 KiB none is tried, and the sync stays planned', async () => {
+  const server = fakeSupabase(), keepalive = [];
+  const fetch = (url, opts = {}) => { if (opts.keepalive) keepalive.push(Buffer.byteLength(opts.body)); return server.fetch(url, opts); };
+  const a = launchHosted({ fetch }); await settle();
+  a.site.data.modules.chantier.entries.push(task('t1', 'Velux')); a.site.save();
+  a.site.flush(); await settle();
+  assert.equal(keepalive.length, 1, 'one keepalive write');
+  assert.ok(server.rows.get('u1').site.modules.chantier.entries.some(t => t.title === 'Velux'), 'and it reached the server');
+  // Un document plus lourd que ce que les navigateurs acceptent en keepalive (T13 de l'audit).
+  a.site.data.modules.chantier.entries.push(task('t2', 'x'.repeat(70000))); a.site.save();
+  a.site.flush();
+  assert.equal(keepalive.length, 1, 'past 64 KiB: no keepalive write, which the browser would refuse anyway');
+  assert.ok(a.site.timer, 'the regular sync is still planned, in case the page lives on');
+  clearTimeout(a.site.timer); a.site.timer = null;
+  assert.equal(await a.site.sync(), true);
+  assert.ok(server.rows.get('u1').site.modules.chantier.entries.some(t => t.id === 't2'), 'and it is sent by the regular sync');
+});
+
 test('signing out pushes pending edits first, then stops every poller', async () => {
   const { server, a } = await twoDevices();
   a.site.data.modules.chantier.entries.push(task('t1', 'Velux')); a.site.save(); // reste dans le délai de 900 ms

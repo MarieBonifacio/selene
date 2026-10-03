@@ -28,14 +28,16 @@ const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_
     console.log('hors de l’offre publique : sans compte (l’artefact claude.ai), l’espace n’est pas proposé');
     const anon = await b.newContext({ viewport: { width: 390, height: 844 } }), a = await anon.newPage();
     await a.addInitScript(() => { window.claude = { use: async () => null }; });
-    await a.goto(BASE + '/index.html'); await a.waitForSelector('[data-tpl="carnet"]');
+    // Les modèles de l'accueil sont repliés derrière « Choisir moi-même » (U3) : on déplie la liste.
+    const deplier = q => q.waitForSelector('#welcome-all', { state: 'attached' }).then(() => q.evaluate(() => { document.getElementById('welcome-all').open = true; }));
+    await a.goto(BASE + '/index.html'); await deplier(a); await a.waitForSelector('[data-tpl="carnet"]');
     check(!(await a.$('[data-tpl="regulation"]')), 'accueil : d’autres modèles, pas celui-ci');
     await anon.close();
 
     await ctx.route('https://*.supabase.co/**', supabase);
     await p.addInitScript(s => { if (!localStorage.getItem('selene-auth-session')) { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', 'u1'); } }, session);
     await p.goto(BASE + '/index.html');
-    await p.waitForSelector('[data-tpl="regulation"]');
+    await deplier(p); await p.waitForSelector('[data-tpl="regulation"]');
     const main = async () => (await p.textContent('#main')).replace(/\s+/g, ' ');
     const site = () => storeJSON(p, 'selene-site-v1');
     // Le contenu du suivi vit dans le document local de l'appareil ; le site (synchronisé) n'en a que le talon.
@@ -156,7 +158,7 @@ const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_
     console.log('autres sujets : unités et bornes');
     await go('accueil');
     for (const [subject, value, unit] of [['cannabis', '0.25', '0,25 g'], ['reseaux', '45', '45 minutes'], ['tabac', '3', '3 cigarettes']]) {
-      await p.click('[data-tpl="regulation"]');
+      await deplier(p); await p.click('[data-tpl="regulation"]');
       const mods = (await site()).modules, mid = Object.keys(mods).filter(k => mods[k].type === 'regulation').pop();
       await go(mid); await p.click('[data-act="rlm-setup"]'); await fill({ name: `Suivi ${subject}` }); await p.selectOption('#form [name="subject"]', subject); await next('Mon intention');
       check((await p.textContent('#nav')).includes(`Suivi ${subject}`), `${subject} : nom choisi, visible dans la navigation`);

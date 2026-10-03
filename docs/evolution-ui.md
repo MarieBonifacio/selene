@@ -224,7 +224,10 @@ plutôt qu'une pluie périmée. La CSP hébergée (`build.py`) devra autoriser `
 - [x] La lune de la scène visible sur iPhone (sortie du SVG recadré, entre le ciel et les sapins).
 - [x] Champs à 16 px au moins sur écran tactile (fin du zoom d'iOS).
 - [x] `accent-color` global (fin des cases bleu système).
-- [x] Cibles tactiles de 44 pt sur les petits boutons, l'étoile, les cases.
+- [x] Cibles tactiles de 44 pt pour chaque contrôle sur écran tactile : boutons (44 px de large, zone invisible
+  au-dessus et au-dessous), champs, menus, nuanciers, volets, cases (par leur étiquette). Mesurées par
+  `tests/browser/cibles.js` sur douze écrans : ce que le doigt touche, voisins compris, pas la boîte dessinée. Seule
+  exception, comme dans WCAG 2.5.8 : un lien dans le fil d'une phrase.
 - [x] Étoile inactive et bordures de champs visibles (`--rule-strong`).
 - [x] Couleurs sémantiques séparées : `--ok` vert-de-gris, `--warn` résine, `--alarm` cinabre, `--info` ardoise ; étiquettes neutres à point.
 - [x] Actions de ligne en divulgation progressive (survol ou focus sur ordinateur, toucher de la ligne sur téléphone).

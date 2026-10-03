@@ -20,11 +20,7 @@
      coffres asynchrones { load() → Promise<[clé, valeur][]>, write(clé, valeur) → Promise, remove(clé) → Promise }.
    Un coffre asynchrone est lu dans une copie en mémoire, hydratée une fois avant le démarrage (platform.ready) ;
    chaque écriture part sans être attendue, dans l'ordre pour une même clé, et platform.flush() attend celles en
-   cours (mise en arrière-plan, fermeture).
-   Journal de secours (web, ADR 28) : une page qui se ferme abandonne les transactions IndexedDB encore en cours, et
-   platform.flush() ne peut pas les attendre. Les écritures pas encore confirmées par IndexedDB sont donc recopiées,
-   de façon synchrone, dans localStorage à la mise en arrière-plan ou à la fermeture, puis rejouées au démarrage
-   suivant, si IndexedDB n'a pas changé entre-temps. */
+   cours (mise en arrière-plan, fermeture). */
 const native = window.seleneNative || null;
 // Les clés de platform.secrets : sur le web, elles restent dans localStorage, jamais copiées dans IndexedDB.
 export const SECRET_KEYS = ["selene-auth-session", "selene-api-key", "selene-openalex-key", "selene-zotero-key", "selene-ics-url"];
@@ -39,84 +35,51 @@ export const webStore = area => ({
   }
 });
 const pendingWrites = new Set();
-/* Le journal de secours d'une page : une clé localStorage par page (deux onglets ne s'effacent pas l'un l'autre).
-   { v: 1, entries: [[clé, valeur ou null (effacée), empreinte de la valeur sûre dans le coffre avant elle]] }. */
-export const RESCUE_PREFIX = "selene-secours:";
-// Une empreinte courte d'un texte (sa longueur et FNV-1a 32 bits) : de quoi savoir si le coffre a changé depuis.
-export function fingerprint(s) {
-  if (typeof s !== "string") return "-";
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
-  return `${s.length}:${(h >>> 0).toString(36)}`;
-}
-/* Au démarrage, avant tout le reste : chaque journal laissé par une page (fermée avant qu'IndexedDB ait confirmé ses
-   écritures) est rejoué, clé par clé, seulement si le coffre a encore la valeur d'avant (un autre onglet a pu écrire
-   plus récent depuis) ; puis il est effacé. Rend le nombre d'écritures rejouées. Une écriture refusée laisse le
-   journal en place : le démarrage suivant réessaiera. */
-export async function replayRescue(vault, area) {
-  const names = area.keys().filter(k => k.startsWith(RESCUE_PREFIX));
-  if (!names.length) return 0;
-  const now = new Map((await vault.load()).filter(([k, v]) => typeof k === "string" && typeof v === "string"));
-  let done = 0;
-  for (const name of names) {
-    let entries = [];
-    try { const j = JSON.parse(area.get(name)); if (j && j.v === 1 && Array.isArray(j.entries)) entries = j.entries; } catch {}
-    for (const e of entries) {
-      if (!Array.isArray(e) || typeof e[0] !== "string" || (e[1] !== null && typeof e[1] !== "string")) continue;
-      const [k, v, before] = e, cur = now.has(k) ? now.get(k) : null;
-      if (cur === v || fingerprint(cur) !== before) continue; // déjà écrite, ou le coffre a changé depuis
-      if (v === null) { await vault.remove(k); now.delete(k); } else { await vault.write(k, v); now.set(k, v); }
-      done++;
-    }
-    area.remove(name);
-  }
-  return done;
-}
-/* Une copie en mémoire d'un coffre asynchrone. `rescue` (web seulement) : le localStorage où tenir le journal de
-   secours ; les coquilles natives n'en ont pas (leurs coffres sont des fichiers et le trousseau, jamais localStorage).
-   Exporté pour les tests. */
-export function mirror(vault, written = () => {}, rescue = null) {
-  const m = new Map(), last = new Map();
-  // Les écritures pas encore confirmées par le coffre : la dernière valeur voulue (null : effacée), et la valeur sûre
-  // qu'il avait avant la première d'entre elles.
-  const pend = new Map(), before = new Map(), name = RESCUE_PREFIX + Math.random().toString(36).slice(2, 10);
-  let journaled = false;
-  // Recopie synchrone de ce qui attend encore ; rien qui attende : plus de journal. Trop gros pour localStorage
-  // (quota) : pas de journal plutôt qu'un journal périmé.
-  const journal = () => {
-    if (!rescue) return;
-    if (!pend.size) { if (journaled) rescue.remove(name); journaled = false; return; }
-    journaled = rescue.set(name, JSON.stringify({ v: 1, entries: [...pend].map(([k, v]) => [k, v, fingerprint(before.get(k))]) }));
-    if (!journaled) rescue.remove(name);
-  };
+/* La copie de secours (web) : une écriture d'IndexedDB lancée juste avant la fermeture de la page peut ne jamais
+   aboutir, la page disparaissant avant sa transaction (une capture faite dans la dernière demi-seconde était perdue).
+   localStorage, lui, écrit tout de suite et survit à la fermeture : platform.flush(), appelé à la fermeture et à la
+   mise en arrière-plan, y dépose la dernière valeur de chaque clé encore en route, sous ce préfixe ; le démarrage
+   suivant la reverse dans IndexedDB (restoreRescue). Une écriture qui aboutit retire la copie de sa clé, dans cet
+   onglet comme dans un autre : une copie ne peut donc pas être plus ancienne que ce qu'IndexedDB tient déjà. Une
+   écriture qu'IndexedDB refuse (quota plein, transaction annulée) reste en route, et sa copie la sauvera ; une écriture
+   de la même clé qui aboutit, ici ou dans un autre onglet, la remplace. */
+export const RESCUE = "selene-secours:";
+export function mirror(vault, written = () => {}, rescueArea = null) { // exportée pour les tests
+  const m = new Map(), last = new Map(), inflight = new Map(); // inflight : clé → valeur pas encore écrite (null : effacée)
   // Une écriture attend la précédente sur la même clé : un coffre asynchrone ne doit pas les inverser.
   const send = (k, v, fn) => {
-    if (!pend.has(k)) before.set(k, m.has(k) ? m.get(k) : null);
-    pend.set(k, v);
+    inflight.set(k, v);
     let ok = false;
     const q = (last.get(k) || Promise.resolve()).then(fn).then(() => { ok = true; try { written(k); } catch {} }, () => {});
     last.set(k, q); pendingWrites.add(q);
     q.then(() => {
       pendingWrites.delete(q);
-      if (last.get(k) !== q) return;
+      if (last.get(k) !== q) return; // une écriture plus récente de la même clé est en route
       last.delete(k);
-      if (ok) { pend.delete(k); before.delete(k); } // refusée : elle reste à recopier, et à rejouer au démarrage
-      if (journaled) journal();
+      if (!ok) return; // refusée : la valeur reste à sauver, seulement en mémoire ; la copie de secours la gardera
+      inflight.delete(k);
+      if (rescueArea) rescueArea.remove(RESCUE + k);
     });
-    if (journaled) journal(); // un journal déjà écrit suit chaque nouvelle valeur
   };
   return {
     async hydrate() {
       m.clear();
       for (const [k, v] of await vault.load()) if (typeof k === "string" && typeof v === "string") m.set(k, v);
     },
-    // Une autre fenêtre a écrit cette clé : la relire dans le coffre.
-    async refresh(k) { const v = await vault.get(k); if (typeof v === "string") m.set(k, v); else m.delete(k); },
+    // Une autre fenêtre a écrit cette clé : la relire dans le coffre. Une valeur refusée ici, qui attendait encore,
+    // n'est plus à sauver : celle de l'autre fenêtre a abouti, et elle est plus récente.
+    async refresh(k) { const v = await vault.get(k); if (typeof v === "string") m.set(k, v); else m.delete(k); if (!last.has(k)) inflight.delete(k); },
     get: k => (m.has(k) ? m.get(k) : null),
-    set(k, v) { v = String(v); send(k, v, () => vault.write(k, v)); m.set(k, v); return true; },
-    remove(k) { send(k, null, () => vault.remove(k)); m.delete(k); },
+    set(k, v) { v = String(v); m.set(k, v); send(k, v, () => vault.write(k, v)); return true; },
+    remove(k) { m.delete(k); send(k, null, () => vault.remove(k)); },
     keys: () => [...m.keys()],
-    journal
+    /* Synchrone : à la fermeture, rien d'asynchrone n'est sûr d'aboutir. Les copies de base de la synchronisation en
+       dernier : si la place manque (localStorage plafonne vers 5 Mo), mieux vaut garder le document que sa base. */
+    rescue() {
+      if (!rescueArea) return;
+      const order = [...inflight].sort(([a], [b]) => a.endsWith("-base") - b.endsWith("-base"));
+      for (const [k, v] of order) rescueArea.set(RESCUE + k, JSON.stringify({ v }));
+    }
   };
 }
 
@@ -143,9 +106,21 @@ function idbVault() {
     get: k => tx("readonly", s => s.get(k)),
     write: (k, v) => tx("readwrite", s => s.put(v, k)),
     remove: k => tx("readwrite", s => s.delete(k)),
-    // Plusieurs clés d'un coup, dans une seule transaction : toutes ou aucune.
-    writeAll: entries => tx("readwrite", s => { for (const [k, v] of entries) s.put(v, k); })
+    // Plusieurs clés d'un coup, dans une seule transaction : toutes ou aucune (une valeur nulle efface la clé).
+    writeAll: entries => tx("readwrite", s => { for (const [k, v] of entries) if (v == null) s.delete(k); else s.put(v, k); })
   };
+}
+/* Au démarrage, avant tout : les copies de secours laissées par une fermeture (voir RESCUE) rejoignent IndexedDB, en
+   une transaction, puis quittent localStorage. Une copie illisible est simplement retirée. */
+export async function restoreRescue(vault, area) {
+  const found = area.keys().filter(k => k.startsWith(RESCUE)), entries = [];
+  for (const rk of found) {
+    let v;
+    try { v = JSON.parse(area.get(rk)).v; } catch { continue; }
+    if (typeof v === "string" || v === null) entries.push([rk.slice(RESCUE.length), v]);
+  }
+  if (entries.length) await vault.writeAll(entries);
+  for (const rk of found) area.remove(rk);
 }
 /* Première ouverture après localStorage (et toute clé qu'une ancienne version y écrirait encore) : chaque clé
    ordinaire absente d'IndexedDB y est copiée, en une transaction ; ce n'est qu'après qu'elle quitte localStorage.
@@ -153,7 +128,7 @@ function idbVault() {
 export async function migrateToIdb(vault, area) {
   const present = new Set((await vault.load()).map(([k]) => k));
   const legacy = [];
-  for (const k of area.keys()) if (!SECRET_KEYS.includes(k) && !k.startsWith(RESCUE_PREFIX)) legacy.push([k, area.get(k)]);
+  for (const k of area.keys()) if (!SECRET_KEYS.includes(k) && !k.startsWith(RESCUE)) legacy.push([k, area.get(k)]);
   const missing = legacy.filter(([k, v]) => !present.has(k) && typeof v === "string");
   if (missing.length) await vault.writeAll(missing);
   for (const [k] of legacy) area.remove(k);
@@ -213,7 +188,9 @@ export const platform = {
     try { idb = platform.runtime() === "web" && window.indexedDB ? idbVault() : null; } catch { idb = null; }
     if (!idb) return start();
     const local = webStore(() => localStorage);
-    idb.open().then(() => replayRescue(idb, local).catch(() => 0)).then(() => migrateToIdb(idb, local)).then(() => {
+    // Une copie de secours qui ne passe pas (IndexedDB refuse l'écriture) reste dans localStorage pour le démarrage
+    // suivant : elle n'empêche pas celui-ci.
+    idb.open().then(() => restoreRescue(idb, local).catch(() => {})).then(() => migrateToIdb(idb, local)).then(() => {
       try { channel = new BroadcastChannel("selene-storage"); } catch { channel = null; }
       const m = mirror(idb, k => { if (channel) channel.postMessage(k); }, local);
       return m.hydrate().then(() => {
@@ -223,11 +200,10 @@ export const platform = {
       }, fail);
     }, () => start());
   },
-  /* Les écritures en cours vers un coffre asynchrone (rien à attendre avec localStorage). Appelée à la mise en
-     arrière-plan et à la fermeture : le journal de secours est écrit d'abord, de façon synchrone, car la page peut
-     disparaître avant la fin de l'attente. */
+  /* Les écritures en cours vers un coffre asynchrone (rien à attendre avec localStorage). D'abord, tout de suite, la
+     copie de secours de ce qui est encore en route (web) : la page peut disparaître avant la suite. */
   async flush() {
-    if (storageImpl.journal) storageImpl.journal();
+    if (storageImpl.rescue) storageImpl.rescue();
     while (pendingWrites.size) await Promise.all([...pendingWrites]);
   },
   /* Notifications locales (ADR 19), dans une coquille native seulement : programmées par le système, elles sonnent

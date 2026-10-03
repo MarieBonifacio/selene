@@ -139,8 +139,76 @@ const loadMigrate = () => {
 };
 const fakeIdb = (initial = {}, { failWrite = false } = {}) => {
   const data = new Map(Object.entries(initial));
-  return { data, load: async () => [...data], writeAll: async entries => { if (failWrite) throw new Error('plein'); for (const [k, v] of entries) data.set(k, v); } };
+  return { data, load: async () => [...data], writeAll: async entries => { if (failWrite) throw new Error('plein'); for (const [k, v] of entries) if (v == null) data.delete(k); else data.set(k, v); } };
 };
+
+// La copie de secours (web) : ce qui est encore en route vers IndexedDB quand la page se ferme.
+test('secours : à la fermeture, la dernière valeur de chaque clé en route, le document avant sa base ; retirée quand l’écriture aboutit', async () => {
+  const { mirror, webStore, RESCUE } = loadMigrate(), ls = memory(), area = webStore(() => ls);
+  let release; const gate = new Promise(r => { release = r; });
+  const lent = { write: () => gate, remove: () => gate }; // IndexedDB qui n'a pas encore fini
+  const m = mirror(lent, () => {}, area);
+  m.set('selene-site-v1-base', 'base'); m.set('selene-site-v1', 'v1'); m.set('selene-site-v1', 'v2'); m.remove('selene-draft-x');
+  m.rescue();
+  const copies = [...area.keys()].filter(k => k.startsWith(RESCUE)); // un tableau de ce contexte (vm), pas de l'autre
+  assert.deepEqual(copies, ['selene-site-v1', 'selene-draft-x', 'selene-site-v1-base'].map(k => RESCUE + k), 'chaque clé en route, la base en dernier');
+  assert.equal(ls.getItem(RESCUE + 'selene-site-v1'), '{"v":"v2"}', 'la dernière valeur');
+  assert.equal(ls.getItem(RESCUE + 'selene-draft-x'), '{"v":null}', 'un effacement aussi');
+  release(); await new Promise(r => setTimeout(r, 0));
+  assert.deepEqual([...area.keys()].filter(k => k.startsWith(RESCUE)), [], 'tout a abouti : plus de copie');
+});
+
+test('secours : une écriture plus récente, dans un autre onglet, retire la copie laissée par le premier', async () => {
+  const { mirror, webStore, RESCUE } = loadMigrate(), ls = memory(), area = webStore(() => ls);
+  const fige = mirror({ write: () => new Promise(() => {}) }, () => {}, area); // l'onglet qui se ferme : jamais fini
+  fige.set('selene-site-v1', 'ancien'); fige.rescue();
+  assert.equal(ls.getItem(RESCUE + 'selene-site-v1'), '{"v":"ancien"}');
+  const autre = mirror({ write: async () => {} }, () => {}, area);
+  autre.set('selene-site-v1', 'récent'); await new Promise(r => setTimeout(r, 0));
+  assert.equal(ls.getItem(RESCUE + 'selene-site-v1'), null, 'la copie ne peut pas écraser, au démarrage, ce qui est plus récent');
+});
+
+test('secours : une écriture refusée par IndexedDB (quota, transaction annulée) reste à sauver, jusqu’à la suivante qui aboutit', async () => {
+  const { mirror, webStore, RESCUE } = loadMigrate(), ls = memory(), area = webStore(() => ls);
+  let refuse = true;
+  const m = mirror({ write: async () => { if (refuse) throw new Error('quota'); } }, () => {}, area);
+  m.set('selene-site-v1', 'capture'); await new Promise(r => setTimeout(r, 0));
+  m.rescue();
+  assert.equal(ls.getItem(RESCUE + 'selene-site-v1'), '{"v":"capture"}', 'refusée, elle n’existait plus qu’en mémoire : la copie la garde');
+  refuse = false; m.set('selene-site-v1', 'suite'); await new Promise(r => setTimeout(r, 0));
+  assert.equal(ls.getItem(RESCUE + 'selene-site-v1'), null, 'la suivante a abouti : plus rien à sauver');
+  m.rescue();
+  assert.deepEqual([...area.keys()].filter(k => k.startsWith(RESCUE)), []);
+});
+
+test('secours : un reste refusé ici cède à une écriture qui a abouti dans un autre onglet', async () => {
+  const { mirror, webStore, RESCUE } = loadMigrate(), ls = memory(), area = webStore(() => ls);
+  const m = mirror({ write: async () => { throw new Error('quota'); }, get: async () => 'récent' }, () => {}, area);
+  m.set('selene-site-v1', 'ancien'); await new Promise(r => setTimeout(r, 0));
+  await m.refresh('selene-site-v1'); // l'autre onglet a écrit « récent », et le dit
+  m.rescue();
+  assert.equal(ls.getItem(RESCUE + 'selene-site-v1'), null, 'jamais plus ancien par-dessus plus récent, au démarrage suivant');
+  assert.equal(m.get('selene-site-v1'), 'récent');
+});
+
+test('secours : si IndexedDB refuse de les reprendre, les copies restent pour le démarrage suivant', async () => {
+  const { restoreRescue, webStore, RESCUE } = loadMigrate(), ls = memory(), area = webStore(() => ls);
+  ls.setItem(RESCUE + 'selene-site-v1', '{"v":"capture"}');
+  await assert.rejects(restoreRescue(fakeIdb({}, { failWrite: true }), area));
+  assert.equal(ls.getItem(RESCUE + 'selene-site-v1'), '{"v":"capture"}');
+});
+
+test('secours : au démarrage, les copies rejoignent IndexedDB (effacements compris), puis quittent localStorage', async () => {
+  const { restoreRescue, migrateToIdb, webStore, RESCUE } = loadMigrate(), ls = memory(), area = webStore(() => ls);
+  ls.setItem(RESCUE + 'selene-site-v1', '{"v":"capture de la dernière seconde"}'); ls.setItem(RESCUE + 'selene-draft-x', '{"v":null}');
+  ls.setItem(RESCUE + 'illisible', 'pas du JSON'); ls.setItem('selene-auth-session', 'jeton');
+  const idb = fakeIdb({ 'selene-site-v1': 'avant', 'selene-draft-x': 'brouillon' });
+  await restoreRescue(idb, area); await migrateToIdb(idb, area);
+  assert.equal(idb.data.get('selene-site-v1'), 'capture de la dernière seconde');
+  assert.equal(idb.data.has('selene-draft-x'), false, 'l’effacement est appliqué');
+  assert.ok(![...idb.data.keys()].some(k => k.startsWith(RESCUE)), 'aucune copie ne devient une clé ordinaire');
+  assert.deepEqual([...area.keys()], ['selene-auth-session'], 'localStorage ne garde que les secrets');
+});
 
 test('migration : les clés ordinaires passent dans IndexedDB, les secrets restent, IndexedDB l’emporte', async () => {
   const { migrateToIdb, webStore } = loadMigrate(), ls = memory();
@@ -158,89 +226,6 @@ test('migration : si IndexedDB refuse l’écriture, rien ne quitte localStorage
   ls.setItem('selene-site-v1', 'doc');
   await assert.rejects(migrateToIdb(fakeIdb({}, { failWrite: true }), webStore(() => ls)));
   assert.equal(ls.getItem('selene-site-v1'), 'doc');
-});
-
-// Le journal de secours (ADR 28) : une page fermée avant qu'IndexedDB ait confirmé ses écritures ne les perd pas.
-const freshArea = webStore => { const ls = memory(); return webStore(() => ls); };
-const rescueKeys = area => area.keys().filter(k => k.startsWith('selene-secours:'));
-const tick = ms => new Promise(r => setTimeout(r, ms));
-
-test('journal de secours : ce qui attend encore est recopié à la fermeture, et effacé une fois confirmé', async () => {
-  const { mirror, webStore, fingerprint } = load({ window: { claude: null } }), area = freshArea(webStore);
-  const v = vault({ doc: 'ancien' }, { delay: () => 30 }), m = mirror(v, () => {}, area);
-  await m.hydrate();
-  m.journal();
-  assert.equal(rescueKeys(area).length, 0, 'rien n’attend : pas de journal');
-  m.set('doc', 'nouveau'); m.remove('brouillon');
-  m.journal(); // la mise en arrière-plan, ou la fermeture
-  const [name] = rescueKeys(area);
-  assert.deepEqual(JSON.parse(area.get(name)).entries, [['doc', 'nouveau', fingerprint('ancien')], ['brouillon', null, '-']],
-    'la valeur voulue, et l’empreinte de la valeur sûre d’avant');
-  m.set('doc', 'encore'); // la page n'était que cachée : le journal suit la dernière valeur
-  assert.equal(JSON.parse(area.get(name)).entries[0][1], 'encore');
-  assert.equal(JSON.parse(area.get(name)).entries[0][2], fingerprint('ancien'), 'toujours la valeur sûre d’avant la première');
-  await tick(150);
-  assert.equal(v.data.get('doc'), 'encore');
-  assert.equal(rescueKeys(area).length, 0, 'tout est confirmé : plus de journal');
-});
-
-test('journal de secours : une écriture refusée par le coffre reste à rejouer ; deux pages, deux journaux', async () => {
-  const { mirror, webStore } = load({ window: { claude: null } }), area = freshArea(webStore);
-  const a = mirror(vault({}, { fail: 'write' }), () => {}, area), b = mirror(vault({}), () => {}, area);
-  a.set('doc', 'x'); b.set('doc', 'y');
-  await tick(20);
-  a.journal(); b.journal();
-  assert.equal(rescueKeys(area).length, 1, 'la page dont l’écriture a réussi n’a rien à recopier');
-  assert.equal(JSON.parse(area.get(rescueKeys(area)[0])).entries[0][1], 'x');
-});
-
-test('journal de secours : trop gros pour localStorage, pas de journal plutôt qu’un journal périmé', async () => {
-  const { mirror, webStore } = load({ window: { claude: null } }), ls = memory(), area = webStore(() => ls);
-  const m = mirror(vault({}, { delay: () => 30 }), () => {}, area);
-  m.set('doc', 'petit'); m.journal();
-  assert.equal(rescueKeys(area).length, 1);
-  const set = ls.setItem; ls.setItem = () => { throw new Error('quota'); };
-  m.set('doc', 'trop gros');
-  ls.setItem = set;
-  assert.equal(rescueKeys(area).length, 0, 'l’ancien journal (« petit ») ne doit pas survivre à « trop gros »');
-});
-
-test('rejeu au démarrage : seulement si le coffre a encore la valeur d’avant ; puis le journal disparaît', async () => {
-  const { replayRescue, webStore, fingerprint } = load({ window: { claude: null } }), area = freshArea(webStore);
-  area.set('selene-secours:a', JSON.stringify({ v: 1, entries: [
-    ['perdue', 'v2', fingerprint('v1')], // le coffre a gardé v1 : la page s'est fermée avant la confirmation
-    ['depassee', 'v2', fingerprint('v1')], // un autre onglet a écrit v3 depuis : plus récent, on n'y touche pas
-    ['faite', 'v2', fingerprint('v1')], // confirmée après tout : rien à faire
-    ['effacee', null, fingerprint('x')],
-    ['neuve', 'n', fingerprint(null)],
-    ['bizarre'], 'pas une entrée'] }));
-  area.set('selene-secours:b', '{pas du json');
-  area.set('selene-autre', 'gardée');
-  const v = vault({ perdue: 'v1', depassee: 'v3', faite: 'v2', effacee: 'x' });
-  assert.equal(await replayRescue(v, area), 3);
-  assert.equal(v.data.get('perdue'), 'v2');
-  assert.equal(v.data.get('depassee'), 'v3', 'jamais plus ancien par-dessus plus récent');
-  assert.equal(v.data.get('faite'), 'v2');
-  assert.equal(v.data.has('effacee'), false);
-  assert.equal(v.data.get('neuve'), 'n');
-  assert.deepEqual([...area.keys()], ['selene-autre'], 'les journaux, lisibles ou non, sont effacés ; le reste ne bouge pas');
-  assert.equal(await replayRescue(v, area), 0, 'sans journal, rien');
-});
-
-test('rejeu au démarrage : un coffre qui refuse l’écriture laisse le journal pour le démarrage suivant', async () => {
-  const { replayRescue, webStore, fingerprint } = load({ window: { claude: null } }), area = freshArea(webStore);
-  area.set('selene-secours:a', JSON.stringify({ v: 1, entries: [['doc', 'v2', fingerprint('v1')]] }));
-  await assert.rejects(replayRescue(vault({ doc: 'v1' }, { fail: 'write' }), area));
-  assert.equal(rescueKeys(area).length, 1);
-});
-
-test('migration : un journal de secours n’est pas une ancienne clé à verser dans IndexedDB', async () => {
-  const { migrateToIdb, webStore } = loadMigrate(), ls = memory();
-  ls.setItem('selene-secours:a', '{"v":1,"entries":[]}'); ls.setItem('selene-bilan', 'mois');
-  const idb = fakeIdb();
-  await migrateToIdb(idb, webStore(() => ls));
-  assert.equal(idb.data.has('selene-secours:a'), false);
-  assert.equal(ls.getItem('selene-secours:a'), '{"v":1,"entries":[]}', 'il reste où il est, pour le rejeu');
 });
 
 test('les secrets déclarés par platform sont ceux que la déconnexion efface', () => {

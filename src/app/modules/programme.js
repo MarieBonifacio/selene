@@ -39,7 +39,7 @@ function tiersPanel(id) {
 registerType("programme", {
   view(id) {
     const inst = S().modules[id], c = inst.config, now = todayISO();
-    if (!c.start) return `<h2>${esc(label(id))}</h2><p class="hint">${tr`Un protocole de ${esc(c.weeks)} semaines, une séance à la fois.`}</p><button class="btn acc" data-act="prog-start" data-mod="${esc(id)}">${tr`Commencer aujourd'hui`}</button> <a class="btn ghost" href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`ou choisir une autre date`}</a>`;
+    if (!c.start) return `<h2>${esc(label(id))}</h2><p class="hint">${tr`Un protocole de ${esc(c.weeks)} semaines, une séance à la fois.`}</p><div class="row"><button class="btn acc" data-act="prog-start" data-mod="${esc(id)}">${tr`Commencer aujourd'hui`}</button><a class="btn ghost" href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`ou choisir une autre date`}</a></div>`;
     const days = new Set(inst.entries.map(x => x.date)), W = Math.min(52, Math.max(1, Math.round(+c.weeks) || 12));
     const week = Math.min(W, Math.floor(diffDays(now, c.start) / 7) + 1);
     const pct = Math.min(100, Math.round(100 * (diffDays(now, c.start) + 1) / (W * 7)));

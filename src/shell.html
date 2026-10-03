@@ -234,7 +234,8 @@ dialog.palette input:focus-visible{outline:none;border-bottom-color:var(--accent
   #dlg[open]{animation:sheet-in var(--t-3) var(--ease)}
 }
 .set.mod{grid-template-columns:auto minmax(0,1fr) 9em auto}
-@media (max-width:560px){.set.mod{grid-template-columns:auto minmax(0,1fr) auto}.set.mod>:nth-child(3){grid-column:2;grid-row:2}}
+/* Sur téléphone : la case et le nom sur une ligne, le domaine et les boutons dessous (le nom garde toute la largeur). */
+@media (max-width:560px){.set.mod{grid-template-columns:auto minmax(0,1fr) auto}.set.mod>:nth-child(2){grid-column:2 / 4}.set.mod>:nth-child(3){grid-column:2;grid-row:2}.set.mod>:nth-child(4){grid-column:3;grid-row:2}}
 /* ================= Réglages : premier accueil, sommaire, chapitres =================
    Une page longue, rangée en chapitres numérotés comme des planches, du plus courant au plus rare. Sur grand écran, le
    sommaire tient la marge droite et marque le chapitre lu (le filet de marge) ; ailleurs, il ouvre la page. */
@@ -329,7 +330,7 @@ details.newmod>summary::-webkit-details-marker{display:none}
 .tipb:popover-open{animation:tip-in var(--t-2) var(--ease)}
 @keyframes tip-in{from{opacity:0;transform:translateY(-3px)}}
 @supports not selector(:popover-open){.tip{display:none}.tipb{position:static;display:block;width:auto;max-width:none;margin:4px 0;padding:0;border:0;background:none;color:var(--muted);font-size:.88rem;font-style:italic}}
-@media (pointer:coarse){.tip{position:relative}.tip::after{content:"";position:absolute;inset:-13px}}
+@media (pointer:coarse){.tip{position:relative}.tip::after{content:"";position:absolute;inset:-14px}}
 
 /* buttons */
 .btn{border:1px solid var(--ink);background:transparent;padding:7px 14px;border-radius:2px;font-weight:500;font-size:.92rem}
@@ -569,6 +570,29 @@ input[type=checkbox],input[type=radio]{width:auto}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:480px){.field-row{grid-template-columns:1fr}}
 .set{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--rule)}
+/* L'écran d'entrée de la version hébergée : la promesse et « Commencer sans compte », puis le compte. Sur ordinateur,
+   côte à côte. Ni minuteur ni navigation avant d'être entrée. */
+[data-auth] .timer,[data-auth] nav.tabbar{display:none}
+.auth{display:grid;gap:30px;max-width:440px;margin:36px auto 0}
+.auth.two-col{max-width:920px}
+@media (min-width:900px){.auth.two-col{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:64px;align-items:start;margin-top:56px}}
+.auth-promise h2{font-size:clamp(1.65rem,5.2vw,2.3rem);line-height:1.12;margin:0 0 10px;text-wrap:balance}
+.auth-promise .lead{font-size:1.08rem;color:var(--ink-2);margin:0 0 14px}
+.auth-promise ul{margin:0 0 20px;padding-left:1.1em;color:var(--ink-2);display:grid;gap:6px}
+.auth-promise .hint{margin-top:10px}
+.auth-form h2,.auth-form h3{margin:0 0 6px}
+.two-col .auth-form{border-top:1px solid var(--rule);padding-top:22px}
+@media (min-width:900px){.two-col .auth-form{border-top:0;border-left:1px solid var(--rule);padding:4px 0 0 40px}}
+/* Le premier accueil : trois réponses à une question, puis la liste entière repliée. */
+.paths{display:grid;gap:10px;margin:14px 0 10px}
+@media (min-width:760px){.paths{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.path{display:grid;gap:3px;align-content:start;text-align:left;padding:13px 15px;border:1px solid var(--rule-strong);border-radius:3px;background:var(--surface);color:var(--ink);font:inherit;cursor:pointer}
+.path b{font-family:var(--f-ui);font-weight:600;font-size:1rem}
+.path span{color:var(--ink-2);font-size:.9rem;line-height:1.4}
+.path small{color:var(--muted);font-family:var(--f-ui);font-size:.8rem;margin-top:4px}
+.path:hover,.path:focus-visible{border-color:var(--accent)}
+.welcome-all>summary{cursor:pointer;font-family:var(--f-ui);font-size:.9rem;color:var(--ink-2);padding:6px 0}
+@media (pointer:coarse){.welcome-all>summary{padding-block:11px}}
 .swatches{display:flex;gap:10px;flex-wrap:wrap}
 .swatch{display:flex;align-items:center;gap:8px;border:1px solid var(--rule);padding:8px 12px;cursor:pointer;background:var(--surface)}
 .swatch.on{border-color:var(--accent);outline:1px solid var(--accent)}
@@ -619,13 +643,23 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 /* Écran étroit : les boutons d'un rappel passent sous son texte, qui garde toute la largeur. */
 @media (max-width:560px){.item.alert>.row{grid-column:2 / 4}}
 @media (max-width:560px){.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.stats .big{font-size:clamp(1.05rem,5vw,1.4rem)}}
-/* Écran tactile : 16 px au moins dans les champs (sinon iOS zoome au focus), et 44 pt de cible autour des petits
-   contrôles, par une zone invisible qui ne change pas leur dessin. */
+/* Écran tactile : 16 px au moins dans les champs (sinon iOS zoome au focus), et 44 pt de cible pour chaque contrôle
+   (Apple, Material, WCAG 2.5.5). Un bouton a 44 px de large au moins (sans bordure, rien ne se voit) et une zone
+   invisible au-dessus et au-dessous, qui ne change pas son dessin : 46 px de haut au moins, 3 px de marge sinon. Les
+   champs, menus, nuanciers et volets prennent leur hauteur ; une case seule, son étiquette (.tap). Mesuré dans
+   tests/browser/cibles.js : ce que le doigt touche, pas la boîte dessinée. */
 @media (pointer:coarse){
   input,select,textarea{font-size:max(16px,1em)}
-  .btn.sm,.btn.ghost,.star,.check{position:relative}
-  .btn.sm::after,.btn.ghost::after,.star::after{content:"";position:absolute;inset:-9px -3px}
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),select,.swatch{min-height:44px}
+  .btn{min-width:44px}a.btn{display:inline-block} /* un lien-bouton ne se coupe pas en deux lignes de cible */
+  .btn,.star,.check{position:relative}
+  .btn::after,.star::after{content:"";position:absolute;inset:min(-3px,calc(50% - 23px)) -3px}
   .check::before{content:"";position:absolute;inset:-11px}
+  details.mreg>summary{min-height:44px;align-items:center}
+  .reg-guide summary,.danger summary,details.rlm-privacy>summary,details.rlm-info>summary{padding-block:11px}
+  .tap{display:grid;place-items:center;min-width:44px;min-height:44px}
+  .field-row{row-gap:18px}.fld{gap:14px} /* la zone d'une bulle « ? » ne mord ni sur son champ, ni sur celui du dessus */
+  .sec-head{margin-bottom:9px}.plate{margin-bottom:16px} /* un titre et ses boutons, au-dessus d'autres boutons */
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.flash{box-shadow:inset 2px 0 0 var(--accent)}}
 </style>

@@ -21,6 +21,8 @@ export const clone = o => JSON.parse(JSON.stringify(o));
    Le serveur refuse un espace de plus de DOC_MAX (contrainte app_state_taille, supabase/schema.sql) ; Réglages prévient
    à partir de DOC_WARN. */
 export const DOC_MAX = 5e6, DOC_WARN = 3e6;
+// Ce que les navigateurs acceptent dans une requête keepalive (64 Kio pour toutes celles en cours), moins l'enveloppe.
+export const KEEPALIVE_MAX = 60000;
 export function utf8Bytes(str) {
   let n = 0;
   for (let i = 0; i < str.length; i++) {
@@ -100,12 +102,17 @@ export function makeStore(key, path, seed, normalize = d => d, { onRemoteChange 
   };
   /* Fermeture ou mise en arrière-plan : pas le temps de relire, donc une seule écriture conditionnelle
      sur la base connue (keepalive = survit à la fermeture de l'onglet). Si le serveur a bougé, elle est
-     refusée sans dégât : les données restent sur l'appareil et seront fusionnées au prochain lancement. */
+     refusée sans dégât : les données restent sur l'appareil et seront fusionnées au prochain lancement.
+     Les navigateurs refusent une requête keepalive de plus de 64 Kio (T13 de l'audit) : un document plus lourd ne
+     tente rien, et sa synchronisation ordinaire reste prévue, si la page survit (simple mise en arrière-plan) ; sinon,
+     il part au lancement suivant, la copie de l'appareil étant assurée par platform.flush(). */
   s.flush = () => {
     if (!s.timer || !s.db) return;
-    clearTimeout(s.timer); s.timer = null;
     const expected = s.base ? s.base.updatedAt : null;
     const value = clone({ ...s.data, updatedAt: Math.max(s.data.updatedAt || 0, (expected || 0) + 1) });
+    const json = JSON.stringify(value);
+    if (json.length > KEEPALIVE_MAX || utf8Bytes(json) > KEEPALIVE_MAX) return; // la longueur d'abord : jamais plus que les octets
+    clearTimeout(s.timer); s.timer = null;
     const db = s.db;
     write(db.doc(path), value, expected, { keepalive: true })
       .then(ok => { if (ok && s.db === db) { s.base = value; saveBase(); } }, () => {});
@@ -113,6 +120,11 @@ export function makeStore(key, path, seed, normalize = d => d, { onRemoteChange 
   /* Remplacement total voulu (import d'une sauvegarde) : la prochaine synchro écrase le serveur
      au lieu de fusionner — toujours par écriture conditionnelle, donc sans course avec un autre appareil. */
   s.replaceAll = data => { s.data = normalize(data); s.force = true; s.save(); };
+  /* Un appareil utilisé sans compte rejoint un compte qui a peut-être déjà ses données. Sans base commune, la fusion garde
+     les ajouts des deux côtés, et pour une même valeur (un réglage : palette, nom) le plus récent gagne, donc l'appareil.
+     Ici, c'est le compte qui doit l'emporter : la date locale passe à 1. Pas à 0, qui ferait adopter le serveur tel quel
+     et perdre ce qui a été noté ; un compte neuf, sans ligne, reçoit l'appareil entier. */
+  s.yieldToRemote = () => { if (s.data.updatedAt) { s.data.updatedAt = 1; saveLS(); } };
   /* Y a-t-il ici des changements que le serveur n'a pas (encore) reçus ? */
   s.unsynced = () => !s.base || !deepEqual({ ...s.data, updatedAt: 0 }, { ...s.base, updatedAt: 0 });
   s.reload = () => {

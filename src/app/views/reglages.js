@@ -18,7 +18,7 @@ import { shareSettingsHTML } from "../features/share.js";
 import { zotSettingsHTML } from "../features/zotero.js";
 import { gcfg, groupBy, grouperFor } from "../modules/groups.js";
 import { skySettingsHTML } from "../scene/sky.js";
-import { authReady, authSession, deleteWord, passwordSettingsHTML } from "../services/auth.js";
+import { authReady, authSession, deleteWord, localAccountHTML, localOnly, passwordSettingsHTML } from "../services/auth.js";
 import { errorSettingsHTML } from "../services/journal.js";
 import { passeurSettingsHTML } from "../services/passeur.js";
 import { addModule, moveMod, offered } from "../shell/actions.js";
@@ -89,7 +89,7 @@ function modBlock(s, m, i) {
   const name = label(m.id), inst = s.modules[m.id], sys = SYSTEM.includes(m.id);
   const settings = enabled(m.id) && (inst || grouperFor(m.id));
   return `<div class="modblock ${tintOf(m.id)}${m.on ? "" : " off"}">
-    <div class="set mod" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="${tr`Activer ${esc(name)}`}"><div class="mod-name">${sigil(m.id)}<input data-act="mod-label" value="${esc(name)}" aria-label="${tr`Nom du module`}"></div>${sys ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="${esc(TEXTS.domaine)}" aria-label="${tr`Domaine de ${esc(name)}`}">`}<div class="row">${inst ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="${tr`Supprimer définitivement`}" title="${tr`Supprimer définitivement`}">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="${tr`Descendre`}">↓</button></div></div>
+    <div class="set mod" data-i="${i}"><label class="tap"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="${tr`Activer ${esc(name)}`}"></label><div class="mod-name">${sigil(m.id)}<input data-act="mod-label" value="${esc(name)}" aria-label="${tr`Nom du module`}"></div>${sys ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="${esc(TEXTS.domaine)}" aria-label="${tr`Domaine de ${esc(name)}`}">`}<div class="row">${inst ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="${tr`Supprimer définitivement`}" title="${tr`Supprimer définitivement`}">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="${tr`Descendre`}">↓</button></div></div>
     ${settings ? `<details id="mreg-${esc(m.id)}" data-mod="${esc(m.id)}" class="mreg"><summary aria-label="${esc(TEXTS.regler(name))}">${esc(TEXTS.reglerShort)}${inst ? `<span class="mreg-type">${esc(typeName(inst.type))}</span>` : ""}</summary><div class="mreg-body">${moduleSettingsHTML(m.id)}</div></details>`
       : sys && m.on ? `<p class="mreg-note"><button type="button" class="btn ghost sm" data-act="reg-goto" data-to="reg-assistant">› ${esc(TEXTS.assistantHere)}</button></p>` : ""}
   </div>`;
@@ -115,7 +115,8 @@ function assistantHTML(s) {
   if (!enabled("assistant")) return `<p class="empty">${esc(TEXTS.assistantOff)}</p><button type="button" class="btn sm" data-act="reg-goto" data-to="reg-espaces">${esc(TEXTS.toEspaces)}</button>`;
   const a = s.config.assistant, known = assistantKnown();
   return `<section id="assistant-cfg"><p class="hint">${tr`Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.`}</p>
-    <div class="field-row">${hosted() ? field(known?.cle ? tr`Clé API Anthropic (enregistrée : ${known.indice || ""})` : tr`Clé API Anthropic`, id => `<input type="password" aria-labelledby="${id}" data-act="as-key" value="" placeholder="${known?.cle ? tr`Coller une autre clé pour la remplacer` : "sk-ant-…"}" autocomplete="off">`, { tip: TIPS.assistantKey }) : ""}
+    ${authReady() && !authSession ? `<p class="hint">${tr`Sans compte, pas d'assistant : ta clé serait gardée sur le serveur, attachée à un compte.`} <button type="button" class="btn ghost sm" data-act="auth-open">${tr`Créer un compte ou me connecter`}</button></p>` : ""}
+    <div class="field-row">${signedIn() ? field(known?.cle ? tr`Clé API Anthropic (enregistrée : ${known.indice || ""})` : tr`Clé API Anthropic`, id => `<input type="password" aria-labelledby="${id}" data-act="as-key" value="" placeholder="${known?.cle ? tr`Coller une autre clé pour la remplacer` : "sk-ant-…"}" autocomplete="off">`, { tip: TIPS.assistantKey }) : ""}
     ${field(tr`Modèle`, id => `<select aria-labelledby="${id}" data-act="as-model">${[["claude-haiku-4-5-20251001", tr`Haiku 4.5, rapide et peu cher`], ["claude-sonnet-5", tr`Sonnet 5, équilibré`], ["claude-opus-5-5", tr`Opus 5.5, le plus capable`]].map(([k, l]) => opt(k, l, a.model)).join("")}</select>`, { tip: TIPS.assistantModel })}</div>
     <div class="row" style="margin-top:12px"><label class="check-l"><input type="checkbox" data-act="as-actions" ${a.actions ? "checked" : ""}>${tr`Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)`}</label>${tip(TIPS.assistantActions, about(tr`Autoriser Claude à modifier le tableau de bord`))}</div>
     <div class="fld-h" style="margin:16px 0 6px"><span>${tr`Ce que Claude peut lire`}</span>${tip(TIPS.assistantShare, about(tr`Ce que Claude peut lire`))}</div><div class="row">${Object.keys(a.share).filter(enabled).map(k => `<label class="check-l"><input type="checkbox" data-act="as-share" data-k="${esc(k)}" ${a.share[k] ? "checked" : ""}>${esc(label(k))}</label>`).join("")}</div>
@@ -150,7 +151,8 @@ function compteHTML() {
     <details id="auth-delete"><summary class="hint">${tr`Supprimer mon compte`}</summary>
       <p class="hint" style="margin-top:8px">${tr`Définitif : ton compte, tout ton tableau de bord sur le serveur et ta clé d'assistant sont effacés, puis cet appareil est vidé. Tes autres appareils perdent l'accès. Exporte d'abord une sauvegarde (plus haut) si tu veux garder quelque chose. Politique de confidentialité : ${`<a href="${privacyUrl()}" target="_blank" rel="noopener">${tr`ce que Selene garde, et où`}</a>`}.`}</p>
       <div class="field-row"><label>${tr`Tape « ${deleteWord()} » pour confirmer`}<input id="authDelIn" autocomplete="off" autocapitalize="off" spellcheck="false"></label><span></span></div>
-      <button class="btn sm" data-act="auth-delete" style="margin-top:8px;color:var(--alarm)">${tr`Supprimer définitivement`}</button></details></section>` : ""}
+      <button class="btn sm" data-act="auth-delete" style="margin-top:8px;color:var(--alarm)">${tr`Supprimer définitivement`}</button></details></section>`
+    : authReady() && localOnly() ? `<section>${sub(tr`Compte`)}${localAccountHTML()}${errorSettingsHTML()}</section>` : ""}
   <p class="hint" style="margin-top:24px">${tr`${`<a href="${privacyUrl()}" target="_blank" rel="noopener">${tr`Confidentialité`}</a>`} : aucun traceur, aucune publicité ; ce que Selene garde, où, et comment tout effacer.`}</p>`;
 }
 

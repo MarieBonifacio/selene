@@ -106,8 +106,10 @@ refuse de fusionner et d'écrire (« recharge la page ») ; un import plus réce
 ### Données de départ
 
 Un compte neuf part de `siteSeed()` : une boîte de réception, rien de personnel, et le drapeau
-`config.welcome` qui affiche sur l'accueil le bloc « Composer ton espace » (modèles `MODULE_TEMPLATES`,
-dans `domain.js`) jusqu'à « C'est bon ». Ce drapeau est exclu de la complétion des réglages manquants :
+`config.welcome` qui affiche sur l'accueil le bloc « Composer ton espace » jusqu'à « C'est bon ». Il pose une
+question, « Sur quoi travailles-tu ? », à trois réponses (`WELCOME_PATHS`, `views/accueil.js`) ; chacune installe
+trois modèles qui vont ensemble (`installModules`, un seul enregistrement) et referme le bloc. La liste entière
+(`MODULE_TEMPLATES`, dans `domain.js`) reste derrière « Choisir moi-même ». Ce drapeau est exclu de la complétion des réglages manquants :
 un compte existant ne le reçoit jamais. Les données de départ doivent rester « vierges » (`updatedAt` à 0,
 aucun identifiant aléatoire) pour qu'un appareil neuf adopte le serveur au lieu de fusionner.
 
@@ -251,7 +253,8 @@ Une seule synchro à la fois par store. Déclencheurs : 900 ms après une modifi
 (onglet visible), au retour en ligne ou au premier plan. La relecture des 30 s demande d'abord la seule date de la
 dernière écriture (`select=u:site->>updatedAt`, quelques octets) : si c'est celle de la base et que l'appareil n'a
 rien à envoyer, le document n'est pas relu. Sinon, relecture complète et fusion, comme avant. À la fermeture, une écriture conditionnelle
-`keepalive` sans relecture ; si elle échoue, les données restent locales et partent au lancement suivant.
+`keepalive` sans relecture, pour un document de moins de 60 000 octets (les navigateurs refusent au-delà de 64 Kio) ;
+sinon, ou si elle échoue, les données restent locales (copie de secours, ADR 13) et partent au lancement suivant.
 
 Sans base (premier contact d'un appareil) : un appareil vierge adopte le serveur, sinon on fusionne
 sans rien supprimer. L'import d'une sauvegarde remplace au lieu de fusionner (`replaceAll`).
@@ -534,9 +537,20 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   reçoit la synchronisation). Les scénarios lisent le stockage par `storeGet` / `storeJSON` et l'écrivent par
   `storeSet` (tests/browser/helpers.js), qui prévient Selene comme un autre onglet ; `tests/browser/indexeddb.js`
   couvre la migration, la relance, deux onglets et un document de plus de 6 M caractères.
-- **Révision (3 octobre 2026, ADR 28)** : « le serveur, lui, reçoit la synchronisation » n'est pas toujours vrai
-  (l'envoi de la fermeture est refusé si un autre appareil a écrit entre-temps, et un suivi gardé sur l'appareil n'a
-  pas de copie serveur) ; le journal de secours couvre désormais ce cas.
+- **Révision (3 octobre 2026)** : la perte « dans la milliseconde » était plus large qu'écrit. Une capture faite dans
+  la demi-seconde avant la fermeture se perdait une fois sur deux (`tests/browser/sync-deux-appareils.js`, instable
+  sur une machine lente), et le serveur ne la rattrapait pas : l'écriture `keepalive` de la fermeture est refusée
+  par les navigateurs au-delà de 64 Kio (T13 de l'audit), soit tout espace un peu rempli. Désormais,
+  `platform.flush()` (fermeture, mise en arrière-plan) dépose d'abord, de façon synchrone, une **copie de secours**
+  de chaque clé encore en route dans `localStorage` (`selene-secours:`), le document avant sa base, faute de place ;
+  le démarrage suivant la reverse dans IndexedDB avant la migration (`restoreRescue`). Une écriture qui aboutit
+  retire la copie de sa clé, dans tout onglet : une copie n'est jamais plus ancienne que ce qu'IndexedDB tient. Le
+  store ne tente plus de `keepalive` au-delà de 60 000 octets et garde sa synchronisation ordinaire prévue
+  (`KEEPALIVE_MAX`). Reste une limite : un document plus gros que la place libre de `localStorage` n'a pas de copie.
+  Une écriture qu'IndexedDB **refuse** (quota plein, transaction annulée) n'est pas « aboutie » : elle reste en route,
+  donc copiée à la fermeture, jusqu'à ce qu'une écriture de la même clé aboutisse ici, ou dans un autre onglet (qui le
+  signale : `refresh`). Sans cela, une saisie refusée, serveur injoignable, était perdue des deux côtés
+  (`tests/browser/secours.js`, qui annule l'écriture pour de bon).
 
 ### ADR 14 — Trois sorties de build : web, artefact, natif
 
@@ -845,35 +859,30 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   (`MODULE_TYPES.regulation.personal`) : seul le compte marqué `selene_personnel` dans ses métadonnées serveur le voit
   proposé. `config.consent` reste lu, pour dire d'où vient un suivi encore synchronisé.
 
-### ADR 28 — Un journal de secours pour les écritures qu'IndexedDB n'a pas confirmées
+### ADR 28 — Selene sans compte dans la version hébergée
 
-- **Contexte** : une écriture IndexedDB est asynchrone (ADR 13) et une page qui se ferme abandonne les transactions
-  encore en cours ; `platform.flush()`, appelée à la fermeture, ne peut pas les attendre. L'ADR 13 acceptait ce risque
-  parce que le serveur recevait la synchronisation. Ce n'est pas toujours le cas : l'envoi de la fermeture est une
-  écriture conditionnelle, refusée si un autre appareil a écrit depuis la dernière synchronisation ; un appareil hors
-  ligne n'envoie rien ; et un suivi gardé sur l'appareil (ADR 27) n'a aucune copie serveur. La CI a vu
-  `sync-deux-appareils.js` échouer deux fois sur une saisie faite juste avant la fermeture ; la cause exacte n'y a pas
-  été établie, mais `tests/browser/secours.js` montre qu'une écriture IndexedDB qui n'aboutit pas, serveur injoignable,
-  perd la saisie à la fois sur l'appareil et sur le serveur.
-- **Décision** : dans la version web, la copie en mémoire d'IndexedDB tient la liste des écritures pas encore
-  confirmées (la dernière valeur voulue par clé, et la valeur sûre qu'avait le coffre avant). À la mise en
-  arrière-plan et à la fermeture, `platform.flush()` la recopie d'abord, de façon synchrone, dans `localStorage`
-  (`selene-secours:<page>`, une clé par page pour que deux onglets ne s'effacent pas) ; le journal suit ensuite chaque
-  nouvelle valeur, et disparaît quand tout est confirmé. Une écriture refusée par IndexedDB y reste. Au démarrage,
-  avant la migration, chaque journal est rejoué clé par clé, seulement si le coffre a encore la valeur d'avant
-  (comparée par une empreinte : longueur et FNV-1a 32 bits), puis effacé.
-- **Garde-fous** : jamais plus ancien par-dessus plus récent (un autre onglet a pu écrire depuis : son écriture est
-  gardée) ; un journal trop gros pour `localStorage` (quota) n'est pas écrit, et l'ancien est effacé plutôt que laissé
-  périmé ; une écriture refusée pendant le rejeu laisse le journal pour le démarrage suivant ; la migration ne prend
-  pas un journal pour une ancienne clé.
-- **Écarté** : les coquilles natives (leurs coffres sont des fichiers et le trousseau, et elles ne touchent jamais
-  `localStorage`, ce que `tests/platform.test.js` garantit ; un risque semblable y reste possible, à mesurer sur un
-  vrai appareil) ; l'artefact claude.ai (déjà
-  synchrone, sur `localStorage`) ; `localStorage` pour tout (le plafond de 5 M caractères qui a motivé l'ADR 13) ; un
-  journal écrit à chaque écriture (un document entier recopié à chaque frappe).
-- **Conséquences** : un document de plusieurs mégaoctets dont l'écriture est encore en cours à la fermeture peut
-  dépasser le quota de `localStorage` : il n'est alors pas protégé, comme avant. Le contenu d'un suivi gardé sur
-  l'appareil peut passer un instant dans `localStorage`, sur le même appareil et pour la même origine. Tests :
-  `tests/platform.test.js` (journal, rejeu, quota, deux pages, migration) ; `tests/browser/secours.js` (une écriture
-  IndexedDB annulée, serveur injoignable, fermeture : la saisie revient et part au serveur ; sans le journal, elle est
-  perdue des deux côtés).
+- **Contexte** : le site et les apps ouvraient sur un formulaire de connexion, sans un mot de ce que fait Selene
+  (U1 de l'audit, 2 octobre 2026). Un outil « local d'abord » exigeait un compte avant la première note ; seul
+  l'artefact claude.ai s'en passait. L'App Store refuse d'exiger un compte quand l'essentiel de l'app n'en dépend pas
+  (App Review Guidelines, 5.1.1 (v)), et le relecteur d'Apple demande sinon un compte de démonstration.
+- **Décision** (3 octobre 2026) :
+  - l'écran d'entrée dit d'abord la promesse (positionnement A de l'audit) et propose **« Commencer sans compte »** ;
+    le compte vient ensuite, pour qui en a un. Ni navigation ni minuteur avant d'être entrée ; la lune, si ;
+  - sans compte, l'app est entière sur l'appareil, comme l'artefact : `selene-sans-compte` dans `platform.storage`
+    (un choix de l'appareil), lu par `localOnly()`. `authGate()` décide de l'écran de connexion à la place de l'app ;
+    rien de ce qu'on écrit ne part au serveur. Ce qui exige un compte (passeur, Dehors, assistant, synchronisation)
+    reste fermé, comme avant, faute de session ;
+  - Réglages → Compte dit ce que veut dire « sans compte » (effacer le navigateur efface tout) et ouvre la connexion ;
+  - se connecter ensuite verse l'appareil dans le compte. Un compte neuf le reçoit tel quel ; un compte qui a déjà ses
+    données le fusionne sans base commune (ADR 3) : les ajouts des deux côtés restent, et pour une même valeur
+    (palette, nom) le compte l'emporte (`yieldToRemote` : la date locale passe à 1, pas à 0, qui ferait adopter le
+    serveur et perdre ce qui a été noté). Un autre compte déconnecté plus tôt sur l'appareil n'efface rien : la
+    déconnexion avait déjà vidé l'appareil, ce qui s'y trouve appartient à qui se connecte.
+- **Écarté** : un compte « invité » anonyme chez Supabase (des lignes sans propriétaire joignable, et des données
+  envoyées sans qu'on l'ait demandé) ; un mode démonstration aux données fictives (on ne garde rien de ce qu'on y
+  essaie) ; adopter le serveur à la connexion (perdre ce qui a été noté sans compte).
+- **Conséquences** : la politique de confidentialité décrit enfin un usage qui existe (« Sans compte ») : rien de ce
+  qu'on écrit ne part, seul le journal des erreurs, anonyme, si on ne le coupe pas. Si la connexion échoue hors ligne,
+  une modification faite avant la synchronisation suivante redonne la main à l'appareil pour les réglages.
+  `tests/browser/sans-compte.js` : l'écran d'entrée, l'app sans compte, le retour, un compte neuf, un compte existant
+  sur un appareil où un autre compte s'était déconnecté.

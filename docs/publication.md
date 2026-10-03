@@ -81,6 +81,10 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
    Productivité, captures d'écran 6,9 pouces
    (`dist/store/fr/ios/` et `dist/store/en/ios/`, 1320 × 2868, par la même commande).
 
+7. **Les informations pour la relecture** (App Review Information) : aucun compte de démonstration n'est nécessaire.
+   Écrire : « Tap “Start without an account” on the first screen: the whole app works on the device. An account only
+   adds sync between devices. » (ADR 28 ; la règle 5.1.1 (v) refuse qu'une app exige un compte sans raison.)
+
 Ce chemin n'a pas pu être essayé sans compte Apple : la première course dira s'il manque quelque chose.
 
 ## Windows
