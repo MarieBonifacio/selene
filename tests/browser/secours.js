@@ -50,8 +50,10 @@ const peek = async ctx => {
       IDBObjectStore.prototype.put = function (v, k) { const r = put.call(this, v, k); if (k === 'selene-site-v1' && String(v).includes('delta')) this.transaction.abort(); return r; };
     });
     await p.fill('#capIn', 'delta'); await p.click('[data-act="cap-add"]'); await p.waitForTimeout(300);
-    const closed = p.waitForEvent('close');
-    await p.close({ runBeforeUnload: true }); await closed;
+    // La fermeture, comme le navigateur la fait : « pagehide » (Selene y dépose la copie de secours), puis la page
+    // disparaît. Déclenché ici plutôt que par close({ runBeforeUnload: true }), que WebKit ne mène pas à son terme.
+    await p.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+    await p.close();
     const after = await peek(ctx);
     check(after.site.includes('alpha') && !after.site.includes('delta'), 'la perte est réelle : « delta » manque dans IndexedDB');
     check(after.journals.some(j => j.includes('delta')), 'la copie de secours l’a gardée à la fermeture');
