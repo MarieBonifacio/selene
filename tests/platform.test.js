@@ -168,6 +168,29 @@ test('secours : une écriture plus récente, dans un autre onglet, retire la cop
   assert.equal(ls.getItem(RESCUE + 'selene-site-v1'), null, 'la copie ne peut pas écraser, au démarrage, ce qui est plus récent');
 });
 
+test('secours : une écriture refusée par IndexedDB (quota, transaction annulée) reste à sauver, jusqu’à la suivante qui aboutit', async () => {
+  const { mirror, webStore, RESCUE } = loadMigrate(), ls = memory(), area = webStore(() => ls);
+  let refuse = true;
+  const m = mirror({ write: async () => { if (refuse) throw new Error('quota'); } }, () => {}, area);
+  m.set('selene-site-v1', 'capture'); await new Promise(r => setTimeout(r, 0));
+  m.rescue();
+  assert.equal(ls.getItem(RESCUE + 'selene-site-v1'), '{"v":"capture"}', 'refusée, elle n’existait plus qu’en mémoire : la copie la garde');
+  refuse = false; m.set('selene-site-v1', 'suite'); await new Promise(r => setTimeout(r, 0));
+  assert.equal(ls.getItem(RESCUE + 'selene-site-v1'), null, 'la suivante a abouti : plus rien à sauver');
+  m.rescue();
+  assert.deepEqual([...area.keys()].filter(k => k.startsWith(RESCUE)), []);
+});
+
+test('secours : un reste refusé ici cède à une écriture qui a abouti dans un autre onglet', async () => {
+  const { mirror, webStore, RESCUE } = loadMigrate(), ls = memory(), area = webStore(() => ls);
+  const m = mirror({ write: async () => { throw new Error('quota'); }, get: async () => 'récent' }, () => {}, area);
+  m.set('selene-site-v1', 'ancien'); await new Promise(r => setTimeout(r, 0));
+  await m.refresh('selene-site-v1'); // l'autre onglet a écrit « récent », et le dit
+  m.rescue();
+  assert.equal(ls.getItem(RESCUE + 'selene-site-v1'), null, 'jamais plus ancien par-dessus plus récent, au démarrage suivant');
+  assert.equal(m.get('selene-site-v1'), 'récent');
+});
+
 test('secours : si IndexedDB refuse de les reprendre, les copies restent pour le démarrage suivant', async () => {
   const { restoreRescue, webStore, RESCUE } = loadMigrate(), ls = memory(), area = webStore(() => ls);
   ls.setItem(RESCUE + 'selene-site-v1', '{"v":"capture"}');
