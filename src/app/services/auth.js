@@ -18,6 +18,17 @@ import { ask } from "../ui/dialogs.js";
 export const SUPABASE_URL = "https://pxnrzrmzritezftefdlj.supabase.co";
 export const SUPABASE_ANON_KEY = "sb_publishable_vC_zBX0TN4jZqi1GRIvo2A_nD2WFW9T";
 export const authReady = () => hosted() && !SUPABASE_URL.includes("YOUR-PROJECT-REF");
+/* Sans compte (U1 de l'audit) : Selene marche entière sur l'appareil, comme dans l'artefact claude.ai, et rien de ce
+   qu'on y écrit ne part au serveur. Un choix de l'appareil (platform.storage), pas un réglage du compte. Se connecter
+   plus tard verse ce qui a été noté dans le compte (fusion à trois voies, ADR 3) ; Apple refuse d'ailleurs qu'une app
+   dont l'essentiel ne dépend pas d'un compte en exige un (App Review Guidelines, 5.1.1 (v)). `authAsked` : depuis
+   Réglages, l'écran de connexion demandé pour ce chargement seulement ; recharger revient à l'espace sans compte. */
+const LOCAL_KEY = "selene-sans-compte";
+let authAsked = false;
+export const localOnly = () => { try { return platform.storage.get(LOCAL_KEY) === "1"; } catch { return false; } };
+/* L'écran de connexion à la place de l'app : version hébergée, sans session, sans le choix « sans compte » (ou avec,
+   quand on vient de demander à se connecter). */
+export const authGate = () => authReady() && !authSession && (!localOnly() || authAsked);
 /* Longueur minimale d'un nouveau mot de passe, à régler aussi dans Supabase (Authentication → Sign In / Providers →
    Email → Minimum password length) : c'est le serveur qui fait foi. La connexion n'impose rien : un compte plus ancien,
    au mot de passe plus court, entre toujours, et Selene lui propose d'en changer. */
@@ -211,7 +222,10 @@ async function authConnectStores() {
   let last = null;
   try { last = platform.storage.get(LAST_UID_KEY); } catch {}
   if (last !== uid) localSwitch(uid); // les suivis gardés sur cet appareil suivent leur compte (ADR 27)
-  if (last && last !== uid) authResetLocal(false);
+  // Sans compte, ce qui a été noté appartient à qui se connecte maintenant (la déconnexion d'avant a vidé l'appareil) :
+  // rien n'est effacé, tout rejoint le compte, dont les réglages l'emportent. Sinon, un autre compte : on repart de zéro.
+  if (localOnly()) { site.yieldToRemote(); board.yieldToRemote(); platform.storage.remove(LOCAL_KEY); authAsked = false; }
+  else if (last && last !== uid) authResetLocal(false);
   platform.storage.set(LAST_UID_KEY, uid);
   // Ne (re)connecte que les stores déconnectés : un store déjà branché a son propre poller, pas de doublon.
   // L'un après l'autre, le site d'abord : le board verse ses tâches dans un site déjà synchronisé (voir absorbBoard).
@@ -362,23 +376,38 @@ export function authView() {
   if (authBooted && !authSignupAsked) authAskSignup();
   const note = `<p class="hint" id="authErr" role="status" style="margin:0${authNote.text ? `;color:var(${authNote.ok ? "--ok" : "--alarm"})` : ""}">${esc(authNote.text)}</p>`;
   const email = `<label>${tr`E-mail`}<input type="email" id="authEmail" required autocomplete="email" value="${esc(authEmail)}"></label>`;
-  const page = (intro, fields, buttons) => `<div class="wrap" style="max-width:420px;margin:60px auto 0"><h2>Selene</h2>
-    <p class="hint">${intro}</p>
-    <form id="authForm" style="display:grid;gap:12px">${fields}<div class="row">${buttons}</div>${note}</form></div>`;
-  if (authMode === "reset") return page(authLink && authLink.type === "invite" ? tr`Bienvenue. Choisis le mot de passe de ton compte.` : tr`Choisis un nouveau mot de passe.`,
+  const form = (intro, fields, buttons) => `<p class="hint">${intro}</p>
+    <form id="authForm" style="display:grid;gap:12px">${fields}<div class="row">${buttons}</div>${note}</form>`;
+  const page = (title, intro, fields, buttons) => `<div class="auth"><div class="auth-form"><h2>${title}</h2>${form(intro, fields, buttons)}</div></div>`;
+  if (authMode === "reset") return page(authLink && authLink.type === "invite" ? tr`Bienvenue` : tr`Nouveau mot de passe`, authLink && authLink.type === "invite" ? tr`Bienvenue. Choisis le mot de passe de ton compte.` : tr`Choisis un nouveau mot de passe.`,
     `<label>${tr`Nouveau mot de passe`}<input type="password" id="authPw" required minlength="${PW_MIN}" autocomplete="new-password"></label>
       <label>${tr`Le même, une seconde fois`}<input type="password" id="authPw2" required minlength="${PW_MIN}" autocomplete="new-password"></label>
       <p class="hint" style="margin:0">${pwHint()}</p>`,
     `<button class="btn acc" type="submit">${tr`Enregistrer et me connecter`}</button><button class="btn ghost" type="button" data-act="auth-back">${trp("formulaire", "Annuler")}</button>`);
-  if (authMode === "recover") return page(tr`Indique l'adresse de ton compte : tu recevras un lien pour choisir un nouveau mot de passe.`, email,
+  if (authMode === "recover") return page(tr`Mot de passe oublié`, tr`Indique l'adresse de ton compte : tu recevras un lien pour choisir un nouveau mot de passe.`, email,
     `<button class="btn acc" type="submit">${tr`Envoyer le lien`}</button><button class="btn ghost" type="button" data-act="auth-back">${tr`Revenir à la connexion`}</button>`);
-  return page(authMode === "signup" ? tr`Crée ton compte pour retrouver tes données sur n'importe quel appareil.` : authSignupOpen ? tr`Connecte-toi pour retrouver tes données.` : tr`Connecte-toi pour retrouver tes données. Selene n'ouvre de compte que sur invitation.`,
+  // Connexion et inscription : d'abord ce que fait Selene, et de quoi commencer sans rien créer ; le compte ensuite.
+  const promise = `<div class="auth-promise"><h2>${tr`Garde tes fragments, tes sources et tes hypothèses reliés.`}</h2>
+    <p class="lead">${tr`Et retrouve ce que tu avais oublié, jusqu'au dernier chapitre.`}</p>
+    <ul>
+      <li>${tr`Un compteur de mots, des chapitres, des fragments datés`}</li>
+      <li>${tr`Des sources complétées depuis un lien ou un DOI, reliées à ce qu'elles documentent`}</li>
+      <li>${tr`Ni publicité ni traceur : tout vit d'abord sur ton appareil`}</li>
+    </ul>
+    <button class="btn acc" type="button" data-act="auth-local">${localOnly() ? tr`Revenir à Selene sans compte` : tr`Commencer sans compte`}</button>
+    <p class="hint">${tr`Rien à créer : tout reste sur cet appareil. Un compte, plus tard, le retrouve sur tes autres appareils, avec ce que tu auras noté.`}</p></div>`;
+  return `<div class="auth two-col">${promise}<div class="auth-form"><h3>${authMode === "signup" ? tr`Créer un compte` : tr`J'ai déjà un compte`}</h3>${form(authMode === "signup" ? tr`Crée ton compte pour retrouver tes données sur n'importe quel appareil.` : authSignupOpen ? tr`Connecte-toi pour retrouver tes données.` : tr`Connecte-toi pour retrouver tes données. Selene n'ouvre de compte que sur invitation.`,
     `${email}
       <label>${tr`Mot de passe`}<input type="password" id="authPw" required ${authMode === "signup" ? `minlength="${PW_MIN}" autocomplete="new-password"` : `autocomplete="current-password"`}></label>
       ${authMode === "signup" ? `<p class="hint" style="margin:0">${pwHint()}</p>` : ""}`,
-    `<button class="btn acc" type="submit">${authMode === "signup" ? tr`Créer le compte` : tr`Se connecter`}</button>
+    `<button class="btn solid" type="submit">${authMode === "signup" ? tr`Créer le compte` : tr`Se connecter`}</button>
       ${authSignupOpen || authMode === "signup" ? `<button class="btn ghost" type="button" data-act="auth-switch">${authMode === "signup" ? tr`J'ai déjà un compte` : tr`Créer un compte`}</button>` : ""}
-      ${authMode === "signin" ? `<button class="btn ghost" type="button" data-act="auth-forgot">${tr`Mot de passe oublié ?`}</button>` : ""}`);
+      ${authMode === "signin" ? `<button class="btn ghost" type="button" data-act="auth-forgot">${tr`Mot de passe oublié ?`}</button>` : ""}`)}</div></div>`;
+}
+/* Réglages → Compte, sans compte : ce que ça veut dire, et la porte vers un compte. */
+export function localAccountHTML() {
+  return `<p class="hint">${tr`Sans compte : tout reste sur cet appareil, et rien de ce que tu écris ne part ailleurs. Effacer les données du navigateur, ou désinstaller l'app, efface tout : exporte une sauvegarde de temps en temps. Un compte retrouve ton espace sur tes autres appareils ; ce que tu as noté ici le rejoint.`}</p>
+    <button class="btn" data-act="auth-open">${tr`Créer un compte ou me connecter`}</button>`;
 }
 /* Réglages → Compte : changer de mot de passe. Le mot de passe actuel est toujours demandé, et vérifié par une connexion
    fraîche (POST /token) : un appareil laissé ouvert ne suffit pas à le changer, et une session de moins de 24 heures
@@ -428,6 +457,8 @@ CLICK["auth-back"] = async () => {
   render();
 };
 CLICK["auth-out"] = () => authSignOut();
+CLICK["auth-local"] = () => { try { platform.storage.set(LOCAL_KEY, "1"); } catch {} authAsked = false; authSay(""); location.hash = "#accueil"; render(); };
+CLICK["auth-open"] = () => { authAsked = true; authMode = authSignupOpen ? "signup" : "signin"; authSay(""); render(); window.scrollTo(0, 0); };
 /* Le mot à taper pour supprimer son compte : celui de la langue de l'interface, ou « supprimer » dans toutes. Le serveur,
    lui, reçoit toujours la constante du protocole (confirmation: "supprimer"), qui ne se traduit pas. */
 export const deleteWord = () => trp("confirmation", "supprimer");

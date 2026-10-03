@@ -3,6 +3,13 @@
 L'App Store (règle 5.1.1(v)) et Google Play exigent qu'une app où l'on crée un compte permette de le **supprimer
 depuis l'app**, et qu'elle publie une **politique de confidentialité**. Selene fait les deux.
 
+## Sans compte
+
+L'écran d'entrée du site et des apps propose **« Commencer sans compte »** (ADR 28) : Selene marche alors entière sur
+l'appareil, et rien de ce qu'on y écrit ne part au serveur. Le choix est gardé sur l'appareil (`selene-sans-compte`).
+*Réglages → Compte* dit ce qu'il implique et ouvre la connexion ; se connecter ensuite verse l'appareil dans le compte
+(un compte existant garde ses réglages). Le relecteur de l'App Store n'a donc pas besoin d'un compte de démonstration.
+
 ## Supprimer son compte
 
 Réglages → Compte → *Supprimer mon compte* : on tape « supprimer », on confirme. La page appelle la fonction Supabase

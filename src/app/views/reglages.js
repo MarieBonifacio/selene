@@ -18,7 +18,7 @@ import { shareSettingsHTML } from "../features/share.js";
 import { zotSettingsHTML } from "../features/zotero.js";
 import { gcfg, groupBy, grouperFor } from "../modules/groups.js";
 import { skySettingsHTML } from "../scene/sky.js";
-import { authReady, authSession, deleteWord, passwordSettingsHTML } from "../services/auth.js";
+import { authReady, authSession, deleteWord, localAccountHTML, localOnly, passwordSettingsHTML } from "../services/auth.js";
 import { errorSettingsHTML } from "../services/journal.js";
 import { passeurSettingsHTML } from "../services/passeur.js";
 import { addModule, moveMod, offered } from "../shell/actions.js";
@@ -150,7 +150,8 @@ function compteHTML() {
     <details id="auth-delete"><summary class="hint">${tr`Supprimer mon compte`}</summary>
       <p class="hint" style="margin-top:8px">${tr`Définitif : ton compte, tout ton tableau de bord sur le serveur et ta clé d'assistant sont effacés, puis cet appareil est vidé. Tes autres appareils perdent l'accès. Exporte d'abord une sauvegarde (plus haut) si tu veux garder quelque chose. Politique de confidentialité : ${`<a href="${privacyUrl()}" target="_blank" rel="noopener">${tr`ce que Selene garde, et où`}</a>`}.`}</p>
       <div class="field-row"><label>${tr`Tape « ${deleteWord()} » pour confirmer`}<input id="authDelIn" autocomplete="off" autocapitalize="off" spellcheck="false"></label><span></span></div>
-      <button class="btn sm" data-act="auth-delete" style="margin-top:8px;color:var(--alarm)">${tr`Supprimer définitivement`}</button></details></section>` : ""}
+      <button class="btn sm" data-act="auth-delete" style="margin-top:8px;color:var(--alarm)">${tr`Supprimer définitivement`}</button></details></section>`
+    : authReady() && localOnly() ? `<section>${sub(tr`Compte`)}${localAccountHTML()}${errorSettingsHTML()}</section>` : ""}
   <p class="hint" style="margin-top:24px">${tr`${`<a href="${privacyUrl()}" target="_blank" rel="noopener">${tr`Confidentialité`}</a>`} : aucun traceur, aucune publicité ; ce que Selene garde, où, et comment tout effacer.`}</p>`;
 }
 

@@ -49,6 +49,8 @@ async function device(browser, errs, personnel = true, id = 'u1') {
     await O.ctx.close();
 
     console.log('configuration : sur cet appareil, sans question');
+    // Les modèles de l'accueil sont repliés derrière « Choisir moi-même » (U3) : on déplie la liste.
+    await p.waitForSelector('#welcome-all', { state: 'attached' }); await p.evaluate(() => { document.getElementById('welcome-all').open = true; });
     await p.waitForSelector('[data-tpl="regulation"]');
     await p.click('[data-tpl="regulation"]'); await go('reprendre-la-main');
     await p.click('[data-act="rlm-setup"]');

@@ -572,6 +572,19 @@ input[type=checkbox],input[type=radio]{width:auto}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:480px){.field-row{grid-template-columns:1fr}}
 .set{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--rule)}
+/* L'écran d'entrée de la version hébergée : la promesse et « Commencer sans compte », puis le compte. Sur ordinateur,
+   côte à côte. Ni minuteur ni navigation avant d'être entrée. */
+[data-auth] .timer,[data-auth] nav.tabbar{display:none}
+.auth{display:grid;gap:30px;max-width:440px;margin:36px auto 0}
+.auth.two-col{max-width:920px}
+@media (min-width:900px){.auth.two-col{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:64px;align-items:start;margin-top:56px}}
+.auth-promise h2{font-size:clamp(1.65rem,5.2vw,2.3rem);line-height:1.12;margin:0 0 10px;text-wrap:balance}
+.auth-promise .lead{font-size:1.08rem;color:var(--ink-2);margin:0 0 14px}
+.auth-promise ul{margin:0 0 20px;padding-left:1.1em;color:var(--ink-2);display:grid;gap:6px}
+.auth-promise .hint{margin-top:10px}
+.auth-form h2,.auth-form h3{margin:0 0 6px}
+.two-col .auth-form{border-top:1px solid var(--rule);padding-top:22px}
+@media (min-width:900px){.two-col .auth-form{border-top:0;border-left:1px solid var(--rule);padding:4px 0 0 40px}}
 /* Le premier accueil : trois réponses à une question, puis la liste entière repliée. */
 .paths{display:grid;gap:10px;margin:14px 0 10px}
 @media (min-width:760px){.paths{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -680,7 +693,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "c772e17611";
+const SELENE_BUILD = "a294cd704f";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1054,6 +1067,7 @@ var __selene = (() => {
     authBoot: () => authBoot,
     authBusy: () => authBusy,
     authDeleteAccount: () => authDeleteAccount,
+    authGate: () => authGate,
     authMode: () => authMode,
     authReady: () => authReady,
     authRefreshIfNeeded: () => authRefreshIfNeeded,
@@ -1201,9 +1215,11 @@ var __selene = (() => {
     liveRecents: () => liveRecents,
     loadDraft: () => loadDraft,
     local: () => local,
+    localAccountHTML: () => localAccountHTML,
     localCopy: () => localCopy,
     localErase: () => localErase,
     localIds: () => localIds,
+    localOnly: () => localOnly,
     localSwitch: () => localSwitch,
     localTemplate: () => localTemplate,
     localizeConfig: () => localizeConfig,
@@ -2711,6 +2727,18 @@ var __selene = (() => {
     "Connexion impossible.": "Couldn't sign in.",
     "Crée ton compte pour retrouver tes données sur n'importe quel appareil.": "Create your account to find your data on any device.",
     "Connecte-toi pour retrouver tes données.": "Sign in to find your data.",
+    "Bienvenue": "Welcome",
+    "Mot de passe oublié": "Forgotten password",
+    "Garde tes fragments, tes sources et tes hypothèses reliés.": "Keep your fragments, sources and hypotheses connected.",
+    "Et retrouve ce que tu avais oublié, jusqu'au dernier chapitre.": "And find what you had forgotten, right up to the last chapter.",
+    "Un compteur de mots, des chapitres, des fragments datés": "A word count, chapters, dated fragments",
+    "Des sources complétées depuis un lien ou un DOI, reliées à ce qu'elles documentent": "Sources filled in from a link or a DOI, connected to what they document",
+    "Ni publicité ni traceur : tout vit d'abord sur ton appareil": "No ads, no trackers: everything lives on your device first",
+    "Revenir à Selene sans compte": "Back to Selene without an account",
+    "Commencer sans compte": "Start without an account",
+    "Rien à créer : tout reste sur cet appareil. Un compte, plus tard, le retrouve sur tes autres appareils, avec ce que tu auras noté.": "Nothing to create: everything stays on this device. An account, later, brings it to your other devices, along with what you will have noted.",
+    "Sans compte : tout reste sur cet appareil, et rien de ce que tu écris ne part ailleurs. Effacer les données du navigateur, ou désinstaller l'app, efface tout : exporte une sauvegarde de temps en temps. Un compte retrouve ton espace sur tes autres appareils ; ce que tu as noté ici le rejoint.": "Without an account: everything stays on this device, and nothing you write goes anywhere else. Clearing the browser's data, or uninstalling the app, erases everything: export a backup from time to time. An account brings your space to your other devices; what you have noted here joins it.",
+    "Créer un compte ou me connecter": "Create an account or sign in",
     "E-mail": "Email",
     "Mot de passe": "Password",
     "Créer le compte": "Create the account",
@@ -4857,6 +4885,12 @@ var __selene = (() => {
       s.force = true;
       s.save();
     };
+    s.yieldToRemote = () => {
+      if (s.data.updatedAt) {
+        s.data.updatedAt = 1;
+        saveLS();
+      }
+    };
     s.unsynced = () => !s.base || !deepEqual({ ...s.data, updatedAt: 0 }, { ...s.base, updatedAt: 0 });
     s.reload = () => {
       const r = read(key);
@@ -6577,6 +6611,16 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   var SUPABASE_URL = "https://pxnrzrmzritezftefdlj.supabase.co";
   var SUPABASE_ANON_KEY = "sb_publishable_vC_zBX0TN4jZqi1GRIvo2A_nD2WFW9T";
   var authReady = () => hosted() && !SUPABASE_URL.includes("YOUR-PROJECT-REF");
+  var LOCAL_KEY = "selene-sans-compte";
+  var authAsked = false;
+  var localOnly = () => {
+    try {
+      return platform.storage.get(LOCAL_KEY) === "1";
+    } catch {
+      return false;
+    }
+  };
+  var authGate = () => authReady() && !authSession && (!localOnly() || authAsked);
   var PW_MIN = 10;
   var pwHint = () => trn(PW_MIN, "{0} caractère au moins. Une courte phrase fait un bon mot de passe, facile à retenir.", "{0} caractères au moins. Une courte phrase fait un bon mot de passe, facile à retenir.");
   var AUTH_KEY = "selene-auth-session";
@@ -6783,7 +6827,12 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     } catch {
     }
     if (last !== uid2) localSwitch(uid2);
-    if (last && last !== uid2) authResetLocal(false);
+    if (localOnly()) {
+      site.yieldToRemote();
+      board.yieldToRemote();
+      platform.storage.remove(LOCAL_KEY);
+      authAsked = false;
+    } else if (last && last !== uid2) authResetLocal(false);
     platform.storage.set(LAST_UID_KEY2, uid2);
     for (const st of [site, board]) if (!st.db) await st.connect(supabaseDb);
     if (board.db && site.db) setSaving("");
@@ -6968,10 +7017,11 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     if (authBooted && !authSignupAsked) authAskSignup();
     const note = `<p class="hint" id="authErr" role="status" style="margin:0${authNote.text ? `;color:var(${authNote.ok ? "--ok" : "--alarm"})` : ""}">${esc(authNote.text)}</p>`;
     const email = `<label>${tr`E-mail`}<input type="email" id="authEmail" required autocomplete="email" value="${esc(authEmail)}"></label>`;
-    const page = (intro, fields, buttons) => `<div class="wrap" style="max-width:420px;margin:60px auto 0"><h2>Selene</h2>
-    <p class="hint">${intro}</p>
-    <form id="authForm" style="display:grid;gap:12px">${fields}<div class="row">${buttons}</div>${note}</form></div>`;
+    const form = (intro, fields, buttons) => `<p class="hint">${intro}</p>
+    <form id="authForm" style="display:grid;gap:12px">${fields}<div class="row">${buttons}</div>${note}</form>`;
+    const page = (title, intro, fields, buttons) => `<div class="auth"><div class="auth-form"><h2>${title}</h2>${form(intro, fields, buttons)}</div></div>`;
     if (authMode === "reset") return page(
+      authLink && authLink.type === "invite" ? tr`Bienvenue` : tr`Nouveau mot de passe`,
       authLink && authLink.type === "invite" ? tr`Bienvenue. Choisis le mot de passe de ton compte.` : tr`Choisis un nouveau mot de passe.`,
       `<label>${tr`Nouveau mot de passe`}<input type="password" id="authPw" required minlength="${PW_MIN}" autocomplete="new-password"></label>
       <label>${tr`Le même, une seconde fois`}<input type="password" id="authPw2" required minlength="${PW_MIN}" autocomplete="new-password"></label>
@@ -6979,19 +7029,33 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       `<button class="btn acc" type="submit">${tr`Enregistrer et me connecter`}</button><button class="btn ghost" type="button" data-act="auth-back">${trp("formulaire", "Annuler")}</button>`
     );
     if (authMode === "recover") return page(
+      tr`Mot de passe oublié`,
       tr`Indique l'adresse de ton compte : tu recevras un lien pour choisir un nouveau mot de passe.`,
       email,
       `<button class="btn acc" type="submit">${tr`Envoyer le lien`}</button><button class="btn ghost" type="button" data-act="auth-back">${tr`Revenir à la connexion`}</button>`
     );
-    return page(
+    const promise = `<div class="auth-promise"><h2>${tr`Garde tes fragments, tes sources et tes hypothèses reliés.`}</h2>
+    <p class="lead">${tr`Et retrouve ce que tu avais oublié, jusqu'au dernier chapitre.`}</p>
+    <ul>
+      <li>${tr`Un compteur de mots, des chapitres, des fragments datés`}</li>
+      <li>${tr`Des sources complétées depuis un lien ou un DOI, reliées à ce qu'elles documentent`}</li>
+      <li>${tr`Ni publicité ni traceur : tout vit d'abord sur ton appareil`}</li>
+    </ul>
+    <button class="btn acc" type="button" data-act="auth-local">${localOnly() ? tr`Revenir à Selene sans compte` : tr`Commencer sans compte`}</button>
+    <p class="hint">${tr`Rien à créer : tout reste sur cet appareil. Un compte, plus tard, le retrouve sur tes autres appareils, avec ce que tu auras noté.`}</p></div>`;
+    return `<div class="auth two-col">${promise}<div class="auth-form"><h3>${authMode === "signup" ? tr`Créer un compte` : tr`J'ai déjà un compte`}</h3>${form(
       authMode === "signup" ? tr`Crée ton compte pour retrouver tes données sur n'importe quel appareil.` : authSignupOpen ? tr`Connecte-toi pour retrouver tes données.` : tr`Connecte-toi pour retrouver tes données. Selene n'ouvre de compte que sur invitation.`,
       `${email}
       <label>${tr`Mot de passe`}<input type="password" id="authPw" required ${authMode === "signup" ? `minlength="${PW_MIN}" autocomplete="new-password"` : `autocomplete="current-password"`}></label>
       ${authMode === "signup" ? `<p class="hint" style="margin:0">${pwHint()}</p>` : ""}`,
-      `<button class="btn acc" type="submit">${authMode === "signup" ? tr`Créer le compte` : tr`Se connecter`}</button>
+      `<button class="btn solid" type="submit">${authMode === "signup" ? tr`Créer le compte` : tr`Se connecter`}</button>
       ${authSignupOpen || authMode === "signup" ? `<button class="btn ghost" type="button" data-act="auth-switch">${authMode === "signup" ? tr`J'ai déjà un compte` : tr`Créer un compte`}</button>` : ""}
       ${authMode === "signin" ? `<button class="btn ghost" type="button" data-act="auth-forgot">${tr`Mot de passe oublié ?`}</button>` : ""}`
-    );
+    )}</div></div>`;
+  }
+  function localAccountHTML() {
+    return `<p class="hint">${tr`Sans compte : tout reste sur cet appareil, et rien de ce que tu écris ne part ailleurs. Effacer les données du navigateur, ou désinstaller l'app, efface tout : exporte une sauvegarde de temps en temps. Un compte retrouve ton espace sur tes autres appareils ; ce que tu as noté ici le rejoint.`}</p>
+    <button class="btn" data-act="auth-open">${tr`Créer un compte ou me connecter`}</button>`;
   }
   function passwordSettingsHTML() {
     return `<details id="auth-pw"${authWeak ? " open" : ""}><summary class="hint">${tr`Changer mon mot de passe`}</summary>
@@ -7066,6 +7130,23 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     render();
   };
   CLICK["auth-out"] = () => authSignOut();
+  CLICK["auth-local"] = () => {
+    try {
+      platform.storage.set(LOCAL_KEY, "1");
+    } catch {
+    }
+    authAsked = false;
+    authSay("");
+    location.hash = "#accueil";
+    render();
+  };
+  CLICK["auth-open"] = () => {
+    authAsked = true;
+    authMode = authSignupOpen ? "signup" : "signin";
+    authSay("");
+    render();
+    window.scrollTo(0, 0);
+  };
   var deleteWord = () => trp("confirmation", "supprimer");
   CLICK["auth-delete"] = async (el) => {
     const inp = $("#authDelIn"), typed = inp ? inp.value.trim().toLowerCase() : "";
@@ -8645,7 +8726,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   });
   document.addEventListener("selene:capture", () => openSheet("capture"));
   function applyShare() {
-    if (hosted() && authReady() && !authSession) return;
+    if (authGate()) return;
     let p = null;
     try {
       p = JSON.parse(platform.session.get("selene-share") || "null");
@@ -9060,7 +9141,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     <details id="auth-delete"><summary class="hint">${tr`Supprimer mon compte`}</summary>
       <p class="hint" style="margin-top:8px">${tr`Définitif : ton compte, tout ton tableau de bord sur le serveur et ta clé d'assistant sont effacés, puis cet appareil est vidé. Tes autres appareils perdent l'accès. Exporte d'abord une sauvegarde (plus haut) si tu veux garder quelque chose. Politique de confidentialité : ${`<a href="${privacyUrl()}" target="_blank" rel="noopener">${tr`ce que Selene garde, et où`}</a>`}.`}</p>
       <div class="field-row"><label>${tr`Tape « ${deleteWord()} » pour confirmer`}<input id="authDelIn" autocomplete="off" autocapitalize="off" spellcheck="false"></label><span></span></div>
-      <button class="btn sm" data-act="auth-delete" style="margin-top:8px;color:var(--alarm)">${tr`Supprimer définitivement`}</button></details></section>` : ""}
+      <button class="btn sm" data-act="auth-delete" style="margin-top:8px;color:var(--alarm)">${tr`Supprimer définitivement`}</button></details></section>` : authReady() && localOnly() ? `<section>${sub(tr`Compte`)}${localAccountHTML()}${errorSettingsHTML()}</section>` : ""}
   <p class="hint" style="margin-top:24px">${tr`${`<a href="${privacyUrl()}" target="_blank" rel="noopener">${tr`Confidentialité`}</a>`} : aucun traceur, aucune publicité ; ce que Selene garde, où, et comment tout effacer.`}</p>`;
   }
   VIEWS.reglages = () => {
@@ -12318,21 +12399,24 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   function renderNow() {
     applyTheme();
     if (applyLang(S().config.lang)) localizeShell();
-    if (hosted() && authReady() && !authSession) {
+    const s = S(), m = moon();
+    $("#brandName").textContent = s.config.name || "Selene";
+    document.title = s.config.name || "Selene";
+    $("#miniMoon").innerHTML = moonSVG(m.p, 40);
+    $("#dateline").textContent = (/* @__PURE__ */ new Date()).toLocaleDateString(uiLocale(), { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
+    const gate = authGate();
+    if (gate) document.documentElement.dataset.auth = "";
+    else delete document.documentElement.dataset.auth;
+    if (gate) {
       $("#nav").innerHTML = "";
       $("#bar").innerHTML = "";
       $("#main").innerHTML = authView();
       return;
     }
-    const s = S(), m = moon();
     let view = routeOf().view;
     const fixed = (v) => v === "accueil" || v === "reglages" || v === "recherche" || v === "bilan" || v === "dehors" && dehorsOn();
     if (!fixed(view) && (!(Object.hasOwn(s.modules, view) || Object.hasOwn(VIEWS, view)) || !enabled(view))) view = "accueil";
     const inst = !fixed(view) && Object.hasOwn(s.modules, view) ? s.modules[view] : null;
-    $("#brandName").textContent = s.config.name || "Selene";
-    document.title = s.config.name || "Selene";
-    $("#miniMoon").innerHTML = moonSVG(m.p, 40);
-    $("#dateline").textContent = (/* @__PURE__ */ new Date()).toLocaleDateString(uiLocale(), { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
     $("#nav").innerHTML = navHTML(view);
     $("#bar").innerHTML = barHTML(view);
     if (inst && view !== lastView) noteVisit(view);

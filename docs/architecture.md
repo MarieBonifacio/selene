@@ -843,3 +843,31 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   l'inverse ; la garde de déconnexion n'offre plus que l'export ou l'effacement. Le type sort de l'offre publique
   (`MODULE_TYPES.regulation.personal`) : seul le compte marqué `selene_personnel` dans ses métadonnées serveur le voit
   proposé. `config.consent` reste lu, pour dire d'où vient un suivi encore synchronisé.
+
+### ADR 28 — Selene sans compte dans la version hébergée
+
+- **Contexte** : le site et les apps ouvraient sur un formulaire de connexion, sans un mot de ce que fait Selene
+  (U1 de l'audit, 2 octobre 2026). Un outil « local d'abord » exigeait un compte avant la première note ; seul
+  l'artefact claude.ai s'en passait. L'App Store refuse d'exiger un compte quand l'essentiel de l'app n'en dépend pas
+  (App Review Guidelines, 5.1.1 (v)), et le relecteur d'Apple demande sinon un compte de démonstration.
+- **Décision** (3 octobre 2026) :
+  - l'écran d'entrée dit d'abord la promesse (positionnement A de l'audit) et propose **« Commencer sans compte »** ;
+    le compte vient ensuite, pour qui en a un. Ni navigation ni minuteur avant d'être entrée ; la lune, si ;
+  - sans compte, l'app est entière sur l'appareil, comme l'artefact : `selene-sans-compte` dans `platform.storage`
+    (un choix de l'appareil), lu par `localOnly()`. `authGate()` décide de l'écran de connexion à la place de l'app ;
+    rien de ce qu'on écrit ne part au serveur. Ce qui exige un compte (passeur, Dehors, assistant, synchronisation)
+    reste fermé, comme avant, faute de session ;
+  - Réglages → Compte dit ce que veut dire « sans compte » (effacer le navigateur efface tout) et ouvre la connexion ;
+  - se connecter ensuite verse l'appareil dans le compte. Un compte neuf le reçoit tel quel ; un compte qui a déjà ses
+    données le fusionne sans base commune (ADR 3) : les ajouts des deux côtés restent, et pour une même valeur
+    (palette, nom) le compte l'emporte (`yieldToRemote` : la date locale passe à 1, pas à 0, qui ferait adopter le
+    serveur et perdre ce qui a été noté). Un autre compte déconnecté plus tôt sur l'appareil n'efface rien : la
+    déconnexion avait déjà vidé l'appareil, ce qui s'y trouve appartient à qui se connecte.
+- **Écarté** : un compte « invité » anonyme chez Supabase (des lignes sans propriétaire joignable, et des données
+  envoyées sans qu'on l'ait demandé) ; un mode démonstration aux données fictives (on ne garde rien de ce qu'on y
+  essaie) ; adopter le serveur à la connexion (perdre ce qui a été noté sans compte).
+- **Conséquences** : la politique de confidentialité décrit enfin un usage qui existe (« Sans compte ») : rien de ce
+  qu'on écrit ne part, seul le journal des erreurs, anonyme, si on ne le coupe pas. Si la connexion échoue hors ligne,
+  une modification faite avant la synchronisation suivante redonne la main à l'appareil pour les réglages.
+  `tests/browser/sans-compte.js` : l'écran d'entrée, l'app sans compte, le retour, un compte neuf, un compte existant
+  sur un appareil où un autre compte s'était déconnecté.
