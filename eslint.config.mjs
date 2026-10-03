@@ -1,5 +1,5 @@
 // Analyse statique de chaque module un à un (src/platform.js, src/app, src/core), de l'outillage (scripts), de
-// l'amorçage natif et du service worker. Un module ne voit que ses imports et les globales déclarées ici : `no-undef`
+// l'amorçage natif, du script de la page de test et du service worker. Un module ne voit que ses imports et les globales déclarées ici : `no-undef`
 // fait de chaque dépendance un import explicite.
 // Aucune dépendance : seulement les règles intégrées d'eslint, globals déclarés à la main.
 const readonly = names => Object.fromEntries(names.map(name => [name, "readonly"]));
@@ -24,7 +24,7 @@ export default [
   { files: ["src/core/**/*.js"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { URL: "readonly" } }, rules },
   { files: ["scripts/**/*.mjs"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { process: "readonly", URL: "readonly", console: "readonly" } }, rules },
   // Le script des captures pilote une page : ce qu'il fait évaluer dedans voit le DOM.
-  { files: ["scripts/store-screenshots.mjs"], languageOptions: { globals: { window: "readonly", document: "readonly", localStorage: "readonly" } } },
+  { files: ["scripts/store-screenshots.mjs", "scripts/essai-captures.mjs"], languageOptions: { globals: { window: "readonly", document: "readonly", localStorage: "readonly" } } },
   // La vérification des sources de santé (npm run liens) interroge le réseau, avec un délai.
   { files: ["scripts/liens.mjs"], languageOptions: { globals: readonly(["fetch", "AbortController", "setTimeout", "clearTimeout"]) } },
   // Le test d'isolation entre comptes (npm run isolation) interroge un projet Supabase de préproduction.
@@ -32,6 +32,9 @@ export default [
   // L'amorçage des coquilles natives (src/native/boot.js), posé seul avant Selene dans dist/native.
   { files: ["src/native/*.js"], languageOptions: { ecmaVersion: 2023, sourceType: "script",
     globals: { window: "readonly", history: "readonly", Event: "readonly", document: "readonly", sessionStorage: "readonly", URL: "readonly", CustomEvent: "readonly" } }, rules },
+  // Le script de la page publique de test (src/essai.js), posé seul dans essai.html : le DOM et le réseau, aucun stockage.
+  { files: ["src/essai.js"], languageOptions: { ecmaVersion: 2023, sourceType: "script",
+    globals: readonly(["document", "location", "fetch", "performance", "URLSearchParams"]) }, rules },
   { files: ["sw.js"], languageOptions: { ecmaVersion: 2023, sourceType: "script",
-    globals: { self: "readonly", caches: "readonly", fetch: "readonly", location: "readonly", URL: "readonly" } }, rules }
+    globals: { self: "readonly", caches: "readonly", fetch: "readonly", location: "readonly", URL: "readonly", Response: "readonly" } }, rules }
 ];

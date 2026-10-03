@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-WXSVkw8DrPdiOqLN0iyB6VlKKF77e4fzZjOGJsCWSfk='; style-src 'sha256-xVDH5TBUIAVWKC0UP4W8miIWUDhwOf3EJeUHobNJ6ZA=' 'sha256-Ii9EZC2sVDtZ/8ZkZ2W1Ujp5LwUNnP1JO4tzU6h4g/U='; font-src 'self'; img-src 'self'; connect-src https://pxnrzrmzritezftefdlj.supabase.co; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Selene — un carnet pour les longs projets d'écriture</title>
+<meta name="description" content="Garde tes fragments, tes sources et tes hypothèses reliés, et retrouve ce que tu avais oublié, jusqu'au dernier chapitre. Un carnet de recherche qui vit d'abord sur ton appareil.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:title" content="Selene — garde tes fragments, tes sources et tes hypothèses reliés">
+<meta property="og:description" content="Un carnet de recherche pour les thèses, les livres et les longs articles. Sans publicité ni traceur ; gratuit sur ton appareil.">
+<meta property="og:url" content="https://mariebonifacio.github.io/selene/essai.html">
+<meta property="og:image" content="https://mariebonifacio.github.io/selene/essai/apercu.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0e1310" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#e2e6de" media="(prefers-color-scheme: light)">
+<style>
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/cormorant-garamond-latin-ext-500-normal.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/cormorant-garamond-latin-500-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/cormorant-garamond-latin-ext-600-normal.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/cormorant-garamond-latin-600-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-display:swap;src:url(fonts/cormorant-garamond-latin-ext-500-italic.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-display:swap;src:url(fonts/cormorant-garamond-latin-500-italic.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Spectral';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/spectral-latin-ext-400-normal.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Spectral';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/spectral-latin-400-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Spectral';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/spectral-latin-ext-500-normal.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Spectral';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/spectral-latin-500-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Spectral';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/spectral-latin-ext-600-normal.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Spectral';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/spectral-latin-600-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Spectral';font-style:italic;font-weight:400;font-display:swap;src:url(fonts/spectral-latin-ext-400-italic.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Spectral';font-style:italic;font-weight:400;font-display:swap;src:url(fonts/spectral-latin-400-italic.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Spectral SC';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/spectral-sc-latin-ext-500-normal.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Spectral SC';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/spectral-sc-latin-500-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'IBM Plex Sans';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/ibm-plex-sans-latin-ext-400-normal.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'IBM Plex Sans';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'IBM Plex Sans';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/ibm-plex-sans-latin-ext-500-normal.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'IBM Plex Sans';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/ibm-plex-sans-latin-500-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'IBM Plex Sans';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/ibm-plex-sans-latin-ext-600-normal.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'IBM Plex Sans';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'IBM Plex Sans';font-style:italic;font-weight:400;font-display:swap;src:url(fonts/ibm-plex-sans-latin-ext-400-italic.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'IBM Plex Sans';font-style:italic;font-weight:400;font-display:swap;src:url(fonts/ibm-plex-sans-latin-400-italic.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+</style>
+<style>
+/* La page publique de test (E3 de l'audit, docs/essai.md) : la langue visuelle de Selene, sans son application. */
+:root{
+  --bg:#e2e6de; --surface:#edf0e9; --surface-2:#f4f2ea; --ink:#1a211b; --ink-2:#394237; --muted:#5b6859;
+  --rule:#c1c9bc; --rule-strong:#9aa596; --accent:#3d6a45; --accent-ink:#f4f2ea; --alarm:#9b3b2f;
+  --f-display:"Cormorant Garamond",Georgia,serif; --f-text:"Spectral",Georgia,"Times New Roman",serif;
+  --f-label:"Spectral SC","Spectral",Georgia,serif; --f-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0e1310; --surface:#151c17; --surface-2:#1a231d; --ink:#dde2d6; --ink-2:#b4bdb0; --muted:#8c998a;
+  --rule:#2b352e; --rule-strong:#45524a; --accent:#8fbf86; --accent-ink:#0e1310; --alarm:#e08a7c; color-scheme:dark}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.6 var(--f-text);font-variant-numeric:oldstyle-nums;-webkit-font-smoothing:antialiased}
+main{max-width:1080px;margin:0 auto;padding:28px 16px 64px}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;line-height:1.08;margin:0;text-wrap:balance}
+h1{font-size:clamp(2.2rem,7vw,3.6rem);max-width:17ch}
+h2{font-size:clamp(1.7rem,4.6vw,2.4rem);margin-bottom:14px}
+p{margin:0 0 14px}
+a{color:var(--accent)}
+.eyebrow{font-family:var(--f-label);text-transform:lowercase;letter-spacing:.08em;color:var(--muted);margin:0 0 14px;font-size:1rem}
+.lead{font-size:1.2rem;color:var(--ink-2);max-width:40ch;margin:18px 0 26px}
+.hero{padding:24px 0 40px;border-bottom:1px solid var(--rule)}
+.hero-img{display:none;margin:0}
+.hero-img img{display:block;width:100%;max-width:none;height:auto;border:1px solid var(--rule);border-radius:6px}
+@media (min-width:900px){.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:48px;align-items:center}.hero-img{display:block}}
+.ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:10px 20px;border:1px solid var(--ink);border-radius:2px;background:transparent;color:var(--ink);font:500 1rem var(--f-ui);text-decoration:none;cursor:pointer}
+.btn.acc{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:hover{border-color:var(--accent)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.note{font-size:.95rem;color:var(--muted);font-style:italic;margin-top:12px}
+section{padding:44px 0;border-bottom:1px solid var(--rule)}
+section:last-of-type{border-bottom:0}
+.who{max-width:62ch;color:var(--ink-2)}
+.shots{display:grid;gap:28px;margin-top:8px}
+@media (min-width:760px){.shots{grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}}
+figure{margin:0}
+figure img{display:block;width:100%;height:auto;max-width:360px;margin:0 auto;border:1px solid var(--rule);border-radius:6px;background:var(--surface)}
+figcaption{font-size:.98rem;color:var(--ink-2);margin-top:12px;max-width:36ch;margin-inline:auto}
+figcaption b{font-family:var(--f-ui);font-weight:600;font-size:.92rem;color:var(--ink);display:block;margin-bottom:2px}
+.points{display:grid;gap:14px;padding:0;margin:0;list-style:none;max-width:62ch}
+.points li{padding-left:22px;position:relative;color:var(--ink-2)}
+.points li::before{content:"";position:absolute;left:0;top:.72em;width:9px;height:1px;background:var(--accent)}
+.points b{color:var(--ink);font-weight:600}
+.price{display:grid;gap:14px}
+@media (min-width:760px){.price{grid-template-columns:1fr 1fr}}
+.tier{border:1px solid var(--rule-strong);border-radius:3px;padding:18px 20px;background:var(--surface)}
+.tier h3{font-size:1.5rem;margin-bottom:4px}
+.tier .amount{font-family:var(--f-ui);font-weight:600;font-size:1.05rem;font-variant-numeric:lining-nums;margin:0 0 8px}
+.tier p:last-child{margin:0;color:var(--ink-2);font-size:1rem}
+form{display:grid;gap:14px;max-width:520px;margin-top:6px}
+label{display:grid;gap:6px;font:500 .95rem var(--f-ui)}
+input[type=email],select{font:16px var(--f-ui);min-height:48px;padding:10px 12px;border:1px solid var(--rule-strong);border-radius:2px;background:var(--surface-2);color:var(--ink);width:100%}
+.consent{display:flex;gap:12px;align-items:flex-start;font:400 .95rem/1.5 var(--f-ui);color:var(--ink-2)}
+.consent input{width:22px;height:22px;margin:2px 0 0;flex:none;accent-color:var(--accent)}
+.status{min-height:1.6em;font:500 .98rem/1.5 var(--f-ui);margin:0}
+.status.ok{color:var(--accent)} .status.err{color:var(--alarm)}
+footer{max-width:1080px;margin:0 auto;padding:22px 16px 40px;border-top:1px solid var(--rule);font:.92rem/1.6 var(--f-ui);color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px}
+footer a{color:var(--muted)}
+.opt{font-weight:400;color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<main>
+  <header class="hero">
+    <div>
+    <p class="eyebrow">Selene · la bêta ouvre bientôt</p>
+    <h1>Garde tes fragments, tes sources et tes hypothèses reliés.</h1>
+    <p class="lead">Et retrouve ce que tu avais oublié, jusqu'au dernier chapitre. Un carnet de recherche pour les thèses, les livres et les longs articles, qui vit d'abord sur ton appareil.</p>
+    <div class="ctas">
+      <a class="btn acc" href="#liste">Être prévenu·e de la bêta</a>
+      <a class="btn" href="index.html#sans-compte" data-essai>Essayer tout de suite, sans compte</a>
+    </div>
+    <p class="note">Rien à installer, rien à créer : l'essai garde tout sur ton appareil.</p>
+    </div>
+    <figure class="hero-img"><img src="essai/apercu.jpg" width="1200" height="630" loading="lazy" alt="Selene sur un ordinateur : la thèse « Les gardiens de phare de la Manche », 42 500 mots sur 90 000, et ses trois chapitres avec leur avancement."></figure>
+  </header>
+
+  <section aria-labelledby="pour-qui">
+    <h2 id="pour-qui">Pour qui</h2>
+    <p class="who">Pour les doctorantes et les doctorants, les chercheurs, les essayistes, les autrices et auteurs de long format : celles et ceux dont les idées s'éparpillent entre un traitement de texte, un gestionnaire de références, des carnets et des post-it, et qui ne savent plus, six mois plus tard, d'où venait une phrase.</p>
+  </section>
+
+  <section aria-labelledby="ce-qu-il-fait">
+    <h2 id="ce-qu-il-fait">Ce que fait Selene</h2>
+    <div class="shots">
+      <figure>
+        <img src="essai/ecriture.jpg" width="780" height="1560" loading="lazy" alt="Le module Écriture sur un téléphone : le titre de la thèse, 42 500 mots sur 90 000, le rythme des trente derniers jours, et trois chapitres avec leur avancement et leurs fragments.">
+        <figcaption><b>Le texte, chapitre par chapitre</b>Le compteur de mots, son objectif et son rythme ; chaque chapitre avec son avancement et ses fragments.</figcaption>
+      </figure>
+      <figure>
+        <img src="essai/sources.jpg" width="780" height="1560" loading="lazy" alt="Le module Sources : des références avec leurs auteurs, leur type et leur état de lecture, dont une reliée au fragment qu'elle documente.">
+        <figcaption><b>Les sources, reliées</b>Un lien ou un DOI suffit : titre, auteurs et date se complètent. Chaque source se relie au fragment qu'elle documente.</figcaption>
+      </figure>
+      <figure>
+        <img src="essai/recherche.jpg" width="780" height="1560" loading="lazy" alt="La recherche de Selene : un mot tapé fait revenir un fragment ancien, avec sa date et la source qui le documente.">
+        <figcaption><b>Ce que tu avais oublié</b>La recherche parcourt tout le carnet : la phrase écrite il y a six mois revient, avec sa date et sa source.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="engagements">
+    <h2 id="engagements">Ce que Selene ne fera pas</h2>
+    <ul class="points">
+      <li><b>Ni publicité, ni traceur.</b> Rien ne mesure ce que tu écris ; cette page compte ses ouvertures, pas les personnes.</li>
+      <li><b>Pas d'enfermement.</b> Tout s'exporte en un fichier, à tout moment, et le code est public.</li>
+      <li><b>Pas d'intelligence artificielle imposée.</b> L'assistant est facultatif, éteint par défaut, et ne lit que ce que tu lui ouvres.</li>
+      <li><b>Pas de compte obligatoire.</b> Selene marche entière sur ton appareil ; un compte ne sert qu'à retrouver ton carnet sur les autres.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="prix">
+    <h2 id="prix">Le prix prévu</h2>
+    <div class="price">
+      <div class="tier"><h3>Selene</h3><p class="amount">Gratuit</p><p>Tout le carnet, sur un appareil, sans limite de durée.</p></div>
+      <div class="tier"><h3>Selene+</h3><p class="amount">29,99 € par an, ou 3,99 € par mois</p><p>La synchronisation entre tes appareils (ordinateur, téléphone, tablette). Gratuite pendant la bêta.</p></div>
+    </div>
+    <p class="note">Un prix prévu, qui peut encore changer avant l'ouverture : rien n'est facturé pendant la bêta.</p>
+  </section>
+
+  <section aria-labelledby="liste" id="liste">
+    <h2>Être prévenu·e de la bêta</h2>
+    <p class="who">Un seul e-mail, à l'ouverture de la bêta : un compte, la synchronisation, puis les apps Android et iPhone.</p>
+    <form id="attente" novalidate>
+      <label for="email">Ton adresse e-mail<input type="email" id="email" name="email" required autocomplete="email" maxlength="254" inputmode="email"></label>
+      <label for="projet"><span>Sur quoi travailles-tu ? <span class="opt">(facultatif)</span></span>
+        <select id="projet" name="projet">
+          <option value="">—</option>
+          <option value="these">Une thèse ou un mémoire</option>
+          <option value="livre">Un livre</option>
+          <option value="articles">Des articles, un essai</option>
+          <option value="autre">Autre chose</option>
+        </select></label>
+      <label class="consent"><input type="checkbox" id="accord" name="accord" required><span>J'accepte que Selene garde cette adresse pour me prévenir de l'ouverture de la bêta, et pour rien d'autre. Je peux demander à l'effacer à tout moment.</span></label>
+      <div><button class="btn acc" type="submit">Me prévenir</button></div>
+      <p class="status" id="statut" role="status" aria-live="polite"></p>
+    </form>
+    <p class="note">Ni revente, ni partage, ni lettre d'information. Pour effacer ton adresse : <a href="mailto:mariebonifacio.pro@gmail.com">mariebonifacio.pro@gmail.com</a>. Le détail : <a href="confidentialite.html#page-de-presentation">la politique de confidentialité</a>.</p>
+  </section>
+</main>
+<footer>
+  <span>Selene, par Marie Bonifacio</span>
+  <a href="confidentialite.html">Confidentialité</a>
+  <a href="https://github.com/MarieBonifacio/selene">Le code</a>
+  <a href="index.html#sans-compte" data-essai>Essayer sans compte</a>
+</footer>
+<script>
+/* La page publique de test (essai.html, docs/essai.md ; E3 de l'audit). Un script sans dépendance, autorisé par son
+   empreinte (build.py), qui ne lit ni n'écrit rien sur l'appareil : ni cookie, ni stockage.
+   - Une ouverture de la page (pas un rechargement, ni un retour en arrière) laisse une ligne dans `audience`, avec le
+     lien d'arrivée (?src=forum-a), un clic sur « Essayer » aussi ; ni adresse, ni identifiant.
+   - La liste d'attente écrit dans `attente` : l'adresse, le lien d'arrivée, et le projet si la personne le dit.
+   Les deux tables ne s'écrivent qu'avec la clé publique, ne se lisent que dans l'éditeur SQL (supabase/schema.sql).
+   https://pxnrzrmzritezftefdlj.supabase.co et sb_publishable_vC_zBX0TN4jZqi1GRIvo2A_nD2WFW9T : posés par build.py, depuis src/app/services/auth.js. */
+(() => {
+  const BASE = "https://pxnrzrmzritezftefdlj.supabase.co/rest/v1/", KEY = "sb_publishable_vC_zBX0TN4jZqi1GRIvo2A_nD2WFW9T", PAGE = "essai";
+  const source = (() => { const s = new URLSearchParams(location.search).get("src") || ""; return /^[a-z0-9-]{1,30}$/.test(s) ? s : ""; })();
+  const send = (table, row, keepalive = false) => fetch(BASE + table, { method: "POST", keepalive,
+    headers: { apikey: KEY, "Content-Type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify(row) });
+
+  // Une ouverture : la première navigation vers la page, pas son rechargement (on compte des ouvertures, pas des clics sur F5).
+  const nav = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
+  if (!nav || nav.type === "navigate") send("audience", { page: PAGE, evenement: "visite", source }).catch(() => {});
+  // « Essayer » : la ligne part pendant que le lien s'ouvre (keepalive), sans retenir la navigation.
+  for (const a of document.querySelectorAll("a[data-essai]")) a.addEventListener("click", () => { send("audience", { page: PAGE, evenement: "essai", source }, true).catch(() => {}); });
+
+  const form = document.getElementById("attente"), status = document.getElementById("statut");
+  const say = (text, ok) => { status.textContent = text; status.className = "status " + (ok ? "ok" : "err"); };
+  let busy = false;
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    if (busy) return;
+    const email = form.email.value.trim(), projet = form.projet.value;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 254) { say("Cette adresse ne semble pas complète.", false); form.email.focus(); return; }
+    if (!form.accord.checked) { say("Coche la case pour que Selene puisse garder ton adresse.", false); form.accord.focus(); return; }
+    busy = true; form.querySelector("button").disabled = true; say("Envoi…", true);
+    try {
+      const r = await send("attente", { email, source, projet });
+      // 409 : la même adresse, inscrite au même instant par un autre envoi. Pour la personne, c'est fait.
+      if (!r.ok && r.status !== 409) throw new Error(String(r.status));
+      form.reset();
+      say("C'est noté : tu recevras un seul e-mail, à l'ouverture de la bêta.", true);
+    } catch {
+      say("L'inscription n'est pas partie (réseau ?). Réessaie dans un moment, ou écris à mariebonifacio.pro@gmail.com.", false);
+    } finally { busy = false; form.querySelector("button").disabled = false; }
+  });
+})();
+</script>
+</body>
+</html>

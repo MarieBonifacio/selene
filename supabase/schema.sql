@@ -78,3 +78,57 @@ begin
 end $$;
 revoke all on function public.erreurs_borne() from public, anon, authenticated;
 create trigger erreurs_borne before insert on public.erreurs for each row execute function public.erreurs_borne();
+
+-- La page publique de test (essai.html, docs/essai.md ; E3 de l'audit). Deux tables que la page peut seulement écrire,
+-- avec la clé publique ; on les lit dans l'éditeur SQL. Pas de compte, pas de cookie, rien d'écrit sur l'appareil.
+--
+-- La liste d'attente : une adresse pour prévenir de l'ouverture de la bêta, le lien d'arrivée (?src=…) et, si la
+-- personne le dit, sur quoi elle travaille. Le déclencheur met l'adresse en minuscules, ignore en silence une adresse
+-- déjà inscrite (la page ne peut donc pas servir à savoir qui l'est) et toute inscription au-delà de 200 par heure,
+-- impose l'heure du serveur, et efface ce qui a plus de deux ans (la politique de confidentialité le dit).
+create table public.attente (
+  id bigint generated always as identity primary key,
+  at timestamptz not null default now(),
+  email text not null unique check (char_length(email) between 3 and 254 and email ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'),
+  source text not null default '' check (source ~ '^[a-z0-9-]{0,30}$'),
+  projet text not null default '' check (projet in ('', 'these', 'livre', 'articles', 'autre'))
+);
+create index attente_at on public.attente (at);
+alter table public.attente enable row level security;
+create policy "liste d'attente : inscription" on public.attente for insert to anon, authenticated with check (true);
+
+create function public.attente_borne() returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  delete from public.attente where at < now() - interval '2 years';
+  new.email := lower(btrim(new.email));
+  new.at := now();
+  if exists (select 1 from public.attente where email = new.email) then return null; end if;
+  if (select count(*) from public.attente where at > now() - interval '1 hour') >= 200 then return null; end if;
+  return new;
+end $$;
+revoke all on function public.attente_borne() from public, anon, authenticated;
+create trigger attente_borne before insert on public.attente for each row execute function public.attente_borne();
+
+-- La mesure d'audience : une ligne par ouverture de la page (pas les rechargements) ou par clic sur « Essayer », avec
+-- la date, la page et le lien d'arrivée. Ni adresse IP, ni identifiant : on compte des ouvertures, pas des personnes.
+-- Au plus 2 000 lignes par heure, gardées 13 mois.
+create table public.audience (
+  id bigint generated always as identity primary key,
+  at timestamptz not null default now(),
+  page text not null check (page ~ '^[a-z0-9-]{1,20}$'),
+  evenement text not null check (evenement in ('visite', 'essai')),
+  source text not null default '' check (source ~ '^[a-z0-9-]{0,30}$')
+);
+create index audience_at on public.audience (at);
+alter table public.audience enable row level security;
+create policy "audience : écriture" on public.audience for insert to anon, authenticated with check (true);
+
+create function public.audience_borne() returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  delete from public.audience where at < now() - interval '13 months';
+  if (select count(*) from public.audience where at > now() - interval '1 hour') >= 2000 then return null; end if;
+  new.at := now();
+  return new;
+end $$;
+revoke all on function public.audience_borne() from public, anon, authenticated;
+create trigger audience_borne before insert on public.audience for each row execute function public.audience_borne();

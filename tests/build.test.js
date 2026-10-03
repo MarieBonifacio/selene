@@ -17,7 +17,8 @@ const hash = text => `'sha256-${crypto.createHash('sha256').update(text, 'utf8')
 test('web et artefact : exactement les fichiers versionnés (vérifiés par build.py --check)', () => {
   assert.equal(read('web/index.html'), fs.readFileSync('index.html', 'utf8'));
   assert.equal(read('artifact/selene.html'), fs.readFileSync('selene.html', 'utf8'));
-  assert.deepEqual(fs.readdirSync(path.join(dist, 'web')).sort(), ['apple-touch-icon.png', 'confidentialite.html', 'fonts', 'icon-192.png', 'icon-512.png', 'index.html', 'manifest.webmanifest', 'privacy.html', 'sw.js']);
+  assert.equal(read('web/essai.html'), fs.readFileSync('essai.html', 'utf8'));
+  assert.deepEqual(fs.readdirSync(path.join(dist, 'web')).sort(), ['apple-touch-icon.png', 'confidentialite.html', 'essai', 'essai.html', 'fonts', 'icon-192.png', 'icon-512.png', 'index.html', 'manifest.webmanifest', 'privacy.html', 'sw.js']);
   assert.ok(fs.readFileSync(path.join(dist, 'web/icon-512.png')).equals(fs.readFileSync('icon-512.png')), 'icônes copiées telles quelles');
 });
 
@@ -68,14 +69,33 @@ test('politique de confidentialité : ce que demande l’article 13 du RGPD, dan
     assert.match(x, /Marie Bonifacio/, 'la responsable du traitement, nommée');
     assert.match(x, /href="mailto:mariebonifacio\.pro@gmail\.com"/, 'une adresse de contact privée');
     assert.doesNotMatch(x, /\/issues/, 'jamais une demande sur ses données par ticket public');
-    for (const base of [/6[.(]1[.)]?\(?b/, /9[.(]2[.)]?\(?a/, /6[.(]1[.)]?\(?f/]) assert.match(x, base, `base légale ${base}`);
+    for (const base of [/6[.(]1[.)]?\(?a/, /6[.(]1[.)]?\(?b/, /9[.(]2[.)]?\(?a/, /6[.(]1[.)]?\(?f/]) assert.match(x, base, `base légale ${base}`);
     assert.match(x, /Paris/, 'où sont les données du compte');
     assert.match(x, /href="https:\/\/www\.cnil\.fr\/fr\/plaintes"/, 'le droit de réclamation auprès de la CNIL');
   }
 });
 
+test('page publique de test (E3) : statique, son script et ses styles autorisés par leur empreinte, Supabase seul en réseau', () => {
+  const p = read('web/essai.html');
+  const policy = p.match(/Content-Security-Policy" content="([^"]+)"/)[1];
+  const directive = name => (policy.match(new RegExp(`(?:^|; )${name} ([^;]+)`)) || [])[1] || '';
+  assert.equal(directive('default-src'), "'none'");
+  assert.deepEqual(directive('script-src').split(' '), scripts(p).map(hash), 'un seul script, par son empreinte');
+  assert.deepEqual(directive('style-src').split(' '), [...p.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(m => hash(m[1])), 'ses deux feuilles de style, par leur empreinte');
+  assert.ok(!/unsafe-inline|unsafe-eval/.test(policy) && !/ style="/.test(p) && !/ on[a-z]+="/.test(p), 'rien en ligne qui ne soit autorisé');
+  assert.match(directive('connect-src'), /^https:\/\/[a-z0-9]+\.supabase\.co$/, 'le réseau : le projet Supabase, rien d’autre');
+  assert.equal(directive('form-action'), "'none'");
+  assert.doesNotMatch(p, /googleapis|gstatic|__SUPABASE|localStorage|sessionStorage|document\.cookie|indexedDB/, 'ni police de Google, ni stockage, ni cookie');
+  // Les images citées existent, l'aperçu des partages aussi ; les liens mènent où ils disent.
+  for (const src of [...p.matchAll(/src="(essai\/[^"]+)"/g)].map(m => m[1])) assert.ok(fs.statSync(path.join(dist, 'web', src)).size > 10000, `${src} publié`);
+  assert.ok(fs.existsSync(path.join(dist, 'web', p.match(/og:image" content="https:\/\/[^/]+\/selene\/([^"]+)"/)[1])), 'l’aperçu des partages (og:image) est publié');
+  assert.match(p, /href="index\.html#sans-compte"/, '« Essayer sans compte » ouvre l’app sans compte');
+  assert.match(read('web/confidentialite.html'), /<h2 id="page-de-presentation">/, 'le lien vers la politique trouve sa section');
+  assert.match(p, /29,99 €/, 'le prix annoncé (E3 de l’audit)');
+});
+
 test('le script produit ne dépend pas de la machine : aucun chemin absolu', () => {
-  for (const f of ['selene.html', 'index.html']) assert.doesNotMatch(fs.readFileSync(f, 'utf8'), new RegExp(process.cwd().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  for (const f of ['selene.html', 'index.html', 'essai.html']) assert.doesNotMatch(fs.readFileSync(f, 'utf8'), new RegExp(process.cwd().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
 
 test('natif : l’amorçage puis le même script, sans service worker ni manifeste', () => {

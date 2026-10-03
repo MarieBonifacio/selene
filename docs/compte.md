@@ -237,7 +237,8 @@ Elle remplit l'article 13 du RGPD, et `build.test.js` le vérifie dans les deux 
 - la responsable du traitement : Marie Bonifacio, personne physique ;
 - une adresse de contact privée (jamais un ticket public) ;
 - une base légale par usage : le contrat (6.1.b), le consentement explicite pour la santé synchronisée (9.2.a),
-  l'intérêt légitime pour la sécurité (6.1.f) ;
+  le consentement pour la liste d'attente de la page de test (6.1.a), l'intérêt légitime pour la sécurité, le journal
+  des erreurs et la mesure d'audience (6.1.f) ;
 - les durées de conservation ;
 - les transferts hors de l'Union ;
 - le droit de réclamation auprès de la CNIL.
@@ -248,7 +249,11 @@ Ce qu'elle promet, et qu'il faut tenir à la main :
   manuelle (`supabase db dump`) doit être effacée au bout de 30 jours, sinon une donnée supprimée y survit.
 - **E-mails reçus à l'adresse de contact : un an au plus** après le dernier échange.
 - **Journal des erreurs : 30 jours.** Le déclencheur de la table `erreurs` y veille seul.
-- **Réponse à une demande de droits sous un mois.** La demande doit venir de l'adresse du compte concerné.
+- **Liste d'attente : un seul e-mail, à l'ouverture de la bêta, puis effacée** (deux ans au plus : le déclencheur de
+  la table `attente` y veille). L'envoi et l'effacement sont à faire à la main ([essai.md](essai.md#écrire-aux-inscrits-puis-effacer)).
+- **Mesure d'audience de la page de test : 13 mois.** Le déclencheur de la table `audience` y veille seul.
+- **Réponse à une demande de droits sous un mois.** La demande doit venir de l'adresse du compte concerné (ou de
+  l'adresse inscrite sur la liste d'attente).
 - **La base reste à Paris** (eu-west-3). Un projet déplacé dans une autre région change la section « Hors de l'Union
   européenne ».
 

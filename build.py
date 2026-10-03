@@ -3,6 +3,7 @@ from pathlib import Path
 import base64
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -78,18 +79,38 @@ own = shell.replace("<!-- SELENE_FONTS -->\n", FONTS_SELF)
 hosted = own.replace("<title>", head + "<title>", 1).replace("</body>", sw + "</body>", 1).replace("<!-- SELENE_SCRIPT -->", script)
 native = own.replace("<title>", native_head + "<title>", 1).replace("<!-- SELENE_SCRIPT -->", "<script>" + boot_code + "</script>\n" + script)
 
-outputs = {"selene.html": standalone, "index.html": hosted}
+# La page publique de test (E3 de l'audit, docs/essai.md) : statique, à côté de l'app, sans son script. Le sien (src/essai.js)
+# et ses deux feuilles de style sont autorisés par leur empreinte ; elle ne parle qu'au projet Supabase, dont l'adresse et
+# la clé publique sont lues dans auth.js (une seule source). Ni cookie, ni stockage : voir src/essai.js.
+auth_js = (SOURCE / "app" / "services" / "auth.js").read_text(encoding="utf-8")
+supa_url = re.search(r'export const SUPABASE_URL = "(https://[a-z0-9]+\.supabase\.co)"', auth_js).group(1)
+supa_key = re.search(r'export const SUPABASE_ANON_KEY = "(sb_publishable_[A-Za-z0-9_-]+)"', auth_js).group(1)
+essai_js = "\n" + (SOURCE / "essai.js").read_text(encoding="utf-8").replace("__SUPABASE_URL__", supa_url).replace("__SUPABASE_KEY__", supa_key)
+assert "</script" not in essai_js.lower() and "__SUPABASE" not in essai_js
+essai_page = (SOURCE / "essai.html").read_text(encoding="utf-8")
+assert all(essai_page.count(m) == 1 for m in ["<!-- ESSAI_CSP -->", "<!-- SELENE_FONTS -->", "<!-- ESSAI_SCRIPT -->"])
+essai_page = essai_page.replace("<!-- SELENE_FONTS -->\n", FONTS_SELF).replace("<!-- ESSAI_SCRIPT -->", "<script>" + essai_js + "</script>")
+essai_styles = re.findall(r"<style>(.*?)</style>", essai_page, re.S)
+assert len(essai_styles) == 2 and "style=" not in essai_page, "essai.html : deux feuilles de style, aucun attribut style"
+essai_csp = ("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; script-src " + csp_hash(essai_js)
+             + "; style-src " + " ".join(csp_hash(x) for x in essai_styles) + "; font-src 'self'; img-src 'self'; connect-src " + supa_url
+             + "; base-uri 'none'; form-action 'none'\">")
+essai = essai_page.replace("<!-- ESSAI_CSP -->", essai_csp)
+
+outputs = {"selene.html": standalone, "index.html": hosted, "essai.html": essai}
 if sys.argv[1:2] == ["--dist"]:
     # Les trois sorties, chacune dans son dossier (non versionné) : dist/web pour GitHub Pages, dist/artifact pour
     # claude.ai, dist/native pour les coquilles natives (Capacitor, Tauri).
     dist = ROOT / (sys.argv[2] if len(sys.argv) > 2 else "dist")
-    web = {"index.html": hosted}
+    web = {"index.html": hosted, "essai.html": essai}
     files = {**{f"web/{n}": c for n, c in web.items()}, "artifact/selene.html": standalone, "native/index.html": native}
     for rel, content in files.items():
         (dist / rel).parent.mkdir(parents=True, exist_ok=True)
         (dist / rel).write_text(content, encoding="utf-8")
     for name in ["sw.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "confidentialite.html", "privacy.html"]:
         shutil.copyfile(ROOT / name, dist / "web" / name)
+    if (ROOT / "essai").is_dir():  # les captures de la page de test (npm run essai:captures ; absentes avant la première)
+        shutil.copytree(ROOT / "essai", dist / "web" / "essai", dirs_exist_ok=True)
     for out in ["web", "native"]:  # les polices, avec leurs licences
         shutil.copytree(ROOT / "fonts", dist / out / "fonts", dirs_exist_ok=True)
     print(f"{dist.relative_to(ROOT) if dist.is_relative_to(ROOT) else dist}: web, artifact, native built")
@@ -100,4 +121,4 @@ elif sys.argv[1:] == ["--check"]:
 else:
     for name, content in outputs.items():
         (ROOT / name).write_text(content, encoding="utf-8")
-    print("selene.html and index.html built")
+    print("selene.html, index.html and essai.html built")
