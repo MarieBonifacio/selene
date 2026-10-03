@@ -70,7 +70,7 @@ function subjectForm(id) {
       }
       goalForm(id, v.subject);
     },
-    synced() ? `${about}\n\n${tr`Sur cet appareil seulement : ce suivi ne quitte pas cet appareil ; ton compte n'en garde que le nom. Sur ton compte : il est synchronisé sur le serveur de Selene, avec ton accord explicite, et retrouvé sur tes appareils. Tu pourras changer d'avis.`}` : about);
+    synced() ? `${about}\n\n${tr`Sur cet appareil seulement : Selene ne l'envoie nulle part, ton compte n'en garde que le nom (seule la sauvegarde de ton appareil, Google ou iCloud, peut l'inclure si tu l'as activée). Sur ton compte : il est synchronisé sur le serveur de Selene, avec ton accord explicite, et retrouvé sur tes appareils. Tu pourras changer d'avis.`}` : about);
 }
 function goalForm(id, setupSubject = null) {
   const inst = T(id), subject = setupSubject || inst.config.subject, sub = SUBJECTS[subject], today = todayISO(), cur = regulationGoal(inst, today);
@@ -166,7 +166,7 @@ async function chooseAccount(id) {
 /* Garder sur cet appareil seulement (choix de départ, ou retrait de l'accord) : le contenu passe dans le document local,
    le compte n'en garde que le talon dès la synchronisation suivante. */
 async function chooseDevice(id, confirm = false) {
-  if (confirm && !await ask(tr`Garder « ${label(id)} » sur cet appareil seulement ? À la prochaine synchronisation, ses données quittent ton compte : tes autres appareils n'en verront plus que le nom. Les sauvegardes techniques de l'hébergeur suivent leur propre durée de conservation. Cet appareil devient le seul à le garder : se déconnecter te demandera quoi en faire, et un export de temps en temps te protège d'une perte.`)) return false;
+  if (confirm && !await ask(tr`Garder « ${label(id)} » sur cet appareil seulement ? À la prochaine synchronisation, ses données quittent ton compte : tes autres appareils n'en verront plus que le nom. Les sauvegardes techniques de l'hébergeur peuvent encore le contenir 30 jours au plus. Cet appareil devient le seul à le garder : se déconnecter te demandera quoi en faire, et un export de temps en temps te protège d'une perte.`)) return false;
   const s = S(), inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null; if (!inst || regulationOnDevice(inst)) return false;
   moveToDevice(s, id); save(); toast(tr`« ${label(id)} » est gardé sur cet appareil seulement.`);
   return true;
@@ -325,7 +325,7 @@ function entryHTML(inst, e) {
 function whereText(id) {
   const stub = S().modules[id], c = stub.config;
   if (!synced()) return tr`Sur cet appareil : sans compte, rien n'est envoyé au serveur de Selene.`;
-  if (regulationOnDevice(stub)) return tr`Sur cet appareil seulement. Ton compte n'en garde que le nom, pour que tes autres appareils sachent qu'il existe : son contenu ne passe pas par le serveur. Ce n'est pas un coffre chiffré : quiconque ouvre cet appareil déverrouillé peut lire son stockage. Perdre l'appareil, c'est perdre le suivi : exporte-le de temps en temps.`;
+  if (regulationOnDevice(stub)) return tr`Sur cet appareil seulement. Ton compte n'en garde que le nom, pour que tes autres appareils sachent qu'il existe : son contenu ne passe pas par le serveur. La sauvegarde de cet appareil (Google, iCloud…), si tu l'as activée, peut l'inclure : elle relève de ton compte Google ou Apple, pas de Selene. Ce n'est pas un coffre chiffré : quiconque ouvre cet appareil déverrouillé peut lire son stockage. Perdre l'appareil peut faire perdre le suivi : exporte-le de temps en temps.`;
   if (c.consent) return tr`Synchronisé avec ton compte depuis ton accord du ${fmt(iso(new Date(c.consent.at)), { day: "numeric", month: "long", year: "numeric" })} : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Tu peux retirer cet accord : le suivi reviendra sur cet appareil seulement.`;
   return tr`Synchronisé avec ton compte, sans accord enregistré : ce suivi date d'avant la question. Choisis ci-dessus où le garder.`;
 }
