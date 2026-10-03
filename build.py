@@ -29,7 +29,10 @@ parts = json.loads(bundled.stdout)
 js = parts["platform"] + "__platform.platform.ready(() => {\n" + parts["app"] + "});\n"
 # Le script est posé tel quel dans une balise <script> : « </script » dans une chaîne le fermerait avant sa fin.
 assert "</script" not in js.lower(), "« </script » dans le JavaScript : l'écrire en deux morceaux"
-code = "\n(() => {\n" + js + "})();\n"
+# L'empreinte du code, pour le journal des erreurs (src/app/services/journal.js) : la même source donne la même empreinte,
+# sans date ni commit, et build.py --check reste stable.
+build_id = hashlib.sha256(js.encode("utf-8")).hexdigest()[:10]
+code = "\n(() => {\nconst SELENE_BUILD = \"" + build_id + "\";\n" + js + "})();\n"
 script = "<script>" + code + "</script>"
 standalone = shell.replace("<!-- SELENE_FONTS -->\n", FONTS_GOOGLE).replace("<!-- SELENE_SCRIPT -->", script)
 

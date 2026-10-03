@@ -50,3 +50,31 @@ create table public.assistant_keys (
 );
 
 alter table public.assistant_keys enable row level security;
+
+-- Le journal des erreurs (src/app/services/journal.js, docs/compte.md) : des erreurs de programmation, anonymes. Ni
+-- compte, ni texte saisi : le nom de l'erreur, l'endroit du code, l'écran, la version et la plateforme. Toute page peut
+-- écrire (la clé publique suffit) ; personne ne lit par l'API : on consulte dans l'éditeur SQL. Bornes : la taille de
+-- chaque champ, 500 entrées par heure au plus (au-delà, l'entrée est ignorée en silence), 30 jours de conservation (la
+-- politique de confidentialité le dit). Le déclencheur purge à chaque écriture : pas de tâche planifiée à entretenir.
+create table public.erreurs (
+  id bigint generated always as identity primary key,
+  at timestamptz not null default now(),
+  version text not null check (char_length(version) between 1 and 40),
+  plateforme text not null check (char_length(plateforme) between 1 and 20),
+  genre text not null check (genre ~ '^[A-Za-z]{1,40}$'),
+  lieu text not null default '' check (char_length(lieu) <= 200),
+  vue text not null default '' check (char_length(vue) <= 40)
+);
+create index erreurs_at on public.erreurs (at);
+alter table public.erreurs enable row level security;
+create policy "journal : écriture" on public.erreurs for insert to anon, authenticated with check (true);
+
+create function public.erreurs_borne() returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  delete from public.erreurs where at < now() - interval '30 days';
+  if (select count(*) from public.erreurs where at > now() - interval '1 hour') >= 500 then return null; end if;
+  new.at := now(); -- l'heure du serveur, pas celle que la page aurait envoyée
+  return new;
+end $$;
+revoke all on function public.erreurs_borne() from public, anon, authenticated;
+create trigger erreurs_borne before insert on public.erreurs for each row execute function public.erreurs_borne();
