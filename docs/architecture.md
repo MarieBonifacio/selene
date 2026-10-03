@@ -534,6 +534,9 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   reçoit la synchronisation). Les scénarios lisent le stockage par `storeGet` / `storeJSON` et l'écrivent par
   `storeSet` (tests/browser/helpers.js), qui prévient Selene comme un autre onglet ; `tests/browser/indexeddb.js`
   couvre la migration, la relance, deux onglets et un document de plus de 6 M caractères.
+- **Révision (3 octobre 2026, ADR 28)** : « le serveur, lui, reçoit la synchronisation » n'est pas toujours vrai
+  (l'envoi de la fermeture est refusé si un autre appareil a écrit entre-temps, et un suivi gardé sur l'appareil n'a
+  pas de copie serveur) ; le journal de secours couvre désormais ce cas.
 
 ### ADR 14 — Trois sorties de build : web, artefact, natif
 
@@ -841,3 +844,36 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   l'inverse ; la garde de déconnexion n'offre plus que l'export ou l'effacement. Le type sort de l'offre publique
   (`MODULE_TYPES.regulation.personal`) : seul le compte marqué `selene_personnel` dans ses métadonnées serveur le voit
   proposé. `config.consent` reste lu, pour dire d'où vient un suivi encore synchronisé.
+
+### ADR 28 — Un journal de secours pour les écritures qu'IndexedDB n'a pas confirmées
+
+- **Contexte** : une écriture IndexedDB est asynchrone (ADR 13) et une page qui se ferme abandonne les transactions
+  encore en cours ; `platform.flush()`, appelée à la fermeture, ne peut pas les attendre. L'ADR 13 acceptait ce risque
+  parce que le serveur recevait la synchronisation. Ce n'est pas toujours le cas : l'envoi de la fermeture est une
+  écriture conditionnelle, refusée si un autre appareil a écrit depuis la dernière synchronisation ; un appareil hors
+  ligne n'envoie rien ; et un suivi gardé sur l'appareil (ADR 27) n'a aucune copie serveur. La CI a vu
+  `sync-deux-appareils.js` échouer deux fois sur une saisie faite juste avant la fermeture ; la cause exacte n'y a pas
+  été établie, mais `tests/browser/secours.js` montre qu'une écriture IndexedDB qui n'aboutit pas, serveur injoignable,
+  perd la saisie à la fois sur l'appareil et sur le serveur.
+- **Décision** : dans la version web, la copie en mémoire d'IndexedDB tient la liste des écritures pas encore
+  confirmées (la dernière valeur voulue par clé, et la valeur sûre qu'avait le coffre avant). À la mise en
+  arrière-plan et à la fermeture, `platform.flush()` la recopie d'abord, de façon synchrone, dans `localStorage`
+  (`selene-secours:<page>`, une clé par page pour que deux onglets ne s'effacent pas) ; le journal suit ensuite chaque
+  nouvelle valeur, et disparaît quand tout est confirmé. Une écriture refusée par IndexedDB y reste. Au démarrage,
+  avant la migration, chaque journal est rejoué clé par clé, seulement si le coffre a encore la valeur d'avant
+  (comparée par une empreinte : longueur et FNV-1a 32 bits), puis effacé.
+- **Garde-fous** : jamais plus ancien par-dessus plus récent (un autre onglet a pu écrire depuis : son écriture est
+  gardée) ; un journal trop gros pour `localStorage` (quota) n'est pas écrit, et l'ancien est effacé plutôt que laissé
+  périmé ; une écriture refusée pendant le rejeu laisse le journal pour le démarrage suivant ; la migration ne prend
+  pas un journal pour une ancienne clé.
+- **Écarté** : les coquilles natives (leurs coffres sont des fichiers et le trousseau, et elles ne touchent jamais
+  `localStorage`, ce que `tests/platform.test.js` garantit ; un risque semblable y reste possible, à mesurer sur un
+  vrai appareil) ; l'artefact claude.ai (déjà
+  synchrone, sur `localStorage`) ; `localStorage` pour tout (le plafond de 5 M caractères qui a motivé l'ADR 13) ; un
+  journal écrit à chaque écriture (un document entier recopié à chaque frappe).
+- **Conséquences** : un document de plusieurs mégaoctets dont l'écriture est encore en cours à la fermeture peut
+  dépasser le quota de `localStorage` : il n'est alors pas protégé, comme avant. Le contenu d'un suivi gardé sur
+  l'appareil peut passer un instant dans `localStorage`, sur le même appareil et pour la même origine. Tests :
+  `tests/platform.test.js` (journal, rejeu, quota, deux pages, migration) ; `tests/browser/secours.js` (une écriture
+  IndexedDB annulée, serveur injoignable, fermeture : la saisie revient et part au serveur ; sans le journal, elle est
+  perdue des deux côtés).

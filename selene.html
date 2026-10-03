@@ -659,7 +659,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "075a55ac60";
+const SELENE_BUILD = "cbb5f1f957";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -682,10 +682,14 @@ var __platform = (() => {
   // src/platform.js
   var platform_exports = {};
   __export(platform_exports, {
+    RESCUE_PREFIX: () => RESCUE_PREFIX,
     SECRET_KEYS: () => SECRET_KEYS,
+    fingerprint: () => fingerprint,
     hosted: () => hosted,
     migrateToIdb: () => migrateToIdb,
+    mirror: () => mirror,
     platform: () => platform,
+    replayRescue: () => replayRescue,
     unreadable: () => unreadable,
     webStore: () => webStore
   });
@@ -727,18 +731,85 @@ var __platform = (() => {
     }
   });
   var pendingWrites = /* @__PURE__ */ new Set();
+  var RESCUE_PREFIX = "selene-secours:";
+  function fingerprint(s) {
+    if (typeof s !== "string") return "-";
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return `${s.length}:${(h >>> 0).toString(36)}`;
+  }
+  async function replayRescue(vault, area) {
+    const names = area.keys().filter((k) => k.startsWith(RESCUE_PREFIX));
+    if (!names.length) return 0;
+    const now = new Map((await vault.load()).filter(([k, v]) => typeof k === "string" && typeof v === "string"));
+    let done = 0;
+    for (const name of names) {
+      let entries = [];
+      try {
+        const j = JSON.parse(area.get(name));
+        if (j && j.v === 1 && Array.isArray(j.entries)) entries = j.entries;
+      } catch {
+      }
+      for (const e of entries) {
+        if (!Array.isArray(e) || typeof e[0] !== "string" || e[1] !== null && typeof e[1] !== "string") continue;
+        const [k, v, before] = e, cur = now.has(k) ? now.get(k) : null;
+        if (cur === v || fingerprint(cur) !== before) continue;
+        if (v === null) {
+          await vault.remove(k);
+          now.delete(k);
+        } else {
+          await vault.write(k, v);
+          now.set(k, v);
+        }
+        done++;
+      }
+      area.remove(name);
+    }
+    return done;
+  }
   function mirror(vault, written = () => {
-  }) {
+  }, rescue = null) {
     const m = /* @__PURE__ */ new Map(), last = /* @__PURE__ */ new Map();
-    const send = (k, fn) => {
-      const q = (last.get(k) || Promise.resolve()).then(fn).then(() => written(k), () => {
+    const pend = /* @__PURE__ */ new Map(), before = /* @__PURE__ */ new Map(), name = RESCUE_PREFIX + Math.random().toString(36).slice(2, 10);
+    let journaled = false;
+    const journal = () => {
+      if (!rescue) return;
+      if (!pend.size) {
+        if (journaled) rescue.remove(name);
+        journaled = false;
+        return;
+      }
+      journaled = rescue.set(name, JSON.stringify({ v: 1, entries: [...pend].map(([k, v]) => [k, v, fingerprint(before.get(k))]) }));
+      if (!journaled) rescue.remove(name);
+    };
+    const send = (k, v, fn) => {
+      if (!pend.has(k)) before.set(k, m.has(k) ? m.get(k) : null);
+      pend.set(k, v);
+      let ok = false;
+      const q = (last.get(k) || Promise.resolve()).then(fn).then(() => {
+        ok = true;
+        try {
+          written(k);
+        } catch {
+        }
+      }, () => {
       });
       last.set(k, q);
       pendingWrites.add(q);
       q.then(() => {
         pendingWrites.delete(q);
-        if (last.get(k) === q) last.delete(k);
+        if (last.get(k) !== q) return;
+        last.delete(k);
+        if (ok) {
+          pend.delete(k);
+          before.delete(k);
+        }
+        if (journaled) journal();
       });
+      if (journaled) journal();
     };
     return {
       async hydrate() {
@@ -754,15 +825,16 @@ var __platform = (() => {
       get: (k) => m.has(k) ? m.get(k) : null,
       set(k, v) {
         v = String(v);
+        send(k, v, () => vault.write(k, v));
         m.set(k, v);
-        send(k, () => vault.write(k, v));
         return true;
       },
       remove(k) {
+        send(k, null, () => vault.remove(k));
         m.delete(k);
-        send(k, () => vault.remove(k));
       },
-      keys: () => [...m.keys()]
+      keys: () => [...m.keys()],
+      journal
     };
   }
   function idbVault() {
@@ -797,7 +869,7 @@ var __platform = (() => {
   async function migrateToIdb(vault, area) {
     const present = new Set((await vault.load()).map(([k]) => k));
     const legacy = [];
-    for (const k of area.keys()) if (!SECRET_KEYS.includes(k)) legacy.push([k, area.get(k)]);
+    for (const k of area.keys()) if (!SECRET_KEYS.includes(k) && !k.startsWith(RESCUE_PREFIX)) legacy.push([k, area.get(k)]);
     const missing = legacy.filter(([k, v]) => !present.has(k) && typeof v === "string");
     if (missing.length) await vault.writeAll(missing);
     for (const [k] of legacy) area.remove(k);
@@ -863,7 +935,7 @@ var __platform = (() => {
       }
       if (!idb) return start();
       const local = webStore(() => localStorage);
-      idb.open().then(() => migrateToIdb(idb, local)).then(() => {
+      idb.open().then(() => replayRescue(idb, local).catch(() => 0)).then(() => migrateToIdb(idb, local)).then(() => {
         try {
           channel = new BroadcastChannel("selene-storage");
         } catch {
@@ -871,7 +943,7 @@ var __platform = (() => {
         }
         const m = mirror(idb, (k) => {
           if (channel) channel.postMessage(k);
-        });
+        }, local);
         return m.hydrate().then(() => {
           storageImpl = m;
           if (channel) channel.onmessage = (e) => {
@@ -883,8 +955,11 @@ var __platform = (() => {
         }, fail);
       }, () => start());
     },
-    // Les écritures en cours vers un coffre asynchrone (rien à attendre avec localStorage).
+    /* Les écritures en cours vers un coffre asynchrone (rien à attendre avec localStorage). Appelée à la mise en
+       arrière-plan et à la fermeture : le journal de secours est écrit d'abord, de façon synchrone, car la page peut
+       disparaître avant la fin de l'attente. */
     async flush() {
+      if (storageImpl.journal) storageImpl.journal();
       while (pendingWrites.size) await Promise.all([...pendingWrites]);
     },
     /* Notifications locales (ADR 19), dans une coquille native seulement : programmées par le système, elles sonnent
@@ -3267,7 +3342,7 @@ var __selene = (() => {
   };
 
   // plateforme:src/platform.js
-  var { SECRET_KEYS, hosted, migrateToIdb, platform, unreadable, webStore } = __platform;
+  var { RESCUE_PREFIX, SECRET_KEYS, fingerprint, hosted, migrateToIdb, mirror, platform, replayRescue, unreadable, webStore } = __platform;
 
   // src/app/services/host.js
   var sampleNS = null;
