@@ -693,7 +693,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "a294cd704f";
+const SELENE_BUILD = "8b64a96429";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -2739,6 +2739,7 @@ var __selene = (() => {
     "Rien à créer : tout reste sur cet appareil. Un compte, plus tard, le retrouve sur tes autres appareils, avec ce que tu auras noté.": "Nothing to create: everything stays on this device. An account, later, brings it to your other devices, along with what you will have noted.",
     "Sans compte : tout reste sur cet appareil, et rien de ce que tu écris ne part ailleurs. Effacer les données du navigateur, ou désinstaller l'app, efface tout : exporte une sauvegarde de temps en temps. Un compte retrouve ton espace sur tes autres appareils ; ce que tu as noté ici le rejoint.": "Without an account: everything stays on this device, and nothing you write goes anywhere else. Clearing the browser's data, or uninstalling the app, erases everything: export a backup from time to time. An account brings your space to your other devices; what you have noted here joins it.",
     "Créer un compte ou me connecter": "Create an account or sign in",
+    "Sans compte, pas d'assistant : ta clé serait gardée sur le serveur, attachée à un compte.": "No assistant without an account: your key would be kept on the server, attached to an account.",
     "E-mail": "Email",
     "Mot de passe": "Password",
     "Créer le compte": "Create the account",
@@ -9112,7 +9113,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     if (!enabled("assistant")) return `<p class="empty">${esc(TEXTS.assistantOff)}</p><button type="button" class="btn sm" data-act="reg-goto" data-to="reg-espaces">${esc(TEXTS.toEspaces)}</button>`;
     const a = s.config.assistant, known = assistantKnown();
     return `<section id="assistant-cfg"><p class="hint">${tr`Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.`}</p>
-    <div class="field-row">${hosted() ? field(known?.cle ? tr`Clé API Anthropic (enregistrée : ${known.indice || ""})` : tr`Clé API Anthropic`, (id) => `<input type="password" aria-labelledby="${id}" data-act="as-key" value="" placeholder="${known?.cle ? tr`Coller une autre clé pour la remplacer` : "sk-ant-…"}" autocomplete="off">`, { tip: TIPS.assistantKey }) : ""}
+    ${authReady() && !authSession ? `<p class="hint">${tr`Sans compte, pas d'assistant : ta clé serait gardée sur le serveur, attachée à un compte.`} <button type="button" class="btn ghost sm" data-act="auth-open">${tr`Créer un compte ou me connecter`}</button></p>` : ""}
+    <div class="field-row">${signedIn() ? field(known?.cle ? tr`Clé API Anthropic (enregistrée : ${known.indice || ""})` : tr`Clé API Anthropic`, (id) => `<input type="password" aria-labelledby="${id}" data-act="as-key" value="" placeholder="${known?.cle ? tr`Coller une autre clé pour la remplacer` : "sk-ant-…"}" autocomplete="off">`, { tip: TIPS.assistantKey }) : ""}
     ${field(tr`Modèle`, (id) => `<select aria-labelledby="${id}" data-act="as-model">${[["claude-haiku-4-5-20251001", tr`Haiku 4.5, rapide et peu cher`], ["claude-sonnet-5", tr`Sonnet 5, équilibré`], ["claude-opus-5-5", tr`Opus 5.5, le plus capable`]].map(([k, l]) => opt(k, l, a.model)).join("")}</select>`, { tip: TIPS.assistantModel })}</div>
     <div class="row" style="margin-top:12px"><label class="check-l"><input type="checkbox" data-act="as-actions" ${a.actions ? "checked" : ""}>${tr`Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)`}</label>${tip(TIPS.assistantActions, about(tr`Autoriser Claude à modifier le tableau de bord`))}</div>
     <div class="fld-h" style="margin:16px 0 6px"><span>${tr`Ce que Claude peut lire`}</span>${tip(TIPS.assistantShare, about(tr`Ce que Claude peut lire`))}</div><div class="row">${Object.keys(a.share).filter(enabled).map((k) => `<label class="check-l"><input type="checkbox" data-act="as-share" data-k="${esc(k)}" ${a.share[k] ? "checked" : ""}>${esc(label(k))}</label>`).join("")}</div>

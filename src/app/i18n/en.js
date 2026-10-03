@@ -1292,6 +1292,7 @@ export default {
   "Rien à créer : tout reste sur cet appareil. Un compte, plus tard, le retrouve sur tes autres appareils, avec ce que tu auras noté.": "Nothing to create: everything stays on this device. An account, later, brings it to your other devices, along with what you will have noted.",
   "Sans compte : tout reste sur cet appareil, et rien de ce que tu écris ne part ailleurs. Effacer les données du navigateur, ou désinstaller l'app, efface tout : exporte une sauvegarde de temps en temps. Un compte retrouve ton espace sur tes autres appareils ; ce que tu as noté ici le rejoint.": "Without an account: everything stays on this device, and nothing you write goes anywhere else. Clearing the browser's data, or uninstalling the app, erases everything: export a backup from time to time. An account brings your space to your other devices; what you have noted here joins it.",
   "Créer un compte ou me connecter": "Create an account or sign in",
+  "Sans compte, pas d'assistant : ta clé serait gardée sur le serveur, attachée à un compte.": "No assistant without an account: your key would be kept on the server, attached to an account.",
   "E-mail": "Email",
   "Mot de passe": "Password",
   "Créer le compte": "Create the account",
