@@ -15,13 +15,14 @@ const sessionBody = { access_token: 'new', refresh_token: 'new-r', expires_in: 3
 
 /* Imite PostgREST pour ce que l'app utilise : GET filtré, POST ignore-duplicates,
    PATCH conditionnel sur `col->>champ` avec Prefer: return=representation. */
-function fakeSupabase() {
+function fakeSupabase({ appMetadata } = {}) {
   const server = { rows: new Map(), calls: [], selects: [], offline: false, beforePatch: null, maxBytes: Infinity };
+  const token = appMetadata ? { ...sessionBody, user: { ...USER, app_metadata: appMetadata } } : sessionBody;
   server.fetch = async (url, opts = {}) => {
     if (server.offline) throw new TypeError('Failed to fetch');
     const u = new URL(url), method = opts.method || 'GET';
     server.calls.push(`${method} ${u.pathname}`);
-    if (u.pathname === '/auth/v1/token') return reply(200, sessionBody);
+    if (u.pathname === '/auth/v1/token') return reply(200, token);
     if (u.pathname === '/auth/v1/logout') return reply(204, {});
     if (u.pathname !== '/rest/v1/app_state') return reply(404, {});
     const uid = (u.searchParams.get('user_id') || '').replace(/^eq\./, ''), row = server.rows.get(uid);
@@ -53,11 +54,12 @@ function fakeSupabase() {
   return server;
 }
 
-function launchHosted({ storage = new Map(), fetch, session = 'valid', bare = false } = {}) {
+/* `personnel` : le compte marqué selene_personnel par le serveur (docs/regulation.md, « Hors de l'offre publique »). */
+function launchHosted({ storage = new Map(), fetch, session = 'valid', bare = false, personnel = false } = {}) {
   if (!bare && !storage.has('selene-site-v1')) storage.set('selene-site-v1', DEMO);
   if (session) {
     const expires_at = Math.floor(Date.now() / 1000) + (session === 'valid' ? 3600 : -60);
-    storage.set('selene-auth-session', JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at, user: USER }));
+    storage.set('selene-auth-session', JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at, user: personnel ? { ...USER, personnel: true } : USER }));
     storage.set('selene-auth-last-uid', USER.id);
   }
   const nodes = new Map();

@@ -20,7 +20,7 @@ import { gcfg, groupBy, grouperFor } from "../modules/groups.js";
 import { skySettingsHTML } from "../scene/sky.js";
 import { authReady, authSession, deleteWord, passwordSettingsHTML } from "../services/auth.js";
 import { passeurSettingsHTML } from "../services/passeur.js";
-import { addModule, moveMod } from "../shell/actions.js";
+import { addModule, moveMod, offered } from "../shell/actions.js";
 import { SYSTEM, openOn, routeOf } from "../shell/nav.js";
 import { render } from "../shell/render.js";
 import { roman, sigil, sigilPicker, tintOf } from "../shell/sigils.js";
@@ -102,9 +102,9 @@ function espacesHTML(s, c) {
     <div class="modlist">${c.modules.map((m, i) => modBlock(s, m, i)).join("")}</div>
     <details id="mod-new" class="newmod"><summary class="btn sm">+ ${esc(TEXTS.create)}</summary><div class="newmod-body">
       ${sub(TEXTS.fromTemplate, TIPS.creer)}<p class="hint">${esc(TEXTS.fromTemplateHint)}</p>
-      <div class="tpl-grid">${MODULE_TEMPLATES.map(t => `<div class="tpl"><div><b>${esc(tr(t.name))}</b><p class="hint">${esc(tr(t.hint))}</p></div><button type="button" class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}" aria-label="${esc(TEXTS.addAria(tr(t.name)))}">${esc(TEXTS.add)}</button></div>`).join("")}</div>
+      <div class="tpl-grid">${MODULE_TEMPLATES.filter(t => offered(t.type)).map(t => `<div class="tpl"><div><b>${esc(tr(t.name))}</b><p class="hint">${esc(tr(t.hint))}</p></div><button type="button" class="btn sm" data-act="tpl-add" data-tpl="${esc(t.id)}" aria-label="${esc(TEXTS.addAria(tr(t.name)))}">${esc(TEXTS.add)}</button></div>`).join("")}</div>
       ${sub(TEXTS.custom)}<p class="hint">${esc(TEXTS.customHint)}</p>
-      <div class="field-row"><label>${tr`Modèle ou type`}<select id="newModType"><optgroup label="${tr`Modèles`}">${MODULE_TEMPLATES.map(t => `<option value="tpl:${esc(t.id)}" title="${esc(tr(t.hint))}">${esc(tr(t.name))}</option>`).join("")}</optgroup><optgroup label="${tr`Types vides`}">${Object.entries(MODULE_TYPES).map(([k, t]) => `<option value="${esc(k)}" title="${esc(tr(t.label))}">${esc(typeName(k))}</option>`).join("")}</optgroup></select></label>
+      <div class="field-row"><label>${tr`Modèle ou type`}<select id="newModType"><optgroup label="${tr`Modèles`}">${MODULE_TEMPLATES.filter(t => offered(t.type)).map(t => `<option value="tpl:${esc(t.id)}" title="${esc(tr(t.hint))}">${esc(tr(t.name))}</option>`).join("")}</optgroup><optgroup label="${tr`Types vides`}">${Object.entries(MODULE_TYPES).filter(([k]) => offered(k)).map(([k, t]) => `<option value="${esc(k)}" title="${esc(tr(t.label))}">${esc(typeName(k))}</option>`).join("")}</optgroup></select></label>
       <label>${tr`Nom`}<input id="newModName" placeholder="${tr`Nom du modèle si vide`}"></label></div>
       <button class="btn sm" data-act="mod-add" style="margin-top:8px">${esc(TEXTS.add)}</button></div></details>`;
 }

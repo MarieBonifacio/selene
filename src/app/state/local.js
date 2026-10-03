@@ -1,4 +1,4 @@
-/* « Sur cet appareil seulement » (ADR 27, docs/regulation.md) : les suivis sensibles que la personne ne synchronise pas.
+/* « Sur cet appareil seulement » (ADR 27, docs/regulation.md) : les suivis sensibles, que Selene ne synchronise plus.
    Un second document, tenu par le même store que le site (makeStore), mais jamais relié au serveur. Le document
    synchronisé n'en garde qu'un talon (core/regulation.js, regulationStub) : le nom, la présence, l'appareil détenteur.
    Ce fichier ne lit pas le site lui-même (site.js l'importe : il lui passe son document) ; il garde :
@@ -40,16 +40,6 @@ export function moveToDevice(siteDoc, id) {
   local.data.modules[id] = full;
   siteDoc.modules[id] = regulationStub(inst, me);
   if (!local.data.owner) local.data.owner = lastUid();
-  return full;
-}
-/* Retour au compte, avec l'accord daté : le contenu revient dans le site, le document local l'oublie. Le nom est celui
-   du talon (on a pu le renommer ailleurs entre-temps). */
-export function moveToAccount(siteDoc, id, consent) {
-  const full = clone(localCopy(id)), stub = siteDoc.modules[id];
-  if (stub) full.label = stub.label;
-  full.config.storage = "account"; full.config.consent = consent; delete full.config.holder;
-  siteDoc.modules[id] = full;
-  delete local.data.modules[id];
   return full;
 }
 export function forgetLocal(id) { if (localCopy(id)) { delete local.data.modules[id]; local.save(); } }

@@ -422,9 +422,11 @@ const answer = (app, ok) => { const d = app.nodes.get('#cdlg') || app.$('#cdlg')
 const SECRET = ['CONFIDENTIEL_XYZ', 'SECRET_ABC', 'PONT_SECRET', 'RECOMPENSE_SECRETE'];
 const leaks = text => SECRET.filter(s => String(text).includes(s));
 
+/* Un suivi déjà là : installé sans passer par le catalogue, où l'espace n'est plus proposé hors du compte personnel
+   (« Hors de l'offre publique ») ; un suivi existant reste ouvert à tous. */
 function privateTracker(app, name = 'Suivi privé') {
   const tpl = app.localTemplate(app.MODULE_TEMPLATES.find(t => t.id === 'regulation'));
-  app.addModule(tpl, name);
+  app.installModule(tpl, name);
   const id = app.S().config.modules[app.S().config.modules.length - 1].id, inst = app.S().modules[id], today = app.todayISO();
   app.setupRegulation(inst, { subject: 'alcool', date: app.addDaysTo(today, -20), mode: 'reduire', limit: 2 }, 'g', today, 1);
   for (let i = 0; i < 20; i++) {
@@ -443,7 +445,7 @@ test('partage avec l’assistant désactivé à la création, depuis le modèle 
   const app = launch();
   const { id } = privateTracker(app);
   assert.equal(app.S().config.assistant.share[id], false);
-  app.addModule({ type: 'regulation' }, 'Type vide');
+  app.installModule({ type: 'regulation' }, 'Type vide');
   const empty = app.S().config.modules.find(m => app.label(m.id) === 'Type vide').id;
   assert.equal(app.S().config.assistant.share[empty], false);
   app.addModule({ type: 'notes' }, 'Carnet ordinaire');
@@ -524,7 +526,7 @@ test('l’écran du module : textes échappés, quatre actions, alcool informé 
   assert.match(html, /0 980 980 930/);
   assert.match(html, /verres standard/);
   // Un suivi qui n'est pas l'alcool ne reçoit pas l'avertissement.
-  app.addModule({ type: 'regulation' }, 'Écrans');
+  app.installModule({ type: 'regulation' }, 'Écrans');
   const sid = app.S().config.modules.find(m => app.label(m.id) === 'Écrans').id, s2 = app.S().modules[sid];
   app.setupRegulation(s2, { subject: 'reseaux', date: app.todayISO(), mode: 'observer' }, 'g', app.todayISO(), 1);
   const h2 = app.TYPE_UI.regulation.view(sid);
@@ -548,16 +550,26 @@ const { fakeSupabase, launchHosted, settle } = require('./hosted-harness');
 const tick = () => new Promise(r => setTimeout(r, 0));
 const confirmBox = async (app, ok) => { await tick(); const d = app.$('#cdlg'); d.returnValue = ok ? 'ok' : 'cancel'; d.onclose(); await tick(); };
 const serverSite = server => server.rows.get('u1').site;
-/* Créer et configurer un suivi par les vrais formulaires : nom et sujet (et stockage), puis l'intention. */
-async function setupTracker(app, { storage = 'device', consent = true, name = 'Carnet du soir' } = {}) {
+/* Le compte personnel (le seul à qui l'espace est proposé), connecté à un faux serveur. */
+const personal = (opts = {}) => launchHosted({ personnel: true, ...opts });
+/* Créer et configurer un suivi par les vrais formulaires : nom et sujet, puis l'intention. */
+async function setupTracker(app, { name = 'Carnet du soir' } = {}) {
   app.addModule(app.localTemplate(app.MODULE_TEMPLATES.find(t => t.id === 'regulation')), 'Reprendre la main');
   const id = app.S().config.modules[app.S().config.modules.length - 1].id;
   app.CLICK['rlm-setup']({ dataset: { mod: id } });
-  const first = app.form({ name, subject: 'alcool', storage });
-  if (storage === 'account') await confirmBox(app, consent);
-  await first;
-  if (storage === 'account' && !consent) return id;
+  await app.form({ name, subject: 'alcool' });
   app.form({ mode: 'reduire', limit: '2', date: app.todayISO() });
+  return id;
+}
+/* Un suivi encore synchronisé, comme en laissait la version d'avant le 3 octobre 2026 : avec un accord daté, ou d'avant
+   la question (sans accord). */
+async function legacyTracker(app, server, { consent = true, name = 'Ancien' } = {}) {
+  app.installModule({ type: 'regulation' }, name);
+  const id = app.S().config.modules[app.S().config.modules.length - 1].id, inst = app.S().modules[id];
+  app.setupRegulation(inst, { subject: 'tabac', date: app.todayISO(), mode: 'observer' }, 'g', app.todayISO(), 1);
+  if (consent) { inst.config.storage = 'account'; inst.config.consent = { at: Date.now() - 864e5, version: app.REGULATION_CONSENT_VERSION }; }
+  addUse(app, id, 3); await app.site.sync();
+  assert.equal(serverSite(server).modules[id].entries.length, 1, 'avant : le contenu est sur le serveur');
   return id;
 }
 const addUse = (app, id, value = 1.5, note = 'NOTE_PRIVEE') => {
@@ -566,8 +578,8 @@ const addUse = (app, id, value = 1.5, note = 'NOTE_PRIVEE') => {
   app.site.save(); app.local.save();
 };
 
-test('sur cet appareil seulement (choix par défaut) : le serveur ne reçoit que le talon, jamais le contenu', async () => {
-  const server = fakeSupabase(), app = launchHosted({ fetch: server.fetch }); await settle();
+test('sur cet appareil seulement, sans question : le serveur ne reçoit que le talon, jamais le contenu', async () => {
+  const server = fakeSupabase(), app = personal({ fetch: server.fetch }); await settle();
   const id = await setupTracker(app);
   addUse(app, id); await app.site.sync();
   const stub = serverSite(server).modules[id];
@@ -585,53 +597,83 @@ test('sur cet appareil seulement (choix par défaut) : le serveur ne reçoit que
   app.site.disconnect(); app.board.disconnect();
 });
 
-test('sur mon compte : seulement avec un accord daté et versionné ; refuser ne configure rien', async () => {
-  const server = fakeSupabase(), app = launchHosted({ fetch: server.fetch }); await settle();
-  const refused = await setupTracker(app, { storage: 'account', consent: false });
-  assert.equal(app.S().modules[refused].config.subject, null, 'pas d’accord : pas de configuration');
-  assert.equal(app.S().modules[refused].config.storage, undefined);
-  const id = await setupTracker(app, { storage: 'account', name: 'Synchronisé' });
-  assert.match(app.$('#cmsg').textContent, /données de santé.*sans chiffrement de bout en bout.*Confirmer vaut accord/s);
-  const c = app.S().modules[id].config;
-  assert.equal(c.storage, 'account'); assert.equal(c.consent.version, app.REGULATION_CONSENT_VERSION); assert.ok(c.consent.at > 0);
-  addUse(app, id); await app.site.sync();
-  assert.equal(serverSite(server).modules[id].entries.length, 1, 'avec l’accord, le contenu est synchronisé');
-  assert.equal(app.localCopy(id), null);
+test('plus de synchronisation : ni choix du compte à la création, ni action pour y revenir', async () => {
+  const server = fakeSupabase(), app = personal({ fetch: server.fetch }); await settle();
+  app.addModule(app.localTemplate(app.MODULE_TEMPLATES.find(t => t.id === 'regulation')), 'Reprendre la main');
+  const id = app.S().config.modules[app.S().config.modules.length - 1].id;
+  app.CLICK['rlm-setup']({ dataset: { mod: id } });
+  assert.doesNotMatch(app.$('#form').innerHTML, /name="storage"/, 'aucun choix « sur mon compte »');
+  assert.match(app.$('#form').innerHTML, /Selene ne synchronise pas les suivis de santé/);
+  await app.form({ name: 'Carnet', subject: 'alcool' });
+  assert.equal(app.S().modules[id].config.storage, 'device', 'gardé sur l’appareil, sans question');
+  assert.equal(app.CLICK['rlm-account'], undefined, 'aucune action ne synchronise un suivi');
+  assert.doesNotMatch(app.TYPE_UI.regulation.view(id), /rlm-account|Synchroniser avec mon compte/);
   app.site.disconnect(); app.board.disconnect();
 });
 
-test('retirer l’accord : le contenu revient sur l’appareil, le serveur n’a plus que le talon ; et retour au compte', async () => {
-  const server = fakeSupabase(), app = launchHosted({ fetch: server.fetch }); await settle();
-  const id = await setupTracker(app, { storage: 'account' });
-  addUse(app, id); await app.site.sync();
+test('un suivi encore synchronisé avec un accord : un bandeau, puis gardé sur l’appareil ; jamais l’inverse', async () => {
+  const server = fakeSupabase(), app = personal({ fetch: server.fetch }); await settle();
+  const id = await legacyTracker(app, server);
+  const view = app.TYPE_UI.regulation.view(id);
+  assert.match(view, /Ce suivi doit revenir sur un appareil/); assert.match(view, /data-act="rlm-device"/);
+  assert.doesNotMatch(view, /rlm-account/);
+  assert.match(view, /Encore synchronisé avec ton compte, selon ton accord du/);
+  await app.site.sync();
+  assert.equal(serverSite(server).modules[id].entries.length, 1, 'rien ne change tant que la personne n’a pas choisi');
   const back = app.CLICK['rlm-device']({ dataset: { mod: id } });
   assert.match(app.$('#cmsg').textContent, /sauvegardes techniques de l'hébergeur/);
   await confirmBox(app, true); await back; await app.site.sync();
-  assert.equal(serverSite(server).modules[id].entries.length, 0); assert.equal(serverSite(server).modules[id].config.consent, undefined);
+  assert.equal(serverSite(server).modules[id].entries.length, 0, 'le serveur n’a plus que le talon');
+  assert.equal(serverSite(server).modules[id].config.consent, undefined);
   assert.equal(app.localCopy(id).entries.length, 1, 'rien de perdu');
-  const again = app.CLICK['rlm-account']({ dataset: { mod: id } }); await confirmBox(app, true); await again; await app.site.sync();
-  assert.equal(serverSite(server).modules[id].entries.length, 1); assert.equal(app.localCopy(id), null);
+  assert.doesNotMatch(app.TYPE_UI.regulation.view(id), /rlm-choice|rlm-account/, 'plus de bandeau, et pas de retour au compte');
   app.site.disconnect(); app.board.disconnect();
 });
 
-test('un suivi synchronisé d’avant la question : un bandeau demande le choix, rien ne change en silence', async () => {
-  const server = fakeSupabase(), app = launchHosted({ fetch: server.fetch }); await settle();
-  app.addModule({ type: 'regulation' }, 'Ancien');
-  const id = app.S().config.modules[app.S().config.modules.length - 1].id, inst = app.S().modules[id];
-  app.setupRegulation(inst, { subject: 'tabac', date: app.todayISO(), mode: 'observer' }, 'g', app.todayISO(), 1); // comme avant ce choix
-  assert.match(app.TYPE_UI.regulation.view(id), /data-act="rlm-device"[\s\S]*data-act="rlm-account"/);
-  assert.match(app.TYPE_UI.regulation.view(id), /Rien ne change tant que tu n'as pas choisi/);
+test('un suivi synchronisé d’avant la question : le même bandeau, rien ne change en silence ; sans compte, pas de question', async () => {
+  const server = fakeSupabase(), app = launchHosted({ fetch: server.fetch }); await settle(); // un compte ordinaire : le suivi reste ouvert
+  const id = await legacyTracker(app, server, { consent: false });
+  assert.match(app.TYPE_UI.regulation.view(id), /Ce suivi doit revenir sur un appareil[\s\S]*data-act="rlm-device"/);
+  assert.match(app.TYPE_UI.regulation.view(id), /Encore synchronisé avec ton compte, depuis sa création/);
+  assert.match(app.TYPE_UI.regulation.view(id), /Tant que tu n'as pas choisi, rien ne change/);
   assert.equal(app.S().modules[id].config.subject, 'tabac', 'les données restent où elles sont');
   const artefact = launch(); // sans compte (artefact) : pas de question, rien à synchroniser
-  artefact.addModule({ type: 'regulation' }, 'Local');
+  artefact.installModule({ type: 'regulation' }, 'Local');
   const lid = artefact.S().config.modules[artefact.S().config.modules.length - 1].id;
   artefact.setupRegulation(artefact.S().modules[lid], { subject: 'tabac', date: artefact.todayISO(), mode: 'observer' }, 'g', artefact.todayISO(), 1);
   assert.doesNotMatch(artefact.TYPE_UI.regulation.view(lid), /rlm-choice|rlm-device/);
   app.site.disconnect(); app.board.disconnect();
 });
 
+test('hors de l’offre publique : l’espace n’est proposé qu’au compte marqué personnel par le serveur', async () => {
+  const offeredIn = app => {
+    const reg = app.VIEWS.reglages();
+    return { grid: /data-tpl="regulation"/.test(reg), option: /<option value="(tpl:)?regulation"/.test(reg) };
+  };
+  const artefact = launch(); // sans compte
+  assert.deepEqual(offeredIn(artefact), { grid: false, option: false }, 'sans compte : ni modèle ni type');
+  artefact.S().config.welcome = true;
+  assert.doesNotMatch(artefact.VIEWS.accueil(), /data-tpl="regulation"/, 'ni dans « Composer ton espace »');
+  const before = artefact.S().config.modules.length;
+  artefact.addModule(artefact.localTemplate(artefact.MODULE_TEMPLATES.find(t => t.id === 'regulation')), 'Contourné');
+  artefact.CLICK['tpl-add']({ dataset: { tpl: 'regulation' } });
+  assert.equal(artefact.S().config.modules.length, before, 'la création elle-même refuse');
+  assert.equal(artefact.offered('notes'), true, 'les autres types restent proposés');
+  const server = fakeSupabase(), other = launchHosted({ fetch: server.fetch }); await settle();
+  assert.deepEqual(offeredIn(other), { grid: false, option: false }, 'un compte ordinaire : pas proposé');
+  const me = personal({ fetch: fakeSupabase().fetch }); await settle();
+  assert.deepEqual(offeredIn(me), { grid: true, option: true }, 'le compte personnel : proposé');
+  // La marque vient des métadonnées serveur (app_metadata), lues à chaque session reçue ; la page ne peut pas l'écrire.
+  for (const [meta, expected] of [[{ selene_personnel: true }, true], [{ selene_personnel: 'true' }, false], [{}, false]]) {
+    const srv = fakeSupabase({ appMetadata: meta }), a = launchHosted({ fetch: srv.fetch, session: 'expired' }); await settle();
+    assert.equal(a.personalAccount(), expected, JSON.stringify(meta));
+    a.site.disconnect(); a.board.disconnect();
+  }
+  for (const x of [other, me]) { x.site.disconnect(); x.board.disconnect(); }
+});
+
 test('un autre appareil du compte : le nom seulement ; les données renvoyées reviennent au détenteur ; retirer le nom ailleurs', async () => {
-  const server = fakeSupabase(), a = launchHosted({ fetch: server.fetch }); await settle();
+  const server = fakeSupabase(), a = personal({ fetch: server.fetch }); await settle();
   const id = await setupTracker(a); addUse(a, id); await a.site.sync();
   const b = launchHosted({ fetch: server.fetch, storage: new Map([['selene-device-id', 'dB']]) }); await settle();
   assert.ok(b.S().modules[id], 'le talon arrive'); assert.equal(b.localCopy(id), null);
@@ -662,27 +704,23 @@ test('un autre appareil du compte : le nom seulement ; les données renvoyées r
   for (const x of [a, b]) { x.site.disconnect(); x.board.disconnect(); }
 });
 
-test('se déconnecter avec un suivi gardé ici : exporter, synchroniser ou effacer, jamais une perte silencieuse', async () => {
-  const server = fakeSupabase(), app = launchHosted({ fetch: server.fetch }); await settle();
-  const id = await setupTracker(app); addUse(app, id);
-  // Synchroniser avant de partir : l'accord, puis le contenu sur le serveur, puis la déconnexion.
-  let out = app.authSignOut(); await tick();
+test('se déconnecter avec un suivi gardé ici : exporter ou effacer, jamais une perte silencieuse', async () => {
+  const server = fakeSupabase(), app = personal({ fetch: server.fetch }); await settle();
+  const id = await setupTracker(app, { name: 'Éphémère' }); addUse(app, id);
+  const out = app.authSignOut(); await tick();
   assert.ok(app.formOpen(), 'la garde s’ouvre avant tout effacement');
-  const done = app.form({ what: 'sync' }); await confirmBox(app, true); await done; await out;
-  assert.equal(serverSite(server).modules[id].entries.length, 1, 'synchronisé avant la déconnexion');
-  assert.equal(app.session(), null);
-  // Effacer : une confirmation de plus, puis plus rien sur l'appareil.
-  const app2 = launchHosted({ fetch: server.fetch }); await settle();
-  const id2 = await setupTracker(app2, { name: 'Éphémère' }); addUse(app2, id2);
-  out = app2.authSignOut(); await tick();
-  const erase = app2.form({ what: 'erase' }); await confirmBox(app2, true); await erase; await out;
-  assert.deepEqual(app2.localIds().length, 0); assert.equal(app2.session(), null);
-  assert.ok(![...app2.storage.keys()].some(k => k.startsWith('selene-local-v1:')), 'aucune copie mise de côté');
-  for (const x of [app, app2]) { x.site.disconnect(); x.board.disconnect(); }
+  const f = app.$('#form').innerHTML;
+  assert.match(f, /value="export"/); assert.match(f, /value="erase"/);
+  assert.doesNotMatch(f, /value="sync"/, 'plus de synchronisation proposée en partant');
+  const erase = app.form({ what: 'erase' }); await confirmBox(app, true); await erase; await out;
+  assert.deepEqual(app.localIds().length, 0); assert.equal(app.session(), null);
+  assert.ok(![...app.storage.keys()].some(k => k.startsWith('selene-local-v1:')), 'aucune copie mise de côté');
+  assert.doesNotMatch(JSON.stringify(serverSite(server)), /NOTE_PRIVEE/, 'rien n’est parti au serveur');
+  app.site.disconnect(); app.board.disconnect();
 });
 
 test('changement de compte sur le même appareil : les suivis locaux suivent leur compte, jamais montrés à l’autre', async () => {
-  const server = fakeSupabase(), app = launchHosted({ fetch: server.fetch }); await settle();
+  const server = fakeSupabase(), app = personal({ fetch: server.fetch }); await settle();
   const id = await setupTracker(app); addUse(app, id);
   assert.equal(app.local.data.owner, 'u1');
   app.localSwitch('u2');
@@ -694,7 +732,7 @@ test('changement de compte sur le même appareil : les suivis locaux suivent leu
 });
 
 test('sauvegarde complète : le contenu gardé sur l’appareil y est ; restauré ailleurs, cet appareil en devient le détenteur', async () => {
-  const server = fakeSupabase(), app = launchHosted({ fetch: server.fetch }); await settle();
+  const server = fakeSupabase(), app = personal({ fetch: server.fetch }); await settle();
   const id = await setupTracker(app); addUse(app, id);
   const file = app.createBackup(app.board.data, app.withLocal(app.site.data));
   const parsed = app.parseBackup(file);

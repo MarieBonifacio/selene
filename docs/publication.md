@@ -42,20 +42,18 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
      `https://mariebonifacio.github.io/selene/privacy.html`, pour une fiche anglaise) ;
    - Sécurité des données : collecte l'adresse e-mail (gestion du compte) et le contenu créé (fonctionnement de
      l'app), et la position approximative (le lieu du ciel, arrondi à ~10 km, facultatif : fonctionnalité de l'app),
-     liés au compte, non partagés, chiffrés en transit, supprimables par l'utilisateur (dans l'app). Depuis « Reprendre
-     la main » (docs/regulation.md), aussi **Santé et forme → Informations de santé** : facultatif (seulement si un suivi
-     est créé, et collecté seulement si la personne choisit de le synchroniser avec son compte, par un accord explicite ;
-     par défaut, il reste sur l'appareil, le serveur n'en a que le nom), fonctionnalité de l'app, lié au compte, non
-     partagé (le résumé envoyé à l'assistant part à la demande de la personne, avec sa propre clé), supprimable ;
-   - Applications de santé : si la Console présente la déclaration des fonctionnalités de santé, y décrire un suivi
-     personnel autodéclaratif (tabac, cannabis, alcool, réseaux sociaux), sans diagnostic, sans dispositif médical,
-     sans lien avec un soignant ;
+     liés au compte, non partagés, chiffrés en transit, supprimables par l'utilisateur (dans l'app). Aucune information
+     de santé : « Reprendre la main » est hors de l'offre publique, et ses données ne quittent pas l'appareil
+     (docs/regulation.md, « Hors de l'offre publique ») ;
+   - **Avant l'envoi** : exclure le type « Reprendre la main » de la version des stores, à la construction. Le masquer
+     ne suffit pas : la règle 2.3.1 d'Apple refuse les fonctions cachées, et une fonction de santé présente dans l'app
+     appellerait les déclarations ci-dessus ;
+   - Applications de santé : aucune déclaration, Selene n'en est pas une une fois ce type exclu ;
    - Suppression du compte : dans l'app (Réglages → Compte), et l'adresse de la politique pour la demander ;
-   - Publicités : non. Public cible : adultes. Questionnaire de classification : des **références** au tabac, à
-     l'alcool et aux drogues (le cannabis), dans un outil de suivi et de réduction, sans incitation ni vente : à
-     déclarer comme telles (l'âge minimal peut monter) ; aucun autre contenu sensible.
-   - Fiche : présenter « Reprendre la main » comme un carnet de suivi et de réduction, jamais comme un traitement ni
-     un dispositif médical (pas d'efficacité clinique revendiquée).
+   - Publicités : non. Public cible : adultes. Questionnaire de classification : aucun contenu sensible, « Reprendre la
+     main » exclu de la version envoyée. S'il y restait, il faudrait déclarer des références au tabac, à l'alcool et aux
+     drogues, ce qui peut relever l'âge minimal.
+   - Fiche : ne pas présenter « Reprendre la main ».
 6. **La fiche** : description, icône 512 px (`icon-512.png`), image de présentation 1024 × 500, au moins deux captures
    d'écran de téléphone : `npm run screenshots` (ou Actions → Captures → Run workflow, polices comprises) les produit
    dans `dist/store/fr/android/`, en 1080 × 1920, sur un espace de démonstration fictif ; la fiche anglaise prend
@@ -76,9 +74,9 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
 5. **TestFlight** : après l'envoi, la version apparaît dans TestFlight (quelques minutes de traitement) ; l'installer
    par l'app TestFlight sur l'iPhone.
 6. **Les formulaires** : Confidentialité de l'app (mêmes réponses que pour Google Play : e-mail, contenu, position
-   approximative et, pour « Reprendre la main », **Santé et forme → Santé**, liés à l'identité, pas de suivi
-   publicitaire), classification par âge (références à l'alcool, au tabac et aux drogues : occasionnelles, dans un
-   outil de réduction ; règle 1.4.3 : l'app n'encourage aucune consommation), adresse de la politique, catégorie
+   approximative, liés à l'identité, pas de suivi publicitaire, aucune donnée de santé une fois « Reprendre la main »
+   exclu de la version envoyée), classification par âge (aucun contenu sensible, pour la même raison), adresse de la
+   politique, catégorie
    Productivité, captures d'écran 6,9 pouces
    (`dist/store/fr/ios/` et `dist/store/en/ios/`, 1320 × 2868, par la même commande).
 

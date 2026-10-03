@@ -290,6 +290,9 @@ export const MODULE_TYPES = {
   },
   regulation: {
     label: "Reprendre la main (tabac, cannabis, alcool ou réseaux sociaux)",
+    // Hors de l'offre publique (docs/regulation.md) : proposé au seul compte que le serveur marque « personnel ». Un suivi
+    // existant reste ouvert à tous ceux qui en ont un.
+    personal: true,
     // Suivi sensible (docs/regulation.md) : règles dans regulation.js ; aucun texte versé aux analyses transversales.
     defaults: () => regulationDefaults(),
     normalize: inst => normalizeRegulation(inst),

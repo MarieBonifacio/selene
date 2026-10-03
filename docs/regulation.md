@@ -5,6 +5,35 @@ observer, réduire avec une limite quotidienne choisie, ou viser l'arrêt. C'est
 aucun diagnostic, ne calcule aucun protocole de sevrage, ne recommande aucune dose et ne dit jamais qu'une quantité est
 sans risque. Décision d'architecture : [ADR 26](architecture.md#adr-26--reprendre-la-main--un-suivi-sensible-dans-un-type-de-module).
 
+## Hors de l'offre publique
+
+Depuis le 3 octobre 2026 (décision T3 de l'audit), Selene ne propose plus cet espace au public, et ne synchronise plus
+aucun suivi :
+
+- **Proposé au seul compte personnel.** Le modèle et le type n'apparaissent dans l'accueil et les Réglages que pour le
+  compte dont les métadonnées serveur portent `selene_personnel` (`MODULE_TYPES.regulation.personal`,
+  `offered` dans `shell/actions.js`). Ces métadonnées (`app_metadata`) ne s'écrivent qu'avec la clé serveur, jamais
+  depuis la page. Sans compte (artefact claude.ai, ou déconnectée), l'espace n'est pas proposé.
+- **Rien ne disparaît.** Un suivi déjà créé reste ouvert, sur tout compte et sur tout appareil.
+- **Sur l'appareil seulement.** Un nouveau suivi est gardé sur l'appareil où il est configuré ; aucun chemin ne le
+  synchronise. Un suivi encore synchronisé (avec un accord daté, ou d'avant la question) affiche un bandeau, « Ce suivi
+  doit revenir sur un appareil » : le garder sur cet appareil le ramène, et le serveur n'en a plus que le talon à la
+  synchronisation suivante. Selene ne choisit pas l'appareil à la place de la personne : tant qu'elle n'a pas choisi,
+  rien ne change.
+
+Marquer son compte, une fois, dans l'éditeur SQL de Supabase (avec l'adresse du compte Selene) :
+
+```sql
+update auth.users set raw_app_meta_data = raw_app_meta_data || '{"selene_personnel": true}'::jsonb
+where email = 'adresse-du-compte@exemple.fr';
+```
+
+La session ouverte reçoit la marque à son rafraîchissement suivant, dans l'heure. **Ne pas se déconnecter pour
+l'obtenir plus vite** : la déconnexion vide l'appareil, et un suivi gardé là serait perdu sans export.
+
+**Avant une publication sur l'App Store** : la règle 2.3.1 d'Apple refuse les fonctions cachées. Les versions des
+stores devront exclure ce type à la construction, plutôt que le masquer.
+
 ## Parcours
 
 1. **Créer** : modèle « Reprendre la main » (accueil, ou Réglages → Espaces → Créer ; il est proposé en dernier), ou
@@ -159,20 +188,17 @@ Trois questions distinctes, à ne pas confondre :
   déclencheurs, appuis ni la récompense. Ce résumé est affiché en permanence dans « Confidentialité et données ».
   Arrêter le partage empêche les envois suivants ; ce qui a déjà été envoyé n'est pas retiré (la conversation se
   trouve dans l'Assistant, sur l'appareil).
-- **Stockage (ADR 27).** Dans les versions hébergées (site, Android, iOS, Windows), un compte est obligatoire : sans le
-  choix qui suit, tout suivi serait sur le serveur. À la configuration, connectée, la personne choisit :
-  - **sur cet appareil seulement** (présélectionné, protection des données par défaut, RGPD art. 25) : le contenu vit
-    dans un second document local (`selene-local-v1`), jamais envoyé ; le document synchronisé n'en garde qu'un
-    **talon** (nom, présence, appareil détenteur `holder`), ni sujet, ni appuis, ni objectifs, ni journal ;
-  - **sur mon compte** : seulement après avoir confirmé un texte d'accord (données de santé, serveur de Selene chez
-    Supabase, lisible par le seul compte, sans chiffrement de bout en bout, retrait possible) ; l'accord est daté et
-    versionné (`config.consent`), un texte changé le redemandera.
+- **Stockage (ADR 27).** Dans les versions hébergées (site, Android, iOS, Windows), un compte est obligatoire, et tout
+  le reste du site est synchronisé. Un suivi configuré par une personne connectée est gardé **sur cet appareil
+  seulement** : son contenu vit dans un second document local (`selene-local-v1`), jamais envoyé ; le document
+  synchronisé n'en garde qu'un **talon** (nom, présence, appareil détenteur `holder`), ni sujet, ni appuis, ni
+  objectifs, ni journal. Il n'y a plus de choix « sur mon compte » (voir « Hors de l'offre publique »).
 
-  On change d'avis dans « Confidentialité et données ». **Retirer l'accord** ramène le contenu sur l'appareil ; à la
-  synchronisation suivante, le serveur n'a plus que le talon (ses sauvegardes techniques suivent leur propre durée de
-  conservation, selon l'offre Supabase : à vérifier). Un suivi synchronisé d'avant cette question affiche un bandeau
-  de choix : rien ne change tant que la personne n'a pas choisi. Sans compte (artefact claude.ai), rien n'est envoyé :
-  pas de question.
+  Un suivi **encore synchronisé** (un accord daté `config.consent` donné avant le 3 octobre 2026, ou un suivi d'avant
+  la question) affiche un bandeau et, dans « Confidentialité et données », le bouton qui le garde sur cet appareil ; à
+  la synchronisation suivante, le serveur n'a plus que le talon (ses sauvegardes, 30 jours au plus, voir la politique
+  de confidentialité). Rien ne change tant que la personne n'a pas choisi. Sans compte (artefact claude.ai), rien n'est
+  envoyé : pas de question.
   - **Autres appareils du compte** : le talon seulement (« gardé sur un autre de tes appareils »), sans contenu. Un
     appareil resté hors ligne qui renvoie l'ancienne copie : le détenteur reprend ses saisies (la plus récente gagne) et
     le talon redevient vide (`absorbDeviceTrackers`). Supprimer le suivi depuis un autre appareil ne retire que son nom,
@@ -181,8 +207,7 @@ Trois questions distinctes, à ne pas confondre :
     identifiant d'appareil), le retrait est définitif. Sans cela, un appareil perdu laisserait un nom impossible à
     effacer.
   - **Déconnexion** (qui vide l'appareil) : une garde demande quoi faire de ce qui n'existe qu'ici — télécharger une
-    sauvegarde complète puis l'effacer, le synchroniser (avec l'accord), ou l'effacer (confirmé) ; annuler ne déconnecte
-    pas. **Changement de compte** sur le même appareil : les suivis locaux du compte précédent sont mis de côté
+    sauvegarde complète puis l'effacer, ou l'effacer (confirmé) ; annuler ne déconnecte pas. **Changement de compte** sur le même appareil : les suivis locaux du compte précédent sont mis de côté
     (`selene-local-v1:<compte>`), jamais montrés au suivant, retrouvés à son retour. **Suppression du compte** : effacés.
   - **Sauvegarde complète** : elle contient aussi le contenu gardé sur l'appareil (c'est un fichier que la personne
     télécharge). **Restaurée** sur un appareil, celui-ci en devient le détenteur ; un talon sans contenu (sauvegarde
@@ -240,14 +265,16 @@ Trois questions distinctes, à ne pas confondre :
   début du suivi, comparabilité, envies et « je l'ai fait » idempotent, marques, appuis et récompense, pause,
   corrections, fusions entre appareils (marques, confirmation, quantité tardive, suppression, conflit de sujet),
   sauvegardes (restauration, 21 imports invalides, version trop récente) ; le stockage sur l'appareil, sur un faux
-  serveur (le talon seul arrive au serveur, l'accord daté, refusé ou retiré, le bandeau des anciens suivis, l'autre
+  serveur (le talon seul arrive au serveur, le bandeau des suivis encore synchronisés, l'autre
   appareil, la reprise des saisies renvoyées, la garde de déconnexion, le changement de compte, la sauvegarde et la
   restauration, la forme des nouveaux champs) ; et, dans l'app assemblée, chaque surface :
   assistant, recherche, accueil, bilan, planche, widget, résumé du matin, test lunaire, dérive, statuts, liens,
   sortes, arc, rangement de notes, motifs ; partage confirmé depuis les Réglages ; échappement HTML ; formulaire commun.
 - `tests/browser/regulation-appareil.js` : deux appareils du même compte sur un faux Supabase, en lisant le serveur :
-  choix par défaut, talon seul, autre appareil, accord refusé puis donné puis retiré, garde de déconnexion.
-- `tests/browser/regulation.js` : le parcours complet sur téléphone (Chromium et WebKit en CI), dont la modification
+  pas de choix de stockage, talon seul, autre appareil, aucun chemin vers le compte, garde de déconnexion ; et l'espace
+  non proposé à un compte sans la marque `selene_personnel`.
+- `tests/browser/regulation.js` : l'espace absent sans compte, puis le parcours complet du compte personnel sur
+  téléphone (Chromium et WebKit en CI), aucune saisie sur le serveur, dont la modification
   arrivée d'un autre onglet pendant la confirmation, la pause au rechargement, le partage depuis les Réglages ; puis
   ordinateur, clavier, libellés et anglais.
 - `npm run check`, puis `npm run test:browser -- regulation` (`SELENE_BROWSER=webkit` pour WebKit ;
@@ -255,7 +282,8 @@ Trois questions distinctes, à ne pas confondre :
 
 ### Parcours manuel (cinq minutes)
 
-1. Accueil → « Reprendre la main » → Ajouter ; ouvrir l'espace. Réglages → Assistant : la case du suivi est décochée.
+1. Connectée au compte marqué `selene_personnel` : Accueil → « Reprendre la main » → Ajouter ; ouvrir l'espace.
+   Réglages → Assistant : la case du suivi est décochée. Sur un autre compte, l'espace n'est pas proposé.
 2. « Commencer » : nommer, choisir **Alcool** ; lire l'information sur le sevrage ; « Réduire », limite 2.
 3. « Noter une consommation » 1,5 ; « Faire mon point du jour » : la date et « 1,5 verre standard au total » s'affichent ;
    confirmer. Noter 1 de plus : la journée passe « à reconfirmer ».
@@ -266,6 +294,5 @@ Trois questions distinctes, à ne pas confondre :
 7. Accueil, Chercher (une note saisie), Bilan, planche : aucun détail. « Confidentialité et données » : lire le résumé ;
    « Partager… » montre le même texte avant de partager.
 8. Créer un second suivi **Tabac** : pas d'avertissement alcool ; « 1.5 » cigarette est refusé.
-9. Connectée à un compte (version hébergée), sur deux appareils : un suivi créé « sur cet appareil » n'affiche que son
-   nom sur l'autre ; « Synchroniser avec mon compte… » demande l'accord ; « Garder sur cet appareil seulement… » le
-   retire ; se déconnecter demande quoi faire du suivi.
+9. Sur deux appareils du même compte : le suivi n'affiche que son nom sur l'autre ; aucun bouton ne le synchronise ;
+   se déconnecter demande quoi en faire (export ou effacement).
