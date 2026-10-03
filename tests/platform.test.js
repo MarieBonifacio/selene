@@ -139,8 +139,53 @@ const loadMigrate = () => {
 };
 const fakeIdb = (initial = {}, { failWrite = false } = {}) => {
   const data = new Map(Object.entries(initial));
-  return { data, load: async () => [...data], writeAll: async entries => { if (failWrite) throw new Error('plein'); for (const [k, v] of entries) data.set(k, v); } };
+  return { data, load: async () => [...data], writeAll: async entries => { if (failWrite) throw new Error('plein'); for (const [k, v] of entries) if (v == null) data.delete(k); else data.set(k, v); } };
 };
+
+// La copie de secours (web) : ce qui est encore en route vers IndexedDB quand la page se ferme.
+test('secours : à la fermeture, la dernière valeur de chaque clé en route, le document avant sa base ; retirée quand l’écriture aboutit', async () => {
+  const { mirror, webStore, RESCUE } = loadMigrate(), ls = memory(), area = webStore(() => ls);
+  let release; const gate = new Promise(r => { release = r; });
+  const lent = { write: () => gate, remove: () => gate }; // IndexedDB qui n'a pas encore fini
+  const m = mirror(lent, () => {}, area);
+  m.set('selene-site-v1-base', 'base'); m.set('selene-site-v1', 'v1'); m.set('selene-site-v1', 'v2'); m.remove('selene-draft-x');
+  m.rescue();
+  const copies = [...area.keys()].filter(k => k.startsWith(RESCUE)); // un tableau de ce contexte (vm), pas de l'autre
+  assert.deepEqual(copies, ['selene-site-v1', 'selene-draft-x', 'selene-site-v1-base'].map(k => RESCUE + k), 'chaque clé en route, la base en dernier');
+  assert.equal(ls.getItem(RESCUE + 'selene-site-v1'), '{"v":"v2"}', 'la dernière valeur');
+  assert.equal(ls.getItem(RESCUE + 'selene-draft-x'), '{"v":null}', 'un effacement aussi');
+  release(); await new Promise(r => setTimeout(r, 0));
+  assert.deepEqual([...area.keys()].filter(k => k.startsWith(RESCUE)), [], 'tout a abouti : plus de copie');
+});
+
+test('secours : une écriture plus récente, dans un autre onglet, retire la copie laissée par le premier', async () => {
+  const { mirror, webStore, RESCUE } = loadMigrate(), ls = memory(), area = webStore(() => ls);
+  const fige = mirror({ write: () => new Promise(() => {}) }, () => {}, area); // l'onglet qui se ferme : jamais fini
+  fige.set('selene-site-v1', 'ancien'); fige.rescue();
+  assert.equal(ls.getItem(RESCUE + 'selene-site-v1'), '{"v":"ancien"}');
+  const autre = mirror({ write: async () => {} }, () => {}, area);
+  autre.set('selene-site-v1', 'récent'); await new Promise(r => setTimeout(r, 0));
+  assert.equal(ls.getItem(RESCUE + 'selene-site-v1'), null, 'la copie ne peut pas écraser, au démarrage, ce qui est plus récent');
+});
+
+test('secours : si IndexedDB refuse de les reprendre, les copies restent pour le démarrage suivant', async () => {
+  const { restoreRescue, webStore, RESCUE } = loadMigrate(), ls = memory(), area = webStore(() => ls);
+  ls.setItem(RESCUE + 'selene-site-v1', '{"v":"capture"}');
+  await assert.rejects(restoreRescue(fakeIdb({}, { failWrite: true }), area));
+  assert.equal(ls.getItem(RESCUE + 'selene-site-v1'), '{"v":"capture"}');
+});
+
+test('secours : au démarrage, les copies rejoignent IndexedDB (effacements compris), puis quittent localStorage', async () => {
+  const { restoreRescue, migrateToIdb, webStore, RESCUE } = loadMigrate(), ls = memory(), area = webStore(() => ls);
+  ls.setItem(RESCUE + 'selene-site-v1', '{"v":"capture de la dernière seconde"}'); ls.setItem(RESCUE + 'selene-draft-x', '{"v":null}');
+  ls.setItem(RESCUE + 'illisible', 'pas du JSON'); ls.setItem('selene-auth-session', 'jeton');
+  const idb = fakeIdb({ 'selene-site-v1': 'avant', 'selene-draft-x': 'brouillon' });
+  await restoreRescue(idb, area); await migrateToIdb(idb, area);
+  assert.equal(idb.data.get('selene-site-v1'), 'capture de la dernière seconde');
+  assert.equal(idb.data.has('selene-draft-x'), false, 'l’effacement est appliqué');
+  assert.ok(![...idb.data.keys()].some(k => k.startsWith(RESCUE)), 'aucune copie ne devient une clé ordinaire');
+  assert.deepEqual([...area.keys()], ['selene-auth-session'], 'localStorage ne garde que les secrets');
+});
 
 test('migration : les clés ordinaires passent dans IndexedDB, les secrets restent, IndexedDB l’emporte', async () => {
   const { migrateToIdb, webStore } = loadMigrate(), ls = memory();

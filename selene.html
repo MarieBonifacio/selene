@@ -693,7 +693,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "8b64a96429";
+const SELENE_BUILD = "b47b0cc3c8";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -716,10 +716,13 @@ var __platform = (() => {
   // src/platform.js
   var platform_exports = {};
   __export(platform_exports, {
+    RESCUE: () => RESCUE,
     SECRET_KEYS: () => SECRET_KEYS,
     hosted: () => hosted,
     migrateToIdb: () => migrateToIdb,
+    mirror: () => mirror,
     platform: () => platform,
+    restoreRescue: () => restoreRescue,
     unreadable: () => unreadable,
     webStore: () => webStore
   });
@@ -761,17 +764,22 @@ var __platform = (() => {
     }
   });
   var pendingWrites = /* @__PURE__ */ new Set();
+  var RESCUE = "selene-secours:";
   function mirror(vault, written = () => {
-  }) {
-    const m = /* @__PURE__ */ new Map(), last = /* @__PURE__ */ new Map();
-    const send = (k, fn) => {
+  }, rescueArea = null) {
+    const m = /* @__PURE__ */ new Map(), last = /* @__PURE__ */ new Map(), inflight = /* @__PURE__ */ new Map();
+    const send = (k, v, fn) => {
+      inflight.set(k, v);
       const q = (last.get(k) || Promise.resolve()).then(fn).then(() => written(k), () => {
       });
       last.set(k, q);
       pendingWrites.add(q);
       q.then(() => {
         pendingWrites.delete(q);
-        if (last.get(k) === q) last.delete(k);
+        if (last.get(k) !== q) return;
+        last.delete(k);
+        inflight.delete(k);
+        if (rescueArea) rescueArea.remove(RESCUE + k);
       });
     };
     return {
@@ -789,14 +797,21 @@ var __platform = (() => {
       set(k, v) {
         v = String(v);
         m.set(k, v);
-        send(k, () => vault.write(k, v));
+        send(k, v, () => vault.write(k, v));
         return true;
       },
       remove(k) {
         m.delete(k);
-        send(k, () => vault.remove(k));
+        send(k, null, () => vault.remove(k));
       },
-      keys: () => [...m.keys()]
+      keys: () => [...m.keys()],
+      /* Synchrone : à la fermeture, rien d'asynchrone n'est sûr d'aboutir. Les copies de base de la synchronisation en
+         dernier : si la place manque (localStorage plafonne vers 5 Mo), mieux vaut garder le document que sa base. */
+      rescue() {
+        if (!rescueArea) return;
+        const order = [...inflight].sort(([a], [b]) => a.endsWith("-base") - b.endsWith("-base"));
+        for (const [k, v] of order) rescueArea.set(RESCUE + k, JSON.stringify({ v }));
+      }
     };
   }
   function idbVault() {
@@ -822,16 +837,31 @@ var __platform = (() => {
       get: (k) => tx("readonly", (s) => s.get(k)),
       write: (k, v) => tx("readwrite", (s) => s.put(v, k)),
       remove: (k) => tx("readwrite", (s) => s.delete(k)),
-      // Plusieurs clés d'un coup, dans une seule transaction : toutes ou aucune.
+      // Plusieurs clés d'un coup, dans une seule transaction : toutes ou aucune (une valeur nulle efface la clé).
       writeAll: (entries) => tx("readwrite", (s) => {
-        for (const [k, v] of entries) s.put(v, k);
+        for (const [k, v] of entries) if (v == null) s.delete(k);
+        else s.put(v, k);
       })
     };
+  }
+  async function restoreRescue(vault, area) {
+    const found = area.keys().filter((k) => k.startsWith(RESCUE)), entries = [];
+    for (const rk of found) {
+      let v;
+      try {
+        v = JSON.parse(area.get(rk)).v;
+      } catch {
+        continue;
+      }
+      if (typeof v === "string" || v === null) entries.push([rk.slice(RESCUE.length), v]);
+    }
+    if (entries.length) await vault.writeAll(entries);
+    for (const rk of found) area.remove(rk);
   }
   async function migrateToIdb(vault, area) {
     const present = new Set((await vault.load()).map(([k]) => k));
     const legacy = [];
-    for (const k of area.keys()) if (!SECRET_KEYS.includes(k)) legacy.push([k, area.get(k)]);
+    for (const k of area.keys()) if (!SECRET_KEYS.includes(k) && !k.startsWith(RESCUE)) legacy.push([k, area.get(k)]);
     const missing = legacy.filter(([k, v]) => !present.has(k) && typeof v === "string");
     if (missing.length) await vault.writeAll(missing);
     for (const [k] of legacy) area.remove(k);
@@ -897,7 +927,8 @@ var __platform = (() => {
       }
       if (!idb) return start();
       const local = webStore(() => localStorage);
-      idb.open().then(() => migrateToIdb(idb, local)).then(() => {
+      idb.open().then(() => restoreRescue(idb, local).catch(() => {
+      })).then(() => migrateToIdb(idb, local)).then(() => {
         try {
           channel = new BroadcastChannel("selene-storage");
         } catch {
@@ -905,7 +936,7 @@ var __platform = (() => {
         }
         const m = mirror(idb, (k) => {
           if (channel) channel.postMessage(k);
-        });
+        }, local);
         return m.hydrate().then(() => {
           storageImpl = m;
           if (channel) channel.onmessage = (e) => {
@@ -917,8 +948,10 @@ var __platform = (() => {
         }, fail);
       }, () => start());
     },
-    // Les écritures en cours vers un coffre asynchrone (rien à attendre avec localStorage).
+    /* Les écritures en cours vers un coffre asynchrone (rien à attendre avec localStorage). D'abord, tout de suite, la
+       copie de secours de ce qui est encore en route (web) : la page peut disparaître avant la suite. */
     async flush() {
+      if (storageImpl.rescue) storageImpl.rescue();
       while (pendingWrites.size) await Promise.all([...pendingWrites]);
     },
     /* Notifications locales (ADR 19), dans une coquille native seulement : programmées par le système, elles sonnent
@@ -994,6 +1027,7 @@ var __selene = (() => {
     ECLIPSE_TEXT: () => ECLIPSE_TEXT,
     EP_STATUS: () => EP_STATUS,
     ICONS: () => ICONS,
+    KEEPALIVE_MAX: () => KEEPALIVE_MAX,
     LINK_BACK: () => LINK_BACK,
     LINK_REF: () => LINK_REF,
     LINK_TYPES: () => LINK_TYPES,
@@ -3328,7 +3362,7 @@ var __selene = (() => {
   };
 
   // plateforme:src/platform.js
-  var { SECRET_KEYS, hosted, migrateToIdb, platform, unreadable, webStore } = __platform;
+  var { RESCUE, SECRET_KEYS, hosted, migrateToIdb, mirror, platform, restoreRescue, unreadable, webStore } = __platform;
 
   // src/app/services/host.js
   var sampleNS = null;
@@ -4754,6 +4788,7 @@ var __selene = (() => {
   var clone = (o) => JSON.parse(JSON.stringify(o));
   var DOC_MAX = 5e6;
   var DOC_WARN = 3e6;
+  var KEEPALIVE_MAX = 6e4;
   function utf8Bytes(str) {
     let n = 0;
     for (let i = 0; i < str.length; i++) {
@@ -4868,10 +4903,12 @@ var __selene = (() => {
     };
     s.flush = () => {
       if (!s.timer || !s.db) return;
-      clearTimeout(s.timer);
-      s.timer = null;
       const expected = s.base ? s.base.updatedAt : null;
       const value = clone({ ...s.data, updatedAt: Math.max(s.data.updatedAt || 0, (expected || 0) + 1) });
+      const json = JSON.stringify(value);
+      if (json.length > KEEPALIVE_MAX || utf8Bytes(json) > KEEPALIVE_MAX) return;
+      clearTimeout(s.timer);
+      s.timer = null;
       const db = s.db;
       write(db.doc(path), value, expected, { keepalive: true }).then((ok) => {
         if (ok && s.db === db) {
