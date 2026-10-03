@@ -18,6 +18,7 @@ import { confirmSensitiveShare } from "../modules/regulation.js";
 import { taskFilters } from "../modules/taches.js";
 import { refreshWeather, skyConf, skySearch } from "../scene/sky.js";
 import { personalAccount } from "../services/auth.js";
+import { reportError, topFrame } from "../services/journal.js";
 import { openPalette } from "./palette.js";
 import { rememberScroll, render } from "./render.js";
 import { closeSheet } from "./sheets.js";
@@ -86,7 +87,10 @@ export function moveMod(el, d) { const ms = S().config.modules, i = +el.closest(
 /* Lance une action de CLICK ou de CHANGE. Une action qui échoue, tout de suite ou plus tard (une promesse rejetée), le
    dit : un clic sans aucun effet visible est la pire des réponses, on ne sait ni quoi réessayer ni quoi signaler. */
 export function runAction(table, name, ...args) {
-  const failed = err => { console.error(`Action « ${name} »`, err); toast(tr`Cette action n'a pas abouti : ${errMsg(err) || String(err)}`); };
+  const failed = err => {
+    console.error(`Action « ${name} »`, err); toast(tr`Cette action n'a pas abouti : ${errMsg(err) || String(err)}`);
+    reportError(err, `${topFrame(err && err.stack)} (${name})`); // une validation (Error simple, code du noyau) ne part pas
+  };
   try { const r = table[name](...args); if (r && typeof r.then === "function") r.then(null, failed); } catch (err) { failed(err); }
 }
 document.addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (a && Object.hasOwn(CLICK, a.dataset.act) && a.tagName !== "SELECT" && !(a.tagName === "INPUT" && a.type !== "button")) runAction(CLICK, a.dataset.act, a, e); });

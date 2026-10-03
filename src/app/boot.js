@@ -4,12 +4,17 @@ import { agendaRefresh } from "./features/agenda.js";
 import { dehorsRefresh } from "./features/dehors.js";
 import { refreshWeather } from "./scene/sky.js";
 import { authBoot, authReady } from "./services/auth.js";
+import { reportError } from "./services/journal.js";
 import { connectHost } from "./services/host.js";
 import { focusEntry, liveRecents, openOn, routeOf } from "./shell/nav.js";
 import { render } from "./shell/render.js";
 import { local } from "./state/local.js";
 import { S, board, site } from "./state/site.js";
 
+// Le journal des erreurs (services/journal.js) : une erreur de programmation qui échappe à l'app part, anonyme. Une
+// erreur de ressource (image) n'arrive pas ici : elle ne remonte pas jusqu'à la fenêtre.
+window.addEventListener("error", e => { if (e && e.error) reportError(e.error); });
+window.addEventListener("unhandledrejection", e => reportError(e && e.reason));
 const flushAll = () => { board.flush(); site.flush(); platform.flush(); }; // serveur, puis coffre natif (s'il y en a un)
 window.addEventListener("pagehide", flushAll);
 document.addEventListener("visibilitychange", () => { if (document.hidden) flushAll(); });

@@ -96,6 +96,37 @@ alter table public.app_state add constraint app_state_taille
   check (octet_length(site::text) < 5000000 and octet_length(board::text) < 1000000) not valid;
 ```
 
+## Journal des erreurs
+
+Une erreur de programmation qui échappe à l'app (une exception non rattrapée, une promesse rejetée, une action qui
+échoue sur un défaut) part, anonyme, dans la table `erreurs` (`src/app/services/journal.js`, T9 de l'audit). Six
+informations seulement :
+- le **genre** : le nom de l'erreur (`TypeError`…), jamais son message, qui peut citer ce que la personne a écrit ;
+- le **lieu** : `fichier:ligne:colonne`, ou le nom de l'action ;
+- la **vue** : l'écran, ou `module:<type>`, jamais l'identifiant d'un module (tiré du nom choisi) ; `module` seul pour
+  un type sensible ;
+- la **version** : l'empreinte du code (`SELENE_BUILD`, posée par `build.py`) ;
+- la **plateforme** (`web`, `capacitor`, `tauri`) ;
+- l'**heure**, celle du serveur.
+
+Il n'y a ni compte ni jeton : la requête ne porte que la clé publique. Ne partent pas : les validations (une erreur
+simple, ou une erreur du noyau avec son code), un réseau coupé, un abandon. Au plus cinq envois par chargement, une fois
+chacun ; jamais depuis l'artefact claude.ai. La personne coupe l'envoi dans *Réglages → Compte*, pour cet appareil.
+
+Côté serveur (`supabase/schema.sql`), toute page peut écrire, et personne ne lit par l'API. Chaque champ a sa taille
+maximale. Au-delà de 500 entrées par heure, une entrée est ignorée en silence ; au-delà de 30 jours, elle est effacée :
+le déclencheur purge à chaque écriture, sans tâche planifiée.
+
+**Pour un projet existant**, coller dans l'éditeur SQL la partie « Le journal des erreurs » de `supabase/schema.sql`.
+Avant, l'app reçoit un 404 et n'insiste pas : rien ne casse. **Lire le journal**, dans l'éditeur SQL :
+
+```sql
+select genre, lieu, vue, version, plateforme, count(*) as fois, max(at) as derniere
+from public.erreurs group by 1, 2, 3, 4, 5 order by derniere desc limit 50;
+```
+
+Une même `version` donne les mêmes lignes et colonnes : `npm run build` sur le même commit retrouve l'endroit du code.
+
 ## Vérifier l'isolation entre comptes
 
 Chaque compte ne voit que sa propre ligne : ce sont les règles RLS de `supabase/schema.sql` qui l'imposent, dans la
@@ -209,6 +240,7 @@ Ce qu'elle promet, et qu'il faut tenir à la main :
 - **Sauvegardes : 30 jours au plus.** Les sauvegardes de l'offre Pro de Supabase (7 jours) le respectent. Une copie
   manuelle (`supabase db dump`) doit être effacée au bout de 30 jours, sinon une donnée supprimée y survit.
 - **E-mails reçus à l'adresse de contact : un an au plus** après le dernier échange.
+- **Journal des erreurs : 30 jours.** Le déclencheur de la table `erreurs` y veille seul.
 - **Réponse à une demande de droits sous un mois.** La demande doit venir de l'adresse du compte concerné.
 - **La base reste à Paris** (eu-west-3). Un projet déplacé dans une autre région change la section « Hors de l'Union
   européenne ».

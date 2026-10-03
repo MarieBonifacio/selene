@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-BkjfHPPiTcE+nn/vThq7XqxEXQnB8CTZX1JVx2sLohU=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-c69474rZVIpTBB3a0bS7QOxGSToipBBDvc1iv9uqdxs=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -692,6 +692,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
+const SELENE_BUILD = "075a55ac60";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -978,6 +979,7 @@ var __selene = (() => {
   var index_exports = {};
   __export(index_exports, {
     $: () => $,
+    BUILD: () => BUILD,
     CARTE_MAX: () => CARTE_MAX,
     CHANGE: () => CHANGE,
     CLICK: () => CLICK,
@@ -1115,6 +1117,7 @@ var __selene = (() => {
     createFromTemplate: () => createFromTemplate,
     createModuleInstance: () => createModuleInstance,
     crossrefToSource: () => crossrefToSource,
+    currentView: () => currentView,
     dayDigest: () => dayDigest,
     deepEqual: () => deepEqual,
     dehorsFeeds: () => dehorsFeeds,
@@ -1150,6 +1153,9 @@ var __selene = (() => {
     epPrefix: () => epPrefix,
     epSelect: () => epSelect,
     errMsg: () => errMsg,
+    errorReport: () => errorReport,
+    errorReportsOn: () => errorReportsOn,
+    errorSettingsHTML: () => errorSettingsHTML,
     esc: () => esc,
     excerpt: () => excerpt,
     executeTool: () => executeTool,
@@ -1332,6 +1338,7 @@ var __selene = (() => {
     rememberScroll: () => rememberScroll,
     removeWithUndo: () => removeWithUndo,
     render: () => render,
+    reportError: () => reportError,
     requireText: () => requireText,
     reservedId: () => reservedId,
     retargetLinks: () => retargetLinks,
@@ -1352,6 +1359,7 @@ var __selene = (() => {
     setBilanOffset: () => setBilanOffset,
     setBridgeOpen: () => setBridgeOpen,
     setEpStatus: () => setEpStatus,
+    setErrorReports: () => setErrorReports,
     setOpenId: () => setOpenId,
     setRegulationPlan: () => setRegulationPlan,
     setResume: () => setResume,
@@ -1410,6 +1418,7 @@ var __selene = (() => {
     toastUndo: () => toastUndo,
     todayISO: () => todayISO,
     todayTasks: () => todayTasks,
+    topFrame: () => topFrame,
     totalOf: () => totalOf,
     trackBack: () => trackBack,
     uid: () => uid,
@@ -3130,6 +3139,8 @@ var __selene = (() => {
     "Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)": "Allow Claude to change the dashboard (tasks, capture, budget)",
     "Oublier la clé (sur tous tes appareils)": "Forget the key (on all your devices)",
     "Compte": "Account",
+    "Envoyer les erreurs de l'app, anonymes": "Send app errors, anonymously",
+    "Seulement les erreurs de programmation : leur type, l'endroit du code, l'écran, la version et la plateforme. Jamais ton compte ni ce que tu écris. Gardées 30 jours, pour corriger Selene. Ce réglage vaut pour cet appareil.": "Programming errors only: their type, the place in the code, the screen, the version and the platform. Never your account or anything you write. Kept 30 days, to fix Selene. This setting applies to this device.",
     "Connecté en tant que {0}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.": "Signed in as {0}. Your data belongs to this account and follows you on all your devices. Signing out erases your data and the conversation with the assistant from this device; your API key stays tied to your account, encrypted, until you forget it.",
     "Se déconnecter": "Sign out",
     "Supprimer mon compte": "Delete my account",
@@ -8645,6 +8656,75 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     toast(tr`Glisse ce bouton dans la barre de favoris : c'est là qu'il sert, sur la page à garder.`);
   };
 
+  // src/app/services/journal.js
+  var BUILD = typeof SELENE_BUILD === "string" ? SELENE_BUILD : "dev";
+  var OFF_KEY = "selene-erreurs";
+  var MAX = 5;
+  var sent = /* @__PURE__ */ new Set();
+  var EXPECTED = /failed to fetch|networkerror|load failed|network request failed|the user aborted|timed? ?out/i;
+  var errorReportsOn = () => {
+    try {
+      return platform.storage.get(OFF_KEY) !== "off";
+    } catch {
+      return true;
+    }
+  };
+  function setErrorReports(on) {
+    try {
+      if (on) platform.storage.remove(OFF_KEY);
+      else platform.storage.set(OFF_KEY, "off");
+    } catch {
+    }
+  }
+  function topFrame(stack) {
+    for (const line of String(stack || "").split("\n")) {
+      const m = line.match(/([^\s()@]*):(\d+):(\d+)\)?\s*$/);
+      if (!m) continue;
+      const file = (m[1].split(/[?#]/)[0].split("/").pop() || "page").replace(/[^A-Za-z0-9._-]/g, "").slice(0, 60) || "page";
+      return `${file}:${m[2]}:${m[3]}`;
+    }
+    return "";
+  }
+  function currentView() {
+    try {
+      const route = decodeURIComponent((typeof location !== "undefined" ? location.hash : "").slice(1).split("/")[0] || "accueil");
+      const inst = Object.hasOwn(S().modules, route) ? S().modules[route] : null;
+      if (inst) return TYPE_UI[inst.type]?.sensitive ? "module" : `module:${String(inst.type).slice(0, 30)}`;
+      return Object.hasOwn(VIEWS, route) ? route.slice(0, 40) : "";
+    } catch {
+      return "";
+    }
+  }
+  function errorReport(err, lieu = "") {
+    const name = err && typeof err === "object" ? String(err.name || "") : "";
+    if (!/^[A-Za-z]{1,40}$/.test(name) || name === "Error" || name === "AbortError" || typeof err.code === "string") return null;
+    if (EXPECTED.test(String(err.message || ""))) return null;
+    return { version: BUILD.slice(0, 40), plateforme: String(platform.runtime()).slice(0, 20), genre: name, lieu: (lieu || topFrame(err.stack)).slice(0, 200), vue: currentView() };
+  }
+  function reportError(err, lieu = "") {
+    try {
+      if (!hosted() || !authReady() || !errorReportsOn()) return;
+      const r = errorReport(err, lieu);
+      if (!r) return;
+      const key = `${r.genre} ${r.lieu}`;
+      if (sent.has(key) || sent.size >= MAX) return;
+      sent.add(key);
+      fetch(`${SUPABASE_URL}/rest/v1/erreurs`, {
+        method: "POST",
+        keepalive: true,
+        body: JSON.stringify(r),
+        headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" }
+      }).catch(() => {
+      });
+    } catch {
+    }
+  }
+  function errorSettingsHTML() {
+    return `<label class="check-l" style="margin-top:12px"><input type="checkbox" data-act="err-reports" ${errorReportsOn() ? "checked" : ""}>${tr`Envoyer les erreurs de l'app, anonymes`}</label>
+    <p class="hint">${tr`Seulement les erreurs de programmation : leur type, l'endroit du code, l'écran, la version et la plateforme. Jamais ton compte ni ce que tu écris. Gardées 30 jours, pour corriger Selene. Ce réglage vaut pour cet appareil.`}</p>`;
+  }
+  CHANGE["err-reports"] = (el) => setErrorReports(el.checked);
+
   // src/app/ui/tips.js
   var seq = 0;
   function tip(text, about2) {
@@ -8954,6 +9034,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     <div class="row"><button class="btn" data-act="exp">${tr`Exporter`}</button><label class="btn" style="display:inline-block;font-weight:500">${tr`Importer`}<input type="file" accept="application/json,.json" data-act="imp" style="display:none"></label>${tip(TIPS.importer, about(tr`Importer`))}</div>${signedIn() ? sizeHTML() : ""}</section>
   ${signedIn() ? `<section>${sub(tr`Compte`)}<p class="hint">${tr`Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.`}</p>
     ${passwordSettingsHTML()}
+    ${errorSettingsHTML()}
     <button class="btn ghost" data-act="auth-out" style="margin-top:12px">${tr`Se déconnecter`}</button></section>
   <section class="danger">${sub(TEXTS.danger)}
     <details id="auth-delete"><summary class="hint">${tr`Supprimer mon compte`}</summary>
@@ -9939,6 +10020,7 @@ ${contextText()}`;
     const failed = (err) => {
       console.error(`Action « ${name} »`, err);
       toast(tr`Cette action n'a pas abouti : ${errMsg(err) || String(err)}`);
+      reportError(err, `${topFrame(err && err.stack)} (${name})`);
     };
     try {
       const r = table[name](...args);
@@ -12929,6 +13011,10 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
   CLICK["sheet-close"] = () => closeSheet();
 
   // src/app/boot.js
+  window.addEventListener("error", (e) => {
+    if (e && e.error) reportError(e.error);
+  });
+  window.addEventListener("unhandledrejection", (e) => reportError(e && e.reason));
   var flushAll = () => {
     board.flush();
     site.flush();

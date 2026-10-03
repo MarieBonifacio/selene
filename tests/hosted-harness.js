@@ -16,7 +16,7 @@ const sessionBody = { access_token: 'new', refresh_token: 'new-r', expires_in: 3
 /* Imite PostgREST pour ce que l'app utilise : GET filtré, POST ignore-duplicates,
    PATCH conditionnel sur `col->>champ` avec Prefer: return=representation. */
 function fakeSupabase({ appMetadata } = {}) {
-  const server = { rows: new Map(), calls: [], selects: [], offline: false, beforePatch: null, maxBytes: Infinity };
+  const server = { rows: new Map(), calls: [], selects: [], erreurs: [], offline: false, beforePatch: null, maxBytes: Infinity };
   const token = appMetadata ? { ...sessionBody, user: { ...USER, app_metadata: appMetadata } } : sessionBody;
   server.fetch = async (url, opts = {}) => {
     if (server.offline) throw new TypeError('Failed to fetch');
@@ -24,6 +24,8 @@ function fakeSupabase({ appMetadata } = {}) {
     server.calls.push(`${method} ${u.pathname}`);
     if (u.pathname === '/auth/v1/token') return reply(200, token);
     if (u.pathname === '/auth/v1/logout') return reply(204, {});
+    // Le journal des erreurs (services/journal.js) : ce qui part, en-têtes compris.
+    if (u.pathname === '/rest/v1/erreurs') { server.erreurs.push({ body: JSON.parse(opts.body), headers: { ...opts.headers } }); return reply(201, null); }
     if (u.pathname !== '/rest/v1/app_state') return reply(404, {});
     const uid = (u.searchParams.get('user_id') || '').replace(/^eq\./, ''), row = server.rows.get(uid);
     if (method === 'GET') {
@@ -93,7 +95,7 @@ function launchHosted({ storage = new Map(), fetch, session = 'valid', bare = fa
     'globalThis.__test = { ...__selene, session: () => __selene.authSession, form: v => __selene.formCb(v), formOpen: () => !!__selene.formCb };\n});\n})();'); // form : le formulaire ouvert à cet instant (formCb change)
   vm.runInNewContext(instrumented, context);
   const poll = () => Promise.all([...intervals.values()].map(fn => fn()));
-  return { ...context.__test, nodes, storage, intervals, poll };
+  return { ...context.__test, nodes, storage, intervals, poll, location: context.location };
 }
 
 module.exports = { fakeSupabase, launchHosted, reply, settle, clone };

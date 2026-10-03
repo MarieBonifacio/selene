@@ -1706,6 +1706,8 @@ export default {
   "Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)": "Allow Claude to change the dashboard (tasks, capture, budget)",
   "Oublier la clé (sur tous tes appareils)": "Forget the key (on all your devices)",
   "Compte": "Account",
+  "Envoyer les erreurs de l'app, anonymes": "Send app errors, anonymously",
+  "Seulement les erreurs de programmation : leur type, l'endroit du code, l'écran, la version et la plateforme. Jamais ton compte ni ce que tu écris. Gardées 30 jours, pour corriger Selene. Ce réglage vaut pour cet appareil.": "Programming errors only: their type, the place in the code, the screen, the version and the platform. Never your account or anything you write. Kept 30 days, to fix Selene. This setting applies to this device.",
   "Connecté en tant que {0}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.": "Signed in as {0}. Your data belongs to this account and follows you on all your devices. Signing out erases your data and the conversation with the assistant from this device; your API key stays tied to your account, encrypted, until you forget it.",
   "Se déconnecter": "Sign out",
   "Supprimer mon compte": "Delete my account",
