@@ -70,7 +70,7 @@ VIEWS.accueil = () => {
       : `<p class="hint">${tr`Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans ${`<a href="#reglages">${tr`Réglages`}</a>`}.`}</p>`}
     </section>
   </div>
-  <section><div class="row" style="align-items:baseline"><h2>${tr`Où en sont les choses`}</h2><span class="spacer"></span><a class="btn ghost sm" href="#bilan">${bilanMode() === "mois" ? tr`Bilan du mois` : tr`Bilan du cycle`}</a></div>${rows}</section>
+  <section><div class="row sec-head" style="align-items:baseline"><h2>${tr`Où en sont les choses`}</h2><span class="spacer"></span><a class="btn ghost sm" href="#bilan">${bilanMode() === "mois" ? tr`Bilan du mois` : tr`Bilan du cycle`}</a></div>${rows}</section>
   ${sortesSection()}`;
 };
 const SUMMARY = {

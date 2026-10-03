@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-c69474rZVIpTBB3a0bS7QOxGSToipBBDvc1iv9uqdxs=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ewfFLZjt1o287ORIg+CnBNYqbHApos2I/cO/7ySZhjk=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -269,7 +269,8 @@ dialog.palette input:focus-visible{outline:none;border-bottom-color:var(--accent
   #dlg[open]{animation:sheet-in var(--t-3) var(--ease)}
 }
 .set.mod{grid-template-columns:auto minmax(0,1fr) 9em auto}
-@media (max-width:560px){.set.mod{grid-template-columns:auto minmax(0,1fr) auto}.set.mod>:nth-child(3){grid-column:2;grid-row:2}}
+/* Sur téléphone : la case et le nom sur une ligne, le domaine et les boutons dessous (le nom garde toute la largeur). */
+@media (max-width:560px){.set.mod{grid-template-columns:auto minmax(0,1fr) auto}.set.mod>:nth-child(2){grid-column:2 / 4}.set.mod>:nth-child(3){grid-column:2;grid-row:2}.set.mod>:nth-child(4){grid-column:3;grid-row:2}}
 /* ================= Réglages : premier accueil, sommaire, chapitres =================
    Une page longue, rangée en chapitres numérotés comme des planches, du plus courant au plus rare. Sur grand écran, le
    sommaire tient la marge droite et marque le chapitre lu (le filet de marge) ; ailleurs, il ouvre la page. */
@@ -364,7 +365,7 @@ details.newmod>summary::-webkit-details-marker{display:none}
 .tipb:popover-open{animation:tip-in var(--t-2) var(--ease)}
 @keyframes tip-in{from{opacity:0;transform:translateY(-3px)}}
 @supports not selector(:popover-open){.tip{display:none}.tipb{position:static;display:block;width:auto;max-width:none;margin:4px 0;padding:0;border:0;background:none;color:var(--muted);font-size:.88rem;font-style:italic}}
-@media (pointer:coarse){.tip{position:relative}.tip::after{content:"";position:absolute;inset:-13px}}
+@media (pointer:coarse){.tip{position:relative}.tip::after{content:"";position:absolute;inset:-14px}}
 
 /* buttons */
 .btn{border:1px solid var(--ink);background:transparent;padding:7px 14px;border-radius:2px;font-weight:500;font-size:.92rem}
@@ -654,13 +655,23 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 /* Écran étroit : les boutons d'un rappel passent sous son texte, qui garde toute la largeur. */
 @media (max-width:560px){.item.alert>.row{grid-column:2 / 4}}
 @media (max-width:560px){.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.stats .big{font-size:clamp(1.05rem,5vw,1.4rem)}}
-/* Écran tactile : 16 px au moins dans les champs (sinon iOS zoome au focus), et 44 pt de cible autour des petits
-   contrôles, par une zone invisible qui ne change pas leur dessin. */
+/* Écran tactile : 16 px au moins dans les champs (sinon iOS zoome au focus), et 44 pt de cible pour chaque contrôle
+   (Apple, Material, WCAG 2.5.5). Un bouton a 44 px de large au moins (sans bordure, rien ne se voit) et une zone
+   invisible au-dessus et au-dessous, qui ne change pas son dessin : 46 px de haut au moins, 3 px de marge sinon. Les
+   champs, menus, nuanciers et volets prennent leur hauteur ; une case seule, son étiquette (.tap). Mesuré dans
+   tests/browser/cibles.js : ce que le doigt touche, pas la boîte dessinée. */
 @media (pointer:coarse){
   input,select,textarea{font-size:max(16px,1em)}
-  .btn.sm,.btn.ghost,.star,.check{position:relative}
-  .btn.sm::after,.btn.ghost::after,.star::after{content:"";position:absolute;inset:-9px -3px}
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),select,.swatch{min-height:44px}
+  .btn{min-width:44px}a.btn{display:inline-block} /* un lien-bouton ne se coupe pas en deux lignes de cible */
+  .btn,.star,.check{position:relative}
+  .btn::after,.star::after{content:"";position:absolute;inset:min(-3px,calc(50% - 23px)) -3px}
   .check::before{content:"";position:absolute;inset:-11px}
+  details.mreg>summary{min-height:44px;align-items:center}
+  .reg-guide summary,.danger summary,details.rlm-privacy>summary,details.rlm-info>summary{padding-block:11px}
+  .tap{display:grid;place-items:center;min-width:44px;min-height:44px}
+  .field-row{row-gap:18px}.fld{gap:14px} /* la zone d'une bulle « ? » ne mord ni sur son champ, ni sur celui du dessus */
+  .sec-head{margin-bottom:9px}.plate{margin-bottom:16px} /* un titre et ses boutons, au-dessus d'autres boutons */
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.flash{box-shadow:inset 2px 0 0 var(--accent)}}
 </style>
@@ -692,7 +703,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "075a55ac60";
+const SELENE_BUILD = "6a8a7cb4cd";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -8512,7 +8523,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       ${pending ? `<p class="hint" style="margin-top:8px"><a href="#${esc(inbox)}">${trn(pending, "{0} élément à trier", "{0} éléments à trier")}</a></p>` : ""}` : `<p class="hint">${tr`Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans ${`<a href="#reglages">${tr`Réglages`}</a>`}.`}</p>`}
     </section>
   </div>
-  <section><div class="row" style="align-items:baseline"><h2>${tr`Où en sont les choses`}</h2><span class="spacer"></span><a class="btn ghost sm" href="#bilan">${bilanMode() === "mois" ? tr`Bilan du mois` : tr`Bilan du cycle`}</a></div>${rows}</section>
+  <section><div class="row sec-head" style="align-items:baseline"><h2>${tr`Où en sont les choses`}</h2><span class="spacer"></span><a class="btn ghost sm" href="#bilan">${bilanMode() === "mois" ? tr`Bilan du mois` : tr`Bilan du cycle`}</a></div>${rows}</section>
   ${sortesSection()}`;
   };
   var SUMMARY = {
@@ -8990,7 +9001,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     const name = label(m.id), inst = s.modules[m.id], sys = SYSTEM.includes(m.id);
     const settings = enabled(m.id) && (inst || grouperFor(m.id));
     return `<div class="modblock ${tintOf(m.id)}${m.on ? "" : " off"}">
-    <div class="set mod" data-i="${i}"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="${tr`Activer ${esc(name)}`}"><div class="mod-name">${sigil(m.id)}<input data-act="mod-label" value="${esc(name)}" aria-label="${tr`Nom du module`}"></div>${sys ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="${esc(TEXTS.domaine)}" aria-label="${tr`Domaine de ${esc(name)}`}">`}<div class="row">${inst ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="${tr`Supprimer définitivement`}" title="${tr`Supprimer définitivement`}">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="${tr`Descendre`}">↓</button></div></div>
+    <div class="set mod" data-i="${i}"><label class="tap"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="${tr`Activer ${esc(name)}`}"></label><div class="mod-name">${sigil(m.id)}<input data-act="mod-label" value="${esc(name)}" aria-label="${tr`Nom du module`}"></div>${sys ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="${esc(TEXTS.domaine)}" aria-label="${tr`Domaine de ${esc(name)}`}">`}<div class="row">${inst ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="${tr`Supprimer définitivement`}" title="${tr`Supprimer définitivement`}">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="${tr`Descendre`}">↓</button></div></div>
     ${settings ? `<details id="mreg-${esc(m.id)}" data-mod="${esc(m.id)}" class="mreg"><summary aria-label="${esc(TEXTS.regler(name))}">${esc(TEXTS.reglerShort)}${inst ? `<span class="mreg-type">${esc(typeName(inst.type))}</span>` : ""}</summary><div class="mreg-body">${moduleSettingsHTML(m.id)}</div></details>` : sys && m.on ? `<p class="mreg-note"><button type="button" class="btn ghost sm" data-act="reg-goto" data-to="reg-assistant">› ${esc(TEXTS.assistantHere)}</button></p>` : ""}
   </div>`;
   }
@@ -12556,7 +12567,7 @@ ${nm} : arc de ${c.stations.length} étapes (${c.stations.map((s) => s.name).joi
   registerType("programme", {
     view(id) {
       const inst = S().modules[id], c = inst.config, now = todayISO();
-      if (!c.start) return `<h2>${esc(label(id))}</h2><p class="hint">${tr`Un protocole de ${esc(c.weeks)} semaines, une séance à la fois.`}</p><button class="btn acc" data-act="prog-start" data-mod="${esc(id)}">${tr`Commencer aujourd'hui`}</button> <a class="btn ghost" href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`ou choisir une autre date`}</a>`;
+      if (!c.start) return `<h2>${esc(label(id))}</h2><p class="hint">${tr`Un protocole de ${esc(c.weeks)} semaines, une séance à la fois.`}</p><div class="row"><button class="btn acc" data-act="prog-start" data-mod="${esc(id)}">${tr`Commencer aujourd'hui`}</button><a class="btn ghost" href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`ou choisir une autre date`}</a></div>`;
       const days = new Set(inst.entries.map((x) => x.date)), W = Math.min(52, Math.max(1, Math.round(+c.weeks) || 12));
       const week = Math.min(W, Math.floor(diffDays(now, c.start) / 7) + 1);
       const pct = Math.min(100, Math.round(100 * (diffDays(now, c.start) + 1) / (W * 7)));
