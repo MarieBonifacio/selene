@@ -21,6 +21,8 @@ export const clone = o => JSON.parse(JSON.stringify(o));
    Le serveur refuse un espace de plus de DOC_MAX (contrainte app_state_taille, supabase/schema.sql) ; Réglages prévient
    à partir de DOC_WARN. */
 export const DOC_MAX = 5e6, DOC_WARN = 3e6;
+// Ce que les navigateurs acceptent dans une requête keepalive (64 Kio pour toutes celles en cours), moins l'enveloppe.
+export const KEEPALIVE_MAX = 60000;
 export function utf8Bytes(str) {
   let n = 0;
   for (let i = 0; i < str.length; i++) {
@@ -100,12 +102,17 @@ export function makeStore(key, path, seed, normalize = d => d, { onRemoteChange 
   };
   /* Fermeture ou mise en arrière-plan : pas le temps de relire, donc une seule écriture conditionnelle
      sur la base connue (keepalive = survit à la fermeture de l'onglet). Si le serveur a bougé, elle est
-     refusée sans dégât : les données restent sur l'appareil et seront fusionnées au prochain lancement. */
+     refusée sans dégât : les données restent sur l'appareil et seront fusionnées au prochain lancement.
+     Les navigateurs refusent une requête keepalive de plus de 64 Kio (T13 de l'audit) : un document plus lourd ne
+     tente rien, et sa synchronisation ordinaire reste prévue, si la page survit (simple mise en arrière-plan) ; sinon,
+     il part au lancement suivant, la copie de l'appareil étant assurée par platform.flush(). */
   s.flush = () => {
     if (!s.timer || !s.db) return;
-    clearTimeout(s.timer); s.timer = null;
     const expected = s.base ? s.base.updatedAt : null;
     const value = clone({ ...s.data, updatedAt: Math.max(s.data.updatedAt || 0, (expected || 0) + 1) });
+    const json = JSON.stringify(value);
+    if (json.length > KEEPALIVE_MAX || utf8Bytes(json) > KEEPALIVE_MAX) return; // la longueur d'abord : jamais plus que les octets
+    clearTimeout(s.timer); s.timer = null;
     const db = s.db;
     write(db.doc(path), value, expected, { keepalive: true })
       .then(ok => { if (ok && s.db === db) { s.base = value; saveBase(); } }, () => {});

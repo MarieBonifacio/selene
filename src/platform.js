@@ -35,13 +35,26 @@ export const webStore = area => ({
   }
 });
 const pendingWrites = new Set();
-function mirror(vault, written = () => {}) {
-  const m = new Map(), last = new Map();
+/* La copie de secours (web) : une écriture d'IndexedDB lancée juste avant la fermeture de la page peut ne jamais
+   aboutir, la page disparaissant avant sa transaction (une capture faite dans la dernière demi-seconde était perdue).
+   localStorage, lui, écrit tout de suite et survit à la fermeture : platform.flush(), appelé à la fermeture et à la
+   mise en arrière-plan, y dépose la dernière valeur de chaque clé encore en route, sous ce préfixe ; le démarrage
+   suivant la reverse dans IndexedDB (restoreRescue). Une écriture qui aboutit retire la copie de sa clé, dans cet
+   onglet comme dans un autre : une copie ne peut donc pas être plus ancienne que ce qu'IndexedDB tient déjà. */
+export const RESCUE = "selene-secours:";
+export function mirror(vault, written = () => {}, rescueArea = null) { // exportée pour les tests
+  const m = new Map(), last = new Map(), inflight = new Map(); // inflight : clé → valeur pas encore écrite (null : effacée)
   // Une écriture attend la précédente sur la même clé : un coffre asynchrone ne doit pas les inverser.
-  const send = (k, fn) => {
+  const send = (k, v, fn) => {
+    inflight.set(k, v);
     const q = (last.get(k) || Promise.resolve()).then(fn).then(() => written(k), () => {});
     last.set(k, q); pendingWrites.add(q);
-    q.then(() => { pendingWrites.delete(q); if (last.get(k) === q) last.delete(k); });
+    q.then(() => {
+      pendingWrites.delete(q);
+      if (last.get(k) !== q) return; // une écriture plus récente de la même clé est en route
+      last.delete(k); inflight.delete(k);
+      if (rescueArea) rescueArea.remove(RESCUE + k);
+    });
   };
   return {
     async hydrate() {
@@ -51,9 +64,16 @@ function mirror(vault, written = () => {}) {
     // Une autre fenêtre a écrit cette clé : la relire dans le coffre.
     async refresh(k) { const v = await vault.get(k); if (typeof v === "string") m.set(k, v); else m.delete(k); },
     get: k => (m.has(k) ? m.get(k) : null),
-    set(k, v) { v = String(v); m.set(k, v); send(k, () => vault.write(k, v)); return true; },
-    remove(k) { m.delete(k); send(k, () => vault.remove(k)); },
-    keys: () => [...m.keys()]
+    set(k, v) { v = String(v); m.set(k, v); send(k, v, () => vault.write(k, v)); return true; },
+    remove(k) { m.delete(k); send(k, null, () => vault.remove(k)); },
+    keys: () => [...m.keys()],
+    /* Synchrone : à la fermeture, rien d'asynchrone n'est sûr d'aboutir. Les copies de base de la synchronisation en
+       dernier : si la place manque (localStorage plafonne vers 5 Mo), mieux vaut garder le document que sa base. */
+    rescue() {
+      if (!rescueArea) return;
+      const order = [...inflight].sort(([a], [b]) => a.endsWith("-base") - b.endsWith("-base"));
+      for (const [k, v] of order) rescueArea.set(RESCUE + k, JSON.stringify({ v }));
+    }
   };
 }
 
@@ -80,9 +100,21 @@ function idbVault() {
     get: k => tx("readonly", s => s.get(k)),
     write: (k, v) => tx("readwrite", s => s.put(v, k)),
     remove: k => tx("readwrite", s => s.delete(k)),
-    // Plusieurs clés d'un coup, dans une seule transaction : toutes ou aucune.
-    writeAll: entries => tx("readwrite", s => { for (const [k, v] of entries) s.put(v, k); })
+    // Plusieurs clés d'un coup, dans une seule transaction : toutes ou aucune (une valeur nulle efface la clé).
+    writeAll: entries => tx("readwrite", s => { for (const [k, v] of entries) if (v == null) s.delete(k); else s.put(v, k); })
   };
+}
+/* Au démarrage, avant tout : les copies de secours laissées par une fermeture (voir RESCUE) rejoignent IndexedDB, en
+   une transaction, puis quittent localStorage. Une copie illisible est simplement retirée. */
+export async function restoreRescue(vault, area) {
+  const found = area.keys().filter(k => k.startsWith(RESCUE)), entries = [];
+  for (const rk of found) {
+    let v;
+    try { v = JSON.parse(area.get(rk)).v; } catch { continue; }
+    if (typeof v === "string" || v === null) entries.push([rk.slice(RESCUE.length), v]);
+  }
+  if (entries.length) await vault.writeAll(entries);
+  for (const rk of found) area.remove(rk);
 }
 /* Première ouverture après localStorage (et toute clé qu'une ancienne version y écrirait encore) : chaque clé
    ordinaire absente d'IndexedDB y est copiée, en une transaction ; ce n'est qu'après qu'elle quitte localStorage.
@@ -90,7 +122,7 @@ function idbVault() {
 export async function migrateToIdb(vault, area) {
   const present = new Set((await vault.load()).map(([k]) => k));
   const legacy = [];
-  for (const k of area.keys()) if (!SECRET_KEYS.includes(k)) legacy.push([k, area.get(k)]);
+  for (const k of area.keys()) if (!SECRET_KEYS.includes(k) && !k.startsWith(RESCUE)) legacy.push([k, area.get(k)]);
   const missing = legacy.filter(([k, v]) => !present.has(k) && typeof v === "string");
   if (missing.length) await vault.writeAll(missing);
   for (const [k] of legacy) area.remove(k);
@@ -150,9 +182,11 @@ export const platform = {
     try { idb = platform.runtime() === "web" && window.indexedDB ? idbVault() : null; } catch { idb = null; }
     if (!idb) return start();
     const local = webStore(() => localStorage);
-    idb.open().then(() => migrateToIdb(idb, local)).then(() => {
+    // Une copie de secours qui ne passe pas (IndexedDB refuse l'écriture) reste dans localStorage pour le démarrage
+    // suivant : elle n'empêche pas celui-ci.
+    idb.open().then(() => restoreRescue(idb, local).catch(() => {})).then(() => migrateToIdb(idb, local)).then(() => {
       try { channel = new BroadcastChannel("selene-storage"); } catch { channel = null; }
-      const m = mirror(idb, k => { if (channel) channel.postMessage(k); });
+      const m = mirror(idb, k => { if (channel) channel.postMessage(k); }, local);
       return m.hydrate().then(() => {
         storageImpl = m;
         if (channel) channel.onmessage = e => { const k = e.data; if (typeof k === "string") m.refresh(k).then(() => watchers.forEach(w => w(k)), () => {}); };
@@ -160,8 +194,12 @@ export const platform = {
       }, fail);
     }, () => start());
   },
-  // Les écritures en cours vers un coffre asynchrone (rien à attendre avec localStorage).
-  async flush() { while (pendingWrites.size) await Promise.all([...pendingWrites]); },
+  /* Les écritures en cours vers un coffre asynchrone (rien à attendre avec localStorage). D'abord, tout de suite, la
+     copie de secours de ce qui est encore en route (web) : la page peut disparaître avant la suite. */
+  async flush() {
+    if (storageImpl.rescue) storageImpl.rescue();
+    while (pendingWrites.size) await Promise.all([...pendingWrites]);
+  },
   /* Notifications locales (ADR 19), dans une coquille native seulement : programmées par le système, elles sonnent
      app fermée. Sur le web, rien (une notification de page exige qu'elle tourne, ou un serveur de push). */
   notifications: {

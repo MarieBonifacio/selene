@@ -253,7 +253,8 @@ Une seule synchro à la fois par store. Déclencheurs : 900 ms après une modifi
 (onglet visible), au retour en ligne ou au premier plan. La relecture des 30 s demande d'abord la seule date de la
 dernière écriture (`select=u:site->>updatedAt`, quelques octets) : si c'est celle de la base et que l'appareil n'a
 rien à envoyer, le document n'est pas relu. Sinon, relecture complète et fusion, comme avant. À la fermeture, une écriture conditionnelle
-`keepalive` sans relecture ; si elle échoue, les données restent locales et partent au lancement suivant.
+`keepalive` sans relecture, pour un document de moins de 60 000 octets (les navigateurs refusent au-delà de 64 Kio) ;
+sinon, ou si elle échoue, les données restent locales (copie de secours, ADR 13) et partent au lancement suivant.
 
 Sans base (premier contact d'un appareil) : un appareil vierge adopte le serveur, sinon on fusionne
 sans rien supprimer. L'import d'une sauvegarde remplace au lieu de fusionner (`replaceAll`).
@@ -536,6 +537,16 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   reçoit la synchronisation). Les scénarios lisent le stockage par `storeGet` / `storeJSON` et l'écrivent par
   `storeSet` (tests/browser/helpers.js), qui prévient Selene comme un autre onglet ; `tests/browser/indexeddb.js`
   couvre la migration, la relance, deux onglets et un document de plus de 6 M caractères.
+- **Révision (3 octobre 2026)** : la perte « dans la milliseconde » était plus large qu'écrit. Une capture faite dans
+  la demi-seconde avant la fermeture se perdait une fois sur deux (`tests/browser/sync-deux-appareils.js`, instable
+  sur une machine lente), et le serveur ne la rattrapait pas : l'écriture `keepalive` de la fermeture est refusée
+  par les navigateurs au-delà de 64 Kio (T13 de l'audit), soit tout espace un peu rempli. Désormais,
+  `platform.flush()` (fermeture, mise en arrière-plan) dépose d'abord, de façon synchrone, une **copie de secours**
+  de chaque clé encore en route dans `localStorage` (`selene-secours:`), le document avant sa base, faute de place ;
+  le démarrage suivant la reverse dans IndexedDB avant la migration (`restoreRescue`). Une écriture qui aboutit
+  retire la copie de sa clé, dans tout onglet : une copie n'est jamais plus ancienne que ce qu'IndexedDB tient. Le
+  store ne tente plus de `keepalive` au-delà de 60 000 octets et garde sa synchronisation ordinaire prévue
+  (`KEEPALIVE_MAX`). Reste une limite : un document plus gros que la place libre de `localStorage` n'a pas de copie.
 
 ### ADR 14 — Trois sorties de build : web, artefact, natif
 
