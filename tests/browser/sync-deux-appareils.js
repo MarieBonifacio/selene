@@ -1,7 +1,7 @@
 /* Scénario de navigateur : deux appareils du même compte, branchés sur un faux Supabase (interception réseau).
    Vérifie la fusion (B n'a jamais vu ce qu'a écrit A) et qu'une saisie faite juste avant de fermer l'onglet
    n'est pas perdue : restée sur l'appareil, elle part à la réouverture. Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, check } = require('./helpers');
+const { engine, BASE, launchOptions, check, until } = require('./helpers');
 const rows = new Map();
 const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 async function supabase(route) {
@@ -32,10 +32,13 @@ const capture = async (p, text) => { await p.fill('#capIn', text); await p.click
 (async () => {
   const browser = await engine.launch(launchOptions), errs = [];
   const A = await device(browser, errs);
+  // Le serveur est attendu jusqu'à ce qu'il réponde (until), pas un délai fixe : une machine de CI chargée met plus
+  // de temps à envoyer, sans rien perdre.
+  await until(() => !!rows.get('u1')?.site?.config);
   check(!!rows.get('u1')?.site?.config, 'le premier appareil crée le compte sur le serveur');
   const B = await device(browser, errs);
-  await capture(A.page, 'alpha'); await A.page.waitForTimeout(1500);
-  await capture(B.page, 'beta'); await B.page.waitForTimeout(1500); // B n'a jamais vu alpha
+  await capture(A.page, 'alpha'); await until(() => inbox().includes('alpha'));
+  await capture(B.page, 'beta'); await until(() => inbox().includes('beta')); // B n'a jamais vu alpha
   check(inbox().join() === 'alpha,beta', `fusion : les deux captures sur le serveur (${inbox().join(', ')})`);
   await B.page.evaluate(() => location.hash = 'inbox'); await B.page.waitForTimeout(300);
   const t = await B.page.textContent('#main');
@@ -43,7 +46,7 @@ const capture = async (p, text) => { await p.fill('#capIn', text); await p.click
   await capture(A.page, 'gamma'); await A.page.close({ runBeforeUnload: true }); // fermé dans le délai de 900 ms
   await new Promise(r => setTimeout(r, 800));
   const A2 = await A.ctx.newPage(); A2.on('pageerror', e => errs.push(e.message));
-  await A2.goto(BASE + '/index.html'); await A2.waitForTimeout(1500);
+  await A2.goto(BASE + '/index.html'); await until(() => inbox().includes('gamma'));
   check(inbox().includes('gamma'), 'la saisie faite juste avant la fermeture part à la réouverture');
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await browser.close();
