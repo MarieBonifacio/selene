@@ -1,13 +1,13 @@
 /* Recevoir un lien depuis ailleurs : partage Android, favori, Raccourci iOS, liens selene:// ; déposé dans la boîte
    une fois les données prêtes. */
-import { hosted, platform } from "../../platform.js";
+import { platform } from "../../platform.js";
 import { inboxId } from "../../core/domain.js";
 import { findDoi, findUrl } from "../../core/sources.js";
 import { CLICK } from "../registry.js";
 import { esc, toast } from "../lib/dom.js";
 import { tr } from "../i18n/index.js";
 import { addNote } from "../modules/notes.js";
-import { authReady, authSession } from "../services/auth.js";
+import { authGate } from "../services/auth.js";
 import { render } from "../shell/render.js";
 import { openSheet } from "../shell/sheets.js";
 import { S, label, site } from "../state/site.js";
@@ -32,7 +32,7 @@ function takeShare() {
 document.addEventListener("selene:share", () => { sharePending = true; render(); });
 document.addEventListener("selene:capture", () => openSheet("capture"));
 export function applyShare() {
-  if (hosted() && authReady() && !authSession) return; // pas encore connectée : on attend
+  if (authGate()) return; // pas encore connectée (ni entrée sans compte) : on attend
   let p = null; try { p = JSON.parse(platform.session.get("selene-share") || "null"); platform.session.remove("selene-share"); } catch {}
   sharePending = false;
   if (!p) return;

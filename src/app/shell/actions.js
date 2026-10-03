@@ -74,14 +74,24 @@ export function addModule(tpl, name) {
 }
 /* Installe sans passer par le catalogue (offered) : la suite d'addModule, et l'installation d'un module qui existe
    déjà ailleurs (les tests l'utilisent pour un suivi créé avant sa sortie de l'offre publique). */
+function createModule(tpl, name) {
+  const s = S(), id = slugId(name, [...s.config.modules.map(x => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
+  createFromTemplate(s.modules, tpl, name, id, tr);
+  s.config.modules.push({ id, on: true });
+  s.config.assistant.share[id] = !TYPE_UI[tpl.type]?.sensitive;
+  return id;
+}
 export function installModule(tpl, name) {
-  try {
-    const s = S(), id = slugId(name, [...s.config.modules.map(x => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
-    createFromTemplate(s.modules, tpl, name, id, tr);
-    s.config.modules.push({ id, on: true });
-    s.config.assistant.share[id] = !TYPE_UI[tpl.type]?.sensitive;
-    site.save(); render(); toast(tr`Module « ${name} » créé.`);
-  } catch (e) { toast(errMsg(e)); }
+  try { createModule(tpl, name); site.save(); render(); toast(tr`Module « ${name} » créé.`); } catch (e) { toast(errMsg(e)); }
+}
+/* Plusieurs modèles d'un coup (le premier accueil) : un seul enregistrement, un seul rendu. Ni module hors de l'offre,
+   ni programme (il demande d'abord sa pratique et sa durée). Rend les noms des modules créés. */
+export function installModules(tpls) {
+  const made = [];
+  try { for (const tpl of tpls) if (offered(tpl.type) && tpl.type !== "programme") { createModule(tpl, tpl.name); made.push(tpl.name); } }
+  catch (e) { toast(errMsg(e)); }
+  site.save(); render();
+  return made;
 }
 export function moveMod(el, d) { const ms = S().config.modules, i = +el.closest("[data-i]").dataset.i, j = i + d; if (j < 0 || j >= ms.length) return; [ms[i], ms[j]] = [ms[j], ms[i]]; site.save(); render(); }
 /* Lance une action de CLICK ou de CHANGE. Une action qui échoue, tout de suite ou plus tard (une promesse rejetée), le

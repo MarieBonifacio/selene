@@ -37,9 +37,10 @@ function launch(storage, { bare = false } = {}) {
 }
 
 test('built artifact boots, persists an assistant-created task, and survives reload', () => {
-  const storage = new Map();
+  // Sans session, la page hébergée montre l'écran d'entrée ; « Commencer sans compte » (U1) ouvre l'app elle-même.
+  const storage = new Map([['selene-sans-compte', '1']]);
   const first = launch(storage);
-  assert.match(first.nodes.get('#main').innerHTML, /Selene|lune|Chantier/i);
+  assert.match(first.nodes.get('#main').innerHTML, /Chantier/);
   first.TOOLS.find(x => x.name === 'ajouter_tache').execute({ titre: 'Tester le Velux' });
   assert.equal(JSON.parse(storage.get('selene-site-v1')).modules.chantier.entries[0].title, 'Tester le Velux');
 

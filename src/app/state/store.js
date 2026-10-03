@@ -113,6 +113,11 @@ export function makeStore(key, path, seed, normalize = d => d, { onRemoteChange 
   /* Remplacement total voulu (import d'une sauvegarde) : la prochaine synchro écrase le serveur
      au lieu de fusionner — toujours par écriture conditionnelle, donc sans course avec un autre appareil. */
   s.replaceAll = data => { s.data = normalize(data); s.force = true; s.save(); };
+  /* Un appareil utilisé sans compte rejoint un compte qui a peut-être déjà ses données. Sans base commune, la fusion garde
+     les ajouts des deux côtés, et pour une même valeur (un réglage : palette, nom) le plus récent gagne, donc l'appareil.
+     Ici, c'est le compte qui doit l'emporter : la date locale passe à 1. Pas à 0, qui ferait adopter le serveur tel quel
+     et perdre ce qui a été noté ; un compte neuf, sans ligne, reçoit l'appareil entier. */
+  s.yieldToRemote = () => { if (s.data.updatedAt) { s.data.updatedAt = 1; saveLS(); } };
   /* Y a-t-il ici des changements que le serveur n'a pas (encore) reçus ? */
   s.unsynced = () => !s.base || !deepEqual({ ...s.data, updatedAt: 0 }, { ...s.base, updatedAt: 0 });
   s.reload = () => {

@@ -1,5 +1,5 @@
 /* Le rendu : thème, mémo par rendu, render() et renderNow(), défilement retenu, changement de route. */
-import { hosted, platform } from "../../platform.js";
+import { platform } from "../../platform.js";
 import { approxPlace, sunPosition } from "../../core/sky.js";
 import { SHEETS, TYPE_UI, VIEWS } from "../registry.js";
 import { $, esc, pageSize } from "../lib/dom.js";
@@ -13,7 +13,7 @@ import { timerLabel } from "../features/timer.js";
 import { setOpenId } from "../modules/taches.js";
 import { moon, moonSVG } from "../scene/moon.js";
 import { skyConf, skyWatch } from "../scene/sky.js";
-import { authReady, authSession, authView } from "../services/auth.js";
+import { authGate, authView } from "../services/auth.js";
 import { backTo, barHTML, focusEntry, navHTML, noteVisit, routeOf, trackBack } from "./nav.js";
 import { closeOverlays, sheetArg, sheetKind } from "./sheets.js";
 import { plateHTML, tintOf } from "./sigils.js";
@@ -63,17 +63,20 @@ export function render() {
 function renderNow() {
   applyTheme();
   if (applyLang(S().config.lang)) localizeShell(); // avant tout texte, écran de connexion compris (la langue de l'appareil, tant qu'aucun compte n'est lu)
-  if (hosted() && authReady() && !authSession) { $("#nav").innerHTML = ""; $("#bar").innerHTML = ""; $("#main").innerHTML = authView(); return; }
   const s = S(), m = moon();
+  $("#brandName").textContent = s.config.name || "Selene";
+  document.title = s.config.name || "Selene";
+  $("#miniMoon").innerHTML = moonSVG(m.p, 40);
+  $("#dateline").textContent = new Date().toLocaleDateString(uiLocale(), { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
+  // L'écran de connexion : la lune du jour, mais ni navigation, ni minuteur (rien à minuter avant d'être entrée).
+  const gate = authGate();
+  if (gate) document.documentElement.dataset.auth = ""; else delete document.documentElement.dataset.auth;
+  if (gate) { $("#nav").innerHTML = ""; $("#bar").innerHTML = ""; $("#main").innerHTML = authView(); return; }
   let view = routeOf().view;
   // Les vues fixes priment toujours ; hasOwn évite qu'un « #constructor » trouve Object.prototype.
   const fixed = v => v === "accueil" || v === "reglages" || v === "recherche" || v === "bilan" || (v === "dehors" && dehorsOn());
   if (!fixed(view) && (!(Object.hasOwn(s.modules, view) || Object.hasOwn(VIEWS, view)) || !enabled(view))) view = "accueil";
   const inst = !fixed(view) && Object.hasOwn(s.modules, view) ? s.modules[view] : null;
-  $("#brandName").textContent = s.config.name || "Selene";
-  document.title = s.config.name || "Selene";
-  $("#miniMoon").innerHTML = moonSVG(m.p, 40);
-  $("#dateline").textContent = new Date().toLocaleDateString(uiLocale(), { weekday: "long", day: "numeric", month: "long" }) + ", " + m.name.toLowerCase();
   $("#nav").innerHTML = navHTML(view);
   $("#bar").innerHTML = barHTML(view);
   if (inst && view !== lastView) noteVisit(view);
