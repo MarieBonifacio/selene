@@ -291,7 +291,9 @@ et la conversation avec l'assistant ; la clé API, gardée chiffrée par la fonc
   (`font-src 'self'`, dossier `fonts/`). Connexions limitées à `*.supabase.co` et aux services publics de la phase 1, chacun nommé (Open-Meteo, Crossref, Microlink,
   MusicBrainz, OpenAgenda (Opendatasoft), OpenAlex, Zotero ; images de Cover Art Archive) : voir [connexions.md](connexions.md).
 - **Assistant** : ne lit que les modules cochés dans Réglages → Assistant ; ses actions sont revérifiées
-  à l'exécution (module actif, écriture autorisée) et passent par les mêmes règles métier que l'interface.
+  à l'exécution (module actif, écriture autorisée) et passent par les mêmes règles métier que l'interface. Chacune
+  attend l'accord de la personne, qui voit en texte brut ce qui serait écrit (T14 : un texte lu par l'assistant peut
+  porter une consigne injectée ; `runTool`).
 
 ## Vérification
 

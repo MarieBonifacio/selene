@@ -69,6 +69,23 @@ test('assistant actions respect module and global permissions at execution time'
   assert.equal(budget.length, 1);
 });
 
+test('assistant : chaque écriture attend l’accord, qui voit ce qui serait écrit ; un refus ne change rien (T14)', async () => {
+  const app = launch(new Map());
+  const budget = app.site.data.modules.budget.entries;
+  app.site.data.config.assistant.actions = true;
+  let answer = 'cancel', opened = 0;
+  app.nodes.set('#cdlg', { returnValue: '', showModal() { opened++; queueMicrotask(() => { this.returnValue = answer; this.onclose(); }); } });
+  const refused = await app.runTool('ajouter_operation', { montant: 12.5, type: 'dépense', enveloppe: 'Courses <img src=x>' });
+  assert.match(app.nodes.get('#cmsg').textContent, /^L'assistant voudrait enregistrer une dépense de 12,5.* \(Courses <img src=x>\)\. D'accord \?$/, 'ce qui serait écrit, en texte brut');
+  assert.match(refused, /Refusé/); assert.equal(budget.length, 0, 'refusé : rien n’est écrit');
+  answer = 'ok';
+  assert.match(await app.runTool('ajouter_operation', { montant: 12.5, type: 'dépense' }), /Enregistré/);
+  assert.equal(budget.length, 1, 'accordé : écrit');
+  app.site.data.config.assistant.actions = false;
+  await assert.rejects(app.runTool('capturer', { texte: 'consigne glissée dans une source' }), /non autorisée/);
+  assert.equal(opened, 2, 'une action non permise est refusée avant toute question');
+});
+
 test('résumé du matin : un par jour qui a quelque chose, à l’heure choisie, en texte brut, jamais dans le passé', () => {
   const storage = new Map();
   assert.equal(launch(storage).digestPlan().length, 0, 'désactivé par défaut');

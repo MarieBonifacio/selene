@@ -19,6 +19,14 @@ hébergée, il n'existe qu'à travers elle.
   `ASSISTANT_ORIGINS` (par défaut le site publié). Donne à ta clé une limite de dépense dans la console Anthropic.
 - **Muette.** Elle ne garde ni les questions ni les réponses. Supabase journalise les invocations (heure, durée,
   code), pas leur contenu.
+- **Rien ne s'écrit sans ton accord** (T14 de l'audit). Quand l'assistant veut agir (ajouter une tâche, en terminer
+  une, déposer une note, enregistrer une opération), une fenêtre dit ce qui serait écrit, en texte brut : « L'assistant
+  voudrait déposer dans la boîte de réception : « … ». D'accord ? ». Un texte que l'assistant lit (une source, un flux,
+  une note) peut contenir des consignes que le modèle prendrait pour les tiennes : c'est l'**injection indirecte**.
+  Avec cette fenêtre, de telles consignes ne peuvent plus rien écrire en silence. Un refus revient au modèle (« Refusé
+  par la personne : rien n'a été modifié. »). Les droits (module actif, actions permises) sont vérifiés avant de
+  demander, puis de nouveau à l'exécution (`runTool`, `src/app/features/assistant.js` ;
+  `tests/browser/assistant-accord.js`).
 
 ## Mettre en place (une fois)
 

@@ -711,7 +711,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "2bf6a981e1";
+const SELENE_BUILD = "47b4fb9c3c";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1418,6 +1418,7 @@ var __selene = (() => {
     roman: () => roman,
     routeOf: () => routeOf,
     runAction: () => runAction,
+    runTool: () => runTool,
     sampleNS: () => sampleNS,
     saveCollectionItem: () => saveCollectionItem,
     saveDraft: () => saveDraft,
@@ -2969,6 +2970,13 @@ var __selene = (() => {
     "Lancer le minuteur (15 min)": "Start the timer (15 min)",
     "Capturer…": "Capture…",
     "Trier la boîte, une note à la fois": "Sort the inbox, one note at a time",
+    "ajouter la tâche « {0} »": "add the task “{0}”",
+    ", pour le {0}": ", due {0}",
+    "marquer comme faite la tâche « {0} »": "mark the task “{0}” as done",
+    "déposer dans la boîte de réception : « {0} »": "drop into the inbox: “{0}”",
+    "enregistrer un revenu de {0}": "record income of {0}",
+    "enregistrer une dépense de {0}": "record an expense of {0}",
+    "L'assistant voudrait {0}. D'accord ?": "The assistant would like to {0}. All right?",
     "Bilan par cycle lunaire": "Review by lunar cycle",
     "Bilan par mois": "Review by month",
     "Action": "Action",
@@ -5805,9 +5813,9 @@ var __selene = (() => {
   function originHTML(e, current) {
     const o = e.origin;
     if (!o) return "";
-    const same = String(current ?? "").trim() === o.text.trim(), short = o.text.length > 90 ? o.text.slice(0, 90) + "…" : o.text;
+    const same = String(current ?? "").trim() === o.text.trim(), short2 = o.text.length > 90 ? o.text.slice(0, 90) + "…" : o.text;
     const from = o.date ? tr`de ${esc(o.from)}, ${fmt(o.date)}` : tr`de ${esc(o.from)}`;
-    return `<span class="origin" title="${esc(o.text)}">↳ ${same ? from : tr`${from} : « ${esc(short)} »`}</span>`;
+    return `<span class="origin" title="${esc(o.text)}">↳ ${same ? from : tr`${from} : « ${esc(short2)} »`}</span>`;
   }
 
   // src/core/radar.js
@@ -9979,12 +9987,17 @@ ${permitted.length ? "Tu peux agir uniquement avec les outils fournis. Ne les ut
 DONNÉES DU TABLEAU DE BORD
 ${contextText()}`;
   }
+  var short = (v) => {
+    const t = String(v ?? "").replace(/\s+/g, " ").trim();
+    return t.length > 160 ? t.slice(0, 159) + "…" : t;
+  };
   var TOOLS = [
     {
       name: "ajouter_tache",
       module: () => firstOfType("taches"),
       description: "Ajoute une tâche au premier module de tâches (voir ses types dans les données). Renvoie une confirmation.",
       inputSchema: { type: "object", properties: { titre: { type: "string" }, piece: { type: "string", description: "pièce ou lieu" }, echeance: { type: "string", description: "AAAA-MM-JJ" }, type: { type: "string" } }, required: ["titre"] },
+      describe: (i) => tr`ajouter la tâche « ${short(i.titre)} »` + (i.echeance ? tr`, pour le ${short(i.echeance)}` : ""),
       execute(i) {
         const inst = S().modules[firstOfType("taches")];
         const t = addTask(inst.entries, { title: i.titre, room: i.piece, cat: i.type || inst.config.cats[0], due: i.echeance, note: "Ajoutée par l'assistant" }, uid(), todayISO());
@@ -9998,6 +10011,10 @@ ${contextText()}`;
       module: () => firstOfType("taches"),
       description: "Marque comme faite une tâche, par son identifiant entre crochets.",
       inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
+      describe: (i) => {
+        const found = allTasks().find(([, t]) => t.id === i.id);
+        return tr`marquer comme faite la tâche « ${short(found ? found[1].title : i.id)} »`;
+      },
       execute(i) {
         const found = allTasks().find(([, t2]) => t2.id === i.id);
         if (!found) throw new Error("Tâche introuvable");
@@ -10012,6 +10029,7 @@ ${contextText()}`;
       module: () => inboxId(S().modules),
       description: "Dépose une note dans la boîte de réception, à trier plus tard.",
       inputSchema: { type: "object", properties: { texte: { type: "string" } }, required: ["texte"] },
+      describe: (i) => tr`déposer dans la boîte de réception : « ${short(i.texte)} »`,
       execute(i) {
         addCapture(S().modules[inboxId(S().modules)].entries, i.texte, uid(), todayISO());
         site.save();
@@ -10024,6 +10042,7 @@ ${contextText()}`;
       module: () => firstOfType("budget"),
       description: "Enregistre une dépense ou un revenu dans le premier module Budget.",
       inputSchema: { type: "object", properties: { montant: { type: "number" }, type: { type: "string", enum: ["dépense", "revenu"] }, enveloppe: { type: "string" }, note: { type: "string" }, date: { type: "string", description: "AAAA-MM-JJ, aujourd'hui par défaut" } }, required: ["montant"] },
+      describe: (i) => (i.type === "revenu" ? tr`enregistrer un revenu de ${money(Number(i.montant) || 0)}` : tr`enregistrer une dépense de ${money(Number(i.montant) || 0)}`) + (i.enveloppe ? ` (${short(i.enveloppe)})` : ""),
       execute(i) {
         const entry = addBudgetEntry(S().modules[firstOfType("budget")].entries, { amount: i.montant, type: i.type, cat: i.enveloppe, note: i.note, date: i.date }, uid(), todayISO());
         site.save();
@@ -10043,6 +10062,12 @@ ${contextText()}`;
     if (!tool) throw new Error("Action non autorisée ou module désactivé");
     return tool.execute(input);
   };
+  async function runTool(name, input) {
+    const tool = availableTools().find((t) => t.name === name);
+    if (!tool) throw new Error("Action non autorisée ou module désactivé");
+    if (!await ask(tr`L'assistant voudrait ${tool.describe(input || {})}. D'accord ?`)) return "Refusé par la personne : rien n'a été modifié.";
+    return executeTool(name, input);
+  }
   async function askAPI(history) {
     const a = S().config.assistant, tools = availableTools().map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema }));
     const msgs = history.map((m) => ({ role: m.role, content: m.content }));
@@ -10058,7 +10083,7 @@ ${contextText()}`;
       for (const b of data.content.filter((b2) => b2.type === "tool_use")) {
         let r;
         try {
-          r = await executeTool(b.name, b.input || {});
+          r = await runTool(b.name, b.input || {});
         } catch (e) {
           r = "Erreur : " + e.message;
         }
@@ -10071,7 +10096,7 @@ ${contextText()}`;
   async function askSample(history, onText) {
     const input = [{ role: "user", content: instructions() }, ...history];
     const opts = { onText: ({ text }) => onText(text) };
-    if (availableTools().length) opts.tools = availableTools().map((t) => ({ name: t.name, description: t.description, inputSchema: t.inputSchema, execute: (i) => executeTool(t.name, i) }));
+    if (availableTools().length) opts.tools = availableTools().map((t) => ({ name: t.name, description: t.description, inputSchema: t.inputSchema, execute: (i) => runTool(t.name, i) }));
     try {
       return (await sampleNS(input, opts)).text;
     } catch (e) {
