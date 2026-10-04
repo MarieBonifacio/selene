@@ -12,6 +12,7 @@ import { backend } from "../features/assistant.js";
 import { bridgeStale } from "../features/bridge.js";
 import { dehorsLine } from "../features/dehors.js";
 import { radarConf, radarPlace } from "../features/radar.js";
+import { relectureLine } from "../features/relecture.js";
 import { sortesSection } from "../features/sortes.js";
 import { taskHTML, taskModules, todayTasks } from "../modules/taches.js";
 import { forestSVG } from "../scene/forest.js";
@@ -70,7 +71,7 @@ VIEWS.accueil = () => {
     </section>
   </div>
   <section><div class="row sec-head" style="align-items:baseline"><h2>${tr`Où en sont les choses`}</h2><span class="spacer"></span><a class="btn ghost sm" href="#bilan">${bilanMode() === "mois" ? tr`Bilan du mois` : tr`Bilan du cycle`}</a></div>${rows}</section>
-  ${sortesSection()}`;
+  ${relectureLine()}${sortesSection()}`;
 };
 const SUMMARY = {
   assistant: () => { const b = backend(); return b === "sample" ? tr`Branché via claude.ai` : b === "api" ? tr`Branché via ta clé API` : tr`Pas encore branché`; }

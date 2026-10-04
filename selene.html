@@ -717,7 +717,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "9e38ebcf66";
+const SELENE_BUILD = "bbf483b61a";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1478,6 +1478,7 @@ var __selene = (() => {
     skySettingsHTML: () => skySettingsHTML,
     skyWatch: () => skyWatch,
     slugId: () => slugId,
+    sortesCard: () => sortesCard,
     sortesDraw: () => sortesDraw,
     sortesForget: () => sortesForget,
     sortesPool: () => sortesPool,
@@ -2011,6 +2012,26 @@ var __selene = (() => {
     "Retirer": "Draw again",
     "Tirer": "Draw",
     "Rien d'assez ancien à tirer. Reviens dans deux semaines.": "Nothing old enough to draw. Come back in two weeks.",
+    // features/relecture.js
+    "{0} chose endormie": { one: "{0} sleeping thing", other: "{0} sleeping things" },
+    "{0} tension ouverte": { one: "{0} open tension", other: "{0} open tensions" },
+    "{0} hypothèse sans source": { one: "{0} hypothesis without a source", other: "{0} hypotheses without a source" },
+    "Relecture de la semaine": "Weekly review",
+    "dix minutes : {0}": "ten minutes: {0}",
+    "notée {0}": "noted {0}",
+    "Dix minutes : ce qui dort, ce qui se contredit, ce qui attend ses preuves. Rien n'est noté ; relire suffit.": "Ten minutes: what sleeps, what contradicts itself, what awaits its evidence. Nothing is scored; rereading is enough.",
+    "Dernière relecture {0}.": "Last review {0}.",
+    "Trois choses endormies": "Three sleeping things",
+    "Tirées au sort, pondérées par l'oubli : plus c'est ancien, plus ça a de chances de revenir.": "Drawn at random, weighted by oblivion: the older it is, the likelier it comes back.",
+    "Rien d'assez ancien pour l'instant : il faut deux semaines de silence.": "Nothing old enough yet: it takes two weeks of silence.",
+    "Aucune. Rien ne se contredit, ou rien n'a encore été relié ainsi.": "None. Nothing contradicts itself, or nothing has been linked that way yet.",
+    "Hypothèses sans source": "Hypotheses without a source",
+    "Notées « hypothèse », et qu'aucune source ne documente encore. Une hypothèse n'est pas une faiblesse, c'est une dette à rembourser.": "Marked “hypothesis”, and not yet documented by any source. A hypothesis isn't a weakness, it's a debt to repay.",
+    "Voir les {0}": "See all {0}",
+    "Aucune : chaque hypothèse a sa source, ou aucune n'est notée.": "None: every hypothesis has its source, or none is noted.",
+    "Relecture faite": "Review done",
+    "Relecture faite. La prochaine, dans une semaine.": "Review done. The next one, in a week.",
+    "dix minutes : ce qui dort, ce qui se contredit, ce qui attend ses preuves": "ten minutes: what sleeps, what contradicts itself, what awaits its evidence",
     // features/sources.js
     "Ce site publie un flux : {0}": "This site publishes a feed: {0}",
     "le suivre dans Dehors": "follow it in Outside",
@@ -8633,6 +8654,71 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     ${c ? `<p class="hint" style="margin-top:6px">${tr`Autour de ${esc(c.name)}.`}</p>` : `<p class="hint" style="margin-top:6px">${tr`Il lui faut un lieu : règle-le dans Ciel, ci-dessus.`}</p>`}</section>`;
   }
 
+  // src/app/features/relecture.js
+  var KEY2 = "selene-relecture";
+  var EVERY = 7;
+  var lastDone = () => {
+    try {
+      return platform.storage.get(KEY2) || "";
+    } catch {
+      return "";
+    }
+  };
+  var drawn = null;
+  function unsourcedHyps() {
+    const back = backlinks();
+    return thoughtItems().filter((it) => it.e.ep === "hyp" && !(back.get(it.ref) || []).some((b) => b.type === "documente")).sort((a, b) => (a.e.date || "").localeCompare(b.e.date || ""));
+  }
+  function drawThree() {
+    const pool = sortesPool().filter((x) => x.kind !== "tension"), out = [];
+    while (out.length < 3 && pool.length) {
+      let r = Math.random() * pool.reduce((a, x) => a + x.days, 0), i = 0;
+      for (; i < pool.length - 1; i++) {
+        r -= pool[i].days;
+        if (r <= 0) break;
+      }
+      out.push(pool.splice(i, 1)[0]);
+    }
+    return out;
+  }
+  var material = () => ({ sleeping: sortesPool().filter((x) => x.kind !== "tension").length, tensions: openTensions().length, hyps: unsourcedHyps().length });
+  function relectureLine() {
+    const last = lastDone();
+    if (last && diffDays(todayISO(), last) < EVERY) return "";
+    const m = material();
+    if (!m.sleeping && !m.tensions && !m.hyps) return "";
+    const parts = [m.sleeping && trn(Math.min(3, m.sleeping), "{0} chose endormie", "{0} choses endormies"), m.tensions && trn(m.tensions, "{0} tension ouverte", "{0} tensions ouvertes"), m.hyps && trn(m.hyps, "{0} hypothèse sans source", "{0} hypothèses sans source")].filter(Boolean);
+    return `<p class="hint relecture-go"><a class="btn ghost sm" href="#bilan/relecture">${tr`Relecture de la semaine`}</a> ${tr`dix minutes : ${parts.join(", ")}`}</p>`;
+  }
+  function relectureView() {
+    if (!drawn) drawn = drawThree();
+    const hyps = unsourcedHyps(), last = lastDone();
+    const hypList = hyps.slice(0, 8).map((it) => `<li class="item"><span></span><div><a href="#${esc(it.mod)}/${esc(it.e.id)}">${tr`« ${esc(excerpt(it.e, 120))} »`}</a><div class="meta"><span>${esc(label(it.mod))}</span>${it.e.date ? `<span>${tr`notée ${ago(it.e.date)}`}</span>` : ""}</div></div></li>`).join("");
+    return `<div class="row" style="margin-bottom:14px"><a class="btn ghost sm" href="#bilan">‹ ${tr`Bilan`}</a></div>
+  <h2>${tr`Relecture de la semaine`}</h2>
+  <p class="hint">${tr`Dix minutes : ce qui dort, ce qui se contredit, ce qui attend ses preuves. Rien n'est noté ; relire suffit.`}${last ? " " + tr`Dernière relecture ${ago(last)}.` : ""}</p>
+  <section><h3>${tr`Trois choses endormies`}</h3><p class="hint">${tr`Tirées au sort, pondérées par l'oubli : plus c'est ancien, plus ça a de chances de revenir.`}</p>
+    ${drawn.length ? drawn.map(sortesCard).join("") : `<p class="empty">${tr`Rien d'assez ancien pour l'instant : il faut deux semaines de silence.`}</p>`}
+    ${drawn.length ? `<button class="btn ghost sm" data-act="relecture-draw">${tr`Retirer`}</button>` : ""}</section>
+  ${tensionSection() || `<section><h3>${tr`Tensions ouvertes`}</h3><p class="empty">${tr`Aucune. Rien ne se contredit, ou rien n'a encore été relié ainsi.`}</p></section>`}
+  <section><h3>${tr`Hypothèses sans source`}</h3><p class="hint">${tr`Notées « hypothèse », et qu'aucune source ne documente encore. Une hypothèse n'est pas une faiblesse, c'est une dette à rembourser.`}</p>
+    ${hyps.length ? `<ul class="plain">${hypList}</ul>${hyps.length > 8 ? `<p class="hint"><button class="btn ghost sm" data-act="search-for" data-q="${esc(trp("recherche", "statut"))}:${esc(epLabel("hyp"))}">${tr`Voir les ${hyps.length}`}</button></p>` : ""}` : `<p class="empty">${tr`Aucune : chaque hypothèse a sa source, ou aucune n'est notée.`}</p>`}</section>
+  <div class="row" style="margin:18px 0 34px"><button class="btn acc" data-act="relecture-done">${tr`Relecture faite`}</button></div>`;
+  }
+  CLICK["relecture-draw"] = () => {
+    drawn = drawThree();
+    render();
+  };
+  CLICK["relecture-done"] = () => {
+    try {
+      platform.storage.set(KEY2, todayISO());
+    } catch {
+    }
+    drawn = null;
+    location.hash = "accueil";
+    toast(tr`Relecture faite. La prochaine, dans une semaine.`);
+  };
+
   // src/app/scene/forest.js
   var TREES = null;
   function rng(seed2) {
@@ -9047,6 +9133,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   }
   VIEWS.bilan = () => {
     if (routeOf().entry === "planche") return plancheView();
+    if (routeOf().entry === "relecture") return relectureView();
     const mode = bilanMode(), cur = periodOf(mode, bilanOffset), prev = periodOf(mode, bilanOffset + 1), s = S();
     const rows = s.config.modules.filter((m) => m.on && Object.hasOwn(s.modules, m.id) && TYPE_UI[s.modules[m.id].type].review && !TYPE_UI[s.modules[m.id].type].sensitive).map((m) => {
       const inst = s.modules[m.id], review = TYPE_UI[inst.type].review, r = review(inst, cur.from, cur.to), p = review(inst, prev.from, prev.to);
@@ -9057,6 +9144,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     return `<div class="row" style="margin-bottom:6px"><h2 style="margin:0">${tr`Bilan`}</h2><span class="spacer"></span>${tab("lune", tr`Cycle lunaire`)}${tab("mois", tr`Mois`)}<button class="btn ghost sm" data-act="planche-open" title="${tr`Le cycle en planche A4, à imprimer ou enregistrer en PDF`}">${tr`Planche`}</button></div>
   <div class="row" style="margin-bottom:18px"><button class="btn ghost" data-act="bilan-nav" data-d="1" aria-label="${tr`Période précédente`}">‹</button><b style="text-transform:none">${esc(cur.name)}</b>${bilanOffset ? `<button class="btn ghost" data-act="bilan-nav" data-d="-1" aria-label="${tr`Période suivante`}">›</button>` : ""}</div>
   <p class="hint">${tr`Ce qui s'est passé dans chaque module pendant la période, et, en face, la période d'avant. Aucune note, aucun trophée : les chiffres suffisent à culpabiliser.`}</p>
+  <p class="hint relecture-go"><a class="btn ghost sm" href="#bilan/relecture">${tr`Relecture de la semaine`}</a> ${tr`dix minutes : ce qui dort, ce qui se contredit, ce qui attend ses preuves`}</p>
   <section>${rows || `<p class="empty">${tr`Aucun module à résumer.`}</p>`}</section>
   ${epLine ? `<section><h3>${tr`Statut des idées notées`}</h3><p class="hint">${tr`Ce qu'elles revendiquent de savoir. Une hypothèse n'est pas une faiblesse, c'est une dette à rembourser.`}</p><div class="row">${epLine}</div></section>` : ""}
   ${driftSection(mode, cur)}
@@ -9121,7 +9209,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     </section>
   </div>
   <section><div class="row sec-head" style="align-items:baseline"><h2>${tr`Où en sont les choses`}</h2><span class="spacer"></span><a class="btn ghost sm" href="#bilan">${bilanMode() === "mois" ? tr`Bilan du mois` : tr`Bilan du cycle`}</a></div>${rows}</section>
-  ${sortesSection()}`;
+  ${relectureLine()}${sortesSection()}`;
   };
   var SUMMARY = {
     assistant: () => {

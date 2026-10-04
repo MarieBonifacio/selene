@@ -44,7 +44,7 @@ export function sortesDraw() {
   for (const x of pool) { r -= x.days; if (r <= 0) return x; }
   return pool.at(-1);
 }
-function sortesCard(x) {
+export function sortesCard(x) {
   if (x.kind === "tension") return `<div class="card"><span class="tag">${tr`Tension ouverte`}</span><p>${refHTML(x.a)} <span class="hint">${esc(linkLabel("contredit"))}</span> ${refHTML(x.b)}</p><div class="row"><button class="btn ghost sm" data-act="tension-resolve" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${tr`résoudre`}</button><button class="btn ghost sm" data-act="tension-dossier" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${tr`dossier`}</button></div></div>`;
   if (x.kind === "source") {
     const st = S().modules[x.mod].config.statuses, fresh = x.e.status === st[0], lun = Math.floor(x.days / SYNODIC);

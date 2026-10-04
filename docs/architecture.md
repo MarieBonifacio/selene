@@ -211,6 +211,11 @@ Trois fonctionnalités s'appuient directement sur ce qui précède, sans rien y 
   jours de silence) sur trois bassins déjà calculés ailleurs — fragments/notes via `editedAt || date`, tensions
   via `openTensions()`, motifs via `concordance()` + `fallow()`. Rien n'est stocké ; l'état affiché (`sortesLast`)
   est une variable de module, oubliée à la fermeture de l'onglet.
+- **Relecture de la semaine** (`#bilan/relecture`, `features/relecture.js`, idée 4 de l'audit) : trois tirages des sortes
+  sans remise (hors tensions), les tensions ouvertes (`tensionSection()`), les hypothèses qu'aucun lien « documente »
+  ne vise (`backlinks()`). Le tirage vit le temps de la visite ; « Relecture faite » garde le jour sur l'appareil
+  (`selene-relecture`), et l'accueil repropose la page sept jours plus tard, s'il y a de quoi relire. Rien n'est compté
+  ni synchronisé.
 - **Test lunaire** (`lunarTest`, `features/lunar.js`) : un test de Rayleigh sur le même corpus que la dérive lexicale (`ui.texts()`
   de chaque module non-concordance). Piège rencontré en écrivant `sortesPool` : un `if` sans accolades dans une
   boucle peut capturer le `else if` suivant (*dangling else*) et rendre une branche entière inatteignable sans la
