@@ -62,8 +62,10 @@ const peek = async ctx => {
     console.log('la réouverture : la copie reversée, puis l’envoi');
     online = true;
     const p2 = await ctx.newPage(); p2.on('pageerror', e => errs.push(e.message));
-    await p2.goto(BASE + '/index.html#inbox'); await until(() => inbox().includes('delta'));
-    check((await p2.textContent('#main')).includes('delta'), 'la saisie est revenue sur l’appareil');
+    await p2.goto(BASE + '/index.html#inbox'); await until(() => inbox().includes('delta'), 20000);
+    // L'écran, lui, s'attend : sous la charge de la CI, l'envoi au serveur peut précéder l'affichage lu ici.
+    const vue = await p2.waitForFunction(() => (document.querySelector('#main') || {}).textContent?.includes('delta'), null, { timeout: 20000 }).then(() => '', async () => `${await p2.evaluate(() => location.hash)} : ${(await p2.textContent('#main')).replace(/\s+/g, ' ').slice(0, 160)}`);
+    check(!vue, 'la saisie est revenue sur l’appareil' + (vue ? ` (à l’écran ${vue})` : ''));
     check(inbox().includes('delta') && inbox().includes('alpha'), 'et elle est partie au serveur');
     const later = await peek(ctx);
     check(later.journals.length === 0, 'les copies reversées sont effacées');
