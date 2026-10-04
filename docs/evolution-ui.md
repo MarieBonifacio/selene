@@ -318,6 +318,10 @@ Livrée en quatre temps, pour que chaque pull request reste relisible.
 - [x] Le Vasculum : « Trier une à une » (boîte, feuille Capturer, palette) ; une note à la fois, la plus ancienne
       d'abord, le rangement reconnu en premier, les espaces en grands sigils, « Plus tard », « Supprimer ».
 - [x] Les messages (« Annuler », « Rangé dans… ») se logent dans la fenêtre modale ouverte au lieu de passer dessous.
+- [x] Un message à action (« Annuler », « Ranger », « La relier à une idée ») ne part pas sous la main : survolé, ou le
+  focus dessus, il attend qu'on le quitte, puis encore deux secondes (WCAG 2.2.1, délai réglable). `⌘Z` / `Ctrl+Z`
+  reprend le dernier « Annuler » affiché, hors d'un champ (dans un champ, le raccourci défait la frappe) ; le bouton
+  l'annonce (`aria-keyshortcuts`). `tests/browser/annuler.js`.
 
 **3d : écrans chargés**
 - [x] Journaux à dates suspendues : la date dans la marge, en petites capitales (notes, fragments, rappels,

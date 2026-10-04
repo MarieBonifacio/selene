@@ -712,7 +712,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "2436a30cde";
+const SELENE_BUILD = "62d2b872c5";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1498,6 +1498,7 @@ var __selene = (() => {
     totalOf: () => totalOf,
     trackBack: () => trackBack,
     uid: () => uid,
+    undoOnKeys: () => undoOnKeys,
     urgeActionId: () => urgeActionId,
     utf8Bytes: () => utf8Bytes,
     validDate: () => validDate,
@@ -3384,6 +3385,7 @@ var __selene = (() => {
   }
   function toast(msg) {
     undoFn = null;
+    undoKeys = false;
     const el = toastHost();
     el.textContent = msg;
     el.classList.remove("act");
@@ -3392,18 +3394,34 @@ var __selene = (() => {
     toast.t = setTimeout(() => el.classList.remove("show"), 3400);
   }
   var undoFn = null;
-  function toastAction(msg, button, fn, ms = 6e3) {
+  var undoKeys = false;
+  var held = (el) => {
+    try {
+      return el.matches(":hover") || el.contains(document.activeElement);
+    } catch {
+      return false;
+    }
+  };
+  function hideAction(el) {
+    if (held(el)) {
+      toast.t = setTimeout(() => hideAction(el), 2e3);
+      return;
+    }
+    el.classList.remove("show", "act");
+    undoFn = null;
+    undoKeys = false;
+  }
+  function toastAction(msg, button, fn, ms = 6e3, keys = "") {
     const el = toastHost();
-    el.innerHTML = `${esc(msg)} <button class="btn sm" data-act="undo">${esc(button)}</button>`;
+    el.innerHTML = `${esc(msg)} <button class="btn sm" data-act="undo"${keys ? ` aria-keyshortcuts="${esc(keys)}"` : ""}>${esc(button)}</button>`;
     el.classList.add("show", "act");
     undoFn = fn;
+    undoKeys = !!keys;
     clearTimeout(toast.t);
-    toast.t = setTimeout(() => {
-      el.classList.remove("show", "act");
-      undoFn = null;
-    }, ms);
+    toast.t = setTimeout(() => hideAction(el), ms);
   }
-  var toastUndo = (msg, undo) => toastAction(msg, trp("toast", "Annuler"), undo);
+  var toastUndo = (msg, undo) => toastAction(msg, trp("toast", "Annuler"), undo, 6e3, "Control+Z Meta+Z");
+  var undoOnKeys = () => !!undoFn && undoKeys;
   var PAGE = 100;
   var pageSize = {};
   function paged(key, list) {
@@ -10377,6 +10395,12 @@ ${contextText()}`;
     render();
     const el = document.getElementById("searchIn");
     if (el) el.focus();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey || e.key !== "z" && e.key !== "Z" || !undoOnKeys()) return;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || "") || e.target.isContentEditable) return;
+    e.preventDefault();
+    CLICK["undo"]();
   });
   document.addEventListener("keydown", (e) => {
     if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === "k" || e.key === "K")) {
