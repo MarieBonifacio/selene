@@ -35,3 +35,15 @@ test('les données déclarées, et leur ligne dans la fiche Google Play', () => 
   const doc = fs.readFileSync('docs/publication.md', 'utf8');
   for (const [type, line] of Object.entries(play)) assert.ok(doc.includes(line), `${type} : « ${line} » manque dans la fiche Play de publication.md`);
 });
+
+test('« Ma position » dans les apps : la position approximative seule, et la phrase d’iOS en deux langues', () => {
+  const android = fs.readFileSync('native/android/app/src/main/AndroidManifest.xml', 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+  assert.match(android, /android\.permission\.ACCESS_COARSE_LOCATION/);
+  assert.doesNotMatch(android, /ACCESS_FINE_LOCATION|ACCESS_BACKGROUND_LOCATION/, 'la position précise ou en arrière-plan n’est jamais demandée');
+  assert.match(fs.readFileSync('native/ios/App/App/Info.plist', 'utf8'), /<key>NSLocationWhenInUseUsageDescription<\/key>\s*<string>[^<]{20,}<\/string>/);
+  for (const lang of ['en', 'fr']) assert.match(fs.readFileSync(`native/ios/App/App/${lang}.lproj/InfoPlist.strings`, 'utf8'), /^"NSLocationWhenInUseUsageDescription" = "[^"]{20,}";$/m, lang);
+  assert.match(fs.readFileSync('native/ios/App/App.xcodeproj/project.pbxproj', 'utf8'), /InfoPlist\.strings in Resources/);
+  // Ce qui est gardé reste approximatif : la position est arrondie avant d'être rangée, et déclarée comme telle.
+  assert.match(fs.readFileSync('src/app/scene/sky.js', 'utf8'), /lat: r1\(lat\), lon: r1\(lon\)/);
+  assert.match(manifest, /NSPrivacyCollectedDataTypeCoarseLocation/);
+});

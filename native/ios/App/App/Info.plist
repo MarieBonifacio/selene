@@ -13,6 +13,10 @@
 		<string>fr</string>
 		<string>en</string>
 	</array>
+	<!-- « Ma position », pour le ciel de l'accueil : WebKit demande la position par le système, qui exige cette phrase
+	     (traduite dans en.lproj et fr.lproj, InfoPlist.strings). Selene l'arrondit aussitôt à un dixième de degré. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Selene uses your approximate position, rounded to about 11 km, only to show the sky and the weather where you are.</string>
 	<key>CFBundleDisplayName</key>
         <string>Selene</string>
 	<key>CFBundleExecutable</key>
