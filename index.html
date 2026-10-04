@@ -339,7 +339,8 @@ dialog.palette input:focus-visible{outline:none;border-bottom-color:var(--accent
 .modblock>.set.mod{border-top:0}
 .mod-name{display:flex;align-items:center;gap:8px;min-width:0}
 .mod-name .sig{width:20px;height:20px;margin:0;color:var(--tint,var(--muted))}
-.modblock.off .mod-name{opacity:.55}
+/* Un espace éteint : son sigil s'estompe, son nom passe en couleur atténuée mais reste lisible (4,5:1) : il se renomme. */
+.modblock.off .mod-name .sig{opacity:.55}.modblock.off .mod-name>input{color:var(--muted)}
 details.mreg,.mreg-note{margin:-6px 0 6px 23px}
 details.mreg>summary{display:inline-flex;align-items:baseline;gap:8px;min-height:32px;padding:4px 8px 4px 0;cursor:pointer;list-style:none;color:var(--muted);font-family:var(--f-ui);font-size:.84rem}
 details.mreg>summary::-webkit-details-marker{display:none}
