@@ -141,3 +141,7 @@ Pas de case ici : ce sont des engagements, pas des tâches.
   ([publication.md](publication.md#à-chaque-version)).
 - Le workflow *Liens*, le 3 de chaque mois : une annotation ⚠️ (refus) se vérifie dans un navigateur ; un échec ✗
   (page disparue) demande une nouvelle adresse officielle.
+- Les PR de Dependabot, au début de chaque mois : une pour les actions de CI, une pour les outils npm
+  (`.github/dependabot.yml`). Fusionner si Check est vert. Après une mise à jour des actions, regarder que le
+  déploiement Pages qui suit réussit : la CI d'une PR ne l'exerce pas, ni la publication des apps. Une PR en retard
+  sur `main` se met à jour par un commentaire `@dependabot rebase`.
