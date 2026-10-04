@@ -56,6 +56,6 @@ SAVED.push(noteActivity);
 
 export function activitySettingsHTML() {
   return `<label class="check-l" style="margin-top:12px"><input type="checkbox" data-act="activity" ${activityOn() ? "checked" : ""}>${tr`Compter mes jours d'usage, pour la bêta`}</label>
-    <p class="hint">${tr`Un jour où tu as saisi quelque chose, et rien d'autre : ni ce que tu écris, ni l'heure, ni l'appareil. Gardé 13 mois, pour savoir si Selene sert encore au bout d'un mois. Ce réglage vaut pour cet appareil.`}</p>`;
+    <p class="hint">${tr`Un jour où tu as saisi quelque chose, et rien d'autre : ni ce que tu écris, ni l'heure, ni l'appareil. Gardé 90 jours, pour savoir si Selene sert encore au bout d'un mois. Ce réglage vaut pour cet appareil.`}</p>`;
 }
 CHANGE["activity"] = el => setActivity(el.checked);

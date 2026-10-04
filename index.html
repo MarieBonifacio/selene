@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-PxZxEHQGcIqepz2u5xwBR+yjJY1lqXbdwcZlQAY/A3M=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-YS/OT9BPlyxZXoPYvd/1lCIpXqWew7Rm1jdSvMTHFyU=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -744,7 +744,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "47b4fb9c3c";
+const SELENE_BUILD = "17e6643570";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -3289,7 +3289,7 @@ var __selene = (() => {
     "Compte": "Account",
     "Envoyer les erreurs de l'app, anonymes": "Send app errors, anonymously",
     "Compter mes jours d'usage, pour la bêta": "Count my days of use, for the beta",
-    "Un jour où tu as saisi quelque chose, et rien d'autre : ni ce que tu écris, ni l'heure, ni l'appareil. Gardé 13 mois, pour savoir si Selene sert encore au bout d'un mois. Ce réglage vaut pour cet appareil.": "A day on which you entered something, and nothing else: not what you write, not the time, not the device. Kept 13 months, to learn whether Selene is still useful after a month. This setting applies to this device.",
+    "Un jour où tu as saisi quelque chose, et rien d'autre : ni ce que tu écris, ni l'heure, ni l'appareil. Gardé 90 jours, pour savoir si Selene sert encore au bout d'un mois. Ce réglage vaut pour cet appareil.": "A day on which you entered something, and nothing else: not what you write, not the time, not the device. Kept 90 days, to learn whether Selene is still useful after a month. This setting applies to this device.",
     "Seulement les erreurs de programmation : leur type, l'endroit du code, l'écran, la version et la plateforme. Jamais ton compte ni ce que tu écris. Gardées 30 jours, pour corriger Selene. Ce réglage vaut pour cet appareil.": "Programming errors only: their type, the place in the code, the screen, the version and the platform. Never your account or anything you write. Kept 30 days, to fix Selene. This setting applies to this device.",
     "Connecté en tant que {0}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.": "Signed in as {0}. Your data belongs to this account and follows you on all your devices. Signing out erases your data and the conversation with the assistant from this device; your API key stays tied to your account, encrypted, until you forget it.",
     "Se déconnecter": "Sign out",
@@ -9026,7 +9026,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   SAVED.push(noteActivity);
   function activitySettingsHTML() {
     return `<label class="check-l" style="margin-top:12px"><input type="checkbox" data-act="activity" ${activityOn() ? "checked" : ""}>${tr`Compter mes jours d'usage, pour la bêta`}</label>
-    <p class="hint">${tr`Un jour où tu as saisi quelque chose, et rien d'autre : ni ce que tu écris, ni l'heure, ni l'appareil. Gardé 13 mois, pour savoir si Selene sert encore au bout d'un mois. Ce réglage vaut pour cet appareil.`}</p>`;
+    <p class="hint">${tr`Un jour où tu as saisi quelque chose, et rien d'autre : ni ce que tu écris, ni l'heure, ni l'appareil. Gardé 90 jours, pour savoir si Selene sert encore au bout d'un mois. Ce réglage vaut pour cet appareil.`}</p>`;
   }
   CHANGE["activity"] = (el) => setActivity(el.checked);
 

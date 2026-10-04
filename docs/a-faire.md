@@ -57,6 +57,20 @@ connaît pas le format 8 et refuse d'écrire.
   d'usage de la bêta » de `supabase/schema.sql`. Sans elle, rien n'est compté, et la bêta (E4) n'a pas de chiffres
   ([compte.md](compte.md#mesure-dusage-bêta)).
 
+## Valider le problème et le parcours (E1, E2)
+
+Le guide d'entretien, les tâches à faire passer, les grilles et le journal des décisions sont dans
+[validation.md](validation.md).
+
+- [ ] **Dix entretiens sur le problème (E1)**, dans les deux premières semaines : recruter hors des proches, parler du
+  dernier épisode réel, ne montrer Selene qu'à la fin ; seuil : 6 sur 10 décrivent le problème sans y être amenés
+  ([validation.md](validation.md#e1--dix-entretiens-sur-le-problème)).
+- [ ] **Deux vagues de cinq tests de tâches (E2)**, avant d'inviter à la bêta : six tâches, sans aide, chronométrées ;
+  seuils : 80 % de réussite, premier fragment en moins de 2 minutes. M'envoyer la liste des hésitations entre les deux
+  vagues ([validation.md](validation.md#e2--tester-le-parcours-deux-fois-cinq-personnes)).
+- [ ] **Le journal des décisions**, une ligne par expérience terminée, avant de passer à la suivante
+  ([validation.md](validation.md#le-journal-des-décisions)).
+
 ## Valider le marché : la page publique de test (E3)
 
 La page est en ligne avec le site : <https://mariebonifacio.github.io/selene/essai.html>. Tout le mode d'emploi est
@@ -66,7 +80,8 @@ dans [essai.md](essai.md).
   lues dans l'éditeur SQL, puis effacées ; l'aperçu (image, titre) dans un message
   ([essai.md](essai.md#mettre-en-place-une-fois-dix-minutes)).
 - [ ] **Diffuser** dans trois à cinq communautés du public visé, avec un lien et une étiquette `?src=` par communauté ;
-  noter où et quand chaque lien a été posté ([essai.md](essai.md#diffuser)).
+  noter où et quand chaque lien a été posté ([essai.md](essai.md#diffuser) ; trois messages types dans
+  [validation.md](validation.md#e3--diffuser-la-page-publique)).
 - [ ] **Lire les résultats** une fois 100 ouvertures venues des communautés ciblées : le seuil de l'audit est de 10 %
   d'inscriptions ([essai.md](essai.md#lire-les-résultats)). En dessous de 100, attendre ou diffuser davantage.
 - [ ] **À l'ouverture de la bêta** : un seul e-mail aux inscrits, puis effacer la liste, comme la politique de
@@ -76,8 +91,9 @@ dans [essai.md](essai.md).
 
 ## Mesurer la bêta fermée (E4)
 
-- [ ] **Dans le message d'invitation**, une phrase : « Pendant la bêta, Selene compte les jours où tu l'utilises (rien
-  de ce que tu écris) ; tu peux le couper dans Réglages → Compte » ([compte.md](compte.md#mesure-dusage-bêta)).
+- [ ] **Le message d'invitation**, envoyé de votre adresse juste avant l'invitation de Supabase : un modèle complet,
+  avec la phrase sur la mesure d'usage, est dans [validation.md](validation.md#e4--la-bêta-fermée-quatre-semaines) ;
+  puis le message de la semaine 2 et les trois questions de la semaine 4.
 - [ ] **Lire les seuils** quatre semaines après les premières invitations, avec la requête de
   [compte.md](compte.md#mesure-dusage-bêta) : au moins 40 % des invités actifs le premier jour, au moins 25 % en
   semaine 4. À 15 invités, un compte pèse près de 7 points : lire les nombres, pas seulement les pourcentages.
