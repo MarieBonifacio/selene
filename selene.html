@@ -712,7 +712,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "62d2b872c5";
+const SELENE_BUILD = "1aa7575d5d";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -12687,6 +12687,8 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     $("#main").innerHTML = back + (inst ? `<div class="view ${tintOf(view)}">${plateHTML(view, bridging || !bridgeable ? "" : `<button class="btn ghost sm" data-act="bridge-edit" data-mod="${esc(view)}">${tr`Je m'arrête ici…`}</button>`)}${bridging ? bridgeBar(view, inst) : ""}${TYPE_UI[inst.type].view(view)}</div>` : VIEWS[view]());
     const fa = document.activeElement, typingSheet = fa && fa.closest && fa.closest("#sheet") && (fa.tagName === "TEXTAREA" || fa.tagName === "INPUT" && !["checkbox", "radio"].includes(fa.type));
     if (["module", "specimen", "vasculum"].includes(sheetKind) && $("#sheet").open && !typingSheet) $("#sheetBody").innerHTML = SHEETS[sheetKind](sheetArg);
+    const h2 = $("#main h2"), here = h2 && String(h2.textContent || "").replace(/\s+/g, " ").trim();
+    document.title = here ? `${here} — ${s.config.name || "Selene"}` : s.config.name || "Selene";
     for (const [id, v] of Object.entries(keep)) {
       const el = document.getElementById(id);
       if (el && v !== "" && el.value !== v) el.value = v;
@@ -12740,6 +12742,14 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     for (const k of Object.keys(pageSize)) delete pageSize[k];
     if (entry && Object.hasOwn(S().modules, view) && S().modules[view].type === "taches") setOpenId(entry);
     render();
+    const fa = document.activeElement;
+    if (!fa || fa === document.body) {
+      const h = $("#main h2");
+      if (h) {
+        if (!h.hasAttribute("tabindex")) h.setAttribute("tabindex", "-1");
+        h.focus({ preventScroll: true });
+      }
+    }
     const t = platform.session.get("selene-scroll");
     platform.session.remove("selene-scroll");
     const el = t && document.getElementById(t);

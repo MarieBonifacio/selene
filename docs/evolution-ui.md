@@ -322,6 +322,10 @@ Livrée en quatre temps, pour que chaque pull request reste relisible.
   focus dessus, il attend qu'on le quitte, puis encore deux secondes (WCAG 2.2.1, délai réglable). `⌘Z` / `Ctrl+Z`
   reprend le dernier « Annuler » affiché, hors d'un champ (dans un champ, le raccourci défait la frappe) ; le bouton
   l'annonce (`aria-keyshortcuts`). `tests/browser/annuler.js`.
+- [x] Le titre de la page nomme l'écran (« Écriture — Selene » : onglet, historique, lecteur d'écran ; WCAG 2.4.2).
+  Suivre un lien du menu ou de la barre du bas porte le focus au titre du nouvel écran, sans défiler : il retombait
+  sur la page entière, et rien n'était annoncé. Un champ qui a déjà le focus le garde (« / » et la recherche).
+  `tests/browser/ecran-lu.js`.
 
 **3d : écrans chargés**
 - [x] Journaux à dates suspendues : la date dans la marge, en petites capitales (notes, fragments, rappels,
