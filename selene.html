@@ -715,7 +715,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "4cc63651e1";
+const SELENE_BUILD = "06a40f825c";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1001,6 +1001,13 @@ var __platform = (() => {
       update: async (data) => {
         if (native && native.widget) await native.widget.update(data);
       }
+    },
+    /* Donner un fichier (sauvegarde, export) dans une coquille native qui sait le faire : écrit sur l'appareil, puis
+       confié à la feuille de partage du système. Ailleurs, le navigateur s'en charge (lib/download.js). Rejette si la
+       personne referme la feuille (« Share canceled ») ou si l'écriture échoue. */
+    files: {
+      supported: () => !!(native && native.files),
+      share: (filename, data, title) => native.files.share(filename, data, title)
     },
     // Un léger retour haptique (une capture enregistrée) ; rien là où l'hôte n'en a pas.
     haptic() {
@@ -2089,6 +2096,7 @@ var __selene = (() => {
     "Voir les {0} suivants ({1} de plus)": "Show the next {0} ({1} more)",
     // lib/download.js
     "Export annulé.": "Export cancelled.",
+    "L'export n'a pas pu être préparé sur cet appareil.": "The export couldn't be prepared on this device.",
     // lib/format.js
     "jamais": "never",
     "aujourd'hui": "today",
@@ -3494,6 +3502,14 @@ var __selene = (() => {
         await downloadsNS.save({ filename, data });
       } catch (e) {
         toast(tr`Export annulé.`);
+      }
+      return;
+    }
+    if (platform.files.supported()) {
+      try {
+        await platform.files.share(filename, data, title);
+      } catch (e) {
+        if (!/cancel/i.test(String(e && e.message || e))) toast(tr`L'export n'a pas pu être préparé sur cet appareil.`);
       }
       return;
     }

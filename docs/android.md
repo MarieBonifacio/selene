@@ -21,6 +21,8 @@ Selene, avec ce qu'un téléphone offre en plus.
   app fermée, sans serveur. Pas d'alarme exacte (permission que Google Play réserve aux réveils) : à quelques
   minutes près.
 - **Un léger retour haptique** quand une capture est gardée.
+- **Les exports** (sauvegarde, Markdown, dossier, planche, BibTeX) ouvrent la feuille de partage d'Android :
+  « Enregistrer » dans Fichiers ou Drive, ou l'envoyer. La WebView ne télécharge rien d'elle-même (ADR 31).
 - **« Ma position »** pour le ciel de l'accueil : la seule permission demandée en plus d'Internet est la position
   approximative (`ACCESS_COARSE_LOCATION`), jamais la précise ni en arrière-plan ; Selene l'arrondit aussitôt à un
   dixième de degré. Android 12 et suivants l'accordent seule ; avant, la demande échoue et l'app propose une ville.
@@ -68,4 +70,5 @@ L'app a pour origine `https://localhost`. Les fonctions Supabase (passeur, assis
 préfixés, bouton retour, mise en pause) ; `tests/browser/natif.js` fait tourner la page native sur des coffres
 simulés derrière un pont asynchrone ; le workflow *Android* compile l'APK à chaque PR concernée. L'essai sur un vrai
 téléphone reste à faire à la main : lancement à froid, hors ligne puis en ligne, partage depuis Chrome, bouton retour,
-rotation, clavier, synchronisation avec la PWA.
+rotation, clavier, synchronisation avec la PWA, et un export (Réglages → Sauvegarde → Exporter : la feuille de
+partage, puis « Enregistrer »).

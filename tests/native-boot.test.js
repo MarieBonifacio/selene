@@ -6,12 +6,13 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 function fakeCapacitor({ native = true, launchUrl = null } = {}) {
-  const files = new Map(), secure = new Map(), listeners = {}, log = [];
+  const files = new Map(), secure = new Map(), listeners = {}, log = [], rm = [];
   const Filesystem = {
     async readdir({ path }) { const pre = path + '/'; const l = [...files.keys()].filter(k => k.startsWith(pre)).map(k => ({ name: k.slice(pre.length) })); if (!l.length && !files.has(path + '/.dir')) throw new Error('absent'); return { files: l.filter(f => f.name !== '.dir') }; },
     async mkdir({ path }) { files.set(path + '/.dir', ''); },
     async readFile({ path }) { if (!files.has(path)) throw new Error('absent'); return { data: files.get(path) }; },
-    async writeFile({ path, data }) { log.push('write ' + path); files.set(path, data); },
+    async writeFile({ path, data, directory }) { log.push('write ' + path); files.set(path, data); return { uri: `file:///${directory.toLowerCase()}/${path}` }; },
+    async rmdir({ path, directory }) { rm.push(`${directory} ${path}`); for (const k of [...files.keys()]) if (k.startsWith(path + '/')) files.delete(k); },
     async deleteFile({ path }) { if (!files.has(path)) throw new Error('absent'); log.push('delete ' + path); files.delete(path); },
     async rename({ from, to }) { log.push(`rename ${from} → ${to}`); files.set(to, files.get(from)); files.delete(from); }
   };
@@ -31,13 +32,14 @@ function fakeCapacitor({ native = true, launchUrl = null } = {}) {
   };
   const Haptics = { impact: async ({ style }) => { log.push('haptic ' + style); } };
   const SeleneWidget = { update: async d => { log.push('widget ' + JSON.stringify(d)); } };
+  const Share = { share: async o => { log.push('share ' + JSON.stringify(o)); if (o.title === 'refermée') throw new Error('Share canceled'); return {}; } };
   const events = [], history = { back() { log.push('back'); } };
-  const window = { Capacitor: { isNativePlatform: () => native, Plugins: { Filesystem, SecureStorage, App, LocalNotifications, Haptics, SeleneWidget } }, dispatchEvent(e) { events.push(e.type); } };
+  const window = { Capacitor: { isNativePlatform: () => native, Plugins: { Filesystem, SecureStorage, App, LocalNotifications, Haptics, SeleneWidget, Share } }, dispatchEvent(e) { events.push(e.type); } };
   const docEvents = [], docHandlers = {}, session = new Map();
   const document = { addEventListener(n, f) { docHandlers[n] = f; }, dispatchEvent(e) { docEvents.push(e); if (docHandlers[e.type]) docHandlers[e.type](e); } };
   const CustomEvent = class { constructor(type, init = {}) { this.type = type; this.detail = init.detail; } };
   vm.runInNewContext(fs.readFileSync('src/native/boot.js', 'utf8'), { window, history, document, CustomEvent, URL, sessionStorage: { setItem: (k, v) => session.set(k, v) }, Event: class { constructor(t) { this.type = t; } } });
-  return { window, files, secure, listeners, log, events, docEvents, session, pending };
+  return { window, files, secure, listeners, log, rm, events, docEvents, session, pending };
 }
 
 test('hors d’une coquille native : rien', () => {
@@ -135,4 +137,17 @@ test('widget (Android) : la lune et des lignes de texte, rien d’autre, vers le
   const c = fakeCapacitor();
   await c.window.seleneNative.widget.update({ moon: 'Pleine lune · 100 %', lines: ['Arroser', 42, null], extra: 'ignoré' });
   assert.deepEqual(c.log, ['widget {"moon":"Pleine lune · 100 %","lines":["Arroser","42","null"]}']);
+});
+
+test('fichiers donnés : écrits dans le cache de l’app, un seul à la fois, puis confiés à la feuille de partage', async () => {
+  const c = fakeCapacitor(), f = c.window.seleneNative.files;
+  assert.deepEqual(c.rm, ['CACHE exports'], 'au lancement, une ancienne sauvegarde ne traîne pas dans le cache');
+  await f.share('selene-2026-10-04.json', '{"a":1}', 'Sauvegarde Selene');
+  assert.deepEqual(c.rm, ['CACHE exports', 'CACHE exports'], 'le précédent export est effacé avant le suivant');
+  assert.deepEqual(c.log, ['write exports/selene-2026-10-04.json',
+    'share {"title":"Sauvegarde Selene","dialogTitle":"Sauvegarde Selene","files":["file:///cache/exports/selene-2026-10-04.json"]}']);
+  assert.equal(c.files.get('exports/selene-2026-10-04.json'), '{"a":1}');
+  await f.share('../dossier é/x.md', '# x', 'Dossier');
+  assert.ok(!c.files.has('exports/selene-2026-10-04.json') && c.files.has('exports/..-dossier-x.md'), 'un seul fichier à la fois ; le nom ne sort pas du dossier');
+  await assert.rejects(f.share('a.bib', '', 'refermée'), /Share canceled/, 'feuille refermée : le refus remonte à la page, qui se tait');
 });

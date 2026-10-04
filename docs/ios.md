@@ -15,6 +15,8 @@ La même coquille Capacitor que sous Android (docs/android.md), autour de la mê
 - **Le résumé du matin** (Réglages → Notifications) : programmé par iOS pour la semaine qui vient, il sonne app fermée.
   iOS garde au plus 64 notifications en attente par app ; Selene en programme sept.
 - **Un léger retour haptique** à la capture.
+- **Les exports** (sauvegarde, Markdown, dossier, planche, BibTeX) ouvrent la feuille de partage d'iOS :
+  « Enregistrer dans Fichiers », AirDrop, Mail (ADR 31).
 - **« Ma position »** pour le ciel de l'accueil : iOS demande l'accord avec la phrase de `Info.plist`
   (`NSLocationWhenInUseUsageDescription`, traduite dans `en.lproj` et `fr.lproj`), « pendant l'utilisation » seulement ;
   Selene arrondit aussitôt la position à un dixième de degré.
@@ -75,4 +77,5 @@ L'app a pour origine `capacitor://localhost` ; les fonctions Supabase l'accepten
 `tests/native-boot.test.js` éprouve l'amorçage (dont les liens `selene://`, au lancement et en cours de route) ; le
 workflow *iOS* compile le projet sur un Mac de GitHub. L'essai sur un vrai iPhone reste à faire à la main : lancement
 à froid, hors ligne puis en ligne, Raccourci de partage, rotation, clavier, encoches (safe areas), synchronisation
-avec les autres appareils.
+avec les autres appareils, et un export (Réglages → Sauvegarde → Exporter : la feuille de partage, puis « Enregistrer
+dans Fichiers »).
