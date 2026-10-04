@@ -53,6 +53,9 @@ connaît pas le format 8 et refuse d'écrire.
 - [ ] **Les deux tables de la page de test** (`attente`, `audience`) : coller la partie « La page publique de test » de
   `supabase/schema.sql`. Sans elles, la page s'affiche mais l'inscription échoue
   ([essai.md](essai.md#mettre-en-place-une-fois-dix-minutes)).
+- [ ] **La table de la mesure d'usage** (`activite`), avant d'inviter les bêta-testeurs : coller la partie « La mesure
+  d'usage de la bêta » de `supabase/schema.sql`. Sans elle, rien n'est compté, et la bêta (E4) n'a pas de chiffres
+  ([compte.md](compte.md#mesure-dusage-bêta)).
 
 ## Valider le marché : la page publique de test (E3)
 
@@ -70,6 +73,16 @@ dans [essai.md](essai.md).
   confidentialité le promet ([essai.md](essai.md#écrire-aux-inscrits-puis-effacer)).
 - [ ] **Chaque demande d'effacement** reçue à l'adresse de contact : la traiter sous un mois (une requête,
   [essai.md](essai.md#écrire-aux-inscrits-puis-effacer)).
+
+## Mesurer la bêta fermée (E4)
+
+- [ ] **Dans le message d'invitation**, une phrase : « Pendant la bêta, Selene compte les jours où tu l'utilises (rien
+  de ce que tu écris) ; tu peux le couper dans Réglages → Compte » ([compte.md](compte.md#mesure-dusage-bêta)).
+- [ ] **Lire les seuils** quatre semaines après les premières invitations, avec la requête de
+  [compte.md](compte.md#mesure-dusage-bêta) : au moins 40 % des invités actifs le premier jour, au moins 25 % en
+  semaine 4. À 15 invités, un compte pèse près de 7 points : lire les nombres, pas seulement les pourcentages.
+- [ ] **Chaque opposition ou demande d'effacement** de la mesure : une requête, sous un mois
+  ([compte.md](compte.md#mesure-dusage-bêta)).
 
 ## Publier dans les stores
 
@@ -90,8 +103,8 @@ La politique de confidentialité remplit l'article 13 : responsable, bases léga
 
 - [ ] **Le registre des activités de traitement** (article 30). La dispense des structures de moins de 250 personnes
   ne s'applique pas à un traitement qui n'est pas occasionnel, comme un compte synchronisé en continu. La CNIL publie
-  un modèle. Y décrire : le compte et sa synchronisation, l'assistant, la sécurité, le journal des erreurs, la liste
-  d'attente et la mesure d'audience de la page de test, avec pour chacun les données, la base légale, la durée et les
+  un modèle. Y décrire : le compte et sa synchronisation, l'assistant, la sécurité, le journal des erreurs, la mesure
+  d'usage de la bêta, la liste d'attente et la mesure d'audience de la page de test, avec pour chacun les données, la base légale, la durée et les
   sous-traitants ; et les suivis de santé encore synchronisés, tant qu'il en reste.
 - [ ] **L'analyse d'impact (AIPD, article 35)** : évaluer si elle est obligatoire, et écrire la conclusion avec ses
   raisons, même négative. Depuis que les suivis de santé ne passent plus par le serveur, le critère des données

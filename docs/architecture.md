@@ -904,3 +904,30 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
 - **Conséquences** : le taux mesuré est prudent (un visiteur qui revient compte deux fois). La lecture, l'envoi de
   l'e-mail de bêta et l'effacement de la liste se font à la main, dans l'éditeur SQL ([essai.md](essai.md)). Le
   service worker ne garde plus que l'app pour le hors-ligne (`sw.js` v3) : une page voisine prenait sa place.
+
+### ADR 30 — Une mesure d'usage minimale pour la bêta : un jour, rien d'autre
+
+- **Contexte** : la bêta fermée (E4 de l'audit) se juge sur deux seuils : 40 % des invités actifs le premier jour,
+  25 % en semaine 4, mesurés par des saisies et non par des ouvertures. Sans mesure, la décision du jour 90 se prendrait
+  à l'impression. Le journal des erreurs (T9) est anonyme par construction ; une rétention, elle, demande de
+  reconnaître un même compte d'un jour à l'autre.
+- **Décision** (4 octobre 2026) :
+  - une table `activite` (compte, jour), clé primaire sur les deux. Elle s'écrit avec la session, pour soi seul : le
+    déclencheur impose `auth.uid()`, refuse un autre jour qu'aujourd'hui (à un jour près, pour les fuseaux), ignore un
+    doublon et purge au-delà de 13 mois. Personne ne la lit par l'API ; elle s'efface avec le compte (`on delete
+    cascade`) ;
+  - côté page (`services/activite.js`), on envoie au plus une ligne par jour et par chargement, après un enregistrement
+    du site que la personne a provoqué (`navigator.userActivation`) et qui change le contenu d'un espace
+    (`contentKey` : tout sauf `type`, `label`, `config`, et sans les champs vides), comparé à la dernière base
+    synchronisée. Le store expose `onSave` pour cela. Rien n'est gardé sur l'appareil pour la mesure ;
+  - seulement avec un compte, jamais dans l'artefact. Un interrupteur de *Réglages → Compte* la coupe pour
+    l'appareil. Base légale : l'intérêt légitime (6.1.f), avec opposition.
+- **Écarté** : un service d'analyse tiers (un sous-traitant de plus, des données hors de la base, souvent un traceur) ;
+  compter les ouvertures (l'audit demande des saisies) ; un identifiant anonyme gardé sur l'appareil (un traceur au
+  sens de l'article 82, donc un consentement) ; compter dans le contenu synchronisé `app_state` (lire les documents des
+  personnes pour une autre finalité que la synchronisation) ; un compteur de saisies par jour (plus que ce qu'il faut
+  pour deux seuils).
+- **Conséquences** : la politique de confidentialité nomme la mesure, sa base et sa durée ; la requête des seuils et
+  la réponse à une opposition se font dans l'éditeur SQL ([compte.md](compte.md#mesure-dusage-bêta)). Tant que la table
+  n'existe pas sur le projet, rien n'est compté. Un appareil sans activation utilisateur connue (navigateur ancien)
+  compte tout enregistrement qui change le contenu.

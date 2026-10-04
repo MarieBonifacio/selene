@@ -5,11 +5,13 @@
      SHEETS  les feuilles (capture, palette, fiche…) : nom → (arg) => HTML
      CLICK   les actions data-act="…" au clic : nom → (élément, événement) => void
      CHANGE  les actions data-act="…" au changement d'un champ : nom → (élément) => void
+     SAVED   ce qui suit chaque enregistrement local du site (la mesure d'usage) : [() => void]
      TYPE_UI les types de module (plus bas) */
 export const VIEWS = {};
 export const SHEETS = {};
 export const CLICK = {};
 export const CHANGE = {};
+export const SAVED = [];
 /* Les types de module, côté interface (le côté données est MODULE_TYPES, src/core/domain.js). Un fichier de
    src/app/modules/ par type, qui s'enregistre par registerType. Ce qu'un type peut fournir :
      sensitive             suivi sensible (docs/regulation.md) : non partagé avec l'assistant à la création, partage confirmé

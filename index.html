@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-1HY+y00zvMBfZlNCR8sDkmdp2PAe7sJiZslybS1yN/Q=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8loLqrOD10sk9w0zHkp+cU8I/kMb/Fds5J4sg/tjR1I=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -744,7 +744,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "21d78079df";
+const SELENE_BUILD = "2bf6a981e1";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1116,6 +1116,7 @@ var __selene = (() => {
     REGULATION_STORAGES: () => REGULATION_STORAGES,
     REGULATION_SUBJECTS: () => REGULATION_SUBJECTS,
     S: () => S,
+    SAVED: () => SAVED,
     SCHEMA_VERSION: () => SCHEMA_VERSION,
     SECTION_TO_MODULE: () => SECTION_TO_MODULE,
     SHEETS: () => SHEETS,
@@ -1134,6 +1135,8 @@ var __selene = (() => {
     ZOT_API: () => ZOT_API,
     ZOT_KIND: () => ZOT_KIND,
     absorbDeviceTrackers: () => absorbDeviceTrackers,
+    activityOn: () => activityOn,
+    activitySettingsHTML: () => activitySettingsHTML,
     addBudgetEntry: () => addBudgetEntry,
     addCapture: () => addCapture,
     addDays: () => addDays,
@@ -1206,6 +1209,7 @@ var __selene = (() => {
     confirmDay: () => confirmDay,
     confirmSensitiveShare: () => confirmSensitiveShare,
     connectHost: () => connectHost,
+    contentKey: () => contentKey,
     contextText: () => contextText,
     contrast: () => contrast,
     coreError: () => coreError,
@@ -1356,6 +1360,7 @@ var __selene = (() => {
     nextDay: () => nextDay,
     normalizeRegulation: () => normalizeRegulation,
     normalizeUrl: () => normalizeUrl,
+    noteActivity: () => noteActivity,
     noteTargets: () => noteTargets,
     noteVisit: () => noteVisit,
     notifyConf: () => notifyConf,
@@ -1457,6 +1462,7 @@ var __selene = (() => {
     searchQuery: () => searchQuery,
     seasonAt: () => seasonAt,
     sendChat: () => sendChat,
+    setActivity: () => setActivity,
     setBilanOffset: () => setBilanOffset,
     setBridgeOpen: () => setBridgeOpen,
     setEpStatus: () => setEpStatus,
@@ -1548,6 +1554,7 @@ var __selene = (() => {
   var SHEETS = {};
   var CLICK = {};
   var CHANGE = {};
+  var SAVED = [];
   var TYPE_UI = {};
   function registerType(name, ui) {
     if (Object.hasOwn(TYPE_UI, name)) throw new Error(`Type « ${name} » déjà enregistré`);
@@ -3273,6 +3280,8 @@ var __selene = (() => {
     "Oublier la clé (sur tous tes appareils)": "Forget the key (on all your devices)",
     "Compte": "Account",
     "Envoyer les erreurs de l'app, anonymes": "Send app errors, anonymously",
+    "Compter mes jours d'usage, pour la bêta": "Count my days of use, for the beta",
+    "Un jour où tu as saisi quelque chose, et rien d'autre : ni ce que tu écris, ni l'heure, ni l'appareil. Gardé 13 mois, pour savoir si Selene sert encore au bout d'un mois. Ce réglage vaut pour cet appareil.": "A day on which you entered something, and nothing else: not what you write, not the time, not the device. Kept 13 months, to learn whether Selene is still useful after a month. This setting applies to this device.",
     "Seulement les erreurs de programmation : leur type, l'endroit du code, l'écran, la version et la plateforme. Jamais ton compte ni ce que tu écris. Gardées 30 jours, pour corriger Selene. Ce réglage vaut pour cet appareil.": "Programming errors only: their type, the place in the code, the screen, the version and the platform. Never your account or anything you write. Kept 30 days, to fix Selene. This setting applies to this device.",
     "Connecté en tant que {0}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.": "Signed in as {0}. Your data belongs to this account and follows you on all your devices. Signing out erases your data and the conversation with the assistant from this device; your API key stays tied to your account, encrypted, until you forget it.",
     "Se déconnecter": "Sign out",
@@ -4875,6 +4884,7 @@ var __selene = (() => {
   }
   function makeStore(key, path, seed2, normalize = (d) => d, { onRemoteChange = () => {
   }, onStatus = () => {
+  }, onSave = () => {
   } } = {}) {
     const BASE = key + "-base";
     const read = (k) => {
@@ -4964,6 +4974,10 @@ var __selene = (() => {
     s.save = () => {
       s.data.updatedAt = Date.now();
       saveLS();
+      try {
+        onSave();
+      } catch {
+      }
       if (!s.db) return;
       onStatus(tr`Enregistrement…`);
       clearTimeout(s.timer);
@@ -5219,7 +5233,9 @@ var __selene = (() => {
     saving[name] = m;
     setSaving(saving.site || saving.board || "");
   } });
-  var site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite, storeHooks("site"));
+  var site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite, { ...storeHooks("site"), onSave: () => {
+    for (const f of SAVED) f();
+  } });
   function absorbBoard(d) {
     if (!Array.isArray(d.tasks)) d.tasks = [];
     if (!d.tasks.length) return d;
@@ -8944,6 +8960,68 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   }
   CHANGE["err-reports"] = (el) => setErrorReports(el.checked);
 
+  // src/app/services/activite.js
+  var OFF_KEY2 = "selene-activite";
+  var sentDay = "";
+  var activityOn = () => {
+    try {
+      return platform.storage.get(OFF_KEY2) !== "off";
+    } catch {
+      return true;
+    }
+  };
+  function setActivity(on) {
+    try {
+      if (on) platform.storage.remove(OFF_KEY2);
+      else platform.storage.set(OFF_KEY2, "off");
+    } catch {
+    }
+  }
+  var SHAPE = /* @__PURE__ */ new Set(["type", "label", "config"]);
+  function contentKey(modules) {
+    const out = [];
+    for (const id of Object.keys(modules || {}).sort()) {
+      const m = modules[id] || {};
+      for (const k of Object.keys(m).sort()) {
+        const v = m[k];
+        if (SHAPE.has(k) || v == null || typeof v === "object" && !Object.keys(v).length) continue;
+        out.push(id, k, JSON.stringify(v));
+      }
+    }
+    return out.join("\0");
+  }
+  var byPerson = () => {
+    try {
+      const u = globalThis.navigator && navigator.userActivation;
+      return !u || u.isActive;
+    } catch {
+      return true;
+    }
+  };
+  function noteActivity() {
+    try {
+      const day = todayISO();
+      if (sentDay === day || !hosted() || !authReady() || !authSession || !activityOn() || !byPerson()) return;
+      if (site.base && contentKey(site.data.modules) === contentKey(site.base.modules)) return;
+      sentDay = day;
+      fetch(`${SUPABASE_URL}/rest/v1/activite`, {
+        method: "POST",
+        keepalive: true,
+        body: JSON.stringify({ jour: day }),
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${authSession.access_token}`, "Content-Type": "application/json", Prefer: "return=minimal" }
+      }).catch(() => {
+        sentDay = "";
+      });
+    } catch {
+    }
+  }
+  SAVED.push(noteActivity);
+  function activitySettingsHTML() {
+    return `<label class="check-l" style="margin-top:12px"><input type="checkbox" data-act="activity" ${activityOn() ? "checked" : ""}>${tr`Compter mes jours d'usage, pour la bêta`}</label>
+    <p class="hint">${tr`Un jour où tu as saisi quelque chose, et rien d'autre : ni ce que tu écris, ni l'heure, ni l'appareil. Gardé 13 mois, pour savoir si Selene sert encore au bout d'un mois. Ce réglage vaut pour cet appareil.`}</p>`;
+  }
+  CHANGE["activity"] = (el) => setActivity(el.checked);
+
   // src/app/ui/tips.js
   var seq = 0;
   function tip(text, about2) {
@@ -9260,6 +9338,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   ${signedIn() ? `<section>${sub(tr`Compte`)}<p class="hint">${tr`Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.`}</p>
     ${passwordSettingsHTML()}
     ${errorSettingsHTML()}
+    ${activitySettingsHTML()}
     <button class="btn ghost" data-act="auth-out" style="margin-top:12px">${tr`Se déconnecter`}</button></section>
   <section class="danger">${sub(TEXTS.danger)}
     <details id="auth-delete"><summary class="hint">${tr`Supprimer mon compte`}</summary>

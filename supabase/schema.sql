@@ -79,6 +79,29 @@ end $$;
 revoke all on function public.erreurs_borne() from public, anon, authenticated;
 create trigger erreurs_borne before insert on public.erreurs for each row execute function public.erreurs_borne();
 
+-- La mesure d'usage de la bêta (services/activite.js, docs/compte.md ; E4 de l'audit) : une ligne par compte et par
+-- jour où il a saisi quelque chose, rien d'autre. Écrite avec la session, pour soi seulement ; jamais relue par l'API.
+-- Le déclencheur impose le compte de la session, refuse un jour qui n'est pas aujourd'hui (à un jour près, pour les
+-- fuseaux), ignore en silence un doublon et efface ce qui a plus de 13 mois. Supprimer le compte efface ses lignes.
+create table public.activite (
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  jour date not null,
+  primary key (user_id, jour)
+);
+alter table public.activite enable row level security;
+create policy "activité : pour soi" on public.activite for insert to authenticated with check (user_id = auth.uid());
+
+create function public.activite_borne() returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  delete from public.activite where jour < current_date - interval '13 months';
+  new.user_id := auth.uid();
+  if new.user_id is null or new.jour not between current_date - 1 and current_date + 1 then return null; end if;
+  if exists (select 1 from public.activite where user_id = new.user_id and jour = new.jour) then return null; end if;
+  return new;
+end $$;
+revoke all on function public.activite_borne() from public, anon, authenticated;
+create trigger activite_borne before insert on public.activite for each row execute function public.activite_borne();
+
 -- La page publique de test (essai.html, docs/essai.md ; E3 de l'audit). Deux tables que la page peut seulement écrire,
 -- avec la clé publique ; on les lit dans l'éditeur SQL. Pas de compte, pas de cookie, rien d'écrit sur l'appareil.
 --

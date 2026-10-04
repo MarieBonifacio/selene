@@ -16,7 +16,7 @@ const sessionBody = { access_token: 'new', refresh_token: 'new-r', expires_in: 3
 /* Imite PostgREST pour ce que l'app utilise : GET filtré, POST ignore-duplicates,
    PATCH conditionnel sur `col->>champ` avec Prefer: return=representation. */
 function fakeSupabase({ appMetadata } = {}) {
-  const server = { rows: new Map(), calls: [], selects: [], erreurs: [], offline: false, beforePatch: null, maxBytes: Infinity };
+  const server = { rows: new Map(), calls: [], selects: [], erreurs: [], activite: [], offline: false, beforePatch: null, maxBytes: Infinity };
   const token = appMetadata ? { ...sessionBody, user: { ...USER, app_metadata: appMetadata } } : sessionBody;
   server.fetch = async (url, opts = {}) => {
     if (server.offline) throw new TypeError('Failed to fetch');
@@ -26,6 +26,8 @@ function fakeSupabase({ appMetadata } = {}) {
     if (u.pathname === '/auth/v1/logout') return reply(204, {});
     // Le journal des erreurs (services/journal.js) : ce qui part, en-têtes compris.
     if (u.pathname === '/rest/v1/erreurs') { server.erreurs.push({ body: JSON.parse(opts.body), headers: { ...opts.headers } }); return reply(201, null); }
+    // La mesure d'usage (services/activite.js) : ce qui part, en-têtes compris.
+    if (u.pathname === '/rest/v1/activite') { server.activite.push({ body: JSON.parse(opts.body), headers: { ...opts.headers } }); return reply(201, null); }
     if (u.pathname !== '/rest/v1/app_state') return reply(404, {});
     const uid = (u.searchParams.get('user_id') || '').replace(/^eq\./, ''), row = server.rows.get(uid);
     if (method === 'GET') {

@@ -20,6 +20,7 @@ import { gcfg, groupBy, grouperFor } from "../modules/groups.js";
 import { skySettingsHTML } from "../scene/sky.js";
 import { authReady, authSession, deleteWord, localAccountHTML, localOnly, passwordSettingsHTML } from "../services/auth.js";
 import { errorSettingsHTML } from "../services/journal.js";
+import { activitySettingsHTML } from "../services/activite.js";
 import { passeurSettingsHTML } from "../services/passeur.js";
 import { addModule, moveMod, offered } from "../shell/actions.js";
 import { SYSTEM, openOn, routeOf } from "../shell/nav.js";
@@ -146,6 +147,7 @@ function compteHTML() {
   ${signedIn() ? `<section>${sub(tr`Compte`)}<p class="hint">${tr`Connecté en tant que ${esc(authSession.user.email)}. Tes données sont propres à ce compte et suivent sur tous tes appareils. Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant ; ta clé API reste attachée à ton compte, chiffrée, jusqu'à ce que tu l'oublies.`}</p>
     ${passwordSettingsHTML()}
     ${errorSettingsHTML()}
+    ${activitySettingsHTML()}
     <button class="btn ghost" data-act="auth-out" style="margin-top:12px">${tr`Se déconnecter`}</button></section>
   <section class="danger">${sub(TEXTS.danger)}
     <details id="auth-delete"><summary class="hint">${tr`Supprimer mon compte`}</summary>
