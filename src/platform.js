@@ -218,6 +218,13 @@ export const platform = {
     supported: () => !!(native && native.widget),
     update: async data => { if (native && native.widget) await native.widget.update(data); }
   },
+  /* Donner un fichier (sauvegarde, export) dans une coquille native qui sait le faire : écrit sur l'appareil, puis
+     confié à la feuille de partage du système. Ailleurs, le navigateur s'en charge (lib/download.js). Rejette si la
+     personne referme la feuille (« Share canceled ») ou si l'écriture échoue. */
+  files: {
+    supported: () => !!(native && native.files),
+    share: (filename, data, title) => native.files.share(filename, data, title)
+  },
   // Un léger retour haptique (une capture enregistrée) ; rien là où l'hôte n'en a pas.
   haptic() { try { if (native && native.haptic) native.haptic(); } catch {} },
   // Demande au navigateur de ne pas évincer les données locales sous la pression d'espace (PWA seulement).

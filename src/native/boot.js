@@ -6,7 +6,8 @@
      Trousseau iOS), sous le préfixe « selene: ».
    Il relie aussi le bouton retour d'Android à l'historique de la page, et la mise en arrière-plan à « pagehide »
    (Selene y pousse ce qui attend). Enfin (ADR 19), les notifications locales (le résumé du matin, programmé par le
-   système : il sonne app fermée, sans serveur) et un léger retour haptique à la capture.
+   système : il sonne app fermée, sans serveur), un léger retour haptique à la capture, et les fichiers donnés
+   (sauvegarde, exports) par la feuille de partage du système (plugin Share).
    Sous Tauri (ordinateur, ADR 16), les mêmes coffres passent par six commandes de l'app (native/tauri/src/main.rs) :
    fichiers du dossier de données, et coffre du système pour les secrets. Hors d'une coquille native, il ne fait rien. */
 (() => {
@@ -41,7 +42,7 @@
   }
   const C = window.Capacitor;
   if (!C || typeof C.isNativePlatform !== "function" || !C.isNativePlatform()) return;
-  const { Filesystem, SecureStorage, App, LocalNotifications, Haptics, SeleneWidget } = C.Plugins;
+  const { Filesystem, SecureStorage, App, LocalNotifications, Haptics, SeleneWidget, Share } = C.Plugins;
   const DIR = "DATA", ROOT = "selene", TMP = ".tmp";
   const file = k => `${ROOT}/${encodeURIComponent(k)}`;
   const storage = {
@@ -87,7 +88,23 @@
   const haptic = () => { if (Haptics) Haptics.impact({ style: "LIGHT" }).catch(() => {}); };
   // Le widget d'écran d'accueil (Android, ADR 24) : un plugin propre à l'app (native/android/…/WidgetPlugin.java).
   const widget = SeleneWidget && { update: d => SeleneWidget.update({ moon: String(d.moon || ""), lines: (d.lines || []).map(String) }) };
-  window.seleneNative = { runtime: "capacitor", storage, secrets, notifications, haptic, widget };
+  // Un fichier à donner (sauvegarde, exports) : la WebView d'Android ne télécharge rien et n'a pas le partage web, celle
+  // d'iOS envoie un lien « blob: » au système, qui ne sait pas l'ouvrir. Le fichier est écrit dans le cache de l'app
+  // (un seul à la fois : le précédent est effacé, et le dossier l'est au lancement, pour qu'une sauvegarde complète
+  // n'y traîne pas), puis confié à la feuille de partage du système : « Enregistrer dans Fichiers », Drive, e-mail.
+  // Android le lit par le FileProvider de l'app (res/xml/file_paths.xml : le cache en fait partie).
+  const EXPORTS = "exports";
+  const clearExports = () => Filesystem.rmdir({ path: EXPORTS, directory: "CACHE", recursive: true }).catch(() => {});
+  const files = Share && {
+    async share(name, data, title) {
+      await clearExports();
+      const safe = String(name || "").replace(/[^\w.-]+/g, "-").slice(0, 120) || "selene.txt";
+      const { uri } = await Filesystem.writeFile({ path: `${EXPORTS}/${safe}`, directory: "CACHE", data: String(data), encoding: "utf8", recursive: true });
+      await Share.share({ title, dialogTitle: title, files: [uri] });
+    }
+  };
+  if (files) clearExports();
+  window.seleneNative = { runtime: "capacitor", storage, secrets, notifications, haptic, widget, files };
   keepShares();
   if (App) {
     App.addListener("appUrlOpen", e => openLink(e && e.url));

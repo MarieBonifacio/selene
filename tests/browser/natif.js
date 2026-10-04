@@ -9,14 +9,18 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
   const ok = check, errs = [];
   const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
   // Les coffres : côté Node, donc intacts d'un chargement de page à l'autre.
-  const notified = [];
+  const notified = []; let shareMode = 'ok'; // la feuille de partage : choisie, refermée, ou l'écriture refusée
   const vaults = { storage: new Map([['selene-site-v1', fixture()], ['selene-auth-last-uid', UID]]), secrets: new Map([['selene-auth-session', session]]) };
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
   await ctx.route('https://*.supabase.co/**', r => r.fulfill({ contentType: 'application/json', body: r.request().method() === 'GET' ? '[]' : '{}' }));
   // Le pont : asynchrone, comme un vrai (chaque appel traverse le processus).
   await ctx.exposeBinding('nativeCall', (_, name, op, k, v) => {
     const m = vaults[name];
-    if (name === 'notify') { notified.push(k); return op === 'permission' ? 'granted' : null; }
+    if (name === 'notify') {
+      notified.push(k);
+      if (op === 'share' && shareMode !== 'ok') throw new Error(shareMode === 'cancel' ? 'Share canceled' : 'Disk full');
+      return op === 'permission' ? 'granted' : null;
+    }
     if (op === 'load') return [...m];
     if (op === 'write') m.set(k, v); else m.delete(k);
     return null;
@@ -26,9 +30,11 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
     window.seleneNative = { runtime: 'capacitor', storage: vault('storage'), secrets: vault('secrets'),
       notifications: { permission: () => window.nativeCall('notify', 'permission'), replace: l => window.nativeCall('notify', 'replace', l) },
       haptic: () => window.nativeCall('notify', 'haptic', 'haptic'),
-      widget: { update: d => window.nativeCall('notify', 'widget', { widget: d }) } };
+      widget: { update: d => window.nativeCall('notify', 'widget', { widget: d }) },
+      files: { share: (n, d, t) => window.nativeCall('notify', 'share', { share: { n, d, t } }) } };
   });
   const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
+  let downloads = 0; p.on('download', () => downloads++);
   // La page des coquilles natives (npm run build:dist).
   await p.goto(BASE + '/dist/native/index.html#accueil'); await p.waitForSelector('#nav a', { timeout: 10000 }).catch(() => {});
 
@@ -70,6 +76,24 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
   await p.fill('#capIn', 'une idée du matin').catch(() => {}); await p.press('#capIn', 'Enter').catch(() => {});
   await until(() => notified.filter(x => x === 'haptic').length > nb);
   ok(notified.filter(x => x === 'haptic').length > nb, 'une capture donne un léger retour haptique');
+
+  console.log('sauvegarde et exports : la feuille de partage de l’app');
+  await p.evaluate(() => location.hash = 'reglages'); await p.waitForSelector('[data-act="exp"]', { timeout: 5000 }).catch(() => {});
+  await p.click('[data-act="exp"]');
+  await until(() => notified.some(x => x && x.share));
+  const sh = (notified.filter(x => x && x.share).pop() || {}).share || {};
+  let saved = null; try { saved = JSON.parse(sh.d); } catch {}
+  ok(/^selene-\d{4}-\d\d-\d\d\.json$/.test(sh.n || '') && saved && JSON.stringify(saved).includes('Phidippus') && !downloads, 'Exporter : la sauvegarde complète part vers la coquille (' + sh.n + '), pas vers un téléchargement que la WebView ignorerait');
+  // Refermer la feuille n'est pas une erreur : aucun message. Une écriture refusée, si.
+  const toastText = () => p.evaluate(() => { const t = document.querySelector('#toast'); return t && t.classList.contains('show') ? t.textContent : ''; });
+  await p.evaluate(() => { const t = document.querySelector('#toast'); if (t) t.classList.remove('show'); });
+  shareMode = 'cancel'; const before = notified.length;
+  await p.click('[data-act="exp"]'); await until(() => notified.length > before); await p.waitForTimeout(200);
+  ok(!(await toastText()) && !downloads, 'feuille refermée : rien ne s’affiche, rien ne se télécharge');
+  shareMode = 'fail';
+  await p.click('[data-act="exp"]'); await until(async () => (await toastText()).includes('pas pu'));
+  ok((await toastText()).includes('n’a pas pu être préparé') || (await toastText()).includes("n'a pas pu être préparé"), 'écriture refusée : la personne le sait');
+  shareMode = 'ok';
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

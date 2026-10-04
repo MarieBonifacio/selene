@@ -554,6 +554,7 @@ export default {
   "Voir les {0} suivants ({1} de plus)": "Show the next {0} ({1} more)",
   // lib/download.js
   "Export annulé.": "Export cancelled.",
+  "L'export n'a pas pu être préparé sur cet appareil.": "The export couldn't be prepared on this device.",
   // lib/format.js
   "jamais": "never",
   "aujourd'hui": "today",
