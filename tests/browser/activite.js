@@ -27,6 +27,16 @@ const session = JSON.stringify({ access_token: 'jeton-a', refresh_token: 'r', ex
     return json(200, []);
   });
   const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
+  // Les requêtes vers le faux Supabase encore en vol. Un rechargement en coupe une, et WebKit le signale comme une
+  // erreur de la page (« due to access control checks »), qui n'en est pas une de Selene : la synchronisation
+  // intercepte ses échecs. waitForLoadState('networkidle') n'y suffit pas : une page déjà chargée l'a atteint, et
+  // l'attente rend la main tout de suite. On attend donc 1,2 s sans aucune requête, plus que les 900 ms après
+  // lesquelles un enregistrement part au serveur.
+  let enVol = 0;
+  const vers = r => r.url().includes('.supabase.co/');
+  p.on('request', r => { if (vers(r)) enVol++; });
+  for (const ev of ['requestfinished', 'requestfailed']) p.on(ev, r => { if (vers(r)) enVol--; });
+  const auCalme = async () => { for (let calme = 0, t = 0; calme < 12 && t < 100; t++) { await p.waitForTimeout(100); calme = enVol ? 0 : calme + 1; } };
   try {
     await p.goto(BASE + '/index.html'); await p.waitForSelector('#capIn'); await until(() => !!lignes.get('u1')?.site?.config); await p.waitForTimeout(500);
     check(!recus.length, 'ouvrir Selene ne compte pas');
@@ -43,10 +53,8 @@ const session = JSON.stringify({ access_token: 'jeton-a', refresh_token: 'r', ex
     await p.evaluate(() => { location.hash = 'reglages'; }); await p.waitForSelector('[data-act="activity"]');
     check(await p.isChecked('[data-act="activity"]') && (await p.textContent('#main')).includes('Compter mes jours d\'usage'), 'Réglages → Compte : l’interrupteur, allumé, et ce qu’il compte');
     await p.uncheck('[data-act="activity"]');
-    // Recharger sans requête en vol : WebKit (Playwright 1.63) signale une synchronisation interrompue par la navigation
-    // comme une erreur de la page (« due to access control checks »), qui n'en est pas une de Selene.
-    await p.waitForLoadState('networkidle');
-    await p.evaluate(() => { location.hash = 'accueil'; }); await p.reload(); await p.waitForSelector('#capIn'); await p.waitForTimeout(300);
+    await p.evaluate(() => { location.hash = 'accueil'; }); await auCalme();
+    await p.reload(); await p.waitForSelector('#capIn'); await p.waitForTimeout(300);
     await p.fill('#capIn', 'coupée'); await p.click('[data-act="cap-add"]'); await p.waitForTimeout(800);
     check(recus.length === 1, 'coupée : plus rien, même après un rechargement');
   } catch (e) { check(false, e.message.split('\n')[0]); }
