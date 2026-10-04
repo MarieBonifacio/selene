@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-YS/OT9BPlyxZXoPYvd/1lCIpXqWew7Rm1jdSvMTHFyU=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8J9Xsaz0bx16oiUdxynSnJ/9loDLvOjUXGYSPYWvJXI=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -745,7 +745,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "17e6643570";
+const SELENE_BUILD = "be35903bf2";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -3004,6 +3004,9 @@ var __selene = (() => {
     "Lancer le minuteur (15 min)": "Start the timer (15 min)",
     "Capturer…": "Capture…",
     "Trier la boîte, une note à la fois": "Sort the inbox, one note at a time",
+    "La relier à une idée": "Link it to an idea",
+    "{0} idée notée par Capturer attend dans la boîte de réception.": { one: "{0} idea noted with Capture is waiting in the inbox.", other: "{0} ideas noted with Capture are waiting in the inbox." },
+    "Les trier": "Sort them",
     "ajouter la tâche « {0} »": "add the task “{0}”",
     ", pour le {0}": ", due {0}",
     "marquer comme faite la tâche « {0} »": "mark the task “{0}” as done",
@@ -7966,7 +7969,8 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     if (inp) inp.value = "";
     site.save();
     render();
-    toast(tr`Gardée : « ${excerpt(e, 50)} ».`);
+    if (thoughtItems().length) toastAction(tr`Gardée : « ${excerpt(e, 50)} ».`, tr`La relier à une idée`, () => sourceLinkForm(id, e.id), 8e3);
+    else toast(tr`Gardée : « ${excerpt(e, 50)} ».`);
   };
   CLICK["src-cancel"] = (el) => {
     delete srcPreview[modOf2(el)];
@@ -11220,6 +11224,10 @@ ${nm} (${mo}) : dépenses ${sumOf2(es, "dépense")} €, revenus ${sumOf2(es, "r
     return `<section><h3 style="margin:0 0 4px">${tr`Par ${esc(c.categoryLabel).toLowerCase()}`}</h3><p class="hint">${tr`Chaque ${esc(c.categoryLabel).toLowerCase()} a son propre objectif.`}</p>
     <div class="rooms">${out.map((g) => `<div class="room"><div class="fill" style="width:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : tr`${g.pct} %`}</b><small>${esc(g.sub)}</small></div>`).join("")}</div></section>`;
   }
+  function waitingHTML(inst) {
+    const box = inboxId(S().modules), n = box && !inst.scraps.length ? S().modules[box].entries.length : 0;
+    return n ? `<p class="hint" style="margin-top:10px">${trn(n, "{0} idée notée par Capturer attend dans la boîte de réception.", "{0} idées notées par Capturer attendent dans la boîte de réception.")} <button class="btn sm" data-act="vasculum">${tr`Les trier`}</button></p>` : "";
+  }
   registerType("cumul", {
     view(id) {
       const inst = S().modules[id], c = inst.config;
@@ -11236,6 +11244,7 @@ ${nm} (${mo}) : dépenses ${sumOf2(es, "dépense")} €, revenus ${sumOf2(es, "r
     <div style="margin-top:28px">${c.categories.length ? cumulGroupPanel(id) : `<p class="hint">${tr`Ajoute des ${`${esc(c.categoryLabel).toLowerCase()}s`} dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`} pour suivre chacune en pourcentage.`}</p>`}</div>
   </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">${tr`Une phrase qui passe, avant qu'elle ne reparte. Un « ? » devant en fait une hypothèse.`}</p>
     ${deriveBanner(id)}<textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="${tr`Nouveau`}"></textarea><div class="row" style="margin-top:8px">${catSelect("scrapCat", "", lastScrapCat)}<button class="btn" data-act="scrap-add" data-mod="${esc(id)}">${tr`Garder`}</button></div>
+    ${waitingHTML(inst)}
     ${c.categories.length || inst.scraps.length ? `<div class="row" style="margin-top:14px">${c.categories.length ? `<select data-act="scrap-f" data-mod="${esc(id)}" aria-label="${tr`Filtrer`}"><option value="*">${tr`Tous`}</option>${[["", tr`Hors ${c.categoryLabel.toLowerCase()}`], ...c.categories.map((x) => [x.id, x.name])].map(([k, n]) => `<option value="${esc(k)}" ${ff === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : ""}<span class="spacer"></span>${inst.scraps.length ? `<button class="btn ghost sm" data-act="scrap-md" data-mod="${esc(id)}">${tr`Exporter en Markdown`}</button><button class="btn ghost sm" data-act="scrap-dossier" data-mod="${esc(id)}" title="${tr`Avec dates, statuts, provenance et liens, pour une lecture assistée`}">${tr`Dossier`}</button>` : ""}</div>` : ""}
     <ul class="plain margins" style="margin-top:10px">${((pg) => pg.items.map((f) => `<li class="item" data-id="${esc(f.id)}"><span class="jdate">${fmt(f.date)}</span><div><div style="white-space:pre-wrap">${esc(f.text)}</div><div class="meta">${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${linksHTML(id)}</div>${versionsHTML(f)}</div>${margHTML(id, f, f.text)}<div class="row"><button class="btn ghost sm ra" data-act="scrap-edit" data-mod="${esc(id)}">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="scrap-del" data-mod="${esc(id)}">${tr`suppr.`}</button></div></li>`).join("") + pg.more)(paged(`scraps:${id}`, [...inst.scraps].reverse().filter((f) => ff === "*" || (f.category || "") === ff))) || `<li class="empty">${tr`Rien pour l'instant.`}</li>`}</ul>
   </section>` : ""}</div>`;
