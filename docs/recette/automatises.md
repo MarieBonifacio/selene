@@ -1,17 +1,17 @@
 # Inventaire des tests automatiques
 
 Ce que les tests de Selene vérifient réellement, lu dans le corps de chaque test et non dans son seul nom ; ce qu'ils
-simulent ; où et quand ils tournent ; ce qu'ils ne prouvent pas. État au commit `768eb34` (4 octobre 2026). Les
+simulent ; où et quand ils tournent ; ce qu'ils ne prouvent pas. État au commit `1ca8c4f` (4 octobre 2026 ; rédigé sur `768eb34`, complété des tests ajoutés ou modifiés depuis). Les
 automatisations seulement proposées sont dans [backlog.md](backlog.md), jamais ici.
 
 Identifiants retirés : aucun.
 
 ## En bref
 
-| Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22) |
+| Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
-| Tests unitaires et d'intégration Node | `npm test` | 268 tests, 26 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis**, 0 échec, 0 ignoré (12,4 s) |
-| Scénarios de navigateur | `npm run test:browser` | 73 scénarios `tests/browser/*.js`, environ 1 034 appels de vérification dans le code | oui : *Check › browser*, Chromium **et** WebKit | Chromium : **73 verts, 1 067 vérifications** ; WebKit : non exécuté (navigateur absent) |
+| Tests unitaires et d'intégration Node | `npm test` | 277 tests, 28 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
+| Scénarios de navigateur | `npm run test:browser` | 73 scénarios `tests/browser/*.js`, environ 1 034 appels de vérification dans le code | oui : *Check › browser*, Chromium **et** WebKit | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
 | Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
@@ -167,6 +167,20 @@ sans navigateur.
 | <a id="tu-bak-07"></a>`TU-BAK-07` | a backup from a newer schema is refused with an explicit message | Une sauvegarde au format 99 est refusée avec le message « … plus récente … ». | [DON-004](manuels/donnees-sauvegardes.md#don-004) |
 | <a id="tu-bak-08"></a>`TU-BAK-08` | connexions externes : Dehors et le radar, validés comme le reste | Flux de Dehors, veilles et mots du radar sont validés : adresse `javascript:`, identifiant piégé, plus de cent flux, plus de trente veilles, mots de plus de 300 caractères, genre de veille inconnu sont refusés. | — |
 
+### Sources en BibTeX et en CSL-JSON — `tests/biblio.test.js`
+
+- **Niveau** : Unitaire pur (U). **Sujet** : `src/core/biblio.js` (`splitAuthors`, `parseName`, `sourceKind`, `sourcesBibtex`, `sourcesCsl`, `sourcesCslJson`).
+- **Simulé** : Rien.
+- **Limites** : Vérifie le texte produit ; la lecture par un vrai outil (LaTeX, Zotero, citeproc) a été faite hors du dépôt par l'auteur de la fonction, pas par ces tests.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-bib-01"></a>`TU-BIB-01` | auteurs : virgules, « et », « ; », initiales rendues à leur nom, « et al. » | Une ligne d'auteurs se redécoupe (virgules, « et », « ; », « et al. » noté à part) ; une initiale seule revient à son nom ; le nom de famille commence à la particule (« de La Fontaine ») ; un seul mot reste une institution. | [EXT-020](manuels/connexions.md#ext-020) |
+| <a id="tu-bib-02"></a>`TU-BIB-02` | genre : l’étiquette reconnue en français ou en anglais, sinon aucun | L'étiquette d'une source donne son genre en français ou en anglais (« Thesis » → thèse) ; une étiquette inconnue n'en donne aucun. | [EXT-020](manuels/connexions.md#ext-020) |
+| <a id="tu-bib-03"></a>`TU-BIB-03` | BibTeX : type, champs, clé lisible, échappement, DOI sans adresse redondante | `@article` avec auteurs « Nom, Prénom » et `and others`, revue, année et mois, DOI sans adresse doi.org ; une page en `@misc` avec site, adresse et date de consultation, caractères de LaTeX échappés ; une clé prise reçoit une lettre ; accolades équilibrées dans chaque entrée ; aucune source, aucun texte. | [EXT-020](manuels/connexions.md#ext-020) |
+| <a id="tu-bib-04"></a>`TU-BIB-04` | BibTeX : chaque genre a son type et le site sa place ; majuscules protégées dans le titre | Livre, chapitre, actes, thèse, rapport, vidéo : le bon type et le site au bon champ (éditeur, ouvrage, école…) ; un mot à majuscule protégé dans le titre ; une institution reste un seul nom ; une entrée vide reste lisible. | [EXT-020](manuels/connexions.md#ext-020) |
+| <a id="tu-bib-05"></a>`TU-BIB-05` | CSL-JSON : type, noms structurés, date en parties, consultation pour une page | L'article et la page en CSL-JSON, champ par champ (type, noms structurés, date en parties, DOI, adresse, date de consultation) ; le type de chaque genre. | [EXT-020](manuels/connexions.md#ext-020) |
+
 ### Sorties du build, politique de confidentialité, page de test — `tests/build.test.js`
 
 - **Niveau** : Statique (S). **Sujet** : `build.py --dist`, `confidentialite.html`, `privacy.html`, `essai.html`.
@@ -196,6 +210,19 @@ sans navigateur.
 | <a id="tu-cart-03"></a>`TU-CART-03` | carte : les liens ne relient que des étoiles présentes, la tension ouverte est marquée | Un lien vers une entrée absente est omis ; la tension ouverte est marquée. | [PEN-014](manuels/penser-avec.md#pen-014) |
 | <a id="tu-cart-04"></a>`TU-CART-04` | carte : vingt étoiles le même jour dans la même bande ne s’empilent pas au même point | Vingt étoiles le même jour dans la même bande sont étagées sans sortir de la bande. | [PEN-014](manuels/penser-avec.md#pen-014) |
 | <a id="tu-cart-05"></a>`TU-CART-05` | carte : le voisinage, en largeur d’abord, coupé à 80 en gardant les plus proches | Le voisinage est parcouru en largeur, deux degrés au plus, et coupé à 80 en gardant les plus proches. | [PEN-014](manuels/penser-avec.md#pen-014) |
+
+### Déclarations de confidentialité des stores — `tests/confidentialite-stores.test.js`
+
+- **Niveau** : Statique (S) : lecture des fichiers de l'app iOS, de l'app Android, de `docs/publication.md` et du code. **Sujet** : `native/ios/App/App/PrivacyInfo.xcprivacy`, `AndroidManifest.xml`, `Info.plist`, `InfoPlist.strings`.
+- **Simulé** : Rien (aucune compilation, aucun lancement).
+- **Limites** : Prouve que les déclarations existent et concordent entre elles ; pas ce que l'App Store ou Google Play en feront, ni ce que l'app fait réellement à l'exécution.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-cst-01"></a>`TU-CST-01` | le manifeste est une ressource de l’app iOS | Le manifeste de confidentialité est copié dans l'app iOS (phase « Copy Bundle Resources »). | — |
+| <a id="tu-cst-02"></a>`TU-CST-02` | aucun pistage, et la raison des dates de fichiers | Aucun pistage, aucun domaine de pistage ; la raison déclarée pour la lecture des dates de fichiers, liée à l'usage réel de `Filesystem.readdir` par l'amorçage natif. | — |
+| <a id="tu-cst-03"></a>`TU-CST-03` | les données déclarées, et leur ligne dans la fiche Google Play | Les six types de données déclarés à Apple ont chacun leur ligne dans la fiche Google Play de `docs/publication.md` ; aucun ne sert au pistage ; seul le diagnostic (journal des erreurs) n'est pas lié au compte. | — |
+| <a id="tu-cst-04"></a>`TU-CST-04` | « Ma position » dans les apps : la position approximative seule, et la phrase d’iOS en deux langues | Android ne demande que la position approximative (ni précise, ni en arrière-plan) ; iOS a sa phrase d'explication, en anglais et en français ; la position est arrondie au dixième avant d'être gardée. | [EXT-007](manuels/connexions.md#ext-007) |
 
 ### Dehors : tri explicable — `tests/dehors.test.js`
 
@@ -625,10 +652,10 @@ publique) ; écran : T téléphone, O ordinateur.
 <a id="tn-activite"></a>
 #### `TN-activite` — Mesure d'usage de la bêta
 
-- **Fichier** : [`tests/browser/activite.js`](../../tests/browser/activite.js) · **mode** H · **écran** O · **état** : instable (WebKit)
+- **Fichier** : [`tests/browser/activite.js`](../../tests/browser/activite.js) · **mode** H · **écran** O · **état** : instable sous WebKit jusqu'à `3a79a01`, correctif à confirmer
 - **Conditions** : Faux Supabase qui enregistre les envois à `/rest/v1/activite`.
 - **Vérifie** : ouvrir ne compte pas ; une capture envoie un jour, avec la session, sans le texte ; le même jour, une fois ; rien n'est écrit sur l'appareil pour la mesure ; l'interrupteur de Réglages → Compte la coupe, même après un rechargement.
-- **Limites** : Instable sous WebKit (A1, [perimetre.md](perimetre.md#anomalies-et-observations)).
+- **Limites** : Instable sous WebKit (A1, [perimetre.md](perimetre.md#anomalies-et-observations)) ; le commit `3a79a01` attend désormais 1,2 s sans requête vers Supabase avant de recharger. Stabilité à confirmer sur plusieurs exécutions WebKit de la CI.
 - **Cas manuels** : [TRV-011](manuels/transverse.md#trv-011)
 
 <a id="tn-journal"></a>
@@ -977,7 +1004,7 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-cibles` — Cibles tactiles
 
 - **Fichier** : [`tests/browser/cibles.js`](../../tests/browser/cibles.js) · **mode** A · **écran** T (390 × 844, pointeur grossier)
-- **Conditions** : Quatorze écrans.
+- **Conditions** : Quinze écrans, dont un espace Sources (liens « ouvrir ↗ », boutons d'export) depuis `89d1ba0`.
 - **Vérifie** : chaque écran demandé est bien affiché ; chaque contrôle offre 44 × 44 px au doigt.
 - **Cas manuels** : [TRV-003](manuels/transverse.md#trv-003)
 
@@ -994,8 +1021,8 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/sources.js`](../../tests/browser/sources.js) · **mode** H puis A · **écran** O
 - **Conditions** : Crossref, Microlink simulés ; partage par `?url=`.
-- **Vérifie** : un seul appel à Crossref pour un DOI ; aperçu ; gardée avec « À lire » ; lien vers l'original à part ; doublon reconnu, « Garder » désactivé ; page par Microlink, titre piégé en texte ; adresse nettoyée ; quota épuisé : gardable avec l'adresse seule ; ni lien ni DOI : aucun appel ; note → source avec provenance ; lien partagé : attend la connexion, puis note de la boîte, adresse nettoyée, une seule fois ; favori ; Selene dans le menu « Partager » d'Android (manifeste).
-- **Cas manuels** : [EXT-001](manuels/connexions.md#ext-001), [EXT-002](manuels/connexions.md#ext-002), [EXT-003](manuels/connexions.md#ext-003), [EXT-004](manuels/connexions.md#ext-004), [EXT-017](manuels/connexions.md#ext-017), [PLT-002](manuels/plateformes.md#plt-002), [TRV-008](manuels/transverse.md#trv-008)
+- **Vérifie** : un seul appel à Crossref pour un DOI ; aperçu ; gardée avec « À lire » ; lien vers l'original à part ; doublon reconnu, « Garder » désactivé ; page par Microlink, titre piégé en texte ; adresse nettoyée ; quota épuisé : gardable avec l'adresse seule ; ni lien ni DOI : aucun appel ; note → source avec provenance ; lien partagé : attend la connexion, puis note de la boîte, adresse nettoyée, une seule fois ; favori ; export BibTeX (clé lisible, auteurs « Nom, Prénom », revue, DOI ; une page en `@misc`, caractères de LaTeX échappés) et CSL-JSON (types, noms structurés, DOI, adresse et date de consultation) ; Selene dans le menu « Partager » d'Android (manifeste).
+- **Cas manuels** : [EXT-001](manuels/connexions.md#ext-001), [EXT-002](manuels/connexions.md#ext-002), [EXT-003](manuels/connexions.md#ext-003), [EXT-004](manuels/connexions.md#ext-004), [EXT-017](manuels/connexions.md#ext-017), [PLT-002](manuels/plateformes.md#plt-002), [TRV-008](manuels/transverse.md#trv-008), [EXT-020](manuels/connexions.md#ext-020)
 
 <a id="tn-passeur"></a>
 #### `TN-passeur` — Le passeur côté Selene

@@ -11,7 +11,7 @@ pas son exécution, et rien ici ne le prétend.
 | Identifiant de campagne | `2026-10-04-mise-en-place` |
 | Type | vérification automatisée et sondes ponctuelles (hors des trois campagnes) |
 | Date(s) | 4 octobre 2026 |
-| Version testée | `main`, commit `768eb34` (code de l'app inchangé sur la branche `docs/cahier-de-recette`) |
+| Version testée | `main`, commit `768eb34`, puis `1ca8c4f` fusionné dans la branche `docs/cahier-de-recette` (le cahier ne modifie pas le code de l'app) |
 | Commit du cahier utilisé | branche `docs/cahier-de-recette` (ce compte rendu en fait partie) |
 | Environnement | conteneur Linux de développement, Node 22, Playwright 1.56.1 avec Chromium 141, Deno 2.9.6 ; page servie en local ; Supabase, Anthropic et les services externes **simulés** (interception des requêtes) |
 | Exécutant(s) | Claude Code (session de mise en place), à la demande de la responsable du produit |
@@ -40,11 +40,16 @@ pas son exécution, et rien ici ne le prétend.
 | Compilations Android, iOS, Windows | workflows *Android*, *iOS*, *Desktop* | **bloqué** | ni SDK Android, ni Xcode, ni Windows ici ; la CI les compile |
 | Isolation entre comptes | `npm run isolation` | **bloqué** | aucun projet de préproduction ni compte de test fournis |
 | Banc de mesure | `npm run bench` | mesuré (aucun seuil) | accueil 31 ms, motifs 42 ms, bilan 46 ms, planche 38 ms, carte d'un motif 56 ms, recherche 3 ms, sortes 46 ms |
-| Cohérence du cahier | `npm run recette` | **réussi** | 186 cas, 374 tests inventoriés, liens et jeux de données vérifiés |
+| Cohérence du cahier | `npm run recette` | **réussi** | 187 cas, 384 tests inventoriés, liens et jeux de données vérifiés |
 
 Relancés en fin de rédaction sur la branche du cahier (commit `7c4b4f8`, code de l'app identique à `768eb34`) :
 `npm run check` (268 tests Node, 16 tests Deno, build, syntaxe, eslint, i18n) et `npm run test:browser` sous Chromium
 (73 scénarios, 1 067 vérifications) : **réussis**, mêmes résultats.
+
+Puis, après la fusion de `main` (`1ca8c4f`, quatorze commits arrivés pendant la rédaction) dans la branche du cahier :
+`npm run check` (277 tests Node, 16 tests Deno) et `npm run test:browser` sous Chromium (73 scénarios, 1 071
+vérifications) : **réussis**. Playwright local : 1.56.1 (le `package.json` fusionné demande 1.63.0 ; la CI utilisera
+celle-ci).
 
 ## Sondes ponctuelles dans Chromium
 
@@ -64,7 +69,7 @@ avec des services simulés.
 
 ## Cas manuels
 
-Les 186 cas : **non exécutés**. Ils demandent des appareils réels, le vrai projet Supabase, claude.ai, une clé Anthropic de
+Les 187 cas : **non exécutés**. Ils demandent des appareils réels, le vrai projet Supabase, claude.ai, une clé Anthropic de
 recette ou un lecteur d'écran, qui n'étaient pas disponibles ici.
 
 ## Synthèse
@@ -72,7 +77,7 @@ recette ou un lecteur d'écran, qui n'étaient pas disponibles ici.
 | Priorité | Réussis | Échoués | Bloqués | Non applicables | Non exécutés |
 |---|---|---|---|---|---|
 | P1 | 0 | 0 | 0 | 0 | 69 |
-| P2 | 0 | 0 | 0 | 0 | 77 |
+| P2 | 0 | 0 | 0 | 0 | 78 |
 | P3 | 0 | 0 | 0 | 0 | 40 |
 
 Anomalies relevées : A1 à A7 ([perimetre.md](../perimetre.md#anomalies-et-observations)), aucune corrigée.

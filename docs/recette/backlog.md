@@ -93,6 +93,8 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 - **Niveau** : scénario de navigateur.
 - **Dépendances** : WebKit de Playwright (absent de l'environnement d'analyse ; présent en CI).
 - **Bénéfice attendu** : une CI à laquelle on peut croire.
+- **État** : le commit `3a79a01` de `main` corrige le test (attente de 1,2 s sans requête avant le rechargement). Reste à
+  confirmer sur une série d'exécutions WebKit de la CI ; si elle tient, barrer cet élément.
 
 <a id="bl-06"></a>
 ### BL-06 — Assistant : dire « non déployé » ou « injoignable », et le tester

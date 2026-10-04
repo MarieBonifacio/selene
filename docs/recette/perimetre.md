@@ -1,6 +1,6 @@
 # Périmètre de la recette
 
-Ce qui est réellement dans Selene au commit de référence (`768eb34`, 4 octobre 2026), d'après le code, les tests et la
+Ce qui est réellement dans Selene au commit de référence (`768eb34`, 4 octobre 2026, complété jusqu'à `1ca8c4f`), d'après le code, les tests et la
 documentation lus ensemble. Quand ils divergent, la divergence est notée plus bas plutôt que tranchée en silence.
 
 Statuts : **disponible** (dans `main`, atteignable par l'interface), **partielle** (une partie seulement est livrée, ou elle
@@ -94,7 +94,8 @@ le passeur), Musique (MusicBrainz, Cover Art Archive), ciel et météo (Open-Met
 fixe jusqu'en 2030, sans réseau), pluie sur les tâches, radar culturel (OpenAgenda, par le passeur quand la lecture directe
 est refusée), import Instagram (sur l'appareil, aussi dans l'artefact), passeur, Dehors, Artist Watch, veille de recherche
 (OpenAlex), « ce que tes sources ont en commun », calendrier iCal, Zotero en lecture seule, « Envoyer à Selene » (partage
-Android, favori, Raccourci iOS, liens `selene://`). Le passeur et Dehors exigent un compte connecté **et** que le compte
+Android, favori, Raccourci iOS, liens `selene://`). Depuis `89d1ba0` : l'**export des sources en BibTeX et en CSL-JSON** (sur l'appareil, sans service). Depuis
+`14e1961` : dans les apps, « Ma position » ne demande que la **position approximative**. Le passeur et Dehors exigent un compte connecté **et** que le compte
 figure dans `PASSEUR_USERS` : pour un compte de recette, c'est un réglage serveur à faire (partielle, de ce point de vue).
 
 ### Assistant
@@ -159,7 +160,7 @@ Constatées, pas corrigées. Chacune est à qualifier par un ticket.
 
 | # | Constat | Preuve | Gravité proposée |
 |---|---|---|---|
-| A1 | **Test instable** `tests/browser/activite.js` sous WebKit : le scénario échoue sur « aucune erreur JavaScript » quand une requête `app_state` est interrompue par le rechargement (« … due to access control checks »). Un correctif (« recharger sans requête en vol », commit `78b240d`) n'a pas suffi. Reste à savoir si le défaut est dans le test ou dans l'app (une promesse rejetée non rattrapée au rechargement, que le journal des erreurs pourrait aussi envoyer). | Échecs des runs Actions `37166847299` (PR #78, 4 octobre, 01 h 08) et `37180520608` (`main`, commit `5549d3b`, 05 h 43) ; vert au commit suivant. | P2 (fiabilité de la CI) |
+| A1 | **Test instable** `tests/browser/activite.js` sous WebKit : le scénario échoue sur « aucune erreur JavaScript » quand une requête `app_state` est interrompue par le rechargement (« … due to access control checks »). Un correctif (« recharger sans requête en vol », commit `78b240d`) n'a pas suffi. Reste à savoir si le défaut est dans le test ou dans l'app (une promesse rejetée non rattrapée au rechargement, que le journal des erreurs pourrait aussi envoyer). | Échecs des runs Actions `37166847299` (PR #78, 4 octobre, 01 h 08) et `37180520608` (`main`, commit `5549d3b`, 05 h 43) ; vert au commit suivant. | P2 (fiabilité de la CI) ; **correctif côté test sur `main`** (`3a79a01`, « attendre vraiment la fin des requêtes avant de recharger ») : stabilité à confirmer sur plusieurs exécutions WebKit |
 | A2 | `tests/browser/secours.js` a échoué deux fois (Chromium, WebKit) pendant le développement de sa propre branche `fix/journal-de-secours`, avant le correctif « déclencher pagehide puis fermer ». Aucun échec depuis : à surveiller, pas à classer instable. | Runs `37161823890`, `37163578221` (3 et 4 octobre) | — |
 | A3 | Un fichier de sauvegarde hostile (identifiant piégé) est refusé avec le message générique « Fichier illisible ou pas une sauvegarde Selene. », sans dire quel champ pose problème. Le refus est le bon ; le message ne permet pas à la personne de comprendre si son fichier est abîmé ou piégé. | Import de `donnees/refus-hostile.json` dans Chromium (4 octobre) | P3, [À ARBITRER] |
 | A4 | Quand la fonction `assistant` a répondu 404 (non déployée) ou 503 (non configurée), coller une clé dans Réglages → Assistant affiche « Clé non enregistrée : L'assistant hébergé demande d'être connectée à ton compte. », alors que la personne **est** connectée ; la vraie cause (« Assistant non déployé ») n'est montrée nulle part, et la vue Assistant dit « Pas encore branché. Colle ta clé API dans Réglages. » comme si seule la clé manquait. Même message « Pas encore branché » quand la fonction est injoignable. Cause lue dans le code : `assistantEtat = "absent"` rend `assistantPret()` faux, et `assistantCall` répond alors par le message « demande d'être connectée » (`src/app/features/assistant.js`). | Sonde Chromium, faux Supabase répondant 404 à `/functions/v1/assistant` (4 octobre) ; voir [AST-007](manuels/assistant.md#ast-007) | P3 |

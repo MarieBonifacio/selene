@@ -32,6 +32,7 @@ request domain*, ou mode hors ligne.
 | [EXT-017](#ext-017) | « Envoyer à Selene » : un lien venu d'ailleurs | P2 | Web, Mob, AND, IOS, WIN |
 | [EXT-018](#ext-018) | Ce que tes sources ont en commun | P3 | Web |
 | [EXT-019](#ext-019) | Dans l'artefact : les connexions absentes le disent | P3 | ART |
+| [EXT-020](#ext-020) | Exporter ses sources en BibTeX et en CSL-JSON | P2 | Web, Mob |
 
 Identifiants retirés : aucun.
 
@@ -188,8 +189,9 @@ Identifiants retirés : aucun.
 - **Priorité** : P3 · **Plateformes** : Web, Mob, AND, IOS
 - **Préconditions** : aucun lieu réglé.
 - **Données** : ville `Lille`.
-- **Automatisés associés** : `TN-fenetre`, `TU-SKY-05`, `TU-SKY-08`
-- **Source** : [DOC] README, « Le ciel de l'accueil » ; [TEST] `tests/browser/fenetre.js`.
+- **Automatisés associés** : `TN-fenetre`, `TU-SKY-05`, `TU-SKY-08`, `TU-CST-04`
+- **Source** : [DOC] README, « Le ciel de l'accueil » ; [DOC] [android.md](../../android.md), [ios.md](../../ios.md) (« Ma position ») ;
+  [TEST] `tests/browser/fenetre.js`, `TU-CST-04` (permissions déclarées par les apps).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -198,6 +200,7 @@ Identifiants retirés : aucun.
 | 3 | Revenir à l'accueil. | Une ligne de données sous le ciel (température, temps, vent) ; la requête à Open-Meteo porte des coordonnées au dixième. |
 | 4 | « Utiliser ma position », refuser l'autorisation du navigateur. | « Position refusée ou indisponible. Une ville fera l'affaire. » |
 | 5 | « retirer » le lieu. | « Lieu retiré : l'heure redevient estimée, sans météo. » |
+| 6 | App Android ou iOS seulement (sinon : non applicable) : « Utiliser ma position », lire la demande d'autorisation du système, l'accepter. | Android : la demande porte sur la position **approximative** seule (jamais « précise », jamais « toute la journée ») ; sous Android 11 ou avant, la demande échoue et l'app propose une ville. iOS : la phrase d'explication de Selene, dans la langue du téléphone, pour « lorsque l'app est active ». Les coordonnées gardées sont au dixième de degré. |
 
 - **État final attendu** : sans lieu.
 - **Nettoyage** : aucun.
@@ -511,3 +514,35 @@ Identifiants retirés : aucun.
 
 - **État final attendu** : inchangé.
 - **Nettoyage** : aucun.
+
+---
+
+<a id="ext-020"></a>
+### EXT-020 — Exporter ses sources en BibTeX et en CSL-JSON
+
+- **Fonctionnalité et règle** : sous le filtre d'un module de Sources, « Exporter en BibTeX » (`.bib`, pour LaTeX, BibTeX ou
+  biblatex) et « CSL-JSON » (`.csl.json`, pour Zotero, Zettlr ou Pandoc) : tout l'espace, quel que soit le filtre ; rien
+  ne part vers un service. L'étiquette donne le genre (article, livre, page…), les auteurs sont redécoupés, la clé de
+  citation est lisible, les caractères de LaTeX échappés. Un nom d'un seul mot est lu comme une institution (limite
+  documentée).
+- **Objectif, risque vérifié** : des sources enfermées dans Selene ; un fichier que LaTeX ou Zotero ne lit pas (accolade
+  déséquilibrée, caractère non échappé) ; un export amputé par le filtre affiché.
+- **Priorité** : P2 · **Plateformes** : Web, Mob
+- **Préconditions** : jeu d'essai (Sources : « Depersonalization and the self », article avec DOI ; « La forêt, lieu commun »,
+  page) ; pour l'étape 5, Zotero installé sur l'ordinateur de recette (sinon : étape non applicable).
+- **Données** : aucune autre.
+- **Automatisés associés** : `TN-sources`, `TU-BIB-01`, `TU-BIB-02`, `TU-BIB-03`, `TU-BIB-04`, `TU-BIB-05`
+- **Source** : [DOC] [connexions.md](../../connexions.md), 7f ; [TEST] `tests/biblio.test.js`, `tests/browser/sources.js` ; résultats
+  des étapes 2 et 3 calculés avec `src/core/biblio.js` sur le jeu d'essai.
+
+| Étape | Action précise | Résultat attendu observable |
+|---|---|---|
+| 1 | Ouvrir Sources ; filtre « Lue ». | Seule « La forêt, lieu commun » est listée ; à côté du filtre, les boutons « Exporter en BibTeX » et « CSL-JSON ». |
+| 2 | « Exporter en BibTeX » ; ouvrir le fichier dans un éditeur de texte. | Fichier `sources-<J>.bib`, **deux** entrées malgré le filtre : `@article{ciaunica2020depersonalization,` avec `author = {{Ciaunica} and {Charlton} and {Farmer}}`, `journal = {Consciousness and Cognition}`, `year = {2020}`, `doi = {10.1016/j.concog.2020.102946}` (sans `url`) ; puis `@misc{foret2025,` avec `howpublished = {exemple.org}`, `month = nov`, `url = {https://exemple.org/foret}`, `urldate = {2026-08-05}`. |
+| 3 | « CSL-JSON » ; ouvrir le fichier. | Fichier `sources-<J>.csl.json` : un tableau de deux objets, `"type": "article-journal"` avec `"DOI"`, puis `"type": "webpage"` avec `"URL"` et `"accessed"`. |
+| 4 | Network pendant les deux exports. | Aucune requête : tout se fait sur l'appareil. |
+| 5 | Zotero : Fichier → Importer… → le fichier `.csl.json`. | Deux documents importés, un article de revue et une page web, titres intacts (accents compris). |
+| 6 | Supprimer les deux sources ; regarder la barre du filtre. | Les boutons d'export disparaissent (rien à exporter). |
+
+- **État final attendu** : Sources vide ; deux fichiers téléchargés.
+- **Nettoyage** : réimporter le jeu d'essai ; supprimer les fichiers téléchargés (et l'import Zotero).
