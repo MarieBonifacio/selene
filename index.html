@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-J8LB8lnyZt1Jwzs3Jj2GuO3Zpo8ChAmxL343BO0faL0=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-AEwfphuUfYRGRUpw7OL+q1ViDFSMJMJAk+dVsjl8CCw=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -745,7 +745,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "62d2b872c5";
+const SELENE_BUILD = "1aa7575d5d";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -12720,6 +12720,8 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     $("#main").innerHTML = back + (inst ? `<div class="view ${tintOf(view)}">${plateHTML(view, bridging || !bridgeable ? "" : `<button class="btn ghost sm" data-act="bridge-edit" data-mod="${esc(view)}">${tr`Je m'arrête ici…`}</button>`)}${bridging ? bridgeBar(view, inst) : ""}${TYPE_UI[inst.type].view(view)}</div>` : VIEWS[view]());
     const fa = document.activeElement, typingSheet = fa && fa.closest && fa.closest("#sheet") && (fa.tagName === "TEXTAREA" || fa.tagName === "INPUT" && !["checkbox", "radio"].includes(fa.type));
     if (["module", "specimen", "vasculum"].includes(sheetKind) && $("#sheet").open && !typingSheet) $("#sheetBody").innerHTML = SHEETS[sheetKind](sheetArg);
+    const h2 = $("#main h2"), here = h2 && String(h2.textContent || "").replace(/\s+/g, " ").trim();
+    document.title = here ? `${here} — ${s.config.name || "Selene"}` : s.config.name || "Selene";
     for (const [id, v] of Object.entries(keep)) {
       const el = document.getElementById(id);
       if (el && v !== "" && el.value !== v) el.value = v;
@@ -12773,6 +12775,14 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     for (const k of Object.keys(pageSize)) delete pageSize[k];
     if (entry && Object.hasOwn(S().modules, view) && S().modules[view].type === "taches") setOpenId(entry);
     render();
+    const fa = document.activeElement;
+    if (!fa || fa === document.body) {
+      const h = $("#main h2");
+      if (h) {
+        if (!h.hasAttribute("tabindex")) h.setAttribute("tabindex", "-1");
+        h.focus({ preventScroll: true });
+      }
+    }
     const t = platform.session.get("selene-scroll");
     platform.session.remove("selene-scroll");
     const el = t && document.getElementById(t);
