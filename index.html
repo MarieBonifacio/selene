@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-cPh97+vh4gVrETSCAqgBbIUn+NZgT+Spzj5ppsFUJtI=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-lZ2+0CUEAVOq4d1A8K3MNLKCrN46l3P9A6FK7I34IB4=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -714,6 +714,8 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
   .tap{display:grid;place-items:center;min-width:44px;min-height:44px}
   .field-row{row-gap:18px}.fld{gap:14px} /* la zone d'une bulle « ? » ne mord ni sur son champ, ni sur celui du dessus */
   .sec-head{margin-bottom:9px}.plate{margin-bottom:16px} /* un titre et ses boutons, au-dessus d'autres boutons */
+  .row{row-gap:10px} /* un bouton passé à la ligne sous un champ : sa zone (9 px au-dessus) ne mord plus sur le champ */
+  .src-link{position:relative}.src-link::after{content:"";position:absolute;inset:-14px -3px -7px} /* « ouvrir ↗ » : le texte au-dessus ne se touche pas, le menu au-dessous si */
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.flash{box-shadow:inset 2px 0 0 var(--accent)}}
 </style>
@@ -746,7 +748,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "c18a9e6fa0";
+const SELENE_BUILD = "4cc63651e1";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1389,6 +1391,7 @@ var __selene = (() => {
     paged: () => paged,
     parseBackup: () => parseBackup,
     parseFeed: () => parseFeed,
+    parseName: () => parseName,
     parseQuantity: () => parseQuantity,
     passeurAcces: () => passeurAcces,
     passeurEtat: () => passeurEtat,
@@ -1502,7 +1505,12 @@ var __selene = (() => {
     sourceBar: () => sourceBar,
     sourceItems: () => sourceItems,
     sourceKey: () => sourceKey,
+    sourceKind: () => sourceKind,
+    sourcesBibtex: () => sourcesBibtex,
+    sourcesCsl: () => sourcesCsl,
+    sourcesCslJson: () => sourcesCslJson,
     sourcesModule: () => sourcesModule,
+    splitAuthors: () => splitAuthors,
     splitLocal: () => splitLocal,
     srcMeta: () => srcMeta,
     srcValid: () => srcValid,
@@ -1516,6 +1524,7 @@ var __selene = (() => {
     taskHTML: () => taskHTML,
     taskModules: () => taskModules,
     tensionSection: () => tensionSection,
+    texEscape: () => texEscape,
     textLang: () => textLang,
     thoughtItems: () => thoughtItems,
     tick: () => tick,
@@ -2042,6 +2051,10 @@ var __selene = (() => {
     "Cette source a disparu entre-temps.": "This source disappeared in the meantime.",
     "Déjà reliée ainsi.": "Already linked this way.",
     "Reliée. Elle apparaît en marge de ce qu'elle documente.": "Linked. It appears in the margin of what it documents.",
+    "Toutes les sources de cet espace, pour LaTeX (BibTeX, biblatex)": "All the sources in this space, for LaTeX (BibTeX, biblatex)",
+    "Exporter en BibTeX": "Export as BibTeX",
+    "Exporter en CSL-JSON": "Export as CSL-JSON",
+    "Toutes les sources de cet espace, pour Zotero, Zettlr ou Pandoc": "All the sources in this space, for Zotero, Zettlr or Pandoc",
     // features/specimen.js
     "Cette entrée n'existe plus.": "This entry no longer exists.",
     "{0} : ": "{0}: ",
@@ -4940,7 +4953,7 @@ var __selene = (() => {
   }, onSave = () => {
   } } = {}) {
     const BASE = key + "-base";
-    const read = (k) => {
+    const read2 = (k) => {
       try {
         const v = platform.storage.get(k);
         return v ? JSON.parse(v) : null;
@@ -4949,13 +4962,13 @@ var __selene = (() => {
       }
     };
     const s = { db: null, timer: null, unsub: null, syncing: null, again: false, key };
-    s.data = normalize(read(key) || seed2());
+    s.data = normalize(read2(key) || seed2());
     try {
       const raw = platform.storage.get(key);
       if (raw && raw !== JSON.stringify(s.data)) platform.storage.set(key, JSON.stringify(s.data));
     } catch {
     }
-    s.base = read(BASE);
+    s.base = read2(BASE);
     const saveLS = () => {
       try {
         platform.storage.set(key, JSON.stringify(s.data));
@@ -5069,10 +5082,10 @@ var __selene = (() => {
     };
     s.unsynced = () => !s.base || !deepEqual({ ...s.data, updatedAt: 0 }, { ...s.base, updatedAt: 0 });
     s.reload = () => {
-      const r = read(key);
+      const r = read2(key);
       if (r && (r.updatedAt || 0) > (s.data.updatedAt || 0)) {
         s.data = normalize(r);
-        s.base = read(BASE) || s.base;
+        s.base = read2(BASE) || s.base;
         return true;
       }
       return false;
@@ -5900,7 +5913,7 @@ var __selene = (() => {
   var RADAR_HOST = "https://public.opendatasoft.com";
   var RADAR_FIELDS = "uid,title_fr,description_fr,keywords_fr,firstdate_begin,lastdate_end,location_name,location_city,canonicalurl";
   var radarFold = (s) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  var addDaysISO = (iso2, n) => new Date(Date.parse(iso2 + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+  var addDaysISO = (iso3, n) => new Date(Date.parse(iso3 + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10);
   function radarUrl(place2, from, { days = 14, km = 20, lean = true } = {}) {
     const lat = Math.round(+place2.lat * 10) / 10, lon = Math.round(+place2.lon * 10) / 10;
     const where = `lastdate_end >= date'${from}' and firstdate_begin < date'${addDaysISO(from, days)}' and within_distance(location_coordinates, geom'POINT(${lon} ${lat})', ${km}km)`;
@@ -7642,6 +7655,140 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     toast(tr`Calendrier oublié sur cet appareil.`);
   };
 
+  // src/core/biblio.js
+  var fold2 = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "");
+  var norm = (s) => fold2(s).toLowerCase().replace(/\s+/g, " ").trim();
+  function sourceKind(tag, dicts = []) {
+    const t = norm(tag);
+    if (!t) return null;
+    return SOURCE_KINDS.find((k) => norm(k) === t || dicts.some((d) => d && d[k] && norm(d[k]) === t)) || null;
+  }
+  var PARTICLES = /* @__PURE__ */ new Set(["de", "du", "des", "la", "le", "van", "von", "der", "den", "da", "di", "del", "della", "dos", "das", "ter", "ten", "zu"]);
+  var INITIALS = /^(\p{Lu}\.\s*-?\s*)+$/u;
+  function splitAuthors(line) {
+    let s = String(line || "").replace(/\s+/g, " ").trim(), others = false;
+    const tail = s.match(/[,;]?\s*(et al\.?|and others|et coll\.?)$/i);
+    if (tail) {
+      others = true;
+      s = s.slice(0, tail.index).trim();
+    }
+    if (!s) return { names: [], others };
+    if (s.includes(";")) return { names: s.split(/\s*;\s*/).filter(Boolean), others };
+    const parts = s.split(/\s*,\s*|\s+(?:et|and|&)\s+/i).filter(Boolean), names = [];
+    for (const p of parts) if (INITIALS.test(p) && names.length && !names[names.length - 1].includes(",")) names[names.length - 1] += ", " + p;
+    else names.push(p);
+    return { names, others };
+  }
+  function parseName(raw) {
+    const s = String(raw || "").replace(/\s+/g, " ").trim();
+    if (s.includes(",")) {
+      const [family, ...rest] = s.split(",");
+      const given = rest.join(",").trim();
+      return given ? { family: family.trim(), given } : { literal: family.trim() };
+    }
+    const w = s.split(" ");
+    if (w.length < 2) return { literal: s };
+    const p = w.findIndex((x, i) => i > 0 && PARTICLES.has(x));
+    const at = p > 0 ? p : w.length - 1;
+    return { family: w.slice(at).join(" "), given: w.slice(0, at).join(" ") };
+  }
+  var dateParts = (d) => {
+    const m = String(d || "").match(/^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?/);
+    return m ? m.slice(1).filter(Boolean).map(Number) : null;
+  };
+  function read(e, dicts) {
+    const x = e.src || {}, a = splitAuthors(e.subtitle);
+    const doi = x.doi ? String(x.doi).replace(/[{}\s]/g, "") : "";
+    const url = x.url && /^https?:\/\//i.test(x.url) && !(doi && /^https?:\/\/(dx\.)?doi\.org\//i.test(x.url)) ? x.url : "";
+    return {
+      title: String(e.title || "").replace(/\s+/g, " ").trim(),
+      names: a.names.map(parseName),
+      others: a.others,
+      kind: sourceKind(e.tag, dicts),
+      site: String(x.site || "").replace(/\s+/g, " ").trim(),
+      date: dateParts(x.date),
+      doi,
+      url,
+      kept: dateParts(e.kept),
+      abstract: String(e.text || "").trim()
+    };
+  }
+  var STOP = /* @__PURE__ */ new Set(["the", "a", "an", "of", "on", "in", "and", "le", "la", "les", "l", "un", "une", "des", "de", "du", "d", "et", "en", "au", "aux", "der", "die", "das", "el", "los", "il", "lo"]);
+  var ascii = (s) => fold2(s).toLowerCase().replace(/[^a-z0-9]/g, "");
+  function citeKey(r, taken) {
+    const n = r.names[0], who = n ? ascii(n.family || n.literal).slice(0, 20) : "";
+    const word = fold2(r.title).toLowerCase().split(/[^a-z0-9]+/).find((w) => w.length > 1 && !STOP.has(w)) || "";
+    const year = r.date ? String(r.date[0]) : "", base = (who ? who + year + word.slice(0, 20) : word.slice(0, 20) + year) || "source";
+    let k = base;
+    for (let i = 1; taken.has(k); i++) k = base + (i < 26 ? String.fromCharCode(97 + i) : i);
+    taken.add(k);
+    return k;
+  }
+  var BIB = {
+    article: ["article", "journal"],
+    livre: ["book", "publisher"],
+    chapitre: ["incollection", "booktitle"],
+    actes: ["inproceedings", "booktitle"],
+    thèse: ["phdthesis", "school"],
+    rapport: ["techreport", "institution"],
+    notice: ["incollection", "booktitle"]
+  };
+  var MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+  var TEX = { "\\": "\\textbackslash{}", "{": "\\{", "}": "\\}", "&": "\\&", "%": "\\%", "$": "\\$", "#": "\\#", "_": "\\_", "^": "\\^{}", "~": "\\textasciitilde{}" };
+  var texEscape = (s) => String(s || "").replace(/[\\{}&%$#_^~]/g, (c) => TEX[c]);
+  var bibTitle = (t) => t.split(" ").map((w, i) => i && /\p{Lu}/u.test(w) ? `{${texEscape(w)}}` : texEscape(w)).join(" ");
+  var bibName = (n) => n.literal ? `{${texEscape(n.literal)}}` : `${texEscape(n.family)}, ${texEscape(n.given)}`;
+  var iso2 = (p) => p.map((v, i) => i ? String(v).padStart(2, "0") : String(v).padStart(4, "0")).join("-");
+  function sourcesBibtex(entries, dicts = []) {
+    const taken = /* @__PURE__ */ new Set();
+    return entries.map((e) => {
+      const r = read(e, dicts), [type, place2] = BIB[r.kind] || ["misc", "howpublished"], f = [];
+      if (r.names.length) f.push(["author", [...r.names.map(bibName), ...r.others ? ["others"] : []].join(" and ")]);
+      if (r.title) f.push(["title", bibTitle(r.title)]);
+      if (r.site) f.push([place2, texEscape(r.site)]);
+      if (r.date) {
+        f.push(["year", String(r.date[0])]);
+        if (r.date[1] >= 1 && r.date[1] <= 12) f.push(["month", MONTHS[r.date[1] - 1], true]);
+      }
+      if (r.doi) f.push(["doi", r.doi]);
+      if (r.url) f.push(["url", r.url]);
+      if (r.kept && r.url) f.push(["urldate", iso2(r.kept)]);
+      if (r.abstract) f.push(["abstract", texEscape(r.abstract)]);
+      const lines = f.map(([k, v, bare]) => `  ${k} = ${bare ? v : `{${/^(doi|url)$/.test(k) ? v.replace(/[{}]/g, encodeURIComponent) : v}}`}`);
+      return [`@${type}{${citeKey(r, taken)},`, ...lines.length ? [lines.join(",\n")] : [], "}"].join("\n");
+    }).join("\n\n") + (entries.length ? "\n" : "");
+  }
+  var CSL = {
+    article: ["article-journal", "container-title"],
+    livre: ["book", "publisher"],
+    chapitre: ["chapter", "container-title"],
+    prépublication: ["article", "publisher"],
+    actes: ["paper-conference", "container-title"],
+    thèse: ["thesis", "publisher"],
+    rapport: ["report", "publisher"],
+    notice: ["entry-encyclopedia", "container-title"],
+    page: ["webpage", "container-title"],
+    vidéo: ["motion_picture", "publisher"],
+    podcast: ["broadcast", "container-title"]
+  };
+  function sourcesCsl(entries, dicts = []) {
+    const taken = /* @__PURE__ */ new Set();
+    return entries.map((e) => {
+      const r = read(e, dicts), [type, place2] = CSL[r.kind] || ["document", "publisher"];
+      const it = { id: citeKey(r, taken), type };
+      if (r.title) it.title = r.title;
+      if (r.names.length) it.author = r.names;
+      if (r.site) it[place2] = r.site;
+      if (r.date) it.issued = { "date-parts": [r.date] };
+      if (r.doi) it.DOI = r.doi;
+      if (r.url) it.URL = r.url;
+      if (r.kept && r.url) it.accessed = { "date-parts": [r.kept] };
+      if (r.abstract) it.abstract = r.abstract;
+      return it;
+    });
+  }
+  var sourcesCslJson = (entries, dicts) => JSON.stringify(sourcesCsl(entries, dicts), null, 2) + "\n";
+
   // src/app/features/tensions.js
   function openTensions() {
     const items = thoughtItems(), parents = [];
@@ -8017,6 +8164,14 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     delete srcPreview[modOf2(el)];
     render();
   };
+  var kindDicts = () => Object.values(LANGS).map((l) => l.dict).filter(Boolean);
+  function sourcesExport(id, format) {
+    const m = S().modules[id];
+    if (!m || !m.entries.length) return;
+    return format === "bib" ? downloadFile(`${id}-${todayISO()}.bib`, sourcesBibtex(m.entries, kindDicts()), "application/x-bibtex", label(id)) : downloadFile(`${id}-${todayISO()}.csl.json`, sourcesCslJson(m.entries, kindDicts()), "application/json", label(id));
+  }
+  CLICK["src-bib"] = (el) => sourcesExport(modOf2(el), "bib");
+  CLICK["src-csl"] = (el) => sourcesExport(modOf2(el), "csl");
   CLICK["note-source"] = async (el) => {
     const from = modOf2(el), to = sourcesModule(), nid = idOf(el), note = S().modules[from].entries.find((x) => x.id === nid);
     if (!note || !to) return;
@@ -10838,7 +10993,7 @@ ${contextText()}`;
       }
       const filter = colFilter[id] || "", shown = items.filter((e) => !filter || e.status === filter);
       return `<div data-mod="${esc(id)}">${head}
-  <div class="row" style="margin-bottom:10px"><select data-act="col-f" aria-label="${tr`Filtrer`}"><option value="">${tr`Tous`}</option>${c.statuses.map((st) => `<option ${st === filter ? "selected" : ""}>${esc(st)}</option>`).join("")}</select></div>
+  <div class="row" style="margin-bottom:10px"><select data-act="col-f" aria-label="${tr`Filtrer`}"><option value="">${tr`Tous`}</option>${c.statuses.map((st) => `<option ${st === filter ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${c.sources && inst.entries.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="src-bib" title="${tr`Toutes les sources de cet espace, pour LaTeX (BibTeX, biblatex)`}">${tr`Exporter en BibTeX`}</button><button class="btn ghost sm" data-act="src-csl" aria-label="${tr`Exporter en CSL-JSON`}" title="${tr`Toutes les sources de cet espace, pour Zotero, Zettlr ou Pandoc`}">CSL-JSON</button>` : ""}</div>
   <div class="two"><div><ul class="plain col-list">${((pg) => pg.items.map((e) => `<li class="item" data-id="${esc(e.id)}"><span>${c.music && e.mb && e.mb.rg ? coverImg(e.mb.rg) : ""}</span><div><b>${esc(e.title)}</b>${f.subtitle ? e.subtitle ? `, <i>${esc(e.subtitle)}</i>${c.music && e.mb && e.mb.y ? ` <span class="hint">(${esc(e.mb.y)})</span>` : ""}` : c.music ? ` <button class="btn ghost sm" data-act="mb-open">${tr`préciser ${esc(f.subtitle.toLowerCase())}`}</button>` : ` <span class="hint">${tr`${esc(f.subtitle.toLowerCase())} à préciser`}</span>` : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${c.review ? tr`à réexaminer le ${fmt(e.due)}` : fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}${reviewedHTML(e) || e.origin || e.src ? `<div class="meta">${srcMeta(e)}${reviewedHTML(e)}${originHTML(e, e.title)}</div>` : ""}${c.sources && (e.links || []).length ? `<div class="meta src-docs">${e.links.map((l) => `<span>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</span>`).join("")}</div>` : ""}</div>
     <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map((st) => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm ra" data-act="specimen">${tr`fiche`}</button>${c.music ? `<button class="btn ghost sm ra" data-act="mb-open">${tr`discographie`}</button>` : ""}${c.sources ? `<button class="btn ghost sm ra" data-act="src-link">${tr`documente…`}</button>` : ""}<button class="btn ghost sm ra" data-act="col-edit">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="col-del">${tr`suppr.`}</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">${tr`Rien dans ce filtre.`}</li>`}</ul></div><div>${panel}</div></div></div>`;
     },

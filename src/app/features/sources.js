@@ -1,11 +1,13 @@
 /* Les sources : un lien ou un DOI, complété (Crossref, Microlink, passeur) puis gardé ; une source documente une
    note. */
 import { addLink, retargetLinks, saveCollectionItem } from "../../core/domain.js";
+import { sourcesBibtex, sourcesCslJson } from "../../core/biblio.js";
 import { bareSource, crossrefToSource, findDoi, findUrl, microlinkToSource, sourceKey } from "../../core/sources.js";
 import { CLICK } from "../registry.js";
 import { $, esc, toast, toastAction } from "../lib/dom.js";
+import { downloadFile } from "../lib/download.js";
 import { fmt, todayISO, uid } from "../lib/format.js";
-import { tr, trp, uiLocale } from "../i18n/index.js";
+import { LANGS, tr, trp, uiLocale } from "../i18n/index.js";
 import { citeBar } from "./cites.js";
 import { dehorsFeeds } from "./dehors.js";
 import { excerpt, refFind, thoughtItems } from "./links.js";
@@ -117,6 +119,17 @@ CLICK["src-keep"] = el => {
   else toast(tr`Gardée : « ${excerpt(e, 50)} ».`);
 };
 CLICK["src-cancel"] = el => { delete srcPreview[modOf(el)]; render(); };
+/* Ne pas enfermer les sources : tout l'espace, quel que soit le filtre, en BibTeX (LaTeX, biblatex) ou en CSL-JSON
+   (Zotero, Zettlr, Pandoc). Le genre d'une source est son étiquette, traduite le jour où elle a été gardée : il se
+   reconnaît dans chaque langue de l'interface. La traduction est dans biblio.js. */
+const kindDicts = () => Object.values(LANGS).map(l => l.dict).filter(Boolean);
+function sourcesExport(id, format) {
+  const m = S().modules[id]; if (!m || !m.entries.length) return;
+  return format === "bib" ? downloadFile(`${id}-${todayISO()}.bib`, sourcesBibtex(m.entries, kindDicts()), "application/x-bibtex", label(id))
+    : downloadFile(`${id}-${todayISO()}.csl.json`, sourcesCslJson(m.entries, kindDicts()), "application/json", label(id));
+}
+CLICK["src-bib"] = el => sourcesExport(modOf(el), "bib");
+CLICK["src-csl"] = el => sourcesExport(modOf(el), "csl");
 /* Une note de la boîte qui contient un lien ou un DOI devient une source, avec sa provenance ; ses liens la suivent. */
 CLICK["note-source"] = async el => {
   const from = modOf(el), to = sourcesModule(), nid = idOf(el), note = S().modules[from].entries.find(x => x.id === nid);

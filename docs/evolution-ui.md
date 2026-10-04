@@ -233,9 +233,13 @@ plutôt qu'une pluie périmée. La CSP hébergée (`build.py`) devra autoriser `
 - [x] `accent-color` global (fin des cases bleu système).
 - [x] Cibles tactiles de 44 pt pour chaque contrôle sur écran tactile : boutons (44 px de large, zone invisible
   au-dessus et au-dessous), champs, menus, nuanciers, volets, cases (par leur étiquette). Mesurées par
-  `tests/browser/cibles.js` sur quatorze écrans : ce que le doigt touche, voisins compris, pas la boîte dessinée. Seule
+  `tests/browser/cibles.js` sur quinze écrans : ce que le doigt touche, voisins compris, pas la boîte dessinée. Seule
   exception, comme dans WCAG 2.5.8 : un lien dans le fil d'une phrase. Le scénario vérifie aussi que l'écran affiché
   est bien celui demandé : il mesurait l'accueil à la place de la Collection, sous une adresse qui n'existait pas.
+  Le quinzième, un espace Sources (absent du jeu d'essai, ajouté au scénario), a montré deux défauts : « ouvrir ↗ »
+  offrait 23 px de haut (une zone invisible le porte à 44, surtout vers le texte au-dessus, qui ne se touche pas) ; et
+  un bouton passé à la ligne sous un champ (« Utiliser ma position » sous « Ville ») mordait d'1 px sur lui, sa zone
+  dépassant de 9 px l'écart de 8 px des lignes : `.row` en garde 10 sur écran tactile.
 - [x] À la souris, WCAG 2.5.8 (AA) : une cible de moins de 24 px garde un cercle de 24 px d'air, sans autre cible
   dedans (`tests/browser/cibles-ordinateur.js`, douze écrans, volets ouverts). Balayage axe-core du 4 octobre 2026,
   quinze vues, téléphone et ordinateur, clair et sombre : seul relevé, deux cases empilées à 24 px dans les réglages

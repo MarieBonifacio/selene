@@ -482,6 +482,10 @@ export default {
   "Cette source a disparu entre-temps.": "This source disappeared in the meantime.",
   "Déjà reliée ainsi.": "Already linked this way.",
   "Reliée. Elle apparaît en marge de ce qu'elle documente.": "Linked. It appears in the margin of what it documents.",
+  "Toutes les sources de cet espace, pour LaTeX (BibTeX, biblatex)": "All the sources in this space, for LaTeX (BibTeX, biblatex)",
+  "Exporter en BibTeX": "Export as BibTeX",
+  "Exporter en CSL-JSON": "Export as CSL-JSON",
+  "Toutes les sources de cet espace, pour Zotero, Zettlr ou Pandoc": "All the sources in this space, for Zotero, Zettlr or Pandoc",
   // features/specimen.js
   "Cette entrée n'existe plus.": "This entry no longer exists.",
   "{0} : ": "{0}: ",

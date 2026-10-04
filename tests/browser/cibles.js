@@ -49,9 +49,17 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   await ecran('Réglages', 'reglages');
 
   console.log('un tableau de bord rempli');
-  await p.evaluate(d => { localStorage.setItem('selene-site-v1', d); }, fixture());
+  // Le jeu d'essai, plus un espace Sources (absent du jeu) : ses liens « ouvrir ↗ » et ses boutons d'export.
+  const rempli = JSON.parse(fixture());
+  rempli.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(rempli.modules.musique.config)), music: false, display: 'liste', sources: true,
+    statuses: ['À lire', 'Lue'], doneFrom: 1, fields: { title: 'Titre', subtitle: 'Auteurs', tag: 'Type', due: '', text: 'Résumé' } }, entries: [
+    { id: 's1', title: 'Depersonalization and the self', subtitle: 'Anna Ciaunica', tag: 'article', status: 'À lire', text: 'Un résumé.', date: '2026-09-28',
+      src: { doi: '10.1016/j.concog.2020.102946', url: 'https://doi.org/10.1016/j.concog.2020.102946', site: 'Consciousness and Cognition', date: '2020-05-12' } },
+    { id: 's2', title: 'La lisière', subtitle: '', tag: 'page', status: 'Lue', text: '', date: '2026-10-01', src: { url: 'https://www.sousbois.fr/lisiere', site: 'Revue des sous-bois' } }] };
+  rempli.config.modules.push({ id: 'sources', on: true });
+  await p.evaluate(d => { localStorage.setItem('selene-site-v1', d); }, JSON.stringify(rempli));
   await p.reload(); await p.waitForTimeout(400);
-  for (const [nom, hash] of [['accueil', 'accueil'], ['Réglages', 'reglages'], ['Tâches', 'chantier'], ['Écriture', 'ecriture'], ['Collection', 'moth'], ['Musique', 'musique'], ['Budget', 'budget'], ['Programme', 'kundalini'], ['Rappels', 'phidippus'], ['Boîte', 'inbox'], ['Bilan', 'bilan'], ['Recherche', 'recherche']]) await ecran(nom, hash);
+  for (const [nom, hash] of [['accueil', 'accueil'], ['Réglages', 'reglages'], ['Tâches', 'chantier'], ['Écriture', 'ecriture'], ['Collection', 'moth'], ['Musique', 'musique'], ['Budget', 'budget'], ['Programme', 'kundalini'], ['Rappels', 'phidippus'], ['Boîte', 'inbox'], ['Sources', 'sources'], ['Bilan', 'bilan'], ['Recherche', 'recherche']]) await ecran(nom, hash);
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();
