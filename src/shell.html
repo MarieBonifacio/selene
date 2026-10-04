@@ -679,6 +679,8 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
   .tap{display:grid;place-items:center;min-width:44px;min-height:44px}
   .field-row{row-gap:18px}.fld{gap:14px} /* la zone d'une bulle « ? » ne mord ni sur son champ, ni sur celui du dessus */
   .sec-head{margin-bottom:9px}.plate{margin-bottom:16px} /* un titre et ses boutons, au-dessus d'autres boutons */
+  .row{row-gap:10px} /* un bouton passé à la ligne sous un champ : sa zone (9 px au-dessus) ne mord plus sur le champ */
+  .src-link{position:relative}.src-link::after{content:"";position:absolute;inset:-14px -3px -7px} /* « ouvrir ↗ » : le texte au-dessus ne se touche pas, le menu au-dessous si */
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.flash{box-shadow:inset 2px 0 0 var(--accent)}}
 </style>

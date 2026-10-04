@@ -190,4 +190,28 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
       « s. d. » quand on ne sait pas. Numérotées dans l'ordre de première citation ; l'en-tête YAML les compte
       (`references`). Le préambule rappelle qu'une source qui documente une entrée ne la prouve pas.
 
+**7f : les sources en BibTeX et en CSL-JSON** (idée 2 de l'audit : ne pas enfermer les sources)
+- [x] Sous le filtre d'un module de Sources : « Exporter en BibTeX » (`.bib`, pour LaTeX, BibTeX ou biblatex) et
+      « CSL-JSON » (`.csl.json`, pour Zotero, Zettlr, Pandoc ou Mendeley). Tout l'espace, quel que soit le filtre ; rien
+      ne part vers un service. La traduction est pure (`src/core/biblio.js`, `tests/biblio.test.js`).
+- [x] Le genre (l'étiquette, traduite le jour où la source a été gardée) se reconnaît en français et en anglais :
+      article → `@article` / `article-journal`, livre → `@book` / `book`, chapitre → `@incollection` / `chapter`,
+      actes → `@inproceedings` / `paper-conference`, thèse → `@phdthesis` / `thesis`, rapport → `@techreport` / `report`,
+      notice → `@incollection` / `entry-encyclopedia`, page, vidéo, podcast et le reste → `@misc` (CSL : `webpage`,
+      `motion_picture`, `broadcast`, `document`). Le site devient la revue, l'ouvrage, l'éditeur, l'école ou
+      l'institution, selon le genre.
+- [x] Les auteurs, gardés en une ligne, sont redécoupés : virgules, « et », « and », « & » ; « ; » si la ligne en a
+      (« Nom, Prénom ; … ») ; une initiale seule après une virgule revient à son nom (« Dupont, J. »). Le nom de famille
+      commence à la première particule (« Jean de La Fontaine » → de La Fontaine, Jean), sinon c'est le dernier mot ; un
+      seul mot (une institution) reste entier. « et al. » devient `and others` en BibTeX ; CSL-JSON n'a pas
+      d'équivalent.
+- [x] Clé de citation lisible et unique : premier auteur, année, premier mot du titre (`raichle2009default`) ; sans
+      auteur, le mot puis l'année (`lisiere2026`) ; une clé prise reçoit b, c… BibTeX : caractères de LaTeX échappés,
+      mots à majuscules du titre protégés (`{Paris}`), adresse et DOI tels quels, `urldate` (la date où la source a été
+      gardée) pour ce qui se lit à une adresse. Vérifié en dehors du dépôt avec pybtex (lecture du `.bib`) et
+      citeproc-js (le style APA, en anglais et en français, sur le CSL-JSON).
+- Limite : Crossref et Zotero ne donnent à une source que ses trois premiers auteurs (puis « et al. ») : l'export n'en
+  sait pas davantage. Un nom à deux mots sans particule est lu « Prénom Nom » ; une institution de plusieurs mots
+  (« Organisation mondiale de la santé ») sera mal découpée, comme dans la plupart des outils.
+
 La phase 3 est terminée.

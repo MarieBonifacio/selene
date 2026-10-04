@@ -50,6 +50,18 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   await p.click('[data-act="src-keep"]'); await p.waitForTimeout(250);
   e = (await data(p)).modules.sources.entries[1];
   ok(e.src.url === 'https://www.sousbois.fr/lisiere' && e.src.site === 'Revue des sous-bois' && e.src.date === '2026-09-01', 'adresse normalisée (traceurs retirés), site, date');
+
+  console.log('exporter les sources (BibTeX, CSL-JSON)');
+  const read = async dl => require('node:fs').readFileSync(await dl.path(), 'utf8');
+  let [dl] = await Promise.all([p.waitForEvent('download'), p.click('[data-act="src-bib"]')]);
+  const bib = await read(dl);
+  ok(/^sources-\d{4}-\d\d-\d\d\.bib$/.test(dl.suggestedFilename()) && bib.includes('@article{ciaunica2020depersonalization,') && bib.includes('author = {Ciaunica, Anna and C, B and E, D and others}')
+    && bib.includes('journal = {Consciousness and Cognition}') && bib.includes('doi = {10.1016/j.concog.2020.102946}'), 'BibTeX : une clé lisible, les auteurs en « Nom, Prénom », la revue, le DOI (' + dl.suggestedFilename() + ')');
+  ok(bib.includes('@misc{lisiere2026,') && bib.includes('howpublished = {Revue des sous-bois}') && bib.includes('url = {https://www.sousbois.fr/lisiere}') && bib.includes('window.\\_\\_pwn'), 'une page : @misc, son site, son adresse ; les caractères de LaTeX échappés');
+  [dl] = await Promise.all([p.waitForEvent('download'), p.click('[data-act="src-csl"]')]);
+  const csl = JSON.parse(await read(dl));
+  ok(dl.suggestedFilename().endsWith('.csl.json') && csl.length === 2 && csl[0].type === 'article-journal' && csl[0].DOI === '10.1016/j.concog.2020.102946' && csl[0].author[0].family === 'Ciaunica'
+    && csl[1].type === 'webpage' && csl[1].URL === 'https://www.sousbois.fr/lisiere' && csl[1].accessed, 'CSL-JSON : types, noms structurés, DOI, adresse et date de consultation');
   const q = await open({}, '/index.html#sources', 'quota');
   await search(q, 'https://inconnu.example/texte');
   ok((await q.textContent('.src-prev')).includes('Métadonnées indisponibles'), 'quota épuisé : dit, et gardable quand même');

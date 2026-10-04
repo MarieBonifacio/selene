@@ -15,11 +15,29 @@ La même coquille Capacitor que sous Android (docs/android.md), autour de la mê
 - **Le résumé du matin** (Réglages → Notifications) : programmé par iOS pour la semaine qui vient, il sonne app fermée.
   iOS garde au plus 64 notifications en attente par app ; Selene en programme sept.
 - **Un léger retour haptique** à la capture.
+- **« Ma position »** pour le ciel de l'accueil : iOS demande l'accord avec la phrase de `Info.plist`
+  (`NSLocationWhenInUseUsageDescription`, traduite dans `en.lproj` et `fr.lproj`), « pendant l'utilisation » seulement ;
+  Selene arrondit aussitôt la position à un dixième de degré.
 - **Sa langue** : l'app déclare le français et l'anglais (`CFBundleLocalizations`, `Info.plist`). WebKit ne donne à
   la page que des langues que l'app déclare : sans elles, un iPhone en français pouvait recevoir l'anglais, la langue de
   développement. iOS les propose aussi dans Réglages → Selene → Langue, pour Selene seule ; un iPhone dans une
   troisième langue peut recevoir l'anglais (la langue de développement) plutôt que le français de repli des autres
   plateformes. Le réglage de langue du compte, s'il est choisi, passe avant (docs/i18n.md).
+
+## Confidentialité pour l'App Store
+
+`App/PrivacyInfo.xcprivacy`, le manifeste de confidentialité qu'Apple exige depuis mai 2024, voyage dans l'app (la CI
+le vérifie après la compilation). Il déclare :
+- **Une API à justifier** : les dates des fichiers (`NSPrivacyAccessedAPICategoryFileTimestamp`, raison `C617.1`),
+  lues par `@capacitor/filesystem` quand l'amorçage relit ses fichiers, dans le dossier privé de l'app. Ce plugin et
+  sa bibliothèque n'ont pas de manifeste à eux ; celui de Capacitor ne déclare rien. Sans cette ligne, App Store
+  Connect refuse l'envoi (ITMS-91053).
+- **Les données qui quittent l'appareil**, avec un compte seulement : l'adresse, le contenu des espaces, le lieu du
+  ciel (arrondi à un dixième de degré), le jour de saisie de la mesure d'usage, le journal des erreurs (non lié au
+  compte) et la clé de l'assistant. Aucun pistage. La fiche « Confidentialité de l'app » d'App Store Connect en
+  reprend les réponses ([publication.md](publication.md#ios--app-store), étape 6).
+
+Un plugin ajouté, une donnée de plus envoyée : le manifeste se relit le même jour, avec la politique.
 
 ## « Partager → Selene » par un Raccourci
 

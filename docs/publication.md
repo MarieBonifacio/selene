@@ -41,11 +41,22 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
 5. **Les formulaires** (Contenu de l'application) :
    - Politique de confidentialité : `https://mariebonifacio.github.io/selene/confidentialite.html` (en anglais :
      `https://mariebonifacio.github.io/selene/privacy.html`, pour une fiche anglaise) ;
-   - Sécurité des données : collecte l'adresse e-mail (gestion du compte) et le contenu créé (fonctionnement de
-     l'app), et la position approximative (le lieu du ciel, arrondi à ~10 km, facultatif : fonctionnalité de l'app),
-     liés au compte, non partagés, chiffrés en transit, supprimables par l'utilisateur (dans l'app). Aucune information
-     de santé : « Reprendre la main » est hors de l'offre publique, et ses données ne quittent pas l'appareil
-     (docs/regulation.md, « Hors de l'offre publique ») ;
+   - Sécurité des données : les mêmes six réponses que le manifeste iOS (`native/ios/App/App/PrivacyInfo.xcprivacy`),
+     toutes **facultatives** (rien ne part sans compte), **non partagées**, chiffrées en transit, supprimables par
+     l'utilisateur (dans l'app) :
+
+     | Catégorie Play | Donnée | Finalité | D'où elle vient |
+     |---|---|---|---|
+     | Informations personnelles → Adresse e-mail | l'adresse du compte | Gestion du compte | `auth.js` |
+     | Activité dans l'app → Autres contenus générés par l'utilisateur | les espaces, notes, sources | Fonctionnement de l'app | table `app_state` |
+     | Position → Position approximative | le lieu du ciel, arrondi à ~11 km | Fonctionnement de l'app | `scene/sky.js` |
+     | Activité dans l'app → Interactions avec l'app | un jour de saisie, 90 jours, coupable | Analyses | `activite.js` |
+     | Infos et performances → Diagnostics | le type et l'endroit d'une erreur, sans compte | Fonctionnement de l'app | `journal.js` |
+     | Informations personnelles → Autres informations | la clé API de l'assistant, chiffrée | Fonctionnement de l'app | `assistant.js` |
+
+     Aucune information de santé : « Reprendre la main » est hors de l'offre publique, et ses données ne quittent pas
+     l'appareil (docs/regulation.md, « Hors de l'offre publique »). Une donnée de plus qui quitte l'appareil se
+     déclare ici, dans le manifeste iOS et dans la politique, le même jour ;
    - **Avant l'envoi** : exclure le type « Reprendre la main » de la version des stores, à la construction. Le masquer
      ne suffit pas : la règle 2.3.1 d'Apple refuse les fonctions cachées, et une fonction de santé présente dans l'app
      appellerait les déclarations ci-dessus ;
@@ -74,9 +85,12 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
    contenu du fichier `.p8` (téléchargeable une seule fois) dans `APPSTORE_KEY_P8`.
 5. **TestFlight** : après l'envoi, la version apparaît dans TestFlight (quelques minutes de traitement) ; l'installer
    par l'app TestFlight sur l'iPhone.
-6. **Les formulaires** : Confidentialité de l'app (mêmes réponses que pour Google Play : e-mail, contenu, position
-   approximative, liés à l'identité, pas de suivi publicitaire, aucune donnée de santé une fois « Reprendre la main »
-   exclu de la version envoyée), classification par âge (aucun contenu sensible, pour la même raison), adresse de la
+6. **Les formulaires** : Confidentialité de l'app, recopiée du manifeste (`PrivacyInfo.xcprivacy`, que l'app
+   embarque) : Coordonnées → Adresse e-mail ; Contenu utilisateur → Autre contenu ; Localisation → Position
+   approximative ; Données d'utilisation → Interaction avec le produit (Analyses) ; Diagnostic → Autres données de
+   diagnostic (**non** liées à l'identité) ; Autres données (la clé de l'assistant). Toutes les autres sont liées à
+   l'identité, aucune ne sert au suivi publicitaire (« Suivi » : non), aucune donnée de santé une fois « Reprendre
+   la main » exclu de la version envoyée. Classification par âge (aucun contenu sensible, pour la même raison), adresse de la
    politique, catégorie
    Productivité, captures d'écran 6,9 pouces
    (`dist/store/fr/ios/` et `dist/store/en/ios/`, 1320 × 2868, par la même commande).

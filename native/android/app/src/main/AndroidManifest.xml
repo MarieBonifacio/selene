@@ -63,6 +63,10 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- « Ma position », pour le ciel de l'accueil (src/app/scene/sky.js) : la position approximative suffit, Selene
+         l'arrondit aussitôt à un dixième de degré. Sans la précise, Android 12 et suivants l'accordent seule ; avant,
+         la demande échoue et l'app propose de choisir une ville. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- Le résumé du matin (ADR 19) n'a pas besoin d'une alarme à la seconde : sans cette permission, que Google Play
          réserve aux réveils et aux agendas, le système le sonne à quelques minutes près. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />

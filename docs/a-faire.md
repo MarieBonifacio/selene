@@ -26,9 +26,11 @@ connaît pas le format 8 et refuse d'écrire.
   proposé au seul compte marqué personnel, aucun choix de stockage, l'autre appareil qui n'affiche que le nom, aucun
   bouton vers le compte, la garde à la déconnexion.
 - [ ] **Android**, avec l'APK de la course *Android* : lancement à froid, hors ligne puis en ligne, partage depuis
-  Chrome, bouton retour, rotation, clavier, synchronisation avec la PWA ([android.md](android.md#tester)).
+  Chrome, bouton retour, rotation, clavier, synchronisation avec la PWA, et Réglages → Ciel et alentours →
+  « Ma position » (Android 12 ou plus : l'accord demandé, puis le lieu « Ma position ») ([android.md](android.md#tester)).
 - [ ] **iPhone**, par TestFlight une fois le compte Apple ouvert : lancement à froid, hors ligne puis en ligne,
-  Raccourci de partage, rotation, clavier, encoches, synchronisation ([ios.md](ios.md#tester)).
+  Raccourci de partage, rotation, clavier, encoches, synchronisation, et « Ma position » (la phrase d'iOS dans la
+  langue du téléphone, puis le lieu) ([ios.md](ios.md#tester)).
 - [ ] **Windows**, avec l'installateur de la course *Desktop* : premier lancement, données relues après fermeture,
   déconnexion, mise à jour par-dessus ([desktop.md](desktop.md#tester)).
 - [ ] **La PWA installée sur iPhone** et **l'artefact claude.ai** ([architecture.md](architecture.md), « Hors CI »).
@@ -150,4 +152,8 @@ Pas de case ici : ce sont des engagements, pas des tâches.
 - Les PR de Dependabot, au début de chaque mois : une pour les actions de CI, une pour les outils npm
   (`.github/dependabot.yml`). Fusionner si Check est vert. Après une mise à jour des actions, regarder que le
   déploiement Pages qui suit réussit : la CI d'une PR ne l'exerce pas, ni la publication des apps. Une PR en retard
-  sur `main` se met à jour par un commentaire `@dependabot rebase`.
+  sur `main` se met à jour par le bouton *Update branch* ou un commentaire `@dependabot rebase`. Les actions sont
+  épinglées par empreinte (`actions/checkout@3d3c42e… # v7.0.1`) : un tag déplacé par un tiers ne change rien à
+  ce qui s'exécute ; Dependabot met à jour l'empreinte et le commentaire ensemble. Une action ajoutée à la main
+  s'épingle de même : `git ls-remote --tags https://github.com/<dépôt>` donne l'empreinte du tag (la ligne en `^{}`
+  pour un tag annoté).
