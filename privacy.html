@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <title>Selene — privacy</title>
 <style>
-:root { --bg: #f4f1ea; --ink: #1d231f; --muted: #5b655e; --rule: #d6d0c3; --acc: #4f7a49; }
+:root { --bg: #f4f1ea; --ink: #1d231f; --muted: #5b655e; --rule: #d6d0c3; --acc: #4a7444; } /* 4,8:1 sur le fond (4,4 avant : sous le seuil AA de 4,5) */
 @media (prefers-color-scheme: dark) { :root { --bg: #0e1310; --ink: #e4e8e1; --muted: #9aa69c; --rule: #2a332d; --acc: #8fbf87; } }
 body { background: var(--bg); color: var(--ink); font: 17px/1.6 Georgia, "Iowan Old Style", serif; margin: 0; padding: 32px 16px 64px; }
 main { max-width: 42rem; margin: 0 auto; }
@@ -21,7 +21,7 @@ code { font-size: .9em; }
 </head>
 <body><main>
 <h1>Selene and your data</h1>
-<p class="meta">Privacy policy of Selene (website, Android, iOS and Windows apps). Last updated: 4 October 2026 (“Taking back control” out of the public offer, no more syncing; device backups; error log; Selene without an account; presentation page and waiting list; beta usage measurement).
+<p class="meta">Privacy policy of Selene (website, Android, iOS and Windows apps). Last updated: 4 October 2026 (“Taking back control” out of the public offer, no more syncing; device backups; error log; Selene without an account; presentation page and waiting list; beta usage measurement; deleting your account without the app).
 <a href="confidentialite.html" hreflang="fr" lang="fr">En français</a>.</p>
 
 <p>The short version: Selene sells nothing, measures nothing, shows no advertising and has no trackers. What you write
@@ -165,7 +165,7 @@ otherwise. They keep nothing.</li>
 <h2>Your rights</h2>
 <ul>
 <li><b>Export</b>: Settings → Backup → Export, your whole state in one file.</li>
-<li><b>Delete</b>: Settings → Account → Delete my account. Your account, your dashboard on the server and your assistant
+<li><b>Delete</b> (and without the app: <a href="#delete-account">Delete your account</a>): Settings → Account → Delete my account. Your account, your dashboard on the server and your assistant
 key are erased at once, then the device is emptied.</li>
 <li><b>Without an account</b>: uninstalling the app, or clearing the website's data in the browser, erases everything.</li>
 <li><b>Everything else</b> (access, rectification, restriction, objection, withdrawing a consent): write to
@@ -173,6 +173,23 @@ key are erased at once, then the device is emptied.</li>
 on the waiting list), which shows the request comes from you. Reply within one month.</li>
 <li><b>Complaint</b>: if the reply does not satisfy you, you can refer the matter to the
 <a href="https://www.cnil.fr/fr/plaintes">CNIL</a> (in French), the French data protection authority.</li>
+</ul>
+
+<h2 id="delete-account">Delete your account</h2>
+<p>For Selene, the application by Marie Bonifacio: the website, and the Android, iOS and Windows apps.</p>
+<ul>
+<li><b>From the app or the website</b>: Settings → Account → Delete my account, then confirm. Without the app, just
+sign in on the website, <a href="https://mariebonifacio.github.io/selene/">mariebonifacio.github.io/selene</a>, from any
+browser.</li>
+<li><b>If you cannot sign in</b>: write to
+<a href="mailto:mariebonifacio.pro@gmail.com?subject=Delete%20my%20Selene%20account">mariebonifacio.pro@gmail.com</a>
+from your account's address, with the subject “Delete my account”. The account is deleted within one month, and the
+deletion is confirmed to you by e-mail.</li>
+<li><b>What is erased</b>: the account (address and password), your dashboard on the server, your assistant key and
+your usage measurement; your waiting-list sign-up too, if you ask.</li>
+<li><b>What remains</b>: nothing linked to you. The error log does not know your account (30 days); the database
+backups keep an erased item for 30 days at most; what you exported stays with you, and what is on your devices is
+erased by uninstalling the app or clearing the website's data.</li>
 </ul>
 
 <h2>Contact</h2>
