@@ -62,6 +62,7 @@ chargeant (`VIEWS`, `SHEETS`, `CLICK`, `CHANGE`) vivent dans `src/app/registry.j
 | `veille.js` | Research Watch, pur : ce que l'on suit (recherche, ORCID, OpenAlex), requête, traduction des résultats ; « cité par tes sources » (références communes, couplage bibliographique, auteurs qui reviennent) | — |
 | `agenda.js` | calendrier dédié, pur : lecture iCalendar (fuseaux, journées entières), récurrences dépliées sur une fenêtre | — |
 | `zotero.js` | Zotero, pur : ce que permet une clé, une fiche traduite en Source (DOI, revue, auteurs, lien vers la fiche) | — |
+| `biblio.js` | les sources en BibTeX et en CSL-JSON, pur : genre reconnu dans chaque langue, auteurs redécoupés, clés de citation, échappement LaTeX | `sources.js` |
 
 L'interface est rangée par **fonctionnalité** : ce qui sert une même chose (sa vue, son état, ses actions) vit dans
 le même fichier, et chaque fichier commence par une phrase qui dit son rôle.
