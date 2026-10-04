@@ -696,7 +696,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "8fbb1e4c7f";
+const SELENE_BUILD = "db06332c3d";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -773,7 +773,14 @@ var __platform = (() => {
     const m = /* @__PURE__ */ new Map(), last = /* @__PURE__ */ new Map(), inflight = /* @__PURE__ */ new Map();
     const send = (k, v, fn) => {
       inflight.set(k, v);
-      const q = (last.get(k) || Promise.resolve()).then(fn).then(() => written(k), () => {
+      let ok = false;
+      const q = (last.get(k) || Promise.resolve()).then(fn).then(() => {
+        ok = true;
+        try {
+          written(k);
+        } catch {
+        }
+      }, () => {
       });
       last.set(k, q);
       pendingWrites.add(q);
@@ -781,6 +788,7 @@ var __platform = (() => {
         pendingWrites.delete(q);
         if (last.get(k) !== q) return;
         last.delete(k);
+        if (!ok) return;
         inflight.delete(k);
         if (rescueArea) rescueArea.remove(RESCUE + k);
       });
@@ -790,11 +798,13 @@ var __platform = (() => {
         m.clear();
         for (const [k, v] of await vault.load()) if (typeof k === "string" && typeof v === "string") m.set(k, v);
       },
-      // Une autre fenêtre a écrit cette clé : la relire dans le coffre.
+      // Une autre fenêtre a écrit cette clé : la relire dans le coffre. Une valeur refusée ici, qui attendait encore,
+      // n'est plus à sauver : celle de l'autre fenêtre a abouti, et elle est plus récente.
       async refresh(k) {
         const v = await vault.get(k);
         if (typeof v === "string") m.set(k, v);
         else m.delete(k);
+        if (!last.has(k)) inflight.delete(k);
       },
       get: (k) => m.has(k) ? m.get(k) : null,
       set(k, v) {

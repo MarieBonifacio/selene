@@ -547,6 +547,10 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   retire la copie de sa clé, dans tout onglet : une copie n'est jamais plus ancienne que ce qu'IndexedDB tient. Le
   store ne tente plus de `keepalive` au-delà de 60 000 octets et garde sa synchronisation ordinaire prévue
   (`KEEPALIVE_MAX`). Reste une limite : un document plus gros que la place libre de `localStorage` n'a pas de copie.
+  Une écriture qu'IndexedDB **refuse** (quota plein, transaction annulée) n'est pas « aboutie » : elle reste en route,
+  donc copiée à la fermeture, jusqu'à ce qu'une écriture de la même clé aboutisse ici, ou dans un autre onglet (qui le
+  signale : `refresh`). Sans cela, une saisie refusée, serveur injoignable, était perdue des deux côtés
+  (`tests/browser/secours.js`, qui annule l'écriture pour de bon).
 
 ### ADR 14 — Trois sorties de build : web, artefact, natif
 

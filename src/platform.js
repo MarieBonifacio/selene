@@ -40,19 +40,24 @@ const pendingWrites = new Set();
    localStorage, lui, écrit tout de suite et survit à la fermeture : platform.flush(), appelé à la fermeture et à la
    mise en arrière-plan, y dépose la dernière valeur de chaque clé encore en route, sous ce préfixe ; le démarrage
    suivant la reverse dans IndexedDB (restoreRescue). Une écriture qui aboutit retire la copie de sa clé, dans cet
-   onglet comme dans un autre : une copie ne peut donc pas être plus ancienne que ce qu'IndexedDB tient déjà. */
+   onglet comme dans un autre : une copie ne peut donc pas être plus ancienne que ce qu'IndexedDB tient déjà. Une
+   écriture qu'IndexedDB refuse (quota plein, transaction annulée) reste en route, et sa copie la sauvera ; une écriture
+   de la même clé qui aboutit, ici ou dans un autre onglet, la remplace. */
 export const RESCUE = "selene-secours:";
 export function mirror(vault, written = () => {}, rescueArea = null) { // exportée pour les tests
   const m = new Map(), last = new Map(), inflight = new Map(); // inflight : clé → valeur pas encore écrite (null : effacée)
   // Une écriture attend la précédente sur la même clé : un coffre asynchrone ne doit pas les inverser.
   const send = (k, v, fn) => {
     inflight.set(k, v);
-    const q = (last.get(k) || Promise.resolve()).then(fn).then(() => written(k), () => {});
+    let ok = false;
+    const q = (last.get(k) || Promise.resolve()).then(fn).then(() => { ok = true; try { written(k); } catch {} }, () => {});
     last.set(k, q); pendingWrites.add(q);
     q.then(() => {
       pendingWrites.delete(q);
       if (last.get(k) !== q) return; // une écriture plus récente de la même clé est en route
-      last.delete(k); inflight.delete(k);
+      last.delete(k);
+      if (!ok) return; // refusée : la valeur reste à sauver, seulement en mémoire ; la copie de secours la gardera
+      inflight.delete(k);
       if (rescueArea) rescueArea.remove(RESCUE + k);
     });
   };
@@ -61,8 +66,9 @@ export function mirror(vault, written = () => {}, rescueArea = null) { // export
       m.clear();
       for (const [k, v] of await vault.load()) if (typeof k === "string" && typeof v === "string") m.set(k, v);
     },
-    // Une autre fenêtre a écrit cette clé : la relire dans le coffre.
-    async refresh(k) { const v = await vault.get(k); if (typeof v === "string") m.set(k, v); else m.delete(k); },
+    // Une autre fenêtre a écrit cette clé : la relire dans le coffre. Une valeur refusée ici, qui attendait encore,
+    // n'est plus à sauver : celle de l'autre fenêtre a abouti, et elle est plus récente.
+    async refresh(k) { const v = await vault.get(k); if (typeof v === "string") m.set(k, v); else m.delete(k); if (!last.has(k)) inflight.delete(k); },
     get: k => (m.has(k) ? m.get(k) : null),
     set(k, v) { v = String(v); m.set(k, v); send(k, v, () => vault.write(k, v)); return true; },
     remove(k) { m.delete(k); send(k, null, () => vault.remove(k)); },
