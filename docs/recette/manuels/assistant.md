@@ -271,8 +271,9 @@ Identifiants retirés : aucun.
   claude.ai de recette ; jeu d'essai importé dans l'artefact ; « Activer Assistant » coché.
 - **Données** : `Ajoute au Chantier la tâche « Tailler la haie ».`
 - **Automatisés associés** : `TU-APP-01`
-- **Source** : [DOC] [assistant.md](../../assistant.md) ; [CODE] `askSample` ; [TEST] `TU-APP-01` (artefact construit,
-  tâche créée par l'outil relue après relance).
+- **Source** : [DOC] [assistant.md](../../assistant.md) ; [CODE] `askSample` ; [TEST] `TU-APP-01` (le fichier
+  `selene.html` construit, mais exécuté hors de claude.ai, sans `window.claude` : tâche créée par l'outil relue après
+  relance ; le passage par le compte claude.ai n'est couvert par aucun test).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|

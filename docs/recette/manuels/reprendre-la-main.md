@@ -629,7 +629,7 @@ Identifiants retirés : aucun.
 | 3 | Palette (Ctrl+K ou ⌘K) : taper `Carnet`, puis `famille`. | « Carnet du soir » propose d'ouvrir l'espace ; `famille` ne renvoie que la note de la Boîte. |
 | 4 | Motifs : ajouter le motif `famille`. | Une occurrence, dans la Boîte ; aucune dans « Carnet du soir ». |
 | 5 | Bilan (bilan du cycle), puis la planche de lunaison. | Ni le nom « Carnet du soir », ni un détail du suivi. |
-| 6 | Accueil → capture : `Carnet du soir : deux verres hier` → « Garder ». | La note va dans la Boîte ; aucune proposition « Ranger » vers « Carnet du soir » (ni message « … ? Ranger », ni bouton « Ranger : … » sur la note). |
+| 6 | Accueil → capture : `Carnet du soir : deux verres hier` → « Garder » ; ouvrir la Boîte. | La note est dans la Boîte ; aucune proposition « Ranger » vers « Carnet du soir » (ni message « … ? Ranger », ni bouton « Ranger : … ») ; parmi les boutons « → … » sous chaque note, aucun « → Carnet du soir ». |
 | 7 | Ouvrir l'espace. | Aucun bouton « Je m'arrête ici… » (pont de reprise, dont le texte serait synchronisé). |
 
 - **État final attendu** : un espace Motifs et deux notes en plus dans la Boîte.
