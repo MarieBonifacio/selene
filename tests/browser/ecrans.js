@@ -46,6 +46,7 @@ demo.modules.moth.entries = [
   ok(await status(d, 'c1') === 'Prêt', 'glisser une carte dans une colonne change son statut');
   await d.focus('#main .card[data-id="c2"]'); await d.keyboard.press(']'); await d.waitForTimeout(200);
   ok(await status(d, 'c2') === 'Prêt' && (await d.evaluate(() => document.activeElement.dataset.id)) === 'c2', '« ] » avance la carte, qui garde le focus');
+  ok(/, Prêt : \[ pour reculer/.test(await d.evaluate(() => document.activeElement.getAttribute('aria-label'))), 'la carte dit sa nouvelle colonne au lecteur d’écran');
   await d.keyboard.press(']'); await d.waitForTimeout(200);
   ok(await status(d, 'c2') === 'Publié' && (await d.textContent('#toast')).includes('Publié'), 'jusqu’à la dernière colonne, phrase de fin comprise');
   await d.keyboard.press('['); await d.keyboard.press('['); await d.waitForTimeout(200);

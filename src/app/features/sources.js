@@ -86,7 +86,7 @@ export function keepSource(mod, x, origin) {
 }
 export function sourceBar(id) {
   const p = srcPreview[id], d = p && p.data;
-  const prev = !p ? "" : p.busy ? `<p class="hint" role="status">${tr`Recherche…`}</p>` : `<div class="src-prev" role="status">
+  const prev = !p ? "" : p.busy ? `<p class="hint" data-status>${tr`Recherche…`}</p>` : `<div class="src-prev" data-status="${esc(tr`Trouvée : « ${d.title || d.url || ""} ».`)}">
     <b>${esc(d.title)}</b>${d.authors ? `<div>${esc(d.authors)}</div>` : ""}
     <div class="meta">${[d.site, pubDate(d.date), d.kind && tr(d.kind)].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("")}${d.doi ? `<span>doi:${esc(d.doi)}</span>` : ""}</div>
     ${d.abstract ? `<p class="note">${esc(d.abstract)}</p>` : ""}

@@ -326,6 +326,11 @@ Livrée en quatre temps, pour que chaque pull request reste relisible.
   Suivre un lien du menu ou de la barre du bas porte le focus au titre du nouvel écran, sans défiler : il retombait
   sur la page entière, et rien n'était annoncé. Un champ qui a déjà le focus le garde (« / » et la recherche).
   `tests/browser/ecran-lu.js`.
+- [x] Les messages d'état qui naissent avec un contenu redessiné (« Recherche… », une erreur, l'aperçu d'une source,
+  « 3 sur 12 artistes… ») portent `data-status` ; une seule région permanente, hors de l'écran (`#sr-say`,
+  `role="status"`), répète ce qui change, une fois (`src/app/lib/dom.js`). Un lecteur d'écran n'annonce pas toujours
+  une région qui apparaît en même temps que son texte. L'aperçu d'une source dit une phrase courte
+  (« Trouvée : « … ». »), pas toute la fiche.
 
 **3d : écrans chargés**
 - [x] Journaux à dates suspendues : la date dans la marge, en petites capitales (notes, fragments, rappels,
@@ -333,7 +338,8 @@ Livrée en quatre temps, pour que chaque pull request reste relisible.
 - [x] Registre au lieu des tuiles : une ligne par groupe (nom, décompte, pourcentage en chiffres alignés), un trait
       de 2 px qui avance sous la ligne ; le groupe filtré porte un filet de marge.
 - [x] Kanban adaptatif : sur téléphone, un sélecteur segmenté et une colonne à la fois ; sur ordinateur, glisser une
-      carte dans une colonne, ou `[` et `]` sur une carte qui a le focus. Les flèches restent partout.
+      carte dans une colonne, ou `[` et `]` sur une carte qui a le focus. Les flèches restent partout. La carte dit au
+      lecteur d'écran son titre, sa colonne et ces deux touches ; déplacée, elle garde le focus et dit sa nouvelle colonne.
 - [x] Recherche à facettes : espace, période (depuis la nouvelle lune, ce mois-ci), statut ; chaque puce compte ce qu'elle
       donnerait, les autres facettes appliquées ; résultats groupés par espace, « N résultats sur M ». Une recherche
       lancée d'ailleurs (un mot du bilan, un motif) repart sans filtre ; l'export en dossier suit les filtres.

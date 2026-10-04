@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-AEwfphuUfYRGRUpw7OL+q1ViDFSMJMJAk+dVsjl8CCw=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-cPh97+vh4gVrETSCAqgBbIUn+NZgT+Spzj5ppsFUJtI=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -742,10 +742,11 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 <dialog id="cdlg"><form method="dialog" style="padding:22px;display:grid;gap:14px"><p id="cmsg" style="margin:0"></p><div class="row"><button class="btn solid" value="ok">Confirmer</button><button class="btn" value="cancel">Annuler</button></div></form></dialog>
 <datalist id="roomList"></datalist>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="sr" id="sr-say" role="status" aria-live="polite"></div>
 
 <script>
 (() => {
-const SELENE_BUILD = "1aa7575d5d";
+const SELENE_BUILD = "c18a9e6fa0";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1780,6 +1781,7 @@ var __selene = (() => {
     "Cité par tes sources": "Cited by your sources",
     "cité par {0} de tes sources": "cited by {0} of your sources",
     "Gardée : « {0} ».": "Kept: “{0}”.",
+    "Trouvée : « {0} ».": "Found: “{0}”.",
     "Trente veilles, c'est une thèse. Retires-en avant d'en ajouter.": "Thirty watches is a thesis. Remove some before adding more.",
     "En veille dans Dehors : {0}. Première lecture…": "Now watched in Outside: {0}. First reading…",
     // features/concordance.js
@@ -2247,7 +2249,7 @@ var __selene = (() => {
     "{0} le {1}": "{0} on {1}",
     "maintenue": "kept",
     "Modifier « {0} »": "Edit “{0}”",
-    "{0} : [ pour reculer, ] pour avancer": "{0}: [ to move back, ] to move forward",
+    "{0}, {1} : [ pour reculer, ] pour avancer": "{0}, {1}: [ to move back, ] to move forward",
     "Reculer": "Move back",
     "Avancer": "Move forward",
     "fiche": "record",
@@ -3455,6 +3457,27 @@ var __selene = (() => {
   }
   var toastUndo = (msg, undo) => toastAction(msg, trp("toast", "Annuler"), undo, 6e3, "Control+Z Meta+Z");
   var undoOnKeys = () => !!undoFn && undoKeys;
+  var said = "";
+  function sayStatus() {
+    const t = [...document.querySelectorAll("#main [data-status], dialog[open] [data-status]")].map((e) => (e.dataset.status || e.textContent || "").replace(/\s+/g, " ").trim()).filter(Boolean).join(" ");
+    if (t === said) return;
+    said = t;
+    const el = $("#sr-say");
+    if (el) el.textContent = t;
+  }
+  try {
+    let queued = false;
+    const Watch = globalThis.MutationObserver;
+    if (typeof Watch === "function") new Watch(() => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        sayStatus();
+      });
+    }).observe(document.body, { childList: true, subtree: true });
+  } catch {
+  }
   var PAGE = 100;
   var pageSize = {};
   function paged(key, list) {
@@ -7179,7 +7202,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   }
   function authView() {
     if (authBooted && !authSignupAsked) authAskSignup();
-    const note = `<p class="hint" id="authErr" role="status" style="margin:0${authNote.text ? `;color:var(${authNote.ok ? "--ok" : "--alarm"})` : ""}">${esc(authNote.text)}</p>`;
+    const note = `<p class="hint" id="authErr" data-status style="margin:0${authNote.text ? `;color:var(${authNote.ok ? "--ok" : "--alarm"})` : ""}">${esc(authNote.text)}</p>`;
     const email = `<label>${tr`E-mail`}<input type="email" id="authEmail" required autocomplete="email" value="${esc(authEmail)}"></label>`;
     const form = (intro, fields, buttons) => `<p class="hint">${intro}</p>
     <form id="authForm" style="display:grid;gap:12px">${fields}<div class="row">${buttons}</div>${note}</form>`;
@@ -7806,7 +7829,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   function zotBar(id) {
     if (!hosted() || !zotKey()) return "";
     const st = zotState[id];
-    const list = !st ? "" : st.busy ? `<p class="hint" role="status">${tr`Recherche dans Zotero…`}</p>` : st.err ? `<p class="hint" role="status">${esc(st.err)}</p>` : !st.items.length ? `<p class="empty">${tr`Rien de tel dans ta bibliothèque.`}</p>` : `<p class="hint" style="margin:6px 0 0">${esc(st.label)}</p><ul class="plain zot-list">${st.items.map((x, i) => {
+    const list = !st ? "" : st.busy ? `<p class="hint" data-status>${tr`Recherche dans Zotero…`}</p>` : st.err ? `<p class="hint" data-status>${esc(st.err)}</p>` : !st.items.length ? `<p class="empty">${tr`Rien de tel dans ta bibliothèque.`}</p>` : `<p class="hint" style="margin:6px 0 0">${esc(st.label)}</p><ul class="plain zot-list">${st.items.map((x, i) => {
       const dup = findSourceDup(x);
       return `<li class="item" data-zi="${i}"><span></span><div><b>${esc(x.title)}</b><div class="meta">${[x.authors, x.site, pubDate(x.date), x.kind && tr(x.kind)].filter(Boolean).map((v) => `<span>${esc(v)}</span>`).join("")}</div></div>
         <div class="row">${dup ? `<a class="hint" href="#${esc(dup.mod)}/${esc(dup.e.id)}">${tr`déjà gardée`}</a>` : `<button class="btn sm" data-act="zot-keep">${tr`garder`}</button>`}</div></li>`;
@@ -7956,7 +7979,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   }
   function sourceBar(id) {
     const p = srcPreview[id], d = p && p.data;
-    const prev = !p ? "" : p.busy ? `<p class="hint" role="status">${tr`Recherche…`}</p>` : `<div class="src-prev" role="status">
+    const prev = !p ? "" : p.busy ? `<p class="hint" data-status>${tr`Recherche…`}</p>` : `<div class="src-prev" data-status="${esc(tr`Trouvée : « ${d.title || d.url || ""} ».`)}">
     <b>${esc(d.title)}</b>${d.authors ? `<div>${esc(d.authors)}</div>` : ""}
     <div class="meta">${[d.site, pubDate(d.date), d.kind && tr(d.kind)].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join("")}${d.doi ? `<span>doi:${esc(d.doi)}</span>` : ""}</div>
     ${d.abstract ? `<p class="note">${esc(d.abstract)}</p>` : ""}
@@ -8216,11 +8239,11 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
   SHEETS.radar = () => {
     const st = radarState, c = radarPlace();
     if (!st) return "";
-    const said = esc(st.words.map((w) => st.said[w] || w).join(", "));
-    const head = `<h2 id="sheetTitle">${tr`Radar culturel`}</h2><p class="hint">${c ? tr`Autour de ${esc(c.name.split(",")[0])}, à 20 km, les deux semaines à venir, ce qui parle de : ${said}. Cinq au plus ; le reste attendra que tu reviennes.` : tr`Autour de chez toi, à 20 km, les deux semaines à venir, ce qui parle de : ${said}. Cinq au plus ; le reste attendra que tu reviennes.`}</p>`;
+    const said2 = esc(st.words.map((w) => st.said[w] || w).join(", "));
+    const head = `<h2 id="sheetTitle">${tr`Radar culturel`}</h2><p class="hint">${c ? tr`Autour de ${esc(c.name.split(",")[0])}, à 20 km, les deux semaines à venir, ce qui parle de : ${said2}. Cinq au plus ; le reste attendra que tu reviennes.` : tr`Autour de chez toi, à 20 km, les deux semaines à venir, ce qui parle de : ${said2}. Cinq au plus ; le reste attendra que tu reviennes.`}</p>`;
     const foot = `<p class="hint" style="margin-top:12px">${tr`Source : OpenAgenda, par le portail public d'Opendatasoft. Le portail voit la zone (arrondie) et les dates, jamais tes mots : le tri se fait ici.`}</p>`;
-    if (st.busy) return head + `<p class="hint" role="status">${tr`Recherche…`}</p>`;
-    if (st.err) return head + `<p class="hint" role="status">${esc(st.err)}</p><button class="btn sm" data-act="radar-open">${tr`Réessayer`}</button>` + foot;
+    if (st.busy) return head + `<p class="hint" data-status>${tr`Recherche…`}</p>`;
+    if (st.err) return head + `<p class="hint" data-status>${esc(st.err)}</p><button class="btn sm" data-act="radar-open">${tr`Réessayer`}</button>` + foot;
     if (!st.items.length) return head + `<p class="empty">${tr`Rien qui te ressemble, cette fois. La ville continuera sans toi, elle a l'habitude.`}</p>` + foot;
     const today = todayISO();
     return head + `<ul class="plain radar">${st.items.map((x) => `<li class="item" data-rid="${esc(x.id)}"><span></span><div><b>${esc(x.title)}</b>
@@ -8231,12 +8254,12 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
   CLICK["radar-open"] = async () => {
     const c = radarPlace(), words2 = radarWords(radarConf().words);
     if (!c || !words2.length) return;
-    const said = /* @__PURE__ */ Object.create(null);
+    const said2 = /* @__PURE__ */ Object.create(null);
     for (const w of radarConf().words.split(",")) {
       const t = w.trim();
-      if (t.length > 1 && !said[radarFold(t)]) said[radarFold(t)] = t;
+      if (t.length > 1 && !said2[radarFold(t)]) said2[radarFold(t)] = t;
     }
-    radarState = { busy: true, err: "", items: [], total: 0, words: words2, said, kept: /* @__PURE__ */ new Set() };
+    radarState = { busy: true, err: "", items: [], total: 0, words: words2, said: said2, kept: /* @__PURE__ */ new Set() };
     if ($("#sheet").open && sheetKind === "radar") $("#sheetBody").innerHTML = SHEETS.radar();
     else openSheet("radar");
     let events = null, err = "";
@@ -10657,8 +10680,8 @@ ${contextText()}`;
     if (!hit || !mbState) return `<p class="empty">${tr`Cet élément n'existe plus.`}</p>`;
     const { mod, e } = hit, inst = S().modules[mod], st = mbState;
     const head = `<h2 id="sheetTitle">${esc(e.title)}</h2><p class="hint">${tr`Discographie studio (albums et EP) selon MusicBrainz, base libre et collaborative.`}</p>`;
-    if (st.busy) return head + `<p class="hint" role="status">${tr`Recherche…`}</p>`;
-    if (st.err) return head + `<p class="hint" role="status">${esc(st.err)}</p><button class="btn sm" data-act="mb-retry">${tr`Réessayer`}</button>`;
+    if (st.busy) return head + `<p class="hint" data-status>${tr`Recherche…`}</p>`;
+    if (st.err) return head + `<p class="hint" data-status>${esc(st.err)}</p><button class="btn sm" data-act="mb-retry">${tr`Réessayer`}</button>`;
     if (st.step === "artist") {
       if (!st.artists.length) return head + `<p class="empty">${tr`Aucun artiste de ce nom dans MusicBrainz. Vérifie l'orthographe du titre.`}</p>`;
       return head + `<p>${tr`Plusieurs artistes portent ce nom :`}</p><ul class="plain">${st.artists.map((a) => `<li class="item"><span></span><div><b>${esc(a.name)}</b><div class="meta">${[a.note, a.country, a.begin && tr`depuis ${a.begin}`].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join("")}</div></div><button class="btn sm" data-act="mb-artist" data-a="${esc(a.id)}">${tr`choisir`}</button></li>`).join("")}</ul>`;
@@ -10715,7 +10738,7 @@ ${contextText()}`;
     const n = mbNews, lab = esc(label(mod));
     if (!n) return "";
     const head = `<h2 id="sheetTitle">${tr`Nouvelles sorties`}</h2><p class="hint">${tr`Ce que tes artistes reliés dans ${lab} ont publié depuis ta dernière vérification, selon MusicBrainz. Rien n'est vérifié sans toi.`}</p>`;
-    if (n.done < n.total) return head + `<p class="hint" role="status">${tr`${n.done} sur ${n.total} artistes…`}</p>`;
+    if (n.done < n.total) return head + `<p class="hint" data-status>${tr`${n.done} sur ${n.total} artistes…`}</p>`;
     const inst = S().modules[mod], have = new Set(inst.entries.filter((x) => x.mb && x.mb.rg).map((x) => x.mb.rg));
     return head + (n.items.length ? `<ul class="plain mb-albums">${n.items.map((x) => `<li class="item" data-rg="${esc(x.album.id)}" data-a="${esc(x.aid)}"><span>${coverImg(x.album.id)}</span><div><b>${esc(x.album.title)}</b><div class="meta"><span>${esc(x.artist)}</span><span>${esc(x.album.date)}</span><span>${esc(x.album.type)}</span></div></div>${have.has(x.album.id) ? `<span class="hint">${tr`déjà là`}</span>` : `<button class="btn sm" data-act="mb-new-add">${tr`ajouter`}</button>`}</li>`).join("")}</ul>` : `<p class="empty">${tr`Rien de neuf. Le silence est aussi une nouvelle.`}</p>`) + (n.failed ? `<p class="hint">${trn(n.failed, "{0} artiste sans réponse : réessaie plus tard.", "{0} artistes sans réponse : réessaie plus tard.")}</p>` : "");
   };
@@ -10795,7 +10818,7 @@ ${contextText()}`;
   }
   function collectionCard(id, e, ci, last) {
     const f = S().modules[id].config.fields, meta = [f.tag && e.tag ? `<span class="tag">${esc(e.tag)}</span>` : "", f.due && e.due ? `<span>${fmt(e.due)}</span>` : "", srcMeta(e), originHTML(e, e.title)].join("");
-    return `<div class="card" data-id="${esc(e.id)}" data-ci="${ci}" draggable="true" tabindex="0" aria-label="${tr`${esc(e.title)} : [ pour reculer, ] pour avancer`}"><b>${esc(e.title)}</b>${f.subtitle && e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ""}${meta ? `<div class="meta">${meta}</div>` : ""}${f.text && e.text ? `<p>${esc(e.text.slice(0, 160))}${e.text.length > 160 ? "…" : ""}</p>` : ""}
+    return `<div class="card" data-id="${esc(e.id)}" data-ci="${ci}" draggable="true" tabindex="0" aria-label="${tr`${esc(e.title)}, ${esc(S().modules[id].config.statuses[ci] || "")} : [ pour reculer, ] pour avancer`}"><b>${esc(e.title)}</b>${f.subtitle && e.subtitle ? `, <i>${esc(e.subtitle)}</i>` : ""}${meta ? `<div class="meta">${meta}</div>` : ""}${f.text && e.text ? `<p>${esc(e.text.slice(0, 160))}${e.text.length > 160 ? "…" : ""}</p>` : ""}
       <div class="row">${ci > 0 ? `<button class="btn ghost sm" data-act="col-move" data-d="-1" aria-label="${tr`Reculer`}">←</button>` : ""}${ci < last ? `<button class="btn ghost sm" data-act="col-move" data-d="1" aria-label="${tr`Avancer`}">→</button>` : ""}<span class="spacer"></span><button class="btn ghost sm ra" data-act="specimen">${tr`fiche`}</button><button class="btn ghost sm ra" data-act="col-edit">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="col-del">${tr`suppr.`}</button></div></div>`;
   }
   registerType("collection", {
@@ -12023,8 +12046,8 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       return x ? `<a href="#${esc(x.mod)}/${esc(x.e.id)}">${tr`« ${esc(excerpt(x.e, 50))} »`}</a>` : "";
     };
     let body = "";
-    if (st && st.busy) body = `<p class="hint" role="status">${tr`Lecture des bibliographies de tes sources…`}</p>`;
-    else if (st && st.err) body = `<p class="hint" role="status">${esc(st.err)}</p>`;
+    if (st && st.busy) body = `<p class="hint" data-status>${tr`Lecture des bibliographies de tes sources…`}</p>`;
+    else if (st && st.err) body = `<p class="hint" data-status>${esc(st.err)}</p>`;
     else if (st && st.res) {
       const r = st.res, followed = new Set(dehorsResearch().filter((x) => x.kind === "author").map((x) => x.q));
       const common = r.common.filter((x) => r.titles[x.id]);

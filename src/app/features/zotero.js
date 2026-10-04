@@ -46,7 +46,7 @@ const zotState = {};
 export function zotBar(id) {
   if (!hosted() || !zotKey()) return "";
   const st = zotState[id];
-  const list = !st ? "" : st.busy ? `<p class="hint" role="status">${tr`Recherche dans Zotero…`}</p>` : st.err ? `<p class="hint" role="status">${esc(st.err)}</p>`
+  const list = !st ? "" : st.busy ? `<p class="hint" data-status>${tr`Recherche dans Zotero…`}</p>` : st.err ? `<p class="hint" data-status>${esc(st.err)}</p>`
     : !st.items.length ? `<p class="empty">${tr`Rien de tel dans ta bibliothèque.`}</p>`
     : `<p class="hint" style="margin:6px 0 0">${esc(st.label)}</p><ul class="plain zot-list">${st.items.map((x, i) => { const dup = findSourceDup(x);
       return `<li class="item" data-zi="${i}"><span></span><div><b>${esc(x.title)}</b><div class="meta">${[x.authors, x.site, pubDate(x.date), x.kind && tr(x.kind)].filter(Boolean).map(v => `<span>${esc(v)}</span>`).join("")}</div></div>

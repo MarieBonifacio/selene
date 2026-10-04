@@ -44,8 +44,8 @@ SHEETS.mb = ref => {
   const hit = mbEntry(ref); if (!hit || !mbState) return `<p class="empty">${tr`Cet élément n'existe plus.`}</p>`;
   const { mod, e } = hit, inst = S().modules[mod], st = mbState;
   const head = `<h2 id="sheetTitle">${esc(e.title)}</h2><p class="hint">${tr`Discographie studio (albums et EP) selon MusicBrainz, base libre et collaborative.`}</p>`;
-  if (st.busy) return head + `<p class="hint" role="status">${tr`Recherche…`}</p>`;
-  if (st.err) return head + `<p class="hint" role="status">${esc(st.err)}</p><button class="btn sm" data-act="mb-retry">${tr`Réessayer`}</button>`;
+  if (st.busy) return head + `<p class="hint" data-status>${tr`Recherche…`}</p>`;
+  if (st.err) return head + `<p class="hint" data-status>${esc(st.err)}</p><button class="btn sm" data-act="mb-retry">${tr`Réessayer`}</button>`;
   if (st.step === "artist") {
     if (!st.artists.length) return head + `<p class="empty">${tr`Aucun artiste de ce nom dans MusicBrainz. Vérifie l'orthographe du titre.`}</p>`;
     return head + `<p>${tr`Plusieurs artistes portent ce nom :`}</p><ul class="plain">${st.artists.map(a => `<li class="item"><span></span><div><b>${esc(a.name)}</b><div class="meta">${[a.note, a.country, a.begin && tr`depuis ${a.begin}`].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("")}</div></div><button class="btn sm" data-act="mb-artist" data-a="${esc(a.id)}">${tr`choisir`}</button></li>`).join("")}</ul>`;
@@ -91,7 +91,7 @@ SHEETS["mb-new"] = mod => {
   const n = mbNews, lab = esc(label(mod));
   if (!n) return "";
   const head = `<h2 id="sheetTitle">${tr`Nouvelles sorties`}</h2><p class="hint">${tr`Ce que tes artistes reliés dans ${lab} ont publié depuis ta dernière vérification, selon MusicBrainz. Rien n'est vérifié sans toi.`}</p>`;
-  if (n.done < n.total) return head + `<p class="hint" role="status">${tr`${n.done} sur ${n.total} artistes…`}</p>`;
+  if (n.done < n.total) return head + `<p class="hint" data-status>${tr`${n.done} sur ${n.total} artistes…`}</p>`;
   const inst = S().modules[mod], have = new Set(inst.entries.filter(x => x.mb && x.mb.rg).map(x => x.mb.rg));
   return head + (n.items.length ? `<ul class="plain mb-albums">${n.items.map(x => `<li class="item" data-rg="${esc(x.album.id)}" data-a="${esc(x.aid)}"><span>${coverImg(x.album.id)}</span><div><b>${esc(x.album.title)}</b><div class="meta"><span>${esc(x.artist)}</span><span>${esc(x.album.date)}</span><span>${esc(x.album.type)}</span></div></div>${have.has(x.album.id) ? `<span class="hint">${tr`déjà là`}</span>` : `<button class="btn sm" data-act="mb-new-add">${tr`ajouter`}</button>`}</li>`).join("")}</ul>` : `<p class="empty">${tr`Rien de neuf. Le silence est aussi une nouvelle.`}</p>`)
     + (n.failed ? `<p class="hint">${trn(n.failed, "{0} artiste sans réponse : réessaie plus tard.", "{0} artistes sans réponse : réessaie plus tard.")}</p>` : "");
