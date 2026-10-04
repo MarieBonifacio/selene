@@ -42,6 +42,10 @@ pas son exécution, et rien ici ne le prétend.
 | Banc de mesure | `npm run bench` | mesuré (aucun seuil) | accueil 31 ms, motifs 42 ms, bilan 46 ms, planche 38 ms, carte d'un motif 56 ms, recherche 3 ms, sortes 46 ms |
 | Cohérence du cahier | `npm run recette` | **réussi** | 186 cas, 374 tests inventoriés, liens et jeux de données vérifiés |
 
+Relancés en fin de rédaction sur la branche du cahier (commit `7c4b4f8`, code de l'app identique à `768eb34`) :
+`npm run check` (268 tests Node, 16 tests Deno, build, syntaxe, eslint, i18n) et `npm run test:browser` sous Chromium
+(73 scénarios, 1 067 vérifications) : **réussis**, mêmes résultats.
+
 ## Sondes ponctuelles dans Chromium
 
 Des scripts jetables (non versionnés), qui pilotent la vraie page `index.html` avec un faux Supabase, pour vérifier les
