@@ -150,4 +150,8 @@ Pas de case ici : ce sont des engagements, pas des tâches.
 - Les PR de Dependabot, au début de chaque mois : une pour les actions de CI, une pour les outils npm
   (`.github/dependabot.yml`). Fusionner si Check est vert. Après une mise à jour des actions, regarder que le
   déploiement Pages qui suit réussit : la CI d'une PR ne l'exerce pas, ni la publication des apps. Une PR en retard
-  sur `main` se met à jour par un commentaire `@dependabot rebase`.
+  sur `main` se met à jour par le bouton *Update branch* ou un commentaire `@dependabot rebase`. Les actions sont
+  épinglées par empreinte (`actions/checkout@3d3c42e… # v7.0.1`) : un tag déplacé par un tiers ne change rien à
+  ce qui s'exécute ; Dependabot met à jour l'empreinte et le commentaire ensemble. Une action ajoutée à la main
+  s'épingle de même : `git ls-remote --tags https://github.com/<dépôt>` donne l'empreinte du tag (la ligne en `^{}`
+  pour un tag annoté).
