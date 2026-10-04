@@ -37,6 +37,9 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   });
   const ecran = async (nom, hash) => {
     await p.evaluate(h => { location.hash = h; }, hash); await p.waitForTimeout(400);
+    // Une adresse inconnue retombe sur l'accueil, sans bruit : on mesurerait l'accueil deux fois en croyant mesurer l'espace.
+    const shown = await p.evaluate(() => { const a = document.querySelector('#nav [aria-current="page"]'); return a ? a.getAttribute('href') : ''; });
+    if (shown !== '#' + hash) return check(false, `${nom} : #${hash} affiche ${shown || 'autre chose'}`);
     const petits = await mesurer();
     check(!petits.length, `${nom} : chaque contrôle offre 44 × 44 px au doigt${petits.length ? ' ; trop petits : ' + petits.join(', ') : ''}`);
   };
@@ -48,7 +51,7 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   console.log('un tableau de bord rempli');
   await p.evaluate(d => { localStorage.setItem('selene-site-v1', d); }, fixture());
   await p.reload(); await p.waitForTimeout(400);
-  for (const [nom, hash] of [['accueil', 'accueil'], ['Réglages', 'reglages'], ['Tâches', 'chantier'], ['Écriture', 'ecriture'], ['Collection', 'october-moth'], ['Musique', 'musique'], ['Budget', 'budget'], ['Programme', 'kundalini'], ['Bilan', 'bilan'], ['Recherche', 'recherche']]) await ecran(nom, hash);
+  for (const [nom, hash] of [['accueil', 'accueil'], ['Réglages', 'reglages'], ['Tâches', 'chantier'], ['Écriture', 'ecriture'], ['Collection', 'moth'], ['Musique', 'musique'], ['Budget', 'budget'], ['Programme', 'kundalini'], ['Rappels', 'phidippus'], ['Boîte', 'inbox'], ['Bilan', 'bilan'], ['Recherche', 'recherche']]) await ecran(nom, hash);
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();
