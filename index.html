@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-23z/Ohvww8lmDuMBO4wg5pRZEOmaIWKskFGRkWtS0i0=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8CnSfsq7xXjjVj6G4HasacWY3R11SQGLF6VRSGVeuzo=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -464,6 +464,7 @@ ul.plain>.item:last-child{border-bottom:1px solid var(--rule)}
 .steps li{display:flex;gap:8px;align-items:center;padding:2px 0}
 .steps input{accent-color:var(--accent);width:16px;height:16px}
 .note{color:var(--muted);white-space:pre-wrap;margin:6px 0}
+.ntext{white-space:pre-line;overflow-wrap:anywhere}.more{margin:4px 0 0}.more>summary{cursor:pointer;color:var(--muted);font-size:.9rem;width:max-content} /* une note longue (importée) : son début, puis le reste */
 .origin{font-style:italic;white-space:normal}
 .versions p{margin:4px 0;color:var(--muted);font-size:.9rem;border-left:2px solid var(--rule);padding-left:8px}
 .links{white-space:normal}.links a{color:inherit}.links .acts{margin-left:auto;display:inline-flex;gap:2px}.links .acts .btn{padding:0 6px;font-size:.8rem}
@@ -714,7 +715,8 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
   .tap{display:grid;place-items:center;min-width:44px;min-height:44px}
   .field-row{row-gap:18px}.fld{gap:14px} /* la zone d'une bulle « ? » ne mord ni sur son champ, ni sur celui du dessus */
   .sec-head{margin-bottom:9px}.plate{margin-bottom:16px} /* un titre et ses boutons, au-dessus d'autres boutons */
-  .row{row-gap:10px} /* un bouton passé à la ligne sous un champ : sa zone (9 px au-dessus) ne mord plus sur le champ */
+  .row{row-gap:10px}
+  .more>summary{padding-block:11px} /* un bouton passé à la ligne sous un champ : sa zone (9 px au-dessus) ne mord plus sur le champ */
   .src-link{position:relative}.src-link::after{content:"";position:absolute;inset:-14px -3px -7px} /* « ouvrir ↗ » : le texte au-dessus ne se touche pas, le menu au-dessous si */
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.flash{box-shadow:inset 2px 0 0 var(--accent)}}
@@ -748,7 +750,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "06a40f825c";
+const SELENE_BUILD = "9e38ebcf66";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1105,6 +1107,7 @@ var __selene = (() => {
     LINK_TYPES: () => LINK_TYPES,
     LUNAR_MIN_N: () => LUNAR_MIN_N,
     MB_SEEN: () => MB_SEEN,
+    MD_NOTE_MAX: () => MD_NOTE_MAX,
     MODULE_DEFS: () => MODULE_DEFS,
     MODULE_ID: () => MODULE_ID,
     MODULE_TEMPLATES: () => MODULE_TEMPLATES,
@@ -1288,6 +1291,7 @@ var __selene = (() => {
     formCb: () => formCb,
     fragFilter: () => fragFilter,
     freshWeather: () => freshWeather,
+    frontMatter: () => frontMatter,
     gFilter: () => gFilter,
     gMatch: () => gMatch,
     gcfg: () => gcfg,
@@ -1345,6 +1349,8 @@ var __selene = (() => {
     mbFetch: () => mbFetch,
     mbSince: () => mbSince,
     mbValid: () => mbValid,
+    mdImport: () => mdImport,
+    mdNote: () => mdNote,
     memoInRender: () => memoInRender,
     mergeDocs: () => mergeDocs,
     microlinkToSource: () => microlinkToSource,
@@ -2393,6 +2399,21 @@ var __selene = (() => {
     "{0} %": "{0}%",
     "Rien à regrouper pour l'instant.": "Nothing to group yet.",
     // modules/notes.js
+    "la suite": "the rest",
+    "Aucun fichier Markdown (.md) dans ce choix.": "No Markdown (.md) file in this selection.",
+    "Rien de nouveau : ces notes sont déjà là.": "Nothing new: these notes are already here.",
+    "Ces fichiers sont vides.": "These files are empty.",
+    "Importer {0} note (du {1} au {2}) dans {3} ?": { one: "Import {0} note (from {1} to {2}) into {3}?", other: "Import {0} notes (from {1} to {2}) into {3}?" },
+    "Importer {0} note (datée du {1}) dans {2} ?": { one: "Import {0} note (dated {1}) into {2}?", other: "Import {0} notes (dated {1}) into {2}?" },
+    "Importer {0} note dans {1} ?": { one: "Import {0} note into {1}?", other: "Import {0} notes into {1}?" },
+    "{0} lien [[…]] devient « fait écho à ».": { one: "{0} [[…]] link becomes “echoes”.", other: "{0} [[…]] links become “echoes”." },
+    "Les plus longues sont coupées à 20 000 caractères.": "The longest ones are cut at 20,000 characters.",
+    "Ton espace pèserait {0} Mo : au-delà de {1} Mo, le serveur ne le garde plus (il reste sur cet appareil).": "Your space would weigh {0} MB: beyond {1} MB, the server no longer keeps it (it stays on this device).",
+    "{0} note importée dans {1}.": { one: "{0} note imported into {1}.", other: "{0} notes imported into {1}." },
+    "{0} lien.": { one: "{0} link.", other: "{0} links." },
+    "Importer des notes Markdown": "Import Markdown notes",
+    "…ou tout un dossier": "…or a whole folder",
+    "Un coffre Obsidian, un dossier Zettlr ou quelques fichiers .md : chaque fichier devient une note, son titre en première ligne, datée par son en-tête (date, created), sinon par son nom, sinon par le fichier. « statut: hypothèse » (ou status: hypothesis) lui donne son statut ; un lien [[…]] vers une autre note du lot devient « fait écho à ». Les fichiers sont lus sur cet appareil ; un second import n'ajoute que ce qui manque.": "An Obsidian vault, a Zettlr folder or a few .md files: each file becomes a note, its title on the first line, dated by its header (date, created), otherwise by its name, otherwise by the file. “status: hypothesis” (or statut: hypothèse) gives it its status; a [[…]] link to another note of the batch becomes “echoes”. The files are read on this device; a second import only adds what is missing.",
     "{0} en dépense dans {1}": "{0} as an expense in {1}",
     "{0} min dans {1}": "{0} min in {1}",
     "Rangé : {0}.": "Filed: {0}.",
@@ -5780,8 +5801,8 @@ var __selene = (() => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   };
   function igEntry(p) {
-    const first = p.caption.split("\n").map((x) => x.trim()).find(Boolean) || "", day = igDay(p.t);
-    const title = first ? first.length > 120 ? first.slice(0, 119).trimEnd() + "…" : first : `${p.k === "reel" ? "Reel" : "Publication"} du ${day}`;
+    const first2 = p.caption.split("\n").map((x) => x.trim()).find(Boolean) || "", day = igDay(p.t);
+    const title = first2 ? first2.length > 120 ? first2.slice(0, 119).trimEnd() + "…" : first2 : `${p.k === "reel" ? "Reel" : "Publication"} du ${day}`;
     return { title, text: p.caption === title ? "" : p.caption, due: day, ig: { t: p.t, k: p.k } };
   }
 
@@ -6616,7 +6637,7 @@ ${tr`Notes, envies, déclencheurs et appuis restent ici. Arrêter le partage plu
       [tr`Objectif atteint`, (p) => p.assessed ? trn(p.assessed, "{1} sur {0} journée évaluable", "{1} sur {0} journées évaluables", p.met) : "—"]
     ];
     const note = !prev.span ? tr`Pas encore de semaine précédente à mettre en regard.` : cmp.ok ? tr`Les deux périodes sont renseignées de façon voisine : leurs moyennes peuvent se comparer.` : cmp.reason === "few" ? tr`Moins de ${REGULATION_COMPARE_MIN} journées complètes dans l'une des périodes : leurs moyennes ne se comparent pas, l'écart dirait surtout ce qui manque.` : tr`Les deux périodes ne sont pas renseignées de la même façon (${cur.complete} et ${prev.complete} journées complètes) : leurs moyennes ne se comparent pas telles quelles.`;
-    const first = regulationGoalHistory(inst).at(-1), changes = [...prev.goalChanges, ...cur.goalChanges].filter((g) => g !== first);
+    const first2 = regulationGoalHistory(inst).at(-1), changes = [...prev.goalChanges, ...cur.goalChanges].filter((g) => g !== first2);
     return `<section aria-labelledby="rlmWeekH-${esc(id)}"><h3 id="rlmWeekH-${esc(id)}">${tr`Mes sept derniers jours`}</h3>
     <p class="hint">${tr`Une journée inconnue ne vaut jamais zéro, ni un échec. Les jours d'avant le début du suivi ne comptent pas.`}</p>
     <div class="rlm-tablewrap"><table class="rlm-cmp"><thead><tr><th scope="col"><span class="sr">${tr`Mesure`}</span></th><th scope="col">${tr`Ces 7 jours`}</th><th scope="col">${tr`Les 7 d'avant`}</th></tr></thead>
@@ -7671,9 +7692,140 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     toast(tr`Calendrier oublié sur cet appareil.`);
   };
 
+  // src/core/markdown.js
+  var MD_NOTE_MAX = 2e4;
+  var fold2 = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  var EP = { obs: ["obs", "observe", "observed", "observation"], hyp: ["hyp", "hypothese", "hypothesis"], int: ["int", "interpretation"], inx: ["inx", "inexplique", "unexplained"] };
+  var epOf = (v) => {
+    const t = fold2(v);
+    return Object.keys(EP).find((k) => EP[k].includes(t)) || null;
+  };
+  var validDay = (y, m, d) => {
+    const dt = new Date(Date.UTC(+y, +m - 1, +d));
+    return +y >= 1900 && +y <= 2100 && dt.getUTCMonth() === +m - 1 && dt.getUTCDate() === +d;
+  };
+  var dayOf = (v) => {
+    const m = String(v || "").match(/^\s*["']?(\d{4})-(\d{2})-(\d{2})/);
+    return m && validDay(m[1], m[2], m[3]) ? `${m[1]}-${m[2]}-${m[3]}` : null;
+  };
+  var dayInName = (n) => {
+    const m = String(n || "").match(/(?:^|[^\d])(\d{4})-?(\d{2})-?(\d{2})(?:\d{2,6})?(?![\d])/);
+    return m && validDay(m[1], m[2], m[3]) ? `${m[1]}-${m[2]}-${m[3]}` : null;
+  };
+  var localDay = (ms) => {
+    if (!Number.isFinite(ms) || ms <= 0) return null;
+    const d = new Date(ms);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  function frontMatter(src) {
+    const s = String(src || "").replace(/^﻿/, "").replace(/\r\n?/g, "\n");
+    const m = s.match(/^---\n([\s\S]*?)\n(?:---|\.\.\.)[ \t]*(?:\n|$)/);
+    if (!m) return { data: {}, body: s };
+    const data = {}, unq = (v) => v.trim().replace(/^(["'])([\s\S]*)\1$/, "$2");
+    let list = null;
+    for (const line of m[1].split("\n")) {
+      const item = line.match(/^\s*-\s+(.*)$/);
+      if (item && list) {
+        data[list].push(unq(item[1]));
+        continue;
+      }
+      const kv = line.match(/^([^:#\s][^:]*):\s*(.*)$/);
+      if (!kv) {
+        list = null;
+        continue;
+      }
+      const k = fold2(kv[1]), v = kv[2].trim();
+      if (!v) {
+        data[k] = [];
+        list = k;
+        continue;
+      }
+      list = null;
+      data[k] = /^\[.*\]$/.test(v) ? v.slice(1, -1).split(",").map(unq).filter(Boolean) : unq(v);
+    }
+    return { data, body: s.slice(m[0].length) };
+  }
+  var first = (v) => Array.isArray(v) ? v[0] : v;
+  var IMAGE = /\.(png|jpe?g|gif|webp|svg|avif|bmp|pdf|mp3|mp4|webm|mov)$/i;
+  function mdNote(file) {
+    const { data, body: raw } = frontMatter(file && file.text);
+    const base = String(file && (file.name || file.path) || "").replace(/^.*[\\/]/, "").replace(/\.(md|markdown|txt)$/i, "");
+    let body = raw.replace(/<!--[\s\S]*?-->/g, "").replace(/%%[\s\S]*?%%/g, "");
+    const h1 = body.match(/^\s*#\s+(.+?)\s*#*\s*$/m), title = String(first(data.title) || h1 && h1[1] || base).replace(/\s+/g, " ").trim();
+    if (h1 && h1[1].trim() === title && !body.slice(0, h1.index).trim()) body = body.slice(h1.index + h1[0].length);
+    const links = [];
+    body = body.replace(/(!?)\[\[([^\]|#\n]*)(#[^\]|\n]*)?(?:\|([^\]\n]*))?\]\]/g, (_, bang, target, head, alias) => {
+      const t = target.trim();
+      if (bang && IMAGE.test(t)) return "";
+      if (t) links.push(fold2(t.replace(/^.*[\\/]/, "").replace(/\.(md|markdown)$/i, "")));
+      return (alias || t || (head || "").slice(1)).trim();
+    });
+    body = body.replace(/\n{3,}/g, "\n\n").trim();
+    if (!title && !body) return null;
+    let text = body ? `${title}
+
+${body}` : title, cut = false;
+    if (text.length > MD_NOTE_MAX) {
+      text = text.slice(0, MD_NOTE_MAX - 1).trimEnd() + "…";
+      cut = true;
+    }
+    const aliases = [].concat(data.aliases || data.alias || []).map(String);
+    const keys = [...new Set([title, base, ...aliases, first(data.id) || ""].map(fold2).filter(Boolean))];
+    return {
+      title,
+      text,
+      cut,
+      ep: epOf(first(data.statut ?? data.status ?? data.ep ?? data["statut epistemique"])),
+      date: dayOf(first(data.date ?? data.created ?? data.creation ?? data["date created"])) || dayInName(base) || localDay(file && file.modified),
+      keys,
+      links: [...new Set(links)]
+    };
+  }
+  function mdImport(files, known = []) {
+    const notes = [], seen = /* @__PURE__ */ new Set();
+    let skipped = 0;
+    for (const f of files || []) {
+      const path = String(f && (f.path || f.name) || "");
+      if (!/\.(md|markdown)$/i.test(path) || /(^|[\\/])\.(obsidian|trash|git)([\\/]|$)/.test(path)) {
+        skipped++;
+        continue;
+      }
+      const n = mdNote(f);
+      if (!n || seen.has(n.text)) {
+        skipped++;
+        continue;
+      }
+      seen.add(n.text);
+      notes.push(n);
+    }
+    notes.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    const byKey = /* @__PURE__ */ new Map();
+    notes.forEach((n, i) => {
+      for (const k of n.keys) if (!byKey.has(k)) byKey.set(k, i);
+    });
+    const byKnown = /* @__PURE__ */ new Map();
+    known.forEach((t, k) => {
+      const key = fold2(String(t || "").split("\n")[0]);
+      if (key && !byKnown.has(key)) byKnown.set(key, k);
+    });
+    const links = [], knownLinks = [];
+    notes.forEach((n, i) => {
+      for (const k of n.links) {
+        const j = byKey.get(k);
+        if (j != null) {
+          if (j !== i && !links.some((l) => l[0] === i && l[1] === j)) links.push([i, j]);
+          continue;
+        }
+        const x = byKnown.get(k);
+        if (x != null && !knownLinks.some((l) => l[0] === i && l[1] === x)) knownLinks.push([i, x]);
+      }
+    });
+    return { notes, links, knownLinks, skipped };
+  }
+
   // src/core/biblio.js
-  var fold2 = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "");
-  var norm = (s) => fold2(s).toLowerCase().replace(/\s+/g, " ").trim();
+  var fold3 = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "");
+  var norm = (s) => fold3(s).toLowerCase().replace(/\s+/g, " ").trim();
   function sourceKind(tag, dicts = []) {
     const t = norm(tag);
     if (!t) return null;
@@ -7730,10 +7882,10 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     };
   }
   var STOP = /* @__PURE__ */ new Set(["the", "a", "an", "of", "on", "in", "and", "le", "la", "les", "l", "un", "une", "des", "de", "du", "d", "et", "en", "au", "aux", "der", "die", "das", "el", "los", "il", "lo"]);
-  var ascii = (s) => fold2(s).toLowerCase().replace(/[^a-z0-9]/g, "");
+  var ascii = (s) => fold3(s).toLowerCase().replace(/[^a-z0-9]/g, "");
   function citeKey(r, taken) {
     const n = r.names[0], who = n ? ascii(n.family || n.literal).slice(0, 20) : "";
-    const word = fold2(r.title).toLowerCase().split(/[^a-z0-9]+/).find((w) => w.length > 1 && !STOP.has(w)) || "";
+    const word = fold3(r.title).toLowerCase().split(/[^a-z0-9]+/).find((w) => w.length > 1 && !STOP.has(w)) || "";
     const year = r.date ? String(r.date[0]) : "", base = (who ? who + year + word.slice(0, 20) : word.slice(0, 20) + year) || "source";
     let k = base;
     for (let i = 1; taken.has(k); i++) k = base + (i < 26 ? String.fromCharCode(97 + i) : i);
@@ -8286,6 +8438,51 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     else if (item.ep) toast(tr`Gardé comme hypothèse. Elle attendra ses preuves.`);
     else if (fallback) toast(fallback);
   }
+  var NOTE_SHOWN = 400;
+  function noteBody(t) {
+    if (t.length <= NOTE_SHOWN + 200) return `<div class="ntext">${esc(t)}</div>`;
+    const para = t.lastIndexOf("\n\n", NOTE_SHOWN), space = t.lastIndexOf(" ", NOTE_SHOWN), half = NOTE_SHOWN / 2;
+    const cut = para >= half ? para : space >= half ? space : NOTE_SHOWN;
+    return `<div class="ntext">${esc(t.slice(0, cut).trimEnd())}</div><details class="more"><summary>${tr`la suite`}</summary><div class="ntext">${esc(t.slice(cut).trimStart())}</div></details>`;
+  }
+  async function importMarkdown(mod, list) {
+    const files = [...list].filter((f) => /\.(md|markdown)$/i.test(f.name)).slice(0, 5e3);
+    if (!files.length) return toast(tr`Aucun fichier Markdown (.md) dans ce choix.`);
+    const read2 = await Promise.all(files.map(async (f) => ({ name: f.name, path: f.webkitRelativePath || f.name, text: await f.text(), modified: f.lastModified })));
+    const inst = S().modules[mod];
+    if (!inst) return;
+    const r = mdImport(read2, inst.entries.map((e) => e.text));
+    const have = new Map(inst.entries.map((e) => [e.text, e.id])), fresh = r.notes.filter((n) => !have.has(n.text));
+    if (!fresh.length) return toast(r.notes.length ? tr`Rien de nouveau : ces notes sont déjà là.` : tr`Ces fichiers sont vides.`);
+    const weight = utf8Bytes(JSON.stringify(fresh.map((n) => n.text))), total = utf8Bytes(JSON.stringify(S())) + weight, dated2 = fresh.filter((n) => n.date).map((n) => n.date);
+    const mo = (n) => (n / 1e6).toLocaleString(uiLocale(), { maximumFractionDigits: 1 }), day = (d) => fmt(d, { day: "numeric", month: "long", year: "numeric" });
+    let q = !dated2.length ? trn(fresh.length, "Importer {0} note dans {1} ?", "Importer {0} notes dans {1} ?", label(mod)) : dated2[0] === dated2[dated2.length - 1] ? trn(fresh.length, "Importer {0} note (datée du {1}) dans {2} ?", "Importer {0} notes (datées du {1}) dans {2} ?", day(dated2[0]), label(mod)) : trn(fresh.length, "Importer {0} note (du {1} au {2}) dans {3} ?", "Importer {0} notes (du {1} au {2}) dans {3} ?", day(dated2[0]), day(dated2[dated2.length - 1]), label(mod));
+    if (r.notes.length > fresh.length) q += " " + trn(r.notes.length - fresh.length, "{0} déjà là, ignorée.", "{0} déjà là, ignorées.");
+    const fromFresh = ([i]) => !have.has(r.notes[i].text), nLinks = r.links.filter(fromFresh).length + r.knownLinks.filter(fromFresh).length;
+    if (nLinks) q += " " + trn(nLinks, "{0} lien [[…]] devient « fait écho à ».", "{0} liens [[…]] deviennent « fait écho à ».");
+    if (fresh.some((n) => n.cut)) q += " " + tr`Les plus longues sont coupées à 20 000 caractères.`;
+    if (total > DOC_WARN) q += " " + tr`Ton espace pèserait ${mo(total)} Mo : au-delà de ${mo(DOC_MAX)} Mo, le serveur ne le garde plus (il reste sur cet appareil).`;
+    if (!await ask(q)) return;
+    const today = todayISO(), ids2 = r.notes.map((n) => have.get(n.text) || null);
+    r.notes.forEach((n, i) => {
+      if (ids2[i]) return;
+      const e = { id: uid(), text: n.text, date: n.date || today };
+      if (n.ep) e.ep = n.ep;
+      inst.entries.push(e);
+      ids2[i] = e.id;
+    });
+    let linked = 0;
+    const byId = new Map(inst.entries.map((e) => [e.id, e]));
+    const link = (i, to) => {
+      const from = byId.get(ids2[i]);
+      if (from && to && addLink(from, `${mod}/${to}`, "echo", uid(), today)) linked++;
+    };
+    for (const [i, j] of r.links.filter(fromFresh)) link(i, ids2[j]);
+    for (const [i, k] of r.knownLinks.filter(fromFresh)) link(i, inst.entries[k] && inst.entries[k].id);
+    site.save();
+    render();
+    toast(trn(fresh.length, "{0} note importée dans {1}.", "{0} notes importées dans {1}.", label(mod)) + (linked ? " " + trn(linked, "{0} lien.", "{0} liens.") : ""));
+  }
   function noteTargets(fromId) {
     const s = S();
     return s.config.modules.filter((m) => m.on && m.id !== fromId).map((m) => m.id).filter((id) => {
@@ -8300,7 +8497,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   ${deriveBanner(id)}<div class="capture" style="margin-bottom:18px"><input id="noteIn" data-draft placeholder="${esc(c.placeholder)}" aria-label="${tr`Nouvelle note`}"><button class="btn acc" data-act="note-add">${tr`Garder`}</button></div>
   <ul class="plain margins">${((pg) => pg.items.map((x) => {
         const intent = captureIntent(x.text);
-        return `<li class="item" data-id="${esc(x.id)}"><span class="jdate">${fmt(x.date)}</span><div>${esc(x.text)}<div class="meta">${epSelect(id, x)}${linksHTML(id)}</div>
+        return `<li class="item" data-id="${esc(x.id)}"><span class="jdate">${fmt(x.date)}</span><div>${noteBody(x.text)}<div class="meta">${epSelect(id, x)}${linksHTML(id)}</div>
     ${intent && intent.to !== id ? `<div class="row" style="margin-top:6px"><button class="btn sm acc" data-act="note-file">${tr`Ranger : ${esc(intent.say)}`}</button></div>` : ""}
     ${sourcesModule() && (findDoi(x.text) || findUrl(x.text)) ? `<div class="row" style="margin-top:6px"><button class="btn sm" data-act="note-source">${tr`Garder comme source`}</button></div>` : ""}
     ${targets.length ? `<div class="row${c.inbox ? "" : " ra"}" style="margin-top:6px">${targets.map((k) => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
@@ -8308,7 +8505,9 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? tr`Vide. Le silence d'une clairière, ou celui d'un cerveau.` : tr`Rien pour l'instant.`}</li>`}</ul></div>`;
     },
     settings: (id, { config: c }) => `<label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="notes-inbox" data-mod="${esc(id)}" ${c.inbox ? "checked" : ""}>${tr`Boîte de réception : reçoit la capture rapide de l'accueil`}</label>
-    <div class="field-row" style="margin-top:8px"><label>${tr`Description`}<input data-set-mod="${esc(id)}.description" value="${esc(c.description)}" placeholder="${tr`Une phrase sous le titre`}"></label><label>${tr`Texte d'invite`}<input data-set-mod="${esc(id)}.placeholder" value="${esc(c.placeholder)}" required></label></div>`,
+    <div class="field-row" style="margin-top:8px"><label>${tr`Description`}<input data-set-mod="${esc(id)}.description" value="${esc(c.description)}" placeholder="${tr`Une phrase sous le titre`}"></label><label>${tr`Texte d'invite`}<input data-set-mod="${esc(id)}.placeholder" value="${esc(c.placeholder)}" required></label></div>
+    <div class="row" style="margin-top:12px"><label class="btn sm" style="display:inline-block;font-weight:500">${tr`Importer des notes Markdown`}<input type="file" accept=".md,.markdown,text/markdown" multiple data-act="notes-md" data-mod="${esc(id)}" style="display:none"></label><label class="btn ghost sm" style="display:inline-block;font-weight:500">${tr`…ou tout un dossier`}<input type="file" webkitdirectory multiple data-act="notes-md" data-mod="${esc(id)}" style="display:none"></label></div>
+    <p class="hint" style="margin:4px 0 0">${tr`Un coffre Obsidian, un dossier Zettlr ou quelques fichiers .md : chaque fichier devient une note, son titre en première ligne, datée par son en-tête (date, created), sinon par son nom, sinon par le fichier. « statut: hypothèse » (ou status: hypothesis) lui donne son statut ; un lien [[…]] vers une autre note du lot devient « fait écho à ». Les fichiers sont lus sur cet appareil ; un second import n'ajoute que ce qui manque.`}</p>`,
     summary: (id, inst) => inst.config.inbox ? tr`${inst.entries.length} à trier` : trn(inst.entries.length, "{0} note", "{0} notes"),
     context: (inst, nm) => `
 ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.text).join(" ; ") || "vide"}`,
@@ -8349,6 +8548,11 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
       }
     },
     change: {
+      "notes-md": (el) => {
+        const files = [...el.files || []];
+        el.value = "";
+        if (files.length) importMarkdown(el.dataset.mod, files);
+      },
       "notes-inbox": (el) => {
         const id = el.dataset.mod;
         for (const [k, inst] of Object.entries(S().modules)) if (inst.type === "notes") inst.config.inbox = el.checked ? k === id : k === id ? false : inst.config.inbox;

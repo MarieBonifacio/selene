@@ -63,6 +63,7 @@ chargeant (`VIEWS`, `SHEETS`, `CLICK`, `CHANGE`) vivent dans `src/app/registry.j
 | `agenda.js` | calendrier dédié, pur : lecture iCalendar (fuseaux, journées entières), récurrences dépliées sur une fenêtre | — |
 | `zotero.js` | Zotero, pur : ce que permet une clé, une fiche traduite en Source (DOI, revue, auteurs, lien vers la fiche) | — |
 | `biblio.js` | les sources en BibTeX et en CSL-JSON, pur : genre reconnu dans chaque langue, auteurs redécoupés, clés de citation, échappement LaTeX | `sources.js` |
+| `markdown.js` | venir d'Obsidian ou de Zettlr, pur : en-tête YAML, titre, date (en-tête, nom, fichier), statut épistémique, liens `[[…]]` résolus entre les notes du lot et vers celles déjà là | — |
 
 L'interface est rangée par **fonctionnalité** : ce qui sert une même chose (sa vue, son état, ses actions) vit dans
 le même fichier, et chaque fichier commence par une phrase qui dit son rôle.

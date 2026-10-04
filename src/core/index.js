@@ -14,3 +14,4 @@ export * from "./agenda.js";
 export * from "./zotero.js";
 export * from "./regulation.js";
 export * from "./biblio.js";
+export * from "./markdown.js";
