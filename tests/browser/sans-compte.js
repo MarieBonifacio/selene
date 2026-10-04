@@ -3,7 +3,7 @@
    l'app entière, sur l'appareil, sans rien envoyer de ce qu'on y écrit ; se connecter plus tard y verse ce qui a été
    noté : dans un compte neuf, tel quel ; dans un compte qui a déjà ses données, en gardant ses réglages. Lancé par
    tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeGet, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const NEUF = '5a5a5a5a-1111-2222-3333-444455556666', ANCIEN = '6b6b6b6b-1111-2222-3333-444455556666';
 (async () => {
   const b = await engine.launch(launchOptions);
@@ -72,6 +72,7 @@ const NEUF = '5a5a5a5a-1111-2222-3333-444455556666', ANCIEN = '6b6b6b6b-1111-222
     check((await p.textContent('#nav')).includes('Écriture'), 'au rechargement : toujours sans compte, rien de perdu');
     check(!p.appels.some(a => a.includes('/rest/v1/app_state')), 'rien de ce qui est écrit ne part au serveur');
 
+    check(await storeGet(p, 'selene-sans-compte') === '1', 'le choix « sans compte » est gardé sur l’appareil');
     console.log('Réglages → Compte, sans compte');
     await p.evaluate(() => { location.hash = 'reglages'; }); await p.waitForSelector('[data-act="auth-open"]');
     check((await main()).includes('Sans compte : tout reste sur cet appareil') && !!(await p.$('[data-act="err-reports"]')), 'ce que veut dire « sans compte », et le journal des erreurs, qu’on peut couper');
@@ -88,7 +89,7 @@ const NEUF = '5a5a5a5a-1111-2222-3333-444455556666', ANCIEN = '6b6b6b6b-1111-222
     await p.click('#authForm button[type="submit"]');
     check(await until(() => noteSur(lignes.get(NEUF), 'chapitre 3')), 'à la création du compte, la capture part sur le serveur');
     check(!!lignes.get(NEUF).site.modules.ecriture, 'avec l’espace Écriture');
-    check(await p.evaluate(() => localStorage.getItem('selene-sans-compte')) === null, 'le choix « sans compte » s’efface : le compte prend le relais');
+    check(await storeGet(p, 'selene-sans-compte') === null, 'le choix « sans compte » s’efface : le compte prend le relais');
     await p.evaluate(() => { location.hash = 'reglages'; }); await p.waitForTimeout(300);
     check((await main()).includes('Connecté en tant que iris@exemple.org'), 'connectée');
   } catch (e) { check(false, e.message.split('\n')[0]); }

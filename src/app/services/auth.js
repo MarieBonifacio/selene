@@ -73,6 +73,16 @@ function takeAuthLink() {
   } catch {}
 }
 if (authReady()) takeAuthLink();
+/* « Essayer sans compte », depuis la page de présentation (essai.html) : index.html#sans-compte entre directement dans
+   l'app sans compte, sans repasser par l'écran d'entrée. Sans effet si une session est gardée sur cet appareil. */
+function takeLocalLink() {
+  try {
+    if (location.hash !== "#sans-compte") return;
+    if (!authLoad()) platform.storage.set(LOCAL_KEY, "1");
+    window.history.replaceState(null, "", location.pathname + location.search + "#accueil");
+  } catch {}
+}
+if (authReady()) takeLocalLink();
 
 function authLoad() {
   try { const v = platform.secrets.get(AUTH_KEY); return v ? JSON.parse(v) : null; } catch { return null; }

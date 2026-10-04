@@ -507,6 +507,9 @@ button.room{cursor:pointer}button.room:hover{background:var(--surface)}
 .room small:last-of-type{order:2;color:var(--muted);font-family:var(--f-ui);font-size:.8rem;font-variant-numeric:tabular-nums lining-nums}
 .room b{order:3;text-align:right;font-family:var(--f-ui);font-weight:500;font-size:.95rem;font-variant-numeric:tabular-nums lining-nums}
 .room.active{box-shadow:inset 2px 0 0 var(--tint,var(--accent));background:var(--surface)}
+/* Sur téléphone : le nom (chapitre, pièce, enveloppe) garde sa ligne avec le pourcentage, le détail passe dessous ; il
+   n'était plus que « I. … » à côté de « 21 400 / 30 000 mots · 2 fragments ». */
+@media (max-width:560px){.room{grid-template-columns:minmax(0,1fr) 4.2em}.room small:first-of-type{grid-column:1;grid-row:1}.room b{grid-column:2;grid-row:1}.room small:last-of-type{grid-column:1 / -1;grid-row:2}}
 /* Recherche à facettes : des puces qui filtrent (espace, période, statut), avec leur décompte ; résultats par espace. */
 .facets{display:grid;gap:6px;margin:12px 0 4px}
 .chip-f{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:3px 10px;border:1px solid var(--rule);border-radius:3px;background:transparent;color:var(--muted);font-size:.84rem}
@@ -693,7 +696,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "9f4da3dacb";
+const SELENE_BUILD = "db06332c3d";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -6714,6 +6717,15 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     }
   }
   if (authReady()) takeAuthLink();
+  function takeLocalLink() {
+    try {
+      if (location.hash !== "#sans-compte") return;
+      if (!authLoad()) platform.storage.set(LOCAL_KEY, "1");
+      window.history.replaceState(null, "", location.pathname + location.search + "#accueil");
+    } catch {
+    }
+  }
+  if (authReady()) takeLocalLink();
   function authLoad() {
     try {
       const v = platform.secrets.get(AUTH_KEY);

@@ -4,7 +4,7 @@ Ce que ni le code ni la CI ne peuvent faire : essayer Selene sur de vrais appare
 stores, tenir les obligations de la responsable du traitement. Une case par démarche, avec un lien vers le détail.
 Une démarche faite : cocher la case, ou retirer la ligne, de préférence dans la PR qui la rend inutile.
 
-Tenue à jour le 3 octobre 2026. Les étapes marquées *(si ce n'est pas déjà fait)* sont des réglages de mise en place
+Tenue à jour le 4 octobre 2026. Les étapes marquées *(si ce n'est pas déjà fait)* sont des réglages de mise en place
 dont le dépôt ne peut pas savoir s'ils ont eu lieu.
 
 ## Tout de suite (une minute)
@@ -47,6 +47,29 @@ connaît pas le format 8 et refuse d'écrire.
   sur un appareil » le propose. Selene ne synchronise plus les suivis de santé depuis le 3 octobre 2026.
 - [ ] **Le test d'isolation entre comptes**, sur un projet de préproduction, puis la comparaison de ses règles avec
   celles de la production ([compte.md](compte.md#vérifier-lisolation-entre-comptes)).
+- [ ] **La table du journal des erreurs** : coller la partie « Le journal des erreurs » de `supabase/schema.sql` dans
+  l'éditeur SQL. D'ici là, l'app reçoit un refus et n'envoie rien, sans gêne pour personne
+  ([compte.md](compte.md#journal-des-erreurs)).
+- [ ] **Les deux tables de la page de test** (`attente`, `audience`) : coller la partie « La page publique de test » de
+  `supabase/schema.sql`. Sans elles, la page s'affiche mais l'inscription échoue
+  ([essai.md](essai.md#mettre-en-place-une-fois-dix-minutes)).
+
+## Valider le marché : la page publique de test (E3)
+
+La page est en ligne avec le site : <https://mariebonifacio.github.io/selene/essai.html>. Tout le mode d'emploi est
+dans [essai.md](essai.md).
+
+- [ ] **Vérifier la page**, après la création des tables : une inscription et une visite de test sous `?src=essai-perso`,
+  lues dans l'éditeur SQL, puis effacées ; l'aperçu (image, titre) dans un message
+  ([essai.md](essai.md#mettre-en-place-une-fois-dix-minutes)).
+- [ ] **Diffuser** dans trois à cinq communautés du public visé, avec un lien et une étiquette `?src=` par communauté ;
+  noter où et quand chaque lien a été posté ([essai.md](essai.md#diffuser)).
+- [ ] **Lire les résultats** une fois 100 ouvertures venues des communautés ciblées : le seuil de l'audit est de 10 %
+  d'inscriptions ([essai.md](essai.md#lire-les-résultats)). En dessous de 100, attendre ou diffuser davantage.
+- [ ] **À l'ouverture de la bêta** : un seul e-mail aux inscrits, puis effacer la liste, comme la politique de
+  confidentialité le promet ([essai.md](essai.md#écrire-aux-inscrits-puis-effacer)).
+- [ ] **Chaque demande d'effacement** reçue à l'adresse de contact : la traiter sous un mois (une requête,
+  [essai.md](essai.md#écrire-aux-inscrits-puis-effacer)).
 
 ## Publier dans les stores
 
@@ -67,8 +90,9 @@ La politique de confidentialité remplit l'article 13 : responsable, bases léga
 
 - [ ] **Le registre des activités de traitement** (article 30). La dispense des structures de moins de 250 personnes
   ne s'applique pas à un traitement qui n'est pas occasionnel, comme un compte synchronisé en continu. La CNIL publie
-  un modèle. Y décrire : le compte et sa synchronisation, l'assistant, la sécurité, avec pour chacun les données, la
-  base légale, la durée et les sous-traitants ; et les suivis de santé encore synchronisés, tant qu'il en reste.
+  un modèle. Y décrire : le compte et sa synchronisation, l'assistant, la sécurité, le journal des erreurs, la liste
+  d'attente et la mesure d'audience de la page de test, avec pour chacun les données, la base légale, la durée et les
+  sous-traitants ; et les suivis de santé encore synchronisés, tant qu'il en reste.
 - [ ] **L'analyse d'impact (AIPD, article 35)** : évaluer si elle est obligatoire, et écrire la conclusion avec ses
   raisons, même négative. Depuis que les suivis de santé ne passent plus par le serveur, le critère des données
   sensibles ne joue plus que pour ceux d'avant le 3 octobre 2026.

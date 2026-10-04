@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7ZwmT/iJ2UGR/AJ6fxBdN/WDM9C99bZqgW06IJZLWgw=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-oHhlklku++vtmEyFUqG3Kw2WvexcsSX6LdoY3SA6eRg=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -540,6 +540,9 @@ button.room{cursor:pointer}button.room:hover{background:var(--surface)}
 .room small:last-of-type{order:2;color:var(--muted);font-family:var(--f-ui);font-size:.8rem;font-variant-numeric:tabular-nums lining-nums}
 .room b{order:3;text-align:right;font-family:var(--f-ui);font-weight:500;font-size:.95rem;font-variant-numeric:tabular-nums lining-nums}
 .room.active{box-shadow:inset 2px 0 0 var(--tint,var(--accent));background:var(--surface)}
+/* Sur téléphone : le nom (chapitre, pièce, enveloppe) garde sa ligne avec le pourcentage, le détail passe dessous ; il
+   n'était plus que « I. … » à côté de « 21 400 / 30 000 mots · 2 fragments ». */
+@media (max-width:560px){.room{grid-template-columns:minmax(0,1fr) 4.2em}.room small:first-of-type{grid-column:1;grid-row:1}.room b{grid-column:2;grid-row:1}.room small:last-of-type{grid-column:1 / -1;grid-row:2}}
 /* Recherche à facettes : des puces qui filtrent (espace, période, statut), avec leur décompte ; résultats par espace. */
 .facets{display:grid;gap:6px;margin:12px 0 4px}
 .chip-f{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:3px 10px;border:1px solid var(--rule);border-radius:3px;background:transparent;color:var(--muted);font-size:.84rem}
@@ -726,7 +729,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "9f4da3dacb";
+const SELENE_BUILD = "db06332c3d";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -6747,6 +6750,15 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     }
   }
   if (authReady()) takeAuthLink();
+  function takeLocalLink() {
+    try {
+      if (location.hash !== "#sans-compte") return;
+      if (!authLoad()) platform.storage.set(LOCAL_KEY, "1");
+      window.history.replaceState(null, "", location.pathname + location.search + "#accueil");
+    } catch {
+    }
+  }
+  if (authReady()) takeLocalLink();
   function authLoad() {
     try {
       const v = platform.secrets.get(AUTH_KEY);

@@ -886,3 +886,21 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   une modification faite avant la synchronisation suivante redonne la main à l'appareil pour les réglages.
   `tests/browser/sans-compte.js` : l'écran d'entrée, l'app sans compte, le retour, un compte neuf, un compte existant
   sur un appareil où un autre compte s'était déconnecté.
+
+### ADR 29 — Une page publique de test, statique et sans traceur
+
+- **Contexte** : l'audit (E3) demande de savoir si la promesse attire des inconnus du public visé avant d'investir :
+  une page d'un écran, une liste d'attente, un prix annoncé, et un taux d'inscription mesuré par communauté.
+- **Décision** (4 octobre 2026) : `essai.html`, construite par `build.py` depuis `src/essai.html` et `src/essai.js`,
+  publiée avec le site, sans l'app. Une CSP stricte (`default-src 'none'`, script et styles par empreinte, Supabase
+  seul en réseau). Deux tables en écriture seule (`attente`, `audience`, `supabase/schema.sql`), bornées par des
+  déclencheurs (doublons ignorés en silence, plafonds horaires, purge). La mesure compte des ouvertures, sans cookie ni
+  stockage ni identifiant : elle ne demande pas de consentement. « Essayer sans compte » ouvre l'app sur
+  `index.html#sans-compte`, qui entre directement sans compte (ADR 28). Les captures viennent d'un espace fictif
+  (`scripts/essai-captures.mjs`).
+- **Écarté** : un outil de formulaires ou de mesure tiers (des données qui sortent, un traceur, un bandeau de
+  consentement) ; une page dans l'app (850 Ko de script et un écran d'entrée, contre 24 Ko ici, pour un visiteur qui ne la
+  connaît pas) ; un identifiant de visiteur pour dédoublonner (un traceur, donc un consentement).
+- **Conséquences** : le taux mesuré est prudent (un visiteur qui revient compte deux fois). La lecture, l'envoi de
+  l'e-mail de bêta et l'effacement de la liste se font à la main, dans l'éditeur SQL ([essai.md](essai.md)). Le
+  service worker ne garde plus que l'app pour le hors-ligne (`sw.js` v3) : une page voisine prenait sa place.
