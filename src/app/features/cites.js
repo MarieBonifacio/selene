@@ -60,8 +60,8 @@ export function citeBar() {
   const srcs = citeSources(); if (srcs.size < 2) return "";
   const st = citeState, name = d => { const x = srcs.get(d); return x ? `<a href="#${esc(x.mod)}/${esc(x.e.id)}">${tr`« ${esc(excerpt(x.e, 50))} »`}</a>` : ""; };
   let body = "";
-  if (st && st.busy) body = `<p class="hint" role="status">${tr`Lecture des bibliographies de tes sources…`}</p>`;
-  else if (st && st.err) body = `<p class="hint" role="status">${esc(st.err)}</p>`;
+  if (st && st.busy) body = `<p class="hint" data-status>${tr`Lecture des bibliographies de tes sources…`}</p>`;
+  else if (st && st.err) body = `<p class="hint" data-status>${esc(st.err)}</p>`;
   else if (st && st.res) {
     const r = st.res, followed = new Set(dehorsResearch().filter(x => x.kind === "author").map(x => x.q));
     const common = r.common.filter(x => r.titles[x.id]);

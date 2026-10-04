@@ -32,6 +32,12 @@ connaît pas le format 8 et refuse d'écrire.
 - [ ] **Windows**, avec l'installateur de la course *Desktop* : premier lancement, données relues après fermeture,
   déconnexion, mise à jour par-dessus ([desktop.md](desktop.md#tester)).
 - [ ] **La PWA installée sur iPhone** et **l'artefact claude.ai** ([architecture.md](architecture.md), « Hors CI »).
+- [ ] **Un lecteur d'écran, une heure** (VoiceOver sur iPhone ou Mac, TalkBack sur Android, NVDA sur Windows) :
+  capturer une note, ajouter une source, la retrouver par la recherche, sans regarder l'écran. Les contrôles
+  automatiques sont faits (axe-core sur quinze vues, titres, focus : [evolution-ui.md](evolution-ui.md)) ; reste à
+  entendre. À vérifier en particulier : le nom de l'écran annoncé à chaque changement (« Écriture — Selene », puis le
+  titre de l'écran) ; « Supprimé… Annuler » annoncé, et ⌘Z / Ctrl+Z qui annule ; « Recherche… » puis « Trouvée : … »
+  en ajoutant une source. Ce qui reste muet ou se répète : ouvrir un ticket, en nommant le lecteur et l'appareil.
 
 ## Régler le projet Supabase *(si ce n'est pas déjà fait)*
 
@@ -141,3 +147,7 @@ Pas de case ici : ce sont des engagements, pas des tâches.
   ([publication.md](publication.md#à-chaque-version)).
 - Le workflow *Liens*, le 3 de chaque mois : une annotation ⚠️ (refus) se vérifie dans un navigateur ; un échec ✗
   (page disparue) demande une nouvelle adresse officielle.
+- Les PR de Dependabot, au début de chaque mois : une pour les actions de CI, une pour les outils npm
+  (`.github/dependabot.yml`). Fusionner si Check est vert. Après une mise à jour des actions, regarder que le
+  déploiement Pages qui suit réussit : la CI d'une PR ne l'exerce pas, ni la publication des apps. Une PR en retard
+  sur `main` se met à jour par un commentaire `@dependabot rebase`.

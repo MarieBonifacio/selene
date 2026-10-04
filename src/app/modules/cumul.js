@@ -1,5 +1,5 @@
 /* Type « cumul » : un total qui avance vers un objectif ; ses fragments datés, par chapitres, avec leurs versions. */
-import { addJournalEntry, editFragmentText, epPrefix } from "../../core/domain.js";
+import { addJournalEntry, editFragmentText, epPrefix, inboxId } from "../../core/domain.js";
 import { registerType } from "../registry.js";
 import { $, esc, paged, toast } from "../lib/dom.js";
 import { downloadFile } from "../lib/download.js";
@@ -49,6 +49,13 @@ function cumulGroupPanel(id) {
   return `<section><h3 style="margin:0 0 4px">${tr`Par ${esc(c.categoryLabel).toLowerCase()}`}</h3><p class="hint">${tr`Chaque ${esc(c.categoryLabel).toLowerCase()} a son propre objectif.`}</p>
     <div class="rooms">${out.map(g => `<div class="room"><div class="fill" style="width:${Math.min(100, g.pct ?? 0)}%"></div><small>${esc(g.name)}</small><b>${g.pct == null ? "—" : tr`${g.pct} %`}</b><small>${esc(g.sub)}</small></div>`).join("")}</div></section>`;
 }
+/* Aucun fragment encore, mais des idées notées par Capturer attendent dans la boîte : le pont vers le tri, qui les range
+   ici une à une. Sans lui, le dossier (qui part des fragments) restait introuvable à qui avait tout noté par ⊕
+   (repéré en jouant les tâches d'E2 sur téléphone, docs/validation.md). */
+function waitingHTML(inst) {
+  const box = inboxId(S().modules), n = box && !inst.scraps.length ? S().modules[box].entries.length : 0;
+  return n ? `<p class="hint" style="margin-top:10px">${trn(n, "{0} idée notée par Capturer attend dans la boîte de réception.", "{0} idées notées par Capturer attendent dans la boîte de réception.")} <button class="btn sm" data-act="vasculum">${tr`Les trier`}</button></p>` : "";
+}
 registerType("cumul", {
   view(id) {
     const inst = S().modules[id], c = inst.config;
@@ -66,6 +73,7 @@ registerType("cumul", {
     <div style="margin-top:28px">${c.categories.length ? cumulGroupPanel(id) : `<p class="hint">${tr`Ajoute des ${`${esc(c.categoryLabel).toLowerCase()}s`} dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`} pour suivre chacune en pourcentage.`}</p>`}</div>
   </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">${tr`Une phrase qui passe, avant qu'elle ne reparte. Un « ? » devant en fait une hypothèse.`}</p>
     ${deriveBanner(id)}<textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="${tr`Nouveau`}"></textarea><div class="row" style="margin-top:8px">${catSelect("scrapCat", "", lastScrapCat)}<button class="btn" data-act="scrap-add" data-mod="${esc(id)}">${tr`Garder`}</button></div>
+    ${waitingHTML(inst)}
     ${c.categories.length || inst.scraps.length ? `<div class="row" style="margin-top:14px">${c.categories.length ? `<select data-act="scrap-f" data-mod="${esc(id)}" aria-label="${tr`Filtrer`}"><option value="*">${tr`Tous`}</option>${[["", tr`Hors ${c.categoryLabel.toLowerCase()}`], ...c.categories.map(x => [x.id, x.name])].map(([k, n]) => `<option value="${esc(k)}" ${ff === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : ""}<span class="spacer"></span>${inst.scraps.length ? `<button class="btn ghost sm" data-act="scrap-md" data-mod="${esc(id)}">${tr`Exporter en Markdown`}</button><button class="btn ghost sm" data-act="scrap-dossier" data-mod="${esc(id)}" title="${tr`Avec dates, statuts, provenance et liens, pour une lecture assistée`}">${tr`Dossier`}</button>` : ""}</div>` : ""}
     <ul class="plain margins" style="margin-top:10px">${(pg => pg.items.map(f => `<li class="item" data-id="${esc(f.id)}"><span class="jdate">${fmt(f.date)}</span><div><div style="white-space:pre-wrap">${esc(f.text)}</div><div class="meta">${c.categories.length ? catSelect("", f.category || "", "", `data-act="scrap-cat" data-mod="${esc(id)}"`) : ""}${epSelect(id, f)}${linksHTML(id)}</div>${versionsHTML(f)}</div>${margHTML(id, f, f.text)}<div class="row"><button class="btn ghost sm ra" data-act="scrap-edit" data-mod="${esc(id)}">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="scrap-del" data-mod="${esc(id)}">${tr`suppr.`}</button></div></li>`).join("") + pg.more)(paged(`scraps:${id}`, [...inst.scraps].reverse().filter(f => ff === "*" || (f.category || "") === ff))) || `<li class="empty">${tr`Rien pour l'instant.`}</li>`}</ul>
   </section>` : ""}</div>`;

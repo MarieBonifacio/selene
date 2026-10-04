@@ -101,6 +101,9 @@ function renderNow() {
   // La feuille « régler » ouverte se redessine aussi, sauf pendant une frappe dans l'un de ses champs.
   const fa = document.activeElement, typingSheet = fa && fa.closest && fa.closest("#sheet") && (fa.tagName === "TEXTAREA" || (fa.tagName === "INPUT" && !["checkbox", "radio"].includes(fa.type)));
   if (["module", "specimen", "vasculum"].includes(sheetKind) && $("#sheet").open && !typingSheet) $("#sheetBody").innerHTML = SHEETS[sheetKind](sheetArg);
+  // Le titre de la page dit l'écran (onglet, historique, lecteur d'écran : WCAG 2.4.2) : « Écriture — Selene ».
+  const h2 = $("#main h2"), here = h2 && String(h2.textContent || "").replace(/\s+/g, " ").trim();
+  document.title = here ? `${here} — ${s.config.name || "Selene"}` : s.config.name || "Selene";
   for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && v !== "" && el.value !== v) el.value = v; }
   for (const id of opened) { const el = document.getElementById(id); if (el && el.tagName === "DETAILS") el.open = true; }
   if (view !== lastView) $("#main").querySelectorAll("[data-draft]").forEach(el => { const v = loadDraft(view, el); if (v) el.value = v; });
@@ -124,6 +127,10 @@ window.addEventListener("hashchange", () => {
   setOpenId(null); setBridgeOpen(null); for (const k of Object.keys(pageSize)) delete pageSize[k];
   if (entry && Object.hasOwn(S().modules, view) && S().modules[view].type === "taches") setOpenId(entry); // une tâche visée s'ouvre
   render();
+  // Le lien suivi (menu, barre du bas) vient d'être redessiné : le focus retombait sur la page entière, et un lecteur
+  // d'écran n'annonçait rien. Il va au titre du nouvel écran, sans défiler ; jamais pris à un champ qui l'a déjà.
+  const fa = document.activeElement;
+  if (!fa || fa === document.body) { const h = $("#main h2"); if (h) { if (!h.hasAttribute("tabindex")) h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); } }
   const t = platform.session.get("selene-scroll"); platform.session.remove("selene-scroll"); const el = t && document.getElementById(t);
   if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView(); }
   else if (!(entry && focusEntry(entry))) window.scrollTo(0, scrollMemo[lastView] || 0);

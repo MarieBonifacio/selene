@@ -86,6 +86,13 @@ aidez, et la tâche compte comme « avec aide ».
 | 5 | « Retrouvez l'idée qui parlait de [un mot de la personne]. » | le fragment est ouvert |
 | 6 | « Préparez un dossier de votre projet, à envoyer à quelqu'un. » | le dossier est exporté |
 
+**Ce qu'un robot a déjà vérifié.** Les six tâches se font sur téléphone, par le chemin le plus probable : ⊕ Capturer
+pour noter, la feuille Espaces pour aller ailleurs, Chercher pour retrouver (`tests/browser/parcours-e2.js`, à chaque
+modification de Selene). Les jouer a fait apparaître deux obstacles, corrigés avant vos testeurs. « documente… » était
+rangé dans le menu « … » d'une source ; le message « Gardée » propose maintenant de la relier à une idée. Le dossier de
+l'Écriture partait des seuls fragments, alors que les idées notées par ⊕ attendent dans la boîte ; l'Écriture vide mène
+maintenant au tri. Le robot sait où cliquer : vos testeurs, non. C'est ce que le test mesure.
+
 **Après chaque tâche, une question** (le SEQ, *Single Ease Question*) : « Dans l'ensemble, cette tâche était… », de
 1 (très difficile) à 7 (très facile). Une moyenne sous 5 signale une tâche à revoir, même réussie.
 

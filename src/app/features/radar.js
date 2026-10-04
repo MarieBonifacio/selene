@@ -56,8 +56,8 @@ SHEETS.radar = () => {
   const said = esc(st.words.map(w => st.said[w] || w).join(", "));
   const head = `<h2 id="sheetTitle">${tr`Radar culturel`}</h2><p class="hint">${c ? tr`Autour de ${esc(c.name.split(",")[0])}, à 20 km, les deux semaines à venir, ce qui parle de : ${said}. Cinq au plus ; le reste attendra que tu reviennes.` : tr`Autour de chez toi, à 20 km, les deux semaines à venir, ce qui parle de : ${said}. Cinq au plus ; le reste attendra que tu reviennes.`}</p>`;
   const foot = `<p class="hint" style="margin-top:12px">${tr`Source : OpenAgenda, par le portail public d'Opendatasoft. Le portail voit la zone (arrondie) et les dates, jamais tes mots : le tri se fait ici.`}</p>`;
-  if (st.busy) return head + `<p class="hint" role="status">${tr`Recherche…`}</p>`;
-  if (st.err) return head + `<p class="hint" role="status">${esc(st.err)}</p><button class="btn sm" data-act="radar-open">${tr`Réessayer`}</button>` + foot;
+  if (st.busy) return head + `<p class="hint" data-status>${tr`Recherche…`}</p>`;
+  if (st.err) return head + `<p class="hint" data-status>${esc(st.err)}</p><button class="btn sm" data-act="radar-open">${tr`Réessayer`}</button>` + foot;
   if (!st.items.length) return head + `<p class="empty">${tr`Rien qui te ressemble, cette fois. La ville continuera sans toi, elle a l'habitude.`}</p>` + foot;
   const today = todayISO();
   return head + `<ul class="plain radar">${st.items.map(x => `<li class="item" data-rid="${esc(x.id)}"><span></span><div><b>${esc(x.title)}</b>

@@ -12,17 +12,42 @@ function toastHost() {
   try { const open = [...document.querySelectorAll("dialog[open]")].pop(), host = open || document.body; if (el.parentNode !== host) host.appendChild(el); } catch {}
   return el;
 }
-export function toast(msg) { undoFn = null; const el = toastHost(); el.textContent = msg; el.classList.remove("act"); el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 3400); }
-/* Un message avec une action proposée (« Annuler », « Ajouter »…), qui disparaît d'elle-même : jamais imposée. */
-let undoFn = null;
-export function toastAction(msg, button, fn, ms = 6000) {
-  const el = toastHost();
-  el.innerHTML = `${esc(msg)} <button class="btn sm" data-act="undo">${esc(button)}</button>`;
-  el.classList.add("show", "act"); undoFn = fn;
-  clearTimeout(toast.t); toast.t = setTimeout(() => { el.classList.remove("show", "act"); undoFn = null; }, ms);
+export function toast(msg) { undoFn = null; undoKeys = false; const el = toastHost(); el.textContent = msg; el.classList.remove("act"); el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 3400); }
+/* Un message avec une action proposée (« Annuler », « Ajouter »…), qui disparaît d'elle-même : jamais imposée. Mais
+   pas sous la main : survolé, ou atteint au clavier (le focus y est), il attend qu'on le quitte, puis encore deux
+   secondes. Six secondes ne suffisent pas pour y aller au clavier ou au lecteur d'écran (WCAG 2.2.1, délai réglable). */
+let undoFn = null, undoKeys = false;
+const held = el => { try { return el.matches(":hover") || el.contains(document.activeElement); } catch { return false; } };
+function hideAction(el) {
+  if (held(el)) { toast.t = setTimeout(() => hideAction(el), 2000); return; }
+  el.classList.remove("show", "act"); undoFn = null; undoKeys = false;
 }
-/* « Annuler » pendant quelques secondes, au lieu d'une confirmation avant d'agir. */
-export const toastUndo = (msg, undo) => toastAction(msg, trp("toast", "Annuler"), undo);
+export function toastAction(msg, button, fn, ms = 6000, keys = "") {
+  const el = toastHost();
+  el.innerHTML = `${esc(msg)} <button class="btn sm" data-act="undo"${keys ? ` aria-keyshortcuts="${esc(keys)}"` : ""}>${esc(button)}</button>`;
+  el.classList.add("show", "act"); undoFn = fn; undoKeys = !!keys;
+  clearTimeout(toast.t); toast.t = setTimeout(() => hideAction(el), ms);
+}
+/* « Annuler » pendant quelques secondes, au lieu d'une confirmation avant d'agir ; ⌘Z (Ctrl+Z) aussi, hors d'un champ. */
+export const toastUndo = (msg, undo) => toastAction(msg, trp("toast", "Annuler"), undo, 6000, "Control+Z Meta+Z");
+export const undoOnKeys = () => !!undoFn && undoKeys;
+/* Les messages d'état (« Recherche… », une erreur, « 3 sur 12 artistes… ») naissent avec le contenu redessiné : un
+   lecteur d'écran n'annonce pas toujours une région qui apparaît en même temps que son texte. Ils portent data-status
+   (la phrase à dire, sinon leur texte) ; une seule région, permanente et hors de l'écran (#sr-say), répète ce qui
+   change, une fois. */
+let said = "";
+function sayStatus() {
+  const t = [...document.querySelectorAll("#main [data-status], dialog[open] [data-status]")]
+    .map(e => (e.dataset.status || e.textContent || "").replace(/\s+/g, " ").trim()).filter(Boolean).join(" ");
+  if (t === said) return;
+  said = t; const el = $("#sr-say"); if (el) el.textContent = t;
+}
+try {
+  let queued = false; const Watch = globalThis.MutationObserver;
+  if (typeof Watch === "function") new Watch(() => {
+    if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; sayStatus(); });
+  }).observe(document.body, { childList: true, subtree: true });
+} catch { /* sans observateur (tests, vieux navigateur), les messages restent écrits à l'écran */ }
 /* Longues listes : les PAGE premiers éléments, puis « Voir les suivants ». Propre à l'appareil, remis à zéro
    quand on change de vue : une liste de milliers de fragments se calcule vite mais se parcourt mal au pouce. */
 export const PAGE = 100, pageSize = {};

@@ -3,7 +3,7 @@
 import { addLink, retargetLinks, saveCollectionItem } from "../../core/domain.js";
 import { bareSource, crossrefToSource, findDoi, findUrl, microlinkToSource, sourceKey } from "../../core/sources.js";
 import { CLICK } from "../registry.js";
-import { $, esc, toast } from "../lib/dom.js";
+import { $, esc, toast, toastAction } from "../lib/dom.js";
 import { fmt, todayISO, uid } from "../lib/format.js";
 import { tr, trp, uiLocale } from "../i18n/index.js";
 import { citeBar } from "./cites.js";
@@ -86,7 +86,7 @@ export function keepSource(mod, x, origin) {
 }
 export function sourceBar(id) {
   const p = srcPreview[id], d = p && p.data;
-  const prev = !p ? "" : p.busy ? `<p class="hint" role="status">${tr`Recherche…`}</p>` : `<div class="src-prev" role="status">
+  const prev = !p ? "" : p.busy ? `<p class="hint" data-status>${tr`Recherche…`}</p>` : `<div class="src-prev" data-status="${esc(tr`Trouvée : « ${d.title || d.url || ""} ».`)}">
     <b>${esc(d.title)}</b>${d.authors ? `<div>${esc(d.authors)}</div>` : ""}
     <div class="meta">${[d.site, pubDate(d.date), d.kind && tr(d.kind)].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("")}${d.doi ? `<span>doi:${esc(d.doi)}</span>` : ""}</div>
     ${d.abstract ? `<p class="note">${esc(d.abstract)}</p>` : ""}
@@ -110,7 +110,11 @@ CLICK["src-keep"] = el => {
   const id = modOf(el), p = srcPreview[id]; if (!p || !p.data || p.dup) return;
   const e = keepSource(id, p.data); delete srcPreview[id];
   const inp = $("#srcIn"); if (inp) inp.value = "";
-  site.save(); render(); toast(tr`Gardée : « ${excerpt(e, 50)} ».`);
+  site.save(); render();
+  // Le geste suivant, proposé tout de suite : sur téléphone, « documente… » est rangé dans le menu « … » de la ligne
+  // (repéré en jouant les tâches d'E2, docs/validation.md).
+  if (thoughtItems().length) toastAction(tr`Gardée : « ${excerpt(e, 50)} ».`, tr`La relier à une idée`, () => sourceLinkForm(id, e.id), 8000);
+  else toast(tr`Gardée : « ${excerpt(e, 50)} ».`);
 };
 CLICK["src-cancel"] = el => { delete srcPreview[modOf(el)]; render(); };
 /* Une note de la boîte qui contient un lien ou un DOI devient une source, avec sa provenance ; ses liens la suivent. */

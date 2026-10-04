@@ -43,6 +43,9 @@ const session = JSON.stringify({ access_token: 'jeton-a', refresh_token: 'r', ex
     await p.evaluate(() => { location.hash = 'reglages'; }); await p.waitForSelector('[data-act="activity"]');
     check(await p.isChecked('[data-act="activity"]') && (await p.textContent('#main')).includes('Compter mes jours d\'usage'), 'Réglages → Compte : l’interrupteur, allumé, et ce qu’il compte');
     await p.uncheck('[data-act="activity"]');
+    // Recharger sans requête en vol : WebKit (Playwright 1.63) signale une synchronisation interrompue par la navigation
+    // comme une erreur de la page (« due to access control checks »), qui n'en est pas une de Selene.
+    await p.waitForLoadState('networkidle');
     await p.evaluate(() => { location.hash = 'accueil'; }); await p.reload(); await p.waitForSelector('#capIn'); await p.waitForTimeout(300);
     await p.fill('#capIn', 'coupée'); await p.click('[data-act="cap-add"]'); await p.waitForTimeout(800);
     check(recus.length === 1, 'coupée : plus rien, même après un rechargement');
