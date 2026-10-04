@@ -219,6 +219,7 @@ export default {
   "Cité par tes sources": "Cited by your sources",
   "cité par {0} de tes sources": "cited by {0} of your sources",
   "Gardée : « {0} ».": "Kept: “{0}”.",
+  "Trouvée : « {0} ».": "Found: “{0}”.",
   "Trente veilles, c'est une thèse. Retires-en avant d'en ajouter.": "Thirty watches is a thesis. Remove some before adding more.",
   "En veille dans Dehors : {0}. Première lecture…": "Now watched in Outside: {0}. First reading…",
   // features/concordance.js

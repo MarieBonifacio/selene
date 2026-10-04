@@ -326,6 +326,11 @@ Livrée en quatre temps, pour que chaque pull request reste relisible.
   Suivre un lien du menu ou de la barre du bas porte le focus au titre du nouvel écran, sans défiler : il retombait
   sur la page entière, et rien n'était annoncé. Un champ qui a déjà le focus le garde (« / » et la recherche).
   `tests/browser/ecran-lu.js`.
+- [x] Les messages d'état qui naissent avec un contenu redessiné (« Recherche… », une erreur, l'aperçu d'une source,
+  « 3 sur 12 artistes… ») portent `data-status` ; une seule région permanente, hors de l'écran (`#sr-say`,
+  `role="status"`), répète ce qui change, une fois (`src/app/lib/dom.js`). Un lecteur d'écran n'annonce pas toujours
+  une région qui apparaît en même temps que son texte. L'aperçu d'une source dit une phrase courte
+  (« Trouvée : « … ». »), pas toute la fiche.
 
 **3d : écrans chargés**
 - [x] Journaux à dates suspendues : la date dans la marge, en petites capitales (notes, fragments, rappels,

@@ -384,7 +384,7 @@ async function authSubmit() {
 }
 export function authView() {
   if (authBooted && !authSignupAsked) authAskSignup();
-  const note = `<p class="hint" id="authErr" role="status" style="margin:0${authNote.text ? `;color:var(${authNote.ok ? "--ok" : "--alarm"})` : ""}">${esc(authNote.text)}</p>`;
+  const note = `<p class="hint" id="authErr" data-status style="margin:0${authNote.text ? `;color:var(${authNote.ok ? "--ok" : "--alarm"})` : ""}">${esc(authNote.text)}</p>`;
   const email = `<label>${tr`E-mail`}<input type="email" id="authEmail" required autocomplete="email" value="${esc(authEmail)}"></label>`;
   const form = (intro, fields, buttons) => `<p class="hint">${intro}</p>
     <form id="authForm" style="display:grid;gap:12px">${fields}<div class="row">${buttons}</div>${note}</form>`;

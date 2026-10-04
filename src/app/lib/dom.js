@@ -31,6 +31,23 @@ export function toastAction(msg, button, fn, ms = 6000, keys = "") {
 /* « Annuler » pendant quelques secondes, au lieu d'une confirmation avant d'agir ; ⌘Z (Ctrl+Z) aussi, hors d'un champ. */
 export const toastUndo = (msg, undo) => toastAction(msg, trp("toast", "Annuler"), undo, 6000, "Control+Z Meta+Z");
 export const undoOnKeys = () => !!undoFn && undoKeys;
+/* Les messages d'état (« Recherche… », une erreur, « 3 sur 12 artistes… ») naissent avec le contenu redessiné : un
+   lecteur d'écran n'annonce pas toujours une région qui apparaît en même temps que son texte. Ils portent data-status
+   (la phrase à dire, sinon leur texte) ; une seule région, permanente et hors de l'écran (#sr-say), répète ce qui
+   change, une fois. */
+let said = "";
+function sayStatus() {
+  const t = [...document.querySelectorAll("#main [data-status], dialog[open] [data-status]")]
+    .map(e => (e.dataset.status || e.textContent || "").replace(/\s+/g, " ").trim()).filter(Boolean).join(" ");
+  if (t === said) return;
+  said = t; const el = $("#sr-say"); if (el) el.textContent = t;
+}
+try {
+  let queued = false; const Watch = globalThis.MutationObserver;
+  if (typeof Watch === "function") new Watch(() => {
+    if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; sayStatus(); });
+  }).observe(document.body, { childList: true, subtree: true });
+} catch { /* sans observateur (tests, vieux navigateur), les messages restent écrits à l'écran */ }
 /* Longues listes : les PAGE premiers éléments, puis « Voir les suivants ». Propre à l'appareil, remis à zéro
    quand on change de vue : une liste de milliers de fragments se calcule vite mais se parcourt mal au pouce. */
 export const PAGE = 100, pageSize = {};
