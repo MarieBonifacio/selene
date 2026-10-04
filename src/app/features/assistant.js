@@ -82,17 +82,23 @@ ${permitted.length ? "Tu peux agir uniquement avec les outils fournis. Ne les ut
 DONNÉES DU TABLEAU DE BORD
 ${contextText()}`;
 }
+// Un texte venu du modèle, coupé pour la fenêtre d'accord (qui l'affiche en texte brut, jamais en HTML).
+const short = v => { const t = String(v ?? "").replace(/\s+/g, " ").trim(); return t.length > 160 ? t.slice(0, 159) + "…" : t; };
 export const TOOLS = [
   { name: "ajouter_tache", module: () => firstOfType("taches"), description: "Ajoute une tâche au premier module de tâches (voir ses types dans les données). Renvoie une confirmation.", inputSchema: { type: "object", properties: { titre: { type: "string" }, piece: { type: "string", description: "pièce ou lieu" }, echeance: { type: "string", description: "AAAA-MM-JJ" }, type: { type: "string" } }, required: ["titre"] },
+    describe: i => tr`ajouter la tâche « ${short(i.titre)} »` + (i.echeance ? tr`, pour le ${short(i.echeance)}` : ""),
     execute(i) { const inst = S().modules[firstOfType("taches")]; const t = addTask(inst.entries, { title: i.titre, room: i.piece, cat: i.type || inst.config.cats[0], due: i.echeance, note: "Ajoutée par l'assistant" }, uid(), todayISO()); site.save(); render(); return `Tâche ajoutée : ${t.title}`; } },
   { name: "terminer_tache", module: () => firstOfType("taches"), description: "Marque comme faite une tâche, par son identifiant entre crochets.", inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
+    describe: i => { const found = allTasks().find(([, t]) => t.id === i.id); return tr`marquer comme faite la tâche « ${short(found ? found[1].title : i.id)} »`; },
     execute(i) {
       const found = allTasks().find(([, t]) => t.id === i.id); if (!found) throw new Error("Tâche introuvable");
       const t = setTaskDone(S().modules[found[0]].entries, i.id, true, todayISO()); site.save(); render(); return `Terminée : ${t.title}`;
     } },
   { name: "capturer", module: () => inboxId(S().modules), description: "Dépose une note dans la boîte de réception, à trier plus tard.", inputSchema: { type: "object", properties: { texte: { type: "string" } }, required: ["texte"] },
+    describe: i => tr`déposer dans la boîte de réception : « ${short(i.texte)} »`,
     execute(i) { addCapture(S().modules[inboxId(S().modules)].entries, i.texte, uid(), todayISO()); site.save(); render(); return "Capturé."; } },
   { name: "ajouter_operation", module: () => firstOfType("budget"), description: "Enregistre une dépense ou un revenu dans le premier module Budget.", inputSchema: { type: "object", properties: { montant: { type: "number" }, type: { type: "string", enum: ["dépense", "revenu"] }, enveloppe: { type: "string" }, note: { type: "string" }, date: { type: "string", description: "AAAA-MM-JJ, aujourd'hui par défaut" } }, required: ["montant"] },
+    describe: i => (i.type === "revenu" ? tr`enregistrer un revenu de ${money(Number(i.montant) || 0)}` : tr`enregistrer une dépense de ${money(Number(i.montant) || 0)}`) + (i.enveloppe ? ` (${short(i.enveloppe)})` : ""),
     execute(i) { const entry = addBudgetEntry(S().modules[firstOfType("budget")].entries, { amount: i.montant, type: i.type, cat: i.enveloppe, note: i.note, date: i.date }, uid(), todayISO()); site.save(); render(); return `Enregistré : ${money(entry.amount)}`; } }
 ];
 // Premier module actif d'un type, dans l'ordre de la navigation.
@@ -105,6 +111,16 @@ export const executeTool = (name, input) => {
   if (!tool) throw new Error("Action non autorisée ou module désactivé");
   return tool.execute(input);
 };
+/* Avant chaque écriture, l'accord de la personne (T14 de l'audit). Un texte que l'assistant lit (une source, un flux, une
+   note) peut porter des consignes que le modèle prendrait pour les siennes : c'est l'injection indirecte. La fenêtre dit
+   ce qui serait écrit, en texte brut ; un refus revient au modèle comme tel, et rien ne change. Les droits (module
+   actif, actions permises) sont vérifiés avant de demander, puis de nouveau à l'exécution. */
+export async function runTool(name, input) {
+  const tool = availableTools().find(t => t.name === name);
+  if (!tool) throw new Error("Action non autorisée ou module désactivé");
+  if (!await ask(tr`L'assistant voudrait ${tool.describe(input || {})}. D'accord ?`)) return "Refusé par la personne : rien n'a été modifié.";
+  return executeTool(name, input);
+}
 async function askAPI(history) {
   const a = S().config.assistant, tools = availableTools().map(t => ({ name: t.name, description: t.description, input_schema: t.inputSchema }));
   const msgs = history.map(m => ({ role: m.role, content: m.content })); let out = "";
@@ -115,7 +131,7 @@ async function askAPI(history) {
     if (data.stop_reason !== "tool_use") break;
     msgs.push({ role: "assistant", content: data.content });
     const results = [];
-    for (const b of data.content.filter(b => b.type === "tool_use")) { let r; try { r = await executeTool(b.name, b.input || {}); } catch (e) { r = "Erreur : " + e.message; } results.push({ type: "tool_result", tool_use_id: b.id, content: String(r) }); }
+    for (const b of data.content.filter(b => b.type === "tool_use")) { let r; try { r = await runTool(b.name, b.input || {}); } catch (e) { r = "Erreur : " + e.message; } results.push({ type: "tool_result", tool_use_id: b.id, content: String(r) }); }
     msgs.push({ role: "user", content: results });
   }
   return out || tr`(pas de réponse)`;
@@ -123,7 +139,7 @@ async function askAPI(history) {
 async function askSample(history, onText) {
   const input = [{ role: "user", content: instructions() }, ...history];
   const opts = { onText: ({ text }) => onText(text) };
-  if (availableTools().length) opts.tools = availableTools().map(t => ({ name: t.name, description: t.description, inputSchema: t.inputSchema, execute: i => executeTool(t.name, i) }));
+  if (availableTools().length) opts.tools = availableTools().map(t => ({ name: t.name, description: t.description, inputSchema: t.inputSchema, execute: i => runTool(t.name, i) }));
   try { return (await sampleNS(input, opts)).text; }
   catch (e) { if (e && e.code === "tools_unavailable") { delete opts.tools; return (await sampleNS(input, opts)).text; } throw e; }
 }
