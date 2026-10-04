@@ -15,6 +15,9 @@ La même coquille Capacitor que sous Android (docs/android.md), autour de la mê
 - **Le résumé du matin** (Réglages → Notifications) : programmé par iOS pour la semaine qui vient, il sonne app fermée.
   iOS garde au plus 64 notifications en attente par app ; Selene en programme sept.
 - **Un léger retour haptique** à la capture.
+- **« Ma position »** pour le ciel de l'accueil : iOS demande l'accord avec la phrase de `Info.plist`
+  (`NSLocationWhenInUseUsageDescription`, traduite dans `en.lproj` et `fr.lproj`), « pendant l'utilisation » seulement ;
+  Selene arrondit aussitôt la position à un dixième de degré.
 - **Sa langue** : l'app déclare le français et l'anglais (`CFBundleLocalizations`, `Info.plist`). WebKit ne donne à
   la page que des langues que l'app déclare : sans elles, un iPhone en français pouvait recevoir l'anglais, la langue de
   développement. iOS les propose aussi dans Réglages → Selene → Langue, pour Selene seule ; un iPhone dans une

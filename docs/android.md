@@ -21,6 +21,9 @@ Selene, avec ce qu'un téléphone offre en plus.
   app fermée, sans serveur. Pas d'alarme exacte (permission que Google Play réserve aux réveils) : à quelques
   minutes près.
 - **Un léger retour haptique** quand une capture est gardée.
+- **« Ma position »** pour le ciel de l'accueil : la seule permission demandée en plus d'Internet est la position
+  approximative (`ACCESS_COARSE_LOCATION`), jamais la précise ni en arrière-plan ; Selene l'arrondit aussitôt à un
+  dixième de degré. Android 12 et suivants l'accordent seule ; avant, la demande échoue et l'app propose une ville.
 - **Un widget d'écran d'accueil** (appui long sur l'écran d'accueil → Widgets → Selene) : la lune du jour et les trois
   choses qui t'attendent (tâches du jour, rappels, échéances), et un « + » qui ouvre la capture. Il montre ce que Selene
   lui a dit à sa dernière ouverture : il ne se réveille pas seul, ne consomme rien et ne sort pas de l'appareil.

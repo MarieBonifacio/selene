@@ -1,0 +1,2 @@
+/* « Ma position » : la phrase que montre iOS avant de donner la position à Selene (Info.plist). */
+"NSLocationWhenInUseUsageDescription" = "Selene utilise ta position approximative, arrondie à une dizaine de kilomètres, seulement pour montrer le ciel et la météo là où tu es.";
