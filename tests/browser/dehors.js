@@ -62,6 +62,8 @@ const PAGES = {
 
   console.log('suivre, découvrir');
   ok(await p.isVisible('#nav a[href="#dehors"]') && (await p.textContent('#main')).includes('Aucun flux suivi'), 'une porte dans la navigation ; rien encore');
+  // U5 de l'audit : le mot courant d'abord, le nom de Selene en second.
+  ok((await p.textContent('#nav a[href="#dehors"]')).replace(/\s+/g, ' ').trim() === 'Nouveautés Dehors' && (await p.textContent('#main h2')).replace(/\s+/g, ' ').trim() === 'Nouveautés · Dehors', 'elle dit « Nouveautés », Dehors en second');
   await until(() => probes.n === 1);
   ok(probes.n === 1 && (await storeJSON(p, 'selene-passeur-acces')).etat === 'ok' && await p.isVisible('#dehorsIn'), 'une sonde : le passeur est ouvert à ce compte, on peut suivre un site');
   await follow('revue.example', 'ecriture'); await until(() => calls.length >= 2); // la page, puis le flux qu'elle annonce

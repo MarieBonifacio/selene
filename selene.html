@@ -113,6 +113,9 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:14p
 #nav{display:none}
 .grp{margin:16px 0 4px;font-family:var(--f-label);font-size:.92rem;letter-spacing:.06em;text-transform:lowercase;color:var(--muted);font-style:normal}
 .badge{font-size:.78rem;color:var(--ink-2);font-variant-numeric:tabular-nums}
+/* U5 : le mot courant d'abord, le nom de Selene en second (« Nouveautés · Dehors »). */
+.aka{color:var(--muted);font-weight:400;font-style:italic;font-size:.72em;letter-spacing:0}
+#nav .aka{font-size:.86em}
 .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent)}
 .nx{margin-left:auto;display:inline-flex;align-items:center;gap:8px}
 nav.tabbar{position:fixed;z-index:7;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);padding:0 4px env(safe-area-inset-bottom,0px);
@@ -127,7 +130,19 @@ nav.tabbar .pip{position:absolute;top:5px;left:calc(50% + 7px);min-width:16px;pa
 @media (max-width:899px){
   .wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
   .capsec{display:none}
+  /* U4 de l'audit : l'en-tête tient sur une ligne. Le minuteur n'y paraît qu'entamé (data-timer-on, timer.js) ; au
+     repos, il se lance depuis Capturer, la palette ou un appui long sur la lune. L'état de l'enregistrement reste. */
+  .side{padding-top:12px}
+  header.top{flex-wrap:nowrap;gap:10px}
+  .brand,.brand>div{min-width:0}
+  .brand{gap:10px}
+  .brand h1{font-size:1.65rem}
+  .brand small{font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header.top .timer{flex:none;gap:2px}
+  .saving:empty{display:none}
+  :root:not([data-timer-on]) header.top .timer>:not(.saving){display:none}
 }
+.sheet-timer{margin-top:14px}
 @media (min-width:900px){
   nav.tabbar{display:none}
   .app{display:grid;grid-template-columns:236px minmax(0,1fr)}
@@ -696,7 +711,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "db06332c3d";
+const SELENE_BUILD = "21d78079df";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -2008,11 +2023,11 @@ var __selene = (() => {
     "Minuteur en pause.": "Timer paused.",
     // features/vasculum.js
     "Vasculum": "Vasculum",
+    "Trier la boîte": "Sort the inbox",
+    "À trier · {0} sur {1}": "To sort · {0} of {1}",
     "Aucune boîte de réception.": "No inbox.",
     "La boîte est vide. Tout a trouvé sa place, ou presque.": "The inbox is empty. Everything has found its place, or nearly.",
     "Fermer": "Close",
-    "Vasculum : trier la boîte": "Vasculum: sort the inbox",
-    "Vasculum · {0} sur {1}": "Vasculum · {0} of {1}",
     "Aucun espace ne sait encore recevoir une note.": "No space can receive a note yet.",
     // features/widget.js
     "{0} · {1} %": "{0} · {1}%",
@@ -2920,6 +2935,16 @@ var __selene = (() => {
     "Bilan": "Review",
     "Chercher": "Search",
     "Dehors": "Outside",
+    "Nouveautés": "What's new",
+    "Nouveautés · Dehors": "What's new · Outside",
+    "Nouveautés (Dehors)": "What's new (Outside)",
+    "Ce qui est paru dans les flux, les veilles et les sorties que tu suis, depuis ta dernière visite.": "What has come out in the feeds, watches and releases you follow, since your last visit.",
+    "Tri (Vasculum)": "Sorting (Vasculum)",
+    "La boîte de réception, une note à la fois : chacune se range d'un geste, attend ou se jette.": "The inbox, one note at a time: each is filed in one move, waits, or is thrown away.",
+    "Jachère": "Fallow",
+    "Un motif vivant, mais absent depuis un moment : reposé, pas perdu.": "A living motif, absent for a while: resting, not lost.",
+    "Lunaison": "Lunation",
+    "Un tour de la lune, d'une nouvelle lune à la suivante (29,5 jours) : le Bilan et la planche s'y découpent.": "One turn of the moon, from one new moon to the next (29.5 days): the Review and the plate are cut along it.",
     "Espaces": "Spaces",
     "Réglages": "Settings",
     "à trier": "to sort",
@@ -3087,7 +3112,7 @@ var __selene = (() => {
     // views/recherche.js
     "Tous les espaces": "All spaces",
     "Toute date": "Any date",
-    "Cette lunaison": "This lunation",
+    "Depuis la nouvelle lune": "Since the new moon",
     "Tout statut": "Any status",
     "ouvrir": "open",
     "Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « {0} » ne garde que les hypothèses (de même pour {1}). Touche « / » pour venir ici.": "In all your modules: notes, fragments, tasks, captions, journals. Accents don't count. “{0}” keeps only hypotheses (likewise for {1}). Press “/” to come here.",
@@ -9037,6 +9062,11 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     [tr`Sigil, planche`, tr`Le signe gravé d'un espace et son numéro (Pl. III), selon l'ordre de la navigation.`],
     [tr`Boîte de réception`, tr`L'espace de notes qui reçoit la capture rapide ; ce qu'elle contient se range ensuite ailleurs.`],
     [tr`Passeur`, tr`Ta fonction, sur le serveur, qui lit pour Selene ce que le navigateur n'a pas le droit de lire.`],
+    // Les noms propres à Selene, que l'interface donne après le mot courant (U5 de l'audit).
+    [tr`Nouveautés (Dehors)`, tr`Ce qui est paru dans les flux, les veilles et les sorties que tu suis, depuis ta dernière visite.`],
+    [tr`Tri (Vasculum)`, tr`La boîte de réception, une note à la fois : chacune se range d'un geste, attend ou se jette.`],
+    [tr`Jachère`, tr`Un motif vivant, mais absent depuis un moment : reposé, pas perdu.`],
+    [tr`Lunaison`, tr`Un tour de la lune, d'une nouvelle lune à la suivante (29,5 jours) : le Bilan et la planche s'y découpent.`],
     [tr`Cet appareil`, tr`Un réglage qui ne suit pas ton compte : il reste sur l'appareil où tu l'as fait.`]
   ];
   var TEXTS = {
@@ -9307,6 +9337,107 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   };
   CLICK["mod-up"] = (el) => moveMod(el, -1);
 
+  // src/app/features/timer.js
+  function timerDone() {
+    const view = routeOf().view, inst = Object.hasOwn(S().modules, view) ? S().modules[view] : null, hook = inst && TYPE_UI[inst.type].timerDone;
+    if (inst) {
+      setBridgeOpen(view);
+      render();
+    }
+    if (!(hook && hook(view, inst, 15))) toast(tr`Quinze minutes. Tu as le droit d'arrêter. Et celui de continuer.`);
+  }
+  var left = 900;
+  var tick = null;
+  var endAt = 0;
+  var paused = false;
+  var timerLabel = () => tick ? tr`Pause` : left === 0 ? tr`Relancer` : paused ? tr`Reprendre` : tr`Lancer 15 min`;
+  var mmss = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  function haloUpdate(done = false) {
+    const h = $("#halo");
+    if (!h || !h.style || !h.classList) return;
+    h.style.setProperty("--p", done ? "1" : String(1 - left / 900));
+    h.classList.toggle("on", !done && left > 0 && left < 900);
+    h.classList.toggle("done", done);
+  }
+  function markTimer() {
+    try {
+      const r = document.documentElement;
+      if (tick || paused || left < 900) r.dataset.timerOn = "";
+      else delete r.dataset.timerOn;
+    } catch {
+    }
+  }
+  function tickTimer() {
+    left = Math.max(0, Math.round((endAt - Date.now()) / 1e3));
+    $("#clock").textContent = mmss(left);
+    haloUpdate();
+    if (left <= 0) {
+      clearInterval(tick);
+      tick = null;
+      $("#clock").classList.add("done");
+      $("#timerBtn").textContent = timerLabel();
+      haloUpdate(true);
+      markTimer();
+      timerDone();
+      try {
+        navigator.vibrate && navigator.vibrate(200);
+      } catch {
+      }
+    }
+  }
+  $("#timerBtn").addEventListener("click", () => {
+    const b = $("#timerBtn");
+    if (tick) {
+      clearInterval(tick);
+      tick = null;
+      paused = true;
+      b.textContent = timerLabel();
+      markTimer();
+      return;
+    }
+    paused = false;
+    if (left === 0) left = 900;
+    endAt = Date.now() + left * 1e3;
+    $("#clock").classList.remove("done");
+    tick = setInterval(tickTimer, 500);
+    b.textContent = timerLabel();
+    haloUpdate();
+    markTimer();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && tick) tickTimer();
+  });
+  $("#timerReset").addEventListener("click", () => {
+    clearInterval(tick);
+    tick = null;
+    paused = false;
+    left = 900;
+    $("#clock").textContent = mmss(left);
+    $("#clock").classList.remove("done");
+    $("#timerBtn").textContent = timerLabel();
+    haloUpdate();
+    markTimer();
+  });
+  var haloPress = null;
+  var haloFired = false;
+  $(".brand").addEventListener("pointerdown", () => {
+    haloFired = false;
+    clearTimeout(haloPress);
+    haloPress = setTimeout(() => {
+      haloFired = true;
+      $("#timerBtn").click();
+      toast(tick ? tr`Quinze minutes, dans le halo de la lune.` : tr`Minuteur en pause.`);
+    }, 550);
+  });
+  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) $(".brand").addEventListener(ev, () => clearTimeout(haloPress));
+  $(".brand").addEventListener("click", (e) => {
+    if (haloFired) {
+      e.preventDefault();
+      haloFired = false;
+    }
+  });
+  $(".brand").addEventListener("contextmenu", (e) => e.preventDefault());
+
   // src/app/shell/sheets.js
   Object.assign(SHEETS, {
     espaces() {
@@ -9325,7 +9456,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     capture() {
       const s = S(), inbox = inboxId(s.modules), n = inbox ? s.modules[inbox].entries.length : 0;
       return `<h2 id="sheetTitle">${tr`Capturer`}</h2>${inbox ? `<div class="capture"><input id="capSheetIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="${tr`Capture rapide`}" enterkeyhint="done"><button class="btn acc" data-act="cap-sheet-add">${tr`Garder`}</button></div>
-      <p class="hint" style="margin:10px 0 0">${tr`« 12 € courses », « Mon module : une note » se rangent d'un geste.`}${n ? ` <a href="#${esc(inbox)}">${trn(n, "{0} élément à trier", "{0} éléments à trier")}</a>` : ""}</p>${n > 1 ? `<div class="row" style="margin-top:10px"><button class="btn sm" data-act="vasculum">${tr`Trier une à une`}</button></div>` : ""}` : `<p class="hint">${tr`Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans ${`<a href="#reglages">${tr`Réglages`}</a>`}.`}</p>`}`;
+      <p class="hint" style="margin:10px 0 0">${tr`« 12 € courses », « Mon module : une note » se rangent d'un geste.`}${n ? ` <a href="#${esc(inbox)}">${trn(n, "{0} élément à trier", "{0} éléments à trier")}</a>` : ""}</p>${n > 1 ? `<div class="row" style="margin-top:10px"><button class="btn sm" data-act="vasculum">${tr`Trier une à une`}</button></div>` : ""}` : `<p class="hint">${tr`Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans ${`<a href="#reglages">${tr`Réglages`}</a>`}.`}</p>`}
+      <div class="row sheet-timer"><button class="btn sm" data-act="sheet-timer">${tick ? tr`Mettre le minuteur en pause` : tr`Lancer le minuteur (15 min)`}</button></div>`;
     }
   });
   var sheetKind = null;
@@ -9364,6 +9496,10 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   });
   CLICK["sheet-espaces"] = () => openSheet("espaces");
   CLICK["sheet-capture"] = () => openSheet("capture");
+  CLICK["sheet-timer"] = () => {
+    closeSheet();
+    $("#timerBtn").click();
+  };
 
   // src/app/modules/groups.js
   var gFilter = {};
@@ -9933,95 +10069,6 @@ ${contextText()}`;
     render();
   };
 
-  // src/app/features/timer.js
-  function timerDone() {
-    const view = routeOf().view, inst = Object.hasOwn(S().modules, view) ? S().modules[view] : null, hook = inst && TYPE_UI[inst.type].timerDone;
-    if (inst) {
-      setBridgeOpen(view);
-      render();
-    }
-    if (!(hook && hook(view, inst, 15))) toast(tr`Quinze minutes. Tu as le droit d'arrêter. Et celui de continuer.`);
-  }
-  var left = 900;
-  var tick = null;
-  var endAt = 0;
-  var paused = false;
-  var timerLabel = () => tick ? tr`Pause` : left === 0 ? tr`Relancer` : paused ? tr`Reprendre` : tr`Lancer 15 min`;
-  var mmss = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-  function haloUpdate(done = false) {
-    const h = $("#halo");
-    if (!h || !h.style || !h.classList) return;
-    h.style.setProperty("--p", done ? "1" : String(1 - left / 900));
-    h.classList.toggle("on", !done && left > 0 && left < 900);
-    h.classList.toggle("done", done);
-  }
-  function tickTimer() {
-    left = Math.max(0, Math.round((endAt - Date.now()) / 1e3));
-    $("#clock").textContent = mmss(left);
-    haloUpdate();
-    if (left <= 0) {
-      clearInterval(tick);
-      tick = null;
-      $("#clock").classList.add("done");
-      $("#timerBtn").textContent = timerLabel();
-      haloUpdate(true);
-      timerDone();
-      try {
-        navigator.vibrate && navigator.vibrate(200);
-      } catch {
-      }
-    }
-  }
-  $("#timerBtn").addEventListener("click", () => {
-    const b = $("#timerBtn");
-    if (tick) {
-      clearInterval(tick);
-      tick = null;
-      paused = true;
-      b.textContent = timerLabel();
-      return;
-    }
-    paused = false;
-    if (left === 0) left = 900;
-    endAt = Date.now() + left * 1e3;
-    $("#clock").classList.remove("done");
-    tick = setInterval(tickTimer, 500);
-    b.textContent = timerLabel();
-    haloUpdate();
-  });
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && tick) tickTimer();
-  });
-  $("#timerReset").addEventListener("click", () => {
-    clearInterval(tick);
-    tick = null;
-    paused = false;
-    left = 900;
-    $("#clock").textContent = mmss(left);
-    $("#clock").classList.remove("done");
-    $("#timerBtn").textContent = timerLabel();
-    haloUpdate();
-  });
-  var haloPress = null;
-  var haloFired = false;
-  $(".brand").addEventListener("pointerdown", () => {
-    haloFired = false;
-    clearTimeout(haloPress);
-    haloPress = setTimeout(() => {
-      haloFired = true;
-      $("#timerBtn").click();
-      toast(tick ? tr`Quinze minutes, dans le halo de la lune.` : tr`Minuteur en pause.`);
-    }, 550);
-  });
-  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) $(".brand").addEventListener(ev, () => clearTimeout(haloPress));
-  $(".brand").addEventListener("click", (e) => {
-    if (haloFired) {
-      e.preventDefault();
-      haloFired = false;
-    }
-  });
-  $(".brand").addEventListener("contextmenu", (e) => e.preventDefault());
-
   // src/app/shell/palette.js
   var palIdx = 0;
   var palItems = [];
@@ -10035,7 +10082,7 @@ ${contextText()}`;
     const spaces = s.config.modules.filter((m) => m.on && Object.hasOwn(s.modules, m.id)).map((m) => [m.id, label(m.id)]);
     if (!f) for (const r of liveRecents().slice(0, 3)) out.push({ k: tr`Récent`, t: label(r.id), run: goTo(r.id) });
     for (const [id, t] of spaces) if (match(t) && !out.some((o) => o.t === t)) out.push({ k: tr`Espace`, t, run: goTo(id) });
-    for (const [id, t] of [["accueil", tr`Aujourd'hui`], ["bilan", tr`Bilan`], ["recherche", tr`Chercher`], ...dehorsOn() ? [["dehors", tr`Dehors`]] : [], ["reglages", tr`Réglages`], ...enabled("assistant") ? [["assistant", label("assistant")]] : []])
+    for (const [id, t] of [["accueil", tr`Aujourd'hui`], ["bilan", tr`Bilan`], ["recherche", tr`Chercher`], ...dehorsOn() ? [["dehors", tr`Nouveautés · Dehors`]] : [], ["reglages", tr`Réglages`], ...enabled("assistant") ? [["assistant", label("assistant")]] : []])
       if (match(t)) out.push({ k: tr`Vue`, t, run: goTo(id) });
     const other = bilanMode() === "mois" ? "lune" : "mois";
     for (const [t, run] of [
@@ -11221,7 +11268,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   function navHTML(view) {
     const link = (id, text, extra = "", cls = "") => `<a href="#${esc(id)}" class="${id === view ? "on" : ""} ${cls}"${id === view ? ' aria-current="page"' : ""}>${text}${extra}</a>`;
     return `<button type="button" class="pal-hint" data-act="palette-open">${tr`Aller à…`} <kbd>⌘K</kbd></button>
-    ${link("accueil", tr`Aujourd'hui`)}${link("bilan", tr`Bilan`)}${link("recherche", tr`Chercher`)}${dehorsOn() ? link("dehors", tr`Dehors`) : ""}
+    ${link("accueil", tr`Aujourd'hui`)}${link("bilan", tr`Bilan`)}${link("recherche", tr`Chercher`)}${dehorsOn() ? link("dehors", `${tr`Nouveautés`} <span class="aka">${tr`Dehors`}</span>`) : ""}
     ${domains().map((d) => `<p class="grp">${esc(d.name || tr`Espaces`)}</p>${d.ids.map((id) => link(id, `${sigil(id)}${esc(label(id))}`, navMarks(id), tintOf(id))).join("")}`).join("")}
     <div class="sys">${enabled("assistant") ? link("assistant", `${sigil("assistant")}${esc(label("assistant"))}`) : ""}${link("reglages", tr`Réglages`)}</div>`;
   }
@@ -11259,7 +11306,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     if (entry && from && from !== view) backTo = { from, to: view, label: backLabel(from) };
     else if (!backTo || view !== backTo.to) backTo = null;
   }
-  var backLabel = (v) => v === "dehors" ? tr`Dehors` : v === "recherche" ? searchQuery.trim() ? tr`Recherche « ${searchQuery.trim()} »` : tr`Recherche` : v === "accueil" ? tr`Aujourd'hui` : v === "bilan" ? tr`Bilan` : v === "reglages" ? tr`Réglages` : label(v) || v;
+  var backLabel = (v) => v === "dehors" ? tr`Nouveautés` : v === "recherche" ? searchQuery.trim() ? tr`Recherche « ${searchQuery.trim()} »` : tr`Recherche` : v === "accueil" ? tr`Aujourd'hui` : v === "bilan" ? tr`Bilan` : v === "reglages" ? tr`Réglages` : label(v) || v;
   function entryEl(id) {
     let hit = null;
     $("#main").querySelectorAll("[data-id], [data-task]").forEach((el) => {
@@ -11451,7 +11498,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     const mods = s.config.modules.map((m) => m.id).filter((id) => byMod.some((h) => h.id === id));
     const facets = all.length ? `<div class="facets">
     <div class="row">${chip("mod", "", tr`Tous les espaces`, byMod.length)}${mods.map((id) => chip("mod", id, `${sigil(id)}${esc(label(id))}`, byMod.filter((h) => h.id === id).length)).join("")}</div>
-    <div class="row">${[["", tr`Toute date`], ["lune", tr`Cette lunaison`], ["mois", tr`Ce mois-ci`]].map(([v, t]) => chip("period", v, t, v ? byPer.filter((h) => {
+    <div class="row">${[["", tr`Toute date`], ["lune", tr`Depuis la nouvelle lune`], ["mois", tr`Ce mois-ci`]].map(([v, t]) => chip("period", v, t, v ? byPer.filter((h) => {
       const p = facetPeriod(v);
       return h.date && h.date >= p.from && h.date < p.to;
     }).length : byPer.length)).join("")}
@@ -12178,7 +12225,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   };
   VIEWS.dehors = () => {
     const feeds = dehorsFeeds(), mods = S().config.modules.filter((m) => m.on && Object.hasOwn(S().modules, m.id) && !SYSTEM.includes(m.id)).map((m) => m.id);
-    const head = `<h2>${tr`Dehors`}</h2><p class="hint">${tr`Ce qui est paru depuis ta dernière visite, dans les flux que tu suis. Douze au plus : le reste attend, rien ne défile. Ce qui croise ce que tu gardes (un motif, un auteur de tes sources, une de tes sources citée, un lien paru dans deux flux) passe devant, et dit pourquoi. Garde ce qui compte, le reste s'efface en un mois.`}</p>`;
+    const head = `<h2>${tr`Nouveautés`} <span class="aka">· ${tr`Dehors`}</span></h2><p class="hint">${tr`Ce qui est paru depuis ta dernière visite, dans les flux que tu suis. Douze au plus : le reste attend, rien ne défile. Ce qui croise ce que tu gardes (un motif, un auteur de tes sources, une de tes sources citée, un lien paru dans deux flux) passe devant, et dit pourquoi. Garde ce qui compte, le reste s'efface en un mois.`}</p>`;
     if (!dehorsOn()) return head + `<p class="empty">${tr`Dehors passe par le passeur : il n'existe que dans la version hébergée, connectée à ton compte.`}</p>`;
     {
       const p = passeurSonder();
@@ -13171,12 +13218,12 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
   var vascSkip = 0;
   SHEETS.vasculum = () => {
     const s = S(), inbox = inboxId(s.modules);
-    if (!inbox) return `<h2 id="sheetTitle">${tr`Vasculum`}</h2><p class="empty">${tr`Aucune boîte de réception.`}</p>`;
+    if (!inbox) return `<h2 id="sheetTitle">${tr`Trier la boîte`} <span class="aka">· ${tr`Vasculum`}</span></h2><p class="empty">${tr`Aucune boîte de réception.`}</p>`;
     const list = s.modules[inbox].entries, n = list.length;
-    if (!n) return `<h2 id="sheetTitle">${tr`Vasculum`}</h2><p class="empty">${tr`La boîte est vide. Tout a trouvé sa place, ou presque.`}</p><div class="row"><button class="btn" data-act="sheet-close">${tr`Fermer`}</button></div>`;
+    if (!n) return `<h2 id="sheetTitle">${tr`Trier la boîte`} <span class="aka">· ${tr`Vasculum`}</span></h2><p class="empty">${tr`La boîte est vide. Tout a trouvé sa place, ou presque.`}</p><div class="row"><button class="btn" data-act="sheet-close">${tr`Fermer`}</button></div>`;
     const i = vascSkip % n, note = list[i], intent = captureIntent(note.text), targets = noteTargets(inbox);
-    return `<div class="vasc" data-mod="${esc(inbox)}" data-id="${esc(note.id)}"><h2 id="sheetTitle" class="sr">${tr`Vasculum : trier la boîte`}</h2>
-    <p class="vasc-count">${tr`Vasculum · ${i + 1} sur ${n}`}</p>
+    return `<div class="vasc" data-mod="${esc(inbox)}" data-id="${esc(note.id)}"><h2 id="sheetTitle" class="sr">${tr`Trier la boîte, une note à la fois`}</h2>
+    <p class="vasc-count">${tr`À trier · ${i + 1} sur ${n}`} <span class="aka">· ${tr`Vasculum`}</span></p>
     <blockquote class="spec-text">${esc(note.text)}</blockquote>
     <p class="meta">${fmt(note.date)}${note.ep ? `<span>${epGlyph(note.ep)}${esc(epLabel(note.ep))}</span>` : ""}</p>
     ${intent && intent.to !== inbox ? `<button class="btn acc" data-act="note-file">${tr`Ranger : ${esc(intent.say)}`}</button>` : ""}

@@ -111,6 +111,9 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:14p
 #nav{display:none}
 .grp{margin:16px 0 4px;font-family:var(--f-label);font-size:.92rem;letter-spacing:.06em;text-transform:lowercase;color:var(--muted);font-style:normal}
 .badge{font-size:.78rem;color:var(--ink-2);font-variant-numeric:tabular-nums}
+/* U5 : le mot courant d'abord, le nom de Selene en second (« Nouveautés · Dehors »). */
+.aka{color:var(--muted);font-weight:400;font-style:italic;font-size:.72em;letter-spacing:0}
+#nav .aka{font-size:.86em}
 .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent)}
 .nx{margin-left:auto;display:inline-flex;align-items:center;gap:8px}
 nav.tabbar{position:fixed;z-index:7;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);padding:0 4px env(safe-area-inset-bottom,0px);
@@ -125,7 +128,19 @@ nav.tabbar .pip{position:absolute;top:5px;left:calc(50% + 7px);min-width:16px;pa
 @media (max-width:899px){
   .wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
   .capsec{display:none}
+  /* U4 de l'audit : l'en-tête tient sur une ligne. Le minuteur n'y paraît qu'entamé (data-timer-on, timer.js) ; au
+     repos, il se lance depuis Capturer, la palette ou un appui long sur la lune. L'état de l'enregistrement reste. */
+  .side{padding-top:12px}
+  header.top{flex-wrap:nowrap;gap:10px}
+  .brand,.brand>div{min-width:0}
+  .brand{gap:10px}
+  .brand h1{font-size:1.65rem}
+  .brand small{font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header.top .timer{flex:none;gap:2px}
+  .saving:empty{display:none}
+  :root:not([data-timer-on]) header.top .timer>:not(.saving){display:none}
 }
+.sheet-timer{margin-top:14px}
 @media (min-width:900px){
   nav.tabbar{display:none}
   .app{display:grid;grid-template-columns:236px minmax(0,1fr)}

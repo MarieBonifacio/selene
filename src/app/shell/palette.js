@@ -23,7 +23,7 @@ function paletteItems(q) {
   const spaces = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id)).map(m => [m.id, label(m.id)]);
   if (!f) for (const r of liveRecents().slice(0, 3)) out.push({ k: tr`Récent`, t: label(r.id), run: goTo(r.id) });
   for (const [id, t] of spaces) if (match(t) && !out.some(o => o.t === t)) out.push({ k: tr`Espace`, t, run: goTo(id) });
-  for (const [id, t] of [["accueil", tr`Aujourd'hui`], ["bilan", tr`Bilan`], ["recherche", tr`Chercher`], ...(dehorsOn() ? [["dehors", tr`Dehors`]] : []), ["reglages", tr`Réglages`], ...(enabled("assistant") ? [["assistant", label("assistant")]] : [])])
+  for (const [id, t] of [["accueil", tr`Aujourd'hui`], ["bilan", tr`Bilan`], ["recherche", tr`Chercher`], ...(dehorsOn() ? [["dehors", tr`Nouveautés · Dehors`]] : []), ["reglages", tr`Réglages`], ...(enabled("assistant") ? [["assistant", label("assistant")]] : [])])
     if (match(t)) out.push({ k: tr`Vue`, t, run: goTo(id) });
   const other = bilanMode() === "mois" ? "lune" : "mois";
   for (const [t, run] of [[tick ? tr`Mettre le minuteur en pause` : tr`Lancer le minuteur (15 min)`, () => { closeOverlays(); $("#timerBtn").click(); }],

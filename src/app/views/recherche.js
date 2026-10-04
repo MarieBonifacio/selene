@@ -73,7 +73,7 @@ VIEWS.recherche = () => {
   const mods = s.config.modules.map(m => m.id).filter(id => byMod.some(h => h.id === id));
   const facets = all.length ? `<div class="facets">
     <div class="row">${chip("mod", "", tr`Tous les espaces`, byMod.length)}${mods.map(id => chip("mod", id, `${sigil(id)}${esc(label(id))}`, byMod.filter(h => h.id === id).length)).join("")}</div>
-    <div class="row">${[["", tr`Toute date`], ["lune", tr`Cette lunaison`], ["mois", tr`Ce mois-ci`]].map(([v, t]) => chip("period", v, t, v ? byPer.filter(h => { const p = facetPeriod(v); return h.date && h.date >= p.from && h.date < p.to; }).length : byPer.length)).join("")}
+    <div class="row">${[["", tr`Toute date`], ["lune", tr`Depuis la nouvelle lune`], ["mois", tr`Ce mois-ci`]].map(([v, t]) => chip("period", v, t, v ? byPer.filter(h => { const p = facetPeriod(v); return h.date && h.date >= p.from && h.date < p.to; }).length : byPer.length)).join("")}
       ${Object.keys(EP_STATUS).some(k => byEp.some(h => h.ep === k)) ? `<span class="spacer"></span>${chip("ep", "", tr`Tout statut`, null)}${Object.keys(EP_STATUS).filter(k => byEp.some(h => h.ep === k)).map(k => chip("ep", k, `${epGlyph(k)}${esc(epLabel(k))}`, byEp.filter(h => h.ep === k).length)).join("")}` : ""}</div></div>` : "";
   // Groupés par espace, dans l'ordre de la navigation ; 80 résultats au plus, les plus récents d'abord dans chaque espace.
   let budget = 80;

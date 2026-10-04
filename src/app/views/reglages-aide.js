@@ -58,6 +58,11 @@ export const glossary = () => [
   [tr`Sigil, planche`, tr`Le signe gravé d'un espace et son numéro (Pl. III), selon l'ordre de la navigation.`],
   [tr`Boîte de réception`, tr`L'espace de notes qui reçoit la capture rapide ; ce qu'elle contient se range ensuite ailleurs.`],
   [tr`Passeur`, tr`Ta fonction, sur le serveur, qui lit pour Selene ce que le navigateur n'a pas le droit de lire.`],
+  // Les noms propres à Selene, que l'interface donne après le mot courant (U5 de l'audit).
+  [tr`Nouveautés (Dehors)`, tr`Ce qui est paru dans les flux, les veilles et les sorties que tu suis, depuis ta dernière visite.`],
+  [tr`Tri (Vasculum)`, tr`La boîte de réception, une note à la fois : chacune se range d'un geste, attend ou se jette.`],
+  [tr`Jachère`, tr`Un motif vivant, mais absent depuis un moment : reposé, pas perdu.`],
+  [tr`Lunaison`, tr`Un tour de la lune, d'une nouvelle lune à la suivante (29,5 jours) : le Bilan et la planche s'y découpent.`],
   [tr`Cet appareil`, tr`Un réglage qui ne suit pas ton compte : il reste sur l'appareil où tu l'as fait.`]
 ];
 

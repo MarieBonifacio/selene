@@ -10,6 +10,7 @@ import { loadDraft } from "../state/drafts.js";
 import { S, enabled, label } from "../state/site.js";
 import { summaryFor } from "../views/accueil.js";
 import { moduleSettingsHTML } from "../views/reglages.js";
+import { tick } from "../features/timer.js";
 
 /* ---- feuilles (sheets) : Espaces et Capturer, depuis la barre basse ---- */
 Object.assign(SHEETS, {
@@ -30,7 +31,8 @@ Object.assign(SHEETS, {
     const s = S(), inbox = inboxId(s.modules), n = inbox ? s.modules[inbox].entries.length : 0;
     return `<h2 id="sheetTitle">${tr`Capturer`}</h2>${inbox ? `<div class="capture"><input id="capSheetIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="${tr`Capture rapide`}" enterkeyhint="done"><button class="btn acc" data-act="cap-sheet-add">${tr`Garder`}</button></div>
       <p class="hint" style="margin:10px 0 0">${tr`« 12 € courses », « Mon module : une note » se rangent d'un geste.`}${n ? ` <a href="#${esc(inbox)}">${trn(n, "{0} élément à trier", "{0} éléments à trier")}</a>` : ""}</p>${n > 1 ? `<div class="row" style="margin-top:10px"><button class="btn sm" data-act="vasculum">${tr`Trier une à une`}</button></div>` : ""}`
-      : `<p class="hint">${tr`Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans ${`<a href="#reglages">${tr`Réglages`}</a>`}.`}</p>`}`;
+      : `<p class="hint">${tr`Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans ${`<a href="#reglages">${tr`Réglages`}</a>`}.`}</p>`}
+      <div class="row sheet-timer"><button class="btn sm" data-act="sheet-timer">${tick ? tr`Mettre le minuteur en pause` : tr`Lancer le minuteur (15 min)`}</button></div>`;
   }
 });
 export let sheetKind = null, sheetArg = null;
@@ -55,3 +57,5 @@ for (const d of ["#sheet", "#palette"]) $(d).addEventListener("click", e => {
 });
 CLICK["sheet-espaces"] = () => openSheet("espaces");
 CLICK["sheet-capture"] = () => openSheet("capture");
+// Le minuteur, depuis Capturer : sur téléphone, l'en-tête ne le montre qu'entamé (U4).
+CLICK["sheet-timer"] = () => { closeSheet(); $("#timerBtn").click(); };
