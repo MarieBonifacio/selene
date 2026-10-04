@@ -32,8 +32,8 @@ export function utf8Bytes(str) {
   return n;
 }
 /* `onRemoteChange` : une synchronisation a changé le document (la page se redessine) ; `onStatus(message)` : l'état de
-   l'enregistrement à montrer ("" quand tout est parti). Le store ne connaît pas l'interface : elle s'y abonne. */
-export function makeStore(key, path, seed, normalize = d => d, { onRemoteChange = () => {}, onStatus = () => {} } = {}) {
+   l'enregistrement à montrer ("" quand tout est parti) ; `onSave` : un enregistrement local vient d'avoir lieu. Le store ne connaît pas l'interface : elle s'y abonne. */
+export function makeStore(key, path, seed, normalize = d => d, { onRemoteChange = () => {}, onStatus = () => {}, onSave = () => {} } = {}) {
   const BASE = key + "-base";
   const read = k => { try { const v = platform.storage.get(k); return v ? JSON.parse(v) : null; } catch { return null; } };
   const s = { db: null, timer: null, unsub: null, syncing: null, again: false, key };
@@ -96,6 +96,7 @@ export function makeStore(key, path, seed, normalize = d => d, { onRemoteChange 
   };
   s.save = () => {
     s.data.updatedAt = Date.now(); saveLS();
+    try { onSave(); } catch {}
     if (!s.db) return;
     onStatus(tr`Enregistrement…`); clearTimeout(s.timer);
     s.timer = setTimeout(() => { s.timer = null; s.sync(); }, 900);

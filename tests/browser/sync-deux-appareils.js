@@ -7,6 +7,7 @@ const json = (route, status, body) => route.fulfill({ status, contentType: 'appl
 async function supabase(route) {
   const req = route.request(), u = new URL(req.url()), m = req.method();
   if (u.pathname.startsWith('/auth/')) return json(route, 200, {});
+  if (u.pathname === '/rest/v1/activite') return route.fulfill({ status: 201, body: '' }); // la mesure d'usage (services/activite.js)
   const uid = (u.searchParams.get('user_id') || '').replace('eq.', ''), row = rows.get(uid);
   const stamp = (u.searchParams.get('select') || '').match(/^u:(\w+)->>updatedAt$/); // la date seule (polling)
   if (m === 'GET' && stamp) return json(route, 200, row ? [{ u: row[stamp[1]] && row[stamp[1]].updatedAt != null ? String(row[stamp[1]].updatedAt) : null }] : []);

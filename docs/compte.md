@@ -134,6 +134,56 @@ from public.erreurs group by 1, 2, 3, 4, 5 order by derniere desc limit 50;
 
 Une même `version` donne les mêmes lignes et colonnes : `npm run build` sur le même commit retrouve l'endroit du code.
 
+## Mesure d'usage (bêta)
+
+Pour la bêta fermée (E4 de l'audit), il faut savoir combien d'invités saisissent quelque chose dès le premier jour, et
+combien le font encore en semaine 4. Les seuils sont de **40 %** et de **25 %**. On compte des saisies, pas des
+ouvertures. `src/app/services/activite.js` envoie une ligne **(compte, jour)** dans la table `activite`, et rien d'autre
+: ni ce qui est écrit, ni l'heure, ni l'écran, ni l'appareil.
+
+- **Une saisie** : un enregistrement que la personne a provoqué (un clic, une touche : l'activation utilisateur du
+  navigateur) et qui change le contenu d'un espace (entrées, journal…). Changer un réglage ou créer un espace vide ne
+  compte pas, pas plus qu'ouvrir l'app ou recevoir une synchronisation.
+- **Une fois par jour et par chargement** : la page ne garde rien sur l'appareil pour s'en souvenir, et le serveur
+  ignore un doublon. L'article 82 de la loi Informatique et Libertés (traceurs) ne s'applique donc pas. Le RGPD
+  s'applique, sur l'intérêt légitime (article 6.1.f), avec un droit d'opposition : l'interrupteur de *Réglages →
+  Compte*, qui vaut pour l'appareil.
+- **Avec un compte seulement** (la session dit qui), jamais depuis l'artefact claude.ai. Sans compte, rien ne part.
+
+Côté serveur (`supabase/schema.sql`), un compte écrit pour lui seul : le déclencheur impose l'identité de la session,
+quoi que la page envoie. Personne ne lit la table par l'API. Le jour doit être aujourd'hui, à un jour près pour les
+fuseaux horaires ; un doublon est ignoré en silence. Les lignes de plus de 13 mois sont effacées, et celles d'un compte
+supprimé partent avec lui (`on delete cascade`). La table a été essayée contre PostgreSQL 16 et PostgREST, avec des
+données synthétiques : 15 cas, dont l'usurpation d'un autre compte, la lecture, la modification, la purge et la
+suppression du compte.
+
+**Pour un projet existant**, coller dans l'éditeur SQL la partie « La mesure d'usage de la bêta » de
+`supabase/schema.sql`. Tant que la table n'existe pas, l'app reçoit un 404 et rien n'est compté. **Lire les
+seuils d'E4**, dans l'éditeur SQL. Sont comptés les comptes créés il y a au moins 28 jours, sauf le vôtre (marqué
+`selene_personnel`, étape 2.5 de la liste de lancement) :
+
+```sql
+with c as (
+  select u.id, u.created_at::date as j0 from auth.users u
+  where not coalesce((u.raw_app_meta_data ->> 'selene_personnel')::boolean, false) and u.created_at <= now() - interval '28 days'
+)
+select count(*) as comptes,
+  count(*) filter (where exists (select 1 from public.activite a where a.user_id = c.id and a.jour between c.j0 and c.j0 + 1)) as actifs_j1,
+  count(*) filter (where exists (select 1 from public.activite a where a.user_id = c.id and a.jour between c.j0 + 21 and c.j0 + 27)) as actifs_s4
+from c;
+```
+
+`actifs_j1 / comptes` doit atteindre 40 %, et `actifs_s4 / comptes` 25 %. À 15 invités, un compte pèse près de
+7 points : lire les nombres, pas seulement les pourcentages. **Une demande d'effacement** (droit d'opposition, ou
+d'effacement) se traite dans l'éditeur SQL :
+
+```sql
+delete from public.activite where user_id = (select id from auth.users where email = 'adresse@exemple.org');
+```
+
+**Dans le message d'invitation**, une phrase suffit : « Pendant la bêta, Selene compte les jours où tu l'utilises
+(rien de ce que tu écris) ; tu peux le couper dans Réglages → Compte. »
+
 ## Vérifier l'isolation entre comptes
 
 Chaque compte ne voit que sa propre ligne : ce sont les règles RLS de `supabase/schema.sql` qui l'imposent, dans la
@@ -238,7 +288,7 @@ Elle remplit l'article 13 du RGPD, et `build.test.js` le vérifie dans les deux 
 - une adresse de contact privée (jamais un ticket public) ;
 - une base légale par usage : le contrat (6.1.b), le consentement explicite pour la santé synchronisée (9.2.a),
   le consentement pour la liste d'attente de la page de test (6.1.a), l'intérêt légitime pour la sécurité, le journal
-  des erreurs et la mesure d'audience (6.1.f) ;
+  des erreurs, la mesure d'audience et la mesure d'usage de la bêta (6.1.f) ;
 - les durées de conservation ;
 - les transferts hors de l'Union ;
 - le droit de réclamation auprès de la CNIL.
@@ -252,6 +302,9 @@ Ce qu'elle promet, et qu'il faut tenir à la main :
 - **Liste d'attente : un seul e-mail, à l'ouverture de la bêta, puis effacée** (deux ans au plus : le déclencheur de
   la table `attente` y veille). L'envoi et l'effacement sont à faire à la main ([essai.md](essai.md#écrire-aux-inscrits-puis-effacer)).
 - **Mesure d'audience de la page de test : 13 mois.** Le déclencheur de la table `audience` y veille seul.
+- **Mesure d'usage : 13 mois, jamais plus que le compte.** Le déclencheur de la table `activite` et la suppression du
+  compte y veillent seuls ; une demande d'opposition ou d'effacement se traite à la main
+  ([plus haut](#mesure-dusage-bêta)).
 - **Réponse à une demande de droits sous un mois.** La demande doit venir de l'adresse du compte concerné (ou de
   l'adresse inscrite sur la liste d'attente).
 - **La base reste à Paris** (eu-west-3). Un projet déplacé dans une autre région change la section « Hors de l'Union

@@ -145,7 +145,8 @@ test('a document the server refuses as too large stays local, and the status say
 
 test('closing the page: a small document leaves in one keepalive write; past 64 KiB none is tried, and the sync stays planned', async () => {
   const server = fakeSupabase(), keepalive = [];
-  const fetch = (url, opts = {}) => { if (opts.keepalive) keepalive.push(Buffer.byteLength(opts.body)); return server.fetch(url, opts); };
+  // Les écritures du document (app_state) ; la mesure d'usage, minuscule, part aussi en keepalive (services/activite.js).
+  const fetch = (url, opts = {}) => { if (opts.keepalive && String(url).includes('/rest/v1/app_state')) keepalive.push(Buffer.byteLength(opts.body)); return server.fetch(url, opts); };
   const a = launchHosted({ fetch }); await settle();
   a.site.data.modules.chantier.entries.push(task('t1', 'Velux')); a.site.save();
   a.site.flush(); await settle();

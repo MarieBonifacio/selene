@@ -6,6 +6,7 @@ import { N_, tr } from "../i18n/index.js";
 import { render } from "../shell/render.js";
 import { absorbDeviceTrackers } from "./local.js";
 import { makeStore } from "./store.js";
+import { SAVED } from "../registry.js";
 
 
 // Les modules fixes et leur nom par défaut, affiché dans la langue de l'interface tant que la personne n'en choisit pas un.
@@ -52,7 +53,7 @@ function normalizeSite(d) {
 // garde le sien et la page montre le premier qui a quelque chose à dire : le succès de l'un n'efface pas l'échec de l'autre.
 const saving = {};
 const storeHooks = name => ({ onRemoteChange: () => render(), onStatus: m => { saving[name] = m; setSaving(saving.site || saving.board || ""); } });
-export const site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite, storeHooks("site"));
+export const site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite, { ...storeHooks("site"), onSave: () => { for (const f of SAVED) f(); } });
 /* L'ancien document « board » (tâches du Chantier jusqu'au format 5) n'est plus qu'un point d'entrée :
    ce qu'il contient est versé dans le module Chantier du site, puis il est vidé, et le vidage part au
    serveur à la synchro suivante (sinon chaque nouvel appareil ressusciterait les tâches supprimées).
