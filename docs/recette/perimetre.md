@@ -169,12 +169,11 @@ Constatées, pas corrigées. Chacune est à qualifier par un ticket.
 
 ## Points à arbitrer
 
-- **Firefox** : cible prise en charge ou non ? Aucun test ne le couvre ; s'il l'est, ajouter le moteur à la matrice de CI.
-- **Compte de recette marqué `selene_personnel`** : nécessaire pour tester l'offre de « Reprendre la main » sans utiliser le
-  compte personnel.
-- **Date qui change, app ouverte** : l'accueil, « Aujourd'hui » et le point du jour suivent la date au rendu suivant ; aucune
-  règle ne dit s'ils doivent se redessiner d'eux-mêmes à minuit (cas `TRV-004`).
-- **Message d'un import refusé** (A3).
+La liste à jour, avec ce que chaque question bloque, est dans [backlog.md](backlog.md#decisions). Relevées pendant
+l'analyse : Firefox (cible ou non) ; le compte de recette marqué `selene_personnel` ; la date qui change app ouverte
+(`TRV-004`) ; le message d'un import refusé (A3) ; puis, en écrivant les cas : les anomalies A4, A6 et A7, la langue du
+résumé destiné à l'assistant (`RLM-028`), le message d'une date d'objectif trop lointaine (`RLM-014`), l'appareil vidé
+(`RLM-029`), les seuils de réactivité (`TRV-007`), l'espace `db` de claude.ai (`PLT-011`).
 
 ## Blocages rencontrés pendant l'analyse
 

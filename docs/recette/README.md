@@ -31,7 +31,8 @@ cahier ; `git log -- docs/recette/` et `git show <commit>:docs/recette/…` rend
 | [comptes-rendus/](comptes-rendus/) | Le modèle de compte rendu et l'historique des campagnes, un fichier par campagne, jamais réécrit. |
 | [backlog.md](backlog.md) | Les lacunes et les automatisations à prioriser. |
 | [maintenance.md](maintenance.md) | Les règles qui gardent ce cahier juste au fil des évolutions, et la vérification de cohérence. |
-| [donnees/](donnees/) | Des jeux de données synthétiques à importer pour préparer un état initial reproductible. |
+| [donnees/](donnees/README.md) | Des jeux de données synthétiques à importer pour préparer un état initial reproductible, et le jeu de volume à générer. |
+| `scripts/recette.mjs`, `scripts/recette-jeux.mjs` | La vérification de cohérence (`npm run recette`), la génération des jeux de données et du jeu de volume ([maintenance.md](maintenance.md#la-vérification-de-cohérence)). |
 
 Les cas manuels, par domaine :
 
@@ -118,8 +119,10 @@ sauvegarde (ce qui remplace tout l'état du compte, sur tous ses appareils), sup
 
 - **Comptes** : deux comptes dédiés à la recette (A et B), créés par invitation dans le projet Supabase, aux adresses qui
   ne servent qu'à ça, mots de passe de 10 caractères au moins. Les cas de « Reprendre la main » qui testent l'offre de
-  l'espace demandent un compte marqué `selene_personnel` ([regulation.md](../regulation.md#hors-de-loffre-publique)) :
-  marquer un compte de recette plutôt que le compte personnel est à décider par la responsable.
+  l'espace, le stockage sur l'appareil et la déconnexion demandent un troisième compte, **P**, marqué `selene_personnel`
+  par la personne qui administre le projet ([regulation.md](../regulation.md#hors-de-loffre-publique)) : marquer un compte
+  de recette plutôt que le compte personnel est à décider par la responsable ([perimetre.md](perimetre.md#points-à-arbitrer)).
+  Les cas de l'assistant demandent une clé Anthropic de recette, à la dépense plafonnée, fournie hors du dépôt.
 - **Mesures à ne pas polluer** : sur chaque appareil de recette connecté, couper « Compter mes jours d'usage, pour la bêta »
   (Réglages → Compte et données) avant tout essai, et exclure les comptes de recette des requêtes de la bêta
   ([compte.md](../compte.md#mesure-dusage-bêta)). Sur la page publique de test, toujours ajouter `?src=recette` à

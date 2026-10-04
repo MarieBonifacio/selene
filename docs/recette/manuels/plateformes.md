@@ -227,7 +227,7 @@ Identifiants retirés : aucun.
 - **Objectif, risque vérifié** : en-tête caché sous l'encoche ; partage perdu au lancement à froid.
 - **Priorité** : P2 · **Plateformes** : IOS
 - **Préconditions** : iPhone de recette avec encoche ou Dynamic Island ; app installée (TestFlight ou Xcode) et connectée
-  au compte A ; le Raccourci « Selene » créé selon [ios.md](../../ios.md#partager--selene-par-un-raccourci).
+  au compte A ; le Raccourci « Selene » créé selon [ios.md](../../ios.md#-partager--selene--par-un-raccourci).
 - **Données** : la page `https://exemple.org/plt-008`.
 - **Automatisés associés** : `TU-NAT-07`, `TS-IOS-SIM`
 - **Source** : [DOC] [ios.md](../../ios.md) (« L'essai sur un vrai iPhone reste à faire à la main ») ; [TEST] `TU-NAT-07` ;

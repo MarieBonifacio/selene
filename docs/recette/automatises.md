@@ -4,6 +4,8 @@ Ce que les tests de Selene vérifient réellement, lu dans le corps de chaque te
 simulent ; où et quand ils tournent ; ce qu'ils ne prouvent pas. État au commit `768eb34` (4 octobre 2026). Les
 automatisations seulement proposées sont dans [backlog.md](backlog.md), jamais ici.
 
+Identifiants retirés : aucun.
+
 ## En bref
 
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22) |
@@ -14,7 +16,7 @@ automatisations seulement proposées sont dans [backlog.md](backlog.md), jamais 
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
 | Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
 | Compilations natives | *Android*, *iOS*, *Desktop* | APK, simulateur, installateur | oui, filtrées par chemins | non exécutées ici ; **vertes** sur `main` `768eb34` |
-| Outils hors CI | `bench`, `isolation`, `liens`, `screenshots` | mesures, préproduction, liens mensuels, captures | non, ou planifié | `bench` exécuté (mesures dans `TS-BENCH`) |
+| Outils hors CI | `bench`, `isolation`, `liens`, `screenshots`, `recette` | mesures, préproduction, liens mensuels, captures, cohérence du cahier | non, ou planifié | `bench` exécuté (mesures dans `TS-BENCH`) ; `recette` vert (`TS-RECETTE`) |
 
 Aucun test n'est désactivé, ignoré ou réduit à un seul cas (`skip`, `only`, `todo` : aucun). Chaque test unitaire
 contient au moins une assertion (six tests de `sync.test.js` passent par l'assistant `same()`, qui appelle
@@ -1240,6 +1242,7 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
 | <a id="ts-liens"></a>`TS-LIENS` | `npm run liens` | Les adresses de santé citées répondent ; une page disparue fait échouer. | planifié : le 3 de chaque mois | Un site qui refuse le robot n'est qu'annoté (lien ameli, [a-faire.md](../a-faire.md#tout-de-suite-une-minute)). | — |
 | <a id="ts-isolation"></a>`TS-ISOLATION` | `npm run isolation` | Douze requêtes interdites refusées par un vrai projet Supabase de préproduction. | **non** : à lancer à la main | Ne prouve rien sur la production tant que ses règles n'ont pas été comparées ([compte.md](../compte.md#vérifier-lisolation-entre-comptes)). | [TRV-016](manuels/transverse.md#trv-016) |
 | <a id="ts-bench"></a>`TS-BENCH` | `npm run bench` | Mesure seulement (aucun seuil) le rendu des vues sur 5 500 textes (1,92 M caractères, document de 2,59 Mo) dans une VM Node. Le 4 octobre : accueil 31 ms, motifs 42 ms, bilan 46 ms, planche 38 ms, carte d'un motif 56 ms, recherche 3 ms, tirage des sortes 46 ms. | **non** | Faux DOM : ni mise en page ni peinture ; compter 3 à 5 fois plus sur téléphone selon le script. | [TRV-007](manuels/transverse.md#trv-007) |
+| <a id="ts-recette"></a>`TS-RECETTE` | `npm run recette` | Cohérence du cahier de recette : identifiants, format des cas, lien cas ↔ tests dans les deux sens, présence de chaque test du dépôt dans l'inventaire, matrice, liens et ancres, jeux de données importables ou refusés ([maintenance.md](maintenance.md#la-vérification-de-cohérence)). | **non** : à lancer à la main ([BL-12](backlog.md#bl-12)) | Ne lance aucun test et ne juge pas la justesse d'un résultat attendu. | — |
 | <a id="ts-apk"></a>`TS-APK` | workflow *Android* | L'APK de débogage se construit ; le chemin de signature de la publication fonctionne (clé jetable, `apksigner verify`). | oui, filtré par chemins | Aucun lancement de l'app. | — |
 | <a id="ts-ios-sim"></a>`TS-IOS-SIM` | workflow *iOS* | Le projet iOS et ses plugins compilent pour le simulateur. | oui, filtré par chemins | Aucun lancement, aucune signature. | [PLT-008](manuels/plateformes.md#plt-008) |
 | <a id="ts-win-nsis"></a>`TS-WIN-NSIS` | workflow *Desktop* | L'installateur Windows se construit (après `TR-TAU-*`). | oui, filtré par chemins | Aucun lancement ; non signé sans certificat. | [PLT-009](manuels/plateformes.md#plt-009) |
