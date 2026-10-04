@@ -338,7 +338,8 @@ Livrée en quatre temps, pour que chaque pull request reste relisible.
 - [x] Registre au lieu des tuiles : une ligne par groupe (nom, décompte, pourcentage en chiffres alignés), un trait
       de 2 px qui avance sous la ligne ; le groupe filtré porte un filet de marge.
 - [x] Kanban adaptatif : sur téléphone, un sélecteur segmenté et une colonne à la fois ; sur ordinateur, glisser une
-      carte dans une colonne, ou `[` et `]` sur une carte qui a le focus. Les flèches restent partout.
+      carte dans une colonne, ou `[` et `]` sur une carte qui a le focus. Les flèches restent partout. La carte dit au
+      lecteur d'écran son titre, sa colonne et ces deux touches ; déplacée, elle garde le focus et dit sa nouvelle colonne.
 - [x] Recherche à facettes : espace, période (depuis la nouvelle lune, ce mois-ci), statut ; chaque puce compte ce qu'elle
       donnerait, les autres facettes appliquées ; résultats groupés par espace, « N résultats sur M ». Une recherche
       lancée d'ailleurs (un mot du bilan, un motif) repart sans filtre ; l'export en dossier suit les filtres.

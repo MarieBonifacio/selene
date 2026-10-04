@@ -693,7 +693,7 @@ export default {
   "{0} le {1}": "{0} on {1}",
   "maintenue": "kept",
   "Modifier « {0} »": "Edit “{0}”",
-  "{0} : [ pour reculer, ] pour avancer": "{0}: [ to move back, ] to move forward",
+  "{0}, {1} : [ pour reculer, ] pour avancer": "{0}, {1}: [ to move back, ] to move forward",
   "Reculer": "Move back",
   "Avancer": "Move forward",
   "fiche": "record",
