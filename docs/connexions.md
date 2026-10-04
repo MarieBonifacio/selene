@@ -214,4 +214,26 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
   sait pas davantage. Un nom à deux mots sans particule est lu « Prénom Nom » ; une institution de plusieurs mots
   (« Organisation mondiale de la santé ») sera mal découpée, comme dans la plupart des outils.
 
+**7g : venir d'Obsidian ou de Zettlr** (idée 1 de l'audit : entrer avec son passé)
+- [x] Dans les réglages d'un module de notes : « Importer des notes Markdown » (plusieurs fichiers `.md`) ou « …ou tout
+      un dossier » (un coffre Obsidian, un dossier Zettlr). Les dossiers `.obsidian`, `.trash`, `.git` et ce qui n'est
+      pas du Markdown sont laissés. Une confirmation dit combien, de quand à quand, où, et combien de liens.
+- [x] Une note par fichier : son titre en première ligne (`title` de l'en-tête, sinon le premier « # », sinon le nom
+      du fichier), puis le texte, retours à la ligne gardés. Date : `date` ou `created` de l'en-tête, sinon une date
+      dans le nom (« 2024-02-10 Lecture », identifiant de Zettelkasten « 202310041530 »), sinon la date du fichier.
+      Statut : `statut` ou `status` (observé, hypothèse, interprétation, inexpliqué, en français ou en anglais).
+- [x] Un lien `[[cible|alias]]` laisse son alias (ou sa cible) dans le texte ; s'il vise une autre note du lot (par son
+      titre, son nom de fichier, un de ses `aliases` ou son `id` Zettlr), ou une note déjà importée (par sa première
+      ligne), il devient « fait écho à ». Une image intégrée (`![[schema.png]]`) et les commentaires (`%% … %%`,
+      `<!-- … -->`) sont retirés.
+- [x] Une note dont le texte est déjà dans le module n'est pas recréée : un second import n'ajoute que ce qui manque.
+      Au-delà de 20 000 caractères, une note est coupée (et la confirmation le dit) ; si l'espace devait dépasser
+      3 Mo, elle prévient que le serveur n'en garde que 5.
+- [x] À l'écran, une note longue montre son début (400 caractères environ, jusqu'à une fin de paragraphe) et le reste
+      dans « la suite ». Les fichiers sont lus sur l'appareil ; rien ne part vers un service. Pur dans
+      `src/core/markdown.js` (`tests/markdown.test.js`) ; parcours dans `tests/browser/import-markdown.js`.
+- Limites : les pièces jointes (images, PDF) ne sont pas importées ; les étiquettes (`tags`, `#mot`) restent dans le
+  texte sans devenir des motifs ; une note modifiée dans Obsidian puis réimportée arrive en double (le texte a
+  changé). Un lien vers une note déjà là ne la retrouve que par sa première ligne.
+
 La phase 3 est terminée.
