@@ -1,0 +1,24 @@
+# Mises à jour proposées par Dependabot (T15 de l'audit) : une PR groupée par mois et par écosystème, pas une par
+# paquet. Les actions de CI d'abord (elles tournent avec les secrets du dépôt), puis les outils npm (tous de
+# développement : Selene n'a aucune dépendance de production). Chaque PR passe par Check, comme les autres.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "CI"
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      outils:
+        patterns: ["*"]
+    commit-message:
+      prefix: "Outils"

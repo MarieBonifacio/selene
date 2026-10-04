@@ -152,7 +152,7 @@ ouvertures. `src/app/services/activite.js` envoie une ligne **(compte, jour)** d
 
 Côté serveur (`supabase/schema.sql`), un compte écrit pour lui seul : le déclencheur impose l'identité de la session,
 quoi que la page envoie. Personne ne lit la table par l'API. Le jour doit être aujourd'hui, à un jour près pour les
-fuseaux horaires ; un doublon est ignoré en silence. Les lignes de plus de 13 mois sont effacées, et celles d'un compte
+fuseaux horaires ; un doublon est ignoré en silence. Les lignes de plus de 90 jours sont effacées (assez pour lire les seuils d'une cohorte), et celles d'un compte
 supprimé partent avec lui (`on delete cascade`). La table a été essayée contre PostgreSQL 16 et PostgREST, avec des
 données synthétiques : 15 cas, dont l'usurpation d'un autre compte, la lecture, la modification, la purge et la
 suppression du compte.
@@ -302,7 +302,7 @@ Ce qu'elle promet, et qu'il faut tenir à la main :
 - **Liste d'attente : un seul e-mail, à l'ouverture de la bêta, puis effacée** (deux ans au plus : le déclencheur de
   la table `attente` y veille). L'envoi et l'effacement sont à faire à la main ([essai.md](essai.md#écrire-aux-inscrits-puis-effacer)).
 - **Mesure d'audience de la page de test : 13 mois.** Le déclencheur de la table `audience` y veille seul.
-- **Mesure d'usage : 13 mois, jamais plus que le compte.** Le déclencheur de la table `activite` et la suppression du
+- **Mesure d'usage : 90 jours, jamais plus que le compte.** Le déclencheur de la table `activite` et la suppression du
   compte y veillent seuls ; une demande d'opposition ou d'effacement se traite à la main
   ([plus haut](#mesure-dusage-bêta)).
 - **Réponse à une demande de droits sous un mois.** La demande doit venir de l'adresse du compte concerné (ou de

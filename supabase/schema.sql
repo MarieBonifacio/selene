@@ -82,7 +82,7 @@ create trigger erreurs_borne before insert on public.erreurs for each row execut
 -- La mesure d'usage de la bêta (services/activite.js, docs/compte.md ; E4 de l'audit) : une ligne par compte et par
 -- jour où il a saisi quelque chose, rien d'autre. Écrite avec la session, pour soi seulement ; jamais relue par l'API.
 -- Le déclencheur impose le compte de la session, refuse un jour qui n'est pas aujourd'hui (à un jour près, pour les
--- fuseaux), ignore en silence un doublon et efface ce qui a plus de 13 mois. Supprimer le compte efface ses lignes.
+-- fuseaux), ignore en silence un doublon et efface ce qui a plus de 90 jours. Supprimer le compte efface ses lignes.
 create table public.activite (
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   jour date not null,
@@ -93,7 +93,7 @@ create policy "activité : pour soi" on public.activite for insert to authentica
 
 create function public.activite_borne() returns trigger language plpgsql security definer set search_path = '' as $$
 begin
-  delete from public.activite where jour < current_date - interval '13 months';
+  delete from public.activite where jour < current_date - 90;
   new.user_id := auth.uid();
   if new.user_id is null or new.jour not between current_date - 1 and current_date + 1 then return null; end if;
   if exists (select 1 from public.activite where user_id = new.user_id and jour = new.jour) then return null; end if;

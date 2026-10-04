@@ -916,7 +916,7 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
 - **Décision** (4 octobre 2026) :
   - une table `activite` (compte, jour), clé primaire sur les deux. Elle s'écrit avec la session, pour soi seul : le
     déclencheur impose `auth.uid()`, refuse un autre jour qu'aujourd'hui (à un jour près, pour les fuseaux), ignore un
-    doublon et purge au-delà de 13 mois. Personne ne la lit par l'API ; elle s'efface avec le compte (`on delete
+    doublon et purge au-delà de 90 jours. Personne ne la lit par l'API ; elle s'efface avec le compte (`on delete
     cascade`) ;
   - côté page (`services/activite.js`), on envoie au plus une ligne par jour et par chargement, après un enregistrement
     du site que la personne a provoqué (`navigator.userActivation`) et qui change le contenu d'un espace
@@ -929,6 +929,12 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   sens de l'article 82, donc un consentement) ; compter dans le contenu synchronisé `app_state` (lire les documents des
   personnes pour une autre finalité que la synchronisation) ; un compteur de saisies par jour (plus que ce qu'il faut
   pour deux seuils).
+- **Révision (4 octobre 2026)** : la conservation passe de 13 mois à **90 jours**, comme le proposait l'audit
+  (section 8) : lire les seuils d'une cohorte demande cinq semaines, et la limitation de la conservation (article
+  5.1.e du RGPD) veut la durée la plus courte qui suffise. L'audit proposait aussi le **consentement** pendant la bêta ;
+  l'intérêt légitime avec opposition est gardé. La mesure ne lit ni n'écrit rien sur l'appareil (pas d'article 82),
+  ne garde qu'un jour par compte, et un interrupteur à allumer soi-même laisserait la bêta presque sans chiffres, donc
+  sans décision possible au jour 90. Les invités en sont prévenus dans l'invitation ([validation.md](validation.md#e4--la-bêta-fermée-quatre-semaines)).
 - **Conséquences** : la politique de confidentialité nomme la mesure, sa base et sa durée ; la requête des seuils et
   la réponse à une opposition se font dans l'éditeur SQL ([compte.md](compte.md#mesure-dusage-bêta)). Tant que la table
   n'existe pas sur le projet, rien n'est compté. Un appareil sans activation utilisateur connue (navigateur ancien)

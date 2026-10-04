@@ -65,6 +65,6 @@ test('activité : la table, écrite pour soi seulement, jamais relue, bornée pa
   assert.match(part, /for insert to authenticated with check \(user_id = auth\.uid\(\)\)/);
   assert.doesNotMatch(part, /for (select|update|delete|all)/, 'aucune lecture, ni modification, par l’API');
   assert.match(part, /security definer set search_path = ''/);
-  assert.match(part, /new\.user_id := auth\.uid\(\)/); assert.match(part, /interval '13 months'/);
+  assert.match(part, /new\.user_id := auth\.uid\(\)/); assert.match(part, /jour < current_date - 90;/);
   assert.match(part, /revoke all on function public\.activite_borne\(\) from public, anon, authenticated/);
 });
