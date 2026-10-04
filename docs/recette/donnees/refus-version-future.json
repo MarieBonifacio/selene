@@ -1,0 +1,49 @@
+{
+  "format": "selene-v1",
+  "exportedAt": "2026-10-04T08:00:00.000Z",
+  "board": {
+    "tasks": []
+  },
+  "site": {
+    "updatedAt": 1,
+    "schemaVersion": 99,
+    "boardMerged": true,
+    "config": {
+      "name": "Selene",
+      "palette": "nigredo",
+      "mode": "auto",
+      "lang": "",
+      "labels": {},
+      "groups": {},
+      "modules": [
+        {
+          "id": "inbox",
+          "on": true
+        }
+      ],
+      "assistant": {
+        "model": "claude-sonnet-5",
+        "actions": true,
+        "share": {}
+      }
+    },
+    "modules": {
+      "inbox": {
+        "type": "notes",
+        "label": "Capture",
+        "config": {
+          "inbox": true,
+          "description": "Tout ce qui traîne dans ta tête, en attendant d'avoir une place.",
+          "placeholder": "Une idée, une course, un rêve…"
+        },
+        "entries": [
+          {
+            "id": "i1",
+            "text": "venue du futur",
+            "date": "2026-09-01"
+          }
+        ]
+      }
+    }
+  }
+}

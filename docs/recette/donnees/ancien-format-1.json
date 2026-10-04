@@ -1,0 +1,204 @@
+{
+  "format": "selene-v1",
+  "exportedAt": "2026-10-04T08:00:00.000Z",
+  "board": {
+    "updatedAt": 900,
+    "tasks": [
+      {
+        "id": "t1",
+        "title": "Poser le velux",
+        "room": "Chambre",
+        "cat": "Bricolage",
+        "due": null,
+        "effort": 2,
+        "cost": 250,
+        "note": "",
+        "today": false,
+        "done": false,
+        "doneAt": null,
+        "created": "2025-01-05",
+        "steps": [
+          {
+            "t": "Devis",
+            "d": true
+          }
+        ]
+      }
+    ]
+  },
+  "site": {
+    "updatedAt": 1000,
+    "config": {
+      "name": "Selene",
+      "palette": "nigredo",
+      "mode": "auto",
+      "labels": {
+        "phidippus": "Aragne"
+      },
+      "groups": {},
+      "modules": [
+        {
+          "id": "chantier",
+          "on": true
+        },
+        {
+          "id": "kundalini",
+          "on": true
+        },
+        {
+          "id": "ecriture",
+          "on": true
+        },
+        {
+          "id": "moth",
+          "on": true
+        },
+        {
+          "id": "phidippus",
+          "on": true
+        },
+        {
+          "id": "musique",
+          "on": true
+        },
+        {
+          "id": "budget",
+          "on": true
+        },
+        {
+          "id": "assistant",
+          "on": false
+        },
+        {
+          "id": "inbox",
+          "on": true
+        }
+      ],
+      "assistant": {
+        "model": "claude-sonnet-5",
+        "actions": true,
+        "share": {
+          "chantier": true,
+          "kundalini": true,
+          "ecriture": true,
+          "moth": true,
+          "phidippus": true,
+          "musique": true,
+          "budget": false,
+          "inbox": true
+        }
+      }
+    },
+    "budget": {
+      "entries": [
+        {
+          "id": "b1",
+          "type": "dépense",
+          "amount": 42.5,
+          "cat": "Courses",
+          "note": "Marché",
+          "date": "2025-01-12"
+        }
+      ],
+      "envelopes": [
+        {
+          "id": "v1",
+          "name": "Courses",
+          "limit": 300
+        }
+      ]
+    },
+    "kundalini": {
+      "start": "2025-01-06",
+      "weeks": 12,
+      "perWeek": 5,
+      "sessions": [
+        {
+          "id": "s1",
+          "date": "2025-01-06",
+          "min": 20,
+          "note": "Premier jour"
+        }
+      ]
+    },
+    "ecriture": {
+      "title": "Mon livre",
+      "goal": 40000,
+      "chapters": [
+        {
+          "id": "c1",
+          "name": "Prologue",
+          "goal": 2000
+        }
+      ],
+      "sessions": [
+        {
+          "id": "w1",
+          "date": "2025-01-06",
+          "words": 500,
+          "chapter": "c1"
+        }
+      ],
+      "fragments": [
+        {
+          "id": "f1",
+          "date": "2025-01-06",
+          "text": "Une phrase qui passe"
+        }
+      ]
+    },
+    "moth": {
+      "posts": [
+        {
+          "id": "p1",
+          "title": "Le lichen",
+          "theme": "Forêt",
+          "due": "2025-02-01",
+          "status": "Prêt",
+          "caption": "Légende du lichen"
+        },
+        {
+          "id": "p2",
+          "title": "Ancien statut",
+          "theme": "",
+          "due": "",
+          "status": "Inconnu",
+          "caption": ""
+        }
+      ]
+    },
+    "phidippus": {
+      "name": "Aragne",
+      "feedEvery": 6,
+      "mistEvery": 3,
+      "log": [
+        {
+          "id": "l1",
+          "date": "2025-01-06",
+          "type": "repas",
+          "note": "Un grillon"
+        }
+      ]
+    },
+    "musique": {
+      "albums": [
+        {
+          "id": "a1",
+          "artist": "Dead Can Dance",
+          "album": "Aion",
+          "status": "Retenu",
+          "note": "nocturne"
+        }
+      ]
+    },
+    "inbox": {
+      "items": [
+        {
+          "id": "i1",
+          "text": "acheter des clous",
+          "date": "2025-01-07"
+        }
+      ]
+    }
+  }
+}

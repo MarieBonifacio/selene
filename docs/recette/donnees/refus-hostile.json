@@ -1,0 +1,53 @@
+{
+  "format": "selene-v1",
+  "exportedAt": "2026-10-04T08:00:00.000Z",
+  "board": {
+    "tasks": []
+  },
+  "site": {
+    "updatedAt": 1,
+    "schemaVersion": 8,
+    "boardMerged": true,
+    "config": {
+      "name": "Selene",
+      "palette": "nigredo",
+      "mode": "auto",
+      "lang": "",
+      "labels": {},
+      "groups": {},
+      "modules": [
+        {
+          "id": "inbox",
+          "on": true
+        },
+        {
+          "id": "\"><img src=x onerror=alert(1)>",
+          "on": true
+        }
+      ],
+      "assistant": {
+        "model": "claude-sonnet-5",
+        "actions": true,
+        "share": {}
+      }
+    },
+    "modules": {
+      "inbox": {
+        "type": "notes",
+        "label": "Capture",
+        "config": {
+          "inbox": true,
+          "description": "Tout ce qui traîne dans ta tête, en attendant d'avoir une place.",
+          "placeholder": "Une idée, une course, un rêve…"
+        },
+        "entries": [
+          {
+            "id": "i1",
+            "text": "<script>alert('recette')</script>",
+            "date": "2026-09-01"
+          }
+        ]
+      }
+    }
+  }
+}

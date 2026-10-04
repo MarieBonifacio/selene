@@ -1,0 +1,1260 @@
+# Inventaire des tests automatiques
+
+Ce que les tests de Selene vérifient réellement, lu dans le corps de chaque test et non dans son seul nom ; ce qu'ils
+simulent ; où et quand ils tournent ; ce qu'ils ne prouvent pas. État au commit `768eb34` (4 octobre 2026). Les
+automatisations seulement proposées sont dans [backlog.md](backlog.md), jamais ici.
+
+## En bref
+
+| Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22) |
+|---|---|---|---|---|
+| Tests unitaires et d'intégration Node | `npm test` | 268 tests, 26 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis**, 0 échec, 0 ignoré (12,4 s) |
+| Scénarios de navigateur | `npm run test:browser` | 73 scénarios `tests/browser/*.js`, environ 1 034 appels de vérification dans le code | oui : *Check › browser*, Chromium **et** WebKit | Chromium : **73 verts, 1 067 vérifications** ; WebKit : non exécuté (navigateur absent) |
+| Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
+| Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
+| Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
+| Compilations natives | *Android*, *iOS*, *Desktop* | APK, simulateur, installateur | oui, filtrées par chemins | non exécutées ici ; **vertes** sur `main` `768eb34` |
+| Outils hors CI | `bench`, `isolation`, `liens`, `screenshots` | mesures, préproduction, liens mensuels, captures | non, ou planifié | `bench` exécuté (mesures dans `TS-BENCH`) |
+
+Aucun test n'est désactivé, ignoré ou réduit à un seul cas (`skip`, `only`, `todo` : aucun). Chaque test unitaire
+contient au moins une assertion (six tests de `sync.test.js` passent par l'assistant `same()`, qui appelle
+`assert.deepEqual`) ; chaque scénario de navigateur en contient au moins trois.
+
+## Comment un échec fait échouer
+
+- **`node --test`** : une assertion qui échoue lève une exception, le test échoue, la commande sort en erreur et la CI
+  s'arrête.
+- **Scénarios de navigateur** (runner maison, `tests/browser/run.js` et `helpers.js`) : `check(condition, message)`
+  affiche ✓ ou ✗ et, sur ✗, met le code de sortie du scénario à 1 ; une promesse rejetée non rattrapée (`unhandledRejection`)
+  aussi ; une exception non rattrapée termine le scénario en erreur ; un scénario de plus de 3 minutes est tué et compte
+  comme un échec. `run.js` les lance six à la fois et sort en 1 si un seul a échoué. Points d'attention : un scénario
+  sans aucun `check` passerait (vérifié : aucun) ; un `check` dans une boucle compte une fois par tour ; la vérification
+  finale « aucune erreur JavaScript » de presque chaque scénario rattrape toute erreur de la page (`pageerror`), y compris
+  une requête interrompue, ce qui explique l'instabilité A1.
+- **`deno test`** : assertion levée ; **`deno check`** : erreur de typage.
+- **`cargo test`** : `assert!` ou `assert_eq!` en échec.
+- **`build.py --check`** : sort en erreur si un HTML généré ne correspond plus aux sources.
+- **`eslint`** : toute règle en erreur. **`npm run i18n`** : code 1 si un texte marqué n'a pas sa traduction ou si une
+  traduction est orpheline.
+- **`npm run liens`** : code 1 seulement pour une page disparue (404, 410, domaine inconnu) ; un refus (401, 403, 429,
+  5xx, délai) n'est qu'une annotation, sans échec.
+- **`npm run isolation`** : 0 (étanche), 1 (fuite), 2 (impossible de conclure).
+
+## Niveaux, et ce qui est simulé
+
+| Code | Niveau | Ce qui tourne vraiment | Ce qui est simulé |
+|---|---|---|---|
+| U | Unitaire | un module pur du noyau (`src/core`), importé tel quel | les entrées |
+| S | Statique | lecture du code ou des fichiers produits par le build | rien n'est exécuté |
+| I-A | Intégration simulée, artefact | le script entier de `selene.html` | navigateur : faux DOM qui garde des chaînes `innerHTML`, stockage en mémoire ; aucun rendu ni événement réel, les actions sont appelées directement |
+| I-H | Intégration simulée, hébergé | le script entier de `index.html` | même faux DOM ; un faux PostgREST en mémoire (`tests/hosted-harness.js`), partagé entre plusieurs « appareils » |
+| I-P, I-N | Plateforme, amorçage natif | `src/platform.js`, `src/native/boot.js` | stockages, IndexedDB, coffres, plugins Capacitor et commandes Tauri factices |
+| C | Contrat | une fonction serveur (Deno) ou un script | faux Supabase Auth, PostgREST, Anthropic, réseau et DNS |
+| N | Navigateur réel (Playwright) | la vraie page dans Chromium ou WebKit : rendu, focus, clavier, stockage, service worker | selon le mode : **A** `index.html` avec un `window.claude` factice (l'app se croit dans l'artefact : stockage localStorage, ni compte ni synchronisation) ; **H** version hébergée, faux Supabase par interception réseau ; **N** coquille native simulée ; **P** page publique |
+
+Jamais réels, dans aucun test : le projet Supabase (Auth, PostgREST, RLS, fonctions déployées), Anthropic, les services
+externes (Crossref, Microlink, MusicBrainz, Open-Meteo, OpenAgenda, OpenAlex, Zotero), claude.ai, un appareil Android, iOS
+ou Windows, Firefox.
+
+## La CI
+
+| Workflow | Déclencheurs | Ce qu'il lance | Environnement |
+|---|---|---|---|
+| *Check* (`check.yml`) | toute PR ; à la demande ; appelé par *Pages* | job `build-and-test` : `npm ci`, `build:check`, `test`, `test:syntax`, `lint`, `i18n` (10 min) ; job `passeur` : `test:functions` (10 min) ; job `browser` : `build:check` puis `test:browser`, matrice Chromium et WebKit, l'un n'interrompant pas l'autre (15 min) | Ubuntu, Node de `.nvmrc` (22), navigateurs Playwright en cache selon `package-lock.json` |
+| *Pages* (`pages.yml`) | push sur `main` ; à la demande | *Check* entier, puis seulement s'il est vert : `build:dist` et déploiement de `dist/web` | Ubuntu |
+| *Android* (`android.yml`) | PR et push sur `main` touchant `src/`, `native/`, `capacitor.config.json`, `package*.json`, `build.py` | `build:dist`, `cap sync`, APK de débogage, puis version signée avec une clé jetable et `apksigner verify` | Ubuntu, Java 21 |
+| *iOS* (`ios.yml`) | idem, chemins iOS | compilation pour le simulateur, sans signature | macOS, Xcode |
+| *Desktop* (`desktop.yml`) | idem, chemins Tauri | `cargo test --locked`, puis installateur NSIS | Windows |
+| *Assistant*, *Compte*, *Passeur* | push sur `main` touchant leur fonction ou `_shared` ; à la demande | `test:functions` puis déploiement ; sautés avec un avis si les secrets manquent | Ubuntu |
+| *Liens* (`liens.yml`) | le 3 de chaque mois à 6 h 17 UTC ; à la demande | `npm run liens` | Ubuntu |
+| *Publication* (`release.yml`) | étiquette `v*` ; à la demande | APK et AAB signés, installateur Windows, archive iOS pour TestFlight ; chaque plateforme sautée sans ses secrets | Ubuntu, Windows, macOS |
+| *Captures* (`screenshots.yml`) | à la demande | captures des stores | Ubuntu |
+
+À savoir : *Check* n'a pas de déclencheur `push` (une branche sans PR n'est pas testée ; `main` l'est par *Pages*) ; les
+compilations natives ne tournent pas sur une PR qui ne touche que la documentation ou les tests ; les déploiements de
+fonctions ne rejouent leurs tests que si les secrets sont présents.
+
+## Tests unitaires et d'intégration Node
+
+Commande commune : `npm test` (tous) ou `node --test tests/<fichier>` (un fichier), après `npm ci` et `python3 build.py`
+(les tests d'intégration lisent `selene.html` et `index.html`). En CI : *Check › build-and-test*. Environnement : Node 22,
+sans navigateur.
+
+
+### Mesure d'usage de la bêta — `tests/activite.test.js`
+
+- **Niveau** : Intégration simulée (I-H). **Sujet** : `src/app/services/activite.js`, table `activite` de `supabase/schema.sql`.
+- **Simulé** : Build hébergé (`index.html`) dans une VM Node, faux DOM, faux PostgREST (`hosted-harness.js`) ; le schéma SQL est lu comme du texte, pas exécuté.
+- **Limites** : Le comportement de la table réelle (déclencheur, purge à 90 jours, RLS) n'est pas exécuté ici : la documentation dit l'avoir essayé une fois contre PostgreSQL 16 ([compte.md](../compte.md#mesure-dusage-bêta)).
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-act-01"></a>`TU-ACT-01` | activité : une saisie, un jour, avec la session ; rien de ce qui est écrit | Une note saisie envoie une seule ligne `{ jour }` (date du jour), avec le jeton de la session et la clé publique ; le texte saisi et l'adresse n'apparaissent nulle part ; une seconde saisie le même jour n'envoie rien. | [TRV-011](manuels/transverse.md#trv-011) |
+| <a id="tu-act-02"></a>`TU-ACT-02` | activité : un réglage, un espace neuf et vide ne comptent pas ; le contenu, si | Changer la palette ou créer un espace vide n'envoie rien ; une note dans cet espace envoie une ligne. | [TRV-011](manuels/transverse.md#trv-011) |
+| <a id="tu-act-03"></a>`TU-ACT-03` | activité : jamais sans compte, ni coupée ; réseau coupé, la saisie suivante réessaie | Sans session : rien. Interrupteur coupé : rien, et l'état reste coupé. Réseau coupé : la saisie suivante, réseau revenu, envoie la ligne. | [CPT-002](manuels/entree-et-comptes.md#cpt-002), [TRV-011](manuels/transverse.md#trv-011) |
+| <a id="tu-act-04"></a>`TU-ACT-04` | activité : la clé du contenu ignore les réglages et les espaces vides | La « clé de contenu » ignore le nom, la boîte et les espaces vides, et change dès qu'une entrée apparaît. | — |
+| <a id="tu-act-05"></a>`TU-ACT-05` | activité : la table, écrite pour soi seulement, jamais relue, bornée par son déclencheur | Dans `schema.sql` : suppression en cascade avec le compte, RLS active, insertion limitée à soi, aucune règle de lecture ou modification, déclencheur `security definer` qui impose l'identité et purge au-delà de 90 jours. | — |
+
+### Calendrier iCal — `tests/agenda.test.js`
+
+- **Niveau** : Unitaire pur (U). **Sujet** : `src/core/agenda.js`.
+- **Simulé** : Rien : fonctions pures, fuseau forcé à `Europe/Paris` (`process.env.TZ`).
+- **Limites** : Récurrences simples seulement (hebdomadaire, quotidienne, mensuelle, exceptions) ; aucun calendrier réel de Google ou Apple.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-agd-01"></a>`TU-AGD-01` | lecture : lignes repliées, échappements, UTC, fuseau, journée entière, annulé écarté | Lignes repliées, échappements, heures UTC, fuseau `TZID`, journée entière, événement annulé écarté ; l'heure de Tokyo convertie. | [EXT-015](manuels/connexions.md#ext-015) |
+| <a id="tu-agd-02"></a>`TU-AGD-02` | récurrences : hebdomadaire par jours, quotidienne limitée, exception déplacée, exclusion | Récurrence hebdomadaire par jours avec exclusion, quotidienne limitée à trois, exception déplacée ; 18 h 30 à Paris conservé après le changement d'heure ; un 31 absent de février est sauté. | [EXT-015](manuels/connexions.md#ext-015), [TRV-005](manuels/transverse.md#trv-005) |
+
+### Application assemblée (artefact) — `tests/app.test.js`
+
+- **Niveau** : Intégration simulée (I-A). **Sujet** : `selene.html` entier : assistant, résumé du matin, widget, erreurs d'action.
+- **Simulé** : Script de `selene.html` dans une VM Node, faux DOM (chaînes `innerHTML`), stockage en mémoire, `window.claude` absent ou factice.
+- **Limites** : Aucun rendu réel, aucun clic réel ; l'assistant est appelé par ses fonctions, sans modèle.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-app-01"></a>`TU-APP-01` | built artifact boots, persists an assistant-created task, and survives reload | Sans session, l'écran d'entrée ; « Commencer sans compte » ouvre l'app ; une tâche créée par l'outil de l'assistant est relue après un nouveau lancement sur le même stockage. | [CPT-002](manuels/entree-et-comptes.md#cpt-002), [AST-009](manuels/assistant.md#ast-009), [PLT-011](manuels/plateformes.md#plt-011) |
+| <a id="tu-app-02"></a>`TU-APP-02` | assistant actions respect module and global permissions at execution time | Un outil de l'assistant refuse d'agir si le module est désactivé ou si « Autoriser Claude à modifier » est décoché, vérifié au moment de l'exécution. | [AST-003](manuels/assistant.md#ast-003), [AST-005](manuels/assistant.md#ast-005) |
+| <a id="tu-app-03"></a>`TU-APP-03` | assistant : chaque écriture attend l’accord, qui voit ce qui serait écrit ; un refus ne change rien (T14) | Chaque écriture de l'assistant ouvre une confirmation qui montre le texte brut à écrire ; refuser n'écrit rien et renvoie « Refusé par la personne » au modèle. | [AST-004](manuels/assistant.md#ast-004) |
+| <a id="tu-app-04"></a>`TU-APP-04` | résumé du matin : un par jour qui a quelque chose, à l’heure choisie, en texte brut, jamais dans le passé | Le résumé du matin : une notification par jour qui a quelque chose, à l'heure choisie, en texte brut, jamais dans le passé. | [PLT-005](manuels/plateformes.md#plt-005) |
+| <a id="tu-app-05"></a>`TU-APP-05` | widget : la lune du jour, puis les tâches choisies et les rappels du jour, trois au plus, sans doublon | Le widget reçoit la lune du jour puis, au plus trois lignes, les tâches choisies et les rappels du jour, sans doublon. | [PLT-006](manuels/plateformes.md#plt-006) |
+| <a id="tu-app-06"></a>`TU-APP-06` | une action qui échoue le dit : jamais un clic sans effet visible | Une action qui lève une erreur affiche « Cette action n'a pas abouti : … » au lieu de rester sans effet. | — |
+
+### Couches et ordre de chargement — `tests/architecture.test.js`
+
+- **Niveau** : Statique (S). **Sujet** : graphe des imports de `src/`.
+- **Simulé** : Analyse du code source (espree), sans exécution.
+- **Limites** : Vérifie la structure, pas le comportement.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-arch-01"></a>`TU-ARCH-01` | les couches : le noyau est pur, l’application ne passe que par la plateforme | Le noyau `src/core` n'importe que lui-même ; `src/app` ne passe que par `src/platform.js` ; la plateforme et les registres ne dépendent de rien. | — |
+| <a id="tu-arch-02"></a>`TU-ARCH-02` | rien ne s’exécute au chargement qui dépende d’un module en cycle avec soi ; aucune écriture dans un import | Aucun code exécuté au chargement ne dépend d'un module en cycle ; aucun module n'écrit dans un import. | — |
+| <a id="tu-arch-03"></a>`TU-ARCH-03` | aucun module n’est chargé sans servir : chaque fichier de src/app et src/core est atteint | Chaque fichier de `src/app` et `src/core` est atteint depuis le point d'entrée. | — |
+
+### Session et rafraîchissement du jeton — `tests/auth.test.js`
+
+- **Niveau** : Intégration simulée (I-H). **Sujet** : `src/app/services/auth.js`.
+- **Simulé** : Build hébergé dans une VM, `fetch` remplacé (panne réseau, 503, 400, faux PostgREST), minuteurs déclenchés à la main.
+- **Limites** : Supabase Auth réel jamais appelé ; l'écran de connexion n'est vu que par la présence de `authForm` dans le HTML.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-auth-01"></a>`TU-AUTH-01` | offline at boot: an expired session is kept and the app runs locally, with a visible warning | Session expirée et réseau coupé au démarrage : la session est gardée (mémoire et stockage), l'app s'affiche (pas `authForm`), « Non synchronisé » est affiché, aucune synchro. | [CPT-012](manuels/entree-et-comptes.md#cpt-012), [SYN-004](manuels/synchronisation.md#syn-004) |
+| <a id="tu-auth-02"></a>`TU-AUTH-02` | server error (5xx) during refresh keeps the session too | Un 503 au rafraîchissement garde aussi la session. | [CPT-012](manuels/entree-et-comptes.md#cpt-012) |
+| <a id="tu-auth-03"></a>`TU-AUTH-03` | an explicit refusal (400 invalid refresh token) ends the session and shows the login screen | Un refus explicite (400 « Invalid Refresh Token ») efface la session et affiche l'écran de connexion. | [CPT-012](manuels/entree-et-comptes.md#cpt-012) |
+| <a id="tu-auth-04"></a>`TU-AUTH-04` | successful refresh connects both stores to Supabase | Un rafraîchissement réussi relie les deux stores au serveur, en un seul appel `/token`. | — |
+| <a id="tu-auth-05"></a>`TU-AUTH-05` | concurrent refreshes share one request (refresh tokens are single-use) | Trois rafraîchissements simultanés ne font qu'une requête (les jetons de rafraîchissement sont à usage unique). | — |
+| <a id="tu-auth-06"></a>`TU-AUTH-06` | offline boot recovers: sync resumes on the next keep-alive once the network is back | Démarrage hors ligne puis retour du réseau : au tour suivant du minuteur de 5 min, le jeton est rafraîchi, les stores reliés, l'indicateur se vide. | [CPT-012](manuels/entree-et-comptes.md#cpt-012) |
+
+### Sauvegardes : format et refus — `tests/backup.test.js`
+
+- **Niveau** : Unitaire pur (U). **Sujet** : `src/core/backup.js` (`parseBackup`, `createBackup`).
+- **Simulé** : Rien.
+- **Limites** : Valide la forme des fichiers ; l'import complet (remplacement, synchronisation) est testé ailleurs (`TU-SYN-15`).
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-bak-01"></a>`TU-BAK-01` | export v1 round trips without changing data | Exporter puis relire une sauvegarde rend exactement les mêmes données. | [DON-001](manuels/donnees-sauvegardes.md#don-001), [DON-007](manuels/donnees-sauvegardes.md#don-007) |
+| <a id="tu-bak-02"></a>`TU-BAK-02` | malformed nested collections are rejected before import | Six formes abîmées sont refusées : étapes non liste, opérations non liste, module `null`, élément de boîte non objet, date d'écriture non numérique, format `selene-v2`. | [DON-005](manuels/donnees-sauvegardes.md#don-005) |
+| <a id="tu-bak-03"></a>`TU-BAK-03` | older v1 backups with missing optional sections can be restored | Une ancienne sauvegarde v1 sans budget ni liste de modules se restaure. | — |
+| <a id="tu-bak-04"></a>`TU-BAK-04` | oversized backup is rejected | Un fichier de plus de 5 000 000 caractères est refusé. | [DON-005](manuels/donnees-sauvegardes.md#don-005) |
+| <a id="tu-bak-05"></a>`TU-BAK-05` | hostile backups are rejected: markup in ids, absurd numbers, bad dates | Douze sauvegardes hostiles sont refusées : balisage dans un identifiant de module, identifiant réservé, nombres absurdes ou en HTML, dates impossibles, valeur « NaN », entrée sans identifiant, fréquence négative, clé de partage piégée, montant textuel. | [DON-005](manuels/donnees-sauvegardes.md#don-005) |
+| <a id="tu-bak-06"></a>`TU-BAK-06` | a well-formed custom module still imports | Un module personnalisé bien formé (`lecture-2`) s'importe avec ses entrées. | — |
+| <a id="tu-bak-07"></a>`TU-BAK-07` | a backup from a newer schema is refused with an explicit message | Une sauvegarde au format 99 est refusée avec le message « … plus récente … ». | [DON-004](manuels/donnees-sauvegardes.md#don-004) |
+| <a id="tu-bak-08"></a>`TU-BAK-08` | connexions externes : Dehors et le radar, validés comme le reste | Flux de Dehors, veilles et mots du radar sont validés : adresse `javascript:`, identifiant piégé, plus de cent flux, plus de trente veilles, mots de plus de 300 caractères, genre de veille inconnu sont refusés. | — |
+
+### Sorties du build, politique de confidentialité, page de test — `tests/build.test.js`
+
+- **Niveau** : Statique (S). **Sujet** : `build.py --dist`, `confidentialite.html`, `privacy.html`, `essai.html`.
+- **Simulé** : Lance `python3 build.py --dist` puis lit les fichiers produits.
+- **Limites** : Contrôle le contenu des pages, pas leur affichage ; les mentions RGPD sont cherchées par motifs de texte.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-bld-01"></a>`TU-BLD-01` | web et artefact : exactement les fichiers versionnés (vérifiés par build.py --check) | `dist/web` et `dist/artifact` contiennent exactement les fichiers versionnés ; icônes copiées à l'identique. | — |
+| <a id="tu-bld-02"></a>`TU-BLD-02` | polices : servies par le site et les apps, avec leurs licences ; Google Fonts dans l’artefact seulement | Site et apps : 24 fichiers de polices servis par le site, CSP `font-src 'self'`, rien chez Google ; l'artefact seul charge Google Fonts ; le service worker ne met pas Google en cache. | [TRV-009](manuels/transverse.md#trv-009) |
+| <a id="tu-bld-03"></a>`TU-BLD-03` | politique de confidentialité : publiée avec le site (en français et en anglais), sans script ni ressource extérieure, et liée depuis les Réglages | Les politiques française et anglaise sont publiées, sans script, avec la même date, nomment chaque service contacté par l'app, et sont liées depuis les Réglages. | [TRV-012](manuels/transverse.md#trv-012) |
+| <a id="tu-bld-04"></a>`TU-BLD-04` | politique de confidentialité : ce que demande l’article 13 du RGPD, dans les deux langues | Dans les deux langues : sections de l'article 13, responsable nommée, contact par courriel (jamais un ticket public), bases légales 6.1.a, 6.1.b, 9.2.a, 6.1.f, hébergement à Paris, lien de réclamation à la CNIL. | [TRV-012](manuels/transverse.md#trv-012) |
+| <a id="tu-bld-05"></a>`TU-BLD-05` | page publique de test (E3) : statique, son script et ses styles autorisés par leur empreinte, Supabase seul en réseau | `essai.html` : un seul script et deux feuilles de style autorisés par empreinte, rien d'inline, réseau limité au projet Supabase, aucun stockage ni cookie, images et aperçu publiés, « Essayer sans compte » vers `index.html#sans-compte`, prix affiché. | [TRV-013](manuels/transverse.md#trv-013) |
+| <a id="tu-bld-06"></a>`TU-BLD-06` | le script produit ne dépend pas de la machine : aucun chemin absolu | Le script produit ne contient aucun chemin absolu de la machine de build. | — |
+| <a id="tu-bld-07"></a>`TU-BLD-07` | natif : l’amorçage puis le même script, sans service worker ni manifeste | La page native contient l'amorçage puis le même script que le web, sans service worker ni manifeste ; chaque CSP n'autorise que ses propres scripts. | — |
+
+### Carte céleste — `tests/carte.test.js`
+
+- **Niveau** : Unitaire pur (U). **Sujet** : `src/core/carte.js`.
+- **Simulé** : Rien.
+- **Limites** : Le dessin SVG et l'interaction sont dans `TN-carte`.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-cart-01"></a>`TU-CART-01` | carte : la même entrée toujours au même endroit, quel que soit l’ordre reçu | La même entrée est toujours à la même place, quel que soit l'ordre reçu. | [PEN-014](manuels/penser-avec.md#pen-014) |
+| <a id="tu-cart-02"></a>`TU-CART-02` | carte : le temps de gauche à droite, une bande par espace dans l’ordre de la navigation | Le temps de gauche à droite (sans date : colonne du bord), une bande par espace dans l'ordre de la navigation, plus de liens = plus grosse étoile. | [PEN-014](manuels/penser-avec.md#pen-014) |
+| <a id="tu-cart-03"></a>`TU-CART-03` | carte : les liens ne relient que des étoiles présentes, la tension ouverte est marquée | Un lien vers une entrée absente est omis ; la tension ouverte est marquée. | [PEN-014](manuels/penser-avec.md#pen-014) |
+| <a id="tu-cart-04"></a>`TU-CART-04` | carte : vingt étoiles le même jour dans la même bande ne s’empilent pas au même point | Vingt étoiles le même jour dans la même bande sont étagées sans sortir de la bande. | [PEN-014](manuels/penser-avec.md#pen-014) |
+| <a id="tu-cart-05"></a>`TU-CART-05` | carte : le voisinage, en largeur d’abord, coupé à 80 en gardant les plus proches | Le voisinage est parcouru en largeur, deux degrés au plus, et coupé à 80 en gardant les plus proches. | [PEN-014](manuels/penser-avec.md#pen-014) |
+
+### Dehors : tri explicable — `tests/dehors.test.js`
+
+- **Niveau** : Unitaire pur (U). **Sujet** : `src/app/features/dehors-feed.js`.
+- **Simulé** : Flux déjà lus, en mémoire.
+- **Limites** : Ni lecture de flux réels, ni passeur.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-deh-01"></a>`TU-DEH-01` | sans croisement : du plus récent au plus ancien, comme avant | Sans croisement, les éléments vont du plus récent au plus ancien, sans raison affichée. | [EXT-013](manuels/connexions.md#ext-013) |
+| <a id="tu-deh-02"></a>`TU-DEH-02` | motifs croisés : ce qui a des raisons passe devant, et les dit ; un lien paru dans deux flux, une fois | Ce qui croise tes sources ou tes motifs passe devant avec sa raison en toutes lettres ; un lien paru dans deux flux n'apparaît qu'une fois (« aussi dans… »). | [EXT-013](manuels/connexions.md#ext-013) |
+| <a id="tu-deh-03"></a>`TU-DEH-03` | écarté par sa clé : il ne revient pas par un autre flux ; « seulement mes motifs » filtre encore ; max | Un élément écarté ne revient pas par un autre flux ; « seulement mes motifs » filtre ; le plafond est respecté et le total compté. | [EXT-013](manuels/connexions.md#ext-013) |
+
+### Règles métier partagées — `tests/domain.test.js`
+
+- **Niveau** : Unitaire pur (U). **Sujet** : `src/core/domain.js`.
+- **Simulé** : Rien.
+- **Limites** : Deux règles seulement (tâches, budget et capture) ; le reste du domaine est couvert par `modules.test.js`.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-dom-01"></a>`TU-DOM-01` | task rules are shared by the UI and assistant | Titre vide refusé, titre nettoyé ; quatrième tâche du jour refusée ; une tâche faite quitte l'étoile et porte sa date ; la défaire efface la date ; tâche inconnue refusée. | [MOD-002](manuels/types-de-module.md#mod-002) |
+| <a id="tu-dom-02"></a>`TU-DOM-02` | budget and capture reject invalid input without changing collections | Montants 0, −1, Infinity, « hello » et date du 30 février refusés sans rien ajouter ; capture vide refusée ; valeurs valides gardées, texte nettoyé. | [MOD-005](manuels/types-de-module.md#mod-005) |
+
+### Langues de l'interface — `tests/i18n.test.js`
+
+- **Niveau** : Unitaire et statique (U, S). **Sujet** : `src/app/i18n/`, dictionnaire `en.js`, déclarations des coquilles natives.
+- **Simulé** : Fonctions de traduction appelées directement ; sources lues comme du texte.
+- **Limites** : Ne juge pas la qualité des traductions ; l'interface traduite à l'écran est dans `TN-langue`.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-i18n-01"></a>`TU-I18N-01` | le français est la source : le texte tel qu’écrit, valeurs comprises | Le français est la source : le texte tel qu'écrit, valeurs comprises. | — |
+| <a id="tu-i18n-02"></a>`TU-I18N-02` | une traduction : clé « … {0} … », valeurs déplaçables, repli sur le français | Une traduction utilise la clé « … {0} … », peut déplacer les valeurs, et retombe sur le français sans traduction. | — |
+| <a id="tu-i18n-03"></a>`TU-I18N-03` | le contexte distingue deux sens d’un même mot (gettext : msgctxt) | Le contexte (`trp`) distingue deux sens d'un même mot. | — |
+| <a id="tu-i18n-04"></a>`TU-I18N-04` | pluriels : les catégories du CLDR de chaque langue (0 est singulier en français, pluriel en anglais) | Pluriels selon le CLDR : 0 singulier en français, pluriel en anglais. | — |
+| <a id="tu-i18n-05"></a>`TU-I18N-05` | la langue en vigueur : le choix du compte s’il est proposé, sinon l’appareil, sinon le français | La langue en vigueur : celle du compte si elle est proposée, sinon celle de l'appareil, sinon le français. | [NAV-009](manuels/navigation-reglages.md#nav-009) |
+| <a id="tu-i18n-06"></a>`TU-I18N-06` | pseudo-langue : chaque texte traduit se voit (⟦ ⟧, accents, un tiers plus long), les valeurs restent intactes | La pseudo-langue marque chaque texte traduit (⟦ ⟧, accents, un tiers plus long) sans toucher aux valeurs. | — |
+| <a id="tu-i18n-07"></a>`TU-I18N-07` | tri dans la langue : « é » se range avec « e », pas après « z » | Le tri suit la langue : « é » se range avec « e ». | — |
+| <a id="tu-i18n-08"></a>`TU-I18N-08` | plural : le « s » d’un mot choisi par la personne, au moment que dictent les règles de la langue | Le « s » d'un mot choisi par la personne s'ajoute selon les règles de la langue. | — |
+| <a id="tu-i18n-09"></a>`TU-I18N-09` | les libellés du noyau (statuts, liens) sont tous marqués pour la traduction | Les libellés du noyau (statuts, liens) sont tous marqués pour la traduction. | — |
+| <a id="tu-i18n-10"></a>`TU-I18N-10` | le ciel du noyau est couvert : temps, pluies d’étoiles, éclipses (2026-2030, depuis Lille), vents | Les textes du ciel (temps, pluies d'étoiles, éclipses 2026-2030, vents) sont tous traduits. | — |
+| <a id="tu-i18n-11"></a>`TU-I18N-11` | chaque erreur du noyau a sa traduction : codes levés par coreError, champs nommés par requireText | Chaque code d'erreur levé par le noyau et chaque champ nommé ont une traduction. | — |
+| <a id="tu-i18n-12"></a>`TU-I18N-12` | chaque erreur des fonctions serveur a son code, et chaque code sa traduction | Chaque erreur des fonctions serveur a un code, et chaque code une traduction. | — |
+| <a id="tu-i18n-13"></a>`TU-I18N-13` | les genres de source du noyau sont tous dans la liste à traduire | Les genres de source du noyau sont dans la liste à traduire. | — |
+| <a id="tu-i18n-14"></a>`TU-I18N-14` | les coquilles natives déclarent les langues proposées, ni plus ni moins (iOS, Android, installateur Windows) | iOS (`CFBundleLocalizations`), Android (`locales_config.xml`) et l'installateur Windows déclarent exactement les langues proposées. | [PLT-007](manuels/plateformes.md#plt-007) |
+| <a id="tu-i18n-15"></a>`TU-I18N-15` | un modèle de module se crée dans la langue de l’interface ; les valeurs du code ne bougent pas | Un modèle se crée dans la langue de l'interface ; les valeurs internes (affichage, mode de saisie) ne changent pas. | [NAV-009](manuels/navigation-reglages.md#nav-009) |
+| <a id="tu-i18n-16"></a>`TU-I18N-16` | un texte enregistré dans une langue se reconnaît dans toutes (provenances) | Une provenance enregistrée dans une langue se reconnaît dans l'autre. | — |
+| <a id="tu-i18n-17"></a>`TU-I18N-17` | les noms tr, trp, trn et N_ sont réservés dans src/app : aucune variable ne les masque | Aucune variable de `src/app` ne masque `tr`, `trp`, `trn` ou `N_`. | — |
+
+### Export Instagram — `tests/instagram.test.js`
+
+- **Niveau** : Unitaire pur (U). **Sujet** : `src/core/instagram.js`.
+- **Simulé** : Exports synthétiques.
+- **Limites** : Le format réel de Meta peut changer : seul un vrai export le dira.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-ig-01"></a>`TU-IG-01` | encodage : les octets de Meta retrouvent leur sens, un texte juste reste intact | L'encodage de Meta est réparé (« Ã© » redevient « é », émojis compris) sans abîmer un texte déjà juste. | [EXT-011](manuels/connexions.md#ext-011) |
+| <a id="tu-ig-02"></a>`TU-IG-02` | lecture : un seul média ou un carrousel, posts et reels, stories ignorées | Un média seul ou un carrousel, posts et reels lus ; stories ignorées ; entrée invalide → liste vide. | [EXT-011](manuels/connexions.md#ext-011) |
+| <a id="tu-ig-03"></a>`TU-IG-03` | élément : la première ligne en titre, la légende en texte, le jour en date, l’origine validée | Première ligne en titre, légende en texte, jour de publication en date ; un reel sans légende prend sa date pour titre ; l'origine `ig` est valide. | [EXT-011](manuels/connexions.md#ext-011) |
+
+### Le script d'isolation entre comptes — `tests/isolation.test.js`
+
+- **Niveau** : Contrat (C). **Sujet** : `scripts/isolation.mjs`.
+- **Simulé** : Une fausse base qui applique les règles RLS de `schema.sql`, puis percée d'un trou à la fois ; aucun réseau.
+- **Limites** : Prouve que le script détecte une fuite ; ne prouve rien sur les règles du vrai projet : c'est `TS-ISOLATION`, à lancer à la main sur la préproduction.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-iso-01"></a>`TU-ISO-01` | isolation : une base conforme à supabase/schema.sql refuse les douze requêtes (code 0) | Contre une base conforme à `schema.sql`, les douze requêtes interdites sont refusées : code de sortie 0. | [TRV-016](manuels/transverse.md#trv-016) |
+| <a id="tu-iso-02"></a>`TU-ISO-02` | isolation : chaque trou dans les règles fait échouer le test (code 1) et se voit à sa ligne | Chaque trou percé dans les règles (lecture, écriture, suppression, clés, administration) fait sortir en 1 et se voit à sa ligne. | — |
+| <a id="tu-iso-03"></a>`TU-ISO-03` | isolation : une écriture passée sans rien renvoyer se voit au contrôle final | Une écriture passée sans rien renvoyer (« muette ») est découverte au contrôle final de la ligne de B. | — |
+| <a id="tu-iso-04"></a>`TU-ISO-04` | isolation : un montage qui ne prouverait rien arrête tout (code 2), sans lancer les douze | Un montage qui ne prouverait rien (table absente, droits cassés) arrête tout avec le code 2, sans lancer les douze requêtes. | — |
+| <a id="tu-iso-05"></a>`TU-ISO-05` | isolation : le projet de l’app est refusé avant toute requête | L'adresse du projet de l'app est refusée avant toute requête. | — |
+| <a id="tu-iso-06"></a>`TU-ISO-06` | isolation : la clé secrète du projet est refusée avant toute requête | Une clé secrète (`service_role`, `sb_secret_`) est refusée avant toute requête. | — |
+| <a id="tu-iso-07"></a>`TU-ISO-07` | isolation : un refus pour une autre raison que la règle reste douteux | Un refus pour une autre raison que la règle (409…) est marqué douteux (code 2). | — |
+| <a id="tu-iso-08"></a>`TU-ISO-08` | isolation : les écritures à refuser ne demandent rien en retour, comme un compte malveillant | Les écritures à refuser demandent `return=minimal`, comme un compte malveillant. | — |
+| <a id="tu-iso-09"></a>`TU-ISO-09` | isolation : le script est déclaré et documenté, chaque variable nommée | Le script est déclaré dans `package.json`, documenté, chaque variable d'environnement nommée. | — |
+
+### Journal des erreurs — `tests/journal.test.js`
+
+- **Niveau** : Intégration simulée (I-H). **Sujet** : `src/app/services/journal.js`, table `erreurs`.
+- **Simulé** : Build hébergé dans une VM, faux PostgREST qui enregistre les envois.
+- **Limites** : La table réelle (purge à 30 jours, plafond horaire) n'est pas exécutée.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-jrn-01"></a>`TU-JRN-01` | journal : une erreur de programmation part sans compte, sans jeton, sans son message | Une exception non rattrapée part sans session ni jeton : genre, lieu `fichier:ligne:colonne`, empreinte du code ; ni le message, ni l'adresse, ni l'identifiant du compte. | [TRV-010](manuels/transverse.md#trv-010) |
+| <a id="tu-jrn-02"></a>`TU-JRN-02` | journal : les erreurs attendues ne partent pas (validation, noyau, réseau, abandon) | Validations, erreurs du noyau, coupures réseau et abandons ne partent pas ; un stockage plein (`QuotaExceededError`) part. | [TRV-010](manuels/transverse.md#trv-010) |
+| <a id="tu-jrn-03"></a>`TU-JRN-03` | journal : une fois chaque erreur, cinq au plus par chargement | La même erreur ne part qu'une fois ; cinq envois au plus par chargement. | — |
+| <a id="tu-jrn-04"></a>`TU-JRN-04` | journal : l’écran dit la vue ou le type, jamais l’identifiant d’un module (tiré de son nom) | L'écran est désigné par la vue ou `module:<type>`, jamais par l'identifiant d'un module ; un type sensible n'est désigné que par `module`. | — |
+| <a id="tu-jrn-05"></a>`TU-JRN-05` | journal : une action qui échoue sur un défaut part avec son nom ; coupé dans les Réglages, plus rien | Une action qui échoue sur un défaut part avec son nom ; l'interrupteur des Réglages (activé par défaut) coupe l'envoi pour l'appareil. | [TRV-010](manuels/transverse.md#trv-010) |
+| <a id="tu-jrn-06"></a>`TU-JRN-06` | journal : le premier cadre de la pile, réduit au fichier, pour Chrome, Firefox et Safari | Le premier cadre de la pile est réduit au nom de fichier, aux formats de Chrome, Firefox et Safari. | — |
+| <a id="tu-jrn-07"></a>`TU-JRN-07` | journal : l’empreinte du code est la même dans le site, l’artefact et les apps, et la table est dans le schéma | L'empreinte du code est la même dans le site, l'artefact et les apps ; la table `erreurs` est dans le schéma, sans règle de lecture ou de modification. | — |
+
+### Vérification des liens de santé — `tests/liens.test.js`
+
+- **Niveau** : Unitaire pur (U). **Sujet** : `scripts/liens.mjs`.
+- **Simulé** : Réponses réseau fabriquées.
+- **Limites** : Le vrai passage mensuel est `TS-LIENS`.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-lnk-01"></a>`TU-LNK-01` | liens : les adresses https des sources et de l’interface, sans ponctuation ni doublon | Le script relève les adresses https des sources de santé et de l'interface, sans ponctuation ni doublon, dont chaque hôte cité. | — |
+| <a id="tu-lnk-02"></a>`TU-LNK-02` | liens : une page disparue fait échouer, un refus est seulement signalé | Une page disparue (404, 410, domaine inconnu) fait échouer ; un refus (401, 403, 429, 5xx, délai) est seulement signalé. | — |
+
+### Modules, migrations, interface et « penser avec » — `tests/modules.test.js`
+
+- **Niveau** : Intégration simulée (I-A), parfois unitaire. **Sujet** : `selene.html` entier : registres de types, migrations, accueil, recherche, liaisons, bilan….
+- **Simulé** : Script de `selene.html` dans une VM Node, faux DOM (HTML lu comme une chaîne), stockage en mémoire, jeu d'essai `tests/fixtures/site-demo.json` (format 6, migré au chargement) sauf mention.
+- **Limites** : Aucun rendu ni clic réels : les actions sont appelées directement (`CLICK[…]`) ; ce que voit l'écran n'est vérifié que par motifs de HTML.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-mod-01"></a>`TU-MOD-01` | legacy site data (pre-generic-modules) migrates in place without data loss | Un document du format 1 (sections à la racine) devient des modules génériques : séances, mots, chapitres, fragments, journal gardés ; nom personnalisé conservé ; migration idempotente. | [DON-006](manuels/donnees-sauvegardes.md#don-006) |
+| <a id="tu-mod-02"></a>`TU-MOD-02` | a deleted built-in module is never resurrected by later S() calls | Un module supprimé n'est pas recréé par la normalisation au chargement suivant. | [ESP-007](manuels/espaces.md#esp-007), [SYN-006](manuels/synchronisation.md#syn-006) |
+| <a id="tu-mod-03"></a>`TU-MOD-03` | creating and deleting a custom module of each type works end to end | Créer un programme, un cumul et des rappels, y écrire, refuser un identifiant déjà pris, supprimer, refuser de supprimer deux fois. | [ESP-003](manuels/espaces.md#esp-003) |
+| <a id="tu-mod-04"></a>`TU-MOD-04` | backup export/import round trips the new generic module shape | Un export puis import garde les modules génériques et leurs entrées. | [DON-001](manuels/donnees-sauvegardes.md#don-001), [DON-007](manuels/donnees-sauvegardes.md#don-007) |
+| <a id="tu-mod-05"></a>`TU-MOD-05` | module ids never shadow fixed routes or Object.prototype names | « Réglages », « Accueil », « Constructor » ne donnent jamais l'identifiant d'une route fixe ou d'un nom de `Object.prototype` ; création forcée refusée. | [NAV-012](manuels/navigation-reglages.md#nav-012) |
+| <a id="tu-mod-06"></a>`TU-MOD-06` | fixed views win over a colliding module id already present in stored data | Un module nommé `reglages` déjà présent dans les données ne masque pas les Réglages ; `#constructor` ne plante pas et ramène à l'accueil. | [NAV-012](manuels/navigation-reglages.md#nav-012) |
+| <a id="tu-mod-07"></a>`TU-MOD-07` | journal entries reject non-numeric values instead of storing NaN | Une valeur « beaucoup » est refusée (pas de NaN) ; une valeur négative est permise dans un cumul (mots coupés). | — |
+| <a id="tu-mod-08"></a>`TU-MOD-08` | type registries: the pure and the UI halves declare exactly the same types | Les registres de types (données et interface) ont les mêmes clés ; chaque type a `view`, `settings`, `summary`, `context` ; ses actions sont branchées. | — |
+| <a id="tu-mod-09"></a>`TU-MOD-09` | every registered type works end to end through the registry alone | Chaque type, créé par le registre seul : une entrée, sa vue, ses réglages, son résumé, son contexte ; privé tant que non partagé avec l'assistant, présent une fois partagé ; tout passe la validation d'import. | [ESP-010](manuels/espaces.md#esp-010), [DON-007](manuels/donnees-sauvegardes.md#don-007), [AST-003](manuels/assistant.md#ast-003) |
+| <a id="tu-mod-10"></a>`TU-MOD-10` | S() is a pure read: calling it never changes the stored document | Lire le document (`S()`) ne le modifie jamais ; la migration a lieu une fois, au chargement. | — |
+| <a id="tu-mod-11"></a>`TU-MOD-11` | a re-render in Settings never wipes a field being typed in (any settings block) | Un rendu pendant la frappe dans un champ de réglage ne remplace pas la page ; une case à cocher, si. | [ESP-011](manuels/espaces.md#esp-011) |
+| <a id="tu-mod-12"></a>`TU-MOD-12` | format 2 → 3: october.moth and Musique become collections without losing anything | Format 2 → 3 : october.moth et Musique deviennent des collections ; nom, statut, regroupement et choix de partage gardés ; statut inconnu → premier statut ; résultat importable. | [DON-006](manuels/donnees-sauvegardes.md#don-006) |
+| <a id="tu-mod-13"></a>`TU-MOD-13` | a legacy section written late by an old app version is absorbed, not lost | Une ancienne section réécrite tard par une vieille version est absorbée dans le module, sans perte ni doublon. | — |
+| <a id="tu-mod-14"></a>`TU-MOD-14` | collection items: required title, disabled fields keep their value, unknown status falls back | Titre obligatoire (« Artiste : à remplir ») ; statut inconnu → premier ; un champ absent du formulaire garde sa valeur ; date invalide → vide. | [MOD-018](manuels/types-de-module.md#mod-018) |
+| <a id="tu-mod-15"></a>`TU-MOD-15` | collection grouping: done threshold and a disabled grouping field never break the panel | Le pourcentage d'un groupe suit le seuil « fait » ; un regroupement sur un champ masqué retombe sur le titre sans casser le panneau. | [MOD-018](manuels/types-de-module.md#mod-018) |
+| <a id="tu-mod-16"></a>`TU-MOD-16` | backup: collections are validated (statuses, dates) but need no journal date | Une collection exportée se réimporte ; statut unique, date impossible, champ non textuel, affichage inconnu sont refusés. | — |
+| <a id="tu-mod-17"></a>`TU-MOD-17` | format 3 → 4: the Capture becomes the designated Notes inbox, items and privacy kept | Format 3 → 4 : la Capture devient la boîte de réception (module Notes), ses notes, son nom et son partage gardés. | [DON-006](manuels/donnees-sauvegardes.md#don-006) |
+| <a id="tu-mod-18"></a>`TU-MOD-18` | only one inbox survives, even when two devices each designated one | Deux boîtes désignées (deux appareils) : une seule survit après normalisation. | [ESP-009](manuels/espaces.md#esp-009), [SYN-008](manuels/synchronisation.md#syn-008) |
+| <a id="tu-mod-19"></a>`TU-MOD-19` | a note can be filed into any module that accepts it, and nowhere else | Les destinations d'une note : tâches, écriture (si carnet), collections, rappels ; ni un programme, ni la boîte elle-même ; rangée, la note quitte la boîte et devient une observation. | [MOD-015](manuels/types-de-module.md#mod-015) |
+| <a id="tu-mod-20"></a>`TU-MOD-20` | without an inbox, the assistant loses its capture tool instead of failing | Sans boîte de réception, l'outil « capturer » de l'assistant disparaît. | [ESP-009](manuels/espaces.md#esp-009) |
+| <a id="tu-mod-21"></a>`TU-MOD-21` | format 4 → 5: the Budget becomes a generic module, operations, envelopes and settings kept | Format 4 → 5 : le Budget devient un module générique ; opérations, enveloppes, regroupement et nom gardés ; importable. | [DON-006](manuels/donnees-sauvegardes.md#don-006) |
+| <a id="tu-mod-22"></a>`TU-MOD-22` | budget: renaming a group renames its envelope, the assistant writes into the first budget module | Renommer un groupe du budget renomme l'enveloppe ; l'outil de l'assistant écrit dans le premier budget. | [MOD-006](manuels/types-de-module.md#mod-006) |
+| <a id="tu-mod-23"></a>`TU-MOD-23` | a new account starts nearly empty, with nothing personal, and is offered templates | Un compte neuf n'a que la boîte, rien de personnel, et voit « Composer ton espace » ; un modèle s'ajoute deux fois ; le nouvel espace est partagé avec l'assistant ; « C'est bon » referme le bloc. | [ESP-001](manuels/espaces.md#esp-001), [ESP-002](manuels/espaces.md#esp-002), [ESP-010](manuels/espaces.md#esp-010) |
+| <a id="tu-mod-24"></a>`TU-MOD-24` | existing accounts never see the welcome block (it is not a missing default) | Un compte existant ne voit jamais le bloc d'accueil. | [ESP-002](manuels/espaces.md#esp-002) |
+| <a id="tu-mod-25"></a>`TU-MOD-25` | every template builds a module that passes its own backup validation | Chaque modèle crée un module qui passe sa propre validation d'import ; les réglages du modèle complètent ceux du type. | [ESP-003](manuels/espaces.md#esp-003), [DON-002](manuels/donnees-sauvegardes.md#don-002) |
+| <a id="tu-mod-26"></a>`TU-MOD-26` | the seed stays pristine: a fresh device adopts the server instead of merging | Les données de départ sont vierges (`updatedAt` 0) et identiques d'un appel à l'autre. | [SYN-009](manuels/synchronisation.md#syn-009) |
+| <a id="tu-mod-27"></a>`TU-MOD-27` | deleting an item offers « Annuler », which puts it back where it was | Supprimer un élément affiche « Supprimé : « deux » » et « Annuler », qui le remet à sa place ; un second « Annuler » ne fait rien. | [MOD-022](manuels/types-de-module.md#mod-022) |
+| <a id="tu-mod-28"></a>`TU-MOD-28` | writing: in « total » mode the app records the difference, cuts included | Mode total : 1 000 puis 1 600 enregistre +600 ; 1 450 enregistre −150 ; le même total n'enregistre rien. | [MOD-009](manuels/types-de-module.md#mod-009) |
+| <a id="tu-mod-29"></a>`TU-MOD-29` | writing: a projected end date from the last 30 days, and honest when there is no pace | Sans élan : « Pas assez d'élan… » ; 30 000 mots en 30 jours : « 1 000 mots par jour » ; objectif dépassé : « Objectif atteint ». | [MOD-010](manuels/types-de-module.md#mod-010) |
+| <a id="tu-mod-30"></a>`TU-MOD-30` | home: a due reminder can be done, a session logged with the last duration, due items surface | L'accueil propose « fait » sur un rappel dû, « Noter 25 min » (dernière durée) et l'élément en retard ; noter enregistre 25 à la date du jour. | [MOD-007](manuels/types-de-module.md#mod-007), [MOD-013](manuels/types-de-module.md#mod-013) |
+| <a id="tu-mod-31"></a>`TU-MOD-31` | drafts are kept per view and field, and emptied when the field is sent | Un brouillon est gardé par vue et par champ, et effacé quand le champ est vidé. | [MOD-023](manuels/types-de-module.md#mod-023) |
+| <a id="tu-mod-32"></a>`TU-MOD-32` | search: every module, accents and case ignored, all words required, highlight stays aligned | La recherche parcourt tous les modules, ignore accents et casse, exige tous les mots, surligne au bon endroit même après un émoji, échappe le HTML ; `recherche` est une route réservée. | [NAV-004](manuels/navigation-reglages.md#nav-004) |
+| <a id="tu-mod-33"></a>`TU-MOD-33` | timer end: the open module proposes the obvious next step | À la fin du minuteur, un programme en minutes propose « Noter 15 min » ; en pages, rien. | [MOD-024](manuels/types-de-module.md#mod-024) |
+| <a id="tu-mod-34"></a>`TU-MOD-34` | a finished task with a cost offers to move it into the budget envelope | Terminer une tâche à 250 € propose de l'ajouter à l'enveloppe « Travaux » ; accepter crée la dépense ; l'enveloppe est devinée dans la langue de la personne. | [MOD-003](manuels/types-de-module.md#mod-003) |
+| <a id="tu-mod-35"></a>`TU-MOD-35` | capture patterns: money, minutes and « module : text » are recognised, nothing else | « 12,50 € courses… », « €12.50 courses », « 25 min kundalini », « 25 mins … », « Phidippus : … », « Écriture: … » sont reconnus ; « acheter du pain », « rdv : 14h… », « 25 min de marche », « 0 € » ne le sont pas ; ranger retire la note de la boîte. | [MOD-014](manuels/types-de-module.md#mod-014) |
+| <a id="tu-mod-36"></a>`TU-MOD-36` | writing workshop: fragments follow chapters and export as Markdown | L'export Markdown range les fragments sous leurs chapitres dans l'ordre, puis « Hors chapitre » ; le panneau compte les fragments par chapitre. | [MOD-011](manuels/types-de-module.md#mod-011) |
+| <a id="tu-mod-37"></a>`TU-MOD-37` | review periods: lunar cycles tile time exactly, months too, and the current one contains today | Les cycles lunaires se suivent sans trou (29 à 30 jours) et contiennent aujourd'hui ; les mois aussi, à travers le changement d'année. | [PEN-010](manuels/penser-avec.md#pen-010), [TRV-004](manuels/transverse.md#trv-004) |
+| <a id="tu-mod-38"></a>`TU-MOD-38` | review: each module sums what happened in the period, next to the previous one | Le bilan de chaque type pour la période (« 2 séances, 45 min », « 40,00 € dépensés », « 1 tâche terminée, 250,00… », « Rien de noté ») et la période d'avant. | [PEN-010](manuels/penser-avec.md#pen-010) |
+| <a id="tu-mod-39"></a>`TU-MOD-39` | epistemic status: « ? » marks a hypothesis, changes are dated, search filters by status | « ? » en tête seulement marque une hypothèse ; capture marquée, « ? » retiré ; changement daté ; vide retire ; `statut:` et `status:` filtrent, abréviations comprises ; décompte du bilan ; statut piégé refusé à l'import. | [PEN-001](manuels/penser-avec.md#pen-001) |
+| <a id="tu-mod-40"></a>`TU-MOD-40` | provenance: what is filed from a box keeps a frozen copy of the note it came from | Une note rangée laisse au fragment une copie de son texte, de sa date et de sa boîte ; le statut suit là où il se lit ; deux rangements gardent la première naissance ; « ↳ de Capture, 3 sept. » affiché ; provenance malformée refusée. | [PEN-002](manuels/penser-avec.md#pen-002) |
+| <a id="tu-mod-41"></a>`TU-MOD-41` | resumption bridge: the next step noted on leaving shows on the module and at home, and its fate is kept | Fin du minuteur : le champ du pont s'ouvre ; le pont s'affiche dans le module et sur l'accueil ; remplacé puis repris : historique « remplacé », « repris » ; « Annuler » le remet ; pont malformé refusé. | [PEN-006](manuels/penser-avec.md#pen-006) |
+| <a id="tu-mod-42"></a>`TU-MOD-42` | decisions: a revision date comes back whatever the state, the reason is reread, « maintenue » is logged | Une décision « Prise » échue revient sur l'accueil, pas une « Abandonnée » ni une future ; « maintenue » date le réexamen et lève le rendez-vous ; « Annuler » rétablit ; une collection ordinaire ne fait pas revenir ce qui est fait. | [MOD-019](manuels/types-de-module.md#mod-019) |
+| <a id="tu-mod-43"></a>`TU-MOD-43` | concordance: motifs counted as whole words across modules, with neighbours and fallow ones | Les motifs se comptent en mot entier, pluriel toléré (« lunettes » exclu), hors de leur propre module, variantes comprises ; voisins dès deux rencontres ; jachère sauf « Épuisé » ; jachère négative refusée à l'import. | [MOD-020](manuels/types-de-module.md#mod-020) |
+| <a id="tu-mod-44"></a>`TU-MOD-44` | settings numbers stay within what backup validation accepts, so an export can always be restored | Un nombre de réglage hors bornes (600 semaines, −4) est ramené à 520 ou 1 ; chaque champ porte le maximum de sa validation ; l'export reste importable. | [DON-010](manuels/donnees-sauvegardes.md#don-010) |
+| <a id="tu-mod-45"></a>`TU-MOD-45` | decisions: editing an overdue revision date counts as a review; an ordinary edit does not | Déplacer une date de révision échue compte comme un réexamen ; changer seulement le titre, ou une date future, non ; seulement en mode révision. | [MOD-019](manuels/types-de-module.md#mod-019) |
+| <a id="tu-mod-46"></a>`TU-MOD-46` | concordance: multi-word variants, accents, and the same answer as before the inverted index | Variantes de plusieurs mots avec espaces quelconques, après ponctuation, sans accents ; « papillon de jour » et « mothra » exclus. | [MOD-020](manuels/types-de-module.md#mod-020) |
+| <a id="tu-mod-47"></a>`TU-MOD-47` | lexical drift: words proper to the period against the six before, stopwords and plurals handled | Sous cinq textes, le bilan le dit ; mots émergents et absents par rapport aux six périodes d'avant, une fois par texte, mots vides et nombres écartés ; « + » ajoute un motif une seule fois ; le module Motifs n'entre pas dans le corpus. | [PEN-012](manuels/penser-avec.md#pen-012) |
+| <a id="tu-mod-48"></a>`TU-MOD-48` | texts in several languages: each read in its own (stopwords, plurals); motifs find English plurals too | La langue d'un texte est devinée ; mots vides et pluriels anglais traités dans un texte anglais ; règles françaises dans un texte français ; les motifs trouvent les pluriels des deux langues. | [PEN-012](manuels/penser-avec.md#pen-012) |
+| <a id="tu-mod-49"></a>`TU-MOD-49` | links: derive, contradict, backlinks, tensions resolved by a synthesis of both | Lien de type inconnu ou mal formé refusé ; « dériver » relie la prochaine entrée ; lien entrant « a donné » ; tension ouverte puis levée par une synthèse des deux ; cible supprimée « (supprimé) » ; lien piégé refusé à l'import. | [PEN-003](manuels/penser-avec.md#pen-003), [PEN-004](manuels/penser-avec.md#pen-004), [PEN-005](manuels/penser-avec.md#pen-005) |
+| <a id="tu-mod-50"></a>`TU-MOD-50` | links: a filed note carries its links and the links aimed at it follow it | Une note rangée emporte ses liens sortants, et les liens qui la visaient la suivent. | [PEN-005](manuels/penser-avec.md#pen-005) |
+| <a id="tu-mod-51"></a>`TU-MOD-51` | links: added on two devices to the same entry, both survive the merge | Deux liens ajoutés à la même entrée sur deux appareils survivent tous deux à la fusion. | [SYN-002](manuels/synchronisation.md#syn-002) |
+| <a id="tu-mod-52"></a>`TU-MOD-52` | dossier: dated, labelled entries with status, provenance and links as internal cross-references | Le dossier : entrées datées et étiquetées, statut, provenance, liens en renvois internes numérotés, en-tête YAML et préambule. | [PEN-008](manuels/penser-avec.md#pen-008) |
+| <a id="tu-mod-53"></a>`TU-MOD-53` | dossier de passation : les sources qui documentent une entrée, en références avec leur DOI | Le dossier cite les sources qui documentent une entrée (`[S1]`, `[S2]`, numérotées à la première citation) et les liste en références avec leur DOI ; sans source, pas de section. | [PEN-008](manuels/penser-avec.md#pen-008) |
+| <a id="tu-mod-54"></a>`TU-MOD-54` | long lists show a hundred items, then « voir les suivants » | Une liste de 250 notes en montre 100, du plus récent, puis « Voir les 100 suivants (150 de plus) », jusqu'à tout montrer. | [NAV-006](manuels/navigation-reglages.md#nav-006), [MOD-025](manuels/types-de-module.md#mod-025) |
+| <a id="tu-mod-55"></a>`TU-MOD-55` | arc: placing, empty stations stay visible, removal, station lifecycle | Trois étapes de départ ; fragments et éléments de collection placables, pas les motifs ; étapes vides affichées « Vide. » ; retrait, renommage, cible supprimée ; placements et étapes piégés refusés à l'import. | [MOD-021](manuels/types-de-module.md#mod-021) |
+| <a id="tu-mod-56"></a>`TU-MOD-56` | tiers: criteria are self-written and self-checked, the app never advances a tier on its own | Paliers invisibles tant qu'on n'en ajoute pas ; critère vidé supprimé ; cocher n'avance jamais ; « Passer au palier suivant » date le passage ; une décision préremplie s'ouvre sans rien enregistrer avant validation. | [MOD-008](manuels/types-de-module.md#mod-008) |
+| <a id="tu-mod-57"></a>`TU-MOD-57` | palimpsest: editing a fragment keeps its earlier text, capped, visible in place | Texte identique ou vide : pas une modification ; chaque modification garde l'ancienne version, dix au plus (la plus ancienne perdue) ; affichage « modifié aujourd'hui », « 10 versions antérieures » ; versions piégées refusées. | [MOD-012](manuels/types-de-module.md#mod-012) |
+| <a id="tu-mod-58"></a>`TU-MOD-58` | sortes: only what has been silent long enough is drawn, weighted by how long | Seul ce qui dort depuis 14 jours au moins est tiré ; une retouche le sort du bassin ; un module désactivé n'apporte rien ; tensions et motifs en jachère entrent, pas un motif jamais rencontré ni épuisé. | [ESP-006](manuels/espaces.md#esp-006), [PEN-009](manuels/penser-avec.md#pen-009) |
+| <a id="tu-mod-59"></a>`TU-MOD-59` | lunar test: the Rayleigh statistic tells concentrated activity from spread activity, honestly | Sous 40 événements : « Pas assez de matière… » ; activité concentrée : R > 0,9 et p < 0,001 près de la pleine lune ; répartie : non significatif (« La lune plaide non coupable »). | [PEN-011](manuels/penser-avec.md#pen-011) |
+| <a id="tu-mod-60"></a>`TU-MOD-60` | sortes : une source gardée et reliée à rien entre au bassin ; reliée, elle en sort | Une source gardée et reliée à rien entre au bassin des sortes (sans date : au seuil de 14 jours) ; reliée, elle en sort ; date `kept` piégée refusée. | [PEN-009](manuels/penser-avec.md#pen-009) |
+| <a id="tu-mod-61"></a>`TU-MOD-61` | new templates contain no personal data or imposed budget and care presets | Les modèles ne contiennent aucune entrée ni donnée personnelle, ni enveloppe ni soin imposés. | [ESP-001](manuels/espaces.md#esp-001) |
+| <a id="tu-mod-62"></a>`TU-MOD-62` | programme installation waits for a chosen practice and validates its settings | Le modèle Protocole ne crée rien tant que le formulaire n'est pas validé ; 9 séances par semaine refusées ; les valeurs saisies sont gardées. | [ESP-004](manuels/espaces.md#esp-004) |
+
+### MusicBrainz — `tests/musique.test.js`
+
+- **Niveau** : Unitaire pur (U). **Sujet** : `src/core/musique.js`.
+- **Simulé** : Réponses MusicBrainz fabriquées.
+- **Limites** : L'API réelle et son quota (une requête par seconde) ne sont pas appelés.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-mus-01"></a>`TU-MUS-01` | recherche d’artiste : le nom entre guillemets, sans casser la syntaxe | La recherche d'artiste met le nom entre guillemets et échappe les guillemets. | [EXT-005](manuels/connexions.md#ext-005) |
+| <a id="tu-mus-02"></a>`TU-MUS-02` | discographie : albums et EP studio seulement, du plus ancien au plus récent, sans doublon | Discographie : albums et EP studio, du plus ancien au plus récent, sans doublon ; parutions après une date (date partielle = premier jour). | [EXT-005](manuels/connexions.md#ext-005) |
+| <a id="tu-mus-03"></a>`TU-MUS-03` | pochettes et validation : un identifiant MusicBrainz ou rien | L'adresse de pochette n'accepte qu'un identifiant MusicBrainz ; la référence `mb` est validée. | [EXT-005](manuels/connexions.md#ext-005) |
+
+### Amorçage des coquilles natives — `tests/native-boot.test.js`
+
+- **Niveau** : Intégration simulée (I-N). **Sujet** : `src/native/boot.js`.
+- **Simulé** : Faux plugins Capacitor (fichiers, trousseau, notifications, widget) et faux `invoke` Tauri, dans une VM.
+- **Limites** : Aucun appareil, aucun vrai plugin : le comportement des systèmes (Android, iOS, Windows) reste à essayer à la main.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-nat-01"></a>`TU-NAT-01` | hors d’une coquille native : rien | Hors coquille native, l'amorçage ne fait rien. | — |
+| <a id="tu-nat-02"></a>`TU-NAT-02` | storage : un fichier par clé, écrit par un temporaire renommé, relu tel quel | Un fichier par clé, écrit dans un temporaire puis renommé, relu tel quel ; premier lancement : dossier créé. | [PLT-003](manuels/plateformes.md#plt-003) |
+| <a id="tu-nat-03"></a>`TU-NAT-03` | storage : une coupure avant le renommage laisse la dernière écriture complète, jamais un fichier à moitié | Une coupure avant le renommage laisse la dernière écriture complète. | [PLT-003](manuels/plateformes.md#plt-003) |
+| <a id="tu-nat-04"></a>`TU-NAT-04` | secrets : dans le trousseau, sous le préfixe selene: | Les secrets vont dans le trousseau sous le préfixe `selene:` ; seuls les siens sont relus. | — |
+| <a id="tu-nat-05"></a>`TU-NAT-05` | bouton retour : l’historique, sinon quitter ; mise en pause : pagehide | Bouton retour : l'historique, sinon quitter ; mise en arrière-plan : `pagehide` (qui envoie ce qui attend). | [PLT-004](manuels/plateformes.md#plt-004), [PLT-012](manuels/plateformes.md#plt-012) |
+| <a id="tu-nat-06"></a>`TU-NAT-06` | Tauri : les coffres passent par les six commandes de l’app, avec leurs arguments | Sous Tauri, les coffres passent par les six commandes avec leurs arguments. | [PLT-009](manuels/plateformes.md#plt-009) |
+| <a id="tu-nat-07"></a>`TU-NAT-07` | liens selene:// (iOS, Android) : partage rangé dans la file, capture relayée, autres ignorés | Un lien `selene://share` est rangé pour la page (`selene-share`), `selene://capture` relayé ; les autres schémas ignorés. | [EXT-017](manuels/connexions.md#ext-017), [PLT-004](manuels/plateformes.md#plt-004), [PLT-008](manuels/plateformes.md#plt-008) |
+| <a id="tu-nat-08"></a>`TU-NAT-08` | notifications : la liste donnée remplace tout ce qui était programmé, avec de vraies dates ; haptique légère | La liste de notifications remplace tout ce qui était programmé, avec de vraies dates (`Date`) ; liste vide = tout annuler ; retour haptique léger. | [PLT-005](manuels/plateformes.md#plt-005) |
+| <a id="tu-nat-09"></a>`TU-NAT-09` | widget (Android) : la lune et des lignes de texte, rien d’autre, vers le plugin de l’app | Le widget Android reçoit la lune et des lignes de texte, rien d'autre. | [PLT-006](manuels/plateformes.md#plt-006) |
+
+### Couche plateforme : stockage, secrets, secours — `tests/platform.test.js`
+
+- **Niveau** : Intégration simulée (I-P). **Sujet** : `src/platform.js`.
+- **Simulé** : `platform.js` traduit en CommonJS (esbuild), évalué avec de faux `localStorage`, IndexedDB et coffres.
+- **Limites** : IndexedDB est simulé ; le vrai navigateur est dans `TN-indexeddb` et `TN-secours`.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-plt-01"></a>`TU-PLT-01` | seul platform.js touche au stockage du navigateur, à window.claude et à navigator.storage | Seul `platform.js` touche à `localStorage`, `sessionStorage`, `window.claude` et `navigator.storage`. | — |
+| <a id="tu-plt-02"></a>`TU-PLT-02` | les secrets (session, clés d’API, adresse privée d’agenda) ne passent jamais par platform.storage | Session, clés d'API et adresse d'agenda ne passent jamais par le stockage ordinaire. | — |
+| <a id="tu-plt-03"></a>`TU-PLT-03` | web : stockage, secrets et session, lus et écrits | Sur le web : stockage, secrets et session lus et écrits ; les secrets partagent `localStorage`, la session est à part. | — |
+| <a id="tu-plt-04"></a>`TU-PLT-04` | stockage refusé (navigation privée, quota) : null ou false, jamais une exception | Un stockage refusé (navigation privée, quota) rend `null` ou `false`, jamais une exception. | — |
+| <a id="tu-plt-05"></a>`TU-PLT-05` | runtime : artefact claude.ai ou web, et ses espaces de noms | Le runtime distingue l'artefact claude.ai et le web, et leurs espaces de noms. | [PLT-011](manuels/plateformes.md#plt-011) |
+| <a id="tu-plt-06"></a>`TU-PLT-06` | web : platform.ready démarre aussitôt, de façon synchrone (comme avant la façade) | Sur le web, l'app démarre aussitôt. | — |
+| <a id="tu-plt-07"></a>`TU-PLT-07` | natif : rien ne démarre avant l’hydratation des deux coffres ; ensuite, lectures synchrones | En natif, rien ne démarre avant l'hydratation des deux coffres ; ensuite, lectures synchrones. | [PLT-003](manuels/plateformes.md#plt-003) |
+| <a id="tu-plt-08"></a>`TU-PLT-08` | natif : écriture immédiate en mémoire, dans l’ordre vers le coffre, et flush attend la fin | En natif, une écriture est lue aussitôt, part dans l'ordre vers le coffre, et `flush` attend la fin. | — |
+| <a id="tu-plt-09"></a>`TU-PLT-09` | natif : un coffre qui refuse une écriture ne casse rien ; un coffre illisible n’ouvre pas une app vide | Un coffre qui refuse une écriture ne casse rien ; un coffre illisible empêche le démarrage (pour ne pas écraser les données). | [PLT-003](manuels/plateformes.md#plt-003) |
+| <a id="tu-plt-10"></a>`TU-PLT-10` | secours : à la fermeture, la dernière valeur de chaque clé en route, le document avant sa base ; retirée quand l’écriture aboutit | À la fermeture, la dernière valeur de chaque clé en route est copiée dans `localStorage` (document avant sa base), puis retirée quand l'écriture aboutit. | — |
+| <a id="tu-plt-11"></a>`TU-PLT-11` | secours : une écriture plus récente, dans un autre onglet, retire la copie laissée par le premier | Une écriture plus récente dans un autre onglet retire la copie de secours laissée par le premier. | — |
+| <a id="tu-plt-12"></a>`TU-PLT-12` | secours : une écriture refusée par IndexedDB (quota, transaction annulée) reste à sauver, jusqu’à la suivante qui aboutit | Une écriture refusée par IndexedDB reste à sauver jusqu'à la suivante qui aboutit. | — |
+| <a id="tu-plt-13"></a>`TU-PLT-13` | secours : un reste refusé ici cède à une écriture qui a abouti dans un autre onglet | Un reste refusé cède à une écriture qui a abouti dans un autre onglet. | — |
+| <a id="tu-plt-14"></a>`TU-PLT-14` | secours : si IndexedDB refuse de les reprendre, les copies restent pour le démarrage suivant | Si IndexedDB refuse de reprendre les copies au démarrage, elles restent pour le démarrage suivant. | — |
+| <a id="tu-plt-15"></a>`TU-PLT-15` | secours : au démarrage, les copies rejoignent IndexedDB (effacements compris), puis quittent localStorage | Au démarrage, les copies rejoignent IndexedDB (effacements compris) puis quittent `localStorage`, qui ne garde que les secrets. | — |
+| <a id="tu-plt-16"></a>`TU-PLT-16` | migration : les clés ordinaires passent dans IndexedDB, les secrets restent, IndexedDB l’emporte | Migration : les clés ordinaires passent de `localStorage` à IndexedDB, les secrets restent, la valeur d'IndexedDB l'emporte si elle existe. | [DON-008](manuels/donnees-sauvegardes.md#don-008) |
+| <a id="tu-plt-17"></a>`TU-PLT-17` | migration : si IndexedDB refuse l’écriture, rien ne quitte localStorage | Si IndexedDB refuse la migration, rien ne quitte `localStorage`. | — |
+| <a id="tu-plt-18"></a>`TU-PLT-18` | les secrets déclarés par platform sont ceux que la déconnexion efface | Les secrets déclarés par la plateforme sont exactement ceux que la déconnexion efface. | [CPT-013](manuels/entree-et-comptes.md#cpt-013) |
+| <a id="tu-plt-19"></a>`TU-PLT-19` | notifications et haptique : absentes sur le web, relayées vers la coquille native | Notifications et haptique : absentes sur le web, relayées vers la coquille native. | [PLT-005](manuels/plateformes.md#plt-005) |
+| <a id="tu-plt-20"></a>`TU-PLT-20` | widget : absent sur le web, relayé vers la coquille native qui en a un | Widget : absent sur le web, relayé vers la coquille qui en a un. | [PLT-006](manuels/plateformes.md#plt-006) |
+| <a id="tu-plt-21"></a>`TU-PLT-21` | un démarrage impossible se dit dans la langue de l’appareil (l’anglais ou, sinon, le français) | Un démarrage impossible est annoncé dans la langue de l'appareil. | — |
+
+### Radar culturel — `tests/radar.test.js`
+
+- **Niveau** : Unitaire pur (U). **Sujet** : `src/core/radar.js`.
+- **Simulé** : Réponses OpenAgenda fabriquées.
+- **Limites** : Le portail réel (champs, CORS) n'est pas appelé.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-rad-01"></a>`TU-RAD-01` | requête : la zone arrondie et deux semaines, sans aucun mot | La requête OpenAgenda porte la zone arrondie (20 km) et deux semaines, tout le jeu (`limit=-1`), triée par date, jamais les mots. | [EXT-010](manuels/connexions.md#ext-010) |
+| <a id="tu-rad-02"></a>`TU-RAD-02` | réponse : champs tolérants, adresse https seulement, doublons écartés | Réponse lue avec des champs tolérants ; seules les adresses https sont gardées ; doublons écartés ; réponse invalide → liste vide. | [EXT-010](manuels/connexions.md#ext-010) |
+| <a id="tu-rad-03"></a>`TU-RAD-03` | tri : tes mots sans accents ni casse, du plus tôt au plus tard, cinq au plus | Tri sur l'appareil par tes mots sans accents ni casse, du plus tôt au plus tard, cinq au plus. | [EXT-010](manuels/connexions.md#ext-010) |
+
+### Reprendre la main — `tests/regulation.test.js`
+
+- **Niveau** : Unitaire pur (U) puis intégration simulée (I-A, I-H). **Sujet** : `src/core/regulation.js`, `src/app/modules/regulation.js`, `src/app/state/local.js`.
+- **Simulé** : Noyau pur (horloge et date passées en paramètres) ; puis `selene.html` ou `index.html` dans une VM, faux DOM, faux PostgREST pour le stockage sur l'appareil.
+- **Limites** : Les formulaires sont soumis par leur fonction de rappel, sans vrai clic ; l'affichage réel est dans `TN-regulation` et `TN-regulation-appareil`.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-reg-01"></a>`TU-REG-01` | un suivi naît sans sujet ; le sujet et la première version d’objectif se choisissent ensemble, puis le sujet est figé | Un suivi naît sans sujet ; aucune saisie avant le sujet ; sujet et première version d'objectif ensemble ; ensuite le sujet est figé (`reg-subject-locked`). | [RLM-003](manuels/reprendre-la-main.md#rlm-003), [RLM-006](manuels/reprendre-la-main.md#rlm-006) |
+| <a id="tu-reg-02"></a>`TU-REG-02` | les quatre sujets et les trois intentions : observer ne juge pas, réduire compare à la limite choisie, l’arrêt vise zéro | Quatre sujets × trois intentions : observer ne juge pas, réduire compare à la limite, l'arrêt vise zéro ; une journée confirmée à zéro atteint l'arrêt. | [RLM-007](manuels/reprendre-la-main.md#rlm-007) |
+| <a id="tu-reg-03"></a>`TU-REG-03` | unités entières et décimales, valeurs invalides, non finies, négatives ou démesurées | « 0,25 » accepté, 0,1 + 0,2 = 0,3 ; valeurs hors pas, non finies, négatives, démesurées ou absentes refusées ; 1 440 minutes par jour au plus ; rien d'enregistré après un refus. | [RLM-005](manuels/reprendre-la-main.md#rlm-005) |
+| <a id="tu-reg-04"></a>`TU-REG-04` | dates impossibles et à venir refusées pour les événements ; une date d’effet d’objectif peut être à venir | Dates impossibles ou à venir refusées pour les événements et la confirmation ; une date d'effet d'objectif peut être à venir (un an au plus) ; réduire à 0 ou 2,5 cigarettes refusé. | [RLM-007](manuels/reprendre-la-main.md#rlm-007), [RLM-014](manuels/reprendre-la-main.md#rlm-014), [RLM-015](manuels/reprendre-la-main.md#rlm-015) |
+| <a id="tu-reg-05"></a>`TU-REG-05` | minuit, fuseaux et changements d’heure : des dates locales, jamais reclassées | Dates locales déclarées, jamais reclassées par le fuseau ou le changement d'heure (Paris, Los Angeles, 29 mars, 25 octobre). | [RLM-015](manuels/reprendre-la-main.md#rlm-015), [TRV-005](manuels/transverse.md#trv-005) |
+| <a id="tu-reg-06"></a>`TU-REG-06` | absence de données ≠ zéro : une journée n’est complète qu’après confirmation de ce qui a été vu | Rien de noté : inconnue, pas zéro ; partielle : ni verdict ni abstinence ; zéro seulement une fois confirmé. | [RLM-008](manuels/reprendre-la-main.md#rlm-008) |
+| <a id="tu-reg-07"></a>`TU-REG-07` | ajout, correction, suppression ou changement de date d’une quantité rouvrent la journée ; une note, non | Ajout, correction de quantité, suppression ou changement de date rouvrent une journée confirmée ; retoucher une note ne rouvre rien. | [RLM-009](manuels/reprendre-la-main.md#rlm-009), [RLM-011](manuels/reprendre-la-main.md#rlm-011), [RLM-013](manuels/reprendre-la-main.md#rlm-013) |
+| <a id="tu-reg-08"></a>`TU-REG-08` | la confirmation refuse un instantané qui n’est plus celui que la personne a vu | Une confirmation portant un instantané qui n'est plus le bon est refusée (`reg-day-changed`), rien n'est validé. | [RLM-012](manuels/reprendre-la-main.md#rlm-012) |
+| <a id="tu-reg-09"></a>`TU-REG-09` | total quotidien : jamais additionné à ses propres saisies, refusé s’il est plus bas | Le total déclaré n'ajoute que la différence ; même total → rien ; total inférieur refusé ; total à zéro n'ajoute ni ne confirme rien. | [RLM-010](manuels/reprendre-la-main.md#rlm-010) |
+| <a id="tu-reg-10"></a>`TU-REG-10` | objectifs versionnés : la journée confirmée garde le sien, la nouvelle cible ne réécrit rien | À date d'effet égale, la dernière version créée ; une journée confirmée garde son objectif, même corrigée puis reconfirmée ; une version ajoutée n'en modifie aucune ; journée inconnue sans verdict. | [RLM-014](manuels/reprendre-la-main.md#rlm-014) |
+| <a id="tu-reg-11"></a>`TU-REG-11` | le début du suivi borne les périodes : rien d’antérieur ne compte comme inconnu ou échec | Le début du suivi (première date connue) borne les périodes : rien d'antérieur ne compte. | [RLM-019](manuels/reprendre-la-main.md#rlm-019) |
+| <a id="tu-reg-12"></a>`TU-REG-12` | comparaison de deux périodes : seulement si les couvertures sont suffisantes et voisines | Deux périodes ne se comparent qu'avec au moins quatre journées complètes chacune et deux d'écart au plus. | [RLM-019](manuels/reprendre-la-main.md#rlm-019) |
+| <a id="tu-reg-13"></a>`TU-REG-13` | envie : jamais un échec ni une marque ; choisir un appui n’est pas l’avoir fait ; « je l’ai fait » ne compte qu’une fois | Une envie (même avec un appui) ne donne pas de marque ; « je l'ai fait » crée une action d'identifiant déduit, une seule fois ; sans appui choisi, rien à déclarer. | [RLM-016](manuels/reprendre-la-main.md#rlm-016) |
+| <a id="tu-reg-14"></a>`TU-REG-14` | marques : une par date d’action ; ni envie, ni consommation, ni pause ; un écart ne retire rien ; une correction, si | Une marque par date d'action ; deux actions le même jour = une ; envie, consommation, pause n'en donnent pas ; un écart ne retire rien ; supprimer l'action corrige. | [RLM-018](manuels/reprendre-la-main.md#rlm-018) |
+| <a id="tu-reg-15"></a>`TU-REG-15` | appuis et récompense : une action par ligne, sans doublon ; seuil borné ; récompenses masquées par défaut | Appuis une action par ligne, sans doublon, vingt au plus ; seuil de récompense 1 à 365 ; marques masquées par défaut. | [RLM-018](manuels/reprendre-la-main.md#rlm-018) |
+| <a id="tu-reg-16"></a>`TU-REG-16` | pause de cinq minutes : échéance persistée, recalculée au retour, interrompue sans trace ni récompense | La pause garde son échéance absolue, se recalcule après relecture, s'affiche « terminée » puis disparaît ; ne donne rien ; modifier l'envie garde son état. | [RLM-017](manuels/reprendre-la-main.md#rlm-017) |
+| <a id="tu-reg-17"></a>`TU-REG-17` | corrections : identifiant, instant de saisie et type conservés ; correction datée à part | Une correction garde l'identifiant, l'instant et le type, et porte sa date de correction ; le type ne change pas. | [RLM-011](manuels/reprendre-la-main.md#rlm-011) |
+| <a id="tu-reg-18"></a>`TU-REG-18` | deux appareils hors ligne : marques dédupliquées, confirmation unique, quantité tardive qui rouvre la journée | Deux appareils hors ligne : marques dédupliquées, une seule confirmation par date ; une quantité tardive rouvre la journée confirmée de l'autre. | — |
+| <a id="tu-reg-19"></a>`TU-REG-19` | deux appareils qui commencent le même suivi avec deux sujets : la fusion le signale, et la sauvegarde reste restaurable | Deux appareils qui commencent le même suivi avec deux sujets : la fusion le signale ; l'état fusionné se restaure. | — |
+| <a id="tu-reg-20"></a>`TU-REG-20` | sauvegardes : un suivi complet se restaure ; un import invalide est refusé champ par champ | Un suivi complet se restaure, un suivi non configuré aussi ; vingt et un imports invalides refusés champ par champ ; version trop récente refusée. | — |
+| <a id="tu-reg-21"></a>`TU-REG-21` | partage avec l’assistant désactivé à la création, depuis le modèle comme depuis un type vide | Créé depuis le modèle comme depuis un type vide, le suivi n'est pas partagé avec l'assistant ; les autres types restent partagés ; le modèle est le dernier de la liste. | [RLM-001](manuels/reprendre-la-main.md#rlm-001) |
+| <a id="tu-reg-22"></a>`TU-REG-22` | confidentialité : aucune surface transversale ne lit les détails du suivi | Aucun mot du suivi n'apparaît dans le contexte de l'assistant, l'accueil (sauf « Suivi privé »), le bilan (pas même une ligne), la planche, la recherche, les motifs, le test lunaire, la dérive, les liaisons, les sortes, l'arc, le widget, le résumé du matin ; une note ne s'y range pas. | [RLM-020](manuels/reprendre-la-main.md#rlm-020) |
+| <a id="tu-reg-23"></a>`TU-REG-23` | partage choisi : un résumé explicite seulement, confirmé sur son texte exact ; l’arrêt ne promet pas l’oubli | Cocher le partage ouvre le résumé exact ; annuler ne partage rien ; confirmer partage ; le résumé ne contient ni notes, ni déclencheurs, ni appuis, ni récompense. | [RLM-021](manuels/reprendre-la-main.md#rlm-021) |
+| <a id="tu-reg-24"></a>`TU-REG-24` | l’écran du module : textes échappés, quatre actions, alcool informé sans répétition, export et suppression présents | L'écran échappe les textes, montre les quatre actions, ne mentionne le delirium tremens qu'une fois (replié), propose export et suppression. | [RLM-004](manuels/reprendre-la-main.md#rlm-004), [RLM-025](manuels/reprendre-la-main.md#rlm-025) |
+| <a id="tu-reg-25"></a>`TU-REG-25` | formulaire commun : un champ nombre garde ses bornes par défaut ; un champ date peut refuser l’avenir | Le formulaire commun : un champ nombre sans bornes garde `min="0" step="1"` ; un champ date peut refuser l'avenir (`max`). | [RLM-005](manuels/reprendre-la-main.md#rlm-005), [RLM-015](manuels/reprendre-la-main.md#rlm-015) |
+| <a id="tu-reg-26"></a>`TU-REG-26` | sur cet appareil seulement, sans question : le serveur ne reçoit que le talon, jamais le contenu | Sur l'appareil seulement, sans question : le serveur ne reçoit que le talon (nom, présence), jamais le contenu ; le résumé partagé se lit sur la copie locale. | [RLM-022](manuels/reprendre-la-main.md#rlm-022) |
+| <a id="tu-reg-27"></a>`TU-REG-27` | plus de synchronisation : ni choix du compte à la création, ni action pour y revenir | Plus de synchronisation : aucun choix « sur mon compte » à la création, stockage `device` posé sans question, aucune action ne synchronise. | [RLM-003](manuels/reprendre-la-main.md#rlm-003) |
+| <a id="tu-reg-28"></a>`TU-REG-28` | un suivi encore synchronisé avec un accord : un bandeau, puis gardé sur l’appareil ; jamais l’inverse | Un suivi encore synchronisé avec un accord : bandeau ; rien ne change tant que la personne n'a pas choisi ; « garder sur cet appareil » laisse au serveur le talon, rien de perdu ; jamais l'inverse. | [RLM-024](manuels/reprendre-la-main.md#rlm-024) |
+| <a id="tu-reg-29"></a>`TU-REG-29` | un suivi synchronisé d’avant la question : le même bandeau, rien ne change en silence ; sans compte, pas de question | Un suivi synchronisé d'avant la question : même bandeau, données laissées où elles sont ; sans compte, pas de question. | [RLM-024](manuels/reprendre-la-main.md#rlm-024) |
+| <a id="tu-reg-30"></a>`TU-REG-30` | hors de l’offre publique : l’espace n’est proposé qu’au compte marqué personnel par le serveur | L'espace n'est proposé (accueil, Réglages) qu'au compte marqué personnel ; sans compte et sur un compte ordinaire, ni modèle ni type, et la création elle-même refuse ; les autres types restent proposés. | [RLM-001](manuels/reprendre-la-main.md#rlm-001), [RLM-002](manuels/reprendre-la-main.md#rlm-002) |
+| <a id="tu-reg-31"></a>`TU-REG-31` | un autre appareil du compte : le nom seulement ; les données renvoyées reviennent au détenteur ; retirer le nom ailleurs | Un autre appareil voit le nom seulement ; les données renvoyées par un appareil resté hors ligne reviennent au détenteur ; retirer le nom ailleurs : le détenteur le recrée sans perte ; détenteur disparu : retrait définitif. | [RLM-022](manuels/reprendre-la-main.md#rlm-022), [RLM-026](manuels/reprendre-la-main.md#rlm-026) |
+| <a id="tu-reg-32"></a>`TU-REG-32` | se déconnecter avec un suivi gardé ici : exporter ou effacer, jamais une perte silencieuse | Se déconnecter avec un suivi gardé ici ouvre la garde avant tout effacement ; plus de synchronisation proposée ; rien mis de côté ni envoyé. | [RLM-023](manuels/reprendre-la-main.md#rlm-023) |
+| <a id="tu-reg-33"></a>`TU-REG-33` | changement de compte sur le même appareil : les suivis locaux suivent leur compte, jamais montrés à l’autre | Changement de compte : les suivis locaux du compte précédent sont mis de côté, jamais montrés au suivant, retrouvés à son retour. | [CPT-014](manuels/entree-et-comptes.md#cpt-014), [RLM-027](manuels/reprendre-la-main.md#rlm-027) |
+| <a id="tu-reg-34"></a>`TU-REG-34` | sauvegarde complète : le contenu gardé sur l’appareil y est ; restauré ailleurs, cet appareil en devient le détenteur | La sauvegarde complète contient le suivi entier (le site seul n'a que le talon) ; restaurée ailleurs, cet appareil en devient le détenteur. | [DON-001](manuels/donnees-sauvegardes.md#don-001), [RLM-025](manuels/reprendre-la-main.md#rlm-025) |
+| <a id="tu-reg-35"></a>`TU-REG-35` | validation : stockage, appareil détenteur et accord ont une forme contrôlée | Stockage, appareil détenteur et accord ont une forme contrôlée à l'import. | — |
+
+### Ciel de l'accueil — `tests/sky.test.js`
+
+- **Niveau** : Unitaire pur (U). **Sujet** : `src/core/sky.js`.
+- **Simulé** : Dates et lieux fixés, météo fabriquée.
+- **Limites** : Précision astronomique à quelques minutes ou degrés près ; Open-Meteo réel jamais appelé.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-sky-01"></a>`TU-SKY-01` | soleil : hauteur à Paris (solstices, minuit) | Hauteur du soleil à Paris aux solstices et à minuit. | — |
+| <a id="tu-sky-02"></a>`TU-SKY-02` | soleil : lever et coucher à Paris, le 28 septembre 2026 | Lever et coucher du soleil à Paris le 28 septembre 2026, à quelques minutes près. | — |
+| <a id="tu-sky-03"></a>`TU-SKY-03` | lune : la pleine lune est haute à minuit et couchée à midi | La pleine lune est haute vers minuit et couchée vers midi. | — |
+| <a id="tu-sky-04"></a>`TU-SKY-04` | lune : placée dans la fenêtre, face au sud, l’est à gauche | La lune est placée face au sud, l'est à gauche (à droite dans l'hémisphère austral) ; sous l'horizon, nulle part. | — |
+| <a id="tu-sky-05"></a>`TU-SKY-05` | sans lieu : longitude déduite du fuseau d’hiver | Sans lieu, la longitude est déduite du fuseau d'hiver (approximation). | [EXT-007](manuels/connexions.md#ext-007) |
+| <a id="tu-sky-06"></a>`TU-SKY-06` | météo : codes WMO → sept états | Les codes météo WMO donnent sept états ; une valeur invalide, aucun. | — |
+| <a id="tu-sky-07"></a>`TU-SKY-07` | scène : le texte posé sur le ciel garde 4,5:1, à toute heure, par tout temps, dans les deux modes | Le texte posé sur le ciel garde un contraste de 4,5:1 à toute heure, par tout temps, en clair et en sombre. | [TRV-006](manuels/transverse.md#trv-006) |
+| <a id="tu-sky-08"></a>`TU-SKY-08` | la version hébergée autorise Open-Meteo, et rien de plus | La CSP hébergée autorise Open-Meteo, et rien de plus pour le ciel. | [EXT-007](manuels/connexions.md#ext-007), [TRV-009](manuels/transverse.md#trv-009) |
+| <a id="tu-sky-09"></a>`TU-SKY-09` | scène : étoiles, halo et lune suivent la lumière réelle | Étoiles, halo et lune suivent la lumière réelle. | — |
+| <a id="tu-sky-10"></a>`TU-SKY-10` | ciel vivant : le vent réel donne le sens, la vitesse et la pente | Le vent mesuré donne le sens, la vitesse et la pente du ciel vivant. | [EXT-008](manuels/connexions.md#ext-008) |
+| <a id="tu-sky-11"></a>`TU-SKY-11` | saisons : la phénologie des feuillus à Lille, et à l’envers au sud | Phénologie des feuillus à Lille (débourrement, plein feuillage, rouille, nu), inversée au sud. | [EXT-008](manuels/connexions.md#ext-008) |
+| <a id="tu-sky-12"></a>`TU-SKY-12` | saisons : couleurs éteintes la nuit, givre seulement s’il est mesuré | Couleurs éteintes la nuit ; givre seulement si la température mesurée est sous zéro. | [EXT-008](manuels/connexions.md#ext-008) |
+| <a id="tu-sky-13"></a>`TU-SKY-13` | ciel des jours qui viennent : étoiles filantes la veille et le jour du maximum, pas après | Étoiles filantes annoncées la veille et le jour du maximum, pas après. | [EXT-009](manuels/connexions.md#ext-009) |
+| <a id="tu-sky-14"></a>`TU-SKY-14` | éclipses : visibles depuis Lille, annoncées sept jours avant, jamais ailleurs | Éclipses visibles depuis Lille annoncées sept jours avant, jamais ailleurs. | [EXT-009](manuels/connexions.md#ext-009) |
+| <a id="tu-sky-15"></a>`TU-SKY-15` | pluie : 1 mm ou 60 % de probabilité, dans les cinq jours | Pluie retenue à partir de 1 mm ou 60 % de probabilité, dans les cinq jours. | [EXT-009](manuels/connexions.md#ext-009) |
+
+### Sources — `tests/sources.test.js`
+
+- **Niveau** : Unitaire pur (U). **Sujet** : `src/core/sources.js`.
+- **Simulé** : Réponses Crossref et Microlink fabriquées.
+- **Limites** : Services réels non appelés.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-src-01"></a>`TU-SRC-01` | adresses : traceurs retirés, fragment oublié, deux liens vers la même page reconnus | Adresses débarrassées des traceurs et du fragment ; `javascript:` refusé ; deux liens vers la même page reconnus ; lien trouvé dans un texte. | [EXT-002](manuels/connexions.md#ext-002) |
+| <a id="tu-src-02"></a>`TU-SRC-02` | DOI : dans un texte, dans une adresse, sans la ponctuation qui suit ; il prime sur l’adresse | DOI trouvé dans un texte ou une adresse, sans la ponctuation qui suit, en minuscules ; il prime sur l'adresse pour la clé de doublon. | [EXT-001](manuels/connexions.md#ext-001) |
+| <a id="tu-src-03"></a>`TU-SRC-03` | Crossref → source : titre, trois auteurs puis « et al. », revue, date partielle, résumé sans balises | Une réponse Crossref devient une source : titre, trois auteurs puis « et al. », revue, date partielle, résumé sans balises. | [EXT-001](manuels/connexions.md#ext-001) |
+| <a id="tu-src-04"></a>`TU-SRC-04` | Microlink → source, et sans réseau : l’adresse seule | Une réponse Microlink devient une source ; sans réseau, l'adresse seule. | [EXT-003](manuels/connexions.md#ext-003) |
+| <a id="tu-src-05"></a>`TU-SRC-05` | validation : jamais un lien exécutable, un DOI et une date bien formés | La validation refuse un lien exécutable, un DOI ou une date mal formés. | — |
+
+### Synchronisation entre appareils — `tests/sync.test.js`
+
+- **Niveau** : Intégration simulée (I-H). **Sujet** : `src/app/state/store.js`, `src/core/sync.js`, `services/auth.js`.
+- **Simulé** : Plusieurs « appareils » (un stockage chacun) qui partagent un faux PostgREST en mémoire, avec écriture conditionnelle ; minuteurs déclenchés à la main.
+- **Limites** : Ni vrai réseau, ni vrai Supabase, ni deux vrais navigateurs (voir `TN-sync-deux-appareils`) ; le délai de 30 s n'est pas attendu, le relevé est déclenché à la main.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-syn-01"></a>`TU-SYN-01` | a fresh device adopts the server as is, without duplicating seeded items | Un appareil neuf adopte le serveur tel quel, sans dupliquer les éléments de départ. | [SYN-009](manuels/synchronisation.md#syn-009) |
+| <a id="tu-syn-02"></a>`TU-SYN-02` | concurrent additions on two devices are both kept | Deux ajouts simultanés sur deux appareils sont gardés tous les deux. | [SYN-002](manuels/synchronisation.md#syn-002) |
+| <a id="tu-syn-03"></a>`TU-SYN-03` | a deletion on one device and an edit on another both apply | Une suppression sur un appareil et une modification d'une autre entrée sur l'autre s'appliquent toutes deux. | [SYN-003](manuels/synchronisation.md#syn-003) |
+| <a id="tu-syn-04"></a>`TU-SYN-04` | delete versus edit of the same entry keeps the edited entry (no silent loss) | Supprimée sur A, modifiée sur B : l'entrée modifiée est conservée. | [SYN-003](manuels/synchronisation.md#syn-003) |
+| <a id="tu-syn-05"></a>`TU-SYN-05` | a deleted module stays deleted on the other device | Un module supprimé sur un appareil reste supprimé sur l'autre. | [ESP-007](manuels/espaces.md#esp-007), [SYN-006](manuels/synchronisation.md#syn-006) |
+| <a id="tu-syn-06"></a>`TU-SYN-06` | a write that races another device is refused, re-read and merged (compare-and-swap) | Une écriture en concurrence est refusée par la condition, relue, refusionnée, réessayée. | — |
+| <a id="tu-syn-07"></a>`TU-SYN-07` | edits made offline are kept locally and pushed once back online | Hors ligne : « Non synchronisé », la saisie est dans le stockage local et marquée en attente ; au retour, elle part. | [SYN-004](manuels/synchronisation.md#syn-004) |
+| <a id="tu-syn-08"></a>`TU-SYN-08` | polling brings remote changes without writing anything back | Le relevé périodique apporte les changements distants sans rien réécrire. | [SYN-001](manuels/synchronisation.md#syn-001) |
+| <a id="tu-syn-09"></a>`TU-SYN-09` | an idle poll reads only the date of the last write, not the document | Un relevé sans changement ne lit que la date de la dernière écriture ; un changement fait relire le seul document changé. | [SYN-001](manuels/synchronisation.md#syn-001) |
+| <a id="tu-syn-10"></a>`TU-SYN-10` | a poll still pushes edits that could not be sent, even when the server has nothing new | Un relevé pousse ce qui n'avait pas pu partir, même si le serveur n'a rien de neuf. | [SYN-004](manuels/synchronisation.md#syn-004) |
+| <a id="tu-syn-11"></a>`TU-SYN-11` | a document the server refuses as too large stays local, and the status says why | Un document refusé comme trop volumineux (code 23514) reste local, l'indicateur dit « Trop volumineux pour le serveur ». | — |
+| <a id="tu-syn-12"></a>`TU-SYN-12` | closing the page: a small document leaves in one keepalive write; past 64 KiB none is tried, and the sync stays planned | À la fermeture, un petit document part en une écriture `keepalive` ; au-delà de 64 Kio, aucune n'est tentée et la synchro reste prévue. | [SYN-005](manuels/synchronisation.md#syn-005) |
+| <a id="tu-syn-13"></a>`TU-SYN-13` | signing out pushes pending edits first, then stops every poller | Se déconnecter pousse d'abord ce qui attend, puis arrête tous les minuteurs ; la base de l'ancien compte est effacée. | [CPT-013](manuels/entree-et-comptes.md#cpt-013), [CPT-014](manuels/entree-et-comptes.md#cpt-014) |
+| <a id="tu-syn-14"></a>`TU-SYN-14` | without a base, a device with real local data merges instead of being overwritten | Sans base, un appareil qui a de vraies données locales fusionne au lieu d'être écrasé. | [CPT-005](manuels/entree-et-comptes.md#cpt-005) |
+| <a id="tu-syn-15"></a>`TU-SYN-15` | importing a backup replaces the account state instead of merging into it | Importer une sauvegarde remplace l'état du compte au lieu de fusionner. | [DON-002](manuels/donnees-sauvegardes.md#don-002), [DON-003](manuels/donnees-sauvegardes.md#don-003) |
+| <a id="tu-syn-16"></a>`TU-SYN-16` | an outdated app never merges into data written by a newer schema | Une version ancienne ne fusionne jamais dans des données d'un format plus récent : rien d'écrit, « recharge la page », saisie locale gardée. | [SYN-007](manuels/synchronisation.md#syn-007) |
+| <a id="tu-syn-17"></a>`TU-SYN-17` | signing out removes the chat history and the API key from the device | Se déconnecter efface de l'appareil la conversation, l'ancienne clé API et les brouillons. | [CPT-013](manuels/entree-et-comptes.md#cpt-013), [AST-008](manuels/assistant.md#ast-008) |
+| <a id="tu-syn-18"></a>`TU-SYN-18` | tasks still written to the old board document (outdated app) land in the Chantier module | Des tâches encore écrites dans l'ancien document `board` par une vieille version arrivent dans le module Chantier. | — |
+| <a id="tu-syn-19"></a>`TU-SYN-19` | a task deleted after the migration is not resurrected by a new device | Une tâche supprimée après la migration n'est pas ressuscitée par un nouvel appareil. | — |
+| <a id="tu-syn-20"></a>`TU-SYN-20` | pre-format-6 device: its local board tasks move into the Chantier module at load | Un appareil d'avant le format 6 verse ses tâches locales dans le Chantier au chargement. | [DON-006](manuels/donnees-sauvegardes.md#don-006) |
+| <a id="tu-syn-21"></a>`TU-SYN-21` | a new device meeting pre-format-6 data on the server: tasks absorbed, nothing duplicated | Un nouvel appareil face à des données d'avant le format 6 sur le serveur : tâches absorbées, rien de dupliqué. | [SYN-009](manuels/synchronisation.md#syn-009) |
+
+### Veille OpenAlex — `tests/veille.test.js`
+
+- **Niveau** : Unitaire pur (U). **Sujet** : `src/core/veille.js`.
+- **Simulé** : Réponses OpenAlex fabriquées.
+- **Limites** : API réelle non appelée.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-vei-01"></a>`TU-VEI-01` | ce que l’on suit : un ORCID, un identifiant OpenAlex, sinon une recherche | Ce que l'on suit : un ORCID, un identifiant OpenAlex, sinon une recherche (200 caractères au plus). | [EXT-014](manuels/connexions.md#ext-014) |
+| <a id="tu-vei-02"></a>`TU-VEI-02` | requête : depuis une date, la plus récente d’abord, la clé seulement si elle existe | Requête OpenAlex depuis une date, la plus récente d'abord, clé seulement si elle existe. | [EXT-014](manuels/connexions.md#ext-014) |
+| <a id="tu-vei-03"></a>`TU-VEI-03` | résultats : résumé remis en ordre, DOI, revue et auteurs ; le reste écarté | Résultats : résumé remis en ordre, DOI, revue, auteurs ; le reste écarté. | [EXT-014](manuels/connexions.md#ext-014) |
+| <a id="tu-vei-04"></a>`TU-VEI-04` | cité par tes sources : les requêtes, par lots de cinquante, sans DOI douteux | « Cité par tes sources » : requêtes par lots de cinquante DOI, sans DOI douteux. | [EXT-018](manuels/connexions.md#ext-018) |
+| <a id="tu-vei-05"></a>`TU-VEI-05` | cité par tes sources : une notice → identifiant, références, auteurs | Une notice OpenAlex donne identifiant, références et auteurs. | [EXT-018](manuels/connexions.md#ext-018) |
+| <a id="tu-vei-06"></a>`TU-VEI-06` | cité par tes sources : références communes, couplage bibliographique, auteurs qui reviennent | Références communes (au moins deux sources), couplage bibliographique (deux références partagées), auteurs qui reviennent. | [EXT-018](manuels/connexions.md#ext-018) |
+
+### Zotero — `tests/zotero.test.js`
+
+- **Niveau** : Unitaire pur (U). **Sujet** : `src/core/zotero.js`.
+- **Simulé** : Réponses Zotero fabriquées.
+- **Limites** : API réelle non appelée.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-zot-01"></a>`TU-ZOT-01` | clé : à qui, et si elle peut écrire | La clé : à qui elle est, et si elle peut écrire. | [EXT-016](manuels/connexions.md#ext-016) |
+| <a id="tu-zot-02"></a>`TU-ZOT-02` | fiche : titre, auteurs, revue, date normalisée, DOI, lien vers la fiche ; pièces jointes écartées | Une fiche Zotero devient une source (titre, auteurs, revue, date, DOI, lien vers la fiche) ; pièces jointes et fiches invalides écartées. | [EXT-016](manuels/connexions.md#ext-016) |
+| <a id="tu-zot-03"></a>`TU-ZOT-03` | validation : une clé Zotero de huit caractères, un lien vers zotero.org seulement | Validation : clé de huit caractères majuscules, lien vers zotero.org seulement. | [EXT-016](manuels/connexions.md#ext-016) |
+
+## Scénarios de navigateur
+
+Commande : `npm run test:browser` (tous, après `build:dist`) ou `npm run test:browser -- <nom>` ; `SELENE_BROWSER=webkit`
+pour WebKit. En CI : *Check › browser*, Chromium et WebKit, à chaque PR et avant chaque déploiement. Données : le jeu
+d'essai `tests/fixtures/site-demo.json` (format 6, migré au chargement) sauf mention ; navigateur en `fr-FR` sauf mention.
+Un identifiant par fichier ; les comportements qu'il distingue sont listés, chacun repérable par le message de sa
+vérification dans le code. Mode : A (artefact simulé), H (hébergé, faux Supabase), N (coquille simulée), P (page
+publique) ; écran : T téléphone, O ordinateur.
+
+
+<a id="tn-sans-compte"></a>
+#### `TN-sans-compte` — Écran d'entrée et Selene sans compte
+
+- **Fichier** : [`tests/browser/sans-compte.js`](../../tests/browser/sans-compte.js) · **mode** H · **écran** O
+- **Conditions** : Écran d'entrée sans session ; faux Supabase en mémoire.
+- **Vérifie** : l'écran d'entrée dit la promesse, la lune du jour, pas de minuteur ; « Commencer sans compte » ouvre l'app et sa première question ; le choix survit au rechargement ; rien de ce qui est écrit ne part au serveur ; Réglages → Compte : ce que veut dire « sans compte » ; l'assistant demande un compte ; créer un compte verse la capture et l'espace Écriture dans le compte neuf ; le choix « sans compte » s'efface ; se connecter à un compte existant : capture gardée, espaces des deux côtés gardés, réglages du compte appliqués.
+- **Limites** : Supabase Auth et PostgREST simulés.
+- **Cas manuels** : [CPT-001](manuels/entree-et-comptes.md#cpt-001), [CPT-002](manuels/entree-et-comptes.md#cpt-002), [CPT-003](manuels/entree-et-comptes.md#cpt-003), [CPT-004](manuels/entree-et-comptes.md#cpt-004), [CPT-005](manuels/entree-et-comptes.md#cpt-005), [AST-001](manuels/assistant.md#ast-001)
+
+<a id="tn-mot-de-passe"></a>
+#### `TN-mot-de-passe` — Mot de passe, invitation, messages de connexion
+
+- **Fichier** : [`tests/browser/mot-de-passe.js`](../../tests/browser/mot-de-passe.js) · **mode** H · **écran** O
+- **Conditions** : Faux Supabase Auth (recover, verify, user, settings).
+- **Vérifie** : connexion refusée : message durable, adresse gardée ; mot de passe oublié : demande avec retour vers la page, réponse neutre ; 429 et SMTP non configuré dits en français ; inscriptions fermées lues une fois : plus de « Créer un compte » ; lien de récupération : le jeton quitte l'adresse ; deux saisies différentes refusées avant envoi ; même mot de passe dit ; lien expiré ou jeton refusé : nouvelle demande proposée ; invitation : choisir son mot de passe puis entrer ; session gardée qui attend puis reprend si on annule ; dix caractères à l'inscription ; ancien mot de passe court : on entre et Selene le dit ; changement vérifié par une connexion fraîche puis envoyé avec l'actuel.
+- **Limites** : Aucun e-mail réel : le contenu et la délivrabilité des courriels restent à essayer à la main.
+- **Cas manuels** : [CPT-006](manuels/entree-et-comptes.md#cpt-006), [CPT-007](manuels/entree-et-comptes.md#cpt-007), [CPT-008](manuels/entree-et-comptes.md#cpt-008), [CPT-009](manuels/entree-et-comptes.md#cpt-009), [CPT-010](manuels/entree-et-comptes.md#cpt-010), [CPT-011](manuels/entree-et-comptes.md#cpt-011), [CPT-016](manuels/entree-et-comptes.md#cpt-016), [CPT-017](manuels/entree-et-comptes.md#cpt-017)
+
+<a id="tn-compte"></a>
+#### `TN-compte` — Supprimer son compte
+
+- **Fichier** : [`tests/browser/compte.js`](../../tests/browser/compte.js) · **mode** H · **écran** O
+- **Conditions** : Faux Supabase, fausse fonction `compte`.
+- **Vérifie** : Réglages → Compte propose la suppression et lie la politique de confidentialité ; sans « supprimer » tapé, ou annulé à la confirmation : rien ne part ; la demande part avec la session ; un échec est dit et rien n'est effacé ; une réussite efface la session et les données de l'appareil.
+- **Limites** : La fonction serveur réelle est testée à part (`TD-CPT-*`) ; jamais les deux ensemble.
+- **Cas manuels** : [CPT-015](manuels/entree-et-comptes.md#cpt-015), [TRV-012](manuels/transverse.md#trv-012)
+
+<a id="tn-activite"></a>
+#### `TN-activite` — Mesure d'usage de la bêta
+
+- **Fichier** : [`tests/browser/activite.js`](../../tests/browser/activite.js) · **mode** H · **écran** O · **état** : instable (WebKit)
+- **Conditions** : Faux Supabase qui enregistre les envois à `/rest/v1/activite`.
+- **Vérifie** : ouvrir ne compte pas ; une capture envoie un jour, avec la session, sans le texte ; le même jour, une fois ; rien n'est écrit sur l'appareil pour la mesure ; l'interrupteur de Réglages → Compte la coupe, même après un rechargement.
+- **Limites** : Instable sous WebKit (A1, [perimetre.md](perimetre.md#anomalies-et-observations)).
+- **Cas manuels** : [TRV-011](manuels/transverse.md#trv-011)
+
+<a id="tn-journal"></a>
+#### `TN-journal` — Journal des erreurs
+
+- **Fichier** : [`tests/browser/journal.js`](../../tests/browser/journal.js) · **mode** H · **écran** O
+- **Conditions** : Faux Supabase ; erreurs provoquées dans la page.
+- **Vérifie** : une exception et une promesse rejetée partent, leur nom seulement, sans message ni compte, clé publique seule ; écran, plateforme et version envoyés ; une erreur réseau ou répétée ne part pas ; coupé dans les Réglages : plus rien, réglage gardé au rechargement.
+- **Limites** : Table réelle non exercée.
+- **Cas manuels** : [TRV-010](manuels/transverse.md#trv-010)
+
+<a id="tn-navigation"></a>
+#### `TN-navigation` — Navigation, palette, reprise
+
+- **Fichier** : [`tests/browser/navigation.js`](../../tests/browser/navigation.js) · **mode** A · **écran** O puis T
+- **Conditions** : 150 fragments (le plus ancien au-delà de la première page).
+- **Vérifie** : ordinateur : barre latérale avec le Bilan ; domaines en titres ; ⌘K ouvre la palette, un espace trouvé par son nom, un texte mène à son entrée dépliée et surlignée, la puce ramène à la recherche telle qu'elle était ; l'accueil propose de reprendre le dernier espace et son brouillon ; « Ouvrir sur : là où j'en étais » ; téléphone : barre basse ; Espaces ouvre une feuille ; toucher un espace y mène ; Capturer garde dans la boîte ; le voile ferme ; le brouillon de capture survit à la fermeture.
+- **Cas manuels** : [NAV-001](manuels/navigation-reglages.md#nav-001), [NAV-002](manuels/navigation-reglages.md#nav-002), [NAV-003](manuels/navigation-reglages.md#nav-003), [NAV-006](manuels/navigation-reglages.md#nav-006), [NAV-011](manuels/navigation-reglages.md#nav-011), [ESP-005](manuels/espaces.md#esp-005), [MOD-023](manuels/types-de-module.md#mod-023), [MOD-025](manuels/types-de-module.md#mod-025)
+
+<a id="tn-interface"></a>
+#### `TN-interface` — Interface : lune, rappels, actions de ligne, défilement
+
+- **Fichier** : [`tests/browser/interface.js`](../../tests/browser/interface.js) · **mode** A · **écran** O et T
+- **Conditions** : Plusieurs rappels dus ; 30 fragments.
+- **Vérifie** : la lune entière même sur écran étroit ; rappels regroupés par module ; onglet actif `aria-current` ; tactile : « suppr. » caché au repos, un toucher montre les actions d'une ligne à la fois ; champs à 16 px au moins ; ordinateur : actions au survol ; chaque vue retrouve sa position ; barre latérale collante.
+- **Cas manuels** : [NAV-001](manuels/navigation-reglages.md#nav-001), [NAV-002](manuels/navigation-reglages.md#nav-002), [NAV-013](manuels/navigation-reglages.md#nav-013), [MOD-013](manuels/types-de-module.md#mod-013), [TRV-003](manuels/transverse.md#trv-003)
+
+<a id="tn-routes"></a>
+#### `TN-routes` — Routes
+
+- **Fichier** : [`tests/browser/routes.js`](../../tests/browser/routes.js) · **mode** A · **écran** —
+- **Conditions** : Jeu d'essai.
+- **Vérifie** : chaque route s'affiche ; `#constructor`, `#nimportequoi`, `#__proto__` ramènent à l'accueil ; un module « Réglages » ne masque pas les Réglages.
+- **Cas manuels** : [NAV-012](manuels/navigation-reglages.md#nav-012)
+
+<a id="tn-reglages"></a>
+#### `TN-reglages` — Réglages en chapitres
+
+- **Fichier** : [`tests/browser/reglages.js`](../../tests/browser/reglages.js) · **mode** A · **écran** O, T (390 et 320 px)
+- **Conditions** : Jeu d'essai.
+- **Vérifie** : six chapitres et un sommaire ; chaque espace une fois ; bloc déplié qui le reste ; infobulles au clic, entières dans l'écran, fermées par Échap ou un clic ailleurs ; le sommaire mène au chapitre, le focus suit, le chapitre lu est marqué ; premier accueil repliable et rouvrable ; rien ne déborde, même à 320 px.
+- **Cas manuels** : [NAV-007](manuels/navigation-reglages.md#nav-007), [NAV-008](manuels/navigation-reglages.md#nav-008), [EXT-019](manuels/connexions.md#ext-019), [TRV-014](manuels/transverse.md#trv-014)
+
+<a id="tn-langue"></a>
+#### `TN-langue` — Langue de l'interface
+
+- **Fichier** : [`tests/browser/langue.js`](../../tests/browser/langue.js) · **mode** A · **écran** O et T (375 px)
+- **Conditions** : Navigateur en anglais (`en-US`), puis pseudo-langue.
+- **Vérifie** : appareil en anglais : `<html lang="en">`, date, lune, navigation, bilan, recherche, budget (€12.00) en anglais ; valeurs enregistrées inchangées ; le sélecteur passe en français sans recharger, choix enregistré dans le compte ; pseudo-langue : chaque texte traduit marqué, attributs et squelette compris ; retour à l'anglais immédiat.
+- **Cas manuels** : [NAV-009](manuels/navigation-reglages.md#nav-009)
+
+<a id="tn-saisie"></a>
+#### `TN-saisie` — Une saisie de réglage survit à un rendu
+
+- **Fichier** : [`tests/browser/saisie.js`](../../tests/browser/saisie.js) · **mode** A · **écran** —
+- **Conditions** : Rendu forcé pendant la frappe.
+- **Vérifie** : la saisie survit au rendu ; elle est enregistrée en quittant le champ.
+- **Cas manuels** : [ESP-011](manuels/espaces.md#esp-011)
+
+<a id="tn-ecran-lu"></a>
+#### `TN-ecran-lu` — Ce que dit un lecteur d'écran
+
+- **Fichier** : [`tests/browser/ecran-lu.js`](../../tests/browser/ecran-lu.js) · **mode** A · **écran** O
+- **Conditions** : Clavier.
+- **Vérifie** : le titre de la page nomme l'écran ; Entrée sur un lien du menu met le focus au titre, sans défiler ; Tab repart du contenu ; « / » met le curseur dans la recherche ; messages d'état courts, région permanente annoncée poliment.
+- **Limites** : Aucun lecteur d'écran réel : la région et le focus sont lus dans le DOM.
+- **Cas manuels** : [NAV-004](manuels/navigation-reglages.md#nav-004), [TRV-001](manuels/transverse.md#trv-001), [TRV-002](manuels/transverse.md#trv-002)
+
+<a id="tn-compte-neuf"></a>
+#### `TN-compte-neuf` — Compte neuf et modèles
+
+- **Fichier** : [`tests/browser/compte-neuf.js`](../../tests/browser/compte-neuf.js) · **mode** A · **écran** —
+- **Conditions** : Données de départ vierges.
+- **Vérifie** : une question, pas de tâche fictive, rien de personnel, trois réponses ; les treize modèles derrière « Choisir moi-même » ; trois modules ajoutés visibles ; tirage au sort avec un module de tâches ; le programme porte la pratique choisie, sans budget ni soin imposé ; « C'est bon » referme, et le bloc ne revient pas ; « Un long texte » installe Écriture, Sources et Tâches et le dit.
+- **Cas manuels** : [ESP-001](manuels/espaces.md#esp-001), [ESP-002](manuels/espaces.md#esp-002), [ESP-003](manuels/espaces.md#esp-003), [ESP-004](manuels/espaces.md#esp-004), [MOD-004](manuels/types-de-module.md#mod-004)
+
+<a id="tn-types"></a>
+#### `TN-types` — Chaque type par le registre
+
+- **Fichier** : [`tests/browser/types.js`](../../tests/browser/types.js) · **mode** A · **écran** —
+- **Conditions** : Jeu d'essai.
+- **Vérifie** : formulaire repris du nom choisi ; séance notée, alerte et résumé fournis par le type ; catégories d'un cumul ; types et fréquences de rappels ; alerte de retard ; journal ; fragment ajouté puis supprimé après confirmation ; chaque route de module s'affiche.
+- **Cas manuels** : [ESP-003](manuels/espaces.md#esp-003), [ESP-007](manuels/espaces.md#esp-007), [MOD-007](manuels/types-de-module.md#mod-007), [MOD-013](manuels/types-de-module.md#mod-013)
+
+<a id="tn-identite"></a>
+#### `TN-identite` — Identité des espaces
+
+- **Fichier** : [`tests/browser/identite.js`](../../tests/browser/identite.js) · **mode** A · **écran** O et T
+- **Conditions** : Domaines réglés.
+- **Vérifie** : sigil par espace, teinte par domaine, planche en chiffres romains ; « régler » ouvre un tiroir ; sigil choisi gardé ; réglage appliqué aussitôt ; trois polices ; le kanban défile dans son cadre ; formulaire plein largeur sur téléphone.
+- **Cas manuels** : [ESP-005](manuels/espaces.md#esp-005), [ESP-008](manuels/espaces.md#esp-008), [TRV-014](manuels/transverse.md#trv-014)
+
+<a id="tn-taches"></a>
+#### `TN-taches` — Tâches
+
+- **Fichier** : [`tests/browser/taches.js`](../../tests/browser/taches.js) · **mode** A · **écran** —
+- **Conditions** : Données au format 5 avec un `board`.
+- **Vérifie** : tâches du `board` versées dans le module, nom personnalisé gardé, `board` vidé ; échéances, coûts, étapes, filtre par pièce, budget estimé ; troisième tâche du jour acceptée, quatrième refusée, aussi entre deux modules ; réglages : types, coûts désactivés, « Lieu » ; une note rangée ouvre le formulaire de tâche.
+- **Cas manuels** : [MOD-001](manuels/types-de-module.md#mod-001), [MOD-002](manuels/types-de-module.md#mod-002)
+
+<a id="tn-budget"></a>
+#### `TN-budget` — Budget
+
+- **Fichier** : [`tests/browser/budget.js`](../../tests/browser/budget.js) · **mode** A · **écran** —
+- **Conditions** : Données au format 4 (budget en section).
+- **Vérifie** : revenus, dépenses, solde migrés ; jauge 40 % puis 50 % après ajout ; mois précédent vide ; clic sur une enveloppe filtre ; renommer l'enveloppe renomme ses opérations ; ajout d'enveloppe ; second budget indépendant ; résumé d'accueil.
+- **Cas manuels** : [MOD-005](manuels/types-de-module.md#mod-005), [MOD-006](manuels/types-de-module.md#mod-006), [TRV-015](manuels/transverse.md#trv-015)
+
+<a id="tn-collections"></a>
+#### `TN-collections` — Collections
+
+- **Fichier** : [`tests/browser/collections.js`](../../tests/browser/collections.js) · **mode** A · **écran** —
+- **Conditions** : Données au format 2.
+- **Vérifie** : post migré dans sa colonne ; ajout, avancée jusqu'à « Publié », phrase de fin, modification ; filtre par groupe et par statut ; album sans sous-titre : « préciser album » ; champ masqué, statut ajouté et renommé, colonnes ; titre vidé → gardé ; statut supprimé après confirmation.
+- **Cas manuels** : [MOD-017](manuels/types-de-module.md#mod-017), [MOD-018](manuels/types-de-module.md#mod-018)
+
+<a id="tn-ecrans"></a>
+#### `TN-ecrans` — Écrans : marges, tableaux, recherche
+
+- **Fichier** : [`tests/browser/ecrans.js`](../../tests/browser/ecrans.js) · **mode** A · **écran** O et T
+- **Conditions** : Jeu d'essai.
+- **Vérifie** : date en marge ; registre en lignes ; glisser une carte change son statut ; « ] » et « [ » au clavier, focus gardé, colonne annoncée ; téléphone : une colonne à la fois par onglets ; recherche : résultats groupés par espace ; facettes période, statut, espace, avec décomptes ; recliquer défait.
+- **Cas manuels** : [NAV-005](manuels/navigation-reglages.md#nav-005), [MOD-017](manuels/types-de-module.md#mod-017), [TRV-002](manuels/transverse.md#trv-002)
+
+<a id="tn-notes"></a>
+#### `TN-notes` — Notes et boîte de réception
+
+- **Fichier** : [`tests/browser/notes.js`](../../tests/browser/notes.js) · **mode** A · **écran** —
+- **Conditions** : Données au format 6 sans boîte désignée, puis avec.
+- **Vérifie** : compteur de la boîte ; « à trier » sur l'accueil ; capture rapide par Entrée ; destinations selon ce que chaque type accepte ; vers le Chantier, le formulaire de tâche ; désigner une autre boîte retire l'ancienne désignation ; sans boîte, une explication.
+- **Cas manuels** : [ESP-009](manuels/espaces.md#esp-009), [MOD-014](manuels/types-de-module.md#mod-014), [MOD-015](manuels/types-de-module.md#mod-015), [TRV-015](manuels/transverse.md#trv-015)
+
+<a id="tn-atelier-capture"></a>
+#### `TN-atelier-capture` — Atelier d'écriture et capture qui comprend
+
+- **Fichier** : [`tests/browser/atelier-capture.js`](../../tests/browser/atelier-capture.js) · **mode** A · **écran** —
+- **Conditions** : Chapitres réglés.
+- **Vérifie** : dernier chapitre présélectionné, fragments rattachés, déplacés, filtrés, export Markdown ; chapitre supprimé : fragments hors chapitre ; bandeau « 12,50 € en dépense dans Budget (Courses) ? », rangé ; proposition qui reste dans la boîte ; note ordinaire juste gardée.
+- **Cas manuels** : [MOD-011](manuels/types-de-module.md#mod-011), [MOD-014](manuels/types-de-module.md#mod-014)
+
+<a id="tn-quotidien"></a>
+#### `TN-quotidien` — Le quotidien sur téléphone
+
+- **Fichier** : [`tests/browser/quotidien.js`](../../tests/browser/quotidien.js) · **mode** A · **écran** T
+- **Conditions** : Programme commencé, élément en retard.
+- **Vérifie** : séance en un geste, élément en retard, « fait » sur un rappel, dernière durée ; paysage réduit à la deuxième ouverture du jour ; brouillon restauré puis effacé ; suppression avec « Annuler » ; écriture en total : +1 200 puis +650 ; projection.
+- **Cas manuels** : [MOD-007](manuels/types-de-module.md#mod-007), [MOD-009](manuels/types-de-module.md#mod-009), [MOD-010](manuels/types-de-module.md#mod-010), [MOD-013](manuels/types-de-module.md#mod-013), [MOD-022](manuels/types-de-module.md#mod-022), [MOD-023](manuels/types-de-module.md#mod-023)
+
+<a id="tn-paliers"></a>
+#### `TN-paliers` — Paliers d'un programme
+
+- **Fichier** : [`tests/browser/paliers.js`](../../tests/browser/paliers.js) · **mode** A · **écran** T
+- **Conditions** : Programme commencé.
+- **Vérifie** : palier et critère affichés, rien de coché ; cocher ne fait pas avancer ; passer au palier : message, date, historique ; décision préremplie, rien d'enregistré avant validation ; suppression confirmée ; pas de débordement.
+- **Cas manuels** : [MOD-008](manuels/types-de-module.md#mod-008)
+
+<a id="tn-arc"></a>
+#### `TN-arc` — Arcs
+
+- **Fichier** : [`tests/browser/arc.js`](../../tests/browser/arc.js) · **mode** A · **écran** T
+- **Conditions** : Un fragment.
+- **Vérifie** : trois étapes vides visibles ; placement sous sa station ; étape renommée ; placement retiré puis rétabli par « Annuler » ; suppression d'étape confirmée (avec ses placements) ; cible supprimée dite ; résumé d'accueil.
+- **Cas manuels** : [MOD-021](manuels/types-de-module.md#mod-021)
+
+<a id="tn-annuler"></a>
+#### `TN-annuler` — « Annuler » à la portée de tous
+
+- **Fichier** : [`tests/browser/annuler.js`](../../tests/browser/annuler.js) · **mode** A · **écran** O
+- **Conditions** : Trois fragments.
+- **Vérifie** : raccourci annoncé (`aria-keyshortcuts`) ; survolé ou focalisé, le message reste au-delà de six secondes ; Entrée annule ; Ctrl+Z hors d'un champ annule ; dans un champ, non ; ⌘Z aussi ; message parti : plus rien.
+- **Cas manuels** : [MOD-022](manuels/types-de-module.md#mod-022), [TRV-001](manuels/transverse.md#trv-001)
+
+<a id="tn-en-tete"></a>
+#### `TN-en-tete` — En-tête et minuteur
+
+- **Fichier** : [`tests/browser/en-tete.js`](../../tests/browser/en-tete.js) · **mode** A · **écran** T et O
+- **Conditions** : —
+- **Vérifie** : téléphone : en-tête sur une ligne (10 % de l'écran au plus), minuteur absent au repos, lancé depuis Capturer, pause, reprise, remise à zéro ; ordinateur : minuteur dans la barre latérale.
+- **Cas manuels** : [MOD-024](manuels/types-de-module.md#mod-024), [TRV-014](manuels/transverse.md#trv-014)
+
+<a id="tn-recherche-minuteur"></a>
+#### `TN-recherche-minuteur` — Recherche et fin du minuteur
+
+- **Fichier** : [`tests/browser/recherche-minuteur.js`](../../tests/browser/recherche-minuteur.js) · **mode** A · **écran** —
+- **Conditions** : Horloge simulée pour quinze minutes.
+- **Vérifie** : « / » ouvre la recherche ; sans accents, tous les mots, surlignage ; frappe continue ; fin des 15 min sur un protocole : « Noter 15 min » ; sur l'Écriture : curseur dans le compteur ; tâche finie : coût proposé au budget, dépense ajoutée.
+- **Cas manuels** : [NAV-004](manuels/navigation-reglages.md#nav-004), [MOD-003](manuels/types-de-module.md#mod-003), [MOD-024](manuels/types-de-module.md#mod-024)
+
+<a id="tn-signatures"></a>
+#### `TN-signatures` — Fiche, minuteur et tri
+
+- **Fichier** : [`tests/browser/signatures.js`](../../tests/browser/signatures.js) · **mode** A · **écran** O et T
+- **Conditions** : Horloge simulée.
+- **Vérifie** : fiche dans un tiroir : provenance, liens entrants, motifs, histoire du statut ; changer le statut ; « Voir dans… » ; anneau du minuteur à mi-course et à la fin ; appui long sur la lune ; trier : la plus ancienne d'abord, rangement reconnu, « Plus tard », supprimer avec « Annuler » visible, rangée par sigil.
+- **Cas manuels** : [MOD-016](manuels/types-de-module.md#mod-016), [MOD-024](manuels/types-de-module.md#mod-024), [PEN-007](manuels/penser-avec.md#pen-007)
+
+<a id="tn-pensee"></a>
+#### `TN-pensee` — Statut, provenance, pont, décisions, motifs
+
+- **Fichier** : [`tests/browser/pensee.js`](../../tests/browser/pensee.js) · **mode** A · **écran** T
+- **Conditions** : Jeu d'essai et collections ajoutées.
+- **Vérifie** : « ? » devant une capture : hypothèse ; provenance du fragment rangé ; statut changé et daté ; pont : le champ s'ouvre, s'affiche en haut du module et sur l'accueil ; « fait » le lève, « Annuler » le remet ; décision : rendez-vous ; revient sur l'accueil ; « relire » ; « maintenue » ; motifs : absent, variantes, voisins, « voir » ; bilan par statut et motifs apparus, mène à la recherche filtrée.
+- **Cas manuels** : [MOD-019](manuels/types-de-module.md#mod-019), [MOD-020](manuels/types-de-module.md#mod-020), [PEN-001](manuels/penser-avec.md#pen-001), [PEN-002](manuels/penser-avec.md#pen-002), [PEN-006](manuels/penser-avec.md#pen-006)
+
+<a id="tn-liaisons"></a>
+#### `TN-liaisons` — Liaisons et tensions
+
+- **Fichier** : [`tests/browser/liaisons.js`](../../tests/browser/liaisons.js) · **mode** A · **écran** T
+- **Conditions** : Fragments liés.
+- **Vérifie** : dériver : bandeau, curseur, lien vers la source et lien entrant ; « contredit » ouvre une tension, listée au bilan ; « résoudre » ouvre la synthèse qui la lève ; dossier : entrées numérotées et renvois ; dossier d'une recherche ; dossier d'une tension.
+- **Cas manuels** : [PEN-003](manuels/penser-avec.md#pen-003), [PEN-004](manuels/penser-avec.md#pen-004), [PEN-008](manuels/penser-avec.md#pen-008)
+
+<a id="tn-marges"></a>
+#### `TN-marges` — Marges
+
+- **Fichier** : [`tests/browser/marges.js`](../../tests/browser/marges.js) · **mode** A · **écran** O (1100, 1280, 1440 px) et T
+- **Conditions** : Fragments avec provenance, liens, motifs.
+- **Vérifie** : marge à droite, alignée ; retouche, provenance, liens, motifs qui mènent à la recherche ; largeur de texte constante ; liste étroite et téléphone : sous le texte ; aucun débordement ; texte piégé inerte.
+- **Cas manuels** : [PEN-015](manuels/penser-avec.md#pen-015), [TRV-008](manuels/transverse.md#trv-008)
+
+<a id="tn-sortes"></a>
+#### `TN-sortes` — Sortes
+
+- **Fichier** : [`tests/browser/sortes.js`](../../tests/browser/sortes.js) · **mode** A · **écran** T
+- **Conditions** : Matière ancienne et récente.
+- **Vérifie** : section présente, « Tirer » ; résultat d'un des trois genres ; rien de deux jours ; « Retirer ».
+- **Cas manuels** : [PEN-009](manuels/penser-avec.md#pen-009)
+
+<a id="tn-bilan"></a>
+#### `TN-bilan` — Bilan
+
+- **Fichier** : [`tests/browser/bilan.js`](../../tests/browser/bilan.js) · **mode** A · **écran** O (900 px)
+- **Conditions** : Horloge figée au milieu d'un mois.
+- **Vérifie** : cycle en cours : séances, mots ; mode mois et période d'avant ; remonter puis revenir ; mode retenu sur l'appareil.
+- **Cas manuels** : [PEN-010](manuels/penser-avec.md#pen-010)
+
+<a id="tn-lune"></a>
+#### `TN-lune` — Test lunaire
+
+- **Fichier** : [`tests/browser/lune.js`](../../tests/browser/lune.js) · **mode** A · **écran** T
+- **Conditions** : Cinquante notes concentrées sur une phase.
+- **Vérifie** : nombre d'événements annoncé ; concentration forte, p très bas ; avertissement sur les tests multiples ; sous le seuil, le bilan le dit.
+- **Cas manuels** : [PEN-011](manuels/penser-avec.md#pen-011)
+
+<a id="tn-vocabulaire"></a>
+#### `TN-vocabulaire` — Dérive lexicale du bilan
+
+- **Fichier** : [`tests/browser/vocabulaire.js`](../../tests/browser/vocabulaire.js) · **mode** A · **écran** T
+- **Conditions** : Notes sur sept mois.
+- **Vérifie** : comparaison aux six périodes d'avant ; émergents (pluriel ramené), absents ; aucun mot vide ; sans module Motifs, pas de « + » ; un mot mène à la recherche ; « + » en fait un motif aussitôt compté.
+- **Cas manuels** : [PEN-012](manuels/penser-avec.md#pen-012)
+
+<a id="tn-planche"></a>
+#### `TN-planche` — Planche de lunaison
+
+- **Fichier** : [`tests/browser/planche.js`](../../tests/browser/planche.js) · **mode** A · **écran** O et T · **état** : conditionnel (une vérification Chromium seulement)
+- **Conditions** : Lunaison de Meeus calculée.
+- **Vérifie** : numéro, règle, quartiers, ligne par espace, motifs apparus, « Venu du dehors », statuts, tension ; lunaison précédente et retour ; impression du navigateur ; fichier téléchargé autonome sans script ; impression sans barre ni boutons ; une seule page A4 (Chromium seulement : `page.pdf`) ; lisible sur téléphone ; motif piégé inerte.
+- **Limites** : La vérification d'une seule page A4 ne tourne que dans Chromium.
+- **Cas manuels** : [PEN-013](manuels/penser-avec.md#pen-013), [TRV-008](manuels/transverse.md#trv-008)
+
+<a id="tn-carte"></a>
+#### `TN-carte` — Carte céleste
+
+- **Fichier** : [`tests/browser/carte.js`](../../tests/browser/carte.js) · **mode** A · **écran** O et T
+- **Conditions** : Fragments liés, un motif à 120 occurrences.
+- **Vérifie** : la fiche mène à la carte du voisinage (deux degrés) ; temps, bandes, forme du trait, tensions marquées ; table des liaisons ; carte identique à la réouverture ; étoile suivie au clavier ; carte d'un motif : 80 étoiles au plus, et l'app le dit ; téléphone : la table d'abord, la carte sur demande ; pas de débordement ; fragment piégé inerte.
+- **Cas manuels** : [PEN-014](manuels/penser-avec.md#pen-014), [TRV-002](manuels/transverse.md#trv-002), [TRV-008](manuels/transverse.md#trv-008)
+
+<a id="tn-sources-oubliees"></a>
+#### `TN-sources-oubliees` — Sources oubliées et sources qui documentent
+
+- **Fichier** : [`tests/browser/sources-oubliees.js`](../../tests/browser/sources-oubliees.js) · **mode** A · **écran** O
+- **Conditions** : Sources gardées il y a longtemps.
+- **Vérifie** : les sortes annoncent une source oubliée (titre, revue, depuis quand) ; « documente… » vers une note ou un fragment ; la carte s'efface ; le fragment dit qui le documente, la source ce qu'elle documente ; dossier avec DOI.
+- **Cas manuels** : [PEN-009](manuels/penser-avec.md#pen-009), [EXT-004](manuels/connexions.md#ext-004)
+
+<a id="tn-indexeddb"></a>
+#### `TN-indexeddb` — Stockage IndexedDB
+
+- **Fichier** : [`tests/browser/indexeddb.js`](../../tests/browser/indexeddb.js) · **mode** H · **écran** O
+- **Conditions** : Document dans localStorage au départ.
+- **Vérifie** : migration vers IndexedDB (secrets laissés) ; capture écrite et relue après relance ; un autre onglet se met à jour ; un document de plus de 5 millions de caractères est enregistré.
+- **Cas manuels** : [DON-008](manuels/donnees-sauvegardes.md#don-008)
+
+<a id="tn-secours"></a>
+#### `TN-secours` — Copie de secours quand IndexedDB refuse
+
+- **Fichier** : [`tests/browser/secours.js`](../../tests/browser/secours.js) · **mode** H · **écran** —
+- **Conditions** : Écriture IndexedDB annulée pour de bon, serveur injoignable.
+- **Vérifie** : la perte est réelle dans IndexedDB ; la copie de secours la garde à la fermeture ; au démarrage suivant, elle rejoint IndexedDB, part au serveur, et les copies sont effacées.
+- **Limites** : Aucun cas manuel : provoquer un refus d'IndexedDB à la main n'est pas praticable. Deux échecs pendant sa branche de correction (A2).
+- **Cas manuels** : —
+
+<a id="tn-taille"></a>
+#### `TN-taille` — Taille d'un espace
+
+- **Fichier** : [`tests/browser/taille.js`](../../tests/browser/taille.js) · **mode** H · **écran** O
+- **Conditions** : Limite abaissée par le test.
+- **Vérifie** : Réglages → Sauvegarde dit la taille en octets UTF-8 et la limite ; près de la limite, l'alerte nomme le module le plus lourd ; refus du serveur (23514) dit en clair.
+- **Cas manuels** : [DON-009](manuels/donnees-sauvegardes.md#don-009)
+
+<a id="tn-sync-deux-appareils"></a>
+#### `TN-sync-deux-appareils` — Deux appareils du même compte
+
+- **Fichier** : [`tests/browser/sync-deux-appareils.js`](../../tests/browser/sync-deux-appareils.js) · **mode** H · **écran** —
+- **Conditions** : Deux contextes de navigateur, un faux Supabase partagé.
+- **Vérifie** : le premier appareil crée la ligne ; fusion : les deux captures sur le serveur ; B affiche ce qu'a écrit A ; une saisie faite juste avant la fermeture part à la réouverture.
+- **Limites** : Un seul faux serveur ; pas de vrai réseau ni de latence réelle.
+- **Cas manuels** : [SYN-001](manuels/synchronisation.md#syn-001), [SYN-002](manuels/synchronisation.md#syn-002), [SYN-005](manuels/synchronisation.md#syn-005)
+
+<a id="tn-hors-ligne"></a>
+#### `TN-hors-ligne` — Service worker
+
+- **Fichier** : [`tests/browser/hors-ligne.js`](../../tests/browser/hors-ligne.js) · **mode** H · **écran** O
+- **Conditions** : L'app, puis la politique et la page de présentation ouvertes.
+- **Vérifie** : le service worker tient la page ; le cache garde l'app, pas la dernière page visitée.
+- **Limites** : La coupure réseau simulée par Playwright n'atteint pas le service worker : le cache est lu, la page n'est pas rouverte hors ligne.
+- **Cas manuels** : [SYN-010](manuels/synchronisation.md#syn-010), [PLT-001](manuels/plateformes.md#plt-001), [TRV-012](manuels/transverse.md#trv-012)
+
+<a id="tn-injection"></a>
+#### `TN-injection` — Identifiants et nombres piégés
+
+- **Fichier** : [`tests/browser/injection.js`](../../tests/browser/injection.js) · **mode** A · **écran** —
+- **Conditions** : Données corrompues injectées.
+- **Vérifie** : aucun script injecté exécuté ; aucune balise injectée dans la page.
+- **Cas manuels** : [DON-005](manuels/donnees-sauvegardes.md#don-005), [TRV-008](manuels/transverse.md#trv-008)
+
+<a id="tn-csp"></a>
+#### `TN-csp` — Politique de sécurité du contenu
+
+- **Fichier** : [`tests/browser/csp.js`](../../tests/browser/csp.js) · **mode** A puis H · **écran** —
+- **Conditions** : —
+- **Vérifie** : deux empreintes, pas de `'unsafe-inline'` ; le script principal et celui du service worker s'exécutent ; polices du site ; 12 vues sans violation ; un `onerror=` ou un `<script>` injecté ne s'exécute pas et le navigateur le signale.
+- **Cas manuels** : [CPT-001](manuels/entree-et-comptes.md#cpt-001), [TRV-008](manuels/transverse.md#trv-008), [TRV-009](manuels/transverse.md#trv-009)
+
+<a id="tn-contraste"></a>
+#### `TN-contraste` — Contraste d'un espace éteint
+
+- **Fichier** : [`tests/browser/contraste.js`](../../tests/browser/contraste.js) · **mode** A · **écran** O
+- **Conditions** : Thèmes clair et sombre.
+- **Vérifie** : le nom d'un espace éteint garde 4,5:1 dans les deux thèmes.
+- **Cas manuels** : [TRV-006](manuels/transverse.md#trv-006)
+
+<a id="tn-cibles"></a>
+#### `TN-cibles` — Cibles tactiles
+
+- **Fichier** : [`tests/browser/cibles.js`](../../tests/browser/cibles.js) · **mode** A · **écran** T (390 × 844, pointeur grossier)
+- **Conditions** : Quatorze écrans.
+- **Vérifie** : chaque écran demandé est bien affiché ; chaque contrôle offre 44 × 44 px au doigt.
+- **Cas manuels** : [TRV-003](manuels/transverse.md#trv-003)
+
+<a id="tn-cibles-ordinateur"></a>
+#### `TN-cibles-ordinateur` — Cibles à la souris
+
+- **Fichier** : [`tests/browser/cibles-ordinateur.js`](../../tests/browser/cibles-ordinateur.js) · **mode** A · **écran** O
+- **Conditions** : Douze écrans, volets ouverts.
+- **Vérifie** : chaque écran demandé est bien affiché ; chaque petite cible garde 24 px d'air (WCAG 2.5.8).
+- **Cas manuels** : [TRV-003](manuels/transverse.md#trv-003)
+
+<a id="tn-sources"></a>
+#### `TN-sources` — Sources et « Envoyer à Selene »
+
+- **Fichier** : [`tests/browser/sources.js`](../../tests/browser/sources.js) · **mode** H puis A · **écran** O
+- **Conditions** : Crossref, Microlink simulés ; partage par `?url=`.
+- **Vérifie** : un seul appel à Crossref pour un DOI ; aperçu ; gardée avec « À lire » ; lien vers l'original à part ; doublon reconnu, « Garder » désactivé ; page par Microlink, titre piégé en texte ; adresse nettoyée ; quota épuisé : gardable avec l'adresse seule ; ni lien ni DOI : aucun appel ; note → source avec provenance ; lien partagé : attend la connexion, puis note de la boîte, adresse nettoyée, une seule fois ; favori ; Selene dans le menu « Partager » d'Android (manifeste).
+- **Cas manuels** : [EXT-001](manuels/connexions.md#ext-001), [EXT-002](manuels/connexions.md#ext-002), [EXT-003](manuels/connexions.md#ext-003), [EXT-004](manuels/connexions.md#ext-004), [EXT-017](manuels/connexions.md#ext-017), [PLT-002](manuels/plateformes.md#plt-002), [TRV-008](manuels/transverse.md#trv-008)
+
+<a id="tn-passeur"></a>
+#### `TN-passeur` — Le passeur côté Selene
+
+- **Fichier** : [`tests/browser/passeur.js`](../../tests/browser/passeur.js) · **mode** H puis A · **écran** O
+- **Conditions** : Faux passeur.
+- **Vérifie** : connectée : les pages passent par le passeur, avec la session ; Microlink non sollicité ; métadonnées, flux repéré, rien de la page exécuté ; og:url d'un autre site ignorée ; DOI de la page complété par Crossref ; passeur absent (404) ou refusé (403) : Microlink prend le relais, sans insister, et l'aide le dit ; identifiant pour `PASSEUR_USERS` ; « Vérifier » ; artefact : pas de passeur.
+- **Cas manuels** : [EXT-012](manuels/connexions.md#ext-012), [EXT-019](manuels/connexions.md#ext-019)
+
+<a id="tn-dehors"></a>
+#### `TN-dehors` — Dehors
+
+- **Fichier** : [`tests/browser/dehors.js`](../../tests/browser/dehors.js) · **mode** H puis A · **écran** O
+- **Conditions** : Faux passeur qui sert des flux.
+- **Vérifie** : une porte dans la navigation ; sonde du passeur ; suivre un site par son flux annoncé ; la semaine écoulée, rangée par projet ; titre piégé inerte ; lien `javascript:` neutralisé ; page sans flux ou flux déjà suivi : dit ; garder (source avec provenance), vers une note, vu ; douze au plus ; ligne d'accueil sans pastille ; seulement mes motifs ; tout marquer comme vu (synchronisé) ; ETag et 304 ; pas de relecture avant trois heures ; retirer un flux ; artefact : pas de Dehors.
+- **Cas manuels** : [EXT-013](manuels/connexions.md#ext-013), [EXT-019](manuels/connexions.md#ext-019)
+
+<a id="tn-dehors-croise"></a>
+#### `TN-dehors-croise` — Motifs croisés dans Dehors
+
+- **Fichier** : [`tests/browser/dehors-croise.js`](../../tests/browser/dehors-croise.js) · **mode** H · **écran** O
+- **Conditions** : Deux flux, une veille OpenAlex simulée.
+- **Vérifie** : même article dans deux flux compté une fois ; d'abord le plus de raisons, puis une raison, puis le reste ; « déjà gardée » ; cache réduit à ce qui croise tes sources ; « vu » partout ; la veille d'un auteur ne compte pas son nom comme raison.
+- **Cas manuels** : [EXT-013](manuels/connexions.md#ext-013)
+
+<a id="tn-artist-watch"></a>
+#### `TN-artist-watch` — Artist Watch
+
+- **Fichier** : [`tests/browser/artist-watch.js`](../../tests/browser/artist-watch.js) · **mode** H · **écran** O
+- **Conditions** : MusicBrainz simulé.
+- **Vérifie** : rien sans la case ; le réglage dit combien d'artistes ; une requête par artiste relié, une seconde d'écart ; le mois écoulé, titre piégé inerte, rangé sous Musique ; ajouté à Musique et quitte Dehors ; pas de nouvelle demande dans la semaine ; décoché : réglage et cache retirés.
+- **Cas manuels** : [EXT-014](manuels/connexions.md#ext-014)
+
+<a id="tn-veille"></a>
+#### `TN-veille` — Veille de recherche
+
+- **Fichier** : [`tests/browser/veille.js`](../../tests/browser/veille.js) · **mode** H · **écran** O
+- **Conditions** : OpenAlex simulé.
+- **Vérifie** : rien avant la première veille ; une requête depuis un mois, sans clé ; articles avec revue, autrice, résumé ; garder : source avec DOI et provenance « Veille » ; ORCID et clé : clé hors des données synchronisées ; veille en double dite ; pas de nouvelle demande dans la semaine ; quota épuisé dit ; se déconnecter efface la clé et ce que le dehors a apporté.
+- **Cas manuels** : [CPT-013](manuels/entree-et-comptes.md#cpt-013), [EXT-014](manuels/connexions.md#ext-014)
+
+<a id="tn-cites"></a>
+#### `TN-cites` — Ce que tes sources ont en commun
+
+- **Fichier** : [`tests/browser/cites.js`](../../tests/browser/cites.js) · **mode** H · **écran** O
+- **Conditions** : OpenAlex simulé.
+- **Vérifie** : rien avant le clic ; deux appels ; OpenAlex ne reçoit que des DOI ; références communes (tes sources exclues), couplage, auteurs qui reviennent ; titres piégés inertes ; résultat sur l'appareil seulement ; garder une référence ; suivre un auteur dans la veille ; cache ; une seule source à DOI : pas de bouton.
+- **Cas manuels** : [EXT-018](manuels/connexions.md#ext-018)
+
+<a id="tn-agenda"></a>
+#### `TN-agenda` — Calendrier dédié
+
+- **Fichier** : [`tests/browser/agenda.js`](../../tests/browser/agenda.js) · **mode** H · **écran** O
+- **Conditions** : Faux passeur qui sert un `.ics` ; horloge fixée.
+- **Vérifie** : rien sans adresse ; `webcal://` devient `https://` ; adresse gardée dans ce navigateur, hors synchronisation, jamais réaffichée ; le plombier sous Chantier ; récurrence ; le passé écarté ; journée entière demain ; titre piégé inerte ; cache d'une heure ; « oublier » retire adresse et cache.
+- **Cas manuels** : [CPT-013](manuels/entree-et-comptes.md#cpt-013), [EXT-015](manuels/connexions.md#ext-015)
+
+<a id="tn-zotero"></a>
+#### `TN-zotero` — Zotero en lecture seule
+
+- **Fichier** : [`tests/browser/zotero.js`](../../tests/browser/zotero.js) · **mode** H puis A · **écran** O
+- **Conditions** : API Zotero et passeur simulés.
+- **Vérifie** : rien sans clé ; clé en en-tête, à qui elle est, lecture seule ; clé hors synchronisation ; recherche, pièces jointes écartées, titre piégé inerte ; garder : source reliée à la fiche ; doublon par clé ; récents ; relais par le passeur ; clé qui peut écrire signalée ; clé refusée dite ; artefact : pas de Zotero.
+- **Cas manuels** : [EXT-016](manuels/connexions.md#ext-016), [EXT-019](manuels/connexions.md#ext-019)
+
+<a id="tn-musique"></a>
+#### `TN-musique` — Musique et MusicBrainz
+
+- **Fichier** : [`tests/browser/musique.js`](../../tests/browser/musique.js) · **mode** A · **écran** O
+- **Conditions** : MusicBrainz simulé.
+- **Vérifie** : homonymes : Selene demande ; discographie studio sans live ; titre piégé inerte ; album choisi (identifiants, année), autre album ajouté ; une requête par seconde au plus ; pochette, ou rien si absente ; nouvelles sorties : l'année écoulée, puis rien le même jour ; service muet dit ; réglable par collection.
+- **Cas manuels** : [EXT-005](manuels/connexions.md#ext-005), [EXT-006](manuels/connexions.md#ext-006)
+
+<a id="tn-radar"></a>
+#### `TN-radar` — Radar culturel
+
+- **Fichier** : [`tests/browser/radar.js`](../../tests/browser/radar.js) · **mode** H puis A · **écran** O
+- **Conditions** : Portail OpenAgenda simulé ; horloge fixée.
+- **Vérifie** : rien à l'ouverture ; un appel au clic ; le portail reçoit la zone et les dates, jamais les mots ; cinq au plus, filtrés ; le reste compté ; titre piégé inerte ; garder dans la boîte ; cache d'une heure ; 400 : second essai sans sélection ; panne dite ; lecture directe refusée : le passeur, retenu ; artefact : dit ce qui manque ; sans mots ou sans lieu : pas de bouton ; mots synchronisés.
+- **Cas manuels** : [EXT-010](manuels/connexions.md#ext-010), [EXT-019](manuels/connexions.md#ext-019)
+
+<a id="tn-instagram"></a>
+#### `TN-instagram` — Import Instagram
+
+- **Fichier** : [`tests/browser/instagram.js`](../../tests/browser/instagram.js) · **mode** A · **écran** O
+- **Conditions** : Exports synthétiques (`posts_1.json`, `reels.json`).
+- **Vérifie** : import dans les réglages d'une collection ; confirmation (combien, dates, où) ; annuler ne verse rien ; publications au dernier statut, encodage réparé, titre et date ; reel sans légende ; réimport sans doublon ; fichier illisible ou mauvais fichier dit ; légende piégée inerte ; pas de rappel dans « Aujourd'hui ».
+- **Cas manuels** : [EXT-011](manuels/connexions.md#ext-011)
+
+<a id="tn-ciel-chantier"></a>
+#### `TN-ciel-chantier` — Ciel et chantier
+
+- **Fichier** : [`tests/browser/ciel-chantier.js`](../../tests/browser/ciel-chantier.js) · **mode** A · **écran** O
+- **Conditions** : Open-Meteo simulé ; horloge fixée à plusieurs dates.
+- **Vérifie** : Géminides et Perséides la veille du maximum ; éclipses annoncées, avec mise en garde ; rien depuis Marseille ; rien un soir ordinaire ; un seul appel Open-Meteo ; « balcon » : pluie des cinq jours ; « Jardin » comme lieu ; rien sur une tâche d'intérieur ou faite ; « sec jusqu'à » ; mots réglables ; sans lieu : pas de météo, mais les étoiles filantes.
+- **Cas manuels** : [EXT-009](manuels/connexions.md#ext-009)
+
+<a id="tn-ciel-vivant"></a>
+#### `TN-ciel-vivant` — Ciel vivant
+
+- **Fichier** : [`tests/browser/ciel-vivant.js`](../../tests/browser/ciel-vivant.js) · **mode** A · **écran** O et T
+- **Conditions** : Météo de Lille simulée (vent, précipitations).
+- **Vérifie** : nuages, brume, pluie suivent le vent ; seul `transform` est animé ; phase tirée de l'horloge ; hors de vue, immobile ; décoché ou mouvement réduit : immobile ; réglage propre à l'appareil ; vent d'est, neige, brume ; téléphone sans débordement.
+- **Cas manuels** : [EXT-008](manuels/connexions.md#ext-008), [TRV-006](manuels/transverse.md#trv-006)
+
+<a id="tn-fenetre"></a>
+#### `TN-fenetre` — La Fenêtre
+
+- **Fichier** : [`tests/browser/fenetre.js`](../../tests/browser/fenetre.js) · **mode** A · **écran** O
+- **Conditions** : Horloge de Paris simulée ; Open-Meteo simulé.
+- **Vérifie** : midi sans étoiles, minuit étoilé ; sans lieu, ni heure ni météo ; recherche de lieux ; lieu arrondi au dixième ; météo demandée une fois ; pluie dessinée ; lune placée et texte opposé ; météo de plus de trois heures ignorée ; « Suivre le soleil » clair l'après-midi, sombre le soir.
+- **Cas manuels** : [NAV-010](manuels/navigation-reglages.md#nav-010), [EXT-007](manuels/connexions.md#ext-007)
+
+<a id="tn-saisons"></a>
+#### `TN-saisons` — Saisons de la lisière
+
+- **Fichier** : [`tests/browser/saisons.js`](../../tests/browser/saisons.js) · **mode** A · **écran** O
+- **Conditions** : Horloge fixée à quatre dates ; météo simulée.
+- **Vérifie** : rouille en octobre, débourrement en avril, plein feuillage en juillet, branches nues en janvier ; givre à −3 °C seulement, pas à 4 °C ; sans lieu, jamais de givre supposé.
+- **Cas manuels** : [EXT-008](manuels/connexions.md#ext-008)
+
+<a id="tn-assistant"></a>
+#### `TN-assistant` — Assistant hébergé
+
+- **Fichier** : [`tests/browser/assistant.js`](../../tests/browser/assistant.js) · **mode** H · **écran** O
+- **Conditions** : Faux Supabase, fausse fonction `assistant`.
+- **Vérifie** : état de la clé demandé au serveur ; la clé part une fois, la page n'en garde que l'indice, rien dans localStorage ; la question part vers la fonction sans clé ; réponse affichée ; jamais d'appel à `api.anthropic.com` ; clé effacée du serveur ; une clé laissée par une ancienne version est confiée puis effacée de l'appareil.
+- **Limites** : Aucun modèle réel ; la fonction réelle est testée à part (`TD-AST-*`).
+- **Cas manuels** : [AST-001](manuels/assistant.md#ast-001), [AST-002](manuels/assistant.md#ast-002), [AST-006](manuels/assistant.md#ast-006)
+
+<a id="tn-assistant-accord"></a>
+#### `TN-assistant-accord` — Accord avant chaque écriture
+
+- **Fichier** : [`tests/browser/assistant-accord.js`](../../tests/browser/assistant-accord.js) · **mode** H · **écran** O
+- **Conditions** : Le faux assistant tente une injection indirecte (consigne glissée dans une source).
+- **Vérifie** : la fenêtre dit ce qui serait écrit, rien interprété comme du HTML ; refusé : rien n'est écrit, le modèle l'apprend ; confirmé : la note est déposée et le modèle l'apprend.
+- **Cas manuels** : [AST-004](manuels/assistant.md#ast-004)
+
+<a id="tn-assistant-injoignable"></a>
+#### `TN-assistant-injoignable` — Fonction assistant injoignable
+
+- **Fichier** : [`tests/browser/assistant-injoignable.js`](../../tests/browser/assistant-injoignable.js) · **mode** H · **écran** O
+- **Conditions** : Refus CORS, hors ligne.
+- **Vérifie** : l'état de la clé est demandé une fois, pas en boucle ; la page ne se redessine pas sans cesse ; les boutons répondent.
+- **Cas manuels** : [AST-007](manuels/assistant.md#ast-007)
+
+<a id="tn-regulation"></a>
+#### `TN-regulation` — Reprendre la main, parcours complet
+
+- **Fichier** : [`tests/browser/regulation.js`](../../tests/browser/regulation.js) · **mode** A puis H · **écran** T puis O
+- **Conditions** : Sans compte, puis compte personnel (`selene_personnel`) sur un faux Supabase.
+- **Vérifie** : sans compte : l'espace n'est pas proposé ; compte personnel : modèle en dernier, non partagé ; écran d'accueil du suivi ; un sujet par suivi ; nom prérempli ; alcool : sevrage, médecin ou CSAPA, urgences avant l'objectif ; aujourd'hui inconnue ; décimale gardée ; point du jour avec date et total ; consommation après confirmation : à reconfirmer ; total déclaré : complément ; modification dans un autre onglet pendant la boîte : rien validé ; reconfirmation sur le total à jour ; envie, pause à échéance absolue au rechargement, « je l'ai fait » une seule fois, pause arrêtée ; marques masquées puis une par jour ; récompense ; serveur : le nom seulement ; pas de pont ; accueil, recherche, bilan, planche sans détail ; partage confirmé sur le résumé, annulable, arrêtable ; tabac, réseaux sociaux, cannabis : unités, « 1,5 » cigarette refusé ; téléphone sans débordement, cibles de 44 px ; clavier et libellés ; anglais.
+- **Cas manuels** : [RLM-001](manuels/reprendre-la-main.md#rlm-001), [RLM-002](manuels/reprendre-la-main.md#rlm-002), [RLM-004](manuels/reprendre-la-main.md#rlm-004), [RLM-005](manuels/reprendre-la-main.md#rlm-005), [RLM-008](manuels/reprendre-la-main.md#rlm-008), [RLM-009](manuels/reprendre-la-main.md#rlm-009), [RLM-010](manuels/reprendre-la-main.md#rlm-010), [RLM-012](manuels/reprendre-la-main.md#rlm-012), [RLM-016](manuels/reprendre-la-main.md#rlm-016), [RLM-017](manuels/reprendre-la-main.md#rlm-017), [RLM-018](manuels/reprendre-la-main.md#rlm-018), [RLM-020](manuels/reprendre-la-main.md#rlm-020), [RLM-021](manuels/reprendre-la-main.md#rlm-021), [RLM-028](manuels/reprendre-la-main.md#rlm-028), [TRV-002](manuels/transverse.md#trv-002), [TRV-014](manuels/transverse.md#trv-014)
+
+<a id="tn-regulation-appareil"></a>
+#### `TN-regulation-appareil` — Reprendre la main, deux appareils
+
+- **Fichier** : [`tests/browser/regulation-appareil.js`](../../tests/browser/regulation-appareil.js) · **mode** H · **écran** O et T
+- **Conditions** : Deux appareils du même compte, faux Supabase lu directement.
+- **Vérifie** : compte ordinaire : non proposé à l'accueil ni dans les Réglages ; aucun choix de stockage ; le serveur connaît le nom, ni note, ni sujet, ni objectif ; contenu dans le stockage local ; B voit le nom, pas le contenu ; supprimer de B prévient qu'on ne retire que le nom ; déconnexion : la garde nomme ce qui n'existe qu'ici ; annuler ne déconnecte pas ; effacer demande une dernière confirmation ; ensuite plus rien sur l'appareil.
+- **Cas manuels** : [RLM-002](manuels/reprendre-la-main.md#rlm-002), [RLM-003](manuels/reprendre-la-main.md#rlm-003), [RLM-022](manuels/reprendre-la-main.md#rlm-022), [RLM-023](manuels/reprendre-la-main.md#rlm-023)
+
+<a id="tn-natif"></a>
+#### `TN-natif` — Coquille native simulée
+
+- **Fichier** : [`tests/browser/natif.js`](../../tests/browser/natif.js) · **mode** N · **écran** O
+- **Conditions** : `window.seleneNative` : deux coffres asynchrones côté Node ; faux Supabase.
+- **Vérifie** : données et session lues depuis les coffres, rien dans localStorage, tout relu après relance ; la page envoie au widget la lune et trois lignes au plus ; notifications proposées, activées : la semaine programmée à 8 h 30 en texte brut ; changer l'heure reprogramme ; haptique à la capture.
+- **Limites** : Aucune vraie coquille Capacitor : le pont est simulé.
+- **Cas manuels** : [PLT-003](manuels/plateformes.md#plt-003), [PLT-005](manuels/plateformes.md#plt-005), [PLT-006](manuels/plateformes.md#plt-006)
+
+<a id="tn-bureau"></a>
+#### `TN-bureau` — App de bureau simulée
+
+- **Fichier** : [`tests/browser/bureau.js`](../../tests/browser/bureau.js) · **mode** N · **écran** O
+- **Conditions** : Faux cœur Rust derrière `window.__TAURI__.core.invoke`.
+- **Vérifie** : données et session par `store_load` et `secret_load`, rien dans localStorage ; Ctrl+Alt+S ouvre la capture ; `selene://share` dépose dans la boîte par `store_write`.
+- **Limites** : Ni fenêtre Tauri réelle, ni raccourci global du système.
+- **Cas manuels** : [EXT-017](manuels/connexions.md#ext-017), [PLT-009](manuels/plateformes.md#plt-009), [PLT-010](manuels/plateformes.md#plt-010)
+
+<a id="tn-parcours-e2"></a>
+#### `TN-parcours-e2` — Les six tâches du test E2
+
+- **Fichier** : [`tests/browser/parcours-e2.js`](../../tests/browser/parcours-e2.js) · **mode** H · **écran** T
+- **Conditions** : Sans compte ; Crossref simulé.
+- **Vérifie** : Écriture et Sources installées ; trois idées par ⊕ ; source gardée par son DOI ; « documente… » proposé et relié ; Chercher retrouve sans accent ni casse ; l'Écriture vide mène au tri ; trois fragments triés, lien suivi ; dossier téléchargé.
+- **Limites** : Le robot sait où cliquer : ne mesure pas la facilité pour une personne (c'est l'objet d'E2, [validation.md](../validation.md#e2--tester-le-parcours-deux-fois-cinq-personnes)).
+- **Cas manuels** : [PEN-008](manuels/penser-avec.md#pen-008), [EXT-004](manuels/connexions.md#ext-004)
+
+<a id="tn-essai"></a>
+#### `TN-essai` — Page publique de test
+
+- **Fichier** : [`tests/browser/essai.js`](../../tests/browser/essai.js) · **mode** P · **écran** T
+- **Conditions** : Faux Supabase (tables `audience`, `attente`).
+- **Vérifie** : une ouverture : une ligne d'audience (page, événement, lien d'arrivée), clé publique seule ; un rechargement ne compte pas ; polices du site ; pas de défilement horizontal ; adresse incomplète ou sans accord : dit, rien n'envoyé ; refus du serveur dit, adresse gardée ; inscription : adresse, lien, projet ; formulaire vidé ; ni cookie ni stockage ; « Essayer sans compte » ouvre l'app directement.
+- **Cas manuels** : [TRV-013](manuels/transverse.md#trv-013)
+
+## Fonctions serveur (Deno)
+
+Commande : `npm run test:functions` (typage par `deno check`, puis `deno test --allow-env`). En CI : *Check › passeur*, et
+avant chaque déploiement (*Assistant*, *Compte*, *Passeur*). Niveau C : la vraie fonction, contre de faux Supabase Auth,
+PostgREST, Anthropic, réseau et DNS. Limite commune : ni le projet réel, ni les secrets réels, ni le déploiement.
+
+| Identifiant | Fichier | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|---|
+| <a id="td-ast-01"></a>`TD-AST-01` | [`assistant/assistant_test.ts`](../../supabase/functions/assistant/assistant_test.ts) | fermé : origine, session, configuration | Origine non listée, session absente ou expirée, secret de chiffrement absent : refus avec leur code d'erreur. | — |
+| <a id="td-ast-02"></a>`TD-AST-02` | [`assistant/assistant_test.ts`](../../supabase/functions/assistant/assistant_test.ts) | clé : vérifiée par Anthropic, chiffrée, jamais rendue ; oubliée | Une clé refusée par Anthropic n'est pas gardée ; acceptée, elle est chiffrée en base (jamais en clair), la réponse n'en rend que l'indice ; « oublier » l'efface. | [AST-001](manuels/assistant.md#ast-001), [AST-006](manuels/assistant.md#ast-006) |
+| <a id="td-ast-03"></a>`TD-AST-03` | [`assistant/assistant_test.ts`](../../supabase/functions/assistant/assistant_test.ts) | message : relayé avec la clé du compte, champs filtrés et bornés | Seuls modèle, `max_tokens` (borné), consigne, messages et outils (bornés) partent vers Anthropic, avec la clé du compte. | [AST-002](manuels/assistant.md#ast-002) |
+| <a id="td-ast-04"></a>`TD-AST-04` | [`assistant/assistant_test.ts`](../../supabase/functions/assistant/assistant_test.ts) | chiffrement lié au compte : une ligne copiée sous un autre compte ne se déchiffre pas | L'identifiant du compte entre dans le chiffrement : une ligne déplacée ne se déchiffre pas. | — |
+| <a id="td-cpt-01"></a>`TD-CPT-01` | [`compte/compte_test.ts`](../../supabase/functions/compte/compte_test.ts) | supprimer : les données puis le compte, seulement les siens | Efface `app_state`, puis `assistant_keys`, puis le compte, pour le seul compte de la session. | [CPT-015](manuels/entree-et-comptes.md#cpt-015) |
+| <a id="td-cpt-02"></a>`TD-CPT-02` | [`compte/compte_test.ts`](../../supabase/functions/compte/compte_test.ts) | refus : sans session, origine inconnue, sans confirmation, action inconnue, non configurée | Chaque cas renvoie son refus, rien n'est effacé. | [CPT-015](manuels/entree-et-comptes.md#cpt-015) |
+| <a id="td-cpt-03"></a>`TD-CPT-03` | [`compte/compte_test.ts`](../../supabase/functions/compte/compte_test.ts) | panne : le compte n'est jamais effacé avant ses données ; un nouvel essai termine | Une panne pendant l'effacement laisse le compte ; un second appel termine. | [CPT-015](manuels/entree-et-comptes.md#cpt-015) |
+| <a id="td-gar-01"></a>`TD-GAR-01` | [`passeur/garde_test.ts`](../../supabase/functions/passeur/garde_test.ts) | IP privées, réservées, locales : refusées ; publiques : acceptées | Plages privées, réservées, boucle locale, métadonnées refusées. | [EXT-012](manuels/connexions.md#ext-012) |
+| <a id="td-gar-02"></a>`TD-GAR-02` | [`passeur/garde_test.ts`](../../supabase/functions/passeur/garde_test.ts) | adresses : http(s), ports usuels, sans identifiants ni nom local ; les IP déguisées sont reconnues | Schémas, ports, identifiants dans l'adresse, noms locaux, IP écrites en décimal ou en hexadécimal. | [EXT-012](manuels/connexions.md#ext-012) |
+| <a id="td-gar-03"></a>`TD-GAR-03` | [`passeur/garde_test.ts`](../../supabase/functions/passeur/garde_test.ts) | types : du texte selon le genre, jamais un binaire | Le type de contenu doit correspondre au genre demandé (`feed`, `page`, `ics`, `json`). | — |
+| <a id="td-gar-04"></a>`TD-GAR-04` | [`passeur/garde_test.ts`](../../supabase/functions/passeur/garde_test.ts) | encodage : en-tête, déclaration XML, balise meta, sinon UTF-8 | L'encodage est lu dans cet ordre. | — |
+| <a id="td-gar-05"></a>`TD-GAR-05` | [`passeur/garde_test.ts`](../../supabase/functions/passeur/garde_test.ts) | configuration : origines par défaut, comptes fermés par défaut | Sans `PASSEUR_USERS`, personne n'est admis. | — |
+| <a id="td-pas-01"></a>`TD-PAS-01` | [`passeur/passeur_test.ts`](../../supabase/functions/passeur/passeur_test.ts) | fermé : origine, session, compte listé, liste obligatoire | Origine, session et appartenance à `PASSEUR_USERS` exigées. | [EXT-012](manuels/connexions.md#ext-012) |
+| <a id="td-pas-02"></a>`TD-PAS-02` | [`passeur/passeur_test.ts`](../../supabase/functions/passeur/passeur_test.ts) | lecture : texte, métadonnées, GET conditionnel transmis, 304 sans corps | Le texte et ses métadonnées reviennent ; `If-None-Match` et `If-Modified-Since` transmis ; un 304 revient sans corps. | [EXT-012](manuels/connexions.md#ext-012) |
+| <a id="td-pas-03"></a>`TD-PAS-03` | [`passeur/passeur_test.ts`](../../supabase/functions/passeur/passeur_test.ts) | SSRF : IP privée écrite, nom qui résout vers le privé, redirection vers les métadonnées | Chacun est refusé, redirections revérifiées. | [EXT-012](manuels/connexions.md#ext-012) |
+| <a id="td-pas-04"></a>`TD-PAS-04` | [`passeur/passeur_test.ts`](../../supabase/functions/passeur/passeur_test.ts) | limites : binaire refusé, 2 Mo, genre inconnu, site en erreur | Chacun refusé ou rapporté avec son code. | [EXT-012](manuels/connexions.md#ext-012) |
+
+## Cœur Rust de l'app Windows
+
+Commande : `cargo test --locked` dans `native/tauri`. En CI : *Desktop*, sous Windows, si la PR touche `src/` ou
+`native/tauri/`. Niveau U. Non exécutable dans un Linux sans `webkit2gtk-4.1`. Limite : la fenêtre, le raccourci global,
+la zone de notification et le Gestionnaire d'identification ne sont pas testés.
+
+| Identifiant | Fichier | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|---|
+| <a id="tr-tau-01"></a>`TR-TAU-01` | [`native/tauri/src/main.rs`](../../native/tauri/src/main.rs) | noms_de_fichiers | Une clé (accents, barres obliques, caractères interdits compris) devient un nom de fichier hexadécimal et revient intacte ; un hexadécimal invalide est refusé. | [PLT-010](manuels/plateformes.md#plt-010) |
+| <a id="tr-tau-02"></a>`TR-TAU-02` | [`native/tauri/src/main.rs`](../../native/tauri/src/main.rs) | langue_du_menu | Les étiquettes de langue en anglais donnent le menu anglais, toutes les autres le français ; les trois entrées du menu. | [PLT-009](manuels/plateformes.md#plt-009) |
+| <a id="tr-tau-03"></a>`TR-TAU-03` | [`native/tauri/src/main.rs`](../../native/tauri/src/main.rs) | partage_en_json | Un partage piégé (guillemets, `</script>`) est transmis à la page en JSON, sans pouvoir s'exécuter. | [PLT-009](manuels/plateformes.md#plt-009) |
+
+## Contrôles statiques, scripts et compilations
+
+| Identifiant | Commande | Ce qui est vérifié | En CI | Limites | Cas manuels |
+|---|---|---|---|---|---|
+| <a id="ts-build-check"></a>`TS-BUILD-CHECK` | `npm run build:check` | Les HTML générés (`index.html`, `selene.html`) correspondent aux sources. | oui, *Check* (deux jobs) | Ne dit rien de leur comportement. | — |
+| <a id="ts-syntax"></a>`TS-SYNTAX` | `npm run test:syntax` | `node --check` sur chaque source de `src/`, `src/app/`, `src/core/`, `src/native/`, `scripts/`. | oui, *Check* | Ne couvre pas les sous-dossiers de `src/app/` (le lint, si). | — |
+| <a id="ts-lint"></a>`TS-LINT` | `npm run lint` | eslint, module par module : variables non déclarées ou inutilisées, globales limitées par couche. | oui, *Check* | Règles intégrées seulement. | — |
+| <a id="ts-i18n"></a>`TS-I18N` | `npm run i18n` | Chaque texte marqué a sa traduction anglaise, sans orphelin, valeurs `{n}` comprises. | oui, *Check* | Ne juge pas la qualité des traductions. | — |
+| <a id="ts-deno-check"></a>`TS-DENO-CHECK` | `deno check` (dans `test:functions`) | Typage des fonctions serveur. | oui, *Check › passeur* | — | — |
+| <a id="ts-liens"></a>`TS-LIENS` | `npm run liens` | Les adresses de santé citées répondent ; une page disparue fait échouer. | planifié : le 3 de chaque mois | Un site qui refuse le robot n'est qu'annoté (lien ameli, [a-faire.md](../a-faire.md#tout-de-suite-une-minute)). | — |
+| <a id="ts-isolation"></a>`TS-ISOLATION` | `npm run isolation` | Douze requêtes interdites refusées par un vrai projet Supabase de préproduction. | **non** : à lancer à la main | Ne prouve rien sur la production tant que ses règles n'ont pas été comparées ([compte.md](../compte.md#vérifier-lisolation-entre-comptes)). | [TRV-016](manuels/transverse.md#trv-016) |
+| <a id="ts-bench"></a>`TS-BENCH` | `npm run bench` | Mesure seulement (aucun seuil) le rendu des vues sur 5 500 textes (1,92 M caractères, document de 2,59 Mo) dans une VM Node. Le 4 octobre : accueil 31 ms, motifs 42 ms, bilan 46 ms, planche 38 ms, carte d'un motif 56 ms, recherche 3 ms, tirage des sortes 46 ms. | **non** | Faux DOM : ni mise en page ni peinture ; compter 3 à 5 fois plus sur téléphone selon le script. | [TRV-007](manuels/transverse.md#trv-007) |
+| <a id="ts-apk"></a>`TS-APK` | workflow *Android* | L'APK de débogage se construit ; le chemin de signature de la publication fonctionne (clé jetable, `apksigner verify`). | oui, filtré par chemins | Aucun lancement de l'app. | — |
+| <a id="ts-ios-sim"></a>`TS-IOS-SIM` | workflow *iOS* | Le projet iOS et ses plugins compilent pour le simulateur. | oui, filtré par chemins | Aucun lancement, aucune signature. | [PLT-008](manuels/plateformes.md#plt-008) |
+| <a id="ts-win-nsis"></a>`TS-WIN-NSIS` | workflow *Desktop* | L'installateur Windows se construit (après `TR-TAU-*`). | oui, filtré par chemins | Aucun lancement ; non signé sans certificat. | [PLT-009](manuels/plateformes.md#plt-009) |
+| <a id="ts-pages"></a>`TS-PAGES` | workflow *Pages* | Le site n'est publié que si *Check* est vert. | oui, push sur `main` | Une mise à jour des actions de CI peut casser le déploiement sans casser *Check* ([a-faire.md](../a-faire.md#à-tenir-dans-la-durée)). | — |
+| <a id="ts-captures"></a>`TS-CAPTURES` | `npm run screenshots` | Produit les captures des stores. | à la demande | Aucune vérification. | — |
+| <a id="ts-release"></a>`TS-RELEASE` | workflow *Publication* | Construit et signe les versions des stores. | sur étiquette | Chaque plateforme est sautée tant que ses secrets manquent. | — |
+
+## États particuliers
+
+- **Instable, vérifié** : `TN-activite` sous WebKit (A1, deux échecs constatés le 4 octobre).
+- **À surveiller** : `TN-secours`, deux échecs pendant sa branche de correction, aucun depuis (A2).
+- **Conditionnel** : une vérification de `TN-planche` (une page A4) ne tourne que dans Chromium ; les compilations natives
+  ne tournent que si la PR touche leurs chemins ; les tests des fonctions ne se rejouent avant déploiement que si les secrets
+  sont là.
+- **Hors CI** : `TS-ISOLATION`, `TS-BENCH`, `TS-CAPTURES` ; `TS-LIENS` seulement une fois par mois.
+- **Désactivé, ignoré, sans assertion** : aucun.
+- **PR #78 ouverte** : Playwright 1.63.0 changera les navigateurs de la CI ; à sa fusion, mettre à jour cet inventaire.
+
