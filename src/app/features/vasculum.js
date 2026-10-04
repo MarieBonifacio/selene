@@ -18,12 +18,12 @@ import { S, label } from "../state/site.js";
 let vascSkip = 0;
 SHEETS.vasculum = () => {
   const s = S(), inbox = inboxId(s.modules);
-  if (!inbox) return `<h2 id="sheetTitle">${tr`Vasculum`}</h2><p class="empty">${tr`Aucune boîte de réception.`}</p>`;
+  if (!inbox) return `<h2 id="sheetTitle">${tr`Trier la boîte`} <span class="aka">· ${tr`Vasculum`}</span></h2><p class="empty">${tr`Aucune boîte de réception.`}</p>`;
   const list = s.modules[inbox].entries, n = list.length;
-  if (!n) return `<h2 id="sheetTitle">${tr`Vasculum`}</h2><p class="empty">${tr`La boîte est vide. Tout a trouvé sa place, ou presque.`}</p><div class="row"><button class="btn" data-act="sheet-close">${tr`Fermer`}</button></div>`;
+  if (!n) return `<h2 id="sheetTitle">${tr`Trier la boîte`} <span class="aka">· ${tr`Vasculum`}</span></h2><p class="empty">${tr`La boîte est vide. Tout a trouvé sa place, ou presque.`}</p><div class="row"><button class="btn" data-act="sheet-close">${tr`Fermer`}</button></div>`;
   const i = vascSkip % n, note = list[i], intent = captureIntent(note.text), targets = noteTargets(inbox);
-  return `<div class="vasc" data-mod="${esc(inbox)}" data-id="${esc(note.id)}"><h2 id="sheetTitle" class="sr">${tr`Vasculum : trier la boîte`}</h2>
-    <p class="vasc-count">${tr`Vasculum · ${i + 1} sur ${n}`}</p>
+  return `<div class="vasc" data-mod="${esc(inbox)}" data-id="${esc(note.id)}"><h2 id="sheetTitle" class="sr">${tr`Trier la boîte, une note à la fois`}</h2>
+    <p class="vasc-count">${tr`À trier · ${i + 1} sur ${n}`} <span class="aka">· ${tr`Vasculum`}</span></p>
     <blockquote class="spec-text">${esc(note.text)}</blockquote>
     <p class="meta">${fmt(note.date)}${note.ep ? `<span>${epGlyph(note.ep)}${esc(epLabel(note.ep))}</span>` : ""}</p>
     ${intent && intent.to !== inbox ? `<button class="btn acc" data-act="note-file">${tr`Ranger : ${esc(intent.say)}`}</button>` : ""}

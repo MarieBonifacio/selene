@@ -43,6 +43,10 @@ fonctionnement interne (voir [architecture.md](architecture.md)).
 5. **Le contemporain par l'interaction** : sheets, palette de commandes, verre fumé, transitions précises.
 6. **Stabilité topologique** : les repères ne bougent jamais, seul le contenu change.
 7. **L'environnement change, l'interface reste** : seuls les jetons de scène varient avec le temps.
+8. **Le mot courant d'abord, le nom de Selene en second** (U5 de l'audit) : « Nouveautés · Dehors », « Trier la
+   boîte · Vasculum », « depuis la nouvelle lune » plutôt que « cette lunaison ». Le nom propre reste, en italique
+   et en retrait (`.aka`) ; le lexique des Réglages (Aide) les explique tous. Les origines enregistrées dans les
+   données (`origin.from` : « Dehors », « Veille ») ne changent pas : ce sont des valeurs, pas des libellés.
 
 ## Architecture de navigation
 
@@ -55,7 +59,10 @@ Trois strates, aujourd'hui confondues :
 | Système | Réglages, Assistant, Compte, Sauvegarde | régler l'outil |
 
 - **iPhone** : barre basse à cinq destinations fixes (Aujourd'hui · Espaces · ⊕ Capturer · Chercher · Bilan),
-  header compact collant (sigil, nom, ⋯), grand titre qui se replie au défilement. Capturer est toujours au
+  header compact collant (sigil, nom, ⋯), grand titre qui se replie au défilement. L'en-tête de l'app tient sur
+  une ligne (lune, Selene, date ; 60 px, 7 % d'un écran de 844 px, contre 121 avant : U4 de l'audit) : le minuteur
+  n'y paraît qu'entamé (temps restant, Pause ou Reprendre, ↺) ; au repos, il se lance depuis la feuille Capturer, la
+  palette ou un appui long sur la lune (`tests/browser/en-tete.js`). Capturer est toujours au
   centre (jamais contextuel). Espaces ouvre une sheet : trois récents, domaines, pastilles, ponts ouverts,
   Réglages en pied ; deux touchers de suite rouvrent le dernier espace.
   Écartés : bouton flottant, glisser entre espaces. Glisser une ligne : P3, jamais le seul chemin.
@@ -314,7 +321,7 @@ Livrée en quatre temps, pour que chaque pull request reste relisible.
       de 2 px qui avance sous la ligne ; le groupe filtré porte un filet de marge.
 - [x] Kanban adaptatif : sur téléphone, un sélecteur segmenté et une colonne à la fois ; sur ordinateur, glisser une
       carte dans une colonne, ou `[` et `]` sur une carte qui a le focus. Les flèches restent partout.
-- [x] Recherche à facettes : espace, période (cette lunaison, ce mois-ci), statut ; chaque puce compte ce qu'elle
+- [x] Recherche à facettes : espace, période (depuis la nouvelle lune, ce mois-ci), statut ; chaque puce compte ce qu'elle
       donnerait, les autres facettes appliquées ; résultats groupés par espace, « N résultats sur M ». Une recherche
       lancée d'ailleurs (un mot du bilan, un motif) repart sans filtre ; l'export en dossier suit les filtres.
 

@@ -27,18 +27,23 @@ function haloUpdate(done = false) {
   h.classList.toggle("on", !done && left > 0 && left < 900);
   h.classList.toggle("done", done);
 }
+/* Sur téléphone, l'en-tête ne montre le minuteur qu'entamé (U4 de l'audit : l'en-tête prenait une ligne de plus) ; au
+   repos, il se lance depuis la feuille Capturer, la palette ou un appui long sur la lune. */
+function markTimer() {
+  try { const r = document.documentElement; if (tick || paused || left < 900) r.dataset.timerOn = ""; else delete r.dataset.timerOn; } catch {}
+}
 function tickTimer() {
   left = Math.max(0, Math.round((endAt - Date.now()) / 1000)); $("#clock").textContent = mmss(left); haloUpdate();
-  if (left <= 0) { clearInterval(tick); tick = null; $("#clock").classList.add("done"); $("#timerBtn").textContent = timerLabel(); haloUpdate(true); timerDone(); try { navigator.vibrate && navigator.vibrate(200); } catch {} }
+  if (left <= 0) { clearInterval(tick); tick = null; $("#clock").classList.add("done"); $("#timerBtn").textContent = timerLabel(); haloUpdate(true); markTimer(); timerDone(); try { navigator.vibrate && navigator.vibrate(200); } catch {} }
 }
 $("#timerBtn").addEventListener("click", () => {
   const b = $("#timerBtn");
-  if (tick) { clearInterval(tick); tick = null; paused = true; b.textContent = timerLabel(); return; }
+  if (tick) { clearInterval(tick); tick = null; paused = true; b.textContent = timerLabel(); markTimer(); return; }
   paused = false; if (left === 0) left = 900; endAt = Date.now() + left * 1000; $("#clock").classList.remove("done");
-  tick = setInterval(tickTimer, 500); b.textContent = timerLabel(); haloUpdate();
+  tick = setInterval(tickTimer, 500); b.textContent = timerLabel(); haloUpdate(); markTimer();
 });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && tick) tickTimer(); });
-$("#timerReset").addEventListener("click", () => { clearInterval(tick); tick = null; paused = false; left = 900; $("#clock").textContent = mmss(left); $("#clock").classList.remove("done"); $("#timerBtn").textContent = timerLabel(); haloUpdate(); });
+$("#timerReset").addEventListener("click", () => { clearInterval(tick); tick = null; paused = false; left = 900; $("#clock").textContent = mmss(left); $("#clock").classList.remove("done"); $("#timerBtn").textContent = timerLabel(); haloUpdate(); markTimer(); });
 /* Un appui long sur la mini-lune lance (ou met en pause) le minuteur ; un clic simple reste un retour à l'accueil.
    Le bouton du minuteur demeure : un geste caché ne doit jamais être le seul chemin. */
 let haloPress = null, haloFired = false;

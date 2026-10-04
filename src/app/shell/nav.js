@@ -39,7 +39,7 @@ export function navMarks(id) {
 export function navHTML(view) {
   const link = (id, text, extra = "", cls = "") => `<a href="#${esc(id)}" class="${id === view ? "on" : ""} ${cls}"${id === view ? ' aria-current="page"' : ""}>${text}${extra}</a>`;
   return `<button type="button" class="pal-hint" data-act="palette-open">${tr`Aller à…`} <kbd>⌘K</kbd></button>
-    ${link("accueil", tr`Aujourd'hui`)}${link("bilan", tr`Bilan`)}${link("recherche", tr`Chercher`)}${dehorsOn() ? link("dehors", tr`Dehors`) : ""}
+    ${link("accueil", tr`Aujourd'hui`)}${link("bilan", tr`Bilan`)}${link("recherche", tr`Chercher`)}${dehorsOn() ? link("dehors", `${tr`Nouveautés`} <span class="aka">${tr`Dehors`}</span>`) : ""}
     ${domains().map(d => `<p class="grp">${esc(d.name || tr`Espaces`)}</p>${d.ids.map(id => link(id, `${sigil(id)}${esc(label(id))}`, navMarks(id), tintOf(id))).join("")}`).join("")}
     <div class="sys">${enabled("assistant") ? link("assistant", `${sigil("assistant")}${esc(label("assistant"))}`) : ""}${link("reglages", tr`Réglages`)}</div>`;
 }
@@ -66,7 +66,7 @@ export function trackBack(view, entry, from) {
   else if (!backTo || view !== backTo.to) backTo = null;
 }
  // { from, to, label } : la puce « ‹ … » qui ramène d'où l'on vient
-const backLabel = v => v === "dehors" ? tr`Dehors` : v === "recherche" ? (searchQuery.trim() ? tr`Recherche « ${searchQuery.trim()} »` : tr`Recherche`) : v === "accueil" ? tr`Aujourd'hui` : v === "bilan" ? tr`Bilan` : v === "reglages" ? tr`Réglages` : label(v) || v;
+const backLabel = v => v === "dehors" ? tr`Nouveautés` : v === "recherche" ? (searchQuery.trim() ? tr`Recherche « ${searchQuery.trim()} »` : tr`Recherche`) : v === "accueil" ? tr`Aujourd'hui` : v === "bilan" ? tr`Bilan` : v === "reglages" ? tr`Réglages` : label(v) || v;
 function entryEl(id) { let hit = null; $("#main").querySelectorAll("[data-id], [data-task]").forEach(el => { if (!hit && (el.dataset.id === id || el.dataset.task === id)) hit = el; }); return hit; }
 export function focusEntry(id) {
   const view = routeOf().view;
