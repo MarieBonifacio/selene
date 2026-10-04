@@ -307,6 +307,11 @@ Ce qu'elle promet, et qu'il faut tenir à la main :
   ([plus haut](#mesure-dusage-bêta)).
 - **Réponse à une demande de droits sous un mois.** La demande doit venir de l'adresse du compte concerné (ou de
   l'adresse inscrite sur la liste d'attente).
+- **Supprimer un compte sur demande, sous un mois** (la section « Supprimer ton compte » de la politique, l'adresse
+  donnée à Google Play) : la demande vient de l'adresse du compte. Supabase → **Authentication → Users**, chercher
+  l'adresse, **⋯ → Delete user**. Le tableau de bord (`app_state`), la clé d'assistant et la mesure d'usage partent
+  avec lui (`on delete cascade`, `supabase/schema.sql`). Si l'adresse figure aussi sur la liste d'attente :
+  `delete from public.attente where email = '…';` dans le **SQL Editor**. Puis répondre que c'est fait.
 - **La base reste à Paris** (eu-west-3). Un projet déplacé dans une autre région change la section « Hors de l'Union
   européenne ».
 
