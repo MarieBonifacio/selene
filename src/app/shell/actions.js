@@ -4,7 +4,7 @@ import { platform } from "../../platform.js";
 import { parseBackup } from "../../core/backup.js";
 import { MODULE_TYPES, createFromTemplate, inboxId, localizeConfig, slugId } from "../../core/domain.js";
 import { CHANGE, CLICK, TYPE_UI, VIEWS } from "../registry.js";
-import { $, PAGE, pageSize, toast } from "../lib/dom.js";
+import { $, PAGE, pageSize, toast, undoOnKeys } from "../lib/dom.js";
 import { tr } from "../i18n/index.js";
 import { CORE_ERRORS, errMsg } from "../lib/labels.js";
 import { assistantCall, assistantSetCle, sendChat } from "../features/assistant.js";
@@ -109,6 +109,12 @@ document.addEventListener("keydown", e => {
   if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || "")) return;
   // Dessiner tout de suite : attendre l'événement hashchange ferait courir le curseur contre le rendu.
   e.preventDefault(); rememberScroll(); location.hash = "recherche"; render(); const el = document.getElementById("searchIn"); if (el) el.focus();
+});
+// ⌘Z (Ctrl+Z) reprend le dernier « Annuler » encore affiché ; dans un champ, il défait la frappe, comme partout.
+document.addEventListener("keydown", e => {
+  if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey || (e.key !== "z" && e.key !== "Z") || !undoOnKeys()) return;
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || "") || e.target.isContentEditable) return;
+  e.preventDefault(); CLICK["undo"]();
 });
 // ⌘K (Ctrl+K) ouvre ou ferme la palette, même pendant une saisie.
 document.addEventListener("keydown", e => { if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === "k" || e.key === "K")) { e.preventDefault(); openPalette(); } });
