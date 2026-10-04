@@ -35,3 +35,10 @@ jobs:
           xcodebuild -project App.xcodeproj -scheme App -configuration Debug
           -sdk iphonesimulator -destination 'generic/platform=iOS Simulator'
           -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+      # Le manifeste de confidentialité (docs/ios.md) doit être dans l'app, et lisible : sans lui, App Store Connect
+      # refuse l'envoi (ITMS-91053, raison manquante pour les dates de fichiers).
+      - name: Manifeste de confidentialité dans l'app
+        working-directory: native/ios/App
+        run: |
+          app=$(find build/Build/Products -maxdepth 2 -name App.app -type d | head -1)
+          test -n "$app" && plutil -lint "$app/PrivacyInfo.xcprivacy"

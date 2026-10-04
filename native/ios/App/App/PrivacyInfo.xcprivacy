@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Le manifeste de confidentialité de l'app iOS, qu'Apple exige depuis mai 2024 (docs/ios.md, « Confidentialité pour
+     l'App Store »). Il doit dire la même chose que la fiche « Confidentialité de l'app » d'App Store Connect et que la
+     politique de confidentialité (confidentialite.html). Relu contre le code le 4 octobre 2026 : un nouvel envoi de
+     données hors de l'appareil, ou une API à justifier, se déclare ici en même temps. -->
+<plist version="1.0">
+<dict>
+	<!-- Aucun pistage : ni publicité, ni partage avec un courtier de données, ni domaine de pistage. -->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<!-- Les API dont Apple demande la raison. Une seule : les dates des fichiers, lues par @capacitor/filesystem (et sa
+	     bibliothèque ion-ios-filesystem, qui n'a pas de manifeste) quand l'amorçage natif (src/native/boot.js) relit
+	     ses fichiers de données, dans le dossier privé de l'app. C617.1 : fichiers du conteneur de l'app. -->
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>C617.1</string>
+			</array>
+		</dict>
+	</array>
+	<!-- Ce qui quitte l'appareil et reste sur le serveur de Selene (Supabase), avec un compte seulement. Sans compte, rien.
+	     Le suivi « Reprendre la main » reste sur l'appareil (ADR 27) : il n'est pas collecté. -->
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array>
+		<!-- L'adresse du compte (auth.js). -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeEmailAddress</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<!-- Ce que la personne écrit dans ses espaces, synchronisé entre ses appareils (table app_state). -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<!-- Le lieu du ciel, une ville ou « Ma position » arrondie à un dixième de degré (environ 11 km, scene/sky.js),
+		     rangé dans les réglages synchronisés. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeCoarseLocation</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<!-- La mesure d'usage de la bêta : une ligne (compte, jour) les jours de saisie, 90 jours, coupable dans les
+		     Réglages (services/activite.js). -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeProductInteraction</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
+		<!-- Le journal des erreurs : le type d'erreur et l'endroit du code, jamais le message ni le compte
+		     (services/journal.js). Non lié à la personne. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherDiagnosticData</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<!-- La clé API Anthropic de la personne, si elle allume l'assistant : gardée chiffrée sur le serveur, attachée au
+		     compte (features/assistant.js). -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherDataTypes</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
