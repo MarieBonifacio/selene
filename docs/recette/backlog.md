@@ -131,7 +131,10 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
   (sdkmanager et l'émulateur du SDK du runner), émulateur Android 15 hors ligne ; la WebView est pilotée par le
   protocole de débogage de Chrome (`scripts/android-fumee.mjs`, sans dépendance). Il éprouve aussi la mise à jour vers
   l'APK de l'édition des stores. Ni session connectée, ni synchronisation : elles demanderaient un faux serveur joignable
-  depuis l'émulateur.
+  depuis l'émulateur. Premier passage vert le 5 octobre 2026 (PR #105) : le premier lancement réel de l'app, en
+  2 min 40. Mis au point en chemin : `ANDROID_AVD_HOME` commun à avdmanager et à l'émulateur (sinon « Unknown AVD
+  name »), chaque attente bornée, et le coffre jugé au repos (deux `.tmp` d'écritures en route avaient été vus une fois,
+  juste après une navigation).
 
 <a id="bl-08"></a>
 ### BL-08 — Fumée de l'app Windows installée, en CI
