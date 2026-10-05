@@ -70,7 +70,8 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
      main » exclu de la version envoyée. S'il y restait, il faudrait déclarer des références au tabac, à l'alcool et aux
      drogues, ce qui peut relever l'âge minimal.
    - Fiche : ne pas présenter « Reprendre la main ».
-6. **La fiche** : description, icône 512 px (`icon-512.png`), image de présentation 1024 × 500, au moins deux captures
+6. **La fiche** : les textes sont prêts dans `docs/fiches/google-play/` (`fr-FR`, `en-GB` : titre, description courte,
+   description complète, à coller champ par champ) ; icône 512 px (`icon-512.png`), image de présentation 1024 × 500, au moins deux captures
    d'écran de téléphone : `npm run screenshots` (ou Actions → Captures → Run workflow, polices comprises) les produit
    dans `dist/store/fr/android/`, en 1080 × 1920, sur un espace de démonstration fictif ; la fiche anglaise prend
    celles de `dist/store/en/android/` (même espace, écrit en anglais, interface en anglais ; `npm run screenshots -- en`
@@ -89,7 +90,10 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
    contenu du fichier `.p8` (téléchargeable une seule fois) dans `APPSTORE_KEY_P8`.
 5. **TestFlight** : après l'envoi, la version apparaît dans TestFlight (quelques minutes de traitement) ; l'installer
    par l'app TestFlight sur l'iPhone.
-6. **Les formulaires** : Confidentialité de l'app, recopiée du manifeste (`PrivacyInfo.xcprivacy`, que l'app
+6. **La fiche** : `docs/fiches/app-store/` (`fr-FR`, `en-GB`) donne le nom, le sous-titre, le texte promotionnel, la
+   description et les mots-clés (100 octets au plus, sans nom d'autre app : règle 2.3.7). Les captures : celles de
+   `dist/store/{fr,en}/ios/` (`npm run screenshots`).
+7. **Les formulaires** : Confidentialité de l'app, recopiée du manifeste (`PrivacyInfo.xcprivacy`, que l'app
    embarque) : Coordonnées → Adresse e-mail ; Contenu utilisateur → Autre contenu ; Localisation → Position
    approximative ; Données d'utilisation → Interaction avec le produit (Analyses) ; Diagnostic → Autres données de
    diagnostic (**non** liées à l'identité) ; Autres données (la clé de l'assistant). Toutes les autres sont liées à
@@ -99,7 +103,7 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
    Productivité, captures d'écran 6,9 pouces
    (`dist/store/fr/ios/` et `dist/store/en/ios/`, 1320 × 2868, par la même commande).
 
-7. **Les informations pour la relecture** (App Review Information) : aucun compte de démonstration n'est nécessaire.
+8. **Les informations pour la relecture** (App Review Information) : aucun compte de démonstration n'est nécessaire.
    Écrire : « Tap “Start without an account” on the first screen: the whole app works on the device. An account only
    adds sync between devices. » (ADR 28 ; la règle 5.1.1 (v) refuse qu'une app exige un compte sans raison.)
 

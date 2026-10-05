@@ -121,7 +121,7 @@ Le chemin complet (comptes, clés, secrets, premier envoi) est dans [publication
   Le masquer ne suffit pas : la règle 2.3.1 d'Apple refuse les fonctions cachées.
 - [ ] **Google Play, Contenu de l'application**, et **App Store Connect** : les déclarations se remplissent alors sans
   données de santé ni références au tabac, à l'alcool ou aux drogues ([publication.md](publication.md#android--google-play),
-  étape 5 ; [publication.md](publication.md#ios--app-store), étape 6).
+  étape 5 ; [publication.md](publication.md#ios--app-store), étape 7).
 
 ## Conformité (RGPD)
 

@@ -1,5 +1,5 @@
 /* Les déclarations de confidentialité des stores (docs/ios.md, « Confidentialité pour l'App Store » ; docs/publication.md,
-   étapes 5 et 6). Le manifeste iOS est une ressource de l'app, sans pistage, avec la raison des dates de fichiers ; chaque
+   étapes 5 et 7). Le manifeste iOS est une ressource de l'app, sans pistage, avec la raison des dates de fichiers ; chaque
    donnée qu'il déclare a sa ligne dans la fiche Google Play, pour que les deux stores disent la même chose. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -46,4 +46,31 @@ test('« Ma position » dans les apps : la position approximative seule, et la p
   // Ce qui est gardé reste approximatif : la position est arrondie avant d'être rangée, et déclarée comme telle.
   assert.match(fs.readFileSync('src/app/scene/sky.js', 'utf8'), /lat: r1\(lat\), lon: r1\(lon\)/);
   assert.match(manifest, /NSPrivacyCollectedDataTypeCoarseLocation/);
+});
+
+test('les fiches des stores : limites de chaque champ, deux langues, rien de « Reprendre la main », l’adresse de la politique', () => {
+  // docs/fiches/ : un fichier par champ, tel qu'il se colle dans la Play Console et dans App Store Connect
+  // (docs/publication.md, « La fiche »). Les limites sont celles des stores ; les mots-clés d'Apple, comptés en octets
+  // par prudence, ne nomment pas d'autres apps (règle 2.3.7).
+  const LIMITS = { 'google-play': { title: 30, short_description: 80, full_description: 4000 },
+    'app-store': { name: 30, subtitle: 30, promotional_text: 170, description: 4000, keywords: 100 } };
+  const POLICY = { 'fr-FR': 'https://mariebonifacio.github.io/selene/confidentialite.html', 'en-GB': 'https://mariebonifacio.github.io/selene/privacy.html' };
+  for (const [store, fields] of Object.entries(LIMITS)) for (const lang of Object.keys(POLICY)) {
+    const dir = `docs/fiches/${store}/${lang}`;
+    assert.deepEqual(fs.readdirSync(dir).sort(), Object.keys(fields).map(f => f + '.txt').sort(), dir);
+    for (const [field, max] of Object.entries(fields)) {
+      const text = fs.readFileSync(`${dir}/${field}.txt`, 'utf8').replace(/\n$/, ''), n = field === 'keywords' ? Buffer.byteLength(text) : [...text].length;
+      assert.ok(text.trim() && n <= max, `${dir}/${field} : ${n} pour ${max} au plus`);
+      // Ni le suivi de santé (hors de l'offre publique, exclu des builds des stores), ni promesse de soin.
+      assert.doesNotMatch(text, /reprendre la main|taking back control|tabac|tobacco|alcool|alcohol|cannabis|addiction|sevrage|santé|health|médical|medical/i, `${dir}/${field}`);
+    }
+    const desc = fs.readFileSync(`${dir}/${store === 'app-store' ? 'description' : 'full_description'}.txt`, 'utf8');
+    assert.ok(desc.includes(POLICY[lang]), `${dir} : la politique de confidentialité, dans sa langue`);
+    if (store === 'app-store') {
+      const kw = fs.readFileSync(`${dir}/keywords.txt`, 'utf8').split(',');
+      assert.ok(kw.every(k => k && k === k.trim()) && new Set(kw).size === kw.length, `${dir}/keywords : séparés par des virgules, sans doublon`);
+      assert.ok(!kw.some(k => /zotero|obsidian|zettlr|notion|scrivener|pandoc/i.test(k)), `${dir}/keywords : pas le nom d'une autre app`);
+    }
+  }
+  assert.match(fs.readFileSync('docs/publication.md', 'utf8'), /docs\/fiches\//);
 });
