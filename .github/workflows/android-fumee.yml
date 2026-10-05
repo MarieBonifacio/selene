@@ -56,9 +56,14 @@ jobs:
         run: |
           sdk="$ANDROID_HOME/cmdline-tools/latest/bin"
           echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          # Un seul dossier d'appareils virtuels pour avdmanager et l'émulateur : les outils récents rangent les leurs
+          # sous ~/.config/.android, où l'émulateur ne les cherche pas (« Unknown AVD name »).
+          export ANDROID_AVD_HOME="$HOME/.android/avd"; mkdir -p "$ANDROID_AVD_HOME"
+          echo "ANDROID_AVD_HOME=$ANDROID_AVD_HOME" >> "$GITHUB_ENV"
           yes | "$sdk/sdkmanager" --licenses > /dev/null || true
           "$sdk/sdkmanager" --install emulator "$IMAGE" > /dev/null
           echo no | "$sdk/avdmanager" create avd -n fumee -k "$IMAGE" -d pixel_6 --force
+          "$ANDROID_HOME/emulator/emulator" -list-avds | grep -qx fumee || { echo "::error::L'appareil virtuel « fumee » est introuvable pour l'émulateur."; exit 1; }
           ls -l /dev/kvm || true
           "$ANDROID_HOME/emulator/emulator" -accel-check || true
       # Chaque attente est bornée : un émulateur qui ne démarre pas échoue en quelques minutes, avec la fin de son journal.
