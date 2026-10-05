@@ -1,7 +1,7 @@
 /* Type « notes » : textes datés ; la boîte de réception reçoit la capture rapide, qui reconnaît trois intentions et
    propose de ranger. */
 import { addBudgetEntry, addCapture, addJournalEntry, addLink, entryIds, epPrefix, retargetLinks, stampOrigin } from "../../core/domain.js";
-import { mdImport } from "../../core/markdown.js";
+import { mdImport, mdReadFiles } from "../../core/markdown.js";
 import { findDoi, findUrl } from "../../core/sources.js";
 import { TYPE_UI, registerType } from "../registry.js";
 import { $, esc, paged, toast, toastAction } from "../lib/dom.js";
@@ -95,18 +95,22 @@ function noteBody(t) {
 async function importMarkdown(mod, list) {
   const files = [...list].filter(f => /\.(md|markdown)$/i.test(f.name)).slice(0, 5000);
   if (!files.length) return toast(tr`Aucun fichier Markdown (.md) dans ce choix.`);
-  const read = await Promise.all(files.map(async f => ({ name: f.name, path: f.webkitRelativePath || f.name, text: await f.text(), modified: f.lastModified })));
+  const { read, unreadable } = await mdReadFiles(files);
+  if (!read.length) return toast(tr`Aucun de ces fichiers n'a pu être lu : ils ont peut-être été déplacés ou supprimés depuis leur choix.`);
+  // Les fichiers illisibles n'arrêtent pas l'import des autres, mais la personne le sait : à la confirmation, puis après.
+  const lost = unreadable ? " " + trn(unreadable, "{0} fichier illisible, ignoré.", "{0} fichiers illisibles, ignorés.") : "";
   const inst = S().modules[mod];
   if (!inst) return;
   const r = mdImport(read, inst.entries.map(e => e.text));
   const have = new Map(inst.entries.map(e => [e.text, e.id])), fresh = r.notes.filter(n => !have.has(n.text));
-  if (!fresh.length) return toast(r.notes.length ? tr`Rien de nouveau : ces notes sont déjà là.` : tr`Ces fichiers sont vides.`);
+  if (!fresh.length) return toast((r.notes.length ? tr`Rien de nouveau : ces notes sont déjà là.` : tr`Ces fichiers sont vides.`) + lost);
   const weight = utf8Bytes(JSON.stringify(fresh.map(n => n.text))), total = utf8Bytes(JSON.stringify(S())) + weight, dated = fresh.filter(n => n.date).map(n => n.date);
   const mo = n => (n / 1e6).toLocaleString(uiLocale(), { maximumFractionDigits: 1 }), day = d => fmt(d, { day: "numeric", month: "long", year: "numeric" });
   let q = !dated.length ? trn(fresh.length, "Importer {0} note dans {1} ?", "Importer {0} notes dans {1} ?", label(mod))
     : dated[0] === dated[dated.length - 1] ? trn(fresh.length, "Importer {0} note (datée du {1}) dans {2} ?", "Importer {0} notes (datées du {1}) dans {2} ?", day(dated[0]), label(mod))
       : trn(fresh.length, "Importer {0} note (du {1} au {2}) dans {3} ?", "Importer {0} notes (du {1} au {2}) dans {3} ?", day(dated[0]), day(dated[dated.length - 1]), label(mod));
   if (r.notes.length > fresh.length) q += " " + trn(r.notes.length - fresh.length, "{0} déjà là, ignorée.", "{0} déjà là, ignorées.");
+  q += lost;
   const fromFresh = ([i]) => !have.has(r.notes[i].text), nLinks = r.links.filter(fromFresh).length + r.knownLinks.filter(fromFresh).length;
   if (nLinks) q += " " + trn(nLinks, "{0} lien [[…]] devient « fait écho à ».", "{0} liens [[…]] deviennent « fait écho à ».");
   if (fresh.some(n => n.cut)) q += " " + tr`Les plus longues sont coupées à 20 000 caractères.`;
@@ -125,7 +129,7 @@ async function importMarkdown(mod, list) {
   for (const [i, j] of r.links.filter(fromFresh)) link(i, ids[j]);
   for (const [i, k] of r.knownLinks.filter(fromFresh)) link(i, inst.entries[k] && inst.entries[k].id);
   site.save(); render();
-  toast(trn(fresh.length, "{0} note importée dans {1}.", "{0} notes importées dans {1}.", label(mod)) + (linked ? " " + trn(linked, "{0} lien.", "{0} liens.") : ""));
+  toast(trn(fresh.length, "{0} note importée dans {1}.", "{0} notes importées dans {1}.", label(mod)) + (linked ? " " + trn(linked, "{0} lien.", "{0} liens.") : "") + lost);
 }
 /* Où une note peut être rangée : les modules actifs qui savent la recevoir, dans l'ordre de la navigation.
    Un type peut renvoyer une suite à donner (le formulaire d'une tâche, pour la compléter). */
@@ -175,7 +179,7 @@ registerType("notes", {
     }
   },
   change: {
-    "notes-md": el => { const files = [...(el.files || [])]; el.value = ""; if (files.length) importMarkdown(el.dataset.mod, files); },
+    "notes-md": el => { const files = [...(el.files || [])]; el.value = ""; if (files.length) importMarkdown(el.dataset.mod, files).catch(() => toast(tr`L'import n'a pas pu aller au bout.`)); },
     "notes-inbox": el => {
       const id = el.dataset.mod;
       for (const [k, inst] of Object.entries(S().modules)) if (inst.type === "notes") inst.config.inbox = el.checked ? k === id : (k === id ? false : inst.config.inbox);

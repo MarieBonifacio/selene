@@ -9,12 +9,13 @@ import { coreError, requireText, validDate } from "./domain.js";
 /* Les sujets et leur unité. `scale` : l'inverse du pas de saisie (cannabis au centième de gramme, alcool au dixième de
    verre) ; `max` : borne d'une saisie, et d'une journée quand `dayMax` est donné (une journée a 1440 minutes). Les noms
    français servent au résumé envoyé à l'assistant (sa consigne reste en français, docs/i18n.md) ; l'interface a les
-   siens, traduits (src/app/modules/regulation.js). */
+   siens, traduits (src/app/modules/regulation.js). `one` et `many` : la quantité au singulier (0 et 1, comme en français,
+   et tout ce qui est inférieur à 2) et au pluriel, pour le résumé de l'assistant (`regulationSummary`). */
 export const REGULATION_SUBJECTS = {
-  tabac: { fr: "tabac", unit: "cigarettes", scale: 1, max: 200 },
-  cannabis: { fr: "cannabis", unit: "grammes de produit", scale: 100, max: 100 },
-  alcool: { fr: "alcool", unit: "verres standard (10 g d'alcool pur)", scale: 10, max: 100 },
-  reseaux: { fr: "réseaux sociaux", unit: "minutes déclarées", scale: 1, max: 1440, dayMax: 1440 }
+  tabac: { fr: "tabac", unit: "cigarettes", one: "cigarette", many: "cigarettes", scale: 1, max: 200 },
+  cannabis: { fr: "cannabis", unit: "grammes de produit", one: "gramme de produit", many: "grammes de produit", scale: 100, max: 100 },
+  alcool: { fr: "alcool", unit: "verres standard (10 g d'alcool pur)", one: "verre standard", many: "verres standard", scale: 10, max: 100 },
+  reseaux: { fr: "réseaux sociaux", unit: "minutes déclarées", one: "minute déclarée", many: "minutes déclarées", scale: 1, max: 1440, dayMax: 1440 }
 };
 export const REGULATION_MODES = ["observer", "reduire", "arreter"];
 export const REGULATION_STORAGES = ["account", "device"];
@@ -334,4 +335,23 @@ export function setRegulationPlan(inst, input) {
   if (!Number.isInteger(at) || at < 1 || at > 365) throw coreError("reg-reward", "Seuil de récompense : 1 à 365 marques");
   Object.assign(inst.config, { supports, rewards: !!input.rewards, reward: String(input.reward ?? "").trim().slice(0, 200), rewardAt: at });
   return inst.config;
+}
+
+/* ---- le résumé que reçoit l'assistant (pur : le texte est celui qu'on montre à la personne avant qu'elle le partage) ----
+   En français (la consigne de l'assistant l'est, docs/i18n.md), quelle que soit la langue de l'interface : virgule
+   décimale, 0 et 1 au singulier, jamais « 1.5 verres » ni « 0 verres ». Ni notes, ni envies, ni déclencheurs, ni appuis. */
+const frNum = n => String(n).replace(".", ",");
+const frCount = (n, one, many) => `${frNum(n)} ${n < 2 ? one : many}`;
+export function regulationSummary(inst, name, today) {
+  const s = REGULATION_SUBJECTS[inst.config.subject];
+  if (!s) return `\n${name} : suivi personnel autodéclaratif, pas encore configuré.`;
+  const p = regulationPeriod(inst, addDays(today, -6), addDays(today, 1)), g = regulationGoal(inst, today), q = n => frCount(n, s.one, s.many);
+  const goal = !g ? "aucun objectif en cours" : g.mode === "observer" ? "observer sans cible" : g.mode === "arreter" ? "viser l'arrêt" : `au plus ${q(g.limit)} par jour`;
+  return `\n${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choisi : ${goal}. Sept derniers jours : ` +
+    `${frCount(p.span, "jour suivi", "jours suivis")}, ${frCount(p.complete, "journée complète", "journées complètes")}, ` +
+    `${frCount(p.incomplete, "inconnue ou à reconfirmer", "inconnues ou à reconfirmer")} (une journée inconnue ne vaut pas zéro) ; ` +
+    `déclaré en tout : ${q(p.declared)} ; moyenne par journée complète : ${p.mean == null ? "sans objet" : q(p.mean)} ; ` +
+    `objectif atteint ${p.met} fois sur ${frCount(p.assessed, "journée évaluable", "journées évaluables")}.` +
+    ` Notes, envies, déclencheurs et appuis ne sont pas transmis. Ne propose ni diagnostic, ni calendrier de sevrage, ni dose.` +
+    (inst.config.subject === "alcool" ? " Un arrêt brutal ou une réduction rapide peuvent être dangereux en cas de dépendance : oriente vers un médecin ou un CSAPA." : "");
 }

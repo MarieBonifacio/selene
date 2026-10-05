@@ -92,3 +92,14 @@ export function mdImport(files, known = []) {
   });
   return { notes, links, knownLinks, skipped };
 }
+
+/* Lire les fichiers choisis, un par un : un fichier que le navigateur ne peut pas lire (déplacé, supprimé, resté dans un
+   nuage depuis son choix) n'empêche pas d'importer les autres. Rend ceux qu'on a lus, et combien on n'a pas pu lire (la
+   personne doit le savoir : une note absente sans un mot est une note perdue). `files` : des File, ou tout objet qui a
+   `text()`. */
+export async function mdReadFiles(files) {
+  const list = [...files || []];
+  const done = await Promise.allSettled(list.map(async f => ({ name: f.name, path: f.webkitRelativePath || f.name, text: await f.text(), modified: f.lastModified })));
+  const read = done.filter(r => r.status === "fulfilled").map(r => r.value);
+  return { read, unreadable: list.length - read.length };
+}

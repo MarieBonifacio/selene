@@ -34,6 +34,37 @@ demo.config.radar = { words: 'jazz' };
   await p.click('[data-act="radar-open"]'); await p.waitForTimeout(400);
   ok(await p.evaluate(() => document.querySelector('#sheet').open), 'les boutons répondent (le radar s’ouvre)');
 
+  console.log('l’assistant dit ce qui manque, au lieu de « Colle ta clé »');
+  await p.evaluate(() => { location.hash = 'assistant'; }); await p.waitForTimeout(500);
+  const statut = await p.textContent('.status');
+  ok(statut.includes('Assistant injoignable (hors ligne, ou pas encore déployé).') && !statut.includes('Pas encore branché'), `la vue le dit (${statut.trim().slice(0, 90)})`);
+  await p.evaluate(() => { location.hash = 'reglages'; }); await p.waitForSelector('[data-act="as-key"]', { timeout: 5000 });
+  ok((await p.textContent('#assistant-cfg')).includes('Assistant injoignable (hors ligne, ou pas encore déployé).'), 'les Réglages aussi');
+  await p.fill('[data-act="as-key"]', 'sk-ant-api03-' + 'a'.repeat(40)); await p.press('[data-act="as-key"]', 'Tab'); await p.waitForTimeout(400);
+  ok((await p.textContent('#toast')).includes('Clé non enregistrée : Assistant injoignable'), 'coller une clé : la cause, pas « connecte-toi »');
+
+  // La fonction répond 404 (pas déployée) ou 503 (pas configurée) : on le dit, on n'insiste pas, on ne boucle pas.
+  for (const [status, phrase] of [[404, 'Assistant non déployé (voir docs/assistant.md).'], [503, 'Assistant non configuré.']]) {
+    const c2 = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' }), q = await c2.newPage(); q.on('pageerror', e => errs.push(e.message));
+    let appels = 0;
+    await c2.route('https://*.supabase.co/**', r => {
+      if (new URL(r.request().url()).pathname === '/functions/v1/assistant') { appels++; return r.fulfill({ status, contentType: 'application/json', body: '{}' }); }
+      r.fulfill({ contentType: 'application/json', body: r.request().method() === 'GET' ? '[]' : '{}' });
+    });
+    await c2.addInitScript(([d, s, uid]) => { if (!localStorage.getItem('selene-auth-session')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); } },
+      [JSON.stringify(demo), JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: UID, email: 'a@b.c' } }), UID]);
+    await q.goto(BASE + '/index.html#assistant'); await q.waitForSelector('.status', { timeout: 10000 }); await q.waitForTimeout(800);
+    const s404 = await q.textContent('.status');
+    ok(s404.includes(phrase) && !s404.includes('Pas encore branché'), `${status} : la vue dit « ${phrase} » (${s404.trim().slice(0, 80)})`);
+    await q.evaluate(() => { location.hash = 'reglages'; }); await q.waitForSelector('[data-act="as-key"]', { timeout: 5000 });
+    await q.fill('[data-act="as-key"]', 'sk-ant-api03-' + 'a'.repeat(40)); await q.press('[data-act="as-key"]', 'Tab'); await q.waitForTimeout(400);
+    const toast = await q.textContent('#toast');
+    ok(toast.includes('Clé non enregistrée : ' + phrase) && !toast.includes('connectée'), `${status} : coller une clé dit la cause, pas « demande d'être connectée » (${toast.trim().slice(0, 90)})`);
+    await q.waitForTimeout(2000);
+    ok(appels === 1, `${status} : une seule demande à la fonction, pas de boucle (${appels})`);
+    await c2.close();
+  }
+
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

@@ -991,7 +991,7 @@ test('dossier: dated, labelled entries with status, provenance and links as inte
   assert.match(md, /^---\ntitre: "Écriture \\"brouillon\\""\nsource: "Selene"/, 'YAML front matter, quotes escaped');
   assert.match(md, /entrees: 3\n---/);
   assert.match(md, /Ne pas traiter une hypothèse comme un fait, ni combler un inexpliqué/, 'reading legend for an assistant');
-  assert.match(md, /## 1\. 1 septembre 2026 · Écriture · hypothèse\n\nLe DMN fabrique le soi\n\n\*Provenance : Capture, 30 août 2026 : « Écriture : le DMN fabrique le soi »\*/);
+  assert.match(md, /## 1\. 1er septembre 2026 · Écriture · hypothèse\n\nLe DMN fabrique le soi\n\n\*Provenance : Capture, 30 août 2026 : « Écriture : le DMN fabrique le soi »\*/);
   assert.match(md, /\*Liens : contredit \[1\] ; fait écho à « Hors dossier » \(hors dossier\) ; documente \(supprimé\)\*/, 'links: cross-reference inside, excerpt outside, deletion said');
   assert.match(md, /## 3\. Budget\n\nPas une pensée/, 'an entry without date or status still has its module');
   assert.doesNotMatch(md, /\n\n\n/, 'no blank-line pile-ups');

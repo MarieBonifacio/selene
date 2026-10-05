@@ -24,7 +24,7 @@ const C = md('Long.md', '---\ncreated: 2024-03-01\n---\n' + Array.from({ length:
   ok(!!(await p.$(input)) && !!(await p.$(folder)), 'dans les réglages d’un module de notes : des fichiers, ou tout un dossier');
   await p.setInputFiles(input, [A, B, C]); await p.waitForTimeout(300);
   const q = await p.textContent('#cmsg');
-  ok(await p.isVisible('#cdlg') && q.includes('Importer 3 notes (du 5 janvier 2024 au 1 mars 2024) dans Carnet') && q.includes('2 liens [[…]] deviennent « fait écho à »'), `confirmation : combien, de quand à quand, où, les liens (${q})`);
+  ok(await p.isVisible('#cdlg') && q.includes('Importer 3 notes (du 5 janvier 2024 au 1er mars 2024) dans Carnet') && q.includes('2 liens [[…]] deviennent « fait écho à »'), `confirmation : combien, de quand à quand, où, les liens (${q})`);
   await p.click('#cdlg button[value=cancel]'); await p.waitForTimeout(200);
   ok(!(await notes()).length, 'annulé : rien n’est versé');
   await p.setInputFiles(input, [A, B, C]); await p.waitForTimeout(300);
@@ -58,6 +58,19 @@ const C = md('Long.md', '---\ncreated: 2024-03-01\n---\n' + Array.from({ length:
   const after = await notes(), neuve = after.find(e => e.text.startsWith('Nouvelle'));
   ok(after.length === 4 && neuve && neuve.links && neuve.links[0].to === `carnet/${seuil.id}`, 'un lien vers une note déjà importée la retrouve');
   fs.rmSync(dir, { recursive: true, force: true });
+
+  console.log('un fichier illisible n’arrête pas les autres');
+  // Le navigateur ne sait pas lire « illisible.md » (déplacé ou supprimé depuis son choix) : text() échoue pour lui seul.
+  await p.evaluate(() => { const t = Blob.prototype.text; Blob.prototype.text = function () { return this.name === 'illisible.md' ? Promise.reject(new DOMException('The requested file could not be read', 'NotReadableError')) : t.call(this); }; });
+  const D = md('Troisième.md', 'Une note de plus, lisible.'), X = md('illisible.md', 'ne sera jamais lue');
+  await p.setInputFiles(input, [D, X]); await p.waitForTimeout(300);
+  const q3 = await p.textContent('#cmsg');
+  ok(await p.isVisible('#cdlg') && q3.includes('Importer 1 note') && q3.includes('1 fichier illisible, ignoré.'), `la confirmation dit combien de fichiers n'ont pas pu être lus (${q3})`);
+  await p.click('#cdlg button[value=ok]'); await p.waitForTimeout(300);
+  const t3 = await p.textContent('#toast');
+  ok((await notes()).length === 5 && t3.includes('1 note importée dans Carnet.') && t3.includes('1 fichier illisible, ignoré.'), `le fichier lisible est importé, et le message le dit (${t3})`);
+  await p.setInputFiles(input, [X]); await p.waitForTimeout(300);
+  ok(!(await p.isVisible('#cdlg')) && (await p.textContent('#toast')).includes('Aucun de ces fichiers n\'a pu être lu') && (await notes()).length === 5, 'aucun lisible : un message, rien n\'est importé, aucune erreur muette');
 
   check(!errs.length, 'aucune erreur JavaScript ni appel réseau' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

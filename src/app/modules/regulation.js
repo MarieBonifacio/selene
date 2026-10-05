@@ -3,9 +3,9 @@
    recherche ni aux analyses transversales (pas de hook texts), rien sur l'accueil au-delà de son nom, pas de rappel ni
    de pastille, partage avec l'assistant désactivé à la création et confirmé sur le résumé exact. Les actions de ce
    type commencent par « rlm- » (Reprendre la main). */
-import { REGULATION_COMPARE_MIN, REGULATION_SUBJECTS, addDays, addRegulationGoal, closeRegulationDay, markUrgeDone, regulationComparable,
+import { REGULATION_COMPARE_MIN, addDays, addRegulationGoal, closeRegulationDay, markUrgeDone, regulationComparable,
   regulationDay, regulationGoal, regulationGoalHistory, regulationNextGoal, regulationPause, regulationPeriod, regulationProgress, regulationRemaining,
-  regulationSnapshot, regulationStart, regulationSubjectConflict, regulationSupports, saveRegulationEvent, saveRegulationTotal, setRegulationPlan, setupRegulation,
+  regulationSnapshot, regulationStart, regulationSubjectConflict, regulationSummary, regulationSupports, saveRegulationEvent, saveRegulationTotal, setRegulationPlan, setupRegulation,
   startRegulationPause, stopRegulationPause, urgeActionId, regulationOnDevice } from "../../core/regulation.js";
 import { createBackup } from "../../core/backup.js";
 import { hosted } from "../../platform.js";
@@ -38,6 +38,8 @@ const subjectOf = inst => SUBJECTS[inst.config.subject] || null;
 const qty = (inst, n) => (subjectOf(inst) ? subjectOf(inst).qty(n) : regNum(n));
 const goalText = (inst, g) => !g ? tr`aucun objectif à cette date` : g.mode === "observer" ? tr`observer, sans cible` : g.mode === "arreter" ? tr`viser l'arrêt` : tr`au plus ${qty(inst, g.limit)} par jour`;
 const longDate = d => fmt(d, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+// Une date en lettres, sans abréviation : « 14 octobre 2026 », jamais « 14 oct. » suivi du point de la phrase (« oct.. »).
+const longDay = d => fmt(d, { day: "numeric", month: "long", year: "numeric" });
 const zone = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch { return ""; } };
 const modOf = el => el.dataset.mod || el.closest("[data-mod]").dataset.mod;
 const entryOf = el => el.closest("[data-id]")?.dataset.id;
@@ -81,7 +83,7 @@ function goalForm(id, setupSubject = null) {
     if (setupSubject) setupRegulation(latest, { ...v, subject: setupSubject }, uid(), todayISO(), Date.now());
     else addRegulationGoal(latest, v, uid(), todayISO(), Date.now());
     save();
-    toast(v.date > todayISO() ? tr`Objectif enregistré, à partir du ${fmt(v.date)}. D'ici là, rien ne change.` : tr`Objectif enregistré. Les journées déjà confirmées gardent le leur.`);
+    toast(v.date > todayISO() ? tr`Objectif enregistré, à partir du ${longDay(v.date)}. D'ici là, rien ne change.` : tr`Objectif enregistré. Les journées déjà confirmées gardent le leur.`);
   }, about);
 }
 /* Noter une consommation (ou une durée) : une de plus, ou le total de la journée. Le total n'est jamais additionné à
@@ -208,7 +210,7 @@ function removeEntry(id, entryId) {
   if (i < 0) return;
   const e = inst.entries[i], wasComplete = e.kind === "use" && regulationDay(inst, e.date).complete;
   inst.entries = inst.entries.filter(x => x.id !== entryId); save();
-  const what = e.kind === "day" ? tr`La journée du ${fmt(e.date)} redevient inconnue.` : e.kind === "use" ? tr`Supprimé : ${qty(inst, e.value)} le ${fmt(e.date)}.`
+  const what = e.kind === "day" ? tr`La journée du ${fmt(e.date)} redevient inconnue.` : e.kind === "use" ? tr`Supprimé : ${qty(inst, e.value)} le ${longDay(e.date)}.`
     : e.kind === "urge" ? tr`Envie du ${fmt(e.date)} supprimée.` : tr`Action du ${fmt(e.date)} supprimée.`;
   toastUndo(wasComplete ? `${what} ${tr`Cette journée est à reconfirmer.`}` : what, () => {
     const cur = T(id); // relu : une synchro a pu passer entre-temps
@@ -388,11 +390,7 @@ const TYPE = {
   context(stub, name, id) {
     const inst = id ? T(id) : stub;
     if (!inst) return `\n${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible ici.`;
-    const s = REGULATION_SUBJECTS[inst.config.subject];
-    if (!s) return `\n${name} : suivi personnel autodéclaratif, pas encore configuré.`;
-    const today = todayISO(), p = regulationPeriod(inst, addDays(today, -6), addDays(today, 1)), g = regulationGoal(inst, today);
-    const goal = !g ? "aucun objectif en cours" : g.mode === "observer" ? "observer sans cible" : g.mode === "arreter" ? "viser l'arrêt" : `au plus ${g.limit} ${s.unit} par jour`;
-    return `\n${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choisi : ${goal}. Sept derniers jours : ${p.span} jours suivis, ${p.complete} journées complètes, ${p.incomplete} inconnues ou à reconfirmer (une journée inconnue ne vaut pas zéro) ; ${p.declared} ${s.unit} déclarés en tout ; moyenne par journée complète : ${p.mean ?? "sans objet"} ; objectif atteint ${p.met} fois sur ${p.assessed} journées évaluables. Notes, envies, déclencheurs et appuis ne sont pas transmis. Ne propose ni diagnostic, ni calendrier de sevrage, ni dose.${inst.config.subject === "alcool" ? " Un arrêt brutal ou une réduction rapide peuvent être dangereux en cas de dépendance : oriente vers un médecin ou un CSAPA." : ""}`;
+    return regulationSummary(inst, name, todayISO());
   },
   recent: () => [],
   review: () => null,

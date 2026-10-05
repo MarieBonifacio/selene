@@ -217,15 +217,17 @@ Identifiants retirés : aucun.
   `*functions/v1/assistant*`.
 - **Données** : `sk-ant-api03-RECETTE-fausse-cle-0000000000`.
 - **Automatisés associés** : `TN-assistant-injoignable`
-- **Source** : [TEST] `tests/browser/assistant-injoignable.js` ; [CODE] `assistantRefresh` (`ASSISTANT_PAUSE`) ;
-  [À ARBITRER] le message de l'étape 4 (anomalie [A4](../perimetre.md#anomalies-et-observations)).
+- **Source** : [TEST] `tests/browser/assistant-injoignable.js` ; [CODE] `assistantRefresh` (`ASSISTANT_PAUSE`), `assistantProbleme` ;
+  anomalie [A4](../perimetre.md#anomalies-et-observations), corrigée : la vue et les Réglages disent ce qui manque. Les réponses
+  404 (« Assistant non déployé (voir docs/assistant.md). ») et 503 (« Assistant non configuré. ») ne se reproduisent pas sans
+  serveur de test : couvertes par le scénario automatique.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Recharger la page sur l'accueil, attendre une minute sans toucher. | Network : une seule requête bloquée vers `functions/v1/assistant`. La page ne clignote pas. |
 | 2 | Ouvrir le radar culturel, la recherche, puis Réglages. | Chaque bouton répond au premier appui. |
 | 3 | Réglages → Assistant : coller la clé de données, Tab. | Message « Clé non enregistrée : Assistant injoignable (hors ligne, ou pas encore déployé). » |
-| 4 | Ouvrir Assistant. | « Pas encore branché. Colle ta clé API dans Réglages. » ; zone désactivée. [À ARBITRER] : la personne ne peut pas savoir que la fonction est injoignable plutôt que la clé absente ; faut-il un message distinct ? (Avec une fonction non déployée, réponse 404, l'étape 3 affiche même « L'assistant hébergé demande d'être connectée à ton compte. » alors qu'elle l'est : anomalie A4.) |
+| 4 | Ouvrir Assistant ; puis Réglages → Assistant. | La vue dit « Assistant injoignable (hors ligne, ou pas encore déployé). » (et non « Pas encore branché. Colle ta clé API… ») ; zone désactivée ; les Réglages répètent cette phrase au-dessus du champ de la clé. |
 | 5 | Retirer le blocage, attendre cinq minutes, ouvrir Réglages. | L'état de la clé est redemandé (une requête `"action":"etat"` qui aboutit). |
 
 - **État final attendu** : inchangé.

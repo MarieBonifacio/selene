@@ -10,11 +10,18 @@ export const diffDays = (a, b) => Math.round((new Date(a + "T12:00") - new Date(
 // Formater une date coûte cher (un formateur Intl reconstruit à chaque appel) et une liste de fragments en affiche
 // des milliers : fonction pure, donc résultats gardés, dans une limite de taille. La langue fait partie de la clé.
 const fmtCache = new Map();
+/* En français, le premier du mois s'écrit « 1er » (« 1er septembre », « 1er sept. ») : Intl donne « 1 septembre ». Seulement
+   avec un mois en lettres : « 01/09 » reste « 01/09 ». */
+function dateText(s, loc, o) {
+  const d = new Date(s + "T12:00");
+  if (d.getDate() !== 1 || !/^fr/i.test(loc) || (o.month !== "long" && o.month !== "short")) return d.toLocaleDateString(loc, o);
+  return new Intl.DateTimeFormat(loc, o).formatToParts(d).map(p => p.type === "day" ? "1er" : p.value).join("");
+}
 export const fmt = (s, o = { day: "numeric", month: "short" }) => {
   if (!s) return "";
   const loc = uiLocale(), k = loc + s + JSON.stringify(o);
   let v = fmtCache.get(k);
-  if (v === undefined) { v = new Date(s + "T12:00").toLocaleDateString(loc, o); if (fmtCache.size >= 5000) fmtCache.clear(); fmtCache.set(k, v); }
+  if (v === undefined) { v = dateText(s, loc, o); if (fmtCache.size >= 5000) fmtCache.clear(); fmtCache.set(k, v); }
   return v;
 };
 export const ago = s => { if (!s) return tr`jamais`; const n = diffDays(todayISO(), s); return n === 0 ? tr`aujourd'hui` : n === 1 ? tr`hier` : tr`il y a ${n} j`; };

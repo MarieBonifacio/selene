@@ -56,3 +56,16 @@ test('un coffre : Markdown seul, hors .obsidian et .trash, doublons écartés, o
   assert.deepEqual(k.links, []);
   assert.deepEqual(k.knownLinks, [[0, 1]]);
 });
+
+test('lire les fichiers choisis : un fichier illisible n’empêche pas les autres, et il est compté', async () => {
+  const ok = (name, text, extra = {}) => ({ name, text: async () => text, lastModified: 5, ...extra });
+  const broken = name => ({ name, text: async () => { throw new DOMException('The requested file could not be read', 'NotReadableError'); } });
+  const r = await M.mdReadFiles([ok('a.md', 'Un'), broken('perdu.md'), ok('b.md', 'Deux', { webkitRelativePath: 'Coffre/b.md' }), { name: 'sans-text.md' }]);
+  assert.deepEqual(r.read.map(f => [f.name, f.path, f.text, f.modified]), [['a.md', 'a.md', 'Un', 5], ['b.md', 'Coffre/b.md', 'Deux', 5]], 'les lisibles, dans l’ordre, avec leur chemin');
+  assert.equal(r.unreadable, 2, 'celui qui échoue, et celui qui n’a pas de text()');
+  assert.deepEqual(await M.mdReadFiles([broken('x.md')]), { read: [], unreadable: 1 }, 'aucun lisible : la personne l’apprend, il n’y a rien à importer');
+  assert.deepEqual(await M.mdReadFiles([]), { read: [], unreadable: 0 });
+  assert.deepEqual(await M.mdReadFiles(null), { read: [], unreadable: 0 });
+  // Ce qui est lu s'importe comme avant.
+  assert.deepEqual(M.mdImport(r.read).notes.map(n => n.title), ['a', 'b']);
+});

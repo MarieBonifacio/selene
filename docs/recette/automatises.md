@@ -10,7 +10,7 @@ Identifiants retirés : aucun.
 
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
-| Tests unitaires et d'intégration Node | `npm test` | 284 tests, 29 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
+| Tests unitaires et d'intégration Node | `npm test` | 287 tests, 29 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
 | Scénarios de navigateur | `npm run test:browser` | 75 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium **et** WebKit | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
@@ -275,6 +275,7 @@ sans navigateur.
 | <a id="tu-i18n-15"></a>`TU-I18N-15` | un modèle de module se crée dans la langue de l’interface ; les valeurs du code ne bougent pas | Un modèle se crée dans la langue de l'interface ; les valeurs internes (affichage, mode de saisie) ne changent pas. | [NAV-009](manuels/navigation-reglages.md#nav-009) |
 | <a id="tu-i18n-16"></a>`TU-I18N-16` | un texte enregistré dans une langue se reconnaît dans toutes (provenances) | Une provenance enregistrée dans une langue se reconnaît dans l'autre. | — |
 | <a id="tu-i18n-17"></a>`TU-I18N-17` | les noms tr, trp, trn et N_ sont réservés dans src/app : aucune variable ne les masque | Aucune variable de `src/app` ne masque `tr`, `trp`, `trn` ou `N_`. | — |
+| <a id="tu-i18n-18"></a>`TU-I18N-18` | dates : en français, le premier du mois s’écrit « 1er » (avec un mois en lettres seulement) ; en anglais, rien ne change | En français, le premier du mois s'écrit « 1er » avec un mois en lettres (« 1er septembre 2026 », « mardi 1er septembre 2026 », « 1er sept. ») ; 2, 11 et 21 ne changent pas ; la date numérique (« 01/09 ») reste telle quelle ; en anglais, la date est celle de la langue. | [NAV-009](manuels/navigation-reglages.md#nav-009), [RLM-014](manuels/reprendre-la-main.md#rlm-014) |
 
 ### Export Instagram — `tests/instagram.test.js`
 
@@ -416,6 +417,7 @@ sans navigateur.
 | <a id="tu-mkd-02"></a>`TU-MKD-02` | une note : titre (en-tête, puis « # », puis nom), corps sans le titre répété, date, statut | Titre pris dans l'en-tête, puis le premier « # », puis le nom ; corps sans titre répété ni lignes vides en trop ; date de l'en-tête, du nom, d'un identifiant Zettelkasten, sinon du fichier ; une date impossible refusée ; statut épistémique en français ou en anglais. | [MOD-026](manuels/types-de-module.md#mod-026) |
 | <a id="tu-mkd-03"></a>`TU-MKD-03` | liens [[…]] : l’alias ou la cible dans le texte, une image intégrée retirée, commentaires effacés | Un lien `[[…]]` laisse son alias ou sa cible dans le texte ; une image intégrée et les commentaires (`%% %%`, `<!-- -->`) disparaissent ; une note trop longue est coupée, et marquée comme telle. | [MOD-026](manuels/types-de-module.md#mod-026) |
 | <a id="tu-mkd-04"></a>`TU-MKD-04` | un coffre : Markdown seul, hors .obsidian et .trash, doublons écartés, ordre des dates, liens résolus | Un coffre : seulement les `.md`, hors `.obsidian` et `.trash`, doublons écartés, notes dans l'ordre des dates, liens résolus par titre ou alias (ni vers soi, ni vers une note inconnue, ni deux fois), liens vers une note déjà importée retrouvés sans la recréer. | [MOD-026](manuels/types-de-module.md#mod-026) |
+| <a id="tu-mkd-05"></a>`TU-MKD-05` | lire les fichiers choisis : un fichier illisible n’empêche pas les autres, et il est compté | Un fichier dont la lecture échoue (ou qui n'a pas de `text()`) n'empêche pas la lecture des autres, qui gardent leur ordre et leur chemin ; il est compté ; aucun fichier lisible : zéro lu, le nombre d'illisibles ; liste vide ou absente sans erreur. | [MOD-026](manuels/types-de-module.md#mod-026) |
 
 ### MusicBrainz — `tests/musique.test.js`
 
@@ -533,6 +535,7 @@ sans navigateur.
 | <a id="tu-reg-33"></a>`TU-REG-33` | changement de compte sur le même appareil : les suivis locaux suivent leur compte, jamais montrés à l’autre | Changement de compte : les suivis locaux du compte précédent sont mis de côté, jamais montrés au suivant, retrouvés à son retour. | [CPT-014](manuels/entree-et-comptes.md#cpt-014), [RLM-027](manuels/reprendre-la-main.md#rlm-027) |
 | <a id="tu-reg-34"></a>`TU-REG-34` | sauvegarde complète : le contenu gardé sur l’appareil y est ; restauré ailleurs, cet appareil en devient le détenteur | La sauvegarde complète contient le suivi entier (le site seul n'a que le talon) ; restaurée ailleurs, cet appareil en devient le détenteur. | [DON-001](manuels/donnees-sauvegardes.md#don-001), [RLM-025](manuels/reprendre-la-main.md#rlm-025) |
 | <a id="tu-reg-35"></a>`TU-REG-35` | validation : stockage, appareil détenteur et accord ont une forme contrôlée | Stockage, appareil détenteur et accord ont une forme contrôlée à l'import. | — |
+| <a id="tu-reg-36"></a>`TU-REG-36` | résumé de l’assistant : en français, virgule décimale, 0 et 1 au singulier, sans note ni appui | Le résumé destiné à l'assistant : limite décimale en virgule (« 1,5 verre standard »), zéro et un au singulier, pluriel dès 2 (« 4,5 verres standard », « 2,25 verres standard »), jamais de point décimal ; ni notes, ni appuis ; avertissement propre à l'alcool ; les autres sujets ; un suivi non configuré. | [RLM-021](manuels/reprendre-la-main.md#rlm-021) |
 
 ### Ciel de l'accueil — `tests/sky.test.js`
 
@@ -810,8 +813,8 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/import-markdown.js`](../../tests/browser/import-markdown.js) · **mode** A · **écran** O
 - **Conditions** : Données de démonstration avec un Carnet ; trois fichiers Markdown en mémoire, puis un dossier temporaire avec `.obsidian` et une image.
-- **Vérifie** : dans les réglages d'un module de notes, des fichiers ou tout un dossier ; confirmation qui dit combien, de quand à quand, où, et les liens ; annulé : rien ; importé : titre en première ligne, date de l'en-tête ou du nom, statut « hypothèse », lien remplacé par son alias, image intégrée retirée, `[[…]]` devenus « fait écho à » dans les deux sens, et le message le dit ; une note longue montre son début (« la suite ») ; paragraphes gardés ; texte piégé affiché en texte ; réimport : « Rien de nouveau », sans question ; un dossier : `.obsidian` et images laissés, un lien vers une note déjà importée la retrouve ; aucun appel réseau.
-- **Limites** : Fichiers en mémoire : un fichier que le navigateur ne peut pas lire n'est pas testé (A8, [perimetre.md](perimetre.md#anomalies-et-observations)).
+- **Vérifie** : dans les réglages d'un module de notes, des fichiers ou tout un dossier ; confirmation qui dit combien, de quand à quand, où, et les liens ; annulé : rien ; importé : titre en première ligne, date de l'en-tête ou du nom, statut « hypothèse », lien remplacé par son alias, image intégrée retirée, `[[…]]` devenus « fait écho à » dans les deux sens, et le message le dit ; une note longue montre son début (« la suite ») ; paragraphes gardés ; texte piégé affiché en texte ; réimport : « Rien de nouveau », sans question ; un dossier : `.obsidian` et images laissés, un lien vers une note déjà importée la retrouve ; aucun appel réseau ; un fichier que le navigateur ne peut pas lire : ignoré et compté (« 1 fichier illisible, ignoré. »), les autres importés ; aucun lisible : un message, rien d'importé.
+- **Limites** : Fichiers en mémoire ; l'échec de lecture est simulé en remplaçant `Blob.prototype.text` pour un nom de fichier (anomalie A8, corrigée : [perimetre.md](perimetre.md#anomalies-et-observations)).
 - **Cas manuels** : [MOD-026](manuels/types-de-module.md#mod-026)
 
 <a id="tn-atelier-capture"></a>
@@ -1200,8 +1203,8 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-assistant-injoignable` — Fonction assistant injoignable
 
 - **Fichier** : [`tests/browser/assistant-injoignable.js`](../../tests/browser/assistant-injoignable.js) · **mode** H · **écran** O
-- **Conditions** : Refus CORS, hors ligne.
-- **Vérifie** : l'état de la clé est demandé une fois, pas en boucle ; la page ne se redessine pas sans cesse ; les boutons répondent.
+- **Conditions** : Refus CORS, hors ligne ; puis une fonction qui répond 404, puis 503.
+- **Vérifie** : l'état de la clé est demandé une fois, pas en boucle ; la page ne se redessine pas sans cesse ; les boutons répondent ; la vue Assistant et les Réglages disent « Assistant injoignable (hors ligne, ou pas encore déployé). » plutôt que « Colle ta clé API » ; coller une clé donne la cause, pas « demande d'être connectée » ; une fonction qui répond 404 (« Assistant non déployé ») ou 503 (« Assistant non configuré ») : le même diagnostic, une seule demande, aucune boucle.
 - **Cas manuels** : [AST-007](manuels/assistant.md#ast-007)
 
 <a id="tn-regulation"></a>
@@ -1209,7 +1212,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/regulation.js`](../../tests/browser/regulation.js) · **mode** A puis H · **écran** T puis O
 - **Conditions** : Sans compte, puis compte personnel (`selene_personnel`) sur un faux Supabase.
-- **Vérifie** : sans compte : l'espace n'est pas proposé ; compte personnel : modèle en dernier, non partagé ; écran d'accueil du suivi ; un sujet par suivi ; nom prérempli ; alcool : sevrage, médecin ou CSAPA, urgences avant l'objectif ; aujourd'hui inconnue ; décimale gardée ; point du jour avec date et total ; consommation après confirmation : à reconfirmer ; total déclaré : complément ; modification dans un autre onglet pendant la boîte : rien validé ; reconfirmation sur le total à jour ; envie, pause à échéance absolue au rechargement, « je l'ai fait » une seule fois, pause arrêtée ; marques masquées puis une par jour ; récompense ; serveur : le nom seulement ; pas de pont ; accueil, recherche, bilan, planche sans détail ; partage confirmé sur le résumé, annulable, arrêtable ; tabac, réseaux sociaux, cannabis : unités, « 1,5 » cigarette refusé ; téléphone sans débordement, cibles de 44 px ; clavier et libellés ; anglais.
+- **Vérifie** : sans compte : l'espace n'est pas proposé ; compte personnel : modèle en dernier, non partagé ; écran d'accueil du suivi ; un sujet par suivi ; nom prérempli ; alcool : sevrage, médecin ou CSAPA, urgences avant l'objectif ; aujourd'hui inconnue ; décimale gardée ; point du jour avec date et total ; consommation après confirmation : à reconfirmer ; total déclaré : complément ; modification dans un autre onglet pendant la boîte : rien validé ; reconfirmation sur le total à jour ; envie, pause à échéance absolue au rechargement, « je l'ai fait » une seule fois, pause arrêtée ; marques masquées puis une par jour ; récompense ; serveur : le nom seulement ; pas de pont ; accueil, recherche, bilan, planche sans détail ; partage confirmé sur le résumé, annulable, arrêtable ; tabac, réseaux sociaux, cannabis : unités, « 1,5 » cigarette refusé ; téléphone sans débordement, cibles de 44 px ; clavier et libellés ; anglais. ; dates dans les messages : objectif à venir et suppression d'une saisie avec la date en lettres et un seul point (jamais « oct.. »).
 - **Cas manuels** : [RLM-001](manuels/reprendre-la-main.md#rlm-001), [RLM-002](manuels/reprendre-la-main.md#rlm-002), [RLM-004](manuels/reprendre-la-main.md#rlm-004), [RLM-005](manuels/reprendre-la-main.md#rlm-005), [RLM-008](manuels/reprendre-la-main.md#rlm-008), [RLM-009](manuels/reprendre-la-main.md#rlm-009), [RLM-010](manuels/reprendre-la-main.md#rlm-010), [RLM-012](manuels/reprendre-la-main.md#rlm-012), [RLM-016](manuels/reprendre-la-main.md#rlm-016), [RLM-017](manuels/reprendre-la-main.md#rlm-017), [RLM-018](manuels/reprendre-la-main.md#rlm-018), [RLM-020](manuels/reprendre-la-main.md#rlm-020), [RLM-021](manuels/reprendre-la-main.md#rlm-021), [RLM-028](manuels/reprendre-la-main.md#rlm-028), [TRV-002](manuels/transverse.md#trv-002), [TRV-014](manuels/transverse.md#trv-014)
 
 <a id="tn-regulation-appareil"></a>
