@@ -102,3 +102,8 @@ Aucune : ce relevé ne conclut pas sur une livraison.
 Les anomalies **A4** (assistant), **A5** (typographie des dates et résumé de l'assistant) et **A8** (import Markdown) ont été
 corrigées par la PR #98, chacune avec un test vérifié en échec sur l'ancien code. Les autres (A1 à A3, A6, A7) restent
 ouvertes ; A1 a reçu un correctif du test sur `main` (`3a79a01`), à confirmer sur la durée.
+
+Les anomalies **A3** (message d'un import de sauvegarde refusé : trois causes distinguées, rien n'est dit du champ fautif)
+et **A6** (texte « encore synchronisé » d'un suivi neuf) ont été corrigées par la PR #99, chacune avec un test vérifié en
+échec sur l'ancien code (`TU-BAK-09`, `TU-REG-37`). Restent ouvertes : A1 et A2 (stabilité de la CI, à confirmer sur la
+durée) et **A7** (le talon d'un suivi effacé à la déconnexion), qui attend une décision de produit.
