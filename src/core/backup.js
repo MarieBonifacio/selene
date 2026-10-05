@@ -14,9 +14,15 @@ const num = (v, name, min = -Infinity, max = Infinity) => {
 };
 const ids = (list, name) => { if (list.some(x => typeof x.id !== "string" || !x.id || x.id.length > 64)) throw new Error(`${name} : identifiant invalide`); };
 const dated = (list, name) => { if (list.some(x => typeof x.date !== "string" || !validDate(x.date))) throw new Error(`${name} : date invalide`); };
+/* Trois refus que la personne distingue (« pas du JSON », « pas une sauvegarde », « contenu invalide »), plus les deux de
+   l'en-tête. Le champ fautif ne se dit pas à l'écran : il reste dans le message, pour le journal et pour les tests. */
 export function parseBackup(text) {
   if (typeof text !== "string" || text.length > 5_000_000) throw coreError("backup-too-big", "Sauvegarde trop volumineuse");
-  const data = JSON.parse(text);
+  let data;
+  try { data = JSON.parse(text); } catch (e) { throw coreError("backup-not-json", `Le fichier n'est pas du JSON valide : ${e.message}`); }
+  try { return checkBackup(data); } catch (e) { throw e && typeof e.code === "string" ? e : coreError("backup-invalid", e && e.message ? e.message : "Contenu de sauvegarde invalide"); }
+}
+function checkBackup(data) {
   if (!record(data) || data.format !== "selene-v1" || !record(data.board) || !record(data.site)) throw coreError("backup-format", "Format de sauvegarde invalide");
   const { board, site } = data;
   if (site.schemaVersion != null && !(Number.isInteger(site.schemaVersion) && site.schemaVersion >= 1)) throw coreError("backup-format", "Version de format invalide");

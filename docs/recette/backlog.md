@@ -200,9 +200,9 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 
 Constatées pendant la mise en place du cahier, décrites avec leur preuve dans
 [perimetre.md](perimetre.md#anomalies-et-observations) : A1 (WebKit, `activite.js`, voir [BL-05](#bl-05)), A2 (à surveiller),
-A3 (message d'un import refusé), A4 (assistant, voir [BL-06](#bl-06) : **corrigée**), A5 (typographie des dates : « oct.. », « 1 septembre »,
-« 1.5 verres » : **corrigée**), A6 (texte « encore synchronisé » sur un suivi neuf), A7 (talon après effacement, voir [BL-02](#bl-02)), A8 (import Markdown : un fichier illisible fait échouer tout l'import sans message : **corrigée**).
-A4, A5 et A8 ont été corrigées le 5 octobre 2026 (leurs cas et leurs tests mis à jour dans la même PR). Pour les autres (A3, A6, A7), rien n'est corrigé : chacune devient un ticket, ou est classée « comportement voulu » par la responsable, et le cas
+A3 (message d'un import refusé : **corrigée**), A4 (assistant, voir [BL-06](#bl-06) : **corrigée**), A5 (typographie des dates : « oct.. », « 1 septembre »,
+« 1.5 verres » : **corrigée**), A6 (texte « encore synchronisé » sur un suivi neuf : **corrigée**), A7 (talon après effacement, voir [BL-02](#bl-02)), A8 (import Markdown : un fichier illisible fait échouer tout l'import sans message : **corrigée**).
+A4, A5 et A8, puis A3 et A6, ont été corrigées le 5 octobre 2026 (leurs cas et leurs tests mis à jour dans la même PR). Pour A7, rien n'est corrigé : elle devient un ticket, ou est classée « comportement voulu » par la responsable, et le cas
 concerné est mis à jour en conséquence ([maintenance.md](maintenance.md)).
 
 <a id="documentation"></a>
@@ -227,7 +227,7 @@ Les questions marquées [À ARBITRER] dans les cas, et ce qu'elles bloquent :
 
 | Question | Cas | Bloque |
 |---|---|---|
-| Un suivi neuf, pas encore configuré, peut-il se dire « encore synchronisé » ? (A6) | [RLM-003](manuels/reprendre-la-main.md#rlm-003) | le résultat attendu de l'étape 1 |
+| ~~Un suivi neuf, pas encore configuré, peut-il se dire « encore synchronisé » ? (A6)~~ : non, corrigé le 5 octobre 2026 | [RLM-003](manuels/reprendre-la-main.md#rlm-003) | — |
 | Effacer définitivement un suivi à la déconnexion retire-t-il aussi son nom du compte ? (A7) | [RLM-023](manuels/reprendre-la-main.md#rlm-023) | [BL-02](#bl-02) |
 | Le résumé destiné à l'assistant doit-il être traduit à l'affichage ? | [RLM-028](manuels/reprendre-la-main.md#rlm-028) | l'étape 5 |
 | Quel message pour une date d'objectif à plus d'un an ? | [RLM-014](manuels/reprendre-la-main.md#rlm-014) | l'étape 3 |

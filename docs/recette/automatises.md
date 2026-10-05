@@ -10,7 +10,7 @@ Identifiants retirés : aucun.
 
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
-| Tests unitaires et d'intégration Node | `npm test` | 287 tests, 29 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
+| Tests unitaires et d'intégration Node | `npm test` | 289 tests, 29 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
 | Scénarios de navigateur | `npm run test:browser` | 75 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium **et** WebKit | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
@@ -167,6 +167,7 @@ sans navigateur.
 | <a id="tu-bak-06"></a>`TU-BAK-06` | a well-formed custom module still imports | Un module personnalisé bien formé (`lecture-2`) s'importe avec ses entrées. | — |
 | <a id="tu-bak-07"></a>`TU-BAK-07` | a backup from a newer schema is refused with an explicit message | Une sauvegarde au format 99 est refusée avec le message « … plus récente … ». | [DON-004](manuels/donnees-sauvegardes.md#don-004) |
 | <a id="tu-bak-08"></a>`TU-BAK-08` | connexions externes : Dehors et le radar, validés comme le reste | Flux de Dehors, veilles et mots du radar sont validés : adresse `javascript:`, identifiant piégé, plus de cent flux, plus de trente veilles, mots de plus de 300 caractères, genre de veille inconnu sont refusés. | — |
+| <a id="tu-bak-09"></a>`TU-BAK-09` | un fichier refusé dit pourquoi : pas du JSON, pas une sauvegarde, contenu invalide, version trop récente | Cinq refus, chacun avec son code et sa phrase affichée (par `errMsg`, donc la phrase de l'interface) : un texte qui n'est pas du JSON (« ne se lit pas comme une sauvegarde »), un JSON sans le bon `format` (« n'est pas une sauvegarde Selene »), un identifiant de module piégé et des tâches absentes (la même phrase « contenu … n'est pas valide »), un format 99 (« plus récente ») ; quatre phrases distinctes pour les cinq cas ; les trois premières disent « Rien n'a été importé. » ; la phrase affichée ne nomme ni le champ ni l'identifiant piégé, le message technique, lui, les garde. | [DON-005](manuels/donnees-sauvegardes.md#don-005) |
 
 ### Sources en BibTeX et en CSL-JSON — `tests/biblio.test.js`
 
@@ -536,6 +537,7 @@ sans navigateur.
 | <a id="tu-reg-34"></a>`TU-REG-34` | sauvegarde complète : le contenu gardé sur l’appareil y est ; restauré ailleurs, cet appareil en devient le détenteur | La sauvegarde complète contient le suivi entier (le site seul n'a que le talon) ; restaurée ailleurs, cet appareil en devient le détenteur. | [DON-001](manuels/donnees-sauvegardes.md#don-001), [RLM-025](manuels/reprendre-la-main.md#rlm-025) |
 | <a id="tu-reg-35"></a>`TU-REG-35` | validation : stockage, appareil détenteur et accord ont une forme contrôlée | Stockage, appareil détenteur et accord ont une forme contrôlée à l'import. | — |
 | <a id="tu-reg-36"></a>`TU-REG-36` | résumé de l’assistant : en français, virgule décimale, 0 et 1 au singulier, sans note ni appui | Le résumé destiné à l'assistant : limite décimale en virgule (« 1,5 verre standard »), zéro et un au singulier, pluriel dès 2 (« 4,5 verres standard », « 2,25 verres standard »), jamais de point décimal ; ni notes, ni appuis ; avertissement propre à l'alcool ; les autres sujets ; un suivi non configuré. | [RLM-021](manuels/reprendre-la-main.md#rlm-021) |
+| <a id="tu-reg-37"></a>`TU-REG-37` | un suivi neuf, pas encore configuré, ne se dit pas « encore synchronisé » ; il le devient sur l’appareil à la configuration | Sur un compte personnel (serveur simulé), un suivi neuf dit « Pas encore configuré : ton compte n'en garde que le nom… son contenu restera sur cet appareil seulement » et ne contient ni « Encore synchronisé », ni « depuis sa création », ni « quittera alors le serveur » ; une fois configuré (formulaire, sujet « alcool »), le texte devient « Sur cet appareil seulement. Ton compte n'en garde que le nom » et le premier a disparu. | [RLM-003](manuels/reprendre-la-main.md#rlm-003) |
 
 ### Ciel de l'accueil — `tests/sky.test.js`
 

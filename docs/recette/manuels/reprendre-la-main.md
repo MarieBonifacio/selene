@@ -141,13 +141,13 @@ Identifiants retirés : aucun.
 - **Préconditions** : chemin P ; le suivi « Reprendre la main » créé et non configuré ([RLM-001](#rlm-001)) ; outils de
   développement → Network, filtre `app_state`.
 - **Données** : nom `Carnet du soir` ; sujet « Tabac » ; intention « Observer, sans cible », à partir de J.
-- **Automatisés associés** : `TU-REG-27`, `TU-REG-01`, `TN-regulation-appareil`
-- **Source** : [CODE] `subjectForm`, `chooseDevice` ; [TEST] `TU-REG-27`, `tests/browser/regulation-appareil.js` ;
-  [À ARBITRER] étape 1 (anomalie [A6](../perimetre.md#anomalies-et-observations)).
+- **Automatisés associés** : `TU-REG-27`, `TU-REG-01`, `TU-REG-37`, `TN-regulation-appareil`
+- **Source** : [CODE] `subjectForm`, `chooseDevice`, `whereText` ; [TEST] `TU-REG-27`, `TU-REG-37`, `tests/browser/regulation-appareil.js` ;
+  étape 1 : anomalie [A6](../perimetre.md#anomalies-et-observations), corrigée.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Ouvrir l'espace, déplier « Confidentialité et données ». | Comportement actuel : « Encore synchronisé avec ton compte, depuis sa création… » et « Garder sur cet appareil seulement… », alors que le suivi est vide. [À ARBITRER] : ce texte doit-il dire, avant la configuration, que le suivi sera gardé sur l'appareil ? |
+| 1 | Ouvrir l'espace, déplier « Confidentialité et données ». | « Où vivent ces données. Pas encore configuré : ton compte n'en garde que le nom. Quand tu auras choisi ce que tu veux suivre, son contenu restera sur cet appareil seulement, sans passer par le serveur de Selene. » ; **pas** « Encore synchronisé avec ton compte… ». |
 | 2 | « Commencer : choisir ce que je veux suivre ». | Formulaire « Ce que je veux suivre » : « Un suivi, un sujet, une unité… Le sujet ne change plus ensuite. » puis « Ce suivi reste sur cet appareil : Selene ne synchronise pas les suivis de santé, ton compte n'en garde que le nom. Seule la sauvegarde de ton appareil (Google ou iCloud), si tu l'as activée, peut l'inclure. » ; deux champs : le nom (prérempli « Reprendre la main ») et « Sujet du suivi » (Tabac, Cannabis, Alcool, Réseaux sociaux) ; **aucun** champ de stockage. |
 | 3 | Nom : les données ; Sujet : « Tabac » ; « Enregistrer ». Dans « Mon intention », « Annuler ». | La navigation affiche « Carnet du soir » ; l'espace propose de nouveau « Commencer : choisir ce que je veux suivre » (le sujet n'est pas figé). |
 | 4 | « Commencer » → « Tabac » → « Enregistrer » → « Observer, sans cible », « À partir du » J → « Enregistrer ». | Message « Objectif enregistré. Les journées déjà confirmées gardent le leur. » ; en-tête « Tabac · observer, sans cible ». |
@@ -776,7 +776,7 @@ Identifiants retirés : aucun.
 | 1 | « Confidentialité et données » → « Exporter ce suivi ». | « Exporter ce suivi dans un fichier lisible, non chiffré ? Il contient tout le journal, notes comprises. » |
 | 2 | « Confirmer » ; ouvrir le fichier dans un éditeur de texte. | Fichier `selene-suivi-<J>.json` ; `"format": "selene-regulation-v1"`, `"about"` qui dit « Restauration : par la sauvegarde complète de Selene. », `module.label` « Carnet du soir », `config.subject` « alcool », 2 objectifs, 7 entrées, dont la note « Repas de famille ». |
 | 3 | Réglages → Compte et données → Sauvegarde → « Exporter » ; ouvrir le fichier. | `selene-<J>.json` ; `site.modules["carnet-du-soir"]` porte 7 entrées et « Repas de famille ». |
-| 4 | Importer le fichier de l'étape 2. | Refusé : « Fichier illisible ou pas une sauvegarde Selene. » ; aucune boîte « Remplacer tout l'état… » ; rien ne change. |
+| 4 | Importer le fichier de l'étape 2. | Refusé : « Ce fichier n'est pas une sauvegarde Selene. Rien n'a été importé. » ; aucune boîte « Remplacer tout l'état… » ; rien ne change. |
 | 5 | Importer le fichier de l'étape 3. | « Sauvegarde importée. » ; le suivi est identique. |
 
 - **État final attendu** : inchangé ; deux fichiers téléchargés.

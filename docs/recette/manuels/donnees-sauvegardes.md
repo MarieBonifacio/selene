@@ -125,18 +125,18 @@ Identifiants retirés : aucun.
 - **Préconditions** : jeu d'essai importé.
 - **Données** : [`donnees/refus-hostile.json`](../donnees/refus-hostile.json) (identifiant de module piégé, texte `<script>`) ;
   un fichier texte quelconque renommé `photo.json` ; un JSON valide sans `format`.
-- **Automatisés associés** : `TU-BAK-02`, `TU-BAK-04`, `TU-BAK-05`, `TN-injection`
-- **Source** : [DOC] [architecture.md](../../architecture.md#sécurité) ; [TEST] `TU-BAK-05`. Vérifié dans Chromium le 4 octobre 2026.
+- **Automatisés associés** : `TU-BAK-02`, `TU-BAK-04`, `TU-BAK-05`, `TU-BAK-09`, `TN-injection`
+- **Source** : [DOC] [architecture.md](../../architecture.md#sécurité) ; [TEST] `TU-BAK-05`, `TU-BAK-09`. Vérifié dans Chromium les 4 et 5 octobre 2026.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Importer `refus-hostile.json`. | Aucune confirmation ; « Fichier illisible ou pas une sauvegarde Selene. » ; aucune alerte JavaScript ne s'ouvre. |
-| 2 | Importer `photo.json`, puis le JSON sans `format`. | Même message, chaque fois. |
+| 1 | Importer `refus-hostile.json`. | Aucune confirmation ; « Le contenu de cette sauvegarde n'est pas valide : le fichier est peut-être abîmé ou a été modifié. Rien n'a été importé. » ; aucune alerte JavaScript ne s'ouvre. |
+| 2 | Importer `photo.json`, puis le JSON sans `format`. | `photo.json` : « Ce fichier ne se lit pas comme une sauvegarde : il est peut-être abîmé ou incomplet. Rien n'a été importé. » ; le JSON sans `format` : « Ce fichier n'est pas une sauvegarde Selene. Rien n'a été importé. » Aucune confirmation dans les deux cas. |
 | 3 | Parcourir l'app. | Le jeu d'essai est intact. |
 
 - **État final attendu** : inchangé.
 - **Nettoyage** : aucun.
-- **Remarque** : le message ne distingue pas un fichier abîmé d'un fichier piégé ([perimetre.md](../perimetre.md#anomalies-et-observations), A3, à arbitrer).
+- **Remarque** : le message ne dit pas quel champ est refusé, ni si le fichier est abîmé ou piégé : c'est voulu (le détail reste dans le journal). Anomalie [A3](../perimetre.md#anomalies-et-observations) corrigée.
 
 ---
 
