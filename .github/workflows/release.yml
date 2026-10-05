@@ -3,6 +3,9 @@ name: Publication
 # - Android : APK signé (installation directe) et AAB signé (Google Play), avec la clé d'envoi gardée dans les secrets ;
 # - Windows : installateur NSIS, signé si un certificat de signature de code est fourni ;
 # - iOS : archive signée par la signature automatique d'Xcode (clé d'API App Store Connect), envoyée à TestFlight.
+# Deux éditions (docs/regulation.md, « Absent des versions des stores ») : l'APK et Windows sont l'édition complète ;
+# l'AAB et l'archive iOS, ce qu'examinent Google et Apple, l'édition des stores (SELENE_EDITION=stores), construite
+# sans le type « Reprendre la main ». Chaque fichier produit est vérifié : la bonne édition, ou l'échec.
 # Chaque plateforme dont les secrets manquent est sautée avec un avis : rien de secret n'est jamais dans le dépôt.
 # Puis une Release GitHub rassemble l'APK et l'installateur Windows.
 on:
@@ -69,24 +72,32 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: gradle
-      - name: Page native, projet synchronisé
+      - run: npm ci
         if: steps.cfg.outputs.ok == 'true'
-        run: |
-          npm ci
-          npm run build:dist
-          npx cap sync android
-      - name: APK et AAB signés
+      # L'APK d'abord, sur la page de l'édition complète ; puis la page de l'édition des stores, et l'AAB. Gradle
+      # reprend les fichiers copiés par cap sync : l'AAB porte bien la seconde page (vérifié plus bas).
+      - name: APK (édition complète) et AAB (édition des stores) signés
         if: steps.cfg.outputs.ok == 'true'
-        working-directory: native/android
         run: |
           export SELENE_KEYSTORE="$RUNNER_TEMP/selene.jks"
+          trap 'rm -f "$SELENE_KEYSTORE"' EXIT
           printf %s "$KEYSTORE_B64" | base64 -d > "$SELENE_KEYSTORE"
-          ./gradlew assembleRelease bundleRelease --no-daemon
-          rm -f "$SELENE_KEYSTORE"
-          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner" verify app/build/outputs/apk/release/app-release.apk
+          npm run build:dist && npx cap sync android
+          (cd native/android && ./gradlew assembleRelease --no-daemon)
+          SELENE_EDITION=stores npm run build:dist && npx cap sync android
+          (cd native/android && ./gradlew bundleRelease --no-daemon)
+          out=native/android/app/build/outputs
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner" verify $out/apk/release/app-release.apk
+          # Sur disque, puis grep : « unzip | grep -q » échouerait à tort sous pipefail (grep referme le tuyau à la trouvaille).
+          unzip -p $out/apk/release/app-release.apk assets/public/index.html > "$RUNNER_TEMP/apk-index.html"
+          unzip -p $out/bundle/release/app-release.aab base/assets/public/index.html > "$RUNNER_TEMP/aab-index.html"
+          grep -q '"rlm-setup"' "$RUNNER_TEMP/apk-index.html" || { echo "::error::L'APK n'est pas l'édition complète."; exit 1; }
+          if grep -q '"rlm-setup"' "$RUNNER_TEMP/aab-index.html" || ! grep -q 'absent: true' "$RUNNER_TEMP/aab-index.html"; then
+            echo "::error::L'AAB n'est pas l'édition des stores : « Reprendre la main » partirait chez Google."; exit 1
+          fi
           mkdir -p "$RUNNER_TEMP/out"
-          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/out/selene-$SELENE_VERSION_NAME.apk"
-          cp app/build/outputs/bundle/release/app-release.aab "$RUNNER_TEMP/out/selene-$SELENE_VERSION_NAME.aab"
+          cp $out/apk/release/app-release.apk "$RUNNER_TEMP/out/selene-$SELENE_VERSION_NAME.apk"
+          cp $out/bundle/release/app-release.aab "$RUNNER_TEMP/out/selene-$SELENE_VERSION_NAME.aab"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: steps.cfg.outputs.ok == 'true'
         with:
@@ -163,12 +174,17 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - name: Page native, projet synchronisé
+      - name: Page native (édition des stores), projet synchronisé
         if: steps.cfg.outputs.ok == 'true'
+        env:
+          SELENE_EDITION: stores
         run: |
           npm ci
           npm run build:dist
           npx cap sync ios
+          if grep -q '"rlm-setup"' native/ios/App/App/public/index.html || ! grep -q 'absent: true' native/ios/App/App/public/index.html; then
+            echo "::error::La page iOS n'est pas l'édition des stores : « Reprendre la main » partirait chez Apple."; exit 1
+          fi
       # Signature automatique : Xcode crée ou reprend lui-même le certificat de distribution et le profil, avec la clé
       # d'API (rôle Admin). Pas de certificat ni de profil à entretenir dans les secrets.
       - name: Archive signée, envoyée à TestFlight

@@ -14,7 +14,7 @@ import { modOf } from "./collection.js";
 import { removeWithUndo, within } from "./entries.js";
 import { idOf } from "../shell/actions.js";
 import { render } from "../shell/render.js";
-import { S, label, site } from "../state/site.js";
+import { S, label, shownModule, site } from "../state/site.js";
 import { DOC_MAX, DOC_WARN, utf8Bytes } from "../state/store.js";
 import { ask } from "../ui/dialogs.js";
 import { fold } from "../views/recherche.js";
@@ -28,7 +28,7 @@ import { fold } from "../views/recherche.js";
    La note part toujours d'abord dans la boîte : reconnaître ne fait que proposer un rangement. */
 export function captureIntent(text) {
   const s = S(), t = String(text).trim();
-  const mods = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id)).map(m => ({ id: m.id, inst: s.modules[m.id], name: fold(label(m.id)) }));
+  const mods = s.config.modules.filter(shownModule).map(m => ({ id: m.id, inst: s.modules[m.id], name: fold(label(m.id)) }));
   let m = t.match(/^(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur(?:os?)?\b)\s*(.*)$/i) || t.match(/^€\s*(\d+(?:[.,]\d{1,2})?)\b\s*(.*)$/);
   const bud = firstOfType("budget");
   if (m && bud && +m[1].replace(",", ".") > 0) {

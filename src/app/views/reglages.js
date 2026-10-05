@@ -28,7 +28,7 @@ import { render } from "../shell/render.js";
 import { roman, sigil, sigilPicker, tintOf } from "../shell/sigils.js";
 import { withLocal } from "../state/local.js";
 import { DOC_MAX, DOC_WARN, utf8Bytes } from "../state/store.js";
-import { S, board, enabled, label, site } from "../state/site.js";
+import { S, absentModule, board, enabled, label, site } from "../state/site.js";
 import { openForm } from "../ui/dialogs.js";
 import { tip } from "../ui/tips.js";
 import { CHAPTERS, GUIDE, TEXTS, TIPS, glossary } from "./reglages-aide.js";
@@ -87,11 +87,13 @@ function apparenceHTML(c) {
 // « Collection (éléments…) » → « Collection » : coupé en français, puis traduit (une traduction ne garde pas forcément la parenthèse).
 const typeName = type => tr(String(MODULE_TYPES[type]?.label || "").split(" (")[0]);
 function modBlock(s, m, i) {
-  const name = label(m.id), inst = s.modules[m.id], sys = SYSTEM.includes(m.id);
+  const name = label(m.id), inst = s.modules[m.id], sys = SYSTEM.includes(m.id), absent = absentModule(m.id);
   const settings = enabled(m.id) && (inst || grouperFor(m.id));
-  return `<div class="modblock ${tintOf(m.id)}${m.on ? "" : " off"}">
-    <div class="set mod" data-i="${i}"><label class="tap"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="${tr`Activer ${esc(name)}`}"></label><div class="mod-name">${sigil(m.id)}<input data-act="mod-label" value="${esc(name)}" aria-label="${tr`Nom du module`}"></div>${sys ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="${esc(TEXTS.domaine)}" aria-label="${tr`Domaine de ${esc(name)}`}">`}<div class="row">${inst ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="${tr`Supprimer définitivement`}" title="${tr`Supprimer définitivement`}">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="${tr`Descendre`}">↓</button></div></div>
-    ${settings ? `<details id="mreg-${esc(m.id)}" data-mod="${esc(m.id)}" class="mreg"><summary aria-label="${esc(TEXTS.regler(name))}">${esc(TEXTS.reglerShort)}${inst ? `<span class="mreg-type">${esc(typeName(inst.type))}</span>` : ""}</summary><div class="mreg-body">${moduleSettingsHTML(m.id)}</div></details>`
+  // Un module dont cette édition n'a pas le type : ni activable ni réglable ici ; une phrase dit pourquoi, et il reste
+  // supprimable (son type dit quoi en savoir avant : deleteNote).
+  return `<div class="modblock ${tintOf(m.id)}${m.on && !absent ? "" : " off"}">
+    <div class="set mod" data-i="${i}"><label class="tap"><input type="checkbox" data-act="mod-on" ${m.on && !absent ? "checked" : ""}${absent ? " disabled" : ""} aria-label="${tr`Activer ${esc(name)}`}"></label><div class="mod-name">${sigil(m.id)}<input data-act="mod-label" value="${esc(name)}" aria-label="${tr`Nom du module`}"></div>${sys ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="${esc(TEXTS.domaine)}" aria-label="${tr`Domaine de ${esc(name)}`}">`}<div class="row">${inst ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="${tr`Supprimer définitivement`}" title="${tr`Supprimer définitivement`}">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="${tr`Descendre`}">↓</button></div></div>
+    ${absent ? `<div class="mreg-note">${TYPE_UI[inst.type].settings(m.id, inst)}</div>` : settings ? `<details id="mreg-${esc(m.id)}" data-mod="${esc(m.id)}" class="mreg"><summary aria-label="${esc(TEXTS.regler(name))}">${esc(TEXTS.reglerShort)}${inst ? `<span class="mreg-type">${esc(typeName(inst.type))}</span>` : ""}</summary><div class="mreg-body">${moduleSettingsHTML(m.id)}</div></details>`
       : sys && m.on ? `<p class="mreg-note"><button type="button" class="btn ghost sm" data-act="reg-goto" data-to="reg-assistant">› ${esc(TEXTS.assistantHere)}</button></p>` : ""}
   </div>`;
 }

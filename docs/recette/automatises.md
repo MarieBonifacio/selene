@@ -10,7 +10,7 @@ Identifiants retirés : aucun.
 
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
-| Tests unitaires et d'intégration Node | `npm test` | 291 tests, 29 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
+| Tests unitaires et d'intégration Node | `npm test` | 297 tests, 30 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
 | Scénarios de navigateur | `npm run test:browser` | 75 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium **et** WebKit | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
@@ -251,6 +251,27 @@ sans navigateur.
 |---|---|---|---|
 | <a id="tu-dom-01"></a>`TU-DOM-01` | task rules are shared by the UI and assistant | Titre vide refusé, titre nettoyé ; quatrième tâche du jour refusée ; une tâche faite quitte l'étoile et porte sa date ; la défaire efface la date ; tâche inconnue refusée. | [MOD-002](manuels/types-de-module.md#mod-002) |
 | <a id="tu-dom-02"></a>`TU-DOM-02` | budget and capture reject invalid input without changing collections | Montants 0, −1, Infinity, « hello » et date du 30 février refusés sans rien ajouter ; capture vide refusée ; valeurs valides gardées, texte nettoyé. | [MOD-005](manuels/types-de-module.md#mod-005) |
+
+### Édition des stores — `tests/edition.test.js`
+
+- **Niveau** : Intégration (I). **Sujet** : `scripts/bundle.mjs` et `build.py` avec `SELENE_EDITION=stores`,
+  `src/app/modules/regulation.stores.js`, `absentModule` et `shownModule` (`state/site.js`), `offered`,
+  `services/device-guard.js`.
+- **Simulé** : Le fichier lance `SELENE_EDITION=stores python3 build.py --dist` dans un dossier temporaire, puis
+  démarre la page web produite dans une VM Node (`tests/hosted-harness.js`, option `html`) avec un faux Supabase en
+  mémoire ; l'appareil A tourne dans l'édition complète (`index.html`), B et C dans celle des stores.
+- **Limites** : Ni l'AAB ni l'app iOS ne sont construits ni lancés ; le contenu exclu est vérifié par des marques (les
+  actions `rlm-…`, le format d'export), pas octet par octet. Les traductions et le noyau du type restent dans
+  l'édition des stores, par choix ([regulation.md](../regulation.md#absent-des-versions-des-stores)).
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-edi-01"></a>`TU-EDI-01` | l’édition des stores ne contient ni l’écran, ni les formulaires, ni l’export du suivi ; l’édition complète, si | Les trois sorties de l'édition des stores (web, native, artefact) n'ont aucune action `rlm-…` ni le format d'export du suivi, et enregistrent le type comme absent ; l'édition complète versionnée a les deux et pas la marque d'absence. | [RLM-030](manuels/reprendre-la-main.md#rlm-030) |
+| <a id="tu-edi-02"></a>`TU-EDI-02` | les fichiers versionnés restent l’édition complète : build.py n’écrit l’édition des stores que dans dist/ | `build.py --check` avec `SELENE_EDITION=stores` échoue (« seulement avec --dist ») ; une édition inconnue est refusée. | — |
+| <a id="tu-edi-03"></a>`TU-EDI-03` | un compte qui a des suivis, ouvert dans l’édition des stores : rien n’est proposé, montré ni partagé | Un suivi gardé sur A et un ancien suivi synchronisé et partagé arrivent dans le document de B ; pour le compte personnel, ni proposé ni créable (modèle, type vide) ; jamais actif ; absent de la navigation et de l'accueil ; son adresse mène à l'accueil ; rien à l'assistant malgré le partage ; dans les Réglages, une ligne à la case désactivée, la phrase qui l'explique, et rien dans « Ce que Claude peut lire ». | [RLM-030](manuels/reprendre-la-main.md#rlm-030) |
+| <a id="tu-edi-04"></a>`TU-EDI-04` | l’édition des stores rend le document comme il est venu : l’édition complète retrouve ses suivis entiers | Une modification faite dans l'édition des stores part au serveur ; les deux suivis, leur place, leur nom et leur partage y restent identiques ; A les retrouve ouverts et entiers. | [RLM-030](manuels/reprendre-la-main.md#rlm-030) |
+| <a id="tu-edi-05"></a>`TU-EDI-05` | supprimer depuis l’édition des stores : la confirmation dit ce qui part ; le détenteur ne perd rien | Supprimer un suivi gardé sur A : le texte « son nom reviendra », et A rend le nom sans rien perdre ; supprimer l'ancien suivi synchronisé : le texte « efface son contenu de ton compte, partout », et il quitte le serveur. | [RLM-030](manuels/reprendre-la-main.md#rlm-030) |
+| <a id="tu-edi-06"></a>`TU-EDI-06` | le même appareil, passé de l’édition complète à celle des stores : la copie locale reste, la déconnexion la protège | Le même stockage relancé dans l'édition des stores : la copie locale est là, entière, sans être ouverte ; « Se déconnecter » ouvre la garde (exporter ou effacer, le nom du suivi) ; l'effacement confirmé retire la copie et le nom du compte, sans toucher l'autre suivi. | [RLM-030](manuels/reprendre-la-main.md#rlm-030) |
 
 ### Langues de l'interface — `tests/i18n.test.js`
 
@@ -1317,7 +1338,7 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
 | <a id="ts-win-nsis"></a>`TS-WIN-NSIS` | workflow *Desktop* | L'installateur Windows se construit (après `TR-TAU-*`). | oui, filtré par chemins | Aucun lancement ; non signé sans certificat. | [PLT-009](manuels/plateformes.md#plt-009) |
 | <a id="ts-pages"></a>`TS-PAGES` | workflow *Pages* | Le site n'est publié que si *Check* est vert. | oui, push sur `main` | Une mise à jour des actions de CI peut casser le déploiement sans casser *Check* ([a-faire.md](../a-faire.md#à-tenir-dans-la-durée)). | — |
 | <a id="ts-captures"></a>`TS-CAPTURES` | `npm run screenshots` | Produit les captures des stores. | à la demande | Aucune vérification. | — |
-| <a id="ts-release"></a>`TS-RELEASE` | workflow *Publication* | Construit et signe les versions des stores. | sur étiquette | Chaque plateforme est sautée tant que ses secrets manquent. | — |
+| <a id="ts-release"></a>`TS-RELEASE` | workflow *Publication* | Construit et signe les versions publiées : l'APK et l'installateur Windows en édition complète, l'AAB et l'archive iOS en édition des stores (`SELENE_EDITION=stores`, sans « Reprendre la main »). | sur étiquette | Chaque plateforme est sautée tant que ses secrets manquent. | — |
 
 ## États particuliers
 

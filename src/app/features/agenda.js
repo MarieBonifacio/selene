@@ -9,7 +9,7 @@ import { dehorsOn, dehorsWhen } from "./dehors.js";
 import { hm } from "../scene/sky.js";
 import { passeurFetch, passeurPret } from "../services/passeur.js";
 import { render } from "../shell/render.js";
-import { S, label } from "../state/site.js";
+import { S, label, shownModule } from "../state/site.js";
 import { fold } from "../views/recherche.js";
 
 /* Agenda : un calendrier dédié, aujourd'hui et demain (agenda.js pour la lecture iCal).
@@ -41,7 +41,7 @@ export async function agendaRefresh(force = false) {
 /* « Chantier : plombier » → l'espace Chantier, et « plombier ». */
 function agendaRoute(summary) {
   const m = String(summary).match(/^([^:]{2,40}?)\s*:\s*(.+)$/); if (!m) return { mod: "", text: summary };
-  const mod = S().config.modules.find(x => x.on && Object.hasOwn(S().modules, x.id) && fold(label(x.id)) === fold(m[1].trim()));
+  const mod = S().config.modules.find(x => shownModule(x) && fold(label(x.id)) === fold(m[1].trim()));
   return mod ? { mod: mod.id, text: m[2].trim() } : { mod: "", text: summary };
 }
 export function agendaHTML() {

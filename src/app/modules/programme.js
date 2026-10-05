@@ -8,7 +8,7 @@ import { collectionForm } from "./collection.js";
 import { instOf, lastValue, recentBy, totalOf, within } from "./entries.js";
 import { idOf } from "../shell/actions.js";
 import { render } from "../shell/render.js";
-import { S, label, site } from "../state/site.js";
+import { S, label, shownModule, site } from "../state/site.js";
 import { ask, openForm } from "../ui/dialogs.js";
 
 function programmeGroupPanel(id) {
@@ -21,7 +21,7 @@ function programmeGroupPanel(id) {
 /* ---- paliers d'un programme : des critères rédigés et cochés à la main, jamais un passage automatique ---- */
 export const tierCurrent = c => (c.tiers || []).find(t => !t.advancedAt) || null;
 /* Premier module Décisions (une collection réglée en mode révision) actif, ou aucun. */
-export const firstDecisions = () => (S().config.modules.find(m => m.on && Object.hasOwn(S().modules, m.id) && S().modules[m.id].type === "collection" && S().modules[m.id].config.review) || {}).id || null;
+export const firstDecisions = () => (S().config.modules.find(m => shownModule(m) && S().modules[m.id].type === "collection" && S().modules[m.id].config.review) || {}).id || null;
 function tiersPanel(id) {
   const inst = S().modules[id], c = inst.config;
   if (!c.tiers.length) return "";

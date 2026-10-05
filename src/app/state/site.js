@@ -6,7 +6,7 @@ import { N_, tr } from "../i18n/index.js";
 import { render } from "../shell/render.js";
 import { absorbDeviceTrackers } from "./local.js";
 import { makeStore } from "./store.js";
-import { SAVED } from "../registry.js";
+import { SAVED, TYPE_UI } from "../registry.js";
 
 
 // Les modules fixes et leur nom par défaut, affiché dans la langue de l'interface tant que la personne n'en choisit pas un.
@@ -73,4 +73,11 @@ export const board = makeStore("selene-board-v1", "board/state", () => ({ update
 export const S = () => site.data;
  // lecture seule : la normalisation a lieu à l'entrée des données, pas ici
 export const label = id => { const s = S(); return s.config.labels[id] || (s.modules[id] && s.modules[id].label) || (Object.hasOwn(MODULE_DEFS, id) ? tr(MODULE_DEFS[id]) : undefined); };
-export const enabled = id => { const m = S().config.modules.find(m => m.id === id); return m ? m.on : false; };
+/* Un module dont cette édition n'a pas le type (TYPE_UI[type].absent : « Reprendre la main » dans celle des stores,
+   modules/regulation.stores.js) : gardé tel quel dans le document, qui revient au serveur comme il en est venu, mais
+   jamais actif ni montré. */
+export const absentModule = id => Object.hasOwn(S().modules, id) && !!TYPE_UI[S().modules[id].type]?.absent;
+export const enabled = id => { const m = S().config.modules.find(m => m.id === id); return m ? m.on && !absentModule(id) : false; };
+/* Un espace montré : actif, présent dans le document, ouvrable par cette édition. Ce que parcourent la navigation, la
+   palette, la planche, le bilan, les rangements de notes. */
+export const shownModule = m => m.on && Object.hasOwn(S().modules, m.id) && !absentModule(m.id);
