@@ -1,0 +1,96 @@
+{
+  "format": "selene-v1",
+  "exportedAt": "2026-10-04T08:00:00.000Z",
+  "board": {
+    "tasks": []
+  },
+  "site": {
+    "updatedAt": 1,
+    "schemaVersion": 8,
+    "boardMerged": true,
+    "config": {
+      "name": "Selene",
+      "palette": "nigredo",
+      "mode": "auto",
+      "lang": "",
+      "labels": {},
+      "groups": {},
+      "modules": [
+        {
+          "id": "inbox",
+          "on": true
+        },
+        {
+          "id": "carnet-du-soir",
+          "on": true
+        },
+        {
+          "id": "assistant",
+          "on": false
+        }
+      ],
+      "assistant": {
+        "model": "claude-sonnet-5",
+        "actions": true,
+        "share": {
+          "inbox": true,
+          "carnet-du-soir": false
+        }
+      }
+    },
+    "modules": {
+      "inbox": {
+        "type": "notes",
+        "label": "Boîte",
+        "config": {
+          "inbox": true,
+          "description": "Tout ce qui traîne dans ta tête, en attendant d'avoir une place.",
+          "placeholder": "Une idée, une course, un rêve…"
+        },
+        "entries": []
+      },
+      "carnet-du-soir": {
+        "type": "regulation",
+        "label": "Carnet du soir",
+        "config": {
+          "subject": "tabac",
+          "supports": [
+            "Marcher quelques minutes",
+            "Dessiner",
+            "Éloigner un déclencheur",
+            "Contacter quelqu'un"
+          ],
+          "rewards": false,
+          "reward": "",
+          "rewardAt": 7,
+          "storage": "account",
+          "consent": {
+            "at": 1788292800000,
+            "version": 1
+          }
+        },
+        "goals": [
+          {
+            "id": "g1",
+            "date": "2026-09-01",
+            "at": 1788292800000,
+            "mode": "observer",
+            "limit": null,
+            "subject": "tabac"
+          }
+        ],
+        "entries": [
+          {
+            "id": "u1",
+            "kind": "use",
+            "date": "2026-09-15",
+            "at": 1789502400000,
+            "zone": "Europe/Paris",
+            "note": "Pause café",
+            "value": 3
+          }
+        ]
+      }
+    }
+  }
+}

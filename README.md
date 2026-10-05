@@ -8,6 +8,8 @@ Vérification locale (Node 22, Python 3) : `npm ci` une fois, puis `npm run chec
 
 Ce qui reste à faire à la main (essais sur de vrais appareils, réglages Supabase, stores, obligations RGPD) : [docs/a-faire.md](docs/a-faire.md).
 
+Recette : le cahier de recette (cas manuels, inventaire des tests automatiques, matrice de traçabilité, campagnes, comptes rendus) est dans [docs/recette/](docs/recette/README.md) ; `npm run recette` vérifie qu'il reste cohérent avec les tests.
+
 ## Publier avec GitHub Pages
 
 1. Pousser ce dépôt sur GitHub.

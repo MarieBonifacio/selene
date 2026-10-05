@@ -1,0 +1,904 @@
+{
+  "format": "selene-v1",
+  "exportedAt": "2026-10-04T08:00:00.000Z",
+  "board": {
+    "tasks": []
+  },
+  "site": {
+    "updatedAt": 1,
+    "schemaVersion": 8,
+    "boardMerged": true,
+    "config": {
+      "name": "Selene",
+      "palette": "nigredo",
+      "mode": "auto",
+      "lang": "",
+      "labels": {},
+      "groups": {},
+      "modules": [
+        {
+          "id": "inbox",
+          "on": true
+        },
+        {
+          "id": "chantier",
+          "on": true,
+          "group": "Maison"
+        },
+        {
+          "id": "budget",
+          "on": true,
+          "group": "Maison"
+        },
+        {
+          "id": "plantes",
+          "on": true,
+          "group": "Maison"
+        },
+        {
+          "id": "yoga",
+          "on": true
+        },
+        {
+          "id": "ecriture",
+          "on": true,
+          "group": "Création"
+        },
+        {
+          "id": "sources",
+          "on": true,
+          "group": "Création"
+        },
+        {
+          "id": "motifs",
+          "on": true,
+          "group": "Création"
+        },
+        {
+          "id": "tableau",
+          "on": true,
+          "group": "Création"
+        },
+        {
+          "id": "arc",
+          "on": true,
+          "group": "Création"
+        },
+        {
+          "id": "decisions",
+          "on": true,
+          "group": "Maison"
+        },
+        {
+          "id": "musique",
+          "on": true
+        },
+        {
+          "id": "carnet",
+          "on": true
+        },
+        {
+          "id": "assistant",
+          "on": false
+        }
+      ],
+      "assistant": {
+        "model": "claude-sonnet-5",
+        "actions": true,
+        "share": {
+          "inbox": true,
+          "chantier": true,
+          "budget": true,
+          "plantes": true,
+          "yoga": true,
+          "ecriture": true,
+          "sources": true,
+          "motifs": true,
+          "tableau": true,
+          "arc": true,
+          "decisions": true,
+          "musique": true,
+          "carnet": true
+        }
+      }
+    },
+    "modules": {
+      "inbox": {
+        "type": "notes",
+        "label": "Boîte",
+        "config": {
+          "inbox": true,
+          "description": "Tout ce qui traîne dans ta tête, en attendant d'avoir une place.",
+          "placeholder": "Une idée, une course, un rêve…"
+        },
+        "entries": [
+          {
+            "id": "n1",
+            "text": "12,50 € courses du marché",
+            "date": "2026-09-21"
+          },
+          {
+            "id": "n2",
+            "text": "25 min yoga, salutation au soleil",
+            "date": "2026-09-22"
+          },
+          {
+            "id": "n3",
+            "text": "Écriture : la lisière comme seuil",
+            "date": "2026-09-23"
+          },
+          {
+            "id": "n4",
+            "text": "À lire : https://doi.org/10.1016/j.concog.2020.102946",
+            "date": "2026-09-24"
+          },
+          {
+            "id": "n5",
+            "text": "la brume précède la pluie",
+            "date": "2026-09-25",
+            "ep": "hyp",
+            "epLog": [
+              {
+                "from": null,
+                "to": "hyp",
+                "date": "2026-09-25"
+              }
+            ]
+          },
+          {
+            "id": "n6",
+            "text": "Penser à rappeler la quincaillerie",
+            "date": "2026-08-02"
+          }
+        ]
+      },
+      "chantier": {
+        "type": "taches",
+        "label": "Chantier",
+        "config": {
+          "groupLabel": "Pièce",
+          "catLabel": "Type",
+          "cats": [
+            "Bricolage",
+            "Artisan",
+            "Achat"
+          ],
+          "costs": true,
+          "outdoor": "extérieur, dehors, balcon, jardin, terrasse, façade, toit",
+          "groups": {
+            "on": true,
+            "by": "room",
+            "sort": "name",
+            "hideDone": false,
+            "title": ""
+          }
+        },
+        "entries": [
+          {
+            "id": "t1",
+            "title": "Repeindre la rambarde du balcon",
+            "room": "Balcon",
+            "cat": "Bricolage",
+            "due": "2026-09-15",
+            "effort": 2,
+            "cost": 120,
+            "note": "Peinture antirouille",
+            "today": false,
+            "done": false,
+            "doneAt": null,
+            "created": "2026-09-01",
+            "steps": [
+              {
+                "t": "Poncer",
+                "d": true
+              },
+              {
+                "t": "Sous-couche",
+                "d": false
+              },
+              {
+                "t": "Deux couches",
+                "d": false
+              }
+            ]
+          },
+          {
+            "id": "t2",
+            "title": "Poser une étagère",
+            "room": "Salon",
+            "cat": "Bricolage",
+            "due": null,
+            "effort": 1,
+            "cost": 35,
+            "note": "",
+            "today": false,
+            "done": false,
+            "doneAt": null,
+            "created": "2026-09-02",
+            "steps": []
+          },
+          {
+            "id": "t3",
+            "title": "Appeler le plombier",
+            "room": "Salle de bain",
+            "cat": "Artisan",
+            "due": null,
+            "effort": 1,
+            "cost": null,
+            "note": "Fuite sous l'évier",
+            "today": false,
+            "done": false,
+            "doneAt": null,
+            "created": "2026-09-03",
+            "steps": []
+          },
+          {
+            "id": "t4",
+            "title": "Changer l'ampoule du couloir",
+            "room": "Couloir",
+            "cat": "Achat",
+            "due": "2026-09-05",
+            "effort": 1,
+            "cost": 8,
+            "note": "",
+            "today": false,
+            "done": true,
+            "doneAt": "2026-09-06",
+            "created": "2026-09-01",
+            "steps": []
+          },
+          {
+            "id": "t5",
+            "title": "Nettoyer les gouttières du jardin",
+            "room": "Jardin",
+            "cat": "Bricolage",
+            "due": null,
+            "effort": 3,
+            "cost": null,
+            "note": "",
+            "today": false,
+            "done": false,
+            "doneAt": null,
+            "created": "2026-09-04",
+            "steps": []
+          }
+        ]
+      },
+      "yoga": {
+        "type": "programme",
+        "label": "Yoga",
+        "config": {
+          "unitLabel": "min",
+          "start": "2026-08-03",
+          "weeks": 12,
+          "perWeek": 3,
+          "tiers": [
+            {
+              "id": "p1",
+              "name": "Souffle",
+              "criteria": [
+                {
+                  "id": "c1",
+                  "text": "12 séances à 20 min",
+                  "done": false
+                },
+                {
+                  "id": "c2",
+                  "text": "Tenir la posture de l'arbre une minute",
+                  "done": false
+                }
+              ]
+            }
+          ]
+        },
+        "entries": [
+          {
+            "id": "y1",
+            "date": "2026-08-03",
+            "value": 20,
+            "note": "Première séance"
+          },
+          {
+            "id": "y2",
+            "date": "2026-08-05",
+            "value": 25,
+            "note": ""
+          },
+          {
+            "id": "y3",
+            "date": "2026-09-01",
+            "value": 30,
+            "note": "Dos raide"
+          },
+          {
+            "id": "y4",
+            "date": "2026-09-08",
+            "value": 25,
+            "note": ""
+          }
+        ]
+      },
+      "ecriture": {
+        "type": "cumul",
+        "label": "Écriture",
+        "config": {
+          "unitLabel": "mots",
+          "goal": 50000,
+          "title": "La lisière",
+          "categories": [
+            {
+              "id": "c1",
+              "name": "Prologue",
+              "goal": 3000
+            },
+            {
+              "id": "c2",
+              "name": "La forêt",
+              "goal": 20000
+            }
+          ],
+          "categoryLabel": "Chapitre",
+          "scraps": true,
+          "scrapsLabel": "Fragments",
+          "entryMode": "total"
+        },
+        "entries": [
+          {
+            "id": "w1",
+            "date": "2026-08-10",
+            "value": 1200,
+            "note": "",
+            "category": "c1"
+          },
+          {
+            "id": "w2",
+            "date": "2026-08-20",
+            "value": 2300,
+            "note": "",
+            "category": "c2"
+          },
+          {
+            "id": "w3",
+            "date": "2026-09-02",
+            "value": 1800,
+            "note": "",
+            "category": "c2"
+          }
+        ],
+        "scraps": [
+          {
+            "id": "f1",
+            "text": "La lisière n'est pas une frontière, c'est un lieu où l'on hésite.",
+            "date": "2026-08-11",
+            "category": "c1"
+          },
+          {
+            "id": "f2",
+            "text": "Le brouillard efface la route avant d'effacer la forêt.",
+            "date": "2026-08-12",
+            "category": "c2",
+            "ep": "obs",
+            "epLog": [
+              {
+                "from": null,
+                "to": "obs",
+                "date": "2026-08-12"
+              }
+            ]
+          },
+          {
+            "id": "f3",
+            "text": "Toute lisière est un seuil que l'on traverse sans le voir.",
+            "date": "2026-08-14",
+            "category": "c1",
+            "links": [
+              {
+                "id": "l1",
+                "to": "ecriture/f1",
+                "type": "derive",
+                "date": "2026-08-14"
+              }
+            ]
+          },
+          {
+            "id": "f4",
+            "text": "La lisière est au contraire une frontière nette, tracée par la coupe.",
+            "date": "2026-08-15",
+            "category": "c2",
+            "links": [
+              {
+                "id": "l2",
+                "to": "ecriture/f1",
+                "type": "contredit",
+                "date": "2026-08-15"
+              }
+            ]
+          },
+          {
+            "id": "f5",
+            "text": "Les sapins gardent la nuit plus longtemps que les hêtres.",
+            "date": "2026-08-16",
+            "ep": "hyp",
+            "epLog": [
+              {
+                "from": null,
+                "to": "hyp",
+                "date": "2026-08-16"
+              }
+            ]
+          },
+          {
+            "id": "f6",
+            "text": "Une phrase sans chapitre, posée là en attendant.",
+            "date": "2026-08-18"
+          }
+        ]
+      },
+      "plantes": {
+        "type": "rappels",
+        "label": "Plantes",
+        "config": {
+          "subtitle": "",
+          "types": [
+            {
+              "id": "arrosage",
+              "label": "Arrosage",
+              "every": 3
+            },
+            {
+              "id": "rempotage",
+              "label": "Rempotage",
+              "every": 0
+            }
+          ]
+        },
+        "entries": [
+          {
+            "id": "r1",
+            "date": "2026-09-01",
+            "type": "arrosage",
+            "note": ""
+          },
+          {
+            "id": "r2",
+            "date": "2026-08-15",
+            "type": "rempotage",
+            "note": "Ficus, pot de 24 cm"
+          },
+          {
+            "id": "r3",
+            "date": "2026-08-20",
+            "type": "note",
+            "note": "Une feuille jaunit sur le ficus"
+          }
+        ]
+      },
+      "budget": {
+        "type": "budget",
+        "label": "Budget",
+        "config": {
+          "envelopes": [
+            {
+              "id": "v1",
+              "name": "Courses",
+              "limit": 300
+            },
+            {
+              "id": "v2",
+              "name": "Travaux",
+              "limit": 500
+            }
+          ],
+          "groups": {
+            "on": true,
+            "by": "cat",
+            "sort": "name",
+            "hideDone": false,
+            "title": ""
+          }
+        },
+        "entries": [
+          {
+            "id": "b1",
+            "type": "revenu",
+            "amount": 2000,
+            "cat": "",
+            "note": "Salaire",
+            "date": "2026-09-01"
+          },
+          {
+            "id": "b2",
+            "type": "dépense",
+            "amount": 120,
+            "cat": "Courses",
+            "note": "Marché",
+            "date": "2026-09-03"
+          },
+          {
+            "id": "b3",
+            "type": "dépense",
+            "amount": 45,
+            "cat": "Travaux",
+            "note": "Vis et chevilles",
+            "date": "2026-09-10"
+          },
+          {
+            "id": "b4",
+            "type": "dépense",
+            "amount": 210,
+            "cat": "Courses",
+            "note": "Grande surface",
+            "date": "2026-08-12"
+          }
+        ]
+      },
+      "tableau": {
+        "type": "collection",
+        "label": "Tableau",
+        "config": {
+          "display": "colonnes",
+          "description": "",
+          "review": false,
+          "concordance": false,
+          "sources": false,
+          "music": false,
+          "fallowDays": 90,
+          "statuses": [
+            "Idée",
+            "En cours",
+            "Prêt",
+            "Publié"
+          ],
+          "doneFrom": 3,
+          "statusLabel": "Étape",
+          "addLabel": "Nouvelle idée",
+          "fields": {
+            "title": "Titre",
+            "subtitle": "",
+            "tag": "Thème",
+            "due": "Date prévue",
+            "text": "Texte"
+          },
+          "groups": {
+            "on": true,
+            "by": "tag",
+            "sort": "name",
+            "hideDone": false,
+            "title": ""
+          }
+        },
+        "entries": [
+          {
+            "id": "k1",
+            "title": "Lichens d'automne",
+            "subtitle": "",
+            "tag": "Forêt",
+            "due": "2026-09-20",
+            "text": "Série de trois photos",
+            "status": "Idée"
+          },
+          {
+            "id": "k2",
+            "title": "Le hêtre fendu",
+            "subtitle": "",
+            "tag": "Forêt",
+            "due": "",
+            "text": "",
+            "status": "En cours"
+          },
+          {
+            "id": "k3",
+            "title": "Brume sur l'étang",
+            "subtitle": "",
+            "tag": "Eau",
+            "due": "",
+            "text": "",
+            "status": "Prêt"
+          },
+          {
+            "id": "k4",
+            "title": "Héron cendré",
+            "subtitle": "",
+            "tag": "Eau",
+            "due": "2026-08-30",
+            "text": "",
+            "status": "Publié"
+          }
+        ]
+      },
+      "sources": {
+        "type": "collection",
+        "label": "Sources",
+        "config": {
+          "display": "liste",
+          "description": "Colle un lien ou un DOI : titre, auteurs, revue et date se complètent. Relie ensuite une source au fragment qu'elle documente.",
+          "review": false,
+          "concordance": false,
+          "sources": true,
+          "music": false,
+          "fallowDays": 90,
+          "statuses": [
+            "À lire",
+            "Lue",
+            "Utilisée"
+          ],
+          "doneFrom": 1,
+          "statusLabel": "Lecture",
+          "addLabel": "Ajouter à la main",
+          "fields": {
+            "title": "Titre",
+            "subtitle": "Auteurs",
+            "tag": "Type",
+            "due": "",
+            "text": "Résumé et notes"
+          },
+          "groups": {
+            "on": true,
+            "by": "tag",
+            "sort": "name",
+            "hideDone": false,
+            "title": ""
+          }
+        },
+        "entries": [
+          {
+            "id": "s1",
+            "title": "Depersonalization and the self",
+            "subtitle": "Ciaunica, Charlton, Farmer",
+            "tag": "Article",
+            "due": "",
+            "text": "",
+            "status": "À lire",
+            "src": {
+              "url": "https://doi.org/10.1016/j.concog.2020.102946",
+              "doi": "10.1016/j.concog.2020.102946",
+              "site": "Consciousness and Cognition",
+              "date": "2020"
+            },
+            "kept": "2026-08-01",
+            "links": [
+              {
+                "id": "l3",
+                "to": "ecriture/f2",
+                "type": "documente",
+                "date": "2026-08-06"
+              }
+            ]
+          },
+          {
+            "id": "s2",
+            "title": "La forêt, lieu commun",
+            "subtitle": "",
+            "tag": "Page",
+            "due": "",
+            "text": "Note de lecture",
+            "status": "Lue",
+            "src": {
+              "url": "https://exemple.org/foret",
+              "site": "exemple.org",
+              "date": "2025-11"
+            },
+            "kept": "2026-08-05"
+          }
+        ]
+      },
+      "motifs": {
+        "type": "collection",
+        "label": "Motifs",
+        "config": {
+          "display": "liste",
+          "description": "Chaque motif est cherché dans tous tes autres modules, en mot entier, pluriel et variantes compris.",
+          "review": false,
+          "concordance": true,
+          "sources": false,
+          "music": false,
+          "fallowDays": 90,
+          "statuses": [
+            "Vivant",
+            "Épuisé"
+          ],
+          "doneFrom": 1,
+          "statusLabel": "État",
+          "addLabel": "Ajouter un motif",
+          "fields": {
+            "title": "Motif",
+            "subtitle": "Variantes (séparées par des virgules)",
+            "tag": "Famille",
+            "due": "",
+            "text": "Note"
+          },
+          "groups": {
+            "on": true,
+            "by": "tag",
+            "sort": "name",
+            "hideDone": false,
+            "title": ""
+          }
+        },
+        "entries": [
+          {
+            "id": "m1",
+            "title": "lisière",
+            "subtitle": "",
+            "tag": "",
+            "due": "",
+            "text": "",
+            "status": "Vivant"
+          },
+          {
+            "id": "m2",
+            "title": "brume",
+            "subtitle": "brouillard",
+            "tag": "",
+            "due": "",
+            "text": "",
+            "status": "Vivant"
+          },
+          {
+            "id": "m3",
+            "title": "phalène",
+            "subtitle": "",
+            "tag": "",
+            "due": "",
+            "text": "",
+            "status": "Épuisé"
+          }
+        ]
+      },
+      "decisions": {
+        "type": "collection",
+        "label": "Décisions",
+        "config": {
+          "display": "liste",
+          "description": "La raison écrite au moment de décider, relue au moment de réexaminer.",
+          "review": true,
+          "concordance": false,
+          "sources": false,
+          "music": false,
+          "fallowDays": 90,
+          "statuses": [
+            "À décider",
+            "Prise",
+            "Abandonnée"
+          ],
+          "doneFrom": 1,
+          "statusLabel": "État",
+          "addLabel": "Noter une décision",
+          "fields": {
+            "title": "Décision",
+            "subtitle": "",
+            "tag": "Domaine",
+            "due": "À réexaminer le",
+            "text": "Contexte, options écartées, raison, et ce qui te ferait changer d'avis"
+          },
+          "groups": {
+            "on": true,
+            "by": "tag",
+            "sort": "name",
+            "hideDone": false,
+            "title": ""
+          }
+        },
+        "entries": [
+          {
+            "id": "d1",
+            "title": "Enduit à la chaux pour le mur nord",
+            "subtitle": "",
+            "tag": "Maison",
+            "due": "2020-01-01",
+            "text": "Humidité du mur nord. Réviser si le devis dépasse 1 200 €.",
+            "status": "Prise"
+          },
+          {
+            "id": "d2",
+            "title": "Placo dans la chambre",
+            "subtitle": "",
+            "tag": "Maison",
+            "due": "2020-01-01",
+            "text": "Trop de poussière.",
+            "status": "Abandonnée"
+          }
+        ]
+      },
+      "musique": {
+        "type": "collection",
+        "label": "Musique",
+        "config": {
+          "display": "liste",
+          "description": "",
+          "review": false,
+          "concordance": false,
+          "sources": false,
+          "music": true,
+          "fallowDays": 90,
+          "statuses": [
+            "À écouter",
+            "Écouté",
+            "Retenu"
+          ],
+          "doneFrom": 1,
+          "statusLabel": "Statut",
+          "addLabel": "Ajouter un artiste",
+          "fields": {
+            "title": "Artiste",
+            "subtitle": "Album",
+            "tag": "Genre",
+            "due": "",
+            "text": "Note"
+          },
+          "groups": {
+            "on": true,
+            "by": "tag",
+            "sort": "name",
+            "hideDone": false,
+            "title": ""
+          }
+        },
+        "entries": [
+          {
+            "id": "a1",
+            "title": "Kate Bush",
+            "subtitle": "",
+            "tag": "",
+            "due": "",
+            "text": "",
+            "status": "À écouter"
+          },
+          {
+            "id": "a2",
+            "title": "Dead Can Dance",
+            "subtitle": "Within the Realm of a Dying Sun",
+            "tag": "",
+            "due": "",
+            "text": "",
+            "status": "Écouté"
+          }
+        ]
+      },
+      "arc": {
+        "type": "arc",
+        "label": "Arc",
+        "config": {
+          "stations": [
+            {
+              "id": "1",
+              "name": "Étape 1"
+            },
+            {
+              "id": "2",
+              "name": "Étape 2"
+            },
+            {
+              "id": "3",
+              "name": "Étape 3"
+            }
+          ]
+        },
+        "entries": [
+          {
+            "id": "pl1",
+            "station": "1",
+            "ref": "ecriture/f1",
+            "at": "2026-08-20"
+          }
+        ]
+      },
+      "carnet": {
+        "type": "notes",
+        "label": "Carnet",
+        "config": {
+          "inbox": false,
+          "description": "",
+          "placeholder": "Une note…"
+        },
+        "entries": [
+          {
+            "id": "c1",
+            "text": "Le héron revient chaque matin à la même pierre.",
+            "date": "2026-08-21"
+          }
+        ]
+      }
+    }
+  }
+}
