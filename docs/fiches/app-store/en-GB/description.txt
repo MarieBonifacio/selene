@@ -1,0 +1,30 @@
+Selene is a research notebook for long writing projects: a thesis, a book, a series of articles. It keeps your fragments, your sources and your hypotheses linked, and brings back what you had forgotten, right up to the last chapter.
+
+THE TEXT, CHAPTER BY CHAPTER
+• A word count, its goal and its pace; each chapter with its progress.
+• Fragments attached to their chapter; an edited version keeps the old one readable underneath.
+• "I'm stopping here…": your next step, noted as you leave, found again when you return.
+
+SOURCES, LINKED
+• A link or a DOI is enough: title, authors, journal and date fill themselves in.
+• Each source links to the fragment it documents.
+• Your Zotero library, read-only.
+• BibTeX and CSL-JSON export, for LaTeX, Zotero, Zettlr or Pandoc.
+
+THINKING WITH WHAT YOU WROTE
+• A status for each idea: observed, hypothesis, interpretation, unexplained.
+• Links between entries: derives from, contradicts, echoes, documents.
+• Open tensions: two ideas that contradict each other, waiting for a synthesis.
+• The weekly review: ten minutes with what sleeps, what contradicts itself and what awaits its evidence.
+• Search covers the whole notebook, statuses and dates included.
+
+COME AND GO FREELY
+• Your Markdown notes from Obsidian or Zettlr import, [[…]] links included.
+• Everything exports, at any time: a full backup, Markdown, a folder ready to reread.
+
+WHAT SELENE DOES NOT DO
+• No ads, no trackers. Nothing measures what you write.
+• No account required: Selene works entirely on your device, even offline. An account only serves to find your notebook on your other devices.
+• No artificial intelligence forced on you.
+
+The code is public. Privacy policy: https://mariebonifacio.github.io/selene/privacy.html

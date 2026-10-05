@@ -37,7 +37,7 @@ le vérifie après la compilation). Il déclare :
 - **Les données qui quittent l'appareil**, avec un compte seulement : l'adresse, le contenu des espaces, le lieu du
   ciel (arrondi à un dixième de degré), le jour de saisie de la mesure d'usage, le journal des erreurs (non lié au
   compte) et la clé de l'assistant. Aucun pistage. La fiche « Confidentialité de l'app » d'App Store Connect en
-  reprend les réponses ([publication.md](publication.md#ios--app-store), étape 6).
+  reprend les réponses ([publication.md](publication.md#ios--app-store), étape 7).
 
 Un plugin ajouté, une donnée de plus envoyée : le manifeste se relit le même jour, avec la politique.
 

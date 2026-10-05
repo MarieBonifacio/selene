@@ -157,11 +157,15 @@ const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_
     await p.locator('.set.mod:has(input[data-act="mod-label"][value="Assistant"]) input[data-act="mod-on"]').check(); await settle();
     const box = p.locator(`input[data-act="as-share"][data-k="${id}"]`);
     check(await box.count() === 1 && !(await box.isChecked()), 'Réglages, assistant : le suivi apparaît, non coché');
-    await box.check({ force: true }).catch(() => {}); // la case se décoche aussitôt : la confirmation décide
+    // La case se décoche aussitôt : la confirmation décide. Un clic tombé pendant un rendu se perd (vu une fois sous
+    // WebKit, PR #100) : on recoche tant que la boîte ne s'ouvre pas, trois fois au plus ; si l'app ne l'ouvre jamais,
+    // ask() échoue comme avant.
+    const tick = async () => { for (let i = 0; i < 3; i++) { await box.check({ force: true }).catch(() => {}); if (await p.waitForSelector('#cdlg[open]', { timeout: 5000 }).then(() => true, () => false)) return; } };
+    await tick();
     msg = await ask(false);
     check(msg.includes('suivi personnel autodéclaratif (alcool') && !SECRET.test(msg), 'cocher le partage : le résumé exact, sans note ni appui');
     check((await site()).config.assistant.share[id] === false && !(await box.isChecked()), 'annuler : rien n’est partagé');
-    await box.check({ force: true }).catch(() => {}); await ask(true);
+    await tick(); await ask(true);
     check((await site()).config.assistant.share[id] === true && await box.isChecked(), 'confirmer : le résumé est partagé');
     await box.uncheck(); await settle();
     check((await site()).config.assistant.share[id] === false, 'décocher : partage arrêté tout de suite');

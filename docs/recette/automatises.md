@@ -217,9 +217,9 @@ sans navigateur.
 
 ### Déclarations de confidentialité des stores — `tests/confidentialite-stores.test.js`
 
-- **Niveau** : Statique (S) : lecture des fichiers de l'app iOS, de l'app Android, de `docs/publication.md` et du code. **Sujet** : `native/ios/App/App/PrivacyInfo.xcprivacy`, `AndroidManifest.xml`, `Info.plist`, `InfoPlist.strings`.
+- **Niveau** : Statique (S) : lecture des fichiers de l'app iOS, de l'app Android, de `docs/publication.md`, des textes des fiches (`docs/fiches/`) et du code. **Sujet** : `native/ios/App/App/PrivacyInfo.xcprivacy`, `AndroidManifest.xml`, `Info.plist`, `InfoPlist.strings`, `docs/fiches/`.
 - **Simulé** : Rien (aucune compilation, aucun lancement).
-- **Limites** : Prouve que les déclarations existent et concordent entre elles ; pas ce que l'App Store ou Google Play en feront, ni ce que l'app fait réellement à l'exécution.
+- **Limites** : Prouve que les déclarations existent et concordent entre elles ; pas ce que l'App Store ou Google Play en feront, ni ce que l'app fait réellement à l'exécution. Pour les fiches : les limites de longueur et les mots interdits, pas la justesse de chaque phrase (relecture humaine).
 
 | Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
 |---|---|---|---|
@@ -227,6 +227,7 @@ sans navigateur.
 | <a id="tu-cst-02"></a>`TU-CST-02` | aucun pistage, et la raison des dates de fichiers | Aucun pistage, aucun domaine de pistage ; la raison déclarée pour la lecture des dates de fichiers, liée à l'usage réel de `Filesystem.readdir` par l'amorçage natif. | — |
 | <a id="tu-cst-03"></a>`TU-CST-03` | les données déclarées, et leur ligne dans la fiche Google Play | Les six types de données déclarés à Apple ont chacun leur ligne dans la fiche Google Play de `docs/publication.md` ; aucun ne sert au pistage ; seul le diagnostic (journal des erreurs) n'est pas lié au compte. | — |
 | <a id="tu-cst-04"></a>`TU-CST-04` | « Ma position » dans les apps : la position approximative seule, et la phrase d’iOS en deux langues | Android ne demande que la position approximative (ni précise, ni en arrière-plan) ; iOS a sa phrase d'explication, en anglais et en français ; la position est arrondie au dixième avant d'être gardée. | [EXT-007](manuels/connexions.md#ext-007) |
+| <a id="tu-cst-05"></a>`TU-CST-05` | les fiches des stores : limites de chaque champ, deux langues, rien de « Reprendre la main », l’adresse de la politique | Chaque champ des fiches Google Play (titre, description courte, description complète) et App Store (nom, sous-titre, texte promotionnel, description, mots-clés) existe en `fr-FR` et en `en-GB`, non vide et sous la limite du store (mots-clés d'Apple comptés en octets) ; aucun ne nomme « Reprendre la main », le tabac, l'alcool, le cannabis, une addiction, la santé ou le médical ; chaque description donne l'adresse de la politique dans sa langue ; les mots-clés sont séparés par des virgules, sans doublon ni nom d'une autre app ; `docs/publication.md` renvoie aux fiches. | — |
 
 ### Dehors : tri explicable — `tests/dehors.test.js`
 
