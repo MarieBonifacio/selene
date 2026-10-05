@@ -96,3 +96,9 @@ cas P1 marqués *couvert partiellement* dans la [matrice](../matrice.md).
 ## Décision
 
 Aucune : ce relevé ne conclut pas sur une livraison.
+
+## Addendum du 5 octobre 2026
+
+Les anomalies **A4** (assistant), **A5** (typographie des dates et résumé de l'assistant) et **A8** (import Markdown) ont été
+corrigées par la PR #98, chacune avec un test vérifié en échec sur l'ancien code. Les autres (A1 à A3, A6, A7) restent
+ouvertes ; A1 a reçu un correctif du test sur `main` (`3a79a01`), à confirmer sur la durée.
