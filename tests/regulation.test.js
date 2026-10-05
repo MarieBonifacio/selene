@@ -762,6 +762,27 @@ test('se déconnecter avec un suivi gardé ici : exporter ou effacer, jamais une
   app.site.disconnect(); app.board.disconnect();
 });
 
+test('se déconnecter en effaçant : le nom du suivi part aussi du compte ; renoncer à la dernière confirmation ne touche à rien', async () => {
+  const server = fakeSupabase(), app = personal({ fetch: server.fetch }); await settle();
+  const id = await setupTracker(app, { name: 'Éphémère' }); addUse(app, id);
+  await app.site.sync();
+  assert.ok(serverSite(server).modules[id], 'avant : le compte garde le talon');
+  // Renoncer à la dernière confirmation : rien n'est effacé, ni ici ni sur le compte.
+  let out = app.authSignOut(); await tick();
+  let choix = app.form({ what: 'erase' }); await confirmBox(app, false); await choix; await out;
+  assert.ok(app.session(), 'toujours connectée'); assert.equal(app.localCopy(id).entries.length, 1, 'le contenu est intact');
+  assert.ok(app.S().modules[id]); await app.site.sync(); assert.ok(serverSite(server).modules[id], 'le talon est toujours sur le compte');
+  // L'effacement confirmé : le contenu, puis le nom, quittent l'appareil et le compte.
+  out = app.authSignOut(); await tick();
+  choix = app.form({ what: 'erase' }); await confirmBox(app, true); await choix; await out;
+  assert.equal(app.session(), null); assert.equal(app.localIds().length, 0);
+  const apres = serverSite(server);
+  assert.equal(apres.modules[id], undefined, 'le nom ne survit pas à un effacement voulu');
+  assert.ok(!apres.config.modules.some(m => m.id === id), 'ni sa place dans la navigation');
+  assert.doesNotMatch(JSON.stringify(apres), /Éphémère|NOTE_PRIVEE/);
+  app.site.disconnect(); app.board.disconnect();
+});
+
 test('changement de compte sur le même appareil : les suivis locaux suivent leur compte, jamais montrés à l’autre', async () => {
   const server = fakeSupabase(), app = personal({ fetch: server.fetch }); await settle();
   const id = await setupTracker(app); addUse(app, id);

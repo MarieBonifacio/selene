@@ -701,16 +701,18 @@ Identifiants retirés : aucun.
 ### RLM-023 — Se déconnecter avec un suivi gardé ici
 
 - **Fonctionnalité et règle** : la déconnexion vide l'appareil ; une garde demande d'abord quoi faire de ce qui n'existe
-  qu'ici : télécharger une sauvegarde complète puis l'effacer, ou l'effacer (confirmé) ; annuler ne déconnecte pas ; la
-  sauvegarde complète contient le suivi ; restaurée, elle refait de l'appareil le détenteur.
+  qu'ici : télécharger une sauvegarde complète puis l'effacer, ou l'effacer (confirmé : le contenu et le nom du suivi
+  quittent l'appareil et le compte) ; annuler ne déconnecte pas ; la sauvegarde complète contient le suivi ; restaurée,
+  elle refait de l'appareil le détenteur.
 - **Objectif, risque vérifié** : perte silencieuse d'un suivi qui n'existe nulle part ailleurs.
 - **Priorité** : P1 · **Plateformes** : Web, Mob, AND, IOS, WIN
 - **Préconditions** : chemin P, avec le suivi de [RLM-003](#rlm-003) et au moins une saisie dont le contexte est
   `NOTE-RLM003`.
 - **Données** : aucune autre.
-- **Automatisés associés** : `TN-regulation-appareil`, `TU-REG-32`
+- **Automatisés associés** : `TN-regulation-appareil`, `TU-REG-32`, `TU-REG-38`
 - **Source** : [DOC] [regulation.md](../../regulation.md#confidentialité) (déconnexion) ; [TEST]
-  `tests/browser/regulation-appareil.js` ; [À ARBITRER] étape 5 (anomalie [A7](../perimetre.md#anomalies-et-observations)).
+  `tests/browser/regulation-appareil.js`, `TU-REG-38` ; étapes 7 à 9 : anomalie [A7](../perimetre.md#anomalies-et-observations),
+  corrigée (décision de la responsable : l'effacement retire aussi le talon).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -718,10 +720,14 @@ Identifiants retirés : aucun.
 | 2 | « Annuler ». | Toujours connectée ; le suivi est intact. |
 | 3 | « Se déconnecter » → « L'effacer définitivement » → « Enregistrer » ; dans la boîte, « Annuler ». | « Effacer définitivement « Carnet du soir » ? Il n'en existe aucune autre copie. » ; après « Annuler », toujours connectée, rien d'effacé. |
 | 4 | « Se déconnecter » → « Télécharger une sauvegarde complète, puis l'effacer d'ici » → « Enregistrer ». | Un fichier `selene-AAAA-MM-JJ.json` est téléchargé, puis l'écran d'entrée s'affiche. Le fichier contient `NOTE-RLM003` et le sujet `tabac` du suivi. |
-| 5 | Se reconnecter au compte P sur le même appareil ; ouvrir « Carnet du soir ». | Comportement actuel : « Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi. » [À ARBITRER] (A7). |
+| 5 | Se reconnecter au compte P sur le même appareil ; ouvrir « Carnet du soir ». | Le nom est resté sur le compte (le contenu a été exporté, pas effacé) : « Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi. » |
 | 6 | Réglages → Compte et données → Sauvegarde → Importer le fichier de l'étape 4 → « Confirmer ». | « Sauvegarde importée. » ; le suivi est entier (la saisie `NOTE-RLM003` est là), « Sur cet appareil seulement. » |
+| 7 | « Se déconnecter » → « L'effacer définitivement » → « Enregistrer » → « Confirmer » dans la boîte « Effacer définitivement… ». | L'écran d'entrée s'affiche. |
+| 8 | Avant de vous reconnecter, Network : ouvrir la dernière requête `PATCH` vers `app_state` envoyée à l'étape 7, onglet *Payload*. | `site.modules` ne contient plus `carnet-du-soir` ; `site.config.modules` non plus ; aucune occurrence de `Carnet du soir` ni de `NOTE-RLM003` dans la charge utile. |
+| 9 | Se reconnecter au compte P sur le même appareil. | Aucun « Carnet du soir » dans la navigation, ni dans Réglages → Espaces ; l'écran « ses données n'y sont plus » n'apparaît nulle part : l'effacement voulu n'est pas présenté comme un accident. |
 
-- **État final attendu** : connectée au compte P, le suivi restauré sur cet appareil.
+- **État final attendu** : connectée au compte P, **sans** le suivi (effacé, nom compris) ; le fichier de l'étape 4 reste la seule
+  copie.
 - **Nettoyage** : supprimer le fichier téléchargé de l'ordinateur de recette.
 
 ---

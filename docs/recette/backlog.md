@@ -11,7 +11,7 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 | Identifiant | Proposition | Type | Priorité | Cas liés |
 |---|---|---|---|---|
 | [BL-01](#bl-01) | Scénario « l'appareil détenteur a perdu son stockage » | automatisation | P1 | RLM-029 |
-| [BL-02](#bl-02) | Figer le sort du talon après « L'effacer définitivement » | décision puis automatisation | P1 | RLM-023 |
+| [BL-02](#bl-02) | ~~Figer le sort du talon après « L'effacer définitivement »~~ (fait, voir ci-dessous) | décision puis automatisation | P1 | RLM-023 |
 | [BL-03](#bl-03) | Rejouer l'isolation entre comptes chaque semaine en CI | automatisation | P1 | TRV-016 |
 | [BL-04](#bl-04) | Balayage d'accessibilité rejoué à chaque PR | automatisation | P2 | TRV-001, TRV-002, TRV-003, TRV-006, TRV-014 |
 | [BL-05](#bl-05) | Stabiliser `tests/browser/activite.js` sous WebKit | fiabilité de la CI | P2 | TRV-011 |
@@ -42,7 +42,7 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
   partiellement ».
 
 <a id="bl-02"></a>
-### BL-02 — Figer le sort du talon après « L'effacer définitivement »
+### BL-02 — Figer le sort du talon après « L'effacer définitivement » (fait le 5 octobre 2026)
 
 - **Risque couvert** : anomalie [A7](perimetre.md#anomalies-et-observations) : après une déconnexion avec effacement, le nom
   du suivi survit sur le compte et l'app présente l'effacement voulu comme un accident.
@@ -53,6 +53,11 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 - **Dépendances** : la décision de la responsable (question posée dans [RLM-023](manuels/reprendre-la-main.md#rlm-023)) ;
   un correctif si le comportement change.
 - **Bénéfice attendu** : la promesse « effacer définitivement » tenue et vérifiée.
+- **Fait** : décision de la responsable : l'effacement retire aussi le talon du compte. Le correctif (`eraseTrackers`,
+  `src/app/modules/regulation.js`) supprime la copie locale puis le module du site avant la synchronisation de la
+  déconnexion ; la fin de `tests/browser/regulation-appareil.js` lit le faux serveur après l'effacement, et `TU-REG-38`
+  couvre l'annulation. Le chemin « exporter » garde le talon (le contenu est dans le fichier) ; il reste à jouer à la main
+  (RLM-023, étapes 4 à 6).
 
 <a id="bl-03"></a>
 ### BL-03 — Rejouer l'isolation entre comptes chaque semaine en CI
@@ -201,8 +206,9 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 Constatées pendant la mise en place du cahier, décrites avec leur preuve dans
 [perimetre.md](perimetre.md#anomalies-et-observations) : A1 (WebKit, `activite.js`, voir [BL-05](#bl-05)), A2 (à surveiller),
 A3 (message d'un import refusé : **corrigée**), A4 (assistant, voir [BL-06](#bl-06) : **corrigée**), A5 (typographie des dates : « oct.. », « 1 septembre »,
-« 1.5 verres » : **corrigée**), A6 (texte « encore synchronisé » sur un suivi neuf : **corrigée**), A7 (talon après effacement, voir [BL-02](#bl-02)), A8 (import Markdown : un fichier illisible fait échouer tout l'import sans message : **corrigée**), A9 (WebKit, `regulation.js` : un clic perdu sur la case de partage ; correctif côté test, à surveiller).
-A4, A5 et A8, puis A3 et A6, ont été corrigées le 5 octobre 2026 (leurs cas et leurs tests mis à jour dans la même PR). Pour A7, rien n'est corrigé : elle devient un ticket, ou est classée « comportement voulu » par la responsable, et le cas
+« 1.5 verres » : **corrigée**), A6 (texte « encore synchronisé » sur un suivi neuf : **corrigée**), A7 (talon après effacement, voir [BL-02](#bl-02) : **corrigée**), A8 (import Markdown : un fichier illisible fait échouer tout l'import sans message : **corrigée**), A9 (WebKit, `regulation.js` : un clic perdu sur la case de partage ; correctif côté test, à surveiller), A10 (`dehors.js` : un échec isolé, délai fixe au démarrage, à surveiller).
+A4, A5 et A8, puis A3 et A6, puis A7, ont été corrigées le 5 octobre 2026 (leurs cas et leurs tests mis à jour dans la même PR). Restent à suivre A1, A2, A9 et A10
+(stabilité de la CI) ; toute nouvelle anomalie devient un ticket, ou est classée « comportement voulu » par la responsable, et le cas
 concerné est mis à jour en conséquence ([maintenance.md](maintenance.md)).
 
 <a id="documentation"></a>
@@ -228,7 +234,7 @@ Les questions marquées [À ARBITRER] dans les cas, et ce qu'elles bloquent :
 | Question | Cas | Bloque |
 |---|---|---|
 | ~~Un suivi neuf, pas encore configuré, peut-il se dire « encore synchronisé » ? (A6)~~ : non, corrigé le 5 octobre 2026 | [RLM-003](manuels/reprendre-la-main.md#rlm-003) | — |
-| Effacer définitivement un suivi à la déconnexion retire-t-il aussi son nom du compte ? (A7) | [RLM-023](manuels/reprendre-la-main.md#rlm-023) | [BL-02](#bl-02) |
+| ~~Effacer définitivement un suivi à la déconnexion retire-t-il aussi son nom du compte ? (A7)~~ : oui, corrigé le 5 octobre 2026 | [RLM-023](manuels/reprendre-la-main.md#rlm-023) | — |
 | Le résumé destiné à l'assistant doit-il être traduit à l'affichage ? | [RLM-028](manuels/reprendre-la-main.md#rlm-028) | l'étape 5 |
 | Quel message pour une date d'objectif à plus d'un an ? | [RLM-014](manuels/reprendre-la-main.md#rlm-014) | l'étape 3 |
 | Comment l'app doit-elle dire qu'un appareil vidé est le détenteur ? | [RLM-029](manuels/reprendre-la-main.md#rlm-029) | [BL-01](#bl-01) |
