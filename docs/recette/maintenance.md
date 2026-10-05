@@ -106,6 +106,9 @@ Ce que `npm run recette` vérifie (`scripts/recette.mjs`, sans réseau ni naviga
 - le lien cas ↔ tests dans les deux sens, et la matrice (une ligne par cas, les mêmes tests, un état défini) ;
 - chaque lien relatif des documents de recette et du modèle de PR : fichier présent, ancre présente (ancres calculées
   comme GitHub) ;
+- les totaux annoncés : ceux du tableau de tête de l'inventaire (tests Node et fichiers, scénarios, tests Deno et Rust)
+  et le décompte des cas par état de la matrice, comparés à ce que le dépôt contient (deux PR qui ajoutent chacune un test
+  écrivent le même nouveau total sans conflit, et faux une fois fusionnées) ;
 - les jeux de données : chaque sauvegarde s'importe, chaque `refus-*` est refusé, chaque export Instagram est reconnu,
   chaque fichier est décrit dans `donnees/README.md`.
 

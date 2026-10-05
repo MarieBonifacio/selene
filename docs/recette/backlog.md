@@ -14,7 +14,7 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 | [BL-02](#bl-02) | ~~Figer le sort du talon après « L'effacer définitivement »~~ (fait, voir ci-dessous) | décision puis automatisation | P1 | RLM-023 |
 | [BL-03](#bl-03) | Rejouer l'isolation entre comptes chaque semaine en CI | automatisation | P1 | TRV-016 |
 | [BL-04](#bl-04) | Balayage d'accessibilité rejoué à chaque PR | automatisation | P2 | TRV-001, TRV-002, TRV-003, TRV-006, TRV-014 |
-| [BL-05](#bl-05) | Stabiliser `tests/browser/activite.js` sous WebKit | fiabilité de la CI | P2 | TRV-011 |
+| [BL-05](#bl-05) | ~~Stabiliser `tests/browser/activite.js` sous WebKit~~ (fait, voir ci-dessous) | fiabilité de la CI | P2 | TRV-011 |
 | [BL-06](#bl-06) | ~~Assistant : dire « non déployé » ou « injoignable », et le tester~~ (fait) | correctif puis automatisation | P2 | AST-007 |
 | [BL-07](#bl-07) | Fumée de l'app Android sur émulateur, en CI | automatisation | P2 | PLT-003, PLT-004 |
 | [BL-08](#bl-08) | Fumée de l'app Windows installée, en CI | automatisation | P3 | PLT-009, PLT-010 |
@@ -87,7 +87,7 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
   appareil réel), mais les régressions mécaniques sont arrêtées par la CI.
 
 <a id="bl-05"></a>
-### BL-05 — Stabiliser `tests/browser/activite.js` sous WebKit
+### BL-05 — Stabiliser `tests/browser/activite.js` sous WebKit (fait, confirmé le 5 octobre 2026)
 
 - **Risque couvert** : anomalie [A1](perimetre.md#anomalies-et-observations) : le scénario échoue de temps en temps sous WebKit
   (« aucune erreur JavaScript » : une requête interrompue par le rechargement). Une CI qui rougit sans raison apprend à
@@ -98,8 +98,10 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 - **Niveau** : scénario de navigateur.
 - **Dépendances** : WebKit de Playwright (absent de l'environnement d'analyse ; présent en CI).
 - **Bénéfice attendu** : une CI à laquelle on peut croire.
-- **État** : le commit `3a79a01` de `main` corrige le test (attente de 1,2 s sans requête avant le rechargement). Reste à
-  confirmer sur une série d'exécutions WebKit de la CI ; si elle tient, barrer cet élément.
+- **État** : le commit `3a79a01` de `main` corrige le test (attente de 1,2 s sans requête avant le rechargement).
+  **Confirmé** : aucun échec d'`activite.js` en 32 exécutions WebKit de la CI depuis (relevé du 5 octobre, dans
+  [perimetre.md](perimetre.md#anomalies-et-observations)). Les autres scénarios instables relevés (A9, A10, A11) avaient
+  la même cause, un délai fixe à la place d'un état attendu, et ont reçu le même remède.
 
 <a id="bl-06"></a>
 ### BL-06 — Assistant : dire « non déployé » ou « injoignable », et le tester (fait le 5 octobre 2026)
@@ -191,6 +193,24 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
   request). Tant que ce n'est pas fait, le job reste consultatif ; le cahier ne peut pas le vérifier depuis le dépôt.
   Il ne bloque que les pull requests : il ne tourne pas quand `pages.yml` appelle *Check*, pour qu'un cahier en retard
   n'empêche jamais de publier.
+- **Réglage recommandé** (analyse du 5 octobre 2026 ; `main` n'était alors pas protégée, et ce réglage ne s'applique pas
+  depuis une session de travail : il demande les droits d'administration du dépôt). Settings → Rules → Rulesets → *New
+  branch ruleset*, cible : la branche par défaut (ou l'ancienne *Branch protection rule* sur `main`, équivalente) :
+  - *Require a pull request before merging*, sans approbation obligatoire (la responsable fusionne seule) : sans cette
+    case, un envoi direct sur `main` contourne le contrôle.
+  - *Require status checks to pass* → `recette` (décidé). `build-and-test` peut s'y ajouter sans risque : rapide et
+    déterministe. **Jamais** `apk`, `simulator` ni `windows` : ils ne tournent que si la PR touche leurs chemins, et un
+    contrôle requis qui ne tourne pas bloque la PR pour toujours (« Expected — Waiting for status »).
+  - *Require branches to be up to date before merging* : **recommandé**. Plusieurs sessions travaillent en parallèle ;
+    chaque PR est vérifiée contre le `main` de son dernier envoi, pas contre celui du moment de la fusion. Le 5 octobre,
+    #100 et #101 ajoutaient chacune un test et écrivaient le même total (290) : vertes séparément, fausses ensemble (291),
+    et deux sessions peuvent de même attribuer le même identifiant libre. Le prix : quand `main` a bougé, mettre la
+    branche à jour (bouton *Update branch*) et attendre la CI, environ cinq minutes.
+  - Laisser à l'administratrice la possibilité de passer outre (*bypass*), pour un correctif urgent.
+  - Vérifier ensuite : la branche `main` apparaît comme protégée dans la liste des branches.
+- **Complément du 5 octobre 2026** : `npm run recette` compare désormais les totaux annoncés (tableau de tête de
+  l'inventaire, décompte de la matrice) à ce que le dépôt contient ; l'erreur de total de la fusion de #100 et #101
+  aurait été arrêtée par le contrôle.
 
 <a id="bl-13"></a>
 ### BL-13 — Firefox : cible ou non ?
@@ -206,9 +226,9 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 Constatées pendant la mise en place du cahier, décrites avec leur preuve dans
 [perimetre.md](perimetre.md#anomalies-et-observations) : A1 (WebKit, `activite.js`, voir [BL-05](#bl-05)), A2 (à surveiller),
 A3 (message d'un import refusé : **corrigée**), A4 (assistant, voir [BL-06](#bl-06) : **corrigée**), A5 (typographie des dates : « oct.. », « 1 septembre »,
-« 1.5 verres » : **corrigée**), A6 (texte « encore synchronisé » sur un suivi neuf : **corrigée**), A7 (talon après effacement, voir [BL-02](#bl-02) : **corrigée**), A8 (import Markdown : un fichier illisible fait échouer tout l'import sans message : **corrigée**), A9 (WebKit, `regulation.js` : un clic perdu sur la case de partage ; correctif côté test, à surveiller), A10 (`dehors.js` : un échec isolé, délai fixe au démarrage, à surveiller).
-A4, A5 et A8, puis A3 et A6, puis A7, ont été corrigées le 5 octobre 2026 (leurs cas et leurs tests mis à jour dans la même PR). Restent à suivre A1, A2, A9 et A10
-(stabilité de la CI) ; toute nouvelle anomalie devient un ticket, ou est classée « comportement voulu » par la responsable, et le cas
+« 1.5 verres » : **corrigée**), A6 (texte « encore synchronisé » sur un suivi neuf : **corrigée**), A7 (talon après effacement, voir [BL-02](#bl-02) : **corrigée**), A8 (import Markdown : un fichier illisible fait échouer tout l'import sans message : **corrigée**), A9 (WebKit, `regulation.js` : un clic perdu sur la case de partage ; correctif côté test, à surveiller), A10 (`dehors.js` : un délai fixe au démarrage : **corrigée** côté test), A11 (`mot-de-passe.js` : deux déploiements bloqués : **corrigée** côté test).
+A4, A5 et A8, puis A3 et A6, puis A7, ont été corrigées le 5 octobre 2026 (leurs cas et leurs tests mis à jour dans la même PR). A1, A9, A10 et A11 (stabilité de la CI) ont été corrigées côté test, A1 confirmée ; reste à suivre A2
+(aucun échec depuis sa branche) ; toute nouvelle anomalie devient un ticket, ou est classée « comportement voulu » par la responsable, et le cas
 concerné est mis à jour en conséquence ([maintenance.md](maintenance.md)).
 
 <a id="documentation"></a>

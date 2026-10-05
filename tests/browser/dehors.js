@@ -61,6 +61,9 @@ const PAGES = {
   const titles = () => p.$$eval('.dehors .item', ls => ls.map(l => (l.querySelector('.t-title, b') || {}).textContent.replace(' ↗', '')));
 
   console.log('suivre, découvrir');
+  // La vue ne dit « Aucun flux suivi » qu'une fois la session prête : l'attendre, pas un délai (sous charge, 600 ms ne
+  // suffisaient pas toujours, A10 du cahier de recette). Si elle ne vient pas en 10 s, la vérification échoue comme avant.
+  await p.waitForFunction(() => !!document.querySelector('#nav a[href="#dehors"]') && (document.querySelector('#main') || {}).textContent?.includes('Aucun flux suivi'), null, { timeout: 10000 }).catch(() => {});
   ok(await p.isVisible('#nav a[href="#dehors"]') && (await p.textContent('#main')).includes('Aucun flux suivi'), 'une porte dans la navigation ; rien encore');
   // U5 de l'audit : le mot courant d'abord, le nom de Selene en second.
   ok((await p.textContent('#nav a[href="#dehors"]')).replace(/\s+/g, ' ').trim() === 'Nouveautés Dehors' && (await p.textContent('#main h2')).replace(/\s+/g, ' ').trim() === 'Nouveautés · Dehors', 'elle dit « Nouveautés », Dehors en second');

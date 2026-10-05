@@ -16,7 +16,7 @@ Identifiants retirés : aucun.
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
 | Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
 | Compilations natives | *Android*, *iOS*, *Desktop* | APK, simulateur, installateur | oui, filtrées par chemins | non exécutées ici ; **vertes** sur `main` `768eb34` |
-| Cohérence du cahier de recette | `npm run recette` | identifiants, lien cas ↔ tests, présence de chaque test dans l'inventaire, matrice, liens, jeux de données | oui : *Check › recette*, sur les PR | **vert** (`TS-RECETTE`) |
+| Cohérence du cahier de recette | `npm run recette` | identifiants, lien cas ↔ tests, présence de chaque test dans l'inventaire, totaux annoncés, matrice et son décompte, liens, jeux de données | oui : *Check › recette*, sur les PR | **vert** (`TS-RECETTE`) |
 | Outils hors CI | `bench`, `isolation`, `liens`, `screenshots` | mesures, préproduction, liens mensuels, captures | non, ou planifié | `bench` exécuté (mesures dans `TS-BENCH`) |
 
 Aucun test n'est désactivé, ignoré ou réduit à un seul cas (`skip`, `only`, `todo` : aucun). Chaque test unitaire
@@ -697,7 +697,7 @@ publique) ; écran : T téléphone, O ordinateur.
 <a id="tn-activite"></a>
 #### `TN-activite` — Mesure d'usage de la bêta
 
-- **Fichier** : [`tests/browser/activite.js`](../../tests/browser/activite.js) · **mode** H · **écran** O · **état** : instable sous WebKit jusqu'à `3a79a01`, correctif à confirmer
+- **Fichier** : [`tests/browser/activite.js`](../../tests/browser/activite.js) · **mode** H · **écran** O · **état** : instable sous WebKit jusqu'à `3a79a01`, correctif confirmé (32 exécutions WebKit de la CI sans échec, 4 et 5 octobre)
 - **Conditions** : Faux Supabase qui enregistre les envois à `/rest/v1/activite`.
 - **Vérifie** : ouvrir ne compte pas ; une capture envoie un jour, avec la session, sans le texte ; le même jour, une fois ; rien n'est écrit sur l'appareil pour la mesure ; l'interrupteur de Réglages → Compte la coupe, même après un rechargement.
 - **Limites** : Instable sous WebKit (A1, [perimetre.md](perimetre.md#anomalies-et-observations)) ; le commit `3a79a01` attend désormais 1,2 s sans requête vers Supabase avant de recharger. Stabilité à confirmer sur plusieurs exécutions WebKit de la CI.
@@ -1332,7 +1332,7 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
 | <a id="ts-liens"></a>`TS-LIENS` | `npm run liens` | Les adresses de santé citées répondent ; une page disparue fait échouer. | planifié : le 3 de chaque mois | Un site qui refuse le robot n'est qu'annoté (lien ameli, [a-faire.md](../a-faire.md#tout-de-suite-une-minute)). | — |
 | <a id="ts-isolation"></a>`TS-ISOLATION` | `npm run isolation` | Douze requêtes interdites refusées par un vrai projet Supabase de préproduction. | **non** : à lancer à la main | Ne prouve rien sur la production tant que ses règles n'ont pas été comparées ([compte.md](../compte.md#vérifier-lisolation-entre-comptes)). | [TRV-016](manuels/transverse.md#trv-016) |
 | <a id="ts-bench"></a>`TS-BENCH` | `npm run bench` | Mesure seulement (aucun seuil) le rendu des vues sur 5 500 textes (1,92 M caractères, document de 2,59 Mo) dans une VM Node. Le 4 octobre : accueil 31 ms, motifs 42 ms, bilan 46 ms, planche 38 ms, carte d'un motif 56 ms, recherche 3 ms, tirage des sortes 46 ms. | **non** | Faux DOM : ni mise en page ni peinture ; compter 3 à 5 fois plus sur téléphone selon le script. | [TRV-007](manuels/transverse.md#trv-007) |
-| <a id="ts-recette"></a>`TS-RECETTE` | `npm run recette` | Cohérence du cahier de recette : identifiants, format des cas, lien cas ↔ tests dans les deux sens, présence de chaque test du dépôt dans l'inventaire, matrice, liens et ancres, jeux de données importables ou refusés ([maintenance.md](maintenance.md#la-vérification-de-cohérence)). | **oui** : *Check › recette*, sur les PR (jamais avant un déploiement de *Pages*) ; aussi dans `npm run check` | Ne lance aucun test et ne juge pas la justesse d'un résultat attendu. | — |
+| <a id="ts-recette"></a>`TS-RECETTE` | `npm run recette` | Cohérence du cahier de recette : identifiants, format des cas, lien cas ↔ tests dans les deux sens, présence de chaque test du dépôt dans l'inventaire, totaux du tableau de tête, matrice et son décompte par état, liens et ancres, jeux de données importables ou refusés ([maintenance.md](maintenance.md#la-vérification-de-cohérence)). | **oui** : *Check › recette*, sur les PR (jamais avant un déploiement de *Pages*) ; aussi dans `npm run check` | Ne lance aucun test et ne juge pas la justesse d'un résultat attendu. | — |
 | <a id="ts-apk"></a>`TS-APK` | workflow *Android* | L'APK de débogage se construit ; le chemin de signature de la publication fonctionne (clé jetable, `apksigner verify`). | oui, filtré par chemins | Aucun lancement de l'app. | — |
 | <a id="ts-ios-sim"></a>`TS-IOS-SIM` | workflow *iOS* | Le projet iOS et ses plugins compilent pour le simulateur. | oui, filtré par chemins | Aucun lancement, aucune signature. | [PLT-008](manuels/plateformes.md#plt-008) |
 | <a id="ts-win-nsis"></a>`TS-WIN-NSIS` | workflow *Desktop* | L'installateur Windows se construit (après `TR-TAU-*`). | oui, filtré par chemins | Aucun lancement ; non signé sans certificat. | [PLT-009](manuels/plateformes.md#plt-009) |
@@ -1342,12 +1342,16 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
 
 ## États particuliers
 
-- **Instable, vérifié** : `TN-activite` sous WebKit (A1, deux échecs constatés le 4 octobre).
+- **Stabilisés côté test, à surveiller** : `TN-activite` sous WebKit (A1 : deux échecs le 4 octobre, aucun depuis le
+  correctif en 32 exécutions WebKit de la CI) ; `TN-mot-de-passe` (A11 : deux échecs sur `main` le 4 octobre) et
+  `TN-dehors` (A10), qui attendent désormais l'état plutôt qu'un délai ; `TN-regulation` sous WebKit (A9, corrigé par la
+  #100) ; `TN-identite` (deux échecs les 2 et 3 octobre, corrigé par `31122f6`). Relevé complet :
+  [perimetre.md](perimetre.md#anomalies-et-observations).
 - **À surveiller** : `TN-secours`, deux échecs pendant sa branche de correction, aucun depuis (A2).
 - **Conditionnel** : une vérification de `TN-planche` (une page A4) ne tourne que dans Chromium ; les compilations natives
   ne tournent que si la PR touche leurs chemins ; les tests des fonctions ne se rejouent avant déploiement que si les secrets
   sont là.
 - **Hors CI** : `TS-ISOLATION`, `TS-BENCH`, `TS-CAPTURES` ; `TS-LIENS` seulement une fois par mois.
 - **Désactivé, ignoré, sans assertion** : aucun.
-- **PR #78 ouverte** : Playwright 1.63.0 changera les navigateurs de la CI ; à sa fusion, mettre à jour cet inventaire.
+- **Playwright** : 1.63.0 depuis la fusion de la PR #78 (`5197c5f`) ; les navigateurs de la CI sont les siens.
 

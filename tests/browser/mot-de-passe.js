@@ -1,6 +1,6 @@
 /* Scénario de navigateur : mot de passe oublié, lien de récupération, invitation, et les messages de l'écran de
    connexion. Version hébergée simulée : un faux Supabase Auth. Lancé par tests/browser/run.js. */
-const { storeGet, engine, BASE, launchOptions, check } = require('./helpers');
+const { storeGet, until, engine, BASE, launchOptions, check } = require('./helpers');
 const UID = '0b8f0c2e-1111-2222-3333-444455556666', AUTRE = '9d1e5b7a-aaaa-bbbb-cccc-ddddeeeeffff';
 const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=${Math.floor(Date.now() / 1000) + 3600}&expires_in=3600&refresh_token=rafraichi&token_type=bearer&type=${type}`;
 (async () => {
@@ -42,6 +42,11 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
   };
   const note = async p => (await p.textContent('#authErr')).replace(/\s+/g, ' ');
   const submit = async p => { await p.click('#authForm button[type="submit"]'); await p.waitForTimeout(400); };
+  /* Attendre un état de la page plutôt qu'un délai (A11 du cahier de recette : sous charge, 300 à 500 ms ne suffisaient
+     pas toujours). Rien n'est affaibli : si l'état ne vient pas en 10 s, la vérification qui suit échoue comme avant. Les
+     délais qui restent servent à vérifier qu'aucune requête ne part : une absence ne s'attend pas. */
+  const attendre = (p, etat) => p.waitForFunction(etat, null, { timeout: 10000 }).catch(() => {});
+  const entree = () => !document.querySelector('#authForm'); // l'écran de connexion a cédé la place à l'app
 
   console.log('les messages de l’écran de connexion');
   const p = await open();
@@ -68,6 +73,7 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
   console.log('inscriptions fermées');
   ok(p.calls.filter(c => c.path === '/auth/v1/settings').length === 1, 'les inscriptions sont demandées une fois au serveur');
   const f = await open('', { fermees: true });
+  await until(() => f.calls.some(c => c.path === '/auth/v1/settings')); await attendre(f, () => !document.querySelector('[data-act="auth-switch"]'));
   ok(!(await f.$('[data-act="auth-switch"]')) && (await f.textContent('#main')).includes('que sur invitation') && await f.isVisible('[data-act="auth-forgot"]'), 'fermées : plus de « Créer un compte », l’invitation est dite ; le mot de passe oublié reste');
   const s2 = await open();
   await s2.click('[data-act="auth-switch"]'); await s2.fill('#authEmail', 'nouvelle@exemple.org'); await s2.fill('#authPw', 'un-mot-de-passe'); await submit(s2);
@@ -81,7 +87,7 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
   ok((await note(r)).includes('ne sont pas identiques') && !r.calls.some(c => c.path === '/auth/v1/user'), 'deux saisies différentes : refusé avant tout envoi');
   await r.fill('#authPw', 'ancien-mdp'); await r.fill('#authPw2', 'ancien-mdp'); await submit(r);
   ok((await note(r)).includes('déjà ton mot de passe'), 'le même qu’avant : dit, en français');
-  await r.fill('#authPw', 'nouveau-mdp'); await r.fill('#authPw2', 'nouveau-mdp'); await submit(r);
+  await r.fill('#authPw', 'nouveau-mdp'); await r.fill('#authPw2', 'nouveau-mdp'); await submit(r); await attendre(r, entree);
   const put = r.calls.filter(c => c.path === '/auth/v1/user').pop();
   ok(put && put.method === 'PUT' && put.auth === 'Bearer jeton-lien' && JSON.parse(put.body).password === 'nouveau-mdp', 'le mot de passe part, avec le jeton du lien');
   const s = JSON.parse(await storeGet(r, 'selene-auth-session') || '{}');
@@ -100,7 +106,7 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
   console.log('invitation, appareil déjà connecté');
   const i = await open(lien('invite'));
   ok((await i.textContent('#main')).includes('Bienvenue. Choisis le mot de passe de ton compte.'), 'une invitation : choisir son mot de passe');
-  await i.fill('#authPw', 'premier-mdp'); await i.fill('#authPw2', 'premier-mdp'); await submit(i);
+  await i.fill('#authPw', 'premier-mdp'); await i.fill('#authPw2', 'premier-mdp'); await submit(i); await attendre(i, entree);
   ok(!(await i.$('#authForm')), 'et entrer');
   const d = await open(lien('recovery'), { session: AUTRE });
   ok(await d.isVisible('#authPw2') && !d.calls.some(c => c.path === '/rest/v1/app_state'), 'déjà connectée à un autre compte : le lien passe d’abord, la session gardée attend');
@@ -120,9 +126,9 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
 
   console.log('changer de mot de passe');
   const w = await open();
-  await w.fill('#authEmail', 'iris@exemple.org'); await w.fill('#authPw', 'court1'); await submit(w);
+  await w.fill('#authEmail', 'iris@exemple.org'); await w.fill('#authPw', 'court1'); await submit(w); await attendre(w, entree);
   ok(!(await w.$('#authForm')) && (await w.textContent('#toast')).includes('plus court que ce que le serveur demande'), 'connexion avec un mot de passe devenu trop court : on entre, et Selene le dit');
-  await w.evaluate(() => { location.hash = 'reglages'; }); await w.waitForTimeout(300);
+  await w.evaluate(() => { location.hash = 'reglages'; }); await attendre(w, () => !!document.querySelector('#auth-pw #authPwForm'));
   await w.evaluate(() => document.querySelectorAll('details').forEach(d => { if (d.id !== 'auth-delete') d.open = true; }));
   ok(await w.isVisible('#authPwForm') && (await w.textContent('#auth-pw')).includes('choisis-en un nouveau'), 'Réglages, Compte : le changement est proposé, ouvert');
   const change = async (cur, pw) => { await w.fill('#authCurPw', cur); await w.fill('#authNewPw', pw); await w.fill('#authNewPw2', pw); await w.click('#authPwForm button[type="submit"]'); await w.waitForTimeout(400); };
