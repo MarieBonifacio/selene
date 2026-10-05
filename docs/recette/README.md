@@ -88,8 +88,8 @@ Les cas manuels, par domaine :
 |---|---|
 | `Web` | Navigateur d'ordinateur, version hébergée (GitHub Pages) : Chrome ou Edge (Chromium), Safari (WebKit) |
 | `Mob` | Navigateur ou PWA installée sur téléphone : Safari sous iOS, Chrome sous Android |
-| `AND` | App Android (Capacitor) |
-| `IOS` | App iOS (Capacitor, TestFlight) |
+| `AND` | App Android (Capacitor) : l'APK de la Release GitHub (édition complète) ou l'AAB de Google Play (édition des stores, sans « Reprendre la main ») |
+| `IOS` | App iOS (Capacitor, TestFlight) : édition des stores, sans « Reprendre la main » |
 | `WIN` | App Windows (Tauri) |
 | `ART` | Artefact claude.ai (`selene.html`) |
 

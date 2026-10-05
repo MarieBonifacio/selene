@@ -4,7 +4,7 @@ import { esc } from "../lib/dom.js";
 import { N_, tr } from "../i18n/index.js";
 import { domains } from "./nav.js";
 import { render } from "./render.js";
-import { S, label, site } from "../state/site.js";
+import { S, label, shownModule, site } from "../state/site.js";
 import { fold } from "../views/recherche.js";
 
 /* Icônes de la barre basse : un trait fin, sans remplissage (une seule exception : la lunaison du bilan). */
@@ -62,7 +62,7 @@ const ROMAN = [[10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
 export const roman = n => { let out = ""; for (const [v, r] of [[50, "L"], [40, "XL"], ...ROMAN]) while (n >= v) { out += r; n -= v; } return out; };
 /* La planche d'un espace : son sigil et son numéro (l'ordre de la navigation), en tête de sa page. */
 export function plateHTML(id, extra = "") {
-  const n = S().config.modules.filter(m => m.on && Object.hasOwn(S().modules, m.id)).findIndex(m => m.id === id) + 1;
+  const n = S().config.modules.filter(shownModule).findIndex(m => m.id === id) + 1;
   return `<div class="plate ${tintOf(id)}">${sigil(id)}<span class="pl">${tr`Pl. ${roman(n)}`}</span><span class="spacer"></span>${extra}<button class="btn ghost sm" data-act="goto-groups" data-mod="${esc(id)}">${tr`régler`}</button></div>`;
 }
 export function sigilPicker(mod) {

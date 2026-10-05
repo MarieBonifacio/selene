@@ -16,7 +16,7 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL, authReady, authRefreshIfNeeded, authSe
 import { sampleNS } from "../services/host.js";
 import { routeOf } from "../shell/nav.js";
 import { render } from "../shell/render.js";
-import { S, enabled, label, site } from "../state/site.js";
+import { S, enabled, label, shownModule, site } from "../state/site.js";
 import { ask } from "../ui/dialogs.js";
 
 export let chatBusy = false;
@@ -110,7 +110,7 @@ export const TOOLS = [
     execute(i) { const entry = addBudgetEntry(S().modules[firstOfType("budget")].entries, { amount: i.montant, type: i.type, cat: i.enveloppe, note: i.note, date: i.date }, uid(), todayISO()); site.save(); render(); return `Enregistré : ${money(entry.amount)}`; } }
 ];
 // Premier module actif d'un type, dans l'ordre de la navigation.
-export const firstOfType = type => (S().config.modules.find(m => m.on && Object.hasOwn(S().modules, m.id) && S().modules[m.id].type === type) || {}).id || null;
+export const firstOfType = type => (S().config.modules.find(m => shownModule(m) && S().modules[m.id].type === type) || {}).id || null;
 // Le module d'un outil peut dépendre des données (la boîte de réception est celle qu'on a désignée).
 const toolModule = t => typeof t.module === "function" ? t.module() : t.module;
 export const availableTools = () => S().config.assistant.actions ? TOOLS.filter(t => { const m = toolModule(t); return m && enabled(m); }) : [];

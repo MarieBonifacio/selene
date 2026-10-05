@@ -717,7 +717,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "8c9881d599";
+const SELENE_BUILD = "0ef01cd70b";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1115,6 +1115,7 @@ var __selene = (() => {
     WIND_TEXT: () => WIND_TEXT,
     ZOT_API: () => ZOT_API,
     ZOT_KIND: () => ZOT_KIND,
+    absentModule: () => absentModule,
     absorbDeviceTrackers: () => absorbDeviceTrackers,
     activityOn: () => activityOn,
     activitySettingsHTML: () => activitySettingsHTML,
@@ -1325,7 +1326,7 @@ var __selene = (() => {
     microlinkToSource: () => microlinkToSource,
     migrateModules: () => migrateModules,
     mixHex: () => mixHex,
-    modOf: () => modOf2,
+    modOf: () => modOf,
     moduleSettingsHTML: () => moduleSettingsHTML,
     money: () => money,
     moon: () => moon,
@@ -1468,6 +1469,7 @@ var __selene = (() => {
     shareSettingsHTML: () => shareSettingsHTML,
     sheetArg: () => sheetArg,
     sheetKind: () => sheetKind,
+    shownModule: () => shownModule,
     sigil: () => sigil,
     sigilPicker: () => sigilPicker,
     site: () => site,
@@ -2735,6 +2737,9 @@ var __selene = (() => {
     "Ici, il n'y a que le nom de ce suivi : son contenu est gardé sur un autre appareil. Si cet appareil existe encore, le suivi y reste entier et son nom reviendra : supprime-le plutôt depuis celui-ci. S'il est perdu, ou si Selene y a été réinstallée, retirer ce nom est définitif.": "Only this tracker's name is here: its content is kept on another device. If that device still exists, the tracker stays there intact and its name will come back: delete it from there instead. If it is lost, or Selene was reinstalled on it, removing this name is final.",
     "Ce suivi est gardé sur un autre appareil : ses réglages se changent là-bas.": "This tracker is kept on another device: its settings are changed there.",
     "Sauvegarde non téléchargée : rien n'a été effacé.": "Backup not downloaded: nothing was erased.",
+    // modules/regulation.stores.js (l'édition des stores, sans ce type)
+    "Ce suivi a été créé avec une autre version de Selene. Celle-ci ne l'ouvre pas : il est gardé tel quel, sans être lu ni modifié, et reste entier dans la version où il a été créé.": "This tracker was created with another version of Selene. This one does not open it: it is kept as it is, neither read nor changed, and stays whole in the version where it was created.",
+    "Cette version ne sait pas ouvrir ce suivi : le supprimer efface son contenu de ton compte, partout, sans retour.": "This version cannot open this tracker: deleting it erases its content from your account, everywhere, for good.",
     // modules/taches.js
     "Fait. Le monde s'effondre un peu moins vite.": "Done. The world is collapsing a little less quickly.",
     "Un de moins. L'entropie note ta résistance.": "One fewer. Entropy notes your resistance.",
@@ -5373,10 +5378,12 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     const s = S();
     return s.config.labels[id] || s.modules[id] && s.modules[id].label || (Object.hasOwn(MODULE_DEFS, id) ? tr(MODULE_DEFS[id]) : void 0);
   };
+  var absentModule = (id) => Object.hasOwn(S().modules, id) && !!TYPE_UI[S().modules[id].type]?.absent;
   var enabled = (id) => {
     const m = S().config.modules.find((m2) => m2.id === id);
-    return m ? m.on : false;
+    return m ? m.on && !absentModule(id) : false;
   };
+  var shownModule = (m) => m.on && Object.hasOwn(S().modules, m.id) && !absentModule(m.id);
 
   // src/app/features/bridge.js
   var bridgeOpen = null;
@@ -6347,194 +6354,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     }
   });
 
-  // src/app/modules/regulation.js
-  var SUBJECTS = {
-    tabac: {
-      name: () => tr`Tabac`,
-      unit: () => tr`cigarettes`,
-      qty: (n) => trn(n, "{1} cigarette", "{1} cigarettes", regNum(n)),
-      step: 1,
-      about: () => tr`Le nombre de cigarettes fumées. Les substituts nicotiniques (patch, gomme, pastille, spray) ne se comptent pas ici : ce ne sont pas des cigarettes fumées.`
-    },
-    cannabis: {
-      name: () => tr`Cannabis`,
-      unit: () => tr`grammes de produit`,
-      qty: (n) => tr`${regNum(n)} g`,
-      step: 0.01,
-      about: () => tr`Une estimation en grammes de produit (herbe, résine…), pas une dose de THC : la teneur varie beaucoup d'un produit à l'autre, ces grammes ne mesurent donc ni l'effet ni le risque.`
-    },
-    alcool: {
-      name: () => tr`Alcool`,
-      unit: () => tr`verres standard`,
-      qty: (n) => trn(n, "{1} verre standard", "{1} verres standard", regNum(n)),
-      step: 0.1,
-      about: () => tr`Un verre standard contient 10 g d'alcool pur, soit environ 25 cl de bière à 5 % ou 10 cl de vin à 12 %. Un verre servi, surtout à la maison, est souvent plus grand : il peut valoir plusieurs verres standard.`
-    },
-    reseaux: {
-      name: () => tr`Réseaux sociaux`,
-      unit: () => tr`minutes`,
-      qty: (n) => trn(n, "{1} minute", "{1} minutes", regNum(n)),
-      step: 1,
-      about: () => tr`Des minutes que tu saisis toi-même, par exemple d'après le temps d'écran de ton téléphone. Selene ne mesure pas ton usage des autres applications et ne les bloque pas.`
-    }
-  };
-  var MODES = [["observer", N_("Observer, sans cible")], ["reduire", N_("Réduire, avec une limite quotidienne que je choisis")], ["arreter", N_("Viser l'arrêt")]];
-  var OUTCOMES = { utile: N_("utile pour moi"), neutre: N_("sans changement"), difficile: N_("difficile") };
-  var subjectOf = (inst) => SUBJECTS[inst.config.subject] || null;
-  var qty = (inst, n) => subjectOf(inst) ? subjectOf(inst).qty(n) : regNum(n);
-  var goalText = (inst, g) => !g ? tr`aucun objectif à cette date` : g.mode === "observer" ? tr`observer, sans cible` : g.mode === "arreter" ? tr`viser l'arrêt` : tr`au plus ${qty(inst, g.limit)} par jour`;
-  var longDate = (d) => fmt(d, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  var longDay = (d) => fmt(d, { day: "numeric", month: "long", year: "numeric" });
-  var zone = () => {
-    try {
-      return Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-    } catch {
-      return "";
-    }
-  };
-  var modOf = (el) => el.dataset.mod || el.closest("[data-mod]").dataset.mod;
-  var entryOf = (el) => el.closest("[data-id]")?.dataset.id;
-  var save = () => {
-    site.save();
-    local.save();
-    render();
-  };
-  var T = (id) => {
-    const inst = Object.hasOwn(S().modules, id) ? S().modules[id] : null;
-    return regulationOnDevice(inst) ? localCopy(id) : inst;
-  };
-  var synced = () => hosted() && authReady() && !!authSession;
-  var alcoholRisk = () => tr`En cas de dépendance à l'alcool (envie très difficile à contrôler, tremblements ou sueurs au réveil, besoin de boire pour aller bien), un arrêt brutal ou une réduction rapide peuvent être dangereux : le sevrage peut provoquer des convulsions ou un delirium tremens. Prépare ce changement avec un médecin ou un CSAPA (centre de soins, d'accompagnement et de prévention en addictologie, gratuit, où l'on peut rester anonyme). Selene ne propose ni calendrier de sevrage, ni dose, ni conseil de traitement.`;
-  var alcoholUrgent = () => tr`Confusion, hallucinations, convulsions, fortes sueurs avec tremblements : appelle le 15 (Samu) ou le 112. Par SMS ou en visio, le 114 pour les personnes sourdes ou malentendantes.`;
-  var alcoholHelp = () => tr`Alcool Info Service : 0 980 980 930, de 8 h à 2 h, 7 jours sur 7, anonyme et non surtaxé.`;
-  function subjectForm(id) {
-    const about2 = tr`Un suivi, un sujet, une unité : le tabac en cigarettes, le cannabis en grammes de produit, l'alcool en verres standard, les réseaux sociaux en minutes déclarées. Pour en suivre plusieurs, crée un suivi par sujet : leurs unités, objectifs et marques ne se mélangent pas. Le sujet ne change plus ensuite.`;
-    openForm(
-      tr`Ce que je veux suivre`,
-      [{ n: "name", l: tr`Nom du suivi, visible partout (navigation, compte) : un nom neutre ne dit rien du sujet`, req: true }, { n: "subject", l: tr`Sujet du suivi`, t: "select", o: Object.keys(SUBJECTS).map((k) => [k, SUBJECTS[k].name()]) }],
-      { name: label(id), subject: "tabac" },
-      (v) => {
-        const inst = S().modules[id], name = v.name.trim().slice(0, 60);
-        if (inst && name && name !== label(id)) {
-          inst.label = name;
-          delete S().config.labels[id];
-          save();
-        }
-        if (synced() && inst && !inst.config.storage) chooseDevice(id);
-        goalForm(id, v.subject);
-      },
-      synced() ? `${about2}
-
-${tr`Ce suivi reste sur cet appareil : Selene ne synchronise pas les suivis de santé, ton compte n'en garde que le nom. Seule la sauvegarde de ton appareil (Google ou iCloud), si tu l'as activée, peut l'inclure.`}` : about2
-    );
-  }
-  function goalForm(id, setupSubject = null) {
-    const inst = T(id), subject = setupSubject || inst.config.subject, sub2 = SUBJECTS[subject], today = todayISO(), cur = regulationGoal(inst, today);
-    const about2 = [
-      sub2.about(),
-      subject === "alcool" ? `${alcoholRisk()}
-${alcoholUrgent()}
-${alcoholHelp()}` : "",
-      tr`La limite ne sert qu'à réduire. Observer n'attribue ni réussite ni échec ; viser l'arrêt vise zéro. Selene ne baisse jamais une limite d'elle-même et ne propose aucun rythme. Les journées déjà confirmées gardent leur objectif.`
-    ].filter(Boolean).join("\n\n");
-    openForm(setupSubject ? tr`Mon intention` : tr`Faire évoluer mon objectif`, [
-      { n: "mode", l: tr`Intention`, t: "select", o: MODES.map(([k, l]) => [k, tr(l)]) },
-      { row: [{ n: "limit", l: tr`Limite quotidienne pour réduire (${sub2.unit()})`, t: "number", step: sub2.step, min: 0 }, { n: "date", l: tr`À partir du`, t: "date", req: true }] }
-    ], { mode: cur ? cur.mode : "observer", limit: cur && cur.mode === "reduire" ? cur.limit : "", date: today }, (v) => {
-      const latest = T(id);
-      if (!latest) return;
-      if (setupSubject) setupRegulation(latest, { ...v, subject: setupSubject }, uid(), todayISO(), Date.now());
-      else addRegulationGoal(latest, v, uid(), todayISO(), Date.now());
-      save();
-      toast(v.date > todayISO() ? tr`Objectif enregistré, à partir du ${longDay(v.date)}. D'ici là, rien ne change.` : tr`Objectif enregistré. Les journées déjà confirmées gardent le leur.`);
-    }, about2);
-  }
-  function useForm(id, old = null) {
-    const inst = T(id), sub2 = subjectOf(inst), today = todayISO();
-    const fields = old ? [] : [{ n: "how", l: tr`Je note`, t: "select", o: [["add", tr`Une consommation de plus, qui s'ajoute aux autres saisies du jour`], ["total", tr`Le total de la journée : seule la différence avec ce qui est déjà noté s'ajoute`]] }];
-    fields.push(
-      { row: [{ n: "date", l: tr`Date`, t: "date", req: true, max: today }, { n: "value", l: tr`Quantité (${sub2.unit()})`, t: "number", step: sub2.step, min: 0, req: true }] },
-      { n: "note", l: tr`Contexte, facultatif`, t: "textarea", rows: 2 }
-    );
-    openForm(old ? tr`Corriger une saisie` : tr`Noter une consommation ou une durée`, fields, old ? { date: old.date, value: old.value, note: old.note } : { how: "add", date: today, value: "", note: "" }, (v) => {
-      const cur = T(id);
-      if (!cur) return;
-      if (old && !cur.entries.some((e) => e.id === old.id)) return toast(errMsg({ code: "reg-missing" }));
-      const before = new Set([v.date, old && old.date].filter(Boolean).filter((d) => regulationDay(cur, d).complete));
-      if (v.how === "total") {
-        const e = saveRegulationTotal(cur, { date: v.date, total: v.value, note: v.note }, uid(), todayISO(), Date.now(), zone());
-        save();
-        toast(e ? tr`Complément noté : ${qty(cur, e.value)}, pour un total déclaré de ${qty(cur, e.declared)}.` : tr`Rien à ajouter : ce total est déjà noté pour ce jour-là.`);
-        return confirmDay(id, v.date);
-      }
-      saveRegulationEvent(cur, { kind: "use", date: v.date, value: v.value, note: v.note }, old ? old.id : uid(), todayISO(), Date.now(), zone());
-      save();
-      const reopened = [...before].find((d) => !regulationDay(T(id), d).complete);
-      if (reopened) toastAction(tr`Noté. La journée du ${fmt(reopened)} était confirmée : elle est à reconfirmer.`, tr`Confirmer`, () => confirmDay(id, reopened), 9e3);
-      else toast(old ? tr`Corrigé.` : tr`Noté.`);
-    }, old ? sub2.about() : `${tr`« Une de plus » s'ajoute aux saisies du jour. « Total de la journée » : ce que tu as consommé ce jour-là en tout ; Selene n'ajoute que ce qui manque, et refuse un total plus bas que ce qui est déjà noté.`}
-
-${sub2.about()}`);
-  }
-  function urgeForm(id, old = null) {
-    const inst = T(id), sup = inst.config.supports;
-    const choices = [["", tr`Aucun pour l'instant`], ...sup.map((s) => [s, s]), ...old && old.strategy && !sup.includes(old.strategy) ? [[old.strategy, old.strategy]] : []];
-    openForm(old ? tr`Modifier une envie` : tr`J'ai une envie`, [
-      { row: [{ n: "date", l: tr`Date`, t: "date", req: true, max: todayISO() }, { n: "intensity", l: tr`Intensité de 0 à 10, facultative`, t: "number", min: 0, max: 10 }] },
-      { n: "note", l: tr`Contexte ou déclencheur, facultatif`, t: "textarea", rows: 2 },
-      { n: "strategy", l: tr`Un appui que je peux essayer, facultatif`, t: "select", o: choices },
-      { n: "outcome", l: tr`Après coup, cet appui a été…`, t: "select", o: [["", tr`pas encore évalué`], ...Object.entries(OUTCOMES).map(([k, l]) => [k, tr(l)])] },
-      ...old ? [] : [{ n: "pause", l: tr`Prendre une pause de cinq minutes maintenant ?`, t: "select", o: [["", tr`Non`], ["oui", tr`Oui, lancer la pause`]] }]
-    ], old ? { date: old.date, intensity: old.intensity ?? "", note: old.note, strategy: old.strategy, outcome: old.outcome } : { date: todayISO(), intensity: "", note: "", strategy: "", outcome: "", pause: "" }, (v) => {
-      const cur = T(id);
-      if (!cur) return;
-      if (old && !cur.entries.some((e2) => e2.id === old.id)) return toast(errMsg({ code: "reg-missing" }));
-      const e = saveRegulationEvent(cur, { kind: "urge", ...v }, old ? old.id : uid(), todayISO(), Date.now(), zone());
-      if (v.pause === "oui") startRegulationPause(cur, e.id, Date.now());
-      save();
-      toast(v.pause === "oui" ? tr`Envie notée. Cinq minutes, à ton rythme.` : tr`Envie notée. Ce n'est pas un écart.`);
-    }, tr`Une envie n'est ni un écart ni un échec, et ne donne pas de marque. Choisir un appui ne veut pas dire l'avoir fait : tu pourras le déclarer réalisé ensuite (« Je l'ai fait »).`);
-  }
-  function actionForm(id, old = null) {
-    const inst = T(id);
-    openForm(old ? tr`Modifier une action` : tr`J'ai réalisé une action`, [
-      { n: "date", l: tr`Date`, t: "date", req: true, max: todayISO() },
-      { n: "strategy", l: tr`L'action de mon plan que j'ai faite`, req: true, list: `rlmSup-${id}` },
-      { n: "note", l: tr`Note, facultative`, t: "textarea", rows: 2 }
-    ], old ? { date: old.date, strategy: old.strategy, note: old.note } : { date: todayISO(), strategy: inst.config.supports[0] || "", note: "" }, (v) => {
-      const cur = T(id);
-      if (!cur) return;
-      if (old && !cur.entries.some((e) => e.id === old.id)) return toast(errMsg({ code: "reg-missing" }));
-      saveRegulationEvent(cur, { kind: "action", ...v }, old ? old.id : uid(), todayISO(), Date.now(), zone());
-      save();
-      toast(tr`Action gardée. Un écart, plus tard, ne l'efface pas.`);
-    }, inst.config.rewards ? tr`Une action concrète de ton plan, faite pour de vrai, même un jour où tu as consommé. Une marque au plus par journée, quel que soit le nombre d'actions.` : tr`Une action concrète de ton plan, faite pour de vrai, même un jour où tu as consommé.`);
-  }
-  function planForm(id) {
-    const inst = T(id);
-    if (!inst) return toast(tr`Ce suivi est gardé sur un autre appareil : ses réglages se changent là-bas.`);
-    const c = inst.config;
-    openForm(tr`Mes appuis et mes récompenses`, [
-      { n: "supports", l: tr`Mes appuis, une action par ligne`, t: "textarea", rows: 5 },
-      { n: "rewards", l: tr`Marques et jalons`, t: "select", o: [["", tr`Masqués`], ["on", tr`Affichés dans cet espace`]] },
-      { row: [{ n: "reward", l: tr`Ma récompense, facultative` }, { n: "rewardAt", l: tr`À combien de marques ? (1 à 365)`, t: "number", min: 1, max: 365, req: true }] }
-    ], { supports: c.supports.join("\n"), rewards: c.rewards ? "on" : "", reward: c.reward, rewardAt: c.rewardAt }, (v) => {
-      const cur = T(id);
-      if (!cur) return;
-      setRegulationPlan(cur, { ...v, rewards: v.rewards === "on" });
-      save();
-      toast(tr`Enregistré.`);
-    }, tr`Des actions concrètes et à ta portée : marcher, dessiner, éloigner un déclencheur, appeler quelqu'un… Les marques sont facultatives : une par journée où tu déclares une action réalisée, jalons fixes à 1, 3, 7, 14 et 30. Aucune série à tenir, rien ne se perd après un écart. La récompense est la tienne, gratuite si tu veux.`);
-  }
-  async function chooseDevice(id, confirm = false) {
-    if (confirm && !await ask(tr`Garder « ${label(id)} » sur cet appareil seulement ? À la prochaine synchronisation, ses données quittent ton compte : tes autres appareils n'en verront plus que le nom. Les sauvegardes techniques de l'hébergeur peuvent encore le contenir 30 jours au plus. Cet appareil devient le seul à le garder : se déconnecter te demandera quoi en faire, et un export de temps en temps te protège d'une perte.`)) return false;
-    const s = S(), inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null;
-    if (!inst || regulationOnDevice(inst)) return false;
-    moveToDevice(s, id);
-    save();
-    toast(tr`« ${label(id)} » est gardé sur cet appareil seulement.`);
-    return true;
-  }
+  // src/app/services/device-guard.js
   var exportBackup = () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, withLocal(site.data)), "application/json", tr`Sauvegarde Selene`);
   function eraseTrackers(ids2) {
     const s = S();
@@ -6545,7 +6365,9 @@ ${sub2.about()}`);
       delete s.config.groups[id];
       delete s.config.assistant.share[id];
     }
-    save();
+    site.save();
+    local.save();
+    render();
   }
   function deviceSignOutGuard() {
     const ids2 = localIds();
@@ -6582,295 +6404,6 @@ ${sub2.about()}`);
       if (d && d.addEventListener) d.addEventListener("close", onClose);
     });
   }
-  async function confirmDay(id, date) {
-    const inst = T(id);
-    if (!inst) return;
-    const d = regulationDay(inst, date), seen = regulationSnapshot(inst, date);
-    const lines = [
-      tr`${longDate(date)} : ${qty(inst, d.total)} au total.`,
-      d.count ? trn(d.count, "{0} saisie : {1}.", "{0} saisies : {1}.", d.uses.map((u) => qty(inst, u.value)).join(" + ")) : tr`Aucune consommation notée ce jour-là : confirmer en fait une journée à zéro.`,
-      tr`Confirmer, c'est dire que toutes les consommations de cette journée sont notées. Annuler la laisse inconnue, sans pénalité.`
-    ];
-    if (!await ask(lines.join("\n"))) return;
-    const cur = T(id);
-    if (!cur) return;
-    try {
-      closeRegulationDay(cur, date, seen, todayISO(), Date.now(), zone());
-    } catch (e) {
-      return toast(errMsg(e));
-    }
-    save();
-    toast(tr`Journée du ${fmt(date)} confirmée.`);
-  }
-  async function confirmSensitiveShare(id) {
-    const inst = T(id);
-    if (!inst) return;
-    const text = TYPE.context(inst, label(id).toUpperCase()).trim();
-    if (!await ask(`${tr`Partager avec l'assistant ce résumé de « ${label(id)} » ? Il partira tel quel à chaque question :`}
-
-${text}
-
-${tr`Notes, envies, déclencheurs et appuis restent ici. Arrêter le partage plus tard n'efface pas ce qui aura déjà été envoyé.`}`)) return;
-    if (!S().modules[id]) return;
-    S().config.assistant.share[id] = true;
-    save();
-    toast(tr`Résumé partagé avec l'assistant.`);
-  }
-  function removeEntry(id, entryId) {
-    const inst = T(id), i = inst ? inst.entries.findIndex((x) => x.id === entryId) : -1;
-    if (i < 0) return;
-    const e = inst.entries[i], wasComplete = e.kind === "use" && regulationDay(inst, e.date).complete;
-    inst.entries = inst.entries.filter((x) => x.id !== entryId);
-    save();
-    const what = e.kind === "day" ? tr`La journée du ${fmt(e.date)} redevient inconnue.` : e.kind === "use" ? tr`Supprimé : ${qty(inst, e.value)} le ${longDay(e.date)}.` : e.kind === "urge" ? tr`Envie du ${fmt(e.date)} supprimée.` : tr`Action du ${fmt(e.date)} supprimée.`;
-    toastUndo(wasComplete ? `${what} ${tr`Cette journée est à reconfirmer.`}` : what, () => {
-      const cur = T(id);
-      if (!cur || cur.entries.some((x) => x.id === entryId)) return;
-      cur.entries.splice(Math.min(i, cur.entries.length), 0, e);
-      save();
-      toast(tr`Rétabli. Rien ne s'est passé.`);
-    });
-  }
-  var pauseTimer = null;
-  var clock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-  function pauseTick() {
-    clearTimeout(pauseTimer);
-    pauseTimer = null;
-    const el = document.getElementById("rlmPause");
-    if (!el) return;
-    const left2 = regulationRemaining(Number(el.dataset.end), Date.now());
-    if (!left2) {
-      if (el.dataset.done !== "1") render();
-      return;
-    }
-    el.textContent = clock(left2);
-    pauseTimer = setTimeout(pauseTick, 1e3);
-  }
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) pauseTick();
-  });
-  function pauseHTML(id, inst) {
-    const p = regulationPause(inst, Date.now());
-    if (!p) return "";
-    setTimeout(pauseTick, 0);
-    const until = new Date(p.end).toLocaleTimeString(uiLocale(), { hour: "2-digit", minute: "2-digit" });
-    return `<section class="rlm-pause" aria-labelledby="rlmPauseH"><h3 id="rlmPauseH">${p.left ? tr`Cinq minutes de pause` : tr`Pause terminée`}</h3>
-    ${p.left ? `<p class="big" id="rlmPause" role="timer" data-end="${p.end}">${clock(p.left)}</p><p class="hint">${tr`Jusqu'à ${until}. Elle continue si tu fermes l'app ou si l'écran se met en veille. Tu peux l'arrêter quand tu veux.`}</p>` : `<p id="rlmPause" data-end="${p.end}" data-done="1">${tr`Tu peux noter ce qui t'a aidé, ou simplement fermer cet encadré.`}</p>`}
-    <div class="row">${p.urge.strategy && !inst.entries.some((e) => e.id === urgeActionId(p.urge.id)) ? `<button class="btn sm" data-act="rlm-done" data-id="${esc(p.urge.id)}">${tr`J'ai fait : ${esc(p.urge.strategy)}`}</button>` : ""}<button class="btn ghost sm" data-act="rlm-pause-stop" data-id="${esc(p.urge.id)}">${p.left ? tr`Arrêter la pause` : tr`Fermer`}</button></div></section>`;
-  }
-  function dayStatus(inst, d) {
-    if (d.complete) {
-      const verdict = d.met === null ? d.goal ? d.goal.mode === "observer" ? tr`observée` : "" : tr`sans objectif ce jour-là` : d.met ? tr`objectif atteint` : tr`au-delà de l'objectif`;
-      return [tr`complète : ${qty(inst, d.total)}`, verdict].filter(Boolean).join(" · ");
-    }
-    if (d.reopened) return tr`à reconfirmer : ${qty(inst, d.total)} après une modification`;
-    return d.count ? tr`inconnue · déjà noté : ${qty(inst, d.total)}, pas encore confirmée` : tr`inconnue`;
-  }
-  function periodHTML(id, inst) {
-    const today = todayISO(), cur = regulationPeriod(inst, addDays(today, -6), addDays(today, 1)), prev = regulationPeriod(inst, addDays(today, -13), addDays(today, -6));
-    const cmp = regulationComparable(cur, prev);
-    const cell = (p, f) => p.span ? f(p) : "—";
-    const rows = [
-      [tr`Journées suivies`, (p) => String(p.span)],
-      [tr`Complètes (confirmées)`, (p) => String(p.complete)],
-      [tr`Inconnues ou à reconfirmer`, (p) => String(p.incomplete)],
-      [tr`Quantités déclarées, toutes journées`, (p) => qty(inst, p.declared)],
-      [tr`Moyenne par journée complète`, (p) => p.mean == null ? "—" : qty(inst, p.mean)],
-      [tr`Objectif atteint`, (p) => p.assessed ? trn(p.assessed, "{1} sur {0} journée évaluable", "{1} sur {0} journées évaluables", p.met) : "—"]
-    ];
-    const note = !prev.span ? tr`Pas encore de semaine précédente à mettre en regard.` : cmp.ok ? tr`Les deux périodes sont renseignées de façon voisine : leurs moyennes peuvent se comparer.` : cmp.reason === "few" ? tr`Moins de ${REGULATION_COMPARE_MIN} journées complètes dans l'une des périodes : leurs moyennes ne se comparent pas, l'écart dirait surtout ce qui manque.` : tr`Les deux périodes ne sont pas renseignées de la même façon (${cur.complete} et ${prev.complete} journées complètes) : leurs moyennes ne se comparent pas telles quelles.`;
-    const first2 = regulationGoalHistory(inst).at(-1), changes = [...prev.goalChanges, ...cur.goalChanges].filter((g) => g !== first2);
-    return `<section aria-labelledby="rlmWeekH-${esc(id)}"><h3 id="rlmWeekH-${esc(id)}">${tr`Mes sept derniers jours`}</h3>
-    <p class="hint">${tr`Une journée inconnue ne vaut jamais zéro, ni un échec. Les jours d'avant le début du suivi ne comptent pas.`}</p>
-    <div class="rlm-tablewrap"><table class="rlm-cmp"><thead><tr><th scope="col"><span class="sr">${tr`Mesure`}</span></th><th scope="col">${tr`Ces 7 jours`}</th><th scope="col">${tr`Les 7 d'avant`}</th></tr></thead>
-    <tbody>${rows.map(([l, f]) => `<tr><th scope="row">${l}</th><td>${esc(cell(cur, f))}</td><td>${esc(cell(prev, f))}</td></tr>`).join("")}</tbody></table></div>
-    <p class="hint">${note}</p>
-    ${changes.length ? `<p>${tr`Objectif changé pendant ces deux semaines :`} ${changes.map((g) => esc(tr`à partir du ${fmt(g.date)}, ${goalText(inst, g)}`)).join(" ; ")}.</p>` : ""}
-    <ul class="plain rlm-days">${[...cur.days].reverse().map((d) => `<li class="item" data-date="${esc(d.date)}"><span class="jdate">${fmt(d.date, { weekday: "short", day: "numeric" })}</span><div>${esc(dayStatus(inst, d))}${d.goal && d.met !== null ? `<div class="meta"><span>${esc(tr`objectif du jour : ${goalText(inst, d.goal)}`)}</span></div>` : ""}</div>
-      <div class="row">${d.complete ? "" : `<button class="btn ghost sm" data-act="rlm-day-at" data-date="${esc(d.date)}" aria-label="${esc(tr`Confirmer le ${longDate(d.date)}`)}">${tr`confirmer`}</button>`}</div></li>`).join("") || `<li class="empty">${tr`Le suivi commence avec ta première saisie ou ton premier objectif.`}</li>`}</ul>
-    <button class="btn ghost sm" data-act="rlm-day-other">${tr`Confirmer une autre journée…`}</button></section>`;
-  }
-  function progressHTML(inst) {
-    if (!inst.config.rewards) return "";
-    const p = regulationProgress(inst);
-    return `<section class="rlm-progress" aria-labelledby="rlmProgH"><h3 id="rlmProgH">${tr`Les gestes restent`}</h3>
-    <p><b>${trn(p.marks, "{0} marque", "{0} marques")}</b> · ${tr`une par journée où tu as déclaré une action réalisée.`}</p>
-    <ol class="rlm-miles">${p.milestones.map((m) => `<li class="${m.reached ? "on" : ""}"><span aria-hidden="true">${m.reached ? "●" : "○"}</span> ${m.reached ? trn(m.n, "{0} marque, jalon atteint", "{0} marques, jalon atteint") : trn(m.n, "{0} marque, à venir", "{0} marques, à venir")}</li>`).join("")}</ol>
-    <p class="hint">${p.next ? trn(p.next, "Prochain jalon : {0} marque.", "Prochain jalon : {0} marques.") : tr`Tous les jalons sont atteints ; tes gestes continuent de compter.`} ${tr`Aucun jour consécutif exigé ; un écart ne retire rien ; supprimer une action erronée corrige le compte.`}</p>
-    ${p.reward ? `<p>${trn(p.reward.at, "Ma récompense à {0} marque : {1}", "Ma récompense à {0} marques : {1}", `<b>${esc(p.reward.text)}</b>`)} · ${p.reward.reached ? tr`atteinte` : trn(p.reward.left, "encore {0}", "encore {0}")}</p>` : ""}</section>`;
-  }
-  function supportsHTML(id, inst) {
-    const today = todayISO(), rows = regulationSupports(inst, addDays(today, -29), addDays(today, 1));
-    return `<section aria-labelledby="rlmSupH-${esc(id)}"><h3 id="rlmSupH-${esc(id)}">${tr`Ce qui peut m'aider`}</h3>
-    ${inst.config.supports.length ? `<ul class="plain rlm-supports">${inst.config.supports.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>` : `<p class="empty">${tr`Aucun appui pour l'instant.`}</p>`}
-    <datalist id="rlmSup-${esc(id)}">${inst.config.supports.map((s) => `<option value="${esc(s)}">`).join("")}</datalist>
-    <button class="btn sm" data-act="rlm-plan">${tr`Personnaliser mes appuis et récompenses`}</button>
-    ${rows.length ? `<h4>${tr`Ce que j'en ai dit, ces 30 derniers jours`}</h4><ul class="plain rlm-feedback">${rows.map((r) => `<li><b>${esc(r.strategy)}</b> : ${esc([
-      r.chosen ? trn(r.chosen, "choisi {0} fois lors d'une envie", "choisi {0} fois lors d'une envie") : "",
-      r.done ? trn(r.done, "réalisé {0} fois", "réalisé {0} fois") : "",
-      ...Object.keys(OUTCOMES).filter((k) => r[k]).map((k) => `${tr(OUTCOMES[k])} ×${r[k]}`)
-    ].filter(Boolean).join(" · "))}</li>`).join("")}</ul>
-      <p class="hint">${tr`Une description, pas une conclusion : quelques retours ne disent ni qu'un appui marche, ni pourquoi.`}</p>` : ""}</section>`;
-  }
-  function entryHTML(inst, e) {
-    let main = "";
-    if (e.kind === "use") main = `<b>${esc(qty(inst, e.value))}</b>${e.declared != null ? ` <span class="hint">${esc(tr`(complément, total déclaré : ${qty(inst, e.declared)})`)}</span>` : ""}`;
-    else if (e.kind === "action") main = esc(tr`Action réalisée : ${e.strategy}`);
-    else if (e.kind === "day") main = esc(regulationDay(inst, e.date).complete ? tr`Journée confirmée` : tr`Confirmation à refaire : la journée a changé depuis`);
-    else main = esc([tr`Envie`, e.intensity !== null ? tr`intensité ${e.intensity}/10` : "", e.strategy ? tr`appui choisi : ${e.strategy}` : "", e.outcome ? tr(OUTCOMES[e.outcome]) : ""].filter(Boolean).join(" · "));
-    const done = e.kind === "urge" && e.strategy && !inst.entries.some((x) => x.id === urgeActionId(e.id));
-    const acts = [
-      done ? `<button class="btn ghost sm" data-act="rlm-done">${tr`Je l'ai fait`}</button>` : "",
-      e.kind === "urge" && !(e.pauseEnd && e.pauseEnd > Date.now()) ? `<button class="btn ghost sm ra" data-act="rlm-pause">${tr`Pause de 5 min`}</button>` : "",
-      e.kind !== "day" ? `<button class="btn ghost sm ra" data-act="rlm-edit">${tr`modifier`}</button>` : "",
-      `<button class="btn ghost sm ra" data-act="rlm-del">${e.kind === "day" ? tr`laisser inconnue` : tr`suppr.`}</button>`
-    ].join("");
-    return `<li class="item" data-id="${esc(e.id)}"><span class="jdate">${fmt(e.date)}</span><div>${main}${e.note ? `<p class="note">${esc(e.note)}</p>` : ""}${e.editedAt ? `<div class="meta"><span>${tr`corrigé`}</span></div>` : ""}</div><div class="row">${acts}</div></li>`;
-  }
-  function whereText(id) {
-    const stub = S().modules[id], c = stub.config;
-    if (!synced()) return tr`Sur cet appareil : sans compte, rien n'est envoyé au serveur de Selene.`;
-    if (regulationOnDevice(stub)) return tr`Sur cet appareil seulement. Ton compte n'en garde que le nom, pour que tes autres appareils sachent qu'il existe : son contenu ne passe pas par le serveur. La sauvegarde de cet appareil (Google, iCloud…), si tu l'as activée, peut l'inclure : elle relève de ton compte Google ou Apple, pas de Selene. Ce n'est pas un coffre chiffré : quiconque ouvre cet appareil déverrouillé peut lire son stockage. Perdre l'appareil peut faire perdre le suivi : exporte-le de temps en temps.`;
-    if (!subjectOf(stub) && !c.consent) return tr`Pas encore configuré : ton compte n'en garde que le nom. Quand tu auras choisi ce que tu veux suivre, son contenu restera sur cet appareil seulement, sans passer par le serveur de Selene.`;
-    if (c.consent) return tr`Encore synchronisé avec ton compte, selon ton accord du ${fmt(iso(new Date(c.consent.at)), { day: "numeric", month: "long", year: "numeric" })} : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.`;
-    return tr`Encore synchronisé avec ton compte, depuis sa création : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.`;
-  }
-  function elsewhereHTML(id) {
-    const mine = S().modules[id].config.holder === deviceId();
-    return `<div data-mod="${esc(id)}" class="rlm"><h2>${esc(label(id))}</h2><section><p>${mine ? tr`Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi.` : tr`Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là. Appareil perdu, ou Selene réinstallée ? Tu peux retirer ce nom dans les réglages.`}</p></section></div>`;
-  }
-  var choiceHTML = (id) => synced() && !regulationOnDevice(S().modules[id]) ? `<section class="rlm-choice" aria-labelledby="rlmChoiceH"><h3 id="rlmChoiceH">${tr`Ce suivi doit revenir sur un appareil`}</h3>
-    <p>${tr`Selene ne synchronise plus les suivis de santé. Celui-ci l'est encore : garde-le sur l'appareil de ton choix, et son contenu quittera ton compte. Tant que tu n'as pas choisi, rien ne change.`}</p>
-    <div class="row"><button class="btn acc" data-act="rlm-device">${tr`Le garder sur cet appareil seulement…`}</button></div></section>` : "";
-  function privacyHTML(id, inst) {
-    const shared = !!S().config.assistant.share[id];
-    return `<details class="rlm-privacy" id="rlmPriv-${esc(id)}"><summary>${tr`Confidentialité et données`}</summary>
-    <ul class="plain rlm-facts">
-      <li><b>${tr`Où vivent ces données.`}</b> ${whereText(id)}</li>
-      <li><b>${tr`Sauvegardes.`}</b> ${tr`La sauvegarde complète (Réglages, Compte et données, Exporter) contient ce suivi en entier, notes comprises.`}</li>
-      <li><b>${tr`Ce qui reste visible.`}</b> ${tr`Le nom de cet espace et sa présence : navigation, accueil, Réglages, palette de commandes. Les détails (quantités, envies, notes, appuis) restent ici : ni recherche, ni motifs, ni dérive lexicale, ni test lunaire, ni bilan général, ni planche de lunaison, ni reprise sur l'accueil, ni liens, ni widget, ni notifications.`}</li>
-      <li><b>${tr`L'assistant.`}</b> ${shared ? tr`Partagé : il reçoit ce résumé, et rien d'autre, à chaque question.` : tr`Non partagé : l'assistant ne reçoit rien de ce suivi. Si tu le partages, il recevra ce résumé, et rien d'autre :`}
-        <blockquote class="note rlm-quote">${esc(TYPE.context(inst, label(id).toUpperCase()).trim())}</blockquote>
-        ${tr`Arrêter le partage empêche les envois suivants ; cela ne retire pas ce qui a déjà été envoyé (efface la conversation dans l'Assistant si tu veux).`}${enabled("assistant") ? "" : ` ${tr`L'assistant est désactivé en ce moment.`}`}</li>
-      <li><b>${tr`Export de ce suivi.`}</b> ${tr`Un fichier JSON lisible, non chiffré : nom, sujet, objectifs et leur historique, journal complet avec les notes, appuis et récompense. Pour le consulter ou le garder ; une restauration passe par la sauvegarde complète.`}</li>
-      <li><b>${tr`Suppression.`}</b> ${tr`Supprimer ce suivi efface ses données de cet appareil puis, à la synchronisation suivante, de ton compte et de tes autres appareils. Les sauvegardes et exports déjà téléchargés restent là où tu les as rangés.`}</li>
-    </ul>
-    <div class="row">${synced() && !regulationOnDevice(S().modules[id]) ? `<button class="btn sm" data-act="rlm-device">${tr`Garder sur cet appareil seulement…`}</button>` : ""}<button class="btn sm" data-act="rlm-share">${shared ? tr`Ne plus partager avec l'assistant` : tr`Partager ce résumé avec l'assistant…`}</button><button class="btn sm" data-act="rlm-export">${tr`Exporter ce suivi`}</button><button class="btn ghost sm" data-act="mod-del" data-mod="${esc(id)}">${tr`Supprimer ce suivi…`}</button></div></details>`;
-  }
-  function setupHTML(id) {
-    return `<section><p>${tr`Un espace pour observer, réduire ou arrêter le tabac, le cannabis, l'alcool ou les réseaux sociaux, à ton rythme. Tu notes ce que tu veux ; une journée ne compte que lorsque tu la confirmes.`}</p>
-    <p class="hint">${tr`Ce n'est ni un diagnostic, ni un programme de soin : un carnet. Il ne calcule aucun sevrage et ne dit jamais qu'une quantité est sans risque.`}</p>
-    <button class="btn acc" data-act="rlm-setup">${tr`Commencer : choisir ce que je veux suivre`}</button></section>`;
-  }
-  function viewHTML(id) {
-    const inst = T(id), m = esc(id);
-    if (!inst) return elsewhereHTML(id);
-    const head = `<h2>${esc(label(id))}</h2><p class="hint">${tr`Suivi personnel et autodéclaratif, sans diagnostic ni programme de sevrage. Privé par défaut : voir « Confidentialité et données ».`}</p>`;
-    if (!subjectOf(inst)) return `<div data-mod="${m}" class="rlm">${head}${setupHTML(id)}${privacyHTML(id, inst)}</div>`;
-    const choice = choiceHTML(id);
-    const today = todayISO(), g = regulationGoal(inst, today), next = regulationNextGoal(inst, today), d = regulationDay(inst, today), sub2 = subjectOf(inst);
-    const journal = [...inst.entries].sort((a, b) => b.date < a.date ? -1 : b.date > a.date ? 1 : b.at - a.at);
-    return `<div data-mod="${m}" class="rlm">${head}${choice}
-    ${regulationSubjectConflict(inst) ? `<p class="hint rlm-warn" role="alert">${tr`Deux appareils ont commencé ce suivi avec deux sujets différents ; un seul a été gardé. Les quantités notées sur l'autre appareil sont peut-être dans une autre unité : vérifie le journal, et crée un suivi par sujet.`}</p>` : ""}
-    <section class="rlm-now" aria-labelledby="rlmNowH"><h3 id="rlmNowH">${esc(sub2.name())} · ${esc(goalText(inst, g))}</h3>
-      <p class="hint">${esc(sub2.about())}</p>
-      ${next ? `<p class="hint">${esc(tr`À partir du ${fmt(next.date)} : ${goalText(inst, next)}.`)}</p>` : ""}
-      <p>${tr`Aujourd'hui, déjà noté : ${esc(qty(inst, d.total))}`} · ${d.complete ? tr`journée confirmée` : d.reopened ? tr`à reconfirmer` : tr`pas encore confirmée`}</p>
-      <div class="rlm-acts"><button class="btn acc" data-act="rlm-urge">${tr`J'ai une envie`}</button><button class="btn" data-act="rlm-use">${tr`Noter une consommation / durée`}</button><button class="btn" data-act="rlm-action">${tr`J'ai réalisé une action`}</button><button class="btn" data-act="rlm-day">${tr`Faire mon point du jour`}</button></div></section>
-    ${pauseHTML(id, inst)}
-    ${inst.config.subject === "alcool" ? `<details class="rlm-info" id="rlmAlc-${m}"><summary>${tr`Alcool : sevrage, urgences, aide`}</summary><p>${esc(alcoholRisk())}</p><p><b>${esc(alcoholUrgent())}</b></p><p>${esc(alcoholHelp())} <a href="https://www.alcool-info-service.fr/" target="_blank" rel="noopener noreferrer">alcool-info-service.fr</a></p></details>` : ""}
-    ${periodHTML(id, inst)}
-    ${progressHTML(inst)}
-    ${supportsHTML(id, inst)}
-    <section aria-labelledby="rlmLogH-${m}"><h3 id="rlmLogH-${m}">${tr`Journal`}</h3><ul class="plain">${((pg) => pg.items.map((e) => entryHTML(inst, e)).join("") + pg.more)(paged(`regulation:${id}`, journal)) || `<li class="empty">${tr`Rien de noté pour l'instant.`}</li>`}</ul></section>
-    <section aria-labelledby="rlmGoalH-${m}"><h3 id="rlmGoalH-${m}">${tr`Mes objectifs`}</h3>
-      <p>${tr`En ce moment : ${esc(goalText(inst, g))}.`}</p>
-      <button class="btn sm" data-act="rlm-goal">${tr`Faire évoluer mon objectif`}</button>
-      <details id="rlmHist-${m}"><summary class="hint">${trn(inst.goals.length, "Historique : {0} version", "Historique : {0} versions")}</summary><ul class="plain rlm-history">${regulationGoalHistory(inst).map((v) => `<li>${esc(tr`à partir du ${fmt(v.date, { day: "numeric", month: "long", year: "numeric" })} : ${goalText(inst, v)}`)} <span class="hint">${esc(tr`(choisi le ${fmt(iso(new Date(v.at)))})`)}</span></li>`).join("")}</ul></details>
-      <p class="hint">${tr`Début du suivi : ${fmt(regulationStart(inst), { day: "numeric", month: "long", year: "numeric" })}. Chaque journée confirmée garde l'objectif en vigueur au moment de sa confirmation.`}</p></section>
-    ${privacyHTML(id, inst)}</div>`;
-  }
-  var TYPE = {
-    sensitive: true,
-    view: viewHTML,
-    settings: (id) => `<p class="hint">${tr`Suivi privé : partage avec l'assistant désactivé à la création, détails exclus des vues générales. Son nom reste visible.`}</p><div class="row">${T(id) ? `<button class="btn sm" data-act="rlm-plan" data-mod="${esc(id)}">${tr`Appuis et récompenses`}</button>` : ""}<a class="btn ghost sm" href="#${esc(id)}">${tr`Ouvrir le suivi`}</a></div>`,
-    summary: () => tr`Suivi privé : ouvrir pour consulter`,
-    // Pour l'assistant (consigne en français, docs/i18n.md) : le résumé explicite, rien de ce qui est écrit à la main.
-    // `id` : pour lire la copie locale d'un suivi gardé sur cet appareil (le document synchronisé n'en a que le talon).
-    context(stub, name, id) {
-      const inst = id ? T(id) : stub;
-      if (!inst) return `
-${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible ici.`;
-      return regulationSummary(inst, name, todayISO());
-    },
-    recent: () => [],
-    review: () => null,
-    // Supprimer ailleurs que chez le détenteur ne retire que le talon : possible (appareil perdu ou réinstallé : sinon, un
-    // nom impossible à effacer) ; si le détenteur existe encore, il le recrée (state/local.js) et ne perd rien. Supprimer
-    // chez le détenteur emporte la copie locale.
-    deleteNote: (id) => {
-      const inst = S().modules[id];
-      return regulationOnDevice(inst) && inst.config.holder !== deviceId() ? tr`Ici, il n'y a que le nom de ce suivi : son contenu est gardé sur un autre appareil. Si cet appareil existe encore, le suivi y reste entier et son nom reviendra : supprime-le plutôt depuis celui-ci. S'il est perdu, ou si Selene y a été réinstallée, retirer ce nom est définitif.` : "";
-    },
-    onDelete: (id) => forgetLocal(id),
-    // Pas de hook texts, ni alerts, ni badge, ni accept : voir l'en-tête.
-    click: {
-      "rlm-setup": (el) => subjectForm(modOf(el)),
-      "rlm-goal": (el) => goalForm(modOf(el)),
-      "rlm-use": (el) => useForm(modOf(el)),
-      "rlm-urge": (el) => urgeForm(modOf(el)),
-      "rlm-action": (el) => actionForm(modOf(el)),
-      "rlm-plan": (el) => planForm(modOf(el)),
-      "rlm-day": (el) => confirmDay(modOf(el), todayISO()),
-      "rlm-day-at": (el) => confirmDay(modOf(el), el.dataset.date),
-      "rlm-day-other": (el) => {
-        const id = modOf(el);
-        openForm(tr`Confirmer une journée`, [{ n: "date", l: tr`Journée`, t: "date", req: true, max: todayISO() }], { date: addDays(todayISO(), -1) }, (v) => confirmDay(id, v.date), tr`Tu verras d'abord son total exact. Une journée non confirmée reste inconnue : jamais zéro, jamais un échec.`);
-      },
-      "rlm-edit": (el) => {
-        const id = modOf(el), e = T(id).entries.find((x) => x.id === entryOf(el));
-        if (!e) return;
-        if (e.kind === "use") useForm(id, e);
-        else if (e.kind === "urge") urgeForm(id, e);
-        else if (e.kind === "action") actionForm(id, e);
-      },
-      "rlm-del": (el) => removeEntry(modOf(el), entryOf(el)),
-      "rlm-done": (el) => {
-        const id = modOf(el), inst = T(id), urgeId = el.dataset.id || entryOf(el);
-        const e = markUrgeDone(inst, urgeId, todayISO(), Date.now(), zone());
-        save();
-        toast(tr`C'est noté : ${e.strategy}. Une action réalisée, pas seulement choisie.`);
-      },
-      "rlm-pause": (el) => {
-        const id = modOf(el);
-        startRegulationPause(T(id), entryOf(el), Date.now());
-        save();
-      },
-      "rlm-pause-stop": (el) => {
-        stopRegulationPause(T(modOf(el)), el.dataset.id);
-        save();
-      },
-      "rlm-device": (el) => chooseDevice(modOf(el), true),
-      "rlm-share": (el) => {
-        const id = modOf(el);
-        if (!S().config.assistant.share[id]) return confirmSensitiveShare(id);
-        S().config.assistant.share[id] = false;
-        save();
-        toast(tr`Partage arrêté. Ce qui a déjà été envoyé dans une conversation n'en est pas retiré.`);
-      },
-      "rlm-export": async (el) => {
-        const id = modOf(el), inst = T(id);
-        if (!await ask(tr`Exporter ce suivi dans un fichier lisible, non chiffré ? Il contient tout le journal, notes comprises.`)) return;
-        await downloadFile(`selene-suivi-${todayISO()}.json`, JSON.stringify({
-          format: "selene-regulation-v1",
-          exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
-          about: "Export de consultation d'un suivi « Reprendre la main ». Restauration : par la sauvegarde complète de Selene.",
-          module: { label: label(id), type: inst.type, config: inst.config, goals: inst.goals, entries: inst.entries }
-        }, null, 2), "application/json", tr`Suivi personnel`);
-      }
-    }
-  };
-  registerType("regulation", TYPE);
 
   // src/app/services/auth.js
   var SUPABASE_URL = "https://pxnrzrmzritezftefdlj.supabase.co";
@@ -7670,7 +7203,7 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
   function agendaRoute(summary) {
     const m = String(summary).match(/^([^:]{2,40}?)\s*:\s*(.+)$/);
     if (!m) return { mod: "", text: summary };
-    const mod = S().config.modules.find((x) => x.on && Object.hasOwn(S().modules, x.id) && fold(label(x.id)) === fold(m[1].trim()));
+    const mod = S().config.modules.find((x) => shownModule(x) && fold(label(x.id)) === fold(m[1].trim()));
     return mod ? { mod: mod.id, text: m[2].trim() } : { mod: "", text: summary };
   }
   function agendaHTML() {
@@ -8207,13 +7740,13 @@ ${body}` : title, cut = false;
     render();
   }
   CLICK["zot-search"] = (el) => {
-    const id = modOf2(el), q = (($("#zotIn") || {}).value || "").trim().slice(0, 200);
+    const id = modOf(el), q = (($("#zotIn") || {}).value || "").trim().slice(0, 200);
     if (!q) return;
     zotList(id, `/items/top?q=${encodeURIComponent(q)}&qmode=titleCreatorYear&limit=10&sort=dateModified&direction=desc&format=json`, tr`Dans ta bibliothèque : « ${q} »`);
   };
-  CLICK["zot-recent"] = (el) => zotList(modOf2(el), `/items/top?limit=10&sort=dateAdded&direction=desc&format=json`, tr`Les dix dernières fiches ajoutées à ta bibliothèque`);
+  CLICK["zot-recent"] = (el) => zotList(modOf(el), `/items/top?limit=10&sort=dateAdded&direction=desc&format=json`, tr`Les dix dernières fiches ajoutées à ta bibliothèque`);
   CLICK["zot-keep"] = (el) => {
-    const id = modOf2(el), st = zotState[id], x = st && st.items[+el.closest("[data-zi]").dataset.zi];
+    const id = modOf(el), st = zotState[id], x = st && st.items[+el.closest("[data-zi]").dataset.zi];
     if (!x || findSourceDup(x)) return;
     const e = keepSource(id, x, { from: "Zotero", text: (zotInfo() || {}).username || tr`ta bibliothèque`, date: todayISO() });
     site.save();
@@ -8349,7 +7882,7 @@ ${body}` : title, cut = false;
   <p class="hint" style="margin:4px 0 12px">${passeurPret() ? tr`Un DOI est complété par Crossref ; une page, par ton passeur (sinon Microlink, qui voit l'adresse demandée, 25 par jour).` : tr`Un DOI est complété par Crossref ; une page, par Microlink, qui voit l'adresse demandée (25 par jour).`}</p>${prev}${zotBar(id)}${citeBar()}`;
   }
   CLICK["src-fetch"] = async (el) => {
-    const id = modOf2(el), inp = $("#srcIn"), raw = inp ? inp.value.trim() : "";
+    const id = modOf(el), inp = $("#srcIn"), raw = inp ? inp.value.trim() : "";
     if (!raw) return;
     if (!findDoi(raw) && !findUrl(raw)) return toast(tr`Ni lien ni DOI reconnu. Un lien commence par https://, un DOI par 10.`);
     srcPreview[id] = { busy: true };
@@ -8360,7 +7893,7 @@ ${body}` : title, cut = false;
     render();
   };
   CLICK["src-keep"] = (el) => {
-    const id = modOf2(el), p = srcPreview[id];
+    const id = modOf(el), p = srcPreview[id];
     if (!p || !p.data || p.dup) return;
     const e = keepSource(id, p.data);
     delete srcPreview[id];
@@ -8372,7 +7905,7 @@ ${body}` : title, cut = false;
     else toast(tr`Gardée : « ${excerpt(e, 50)} ».`);
   };
   CLICK["src-cancel"] = (el) => {
-    delete srcPreview[modOf2(el)];
+    delete srcPreview[modOf(el)];
     render();
   };
   var kindDicts = () => Object.values(LANGS).map((l) => l.dict).filter(Boolean);
@@ -8381,10 +7914,10 @@ ${body}` : title, cut = false;
     if (!m || !m.entries.length) return;
     return format === "bib" ? downloadFile(`${id}-${todayISO()}.bib`, sourcesBibtex(m.entries, kindDicts()), "application/x-bibtex", label(id)) : downloadFile(`${id}-${todayISO()}.csl.json`, sourcesCslJson(m.entries, kindDicts()), "application/json", label(id));
   }
-  CLICK["src-bib"] = (el) => sourcesExport(modOf2(el), "bib");
-  CLICK["src-csl"] = (el) => sourcesExport(modOf2(el), "csl");
+  CLICK["src-bib"] = (el) => sourcesExport(modOf(el), "bib");
+  CLICK["src-csl"] = (el) => sourcesExport(modOf(el), "csl");
   CLICK["note-source"] = async (el) => {
-    const from = modOf2(el), to = sourcesModule(), nid = idOf(el), note = S().modules[from].entries.find((x) => x.id === nid);
+    const from = modOf(el), to = sourcesModule(), nid = idOf(el), note = S().modules[from].entries.find((x) => x.id === nid);
     if (!note || !to) return;
     el.disabled = true;
     el.textContent = tr`Recherche…`;
@@ -8424,13 +7957,13 @@ ${body}` : title, cut = false;
       const [m, i] = ref.split("/");
       return sourceLinkForm(m, i);
     }
-    sourceLinkForm(modOf2(el), idOf(el));
+    sourceLinkForm(modOf(el), idOf(el));
   };
 
   // src/app/modules/notes.js
   function captureIntent(text) {
     const s = S(), t = String(text).trim();
-    const mods = s.config.modules.filter((m2) => m2.on && Object.hasOwn(s.modules, m2.id)).map((m2) => ({ id: m2.id, inst: s.modules[m2.id], name: fold(label(m2.id)) }));
+    const mods = s.config.modules.filter(shownModule).map((m2) => ({ id: m2.id, inst: s.modules[m2.id], name: fold(label(m2.id)) }));
     let m = t.match(/^(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur(?:os?)?\b)\s*(.*)$/i) || t.match(/^€\s*(\d+(?:[.,]\d{1,2})?)\b\s*(.*)$/);
     const bud = firstOfType("budget");
     if (m && bud && +m[1].replace(",", ".") > 0) {
@@ -8568,7 +8101,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
       "note-add": (el) => {
         const inp = $("#noteIn");
         if (!inp || !inp.value.trim()) return;
-        const id = modOf2(el), item = addNote(S().modules[id], inp.value), derived = applyDerive(id, item);
+        const id = modOf(el), item = addNote(S().modules[id], inp.value), derived = applyDerive(id, item);
         inp.value = "";
         site.save();
         render();
@@ -8576,17 +8109,17 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
         else afterCapture(id, item);
       },
       "note-file": (el) => {
-        const id = modOf2(el), note = S().modules[id].entries.find((x) => x.id === idOf(el)), intent = note && captureIntent(note.text);
+        const id = modOf(el), note = S().modules[id].entries.find((x) => x.id === idOf(el)), intent = note && captureIntent(note.text);
         if (intent) fileIntent(intent, id, note.id);
       },
-      "note-del": (el) => removeWithUndo(modOf2(el), "entries", idOf(el)),
+      "note-del": (el) => removeWithUndo(modOf(el), "entries", idOf(el)),
       "note-to": (el) => {
-        const s = S(), src = s.modules[modOf2(el)], note = src.entries.find((x) => x.id === idOf(el)), to = el.dataset.to;
+        const s = S(), src = s.modules[modOf(el)], note = src.entries.find((x) => x.id === idOf(el)), to = el.dataset.to;
         const drop = () => {
           src.entries = src.entries.filter((x) => x !== note);
           site.save();
         };
-        const then = acceptNote(to, modOf2(el), note);
+        const then = acceptNote(to, modOf(el), note);
         drop();
         render();
         if (typeof then === "function") then();
@@ -9011,7 +8544,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     const days = [];
     for (let d = cur.from; d < cur.to; d = addDaysTo(d, 1)) days.push(d);
     const at = new Map(days.map((d, i) => [d, i])), total = days.map(() => 0);
-    const rows = s.config.modules.filter((m) => m.on && Object.hasOwn(s.modules, m.id)).map((m) => {
+    const rows = s.config.modules.filter(shownModule).map((m) => {
       const inst = s.modules[m.id], ui = TYPE_UI[inst.type];
       if (!ui || ui.sensitive || isConcordance(inst)) return null;
       const spark = days.map(() => 0);
@@ -9193,7 +8726,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     if (routeOf().entry === "planche") return plancheView();
     if (routeOf().entry === "relecture") return relectureView();
     const mode = bilanMode(), cur = periodOf(mode, bilanOffset), prev = periodOf(mode, bilanOffset + 1), s = S();
-    const rows = s.config.modules.filter((m) => m.on && Object.hasOwn(s.modules, m.id) && TYPE_UI[s.modules[m.id].type].review && !TYPE_UI[s.modules[m.id].type].sensitive).map((m) => {
+    const rows = s.config.modules.filter((m) => shownModule(m) && TYPE_UI[s.modules[m.id].type].review && !TYPE_UI[s.modules[m.id].type].sensitive).map((m) => {
       const inst = s.modules[m.id], review = TYPE_UI[inst.type].review, r = review(inst, cur.from, cur.to), p = review(inst, prev.from, prev.to);
       return `<div class="over-wrap"><div class="over"><b>${esc(label(m.id))}</b><span>${esc(r || "—")}</span><em class="hint" style="margin:0">${tr`avant : ${esc(p || "—")}`}</em></div></div>`;
     }).join("");
@@ -9831,11 +9364,11 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   }
   var typeName = (type) => tr(String(MODULE_TYPES[type]?.label || "").split(" (")[0]);
   function modBlock(s, m, i) {
-    const name = label(m.id), inst = s.modules[m.id], sys = SYSTEM.includes(m.id);
+    const name = label(m.id), inst = s.modules[m.id], sys = SYSTEM.includes(m.id), absent = absentModule(m.id);
     const settings = enabled(m.id) && (inst || grouperFor(m.id));
-    return `<div class="modblock ${tintOf(m.id)}${m.on ? "" : " off"}">
-    <div class="set mod" data-i="${i}"><label class="tap"><input type="checkbox" data-act="mod-on" ${m.on ? "checked" : ""} aria-label="${tr`Activer ${esc(name)}`}"></label><div class="mod-name">${sigil(m.id)}<input data-act="mod-label" value="${esc(name)}" aria-label="${tr`Nom du module`}"></div>${sys ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="${esc(TEXTS.domaine)}" aria-label="${tr`Domaine de ${esc(name)}`}">`}<div class="row">${inst ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="${tr`Supprimer définitivement`}" title="${tr`Supprimer définitivement`}">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="${tr`Descendre`}">↓</button></div></div>
-    ${settings ? `<details id="mreg-${esc(m.id)}" data-mod="${esc(m.id)}" class="mreg"><summary aria-label="${esc(TEXTS.regler(name))}">${esc(TEXTS.reglerShort)}${inst ? `<span class="mreg-type">${esc(typeName(inst.type))}</span>` : ""}</summary><div class="mreg-body">${moduleSettingsHTML(m.id)}</div></details>` : sys && m.on ? `<p class="mreg-note"><button type="button" class="btn ghost sm" data-act="reg-goto" data-to="reg-assistant">› ${esc(TEXTS.assistantHere)}</button></p>` : ""}
+    return `<div class="modblock ${tintOf(m.id)}${m.on && !absent ? "" : " off"}">
+    <div class="set mod" data-i="${i}"><label class="tap"><input type="checkbox" data-act="mod-on" ${m.on && !absent ? "checked" : ""}${absent ? " disabled" : ""} aria-label="${tr`Activer ${esc(name)}`}"></label><div class="mod-name">${sigil(m.id)}<input data-act="mod-label" value="${esc(name)}" aria-label="${tr`Nom du module`}"></div>${sys ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="${esc(TEXTS.domaine)}" aria-label="${tr`Domaine de ${esc(name)}`}">`}<div class="row">${inst ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="${tr`Supprimer définitivement`}" title="${tr`Supprimer définitivement`}">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="${tr`Descendre`}">↓</button></div></div>
+    ${absent ? `<div class="mreg-note">${TYPE_UI[inst.type].settings(m.id, inst)}</div>` : settings ? `<details id="mreg-${esc(m.id)}" data-mod="${esc(m.id)}" class="mreg"><summary aria-label="${esc(TEXTS.regler(name))}">${esc(TEXTS.reglerShort)}${inst ? `<span class="mreg-type">${esc(typeName(inst.type))}</span>` : ""}</summary><div class="mreg-body">${moduleSettingsHTML(m.id)}</div></details>` : sys && m.on ? `<p class="mreg-note"><button type="button" class="btn ghost sm" data-act="reg-goto" data-to="reg-assistant">› ${esc(TEXTS.assistantHere)}</button></p>` : ""}
   </div>`;
   }
   function espacesHTML(s, c) {
@@ -10403,8 +9936,8 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
         site.save();
         render();
       },
-      "task-new": (el) => taskForm(modOf2(el), null),
-      "task-pick": (el) => pickTask(el.closest("[data-mod]") ? modOf2(el) : null)
+      "task-new": (el) => taskForm(modOf(el), null),
+      "task-pick": (el) => pickTask(el.closest("[data-mod]") ? modOf(el) : null)
     },
     change: {
       "task-done": (el) => {
@@ -10431,11 +9964,11 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
         render();
       },
       "f-room": (el) => {
-        tf(modOf2(el)).room = el.value;
+        tf(modOf(el)).room = el.value;
         render();
       },
       "f-cat": (el) => {
-        tf(modOf2(el)).cat = el.value;
+        tf(modOf(el)).cat = el.value;
         render();
       },
       "task-cats": (el) => {
@@ -10623,7 +10156,7 @@ ${contextText()}`;
       }
     }
   ];
-  var firstOfType = (type) => (S().config.modules.find((m) => m.on && Object.hasOwn(S().modules, m.id) && S().modules[m.id].type === type) || {}).id || null;
+  var firstOfType = (type) => (S().config.modules.find((m) => shownModule(m) && S().modules[m.id].type === type) || {}).id || null;
   var toolModule = (t) => typeof t.module === "function" ? t.module() : t.module;
   var availableTools = () => S().config.assistant.actions ? TOOLS.filter((t) => {
     const m = toolModule(t);
@@ -10745,6 +10278,484 @@ ${contextText()}`;
     render();
   };
 
+  // src/app/modules/regulation.js
+  var SUBJECTS = {
+    tabac: {
+      name: () => tr`Tabac`,
+      unit: () => tr`cigarettes`,
+      qty: (n) => trn(n, "{1} cigarette", "{1} cigarettes", regNum(n)),
+      step: 1,
+      about: () => tr`Le nombre de cigarettes fumées. Les substituts nicotiniques (patch, gomme, pastille, spray) ne se comptent pas ici : ce ne sont pas des cigarettes fumées.`
+    },
+    cannabis: {
+      name: () => tr`Cannabis`,
+      unit: () => tr`grammes de produit`,
+      qty: (n) => tr`${regNum(n)} g`,
+      step: 0.01,
+      about: () => tr`Une estimation en grammes de produit (herbe, résine…), pas une dose de THC : la teneur varie beaucoup d'un produit à l'autre, ces grammes ne mesurent donc ni l'effet ni le risque.`
+    },
+    alcool: {
+      name: () => tr`Alcool`,
+      unit: () => tr`verres standard`,
+      qty: (n) => trn(n, "{1} verre standard", "{1} verres standard", regNum(n)),
+      step: 0.1,
+      about: () => tr`Un verre standard contient 10 g d'alcool pur, soit environ 25 cl de bière à 5 % ou 10 cl de vin à 12 %. Un verre servi, surtout à la maison, est souvent plus grand : il peut valoir plusieurs verres standard.`
+    },
+    reseaux: {
+      name: () => tr`Réseaux sociaux`,
+      unit: () => tr`minutes`,
+      qty: (n) => trn(n, "{1} minute", "{1} minutes", regNum(n)),
+      step: 1,
+      about: () => tr`Des minutes que tu saisis toi-même, par exemple d'après le temps d'écran de ton téléphone. Selene ne mesure pas ton usage des autres applications et ne les bloque pas.`
+    }
+  };
+  var MODES = [["observer", N_("Observer, sans cible")], ["reduire", N_("Réduire, avec une limite quotidienne que je choisis")], ["arreter", N_("Viser l'arrêt")]];
+  var OUTCOMES = { utile: N_("utile pour moi"), neutre: N_("sans changement"), difficile: N_("difficile") };
+  var subjectOf = (inst) => SUBJECTS[inst.config.subject] || null;
+  var qty = (inst, n) => subjectOf(inst) ? subjectOf(inst).qty(n) : regNum(n);
+  var goalText = (inst, g) => !g ? tr`aucun objectif à cette date` : g.mode === "observer" ? tr`observer, sans cible` : g.mode === "arreter" ? tr`viser l'arrêt` : tr`au plus ${qty(inst, g.limit)} par jour`;
+  var longDate = (d) => fmt(d, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  var longDay = (d) => fmt(d, { day: "numeric", month: "long", year: "numeric" });
+  var zone = () => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    } catch {
+      return "";
+    }
+  };
+  var modOf2 = (el) => el.dataset.mod || el.closest("[data-mod]").dataset.mod;
+  var entryOf = (el) => el.closest("[data-id]")?.dataset.id;
+  var save = () => {
+    site.save();
+    local.save();
+    render();
+  };
+  var T = (id) => {
+    const inst = Object.hasOwn(S().modules, id) ? S().modules[id] : null;
+    return regulationOnDevice(inst) ? localCopy(id) : inst;
+  };
+  var synced = () => hosted() && authReady() && !!authSession;
+  var alcoholRisk = () => tr`En cas de dépendance à l'alcool (envie très difficile à contrôler, tremblements ou sueurs au réveil, besoin de boire pour aller bien), un arrêt brutal ou une réduction rapide peuvent être dangereux : le sevrage peut provoquer des convulsions ou un delirium tremens. Prépare ce changement avec un médecin ou un CSAPA (centre de soins, d'accompagnement et de prévention en addictologie, gratuit, où l'on peut rester anonyme). Selene ne propose ni calendrier de sevrage, ni dose, ni conseil de traitement.`;
+  var alcoholUrgent = () => tr`Confusion, hallucinations, convulsions, fortes sueurs avec tremblements : appelle le 15 (Samu) ou le 112. Par SMS ou en visio, le 114 pour les personnes sourdes ou malentendantes.`;
+  var alcoholHelp = () => tr`Alcool Info Service : 0 980 980 930, de 8 h à 2 h, 7 jours sur 7, anonyme et non surtaxé.`;
+  function subjectForm(id) {
+    const about2 = tr`Un suivi, un sujet, une unité : le tabac en cigarettes, le cannabis en grammes de produit, l'alcool en verres standard, les réseaux sociaux en minutes déclarées. Pour en suivre plusieurs, crée un suivi par sujet : leurs unités, objectifs et marques ne se mélangent pas. Le sujet ne change plus ensuite.`;
+    openForm(
+      tr`Ce que je veux suivre`,
+      [{ n: "name", l: tr`Nom du suivi, visible partout (navigation, compte) : un nom neutre ne dit rien du sujet`, req: true }, { n: "subject", l: tr`Sujet du suivi`, t: "select", o: Object.keys(SUBJECTS).map((k) => [k, SUBJECTS[k].name()]) }],
+      { name: label(id), subject: "tabac" },
+      (v) => {
+        const inst = S().modules[id], name = v.name.trim().slice(0, 60);
+        if (inst && name && name !== label(id)) {
+          inst.label = name;
+          delete S().config.labels[id];
+          save();
+        }
+        if (synced() && inst && !inst.config.storage) chooseDevice(id);
+        goalForm(id, v.subject);
+      },
+      synced() ? `${about2}
+
+${tr`Ce suivi reste sur cet appareil : Selene ne synchronise pas les suivis de santé, ton compte n'en garde que le nom. Seule la sauvegarde de ton appareil (Google ou iCloud), si tu l'as activée, peut l'inclure.`}` : about2
+    );
+  }
+  function goalForm(id, setupSubject = null) {
+    const inst = T(id), subject = setupSubject || inst.config.subject, sub2 = SUBJECTS[subject], today = todayISO(), cur = regulationGoal(inst, today);
+    const about2 = [
+      sub2.about(),
+      subject === "alcool" ? `${alcoholRisk()}
+${alcoholUrgent()}
+${alcoholHelp()}` : "",
+      tr`La limite ne sert qu'à réduire. Observer n'attribue ni réussite ni échec ; viser l'arrêt vise zéro. Selene ne baisse jamais une limite d'elle-même et ne propose aucun rythme. Les journées déjà confirmées gardent leur objectif.`
+    ].filter(Boolean).join("\n\n");
+    openForm(setupSubject ? tr`Mon intention` : tr`Faire évoluer mon objectif`, [
+      { n: "mode", l: tr`Intention`, t: "select", o: MODES.map(([k, l]) => [k, tr(l)]) },
+      { row: [{ n: "limit", l: tr`Limite quotidienne pour réduire (${sub2.unit()})`, t: "number", step: sub2.step, min: 0 }, { n: "date", l: tr`À partir du`, t: "date", req: true }] }
+    ], { mode: cur ? cur.mode : "observer", limit: cur && cur.mode === "reduire" ? cur.limit : "", date: today }, (v) => {
+      const latest = T(id);
+      if (!latest) return;
+      if (setupSubject) setupRegulation(latest, { ...v, subject: setupSubject }, uid(), todayISO(), Date.now());
+      else addRegulationGoal(latest, v, uid(), todayISO(), Date.now());
+      save();
+      toast(v.date > todayISO() ? tr`Objectif enregistré, à partir du ${longDay(v.date)}. D'ici là, rien ne change.` : tr`Objectif enregistré. Les journées déjà confirmées gardent le leur.`);
+    }, about2);
+  }
+  function useForm(id, old = null) {
+    const inst = T(id), sub2 = subjectOf(inst), today = todayISO();
+    const fields = old ? [] : [{ n: "how", l: tr`Je note`, t: "select", o: [["add", tr`Une consommation de plus, qui s'ajoute aux autres saisies du jour`], ["total", tr`Le total de la journée : seule la différence avec ce qui est déjà noté s'ajoute`]] }];
+    fields.push(
+      { row: [{ n: "date", l: tr`Date`, t: "date", req: true, max: today }, { n: "value", l: tr`Quantité (${sub2.unit()})`, t: "number", step: sub2.step, min: 0, req: true }] },
+      { n: "note", l: tr`Contexte, facultatif`, t: "textarea", rows: 2 }
+    );
+    openForm(old ? tr`Corriger une saisie` : tr`Noter une consommation ou une durée`, fields, old ? { date: old.date, value: old.value, note: old.note } : { how: "add", date: today, value: "", note: "" }, (v) => {
+      const cur = T(id);
+      if (!cur) return;
+      if (old && !cur.entries.some((e) => e.id === old.id)) return toast(errMsg({ code: "reg-missing" }));
+      const before = new Set([v.date, old && old.date].filter(Boolean).filter((d) => regulationDay(cur, d).complete));
+      if (v.how === "total") {
+        const e = saveRegulationTotal(cur, { date: v.date, total: v.value, note: v.note }, uid(), todayISO(), Date.now(), zone());
+        save();
+        toast(e ? tr`Complément noté : ${qty(cur, e.value)}, pour un total déclaré de ${qty(cur, e.declared)}.` : tr`Rien à ajouter : ce total est déjà noté pour ce jour-là.`);
+        return confirmDay(id, v.date);
+      }
+      saveRegulationEvent(cur, { kind: "use", date: v.date, value: v.value, note: v.note }, old ? old.id : uid(), todayISO(), Date.now(), zone());
+      save();
+      const reopened = [...before].find((d) => !regulationDay(T(id), d).complete);
+      if (reopened) toastAction(tr`Noté. La journée du ${fmt(reopened)} était confirmée : elle est à reconfirmer.`, tr`Confirmer`, () => confirmDay(id, reopened), 9e3);
+      else toast(old ? tr`Corrigé.` : tr`Noté.`);
+    }, old ? sub2.about() : `${tr`« Une de plus » s'ajoute aux saisies du jour. « Total de la journée » : ce que tu as consommé ce jour-là en tout ; Selene n'ajoute que ce qui manque, et refuse un total plus bas que ce qui est déjà noté.`}
+
+${sub2.about()}`);
+  }
+  function urgeForm(id, old = null) {
+    const inst = T(id), sup = inst.config.supports;
+    const choices = [["", tr`Aucun pour l'instant`], ...sup.map((s) => [s, s]), ...old && old.strategy && !sup.includes(old.strategy) ? [[old.strategy, old.strategy]] : []];
+    openForm(old ? tr`Modifier une envie` : tr`J'ai une envie`, [
+      { row: [{ n: "date", l: tr`Date`, t: "date", req: true, max: todayISO() }, { n: "intensity", l: tr`Intensité de 0 à 10, facultative`, t: "number", min: 0, max: 10 }] },
+      { n: "note", l: tr`Contexte ou déclencheur, facultatif`, t: "textarea", rows: 2 },
+      { n: "strategy", l: tr`Un appui que je peux essayer, facultatif`, t: "select", o: choices },
+      { n: "outcome", l: tr`Après coup, cet appui a été…`, t: "select", o: [["", tr`pas encore évalué`], ...Object.entries(OUTCOMES).map(([k, l]) => [k, tr(l)])] },
+      ...old ? [] : [{ n: "pause", l: tr`Prendre une pause de cinq minutes maintenant ?`, t: "select", o: [["", tr`Non`], ["oui", tr`Oui, lancer la pause`]] }]
+    ], old ? { date: old.date, intensity: old.intensity ?? "", note: old.note, strategy: old.strategy, outcome: old.outcome } : { date: todayISO(), intensity: "", note: "", strategy: "", outcome: "", pause: "" }, (v) => {
+      const cur = T(id);
+      if (!cur) return;
+      if (old && !cur.entries.some((e2) => e2.id === old.id)) return toast(errMsg({ code: "reg-missing" }));
+      const e = saveRegulationEvent(cur, { kind: "urge", ...v }, old ? old.id : uid(), todayISO(), Date.now(), zone());
+      if (v.pause === "oui") startRegulationPause(cur, e.id, Date.now());
+      save();
+      toast(v.pause === "oui" ? tr`Envie notée. Cinq minutes, à ton rythme.` : tr`Envie notée. Ce n'est pas un écart.`);
+    }, tr`Une envie n'est ni un écart ni un échec, et ne donne pas de marque. Choisir un appui ne veut pas dire l'avoir fait : tu pourras le déclarer réalisé ensuite (« Je l'ai fait »).`);
+  }
+  function actionForm(id, old = null) {
+    const inst = T(id);
+    openForm(old ? tr`Modifier une action` : tr`J'ai réalisé une action`, [
+      { n: "date", l: tr`Date`, t: "date", req: true, max: todayISO() },
+      { n: "strategy", l: tr`L'action de mon plan que j'ai faite`, req: true, list: `rlmSup-${id}` },
+      { n: "note", l: tr`Note, facultative`, t: "textarea", rows: 2 }
+    ], old ? { date: old.date, strategy: old.strategy, note: old.note } : { date: todayISO(), strategy: inst.config.supports[0] || "", note: "" }, (v) => {
+      const cur = T(id);
+      if (!cur) return;
+      if (old && !cur.entries.some((e) => e.id === old.id)) return toast(errMsg({ code: "reg-missing" }));
+      saveRegulationEvent(cur, { kind: "action", ...v }, old ? old.id : uid(), todayISO(), Date.now(), zone());
+      save();
+      toast(tr`Action gardée. Un écart, plus tard, ne l'efface pas.`);
+    }, inst.config.rewards ? tr`Une action concrète de ton plan, faite pour de vrai, même un jour où tu as consommé. Une marque au plus par journée, quel que soit le nombre d'actions.` : tr`Une action concrète de ton plan, faite pour de vrai, même un jour où tu as consommé.`);
+  }
+  function planForm(id) {
+    const inst = T(id);
+    if (!inst) return toast(tr`Ce suivi est gardé sur un autre appareil : ses réglages se changent là-bas.`);
+    const c = inst.config;
+    openForm(tr`Mes appuis et mes récompenses`, [
+      { n: "supports", l: tr`Mes appuis, une action par ligne`, t: "textarea", rows: 5 },
+      { n: "rewards", l: tr`Marques et jalons`, t: "select", o: [["", tr`Masqués`], ["on", tr`Affichés dans cet espace`]] },
+      { row: [{ n: "reward", l: tr`Ma récompense, facultative` }, { n: "rewardAt", l: tr`À combien de marques ? (1 à 365)`, t: "number", min: 1, max: 365, req: true }] }
+    ], { supports: c.supports.join("\n"), rewards: c.rewards ? "on" : "", reward: c.reward, rewardAt: c.rewardAt }, (v) => {
+      const cur = T(id);
+      if (!cur) return;
+      setRegulationPlan(cur, { ...v, rewards: v.rewards === "on" });
+      save();
+      toast(tr`Enregistré.`);
+    }, tr`Des actions concrètes et à ta portée : marcher, dessiner, éloigner un déclencheur, appeler quelqu'un… Les marques sont facultatives : une par journée où tu déclares une action réalisée, jalons fixes à 1, 3, 7, 14 et 30. Aucune série à tenir, rien ne se perd après un écart. La récompense est la tienne, gratuite si tu veux.`);
+  }
+  async function chooseDevice(id, confirm = false) {
+    if (confirm && !await ask(tr`Garder « ${label(id)} » sur cet appareil seulement ? À la prochaine synchronisation, ses données quittent ton compte : tes autres appareils n'en verront plus que le nom. Les sauvegardes techniques de l'hébergeur peuvent encore le contenir 30 jours au plus. Cet appareil devient le seul à le garder : se déconnecter te demandera quoi en faire, et un export de temps en temps te protège d'une perte.`)) return false;
+    const s = S(), inst = Object.hasOwn(s.modules, id) ? s.modules[id] : null;
+    if (!inst || regulationOnDevice(inst)) return false;
+    moveToDevice(s, id);
+    save();
+    toast(tr`« ${label(id)} » est gardé sur cet appareil seulement.`);
+    return true;
+  }
+  async function confirmDay(id, date) {
+    const inst = T(id);
+    if (!inst) return;
+    const d = regulationDay(inst, date), seen = regulationSnapshot(inst, date);
+    const lines = [
+      tr`${longDate(date)} : ${qty(inst, d.total)} au total.`,
+      d.count ? trn(d.count, "{0} saisie : {1}.", "{0} saisies : {1}.", d.uses.map((u) => qty(inst, u.value)).join(" + ")) : tr`Aucune consommation notée ce jour-là : confirmer en fait une journée à zéro.`,
+      tr`Confirmer, c'est dire que toutes les consommations de cette journée sont notées. Annuler la laisse inconnue, sans pénalité.`
+    ];
+    if (!await ask(lines.join("\n"))) return;
+    const cur = T(id);
+    if (!cur) return;
+    try {
+      closeRegulationDay(cur, date, seen, todayISO(), Date.now(), zone());
+    } catch (e) {
+      return toast(errMsg(e));
+    }
+    save();
+    toast(tr`Journée du ${fmt(date)} confirmée.`);
+  }
+  async function confirmSensitiveShare(id) {
+    const inst = T(id);
+    if (!inst) return;
+    const text = TYPE.context(inst, label(id).toUpperCase()).trim();
+    if (!await ask(`${tr`Partager avec l'assistant ce résumé de « ${label(id)} » ? Il partira tel quel à chaque question :`}
+
+${text}
+
+${tr`Notes, envies, déclencheurs et appuis restent ici. Arrêter le partage plus tard n'efface pas ce qui aura déjà été envoyé.`}`)) return;
+    if (!S().modules[id]) return;
+    S().config.assistant.share[id] = true;
+    save();
+    toast(tr`Résumé partagé avec l'assistant.`);
+  }
+  function removeEntry(id, entryId) {
+    const inst = T(id), i = inst ? inst.entries.findIndex((x) => x.id === entryId) : -1;
+    if (i < 0) return;
+    const e = inst.entries[i], wasComplete = e.kind === "use" && regulationDay(inst, e.date).complete;
+    inst.entries = inst.entries.filter((x) => x.id !== entryId);
+    save();
+    const what = e.kind === "day" ? tr`La journée du ${fmt(e.date)} redevient inconnue.` : e.kind === "use" ? tr`Supprimé : ${qty(inst, e.value)} le ${longDay(e.date)}.` : e.kind === "urge" ? tr`Envie du ${fmt(e.date)} supprimée.` : tr`Action du ${fmt(e.date)} supprimée.`;
+    toastUndo(wasComplete ? `${what} ${tr`Cette journée est à reconfirmer.`}` : what, () => {
+      const cur = T(id);
+      if (!cur || cur.entries.some((x) => x.id === entryId)) return;
+      cur.entries.splice(Math.min(i, cur.entries.length), 0, e);
+      save();
+      toast(tr`Rétabli. Rien ne s'est passé.`);
+    });
+  }
+  var pauseTimer = null;
+  var clock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  function pauseTick() {
+    clearTimeout(pauseTimer);
+    pauseTimer = null;
+    const el = document.getElementById("rlmPause");
+    if (!el) return;
+    const left2 = regulationRemaining(Number(el.dataset.end), Date.now());
+    if (!left2) {
+      if (el.dataset.done !== "1") render();
+      return;
+    }
+    el.textContent = clock(left2);
+    pauseTimer = setTimeout(pauseTick, 1e3);
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) pauseTick();
+  });
+  function pauseHTML(id, inst) {
+    const p = regulationPause(inst, Date.now());
+    if (!p) return "";
+    setTimeout(pauseTick, 0);
+    const until = new Date(p.end).toLocaleTimeString(uiLocale(), { hour: "2-digit", minute: "2-digit" });
+    return `<section class="rlm-pause" aria-labelledby="rlmPauseH"><h3 id="rlmPauseH">${p.left ? tr`Cinq minutes de pause` : tr`Pause terminée`}</h3>
+    ${p.left ? `<p class="big" id="rlmPause" role="timer" data-end="${p.end}">${clock(p.left)}</p><p class="hint">${tr`Jusqu'à ${until}. Elle continue si tu fermes l'app ou si l'écran se met en veille. Tu peux l'arrêter quand tu veux.`}</p>` : `<p id="rlmPause" data-end="${p.end}" data-done="1">${tr`Tu peux noter ce qui t'a aidé, ou simplement fermer cet encadré.`}</p>`}
+    <div class="row">${p.urge.strategy && !inst.entries.some((e) => e.id === urgeActionId(p.urge.id)) ? `<button class="btn sm" data-act="rlm-done" data-id="${esc(p.urge.id)}">${tr`J'ai fait : ${esc(p.urge.strategy)}`}</button>` : ""}<button class="btn ghost sm" data-act="rlm-pause-stop" data-id="${esc(p.urge.id)}">${p.left ? tr`Arrêter la pause` : tr`Fermer`}</button></div></section>`;
+  }
+  function dayStatus(inst, d) {
+    if (d.complete) {
+      const verdict = d.met === null ? d.goal ? d.goal.mode === "observer" ? tr`observée` : "" : tr`sans objectif ce jour-là` : d.met ? tr`objectif atteint` : tr`au-delà de l'objectif`;
+      return [tr`complète : ${qty(inst, d.total)}`, verdict].filter(Boolean).join(" · ");
+    }
+    if (d.reopened) return tr`à reconfirmer : ${qty(inst, d.total)} après une modification`;
+    return d.count ? tr`inconnue · déjà noté : ${qty(inst, d.total)}, pas encore confirmée` : tr`inconnue`;
+  }
+  function periodHTML(id, inst) {
+    const today = todayISO(), cur = regulationPeriod(inst, addDays(today, -6), addDays(today, 1)), prev = regulationPeriod(inst, addDays(today, -13), addDays(today, -6));
+    const cmp = regulationComparable(cur, prev);
+    const cell = (p, f) => p.span ? f(p) : "—";
+    const rows = [
+      [tr`Journées suivies`, (p) => String(p.span)],
+      [tr`Complètes (confirmées)`, (p) => String(p.complete)],
+      [tr`Inconnues ou à reconfirmer`, (p) => String(p.incomplete)],
+      [tr`Quantités déclarées, toutes journées`, (p) => qty(inst, p.declared)],
+      [tr`Moyenne par journée complète`, (p) => p.mean == null ? "—" : qty(inst, p.mean)],
+      [tr`Objectif atteint`, (p) => p.assessed ? trn(p.assessed, "{1} sur {0} journée évaluable", "{1} sur {0} journées évaluables", p.met) : "—"]
+    ];
+    const note = !prev.span ? tr`Pas encore de semaine précédente à mettre en regard.` : cmp.ok ? tr`Les deux périodes sont renseignées de façon voisine : leurs moyennes peuvent se comparer.` : cmp.reason === "few" ? tr`Moins de ${REGULATION_COMPARE_MIN} journées complètes dans l'une des périodes : leurs moyennes ne se comparent pas, l'écart dirait surtout ce qui manque.` : tr`Les deux périodes ne sont pas renseignées de la même façon (${cur.complete} et ${prev.complete} journées complètes) : leurs moyennes ne se comparent pas telles quelles.`;
+    const first2 = regulationGoalHistory(inst).at(-1), changes = [...prev.goalChanges, ...cur.goalChanges].filter((g) => g !== first2);
+    return `<section aria-labelledby="rlmWeekH-${esc(id)}"><h3 id="rlmWeekH-${esc(id)}">${tr`Mes sept derniers jours`}</h3>
+    <p class="hint">${tr`Une journée inconnue ne vaut jamais zéro, ni un échec. Les jours d'avant le début du suivi ne comptent pas.`}</p>
+    <div class="rlm-tablewrap"><table class="rlm-cmp"><thead><tr><th scope="col"><span class="sr">${tr`Mesure`}</span></th><th scope="col">${tr`Ces 7 jours`}</th><th scope="col">${tr`Les 7 d'avant`}</th></tr></thead>
+    <tbody>${rows.map(([l, f]) => `<tr><th scope="row">${l}</th><td>${esc(cell(cur, f))}</td><td>${esc(cell(prev, f))}</td></tr>`).join("")}</tbody></table></div>
+    <p class="hint">${note}</p>
+    ${changes.length ? `<p>${tr`Objectif changé pendant ces deux semaines :`} ${changes.map((g) => esc(tr`à partir du ${fmt(g.date)}, ${goalText(inst, g)}`)).join(" ; ")}.</p>` : ""}
+    <ul class="plain rlm-days">${[...cur.days].reverse().map((d) => `<li class="item" data-date="${esc(d.date)}"><span class="jdate">${fmt(d.date, { weekday: "short", day: "numeric" })}</span><div>${esc(dayStatus(inst, d))}${d.goal && d.met !== null ? `<div class="meta"><span>${esc(tr`objectif du jour : ${goalText(inst, d.goal)}`)}</span></div>` : ""}</div>
+      <div class="row">${d.complete ? "" : `<button class="btn ghost sm" data-act="rlm-day-at" data-date="${esc(d.date)}" aria-label="${esc(tr`Confirmer le ${longDate(d.date)}`)}">${tr`confirmer`}</button>`}</div></li>`).join("") || `<li class="empty">${tr`Le suivi commence avec ta première saisie ou ton premier objectif.`}</li>`}</ul>
+    <button class="btn ghost sm" data-act="rlm-day-other">${tr`Confirmer une autre journée…`}</button></section>`;
+  }
+  function progressHTML(inst) {
+    if (!inst.config.rewards) return "";
+    const p = regulationProgress(inst);
+    return `<section class="rlm-progress" aria-labelledby="rlmProgH"><h3 id="rlmProgH">${tr`Les gestes restent`}</h3>
+    <p><b>${trn(p.marks, "{0} marque", "{0} marques")}</b> · ${tr`une par journée où tu as déclaré une action réalisée.`}</p>
+    <ol class="rlm-miles">${p.milestones.map((m) => `<li class="${m.reached ? "on" : ""}"><span aria-hidden="true">${m.reached ? "●" : "○"}</span> ${m.reached ? trn(m.n, "{0} marque, jalon atteint", "{0} marques, jalon atteint") : trn(m.n, "{0} marque, à venir", "{0} marques, à venir")}</li>`).join("")}</ol>
+    <p class="hint">${p.next ? trn(p.next, "Prochain jalon : {0} marque.", "Prochain jalon : {0} marques.") : tr`Tous les jalons sont atteints ; tes gestes continuent de compter.`} ${tr`Aucun jour consécutif exigé ; un écart ne retire rien ; supprimer une action erronée corrige le compte.`}</p>
+    ${p.reward ? `<p>${trn(p.reward.at, "Ma récompense à {0} marque : {1}", "Ma récompense à {0} marques : {1}", `<b>${esc(p.reward.text)}</b>`)} · ${p.reward.reached ? tr`atteinte` : trn(p.reward.left, "encore {0}", "encore {0}")}</p>` : ""}</section>`;
+  }
+  function supportsHTML(id, inst) {
+    const today = todayISO(), rows = regulationSupports(inst, addDays(today, -29), addDays(today, 1));
+    return `<section aria-labelledby="rlmSupH-${esc(id)}"><h3 id="rlmSupH-${esc(id)}">${tr`Ce qui peut m'aider`}</h3>
+    ${inst.config.supports.length ? `<ul class="plain rlm-supports">${inst.config.supports.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>` : `<p class="empty">${tr`Aucun appui pour l'instant.`}</p>`}
+    <datalist id="rlmSup-${esc(id)}">${inst.config.supports.map((s) => `<option value="${esc(s)}">`).join("")}</datalist>
+    <button class="btn sm" data-act="rlm-plan">${tr`Personnaliser mes appuis et récompenses`}</button>
+    ${rows.length ? `<h4>${tr`Ce que j'en ai dit, ces 30 derniers jours`}</h4><ul class="plain rlm-feedback">${rows.map((r) => `<li><b>${esc(r.strategy)}</b> : ${esc([
+      r.chosen ? trn(r.chosen, "choisi {0} fois lors d'une envie", "choisi {0} fois lors d'une envie") : "",
+      r.done ? trn(r.done, "réalisé {0} fois", "réalisé {0} fois") : "",
+      ...Object.keys(OUTCOMES).filter((k) => r[k]).map((k) => `${tr(OUTCOMES[k])} ×${r[k]}`)
+    ].filter(Boolean).join(" · "))}</li>`).join("")}</ul>
+      <p class="hint">${tr`Une description, pas une conclusion : quelques retours ne disent ni qu'un appui marche, ni pourquoi.`}</p>` : ""}</section>`;
+  }
+  function entryHTML(inst, e) {
+    let main = "";
+    if (e.kind === "use") main = `<b>${esc(qty(inst, e.value))}</b>${e.declared != null ? ` <span class="hint">${esc(tr`(complément, total déclaré : ${qty(inst, e.declared)})`)}</span>` : ""}`;
+    else if (e.kind === "action") main = esc(tr`Action réalisée : ${e.strategy}`);
+    else if (e.kind === "day") main = esc(regulationDay(inst, e.date).complete ? tr`Journée confirmée` : tr`Confirmation à refaire : la journée a changé depuis`);
+    else main = esc([tr`Envie`, e.intensity !== null ? tr`intensité ${e.intensity}/10` : "", e.strategy ? tr`appui choisi : ${e.strategy}` : "", e.outcome ? tr(OUTCOMES[e.outcome]) : ""].filter(Boolean).join(" · "));
+    const done = e.kind === "urge" && e.strategy && !inst.entries.some((x) => x.id === urgeActionId(e.id));
+    const acts = [
+      done ? `<button class="btn ghost sm" data-act="rlm-done">${tr`Je l'ai fait`}</button>` : "",
+      e.kind === "urge" && !(e.pauseEnd && e.pauseEnd > Date.now()) ? `<button class="btn ghost sm ra" data-act="rlm-pause">${tr`Pause de 5 min`}</button>` : "",
+      e.kind !== "day" ? `<button class="btn ghost sm ra" data-act="rlm-edit">${tr`modifier`}</button>` : "",
+      `<button class="btn ghost sm ra" data-act="rlm-del">${e.kind === "day" ? tr`laisser inconnue` : tr`suppr.`}</button>`
+    ].join("");
+    return `<li class="item" data-id="${esc(e.id)}"><span class="jdate">${fmt(e.date)}</span><div>${main}${e.note ? `<p class="note">${esc(e.note)}</p>` : ""}${e.editedAt ? `<div class="meta"><span>${tr`corrigé`}</span></div>` : ""}</div><div class="row">${acts}</div></li>`;
+  }
+  function whereText(id) {
+    const stub = S().modules[id], c = stub.config;
+    if (!synced()) return tr`Sur cet appareil : sans compte, rien n'est envoyé au serveur de Selene.`;
+    if (regulationOnDevice(stub)) return tr`Sur cet appareil seulement. Ton compte n'en garde que le nom, pour que tes autres appareils sachent qu'il existe : son contenu ne passe pas par le serveur. La sauvegarde de cet appareil (Google, iCloud…), si tu l'as activée, peut l'inclure : elle relève de ton compte Google ou Apple, pas de Selene. Ce n'est pas un coffre chiffré : quiconque ouvre cet appareil déverrouillé peut lire son stockage. Perdre l'appareil peut faire perdre le suivi : exporte-le de temps en temps.`;
+    if (!subjectOf(stub) && !c.consent) return tr`Pas encore configuré : ton compte n'en garde que le nom. Quand tu auras choisi ce que tu veux suivre, son contenu restera sur cet appareil seulement, sans passer par le serveur de Selene.`;
+    if (c.consent) return tr`Encore synchronisé avec ton compte, selon ton accord du ${fmt(iso(new Date(c.consent.at)), { day: "numeric", month: "long", year: "numeric" })} : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.`;
+    return tr`Encore synchronisé avec ton compte, depuis sa création : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.`;
+  }
+  function elsewhereHTML(id) {
+    const mine = S().modules[id].config.holder === deviceId();
+    return `<div data-mod="${esc(id)}" class="rlm"><h2>${esc(label(id))}</h2><section><p>${mine ? tr`Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi.` : tr`Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là. Appareil perdu, ou Selene réinstallée ? Tu peux retirer ce nom dans les réglages.`}</p></section></div>`;
+  }
+  var choiceHTML = (id) => synced() && !regulationOnDevice(S().modules[id]) ? `<section class="rlm-choice" aria-labelledby="rlmChoiceH"><h3 id="rlmChoiceH">${tr`Ce suivi doit revenir sur un appareil`}</h3>
+    <p>${tr`Selene ne synchronise plus les suivis de santé. Celui-ci l'est encore : garde-le sur l'appareil de ton choix, et son contenu quittera ton compte. Tant que tu n'as pas choisi, rien ne change.`}</p>
+    <div class="row"><button class="btn acc" data-act="rlm-device">${tr`Le garder sur cet appareil seulement…`}</button></div></section>` : "";
+  function privacyHTML(id, inst) {
+    const shared = !!S().config.assistant.share[id];
+    return `<details class="rlm-privacy" id="rlmPriv-${esc(id)}"><summary>${tr`Confidentialité et données`}</summary>
+    <ul class="plain rlm-facts">
+      <li><b>${tr`Où vivent ces données.`}</b> ${whereText(id)}</li>
+      <li><b>${tr`Sauvegardes.`}</b> ${tr`La sauvegarde complète (Réglages, Compte et données, Exporter) contient ce suivi en entier, notes comprises.`}</li>
+      <li><b>${tr`Ce qui reste visible.`}</b> ${tr`Le nom de cet espace et sa présence : navigation, accueil, Réglages, palette de commandes. Les détails (quantités, envies, notes, appuis) restent ici : ni recherche, ni motifs, ni dérive lexicale, ni test lunaire, ni bilan général, ni planche de lunaison, ni reprise sur l'accueil, ni liens, ni widget, ni notifications.`}</li>
+      <li><b>${tr`L'assistant.`}</b> ${shared ? tr`Partagé : il reçoit ce résumé, et rien d'autre, à chaque question.` : tr`Non partagé : l'assistant ne reçoit rien de ce suivi. Si tu le partages, il recevra ce résumé, et rien d'autre :`}
+        <blockquote class="note rlm-quote">${esc(TYPE.context(inst, label(id).toUpperCase()).trim())}</blockquote>
+        ${tr`Arrêter le partage empêche les envois suivants ; cela ne retire pas ce qui a déjà été envoyé (efface la conversation dans l'Assistant si tu veux).`}${enabled("assistant") ? "" : ` ${tr`L'assistant est désactivé en ce moment.`}`}</li>
+      <li><b>${tr`Export de ce suivi.`}</b> ${tr`Un fichier JSON lisible, non chiffré : nom, sujet, objectifs et leur historique, journal complet avec les notes, appuis et récompense. Pour le consulter ou le garder ; une restauration passe par la sauvegarde complète.`}</li>
+      <li><b>${tr`Suppression.`}</b> ${tr`Supprimer ce suivi efface ses données de cet appareil puis, à la synchronisation suivante, de ton compte et de tes autres appareils. Les sauvegardes et exports déjà téléchargés restent là où tu les as rangés.`}</li>
+    </ul>
+    <div class="row">${synced() && !regulationOnDevice(S().modules[id]) ? `<button class="btn sm" data-act="rlm-device">${tr`Garder sur cet appareil seulement…`}</button>` : ""}<button class="btn sm" data-act="rlm-share">${shared ? tr`Ne plus partager avec l'assistant` : tr`Partager ce résumé avec l'assistant…`}</button><button class="btn sm" data-act="rlm-export">${tr`Exporter ce suivi`}</button><button class="btn ghost sm" data-act="mod-del" data-mod="${esc(id)}">${tr`Supprimer ce suivi…`}</button></div></details>`;
+  }
+  function setupHTML(id) {
+    return `<section><p>${tr`Un espace pour observer, réduire ou arrêter le tabac, le cannabis, l'alcool ou les réseaux sociaux, à ton rythme. Tu notes ce que tu veux ; une journée ne compte que lorsque tu la confirmes.`}</p>
+    <p class="hint">${tr`Ce n'est ni un diagnostic, ni un programme de soin : un carnet. Il ne calcule aucun sevrage et ne dit jamais qu'une quantité est sans risque.`}</p>
+    <button class="btn acc" data-act="rlm-setup">${tr`Commencer : choisir ce que je veux suivre`}</button></section>`;
+  }
+  function viewHTML(id) {
+    const inst = T(id), m = esc(id);
+    if (!inst) return elsewhereHTML(id);
+    const head = `<h2>${esc(label(id))}</h2><p class="hint">${tr`Suivi personnel et autodéclaratif, sans diagnostic ni programme de sevrage. Privé par défaut : voir « Confidentialité et données ».`}</p>`;
+    if (!subjectOf(inst)) return `<div data-mod="${m}" class="rlm">${head}${setupHTML(id)}${privacyHTML(id, inst)}</div>`;
+    const choice = choiceHTML(id);
+    const today = todayISO(), g = regulationGoal(inst, today), next = regulationNextGoal(inst, today), d = regulationDay(inst, today), sub2 = subjectOf(inst);
+    const journal = [...inst.entries].sort((a, b) => b.date < a.date ? -1 : b.date > a.date ? 1 : b.at - a.at);
+    return `<div data-mod="${m}" class="rlm">${head}${choice}
+    ${regulationSubjectConflict(inst) ? `<p class="hint rlm-warn" role="alert">${tr`Deux appareils ont commencé ce suivi avec deux sujets différents ; un seul a été gardé. Les quantités notées sur l'autre appareil sont peut-être dans une autre unité : vérifie le journal, et crée un suivi par sujet.`}</p>` : ""}
+    <section class="rlm-now" aria-labelledby="rlmNowH"><h3 id="rlmNowH">${esc(sub2.name())} · ${esc(goalText(inst, g))}</h3>
+      <p class="hint">${esc(sub2.about())}</p>
+      ${next ? `<p class="hint">${esc(tr`À partir du ${fmt(next.date)} : ${goalText(inst, next)}.`)}</p>` : ""}
+      <p>${tr`Aujourd'hui, déjà noté : ${esc(qty(inst, d.total))}`} · ${d.complete ? tr`journée confirmée` : d.reopened ? tr`à reconfirmer` : tr`pas encore confirmée`}</p>
+      <div class="rlm-acts"><button class="btn acc" data-act="rlm-urge">${tr`J'ai une envie`}</button><button class="btn" data-act="rlm-use">${tr`Noter une consommation / durée`}</button><button class="btn" data-act="rlm-action">${tr`J'ai réalisé une action`}</button><button class="btn" data-act="rlm-day">${tr`Faire mon point du jour`}</button></div></section>
+    ${pauseHTML(id, inst)}
+    ${inst.config.subject === "alcool" ? `<details class="rlm-info" id="rlmAlc-${m}"><summary>${tr`Alcool : sevrage, urgences, aide`}</summary><p>${esc(alcoholRisk())}</p><p><b>${esc(alcoholUrgent())}</b></p><p>${esc(alcoholHelp())} <a href="https://www.alcool-info-service.fr/" target="_blank" rel="noopener noreferrer">alcool-info-service.fr</a></p></details>` : ""}
+    ${periodHTML(id, inst)}
+    ${progressHTML(inst)}
+    ${supportsHTML(id, inst)}
+    <section aria-labelledby="rlmLogH-${m}"><h3 id="rlmLogH-${m}">${tr`Journal`}</h3><ul class="plain">${((pg) => pg.items.map((e) => entryHTML(inst, e)).join("") + pg.more)(paged(`regulation:${id}`, journal)) || `<li class="empty">${tr`Rien de noté pour l'instant.`}</li>`}</ul></section>
+    <section aria-labelledby="rlmGoalH-${m}"><h3 id="rlmGoalH-${m}">${tr`Mes objectifs`}</h3>
+      <p>${tr`En ce moment : ${esc(goalText(inst, g))}.`}</p>
+      <button class="btn sm" data-act="rlm-goal">${tr`Faire évoluer mon objectif`}</button>
+      <details id="rlmHist-${m}"><summary class="hint">${trn(inst.goals.length, "Historique : {0} version", "Historique : {0} versions")}</summary><ul class="plain rlm-history">${regulationGoalHistory(inst).map((v) => `<li>${esc(tr`à partir du ${fmt(v.date, { day: "numeric", month: "long", year: "numeric" })} : ${goalText(inst, v)}`)} <span class="hint">${esc(tr`(choisi le ${fmt(iso(new Date(v.at)))})`)}</span></li>`).join("")}</ul></details>
+      <p class="hint">${tr`Début du suivi : ${fmt(regulationStart(inst), { day: "numeric", month: "long", year: "numeric" })}. Chaque journée confirmée garde l'objectif en vigueur au moment de sa confirmation.`}</p></section>
+    ${privacyHTML(id, inst)}</div>`;
+  }
+  var TYPE = {
+    sensitive: true,
+    view: viewHTML,
+    settings: (id) => `<p class="hint">${tr`Suivi privé : partage avec l'assistant désactivé à la création, détails exclus des vues générales. Son nom reste visible.`}</p><div class="row">${T(id) ? `<button class="btn sm" data-act="rlm-plan" data-mod="${esc(id)}">${tr`Appuis et récompenses`}</button>` : ""}<a class="btn ghost sm" href="#${esc(id)}">${tr`Ouvrir le suivi`}</a></div>`,
+    summary: () => tr`Suivi privé : ouvrir pour consulter`,
+    // Pour l'assistant (consigne en français, docs/i18n.md) : le résumé explicite, rien de ce qui est écrit à la main.
+    // `id` : pour lire la copie locale d'un suivi gardé sur cet appareil (le document synchronisé n'en a que le talon).
+    context(stub, name, id) {
+      const inst = id ? T(id) : stub;
+      if (!inst) return `
+${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible ici.`;
+      return regulationSummary(inst, name, todayISO());
+    },
+    recent: () => [],
+    review: () => null,
+    // Supprimer ailleurs que chez le détenteur ne retire que le talon : possible (appareil perdu ou réinstallé : sinon, un
+    // nom impossible à effacer) ; si le détenteur existe encore, il le recrée (state/local.js) et ne perd rien. Supprimer
+    // chez le détenteur emporte la copie locale.
+    deleteNote: (id) => {
+      const inst = S().modules[id];
+      return regulationOnDevice(inst) && inst.config.holder !== deviceId() ? tr`Ici, il n'y a que le nom de ce suivi : son contenu est gardé sur un autre appareil. Si cet appareil existe encore, le suivi y reste entier et son nom reviendra : supprime-le plutôt depuis celui-ci. S'il est perdu, ou si Selene y a été réinstallée, retirer ce nom est définitif.` : "";
+    },
+    onDelete: (id) => forgetLocal(id),
+    // Pas de hook texts, ni alerts, ni badge, ni accept : voir l'en-tête.
+    click: {
+      "rlm-setup": (el) => subjectForm(modOf2(el)),
+      "rlm-goal": (el) => goalForm(modOf2(el)),
+      "rlm-use": (el) => useForm(modOf2(el)),
+      "rlm-urge": (el) => urgeForm(modOf2(el)),
+      "rlm-action": (el) => actionForm(modOf2(el)),
+      "rlm-plan": (el) => planForm(modOf2(el)),
+      "rlm-day": (el) => confirmDay(modOf2(el), todayISO()),
+      "rlm-day-at": (el) => confirmDay(modOf2(el), el.dataset.date),
+      "rlm-day-other": (el) => {
+        const id = modOf2(el);
+        openForm(tr`Confirmer une journée`, [{ n: "date", l: tr`Journée`, t: "date", req: true, max: todayISO() }], { date: addDays(todayISO(), -1) }, (v) => confirmDay(id, v.date), tr`Tu verras d'abord son total exact. Une journée non confirmée reste inconnue : jamais zéro, jamais un échec.`);
+      },
+      "rlm-edit": (el) => {
+        const id = modOf2(el), e = T(id).entries.find((x) => x.id === entryOf(el));
+        if (!e) return;
+        if (e.kind === "use") useForm(id, e);
+        else if (e.kind === "urge") urgeForm(id, e);
+        else if (e.kind === "action") actionForm(id, e);
+      },
+      "rlm-del": (el) => removeEntry(modOf2(el), entryOf(el)),
+      "rlm-done": (el) => {
+        const id = modOf2(el), inst = T(id), urgeId = el.dataset.id || entryOf(el);
+        const e = markUrgeDone(inst, urgeId, todayISO(), Date.now(), zone());
+        save();
+        toast(tr`C'est noté : ${e.strategy}. Une action réalisée, pas seulement choisie.`);
+      },
+      "rlm-pause": (el) => {
+        const id = modOf2(el);
+        startRegulationPause(T(id), entryOf(el), Date.now());
+        save();
+      },
+      "rlm-pause-stop": (el) => {
+        stopRegulationPause(T(modOf2(el)), el.dataset.id);
+        save();
+      },
+      "rlm-device": (el) => chooseDevice(modOf2(el), true),
+      "rlm-share": (el) => {
+        const id = modOf2(el);
+        if (!S().config.assistant.share[id]) return confirmSensitiveShare(id);
+        S().config.assistant.share[id] = false;
+        save();
+        toast(tr`Partage arrêté. Ce qui a déjà été envoyé dans une conversation n'en est pas retiré.`);
+      },
+      "rlm-export": async (el) => {
+        const id = modOf2(el), inst = T(id);
+        if (!await ask(tr`Exporter ce suivi dans un fichier lisible, non chiffré ? Il contient tout le journal, notes comprises.`)) return;
+        await downloadFile(`selene-suivi-${todayISO()}.json`, JSON.stringify({
+          format: "selene-regulation-v1",
+          exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
+          about: "Export de consultation d'un suivi « Reprendre la main ». Restauration : par la sauvegarde complète de Selene.",
+          module: { label: label(id), type: inst.type, config: inst.config, goals: inst.goals, entries: inst.entries }
+        }, null, 2), "application/json", tr`Suivi personnel`);
+      }
+    }
+  };
+  registerType("regulation", TYPE);
+
   // src/app/shell/palette.js
   var palIdx = 0;
   var palItems = [];
@@ -10755,7 +10766,7 @@ ${contextText()}`;
   };
   function paletteItems(q) {
     const s = S(), f = fold(q.trim()), out = [], match = (t) => !f || fold(t).includes(f);
-    const spaces = s.config.modules.filter((m) => m.on && Object.hasOwn(s.modules, m.id)).map((m) => [m.id, label(m.id)]);
+    const spaces = s.config.modules.filter(shownModule).map((m) => [m.id, label(m.id)]);
     if (!f) for (const r of liveRecents().slice(0, 3)) out.push({ k: tr`Récent`, t: label(r.id), run: goTo(r.id) });
     for (const [id, t] of spaces) if (match(t) && !out.some((o) => o.t === t)) out.push({ k: tr`Espace`, t, run: goTo(id) });
     for (const [id, t] of [["accueil", tr`Aujourd'hui`], ["bilan", tr`Bilan`], ["recherche", tr`Chercher`], ...dehorsOn() ? [["dehors", tr`Nouveautés · Dehors`]] : [], ["reglages", tr`Réglages`], ...enabled("assistant") ? [["assistant", label("assistant")]] : []])
@@ -10862,7 +10873,7 @@ ${contextText()}`;
   CLICK["entry-add"] = (el) => entryAdd(el.dataset.mod);
   CLICK["entry-del"] = (el) => removeWithUndo(el.dataset.mod, "entries", idOf(el));
   CLICK["mod-down"] = (el) => moveMod(el, 1);
-  var offered = (type) => !MODULE_TYPES[type]?.personal || personalAccount();
+  var offered = (type) => !TYPE_UI[type]?.absent && (!MODULE_TYPES[type]?.personal || personalAccount());
   function addModule(tpl, name) {
     if (!offered(tpl.type)) return;
     if (tpl.type === "programme") {
@@ -11200,7 +11211,7 @@ ${contextText()}`;
     if (mbState.artists.length === 1 && !mbState.err) return mbLoadAlbums(mbState.artists[0].id);
     if ($("#sheet").open) $("#sheetBody").innerHTML = SHEETS.mb(ref);
   }
-  CLICK["mb-open"] = (el) => mbOpen(`${modOf2(el)}/${idOf(el)}`);
+  CLICK["mb-open"] = (el) => mbOpen(`${modOf(el)}/${idOf(el)}`);
   CLICK["mb-retry"] = () => {
     if (mbState) mbOpen(mbState.ref);
   };
@@ -11236,7 +11247,7 @@ ${contextText()}`;
     return head + (n.items.length ? `<ul class="plain mb-albums">${n.items.map((x) => `<li class="item" data-rg="${esc(x.album.id)}" data-a="${esc(x.aid)}"><span>${coverImg(x.album.id)}</span><div><b>${esc(x.album.title)}</b><div class="meta"><span>${esc(x.artist)}</span><span>${esc(x.album.date)}</span><span>${esc(x.album.type)}</span></div></div>${have.has(x.album.id) ? `<span class="hint">${tr`déjà là`}</span>` : `<button class="btn sm" data-act="mb-new-add">${tr`ajouter`}</button>`}</li>`).join("")}</ul>` : `<p class="empty">${tr`Rien de neuf. Le silence est aussi une nouvelle.`}</p>`) + (n.failed ? `<p class="hint">${trn(n.failed, "{0} artiste sans réponse : réessaie plus tard.", "{0} artistes sans réponse : réessaie plus tard.")}</p>` : "");
   };
   CLICK["mb-new"] = async (el) => {
-    const mod = modOf2(el), inst = S().modules[mod], artists = /* @__PURE__ */ new Map();
+    const mod = modOf(el), inst = S().modules[mod], artists = /* @__PURE__ */ new Map();
     for (const e of inst.entries) if (e.mb && e.mb.a && !artists.has(e.mb.a)) artists.set(e.mb.a, e.title);
     let seen = {};
     try {
@@ -11287,8 +11298,8 @@ ${contextText()}`;
     render();
     if (i === c.statuses.length - 1) toast(tr(collectionDoneLines[Math.floor(Math.random() * collectionDoneLines.length)], e.title, e.status));
   }
-  var modOf2 = (el) => el.closest("[data-mod]").dataset.mod;
-  var itemOf = (el) => S().modules[modOf2(el)].entries.find((x) => x.id === idOf(el));
+  var modOf = (el) => el.closest("[data-mod]").dataset.mod;
+  var itemOf = (el) => S().modules[modOf(el)].entries.find((x) => x.id === idOf(el));
   var collectionDoneLines = [N_("« {0} » est passé à « {1} ». Le monde n'a rien remarqué, comme prévu."), N_("« {0} » : {1}. Une chose de moins qui attend ton attention."), N_("{1} : « {0} ». L'Œuvre avance, à pas de lichen.")];
   var reviewedHTML = (e) => {
     const r = (e.reviews || []).at(-1);
@@ -11405,15 +11416,15 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
       };
     },
     click: {
-      "col-new": (el) => collectionForm(modOf2(el), null),
-      "col-edit": (el) => collectionForm(modOf2(el), itemOf(el)),
+      "col-new": (el) => collectionForm(modOf(el), null),
+      "col-edit": (el) => collectionForm(modOf(el), itemOf(el)),
       "col-reread": (el) => {
         const e = itemOf(el);
-        if (e) collectionForm(modOf2(el), e);
+        if (e) collectionForm(modOf(el), e);
       },
       // Réexaminée, rien ne change : noté, et le rendez-vous est levé (« Annuler » le remet).
       "col-keep": (el) => {
-        const id = modOf2(el), e = itemOf(el);
+        const id = modOf(el), e = itemOf(el);
         if (!e) return;
         const due = e.due, itemId = e.id;
         e.reviews = [...e.reviews || [], { date: todayISO(), verdict: "maintenue" }];
@@ -11429,13 +11440,13 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
           render();
         });
       },
-      "col-del": (el) => removeWithUndo(modOf2(el), "entries", idOf(el)),
+      "col-del": (el) => removeWithUndo(modOf(el), "entries", idOf(el)),
       "col-move": (el) => {
-        const e = itemOf(el), c = S().modules[modOf2(el)].config;
-        if (e) moveCardTo(modOf2(el), e.id, c.statuses.indexOf(e.status) + +el.dataset.d);
+        const e = itemOf(el), c = S().modules[modOf(el)].config;
+        if (e) moveCardTo(modOf(el), e.id, c.statuses.indexOf(e.status) + +el.dataset.d);
       },
       "col-tab": (el) => {
-        colTab[modOf2(el)] = +el.dataset.i;
+        colTab[modOf(el)] = +el.dataset.i;
         render();
       },
       "st-add": (el) => {
@@ -11470,7 +11481,7 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
     },
     change: {
       "col-f": (el) => {
-        colFilter[modOf2(el)] = el.value;
+        colFilter[modOf(el)] = el.value;
         render();
       },
       "col-st": (el) => {
@@ -11500,7 +11511,7 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
       },
       /* L'export Instagram : lu sur l'appareil, confirmé (combien, de quand à quand), versé au dernier statut. */
       "col-ig": async (el) => {
-        const mod = modOf2(el), files = [...el.files || []];
+        const mod = modOf(el), files = [...el.files || []];
         el.value = "";
         if (!files.length) return;
         let posts = [], bad = 0;
@@ -11551,7 +11562,7 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
   document.addEventListener("dragstart", (e) => {
     const card = e.target.closest && e.target.closest(".board .card[draggable][data-id]");
     if (!card) return;
-    dragCard = { mod: modOf2(card), id: card.dataset.id };
+    dragCard = { mod: modOf(card), id: card.dataset.id };
     card.classList.add("dragging");
     try {
       e.dataTransfer.effectAllowed = "move";
@@ -11586,7 +11597,7 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
     if (!card) return;
     e.preventDefault();
     const id = card.dataset.id;
-    moveCardTo(modOf2(card), id, +card.dataset.ci + (e.key === "]" ? 1 : -1));
+    moveCardTo(modOf(card), id, +card.dataset.ci + (e.key === "]" ? 1 : -1));
     document.querySelectorAll(".board .card[data-id]").forEach((c) => {
       if (c.dataset.id === id) c.focus();
     });
@@ -11666,7 +11677,7 @@ ${nm} (${mo}) : dépenses ${sumOf2(es, "dépense")} €, revenus ${sumOf2(es, "r
     }),
     click: {
       "bud-month": (el) => {
-        const id = modOf2(el), [y, mo] = monthOf(id).split("-").map(Number), d = new Date(y, mo - 1 + +el.dataset.d, 15);
+        const id = modOf(el), [y, mo] = monthOf(id).split("-").map(Number), d = new Date(y, mo - 1 + +el.dataset.d, 15);
         budMonths[id] = iso(d).slice(0, 7);
         gFilter[id] = "";
         render();
@@ -11675,7 +11686,7 @@ ${nm} (${mo}) : dépenses ${sumOf2(es, "dépense")} €, revenus ${sumOf2(es, "r
         const amt = Math.abs(+$("#bAmt").value);
         if (!Number.isFinite(amt) || !amt) return toast(tr`Un montant, même symbolique.`);
         try {
-          addBudgetEntry(S().modules[modOf2(el)].entries, { amount: amt, type: $("#bType").value, cat: $("#bCat").value.trim(), note: $("#bNote").value.trim(), date: $("#bDate").value }, uid(), todayISO());
+          addBudgetEntry(S().modules[modOf(el)].entries, { amount: amt, type: $("#bType").value, cat: $("#bCat").value.trim(), note: $("#bNote").value.trim(), date: $("#bDate").value }, uid(), todayISO());
         } catch (e) {
           return toast(errMsg(e));
         }
@@ -11683,7 +11694,7 @@ ${nm} (${mo}) : dépenses ${sumOf2(es, "dépense")} €, revenus ${sumOf2(es, "r
         site.save();
         render();
       },
-      "bud-del": (el) => removeWithUndo(modOf2(el), "entries", idOf(el)),
+      "bud-del": (el) => removeWithUndo(modOf(el), "entries", idOf(el)),
       "env-add": (el) => {
         instOf(el).config.envelopes.push({ id: uid(), name: tr`Nouvelle enveloppe`, limit: 100 });
         site.save();
@@ -11937,7 +11948,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   var SYSTEM = ["assistant"];
   function domains() {
     const s = S(), out = /* @__PURE__ */ new Map();
-    for (const m of s.config.modules) if (m.on && !SYSTEM.includes(m.id) && Object.hasOwn(s.modules, m.id)) {
+    for (const m of s.config.modules) if (shownModule(m) && !SYSTEM.includes(m.id)) {
       const g = String(m.group || "").trim();
       if (!out.has(g)) out.set(g, []);
       out.get(g).push(m.id);
@@ -12095,7 +12106,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     return out;
   };
   function plateHTML(id, extra = "") {
-    const n = S().config.modules.filter((m) => m.on && Object.hasOwn(S().modules, m.id)).findIndex((m) => m.id === id) + 1;
+    const n = S().config.modules.filter(shownModule).findIndex((m) => m.id === id) + 1;
     return `<div class="plate ${tintOf(id)}">${sigil(id)}<span class="pl">${tr`Pl. ${roman(n)}`}</span><span class="spacer"></span>${extra}<button class="btn ghost sm" data-act="goto-groups" data-mod="${esc(id)}">${tr`régler`}</button></div>`;
   }
   function sigilPicker(mod) {
@@ -12452,7 +12463,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     dossierFile(tr`Tension — ${excerpt(items[0].e, 40)}`, tr`« ${excerpt(items[0].e, 80)} » contredit « ${excerpt(items[1].e, 80)} », et leur voisinage`, items);
   };
   CHANGE["ep-set"] = (el) => {
-    const inst = S().modules[modOf2(el)], id = idOf(el), item = inst && [...inst.entries, ...inst.scraps || []].find((x) => x.id === id);
+    const inst = S().modules[modOf(el)], id = idOf(el), item = inst && [...inst.entries, ...inst.scraps || []].find((x) => x.id === id);
     if (!item) return;
     setEpStatus(item, el.value, todayISO());
     site.save();
@@ -12574,7 +12585,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     if (!w || !hit) return;
     const src = { title: w.title, url: w.link, doi: w.oa.doi || null, site: w.oa.site, date: w.oa.day, kind: w.oa.kind === "article" ? "article" : w.oa.kind || "article", authors: w.oa.authors, abstract: "" };
     if (findSourceDup(src)) return render();
-    const e = keepSource(modOf2(el), src, { from: tr`Cité par tes sources`, text: tr`cité par ${hit.by.length} de tes sources`, date: todayISO() });
+    const e = keepSource(modOf(el), src, { from: tr`Cité par tes sources`, text: tr`cité par ${hit.by.length} de tes sources`, date: todayISO() });
     site.save();
     render();
     toast(tr`Gardée : « ${excerpt(e, 50)} ».`);
@@ -12911,7 +12922,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     return days < 1 ? tr`aujourd'hui, ${hm(t)}` : days < 7 ? d.toLocaleDateString(uiLocale(), { weekday: "long" }) : fmt(d.toISOString().slice(0, 10));
   };
   VIEWS.dehors = () => {
-    const feeds = dehorsFeeds(), mods = S().config.modules.filter((m) => m.on && Object.hasOwn(S().modules, m.id) && !SYSTEM.includes(m.id)).map((m) => m.id);
+    const feeds = dehorsFeeds(), mods = S().config.modules.filter((m) => shownModule(m) && !SYSTEM.includes(m.id)).map((m) => m.id);
     const head = `<h2>${tr`Nouveautés`} <span class="aka">· ${tr`Dehors`}</span></h2><p class="hint">${tr`Ce qui est paru depuis ta dernière visite, dans les flux que tu suis. Douze au plus : le reste attend, rien ne défile. Ce qui croise ce que tu gardes (un motif, un auteur de tes sources, une de tes sources citée, un lien paru dans deux flux) passe devant, et dit pourquoi. Garde ce qui compte, le reste s'efface en un mois.`}</p>`;
     if (!dehorsOn()) return head + `<p class="empty">${tr`Dehors passe par le passeur : il n'existe que dans la version hébergée, connectée à ton compte.`}</p>`;
     {
@@ -13466,7 +13477,7 @@ ${nm} : arc de ${c.stations.length} étapes (${c.stations.map((s) => s.name).joi
     <div class="rooms">${out.map((g) => `<div class="room ${g.pct > 100 ? "over" : ""}"><div class="fill" style="width:${Math.min(100, g.pct)}%"></div><small>${esc(g.name)}</small><b>${tr`${g.pct} %`}</b><small>${esc(g.sub)}</small></div>`).join("") || `<p class="empty">${tr`Rien à regrouper pour l'instant.`}</p>`}</div></section>`;
   }
   var tierCurrent = (c) => (c.tiers || []).find((t) => !t.advancedAt) || null;
-  var firstDecisions = () => (S().config.modules.find((m) => m.on && Object.hasOwn(S().modules, m.id) && S().modules[m.id].type === "collection" && S().modules[m.id].config.review) || {}).id || null;
+  var firstDecisions = () => (S().config.modules.find((m) => shownModule(m) && S().modules[m.id].type === "collection" && S().modules[m.id].config.review) || {}).id || null;
   function tiersPanel(id) {
     const inst = S().modules[id], c = inst.config;
     if (!c.tiers.length) return "";
@@ -13907,7 +13918,7 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
   </div>`;
   };
   CLICK["specimen"] = (el) => {
-    const mod = modOf2(el), id = idOf(el);
+    const mod = modOf(el), id = idOf(el);
     if (mod && id) openSheet("specimen", `${mod}/${id}`);
   };
 

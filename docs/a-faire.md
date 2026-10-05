@@ -117,8 +117,10 @@ Le chemin complet (comptes, clés, secrets, premier envoi) est dans [publication
 « Reprendre la main » est hors de l'offre publique depuis le 3 octobre 2026
 ([regulation.md](regulation.md#hors-de-loffre-publique)) :
 
-- [ ] **Exclure le type « Reprendre la main » des versions des stores**, à la construction, avant le premier envoi.
-  Le masquer ne suffit pas : la règle 2.3.1 d'Apple refuse les fonctions cachées.
+- [x] **Exclure le type « Reprendre la main » des versions des stores**, à la construction : fait le 5 octobre 2026
+  (ADR 32). L'AAB et l'app iOS sont l'édition des stores ; l'APK et Windows gardent l'espace. Rien à faire à la main,
+  sinon le constater une fois sur le téléphone, au premier envoi : la recette [RLM-030](recette/manuels/reprendre-la-main.md#rlm-030).
+  Sur iPhone, le suivi se tient désormais dans la version web.
 - [ ] **Google Play, Contenu de l'application**, et **App Store Connect** : les déclarations se remplissent alors sans
   données de santé ni références au tabac, à l'alcool ou aux drogues ([publication.md](publication.md#android--google-play),
   étape 5 ; [publication.md](publication.md#ios--app-store), étape 7).

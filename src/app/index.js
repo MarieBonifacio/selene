@@ -12,6 +12,7 @@ export * from "./state/local.js";
 export * from "./state/site.js";
 export * from "./state/store.js";
 export * from "./services/auth.js";
+export * from "./services/device-guard.js";
 export * from "./services/journal.js";
 export * from "./services/activite.js";
 export * from "./services/host.js";

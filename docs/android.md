@@ -1,7 +1,8 @@
 # Selene sous Android
 
 Une coquille [Capacitor](https://capacitorjs.com) autour de la page native (`dist/native/index.html`, ADR 14) : la même
-Selene, avec ce qu'un téléphone offre en plus.
+Selene, avec ce qu'un téléphone offre en plus. Deux éditions sont publiées (ADR 32) : l'APK de la Release GitHub, complet,
+et l'AAB de Google Play, sans « Reprendre la main » (docs/regulation.md, « Absent des versions des stores »).
 
 ## Ce que l'app ajoute à la PWA
 

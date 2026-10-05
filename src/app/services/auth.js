@@ -9,7 +9,7 @@ import { $, esc, setSaving, toast } from "../lib/dom.js";
 import { tr, trn, trp } from "../i18n/index.js";
 import { serverError } from "./erreurs.js";
 import { render } from "../shell/render.js";
-import { deviceSignOutGuard } from "../modules/regulation.js";
+import { deviceSignOutGuard } from "./device-guard.js";
 import { DRAFT_PREFIX } from "../state/drafts.js";
 import { localErase, localSwitch } from "../state/local.js";
 import { board, site, siteSeed } from "../state/site.js";
@@ -318,7 +318,7 @@ async function authSignUp(email, password) {
   return !s;
 }
 export async function authSignOut() {
-  // Ce qui n'existe que sur cet appareil (un suivi « Reprendre la main » non synchronisé) : l'exporter, le synchroniser
+  // Ce qui n'existe que sur cet appareil (un suivi « Reprendre la main » non synchronisé) : l'exporter
   // ou l'effacer, au choix, avant que la déconnexion n'efface l'appareil. Annuler ne déconnecte pas.
   if (!await deviceSignOutGuard()) return;
   // Pousser d'abord ce qui attend encore : la déconnexion efface le local. Hors ligne, prévenir avant de perdre.

@@ -11,7 +11,7 @@ import { addNote, afterCapture } from "../modules/notes.js";
 import { liveRecents } from "./nav.js";
 import { render } from "./render.js";
 import { closeOverlays, closeSheet, openSheet } from "./sheets.js";
-import { S, enabled, label, site } from "../state/site.js";
+import { S, enabled, label, shownModule, site } from "../state/site.js";
 import { bilanMode, setBilanOffset } from "../views/bilan.js";
 import { fold, searchAll, setSearchQuery } from "../views/recherche.js";
 
@@ -20,7 +20,7 @@ let palIdx = 0, palItems = [];
 const goTo = hash => () => { closeOverlays(); if (location.hash === "#" + hash) render(); else location.hash = hash; };
 function paletteItems(q) {
   const s = S(), f = fold(q.trim()), out = [], match = t => !f || fold(t).includes(f);
-  const spaces = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id)).map(m => [m.id, label(m.id)]);
+  const spaces = s.config.modules.filter(shownModule).map(m => [m.id, label(m.id)]);
   if (!f) for (const r of liveRecents().slice(0, 3)) out.push({ k: tr`Récent`, t: label(r.id), run: goTo(r.id) });
   for (const [id, t] of spaces) if (match(t) && !out.some(o => o.t === t)) out.push({ k: tr`Espace`, t, run: goTo(id) });
   for (const [id, t] of [["accueil", tr`Aujourd'hui`], ["bilan", tr`Bilan`], ["recherche", tr`Chercher`], ...(dehorsOn() ? [["dehors", tr`Nouveautés · Dehors`]] : []), ["reglages", tr`Réglages`], ...(enabled("assistant") ? [["assistant", label("assistant")]] : [])])

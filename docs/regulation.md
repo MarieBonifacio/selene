@@ -14,7 +14,8 @@ aucun suivi :
   compte dont les métadonnées serveur portent `selene_personnel` (`MODULE_TYPES.regulation.personal`,
   `offered` dans `shell/actions.js`). Ces métadonnées (`app_metadata`) ne s'écrivent qu'avec la clé serveur, jamais
   depuis la page. Sans compte (artefact claude.ai, ou déconnectée), l'espace n'est pas proposé.
-- **Rien ne disparaît.** Un suivi déjà créé reste ouvert, sur tout compte et sur tout appareil.
+- **Rien ne disparaît.** Un suivi déjà créé reste ouvert, sur tout compte et sur tout appareil de l'édition complète ;
+  dans les versions des stores, il est gardé tel quel, sans être ouvert (plus bas).
 - **Sur l'appareil seulement.** Un nouveau suivi est gardé sur l'appareil où il est configuré ; aucun chemin ne le
   synchronise. Un suivi encore synchronisé (avec un accord daté, ou d'avant la question) affiche un bandeau, « Ce suivi
   doit revenir sur un appareil » : le garder sur cet appareil le ramène, et le serveur n'en a plus que le talon à la
@@ -31,16 +32,41 @@ where email = 'adresse-du-compte@exemple.fr';
 La session ouverte reçoit la marque à son rafraîchissement suivant, dans l'heure. **Ne pas se déconnecter pour
 l'obtenir plus vite** : la déconnexion vide l'appareil, et un suivi gardé là serait perdu sans export.
 
-**Avant une publication sur l'App Store** : la règle 2.3.1 d'Apple refuse les fonctions cachées. Les versions des
-stores devront exclure ce type à la construction, plutôt que le masquer.
+### Absent des versions des stores
+
+Depuis le 5 octobre 2026 (ADR 32), l'AAB de Google Play et l'archive de l'App Store (TestFlight compris) sont
+construits **sans ce type** : `SELENE_EDITION=stores` fait remplacer, par `scripts/bundle.mjs`,
+`src/app/modules/regulation.js` par `regulation.stores.js`, un type inerte, sans écran, formulaire, action ni export.
+Le masquer n'aurait pas suffi : la règle 2.3.1 d'Apple refuse les fonctions cachées, et une fonction que le serveur peut
+réveiller (la marque `selene_personnel`) est cachée, pas absente. Le web (navigateur, ou installé sur l'écran
+d'accueil, iPhone compris), l'APK de la Release GitHub et l'installateur Windows gardent l'édition complète. Le
+workflow *Publication* construit les deux (docs/publication.md) ; les fichiers versionnés (`index.html`,
+`selene.html`) sont toujours l'édition complète, et `build.py` refuse d'écrire l'autre ailleurs que dans `dist/`.
+
+Dans une version des stores, un compte qui a un suivi créé ailleurs :
+
+- ne le voit ni dans la navigation, ni sur l'accueil, ni dans la palette, le bilan ou la recherche ; son adresse
+  mène à l'accueil ; le modèle et le type ne sont proposés à personne, compte personnel compris ;
+- en garde une ligne grisée dans Réglages → Espaces : « Ce suivi a été créé avec une autre version de Selene. Celle-ci
+  ne l'ouvre pas : il est gardé tel quel, sans être lu ni modifié, et reste entier dans la version où il a été créé. » ;
+  il peut l'y supprimer, et la confirmation dit ce qui part (un suivi gardé sur un autre appareil : le nom seul, qui
+  revient ; sinon, son contenu, de tout le compte) ;
+- n'envoie rien à l'assistant, même si le partage a été choisi ailleurs ;
+- rend le document au serveur comme il en est venu : le noyau (`core/regulation.js`) le valide et le normalise comme
+  dans l'édition complète, et celle-ci retrouve le suivi entier ;
+- garde, s'il y en a une, la copie locale d'une version précédente : la garde de déconnexion
+  (`services/device-guard.js`, commune aux deux éditions) demande toujours d'exporter ou d'effacer.
+
+Restent dans le code envoyé, inertes : le noyau du type (validation, normalisation, talon), sans lequel les données
+seraient abîmées, et les traductions de ses textes. Aucun chemin ne les montre. Vérifié par `tests/edition.test.js`.
+Conséquence pour le compte personnel : sur iPhone, le suivi se tient dans la version web, pas dans l'app.
 
 ## Parcours
 
 1. **Créer** : modèle « Reprendre la main » (accueil, ou Réglages → Espaces → Créer ; il est proposé en dernier), ou
    type vide du même nom. Le suivi naît **non partagé avec l'assistant**.
-2. **Configurer** (deux formulaires courts) : le nom (libre, visible partout : un nom neutre ne dit rien du sujet), le
-   sujet et, connectée à un compte, **où le garder** (sur cet appareil seulement, présélectionné, ou synchronisé avec un
-   accord explicite : plus bas) ; puis l'intention, la limite si l'on réduit, et la date d'effet. Pour l'alcool, une information sur le sevrage précède le choix (plus
+2. **Configurer** (deux formulaires courts) : le nom (libre, visible partout : un nom neutre ne dit rien du sujet) et
+   le sujet, sans question de stockage (le suivi reste sur cet appareil seulement : plus haut) ; puis l'intention, la limite si l'on réduit, et la date d'effet. Pour l'alcool, une information sur le sevrage précède le choix (plus
    bas). Le sujet, donc l'unité, ne change plus : un autre sujet, c'est un autre suivi.
 3. **Au quotidien**, quatre actions :
    - **J'ai une envie** : date, intensité 0-10 facultative, contexte ou déclencheur facultatif, un appui à essayer

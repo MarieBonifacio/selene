@@ -1187,6 +1187,9 @@ export default {
   "Ici, il n'y a que le nom de ce suivi : son contenu est gardé sur un autre appareil. Si cet appareil existe encore, le suivi y reste entier et son nom reviendra : supprime-le plutôt depuis celui-ci. S'il est perdu, ou si Selene y a été réinstallée, retirer ce nom est définitif.": "Only this tracker's name is here: its content is kept on another device. If that device still exists, the tracker stays there intact and its name will come back: delete it from there instead. If it is lost, or Selene was reinstalled on it, removing this name is final.",
   "Ce suivi est gardé sur un autre appareil : ses réglages se changent là-bas.": "This tracker is kept on another device: its settings are changed there.",
   "Sauvegarde non téléchargée : rien n'a été effacé.": "Backup not downloaded: nothing was erased.",
+  // modules/regulation.stores.js (l'édition des stores, sans ce type)
+  "Ce suivi a été créé avec une autre version de Selene. Celle-ci ne l'ouvre pas : il est gardé tel quel, sans être lu ni modifié, et reste entier dans la version où il a été créé.": "This tracker was created with another version of Selene. This one does not open it: it is kept as it is, neither read nor changed, and stays whole in the version where it was created.",
+  "Cette version ne sait pas ouvrir ce suivi : le supprimer efface son contenu de ton compte, partout, sans retour.": "This version cannot open this tracker: deleting it erases its content from your account, everywhere, for good.",
   // modules/taches.js
   "Fait. Le monde s'effondre un peu moins vite.": "Done. The world is collapsing a little less quickly.",
   "Un de moins. L'entropie note ta résistance.": "One fewer. Entropy notes your resistance.",
