@@ -64,11 +64,12 @@ Trois strates, aujourd'hui confondues :
   n'y paraît qu'entamé (temps restant, Pause ou Reprendre, ↺) ; au repos, il se lance depuis la feuille Capturer, la
   palette ou un appui long sur la lune (`tests/browser/en-tete.js`). Capturer est toujours au
   centre (jamais contextuel). Espaces ouvre une sheet : trois récents, domaines, pastilles, ponts ouverts,
-  Réglages en pied ; deux touchers de suite rouvrent le dernier espace.
+  Réglages en pied. *Envisagé, absent du code* : deux touchers de suite qui rouvrent le dernier espace.
   Écartés : bouton flottant, glisser entre espaces. Glisser une ligne : P3, jamais le seul chemin.
-- **Desktop** : barre latérale de 232 px repliable en rail de sigils (lentilles, domaines, système), panneau de
-  détail à droite, palette `⌘K` / `/` (aller, créer, chercher, minuteur), raccourcis `c`, `t`, `g a|b|r`,
-  `j`/`k`, `x`, `e`, `Échap`, `?`. Actions de ligne au survol, aperçu des liens au survol.
+- **Desktop** : barre latérale de 232 px (lentilles, domaines, système), palette `⌘K` ou `Ctrl+K` (aller, créer,
+  chercher, minuteur), `Échap`. Actions de ligne au survol, aperçu des liens au survol. *Envisagés, absents du code*
+  (contradiction C3 du cahier de recette) : la barre repliable en rail de sigils, un panneau de détail à droite, `/`
+  pour la palette, les raccourcis `c`, `t`, `g a|b|r`, `j`/`k`, `x`, `e`, `?`.
 - **Liens profonds** `#module/entrée` : défilement, surlignage, retour contextuel (« ‹ Recherche « lune » »)
   qui rend la liste et la position. Indispensable en PWA iOS (pas de bouton retour).
 - **Mémoire du défilement** par route, pour la session.
