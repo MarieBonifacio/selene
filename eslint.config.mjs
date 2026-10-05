@@ -29,6 +29,8 @@ export default [
   { files: ["scripts/liens.mjs"], languageOptions: { globals: readonly(["fetch", "AbortController", "setTimeout", "clearTimeout"]) } },
   // Le test d'isolation entre comptes (npm run isolation) interroge un projet Supabase de préproduction.
   { files: ["scripts/isolation.mjs"], languageOptions: { globals: readonly(["fetch", "AbortSignal", "Buffer"]) } },
+  // La fumée de l'app Android (scripts/android-fumee.mjs, sur émulateur) parle à la WebView par le protocole de débogage.
+  { files: ["scripts/android-fumee.mjs"], languageOptions: { globals: readonly(["fetch", "WebSocket", "setTimeout"]) } },
   // L'amorçage des coquilles natives (src/native/boot.js), posé seul avant Selene dans dist/native.
   { files: ["src/native/*.js"], languageOptions: { ecmaVersion: 2023, sourceType: "script",
     globals: { window: "readonly", history: "readonly", Event: "readonly", document: "readonly", sessionStorage: "readonly", URL: "readonly", CustomEvent: "readonly" } }, rules },
