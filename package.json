@@ -20,7 +20,7 @@
     "test:browser": "npm run build:dist && node tests/browser/run.js",
     "bench": "node tests/bench.js",
     "recette": "node scripts/recette.mjs",
-    "check": "npm run build:check && npm test && npm run test:syntax && npm run lint && npm run i18n && npm run test:functions",
+    "check": "npm run build:check && npm test && npm run test:syntax && npm run lint && npm run i18n && npm run test:functions && npm run recette",
     "check:all": "npm run check && npm run test:browser",
     "screenshots": "npm run build:dist && node scripts/store-screenshots.mjs",
     "essai:captures": "npm run build:dist && node scripts/essai-captures.mjs"

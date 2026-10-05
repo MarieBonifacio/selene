@@ -5,9 +5,12 @@
      - chaque test du dépôt (Node, navigateur, Deno, Rust) présent dans l'inventaire, et rien d'inventé ;
      - chaque lien relatif des documents de recette : le fichier existe, l'ancre aussi ;
      - les jeux de données : chaque sauvegarde s'importe (ou est refusée, pour les « refus-* »), chaque fichier est décrit.
-   Usage : npm run recette            (vérifier ; code de sortie 1 au premier écart, tous listés)
+   Usage : npm run recette            (vérifier ; code de sortie 1 s'il y a un écart, tous listés avec le geste qui le corrige)
+           npm run recette -- jeux    (réécrire docs/recette/donnees/*.json, déterministe)
            npm run recette -- donnees (écrire dist/recette/volume.json, le jeu de volume, voir docs/recette/donnees/README.md)
-   Le script ne lit que le dépôt ; il n'exécute aucun test (il ne dit donc jamais qu'un test passe). */
+   Le script ne lit que le dépôt : ni réseau, ni navigateur, ni node_modules ; il n'exécute aucun test (il ne dit donc
+   jamais qu'un test passe). Dans GitHub Actions (job « recette » de check.yml, sur les pull requests), chaque écart devient
+   une annotation rattachée au fichier concerné, et la liste complète va dans le résumé du job. */
 import { Buffer } from "node:buffer";
 import fs from "node:fs";
 import path from "node:path";
@@ -19,7 +22,8 @@ const REC = path.join(ROOT, "docs/recette");
 const read = f => fs.readFileSync(f, "utf8");
 const rel = f => path.relative(ROOT, f);
 const problems = [];
-const fail = (where, what) => problems.push(`${where} : ${what}`);
+// `how` : le geste qui corrige l'écart (affiché sous lui, et dans l'annotation GitHub).
+const fail = (where, what, how = "") => problems.push({ where, what, how });
 
 if (process.argv[2] === "donnees") { volume(); process.exit(0); }
 if (process.argv[2] === "jeux") { await import("./recette-jeux.mjs"); process.exit(0); }
@@ -73,6 +77,23 @@ for (const { file, prefix } of FILES) {
 
 /* ---------- inventaire des tests automatiques ---------- */
 const autoText = read(path.join(REC, "automatises.md"));
+// Un identifiant libre pour un test à décrire : le code des tests déjà décrits dans la section de son fichier, au
+// numéro suivant (plusieurs tests manquants d'un même fichier reçoivent des numéros qui se suivent).
+const proposed = new Map();
+function freeId(kind, file) {
+  const at = autoText.indexOf("`" + file + "`");
+  if (at < 0) return null;
+  const end = autoText.slice(at).search(/\n#{2,3} /), region = autoText.slice(at, end < 0 ? undefined : at + end);
+  const ids = [...region.matchAll(new RegExp(`\\b${kind}-([A-Z0-9]+)-(\\d+)\\b`, "g"))].map(m => ({ code: m[1], n: +m[2] }));
+  if (!ids.length) return null;
+  const used = (proposed.get(file) || 0) + 1; proposed.set(file, used);
+  return `${kind}-${ids[0].code}-${String(Math.max(...ids.map(i => i.n)) + used).padStart(2, "0")}`;
+}
+const howTest = (kind, file) => {
+  const id = freeId(kind, file);
+  return id ? `ajouter une ligne ${id} dans la section de ${file} de docs/recette/automatises.md (identifiant, nom exact du test, ce qui est vérifié, cas manuels liés)`
+    : `décrire ${file} dans une nouvelle section de docs/recette/automatises.md, avec un code d'identifiant libre`;
+};
 const retiredAutos = new Set((autoText.match(/^Identifiants retirés : (.*)$/m)?.[1] ?? "").match(/T[UNDRS]-[A-Za-z0-9-]+/g) || []);
 if (!/^Identifiants retirés : /m.test(autoText)) fail("docs/recette/automatises.md", "ligne « Identifiants retirés : » absente");
 const autos = new Map(); // identifiant → Set des cas manuels qu'il cite
@@ -100,12 +121,12 @@ let nodeTests = 0;
 for (const f of fs.readdirSync(testsDir).filter(x => x.endsWith(".test.js"))) {
   for (const m of read(path.join(testsDir, f)).matchAll(/^\s*test\((['"`])(.+?)\1/gm)) {
     nodeTests++;
-    if (!listedName(m[2])) fail(`tests/${f}`, `test « ${m[2]} » absent de l'inventaire`);
+    if (!listedName(m[2])) fail(`tests/${f}`, `test « ${m[2]} » absent de l'inventaire`, howTest("TU", `tests/${f}`));
   }
 }
 const browserDir = path.join(testsDir, "browser");
 const scenarios = fs.readdirSync(browserDir).filter(x => x.endsWith(".js") && !["helpers.js", "run.js"].includes(x)).map(x => "TN-" + x.slice(0, -3));
-for (const id of scenarios) if (!autos.has(id)) fail(`tests/browser/${id.slice(3)}.js`, `${id} absent de l'inventaire`);
+for (const id of scenarios) if (!autos.has(id)) fail(`tests/browser/${id.slice(3)}.js`, `${id} absent de l'inventaire`, `ajouter une fiche « #### \`${id}\` » dans la section « Scénarios de navigateur » de docs/recette/automatises.md (fichier, mode, conditions, ce qu'il vérifie, limites, cas manuels)`);
 for (const id of autos.keys()) if (id.startsWith("TN-") && !scenarios.includes(id)) fail("automatises.md", `${id} : aucun scénario de ce nom`);
 const fnDir = path.join(ROOT, "supabase/functions");
 let denoTests = 0;
@@ -113,13 +134,13 @@ for (const d of fs.readdirSync(fnDir).filter(x => fs.statSync(path.join(fnDir, x
   for (const f of fs.readdirSync(path.join(fnDir, d)).filter(x => x.endsWith("_test.ts"))) {
     for (const m of read(path.join(fnDir, d, f)).matchAll(/Deno\.test\((['"`])(.+?)\1/g)) {
       denoTests++;
-      if (!listedName(m[2])) fail(`supabase/functions/${d}/${f}`, `test « ${m[2]} » absent de l'inventaire`);
+      if (!listedName(m[2])) fail(`supabase/functions/${d}/${f}`, `test « ${m[2]} » absent de l'inventaire`, howTest("TD", `${d}/${f}`));
     }
   }
 }
 const rust = read(path.join(ROOT, "native/tauri/src/main.rs"));
 const rustTests = [...rust.matchAll(/#\[test\]\s*fn (\w+)/g)].map(m => m[1]);
-for (const name of rustTests) if (!autoText.includes(`| ${name} |`)) fail("native/tauri/src/main.rs", `test ${name} absent de l'inventaire`);
+for (const name of rustTests) if (!autoText.includes(`| ${name} |`)) fail("native/tauri/src/main.rs", `test ${name} absent de l'inventaire`, "ajouter une ligne TR-TAU-nn (numéro libre suivant) dans la section « Cœur Rust de l'app Windows » de docs/recette/automatises.md");
 
 /* ---------- matrice de traçabilité ---------- */
 // Chaque cas y a sa ligne, une seule, avec les mêmes tests automatiques que le cas, et un état défini.
@@ -195,10 +216,34 @@ console.log(`${manual.size} cas manuels dans ${FILES.length} fichiers ; ${autos.
   `${links} liens relatifs ; ${dataFiles.length} jeux de données.`);
 if (problems.length) {
   console.log(`\n${problems.length} écart(s) :`);
-  for (const p of problems) console.log("  ✗ " + p);
+  for (const p of problems) console.log(`  ✗ ${p.where} : ${p.what}` + (p.how ? `\n      → ${p.how}` : ""));
+  console.log("\nLe cahier de recette n'est plus d'accord avec le dépôt. Comment le remettre juste, selon ce qui a changé :\n" +
+    "docs/recette/maintenance.md, section « Selon le changement ». Vérifier ensuite : npm run recette.");
+  if (process.env.GITHUB_ACTIONS === "true") annotate(problems);
   process.exit(1);
 }
 console.log("Aucun écart.");
+
+/* ---------- GitHub Actions : annotations et résumé ---------- */
+// Une annotation par écart, rattachée au fichier fautif (GitHub n'en affiche que dix par étape : la liste complète est
+// dans le résumé du job). `where` est un chemin, ou « fichier.md › IDENTIFIANT » (le fichier est alors dans docs/recette).
+function annotate(list) {
+  const fileOf = where => {
+    const name = where.split(" › ")[0].trim();
+    return [name, `docs/recette/${name}`, `docs/recette/manuels/${name}`].find(c => fs.existsSync(path.join(ROOT, c))) || "docs/recette/maintenance.md";
+  };
+  const data = t => t.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+  const prop = t => data(t).replace(/:/g, "%3A").replace(/,/g, "%2C");
+  for (const p of list.slice(0, 10))
+    console.log(`::error file=${prop(fileOf(p.where))},title=${prop("Cahier de recette : " + p.where)}::${data(p.what + (p.how ? ` — ${p.how}` : ""))}`);
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    const cell = t => t.replace(/\|/g, "\\|").replace(/\n/g, " ");
+    const lines = [`### Le cahier de recette n'est plus d'accord avec le dépôt (${list.length} écart${list.length > 1 ? "s" : ""})`, "",
+      "| Où | Écart | Comment corriger |", "|---|---|---|", ...list.map(p => `| ${cell(p.where)} | ${cell(p.what)} | ${cell(p.how || "voir maintenance.md")} |`), "",
+      "La procédure : `docs/recette/maintenance.md`, section « Selon le changement ». Vérifier en local : `npm run recette`."];
+    fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join("\n") + "\n");
+  }
+}
 
 /* ---------- le jeu de volume ---------- */
 /* Des années d'usage en un fichier : le jeu d'essai, plus 4 000 fragments dans Écriture et 1 500 notes dans la Boîte,

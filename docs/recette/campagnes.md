@@ -14,7 +14,8 @@ qui connaît l'app, pas des engagements.
 2. La CI de ce commit est verte : *Check › build-and-test* et *Check › browser* (Chromium **et** WebKit), plus les
    workflows des plateformes visées (*Android*, *iOS*, *Desktop*). Un rouge connu et accepté est écrit en réserve dès
    l'entrée.
-3. `npm run recette` passe sur le commit du cahier utilisé : le cahier est cohérent avec les tests qu'il cite.
+3. `npm run recette` passe sur le commit du cahier utilisé : le cahier est cohérent avec les tests qu'il cite (la CI le vérifie
+   sur chaque PR, job *Check › recette*).
 4. Les comptes de recette (A, B ; P pour « Reprendre la main » ; une clé Anthropic de recette pour l'assistant) et les
    appareils de recette sont prêts ; « Compter mes jours d'usage, pour la bêta » est coupé sur chaque appareil connecté.
 5. Les jeux de données sont disponibles ; le jeu de volume est régénéré au commit testé (`npm run recette -- donnees`).
