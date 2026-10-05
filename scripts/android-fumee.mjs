@@ -124,8 +124,19 @@ async function main([full, stores, shots]) {
   page = await launch();
   await steps.noteKept(page);
   check(true, "la note est là, sans repasser par l'écran d'entrée");
-  const files = adb("shell", "run-as", PKG, "ls", "files/selene");
-  check(files.includes("selene-site-v1") && !files.includes(".tmp"), `le coffre de fichiers, sans temporaire resté : ${files.trim().split(/\s+/).join(", ")}`);
+  /* Le coffre, au repos : un .tmp seul est une écriture en route (ou coupée, relue au démarrage suivant comme la dernière
+     complète : src/native/boot.js) ; s'il survit à huit secondes sans aucun geste, le renommage a échoué. Les deux
+     listages vont dans le journal du job, avec les erreurs de Capacitor s'il y en a. */
+  const listing = () => adb("shell", "run-as", PKG, "ls", "-l", "files/selene");
+  const tmpOf = l => l.split("\n").map(x => x.trim().split(/\s+/).pop()).filter(n => n && n.endsWith(".tmp"));
+  const first = listing(); console.log(first.trim().replace(/^/gm, "    "));
+  let after = first;
+  if (tmpOf(first).length) { await sleep(8000); after = listing(); console.log("    (huit secondes plus tard)"); console.log(after.trim().replace(/^/gm, "    ")); }
+  const left = tmpOf(after);
+  check(after.includes("selene-site-v1") && !left.length, `le coffre de fichiers, sans temporaire resté au repos${left.length ? ` : ${left.join(", ")}` : ""}`);
+  if (left.length) {
+    try { console.log(adb("logcat", "-d", "-t", "400").split("\n").filter(l => /Capacitor|Filesystem|rename/i.test(l) && /\b[EW]\b|rror|xception/.test(l)).slice(-30).join("\n")); } catch {}
+  }
   shot("3-relance.png");
   const errors2 = [...page.errors]; page.close();
 
