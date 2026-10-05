@@ -110,8 +110,8 @@ Ce que `npm run recette` vérifie (`scripts/recette.mjs`, sans réseau ni naviga
   chaque fichier est décrit dans `donnees/README.md`.
 
 Ce qu'il ne vérifie pas : qu'un résultat attendu est juste, qu'un test passe (il ne lance aucun test), que la description
-d'un test correspond à ses assertions. Cela reste la relecture de la PR. Le lancer dans la CI est proposé, pas décidé
-([BL-12](backlog.md#bl-12)).
+d'un test correspond à ses assertions. Cela reste la relecture de la PR. La CI le lance à chaque pull request (job *Check › recette*, voir
+[BL-12](backlog.md#bl-12)) ; il fait aussi partie de `npm run check`.
 
 ## Liste de contrôle (aussi dans le modèle de PR)
 

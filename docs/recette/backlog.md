@@ -21,7 +21,7 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 | [BL-09](#bl-09) | Seuils de performance sur le jeu de volume | décision puis automatisation | P2 | TRV-007 |
 | [BL-10](#bl-10) | Minuit, app ouverte : horloge simulée | décision puis automatisation | P3 | TRV-004 |
 | [BL-11](#bl-11) | claude.ai : ce qui ne s'automatise pas | lacune assumée | P2 | AST-009, PLT-011 |
-| [BL-12](#bl-12) | `npm run recette` dans la CI | outillage | P2 | tous |
+| [BL-12](#bl-12) | ~~`npm run recette` dans la CI~~ (fait, voir ci-dessous) | outillage | P2 | tous |
 | [BL-13](#bl-13) | Firefox : cible ou non ? | décision | P3 | — |
 
 ---
@@ -171,14 +171,18 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 - **Priorité** : P2.
 
 <a id="bl-12"></a>
-### BL-12 — `npm run recette` dans la CI
+### BL-12 — `npm run recette` dans la CI (fait le 5 octobre 2026)
 
 - **Risque couvert** : un cahier de recette qui ment : un test renommé, ajouté ou supprimé sans que l'inventaire suive, un
-  cas qui cite un test disparu, un lien cassé. Aujourd'hui, la vérification se lance à la main.
-- **Proposition** : ajouter `npm run recette` au job *Check › build-and-test* (quelques secondes, sans réseau). [À ARBITRER] :
-  toute PR qui change un test devra alors mettre l'inventaire à jour dans la même PR ; c'est le but, et c'est une
-  contrainte de plus pour les contributions.
-- **Dépendances** : aucune.
+  cas qui cite un test disparu, un lien cassé. Les deux fusions de `main` faites pendant la rédaction l'avaient montré.
+- **Fait** : un job `recette` dans `check.yml`, sur les pull requests (et à la demande de *Check*), jamais quand
+  `pages.yml` appelle *Check* (un cahier en retard ne doit pas empêcher de publier). Il ne coûte que quelques secondes :
+  pas de `npm ci`, pas de navigateur, pas de réseau. Chaque écart devient une annotation rattachée au fichier fautif, avec
+  le geste qui le corrige et, pour un test à inventorier, l'identifiant libre à lui donner ; la liste complète est dans le
+  résumé du job. `npm run recette` fait aussi partie de `npm run check`, donc du geste local habituel.
+- **Reste à la responsable** : rendre ce job **obligatoire** pour fusionner (Settings → Branches → règle de protection →
+  *Require status checks* → `recette`) ou le laisser consultatif. Le cahier ne dit pas lequel : c'est un choix de rigueur
+  contre friction.
 
 <a id="bl-13"></a>
 ### BL-13 — Firefox : cible ou non ?
@@ -231,7 +235,7 @@ Les questions marquées [À ARBITRER] dans les cas, et ce qu'elles bloquent :
 | Que fait claude.ai de l'espace `db` d'un artefact ? | [PLT-011](manuels/plateformes.md#plt-011) | l'étape 4 |
 | Marquer `selene_personnel` un compte de recette (P) ? | `RLM-*` (chemin P) | les cas d'offre et de stockage |
 | Une dépendance de développement pour l'accessibilité ? | — | [BL-04](#bl-04) |
-| `npm run recette` en CI ? | — | [BL-12](#bl-12) |
+| ~~`npm run recette` en CI ?~~ : oui, fait | — | [BL-12](#bl-12) |
 | Firefox ? | — | [BL-13](#bl-13) |
 
 Les questions ouvertes d'avant ce cahier ([ESP-006](manuels/espaces.md#esp-006), [SYN-006](manuels/synchronisation.md#syn-006))
