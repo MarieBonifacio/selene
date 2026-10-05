@@ -54,7 +54,7 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
   un correctif si le comportement change.
 - **Bénéfice attendu** : la promesse « effacer définitivement » tenue et vérifiée.
 - **Fait** : décision de la responsable : l'effacement retire aussi le talon du compte. Le correctif (`eraseTrackers`,
-  `src/app/modules/regulation.js`) supprime la copie locale puis le module du site avant la synchronisation de la
+  `src/app/services/device-guard.js` depuis la PR #102) supprime la copie locale puis le module du site avant la synchronisation de la
   déconnexion ; la fin de `tests/browser/regulation-appareil.js` lit le faux serveur après l'effacement, et `TU-REG-38`
   couvre l'annulation. Le chemin « exporter » garde le talon (le contenu est dans le fichier) ; il reste à jouer à la main
   (RLM-023, étapes 4 à 6).
@@ -215,16 +215,16 @@ concerné est mis à jour en conséquence ([maintenance.md](maintenance.md)).
 ## Documentation à corriger
 
 Les contradictions C1 à C6 de [perimetre.md](perimetre.md#contradictions-entre-documentation-code-et-tests). Le cahier suit le
-code et les tests ; la documentation n'a été corrigée que là où c'est barré.
+code et les tests ; chaque correction faite est barrée et datée.
 
 | # | Fichier | Correction proposée |
 |---|---|---|
 | C1 | README (« Reprendre la main ») ; `docs/regulation.md`, « Parcours », étape 2 | ~~Retirer le choix « où le garder » : un nouveau suivi est gardé sur l'appareil, sans question.~~ Fait le 5 octobre 2026, avec l'édition des stores. |
 | C2 | README (« Reprendre la main ») | ~~Dire que l'espace n'est proposé qu'au compte marqué `selene_personnel`.~~ Fait le 5 octobre 2026, avec l'édition des stores. |
-| C3 | `docs/evolution-ui.md` | Marquer « envisagés » les raccourcis et le rail de sigils, absents du code. |
-| C4 | `docs/a-faire.md` | Écrire que le balayage axe-core a été fait une fois, à la main (voir [BL-04](#bl-04)). |
-| C5 | `docs/regulation.md`, « Parcours manuel », étape 1 | Passer par Réglages → Espaces → « + Créer un espace » pour un compte existant. |
-| C6 | README, « Vérification locale » | Ajouter `npm run i18n` à la description de `npm run check`. |
+| C3 | `docs/evolution-ui.md` | ~~Marquer « envisagés » les raccourcis et le rail de sigils, absents du code.~~ Fait le 5 octobre 2026. |
+| C4 | `docs/a-faire.md` | ~~Écrire que le balayage axe-core a été fait une fois, à la main (voir [BL-04](#bl-04)).~~ Fait le 5 octobre 2026. |
+| C5 | `docs/regulation.md`, « Parcours manuel », étape 1 | ~~Passer par Réglages → Espaces → « + Créer un espace » pour un compte existant.~~ Fait le 5 octobre 2026. |
+| C6 | README, « Vérification locale » | ~~Ajouter `npm run i18n` à la description de `npm run check`.~~ Déjà fait dans le README (« traductions »), constaté le 5 octobre 2026. |
 
 <a id="decisions"></a>
 ## Décisions en attente

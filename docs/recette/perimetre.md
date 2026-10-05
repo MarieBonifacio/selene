@@ -148,16 +148,16 @@ contre un projet de préproduction ; il n'est pas une fonctionnalité de l'app.
 
 ## Contradictions entre documentation, code et tests
 
-Relevées pendant l'analyse ; C1 et C2 ont été corrigées depuis (5 octobre 2026), les autres attendent la responsable (voir [backlog.md](backlog.md#documentation)).
+Relevées pendant l'analyse ; toutes corrigées depuis, le 5 octobre 2026 (voir [backlog.md](backlog.md#documentation)).
 
 | # | Où | Ce qui est écrit | Ce que font le code et les tests | Conséquence pour la recette |
 |---|---|---|---|---|
 | C1 | README (section « Reprendre la main ») ; [regulation.md](../regulation.md#parcours), étape 2 du parcours | Connectée, on choisit « où le garder » : sur l'appareil, « ou synchronisé avec un accord explicite ». | Aucun choix : un nouveau suivi reste sur l'appareil (`subjectForm`, `TU-REG-27`, `TN-regulation-appareil`). La section « Hors de l'offre publique » du même document le dit. | Les cas suivent le code et la section la plus récente ; l'étape 2 et le README sont périmés. **Corrigée** le 5 octobre 2026, avec l'édition des stores (README, regulation.md). |
 | C2 | README (section « Reprendre la main ») | L'espace est présenté comme un espace facultatif ouvert à toutes et tous. | Il n'est proposé qu'au compte marqué `selene_personnel` (`offered`, `TU-REG-30`). | Les cas d'offre (`RLM-001`, `RLM-002`) distinguent les deux comptes. **Corrigée** le 5 octobre 2026, avec l'édition des stores (README, regulation.md). |
-| C3 | [evolution-ui.md](../evolution-ui.md#architecture-de-navigation) | Raccourcis `c`, `t`, `g a/b/r`, `j`/`k`, `x`, `e`, `?`, rail de sigils repliable, panneau de détail, double toucher sur Espaces. | Absents du code. | Classés « envisagés », aucun cas. |
-| C4 | [a-faire.md](../a-faire.md#essayer-sur-de-vrais-appareils) | « Les contrôles automatiques sont faits (axe-core sur quinze vues…) ». | Le balayage axe-core a été fait une fois, à la main, le 4 octobre ([evolution-ui.md](../evolution-ui.md)) ; aucun test ne le rejoue. Seuls ses correctifs sont figés (`TN-contraste`, `TN-cibles`, `TN-cibles-ordinateur`). | Couverture d'accessibilité « partielle », pas « automatique » ; automatisation proposée ([backlog.md](backlog.md)). |
-| C5 | [regulation.md](../regulation.md#parcours-manuel-cinq-minutes), étape 1 | « Accueil → Reprendre la main → Ajouter ». | Les modèles de l'accueil ne s'affichent que dans le bloc « Composer ton espace », réservé aux comptes neufs ; un compte existant passe par Réglages → Espaces → Créer un espace. | `RLM-001` passe par les Réglages. |
-| C6 | README, « Vérification locale » | `npm run check` = « build, tests unitaires, syntaxe, eslint, passeur ». | Il lance aussi `npm run i18n` (`package.json`). | Aucune ; à compléter dans le README. |
+| C3 | [evolution-ui.md](../evolution-ui.md#architecture-de-navigation) | Raccourcis `c`, `t`, `g a/b/r`, `j`/`k`, `x`, `e`, `?`, rail de sigils repliable, panneau de détail, double toucher sur Espaces. | Absents du code. | Classés « envisagés », aucun cas. **Corrigée** le 5 octobre 2026. |
+| C4 | [a-faire.md](../a-faire.md#essayer-sur-de-vrais-appareils) | « Les contrôles automatiques sont faits (axe-core sur quinze vues…) ». | Le balayage axe-core a été fait une fois, à la main, le 4 octobre ([evolution-ui.md](../evolution-ui.md)) ; aucun test ne le rejoue. Seuls ses correctifs sont figés (`TN-contraste`, `TN-cibles`, `TN-cibles-ordinateur`). | Couverture d'accessibilité « partielle », pas « automatique » ; automatisation proposée ([backlog.md](backlog.md)). **Corrigée** le 5 octobre 2026. |
+| C5 | [regulation.md](../regulation.md#parcours-manuel-cinq-minutes), étape 1 | « Accueil → Reprendre la main → Ajouter ». | Les modèles de l'accueil ne s'affichent que dans le bloc « Composer ton espace », réservé aux comptes neufs ; un compte existant passe par Réglages → Espaces → Créer un espace. | `RLM-001` passe par les Réglages. **Corrigée** le 5 octobre 2026. |
+| C6 | README, « Vérification locale » | `npm run check` = « build, tests unitaires, syntaxe, eslint, passeur ». | Il lance aussi `npm run i18n` (`package.json`). | Aucune ; à compléter dans le README. **Déjà corrigée** dans le README, constaté le 5 octobre 2026. |
 
 ## Anomalies et observations
 
