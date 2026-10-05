@@ -21,6 +21,10 @@ Deux chemins, que chaque cas désigne explicitement :
   jamais se déconnecter pour hâter l'arrivée de la marque (la déconnexion vide l'appareil). Importer une sauvegarde
   sur P remplace l'état du compte sur tous ses appareils.
 
+**Plateformes** : `AND` désigne ici l'APK de la Release GitHub, qui a l'espace (édition complète). L'AAB de Google Play
+et l'app iOS (TestFlight compris) sont l'édition des stores : l'espace n'y existe pas, ce que vérifie
+[RLM-030](#rlm-030) et seulement lui.
+
 **Jeux de données** ([donnees/](../donnees/)) : [`rlm-a-configurer.json`](../donnees/rlm-a-configurer.json) (une Boîte et un
 suivi « Carnet du soir » pas encore configuré, non partagé, assistant éteint) ;
 [`rlm-en-cours.json`](../donnees/rlm-en-cours.json) (« Carnet du soir », alcool : objectif « au plus 2 verres standard » dès
@@ -42,7 +46,7 @@ selon le navigateur ; les cas écrivent « 1.5 ».
 |---|---|---|---|
 | [RLM-001](#rlm-001) | Compte personnel : l'espace est proposé, en dernier, et naît privé | P1 | Web, Mob |
 | [RLM-002](#rlm-002) | Ailleurs : l'espace n'est proposé nulle part | P1 | Web, Mob, ART |
-| [RLM-003](#rlm-003) | Premier réglage : nom libre, un sujet, aucune question de stockage | P1 | Web, Mob, AND, IOS, WIN |
+| [RLM-003](#rlm-003) | Premier réglage : nom libre, un sujet, aucune question de stockage | P1 | Web, Mob, AND, WIN |
 | [RLM-004](#rlm-004) | Alcool : l'information sur le sevrage avant l'objectif, jamais répétée | P1 | Web, Mob |
 | [RLM-005](#rlm-005) | Les quatre unités et leurs bornes | P1 | Web, Mob |
 | [RLM-006](#rlm-006) | Le sujet d'un suivi commencé ne change plus | P2 | Web |
@@ -56,19 +60,20 @@ selon le navigateur ; les cas écrivent « 1.5 ».
 | [RLM-014](#rlm-014) | Faire évoluer l'objectif : versions, date d'effet, historique | P1 | Web, Mob |
 | [RLM-015](#rlm-015) | Dates à venir refusées ; le fuseau ne reclasse rien | P1 | Web |
 | [RLM-016](#rlm-016) | Envie, appui choisi, action réalisée | P1 | Web, Mob |
-| [RLM-017](#rlm-017) | Pause de cinq minutes : rechargement, fermeture, arrêt | P2 | Web, Mob, AND, IOS |
+| [RLM-017](#rlm-017) | Pause de cinq minutes : rechargement, fermeture, arrêt | P2 | Web, Mob, AND |
 | [RLM-018](#rlm-018) | Marques et récompense : facultatives, dédupliquées, jamais perdues | P1 | Web, Mob |
 | [RLM-019](#rlm-019) | Mes sept derniers jours | P2 | Web, Mob |
 | [RLM-020](#rlm-020) | Aucun détail hors de l'espace | P1 | Web, Mob |
 | [RLM-021](#rlm-021) | Partager le résumé avec l'assistant, puis arrêter | P1 | Web |
-| [RLM-022](#rlm-022) | Deux appareils du même compte : le nom seulement | P1 | Web, Mob, AND, IOS, WIN |
-| [RLM-023](#rlm-023) | Se déconnecter avec un suivi gardé ici | P1 | Web, Mob, AND, IOS, WIN |
+| [RLM-022](#rlm-022) | Deux appareils du même compte : le nom seulement | P1 | Web, Mob, AND, WIN |
+| [RLM-023](#rlm-023) | Se déconnecter avec un suivi gardé ici | P1 | Web, Mob, AND, WIN |
 | [RLM-024](#rlm-024) | Un suivi encore synchronisé revient sur un appareil | P1 | Web, Mob |
 | [RLM-025](#rlm-025) | Exporter ce suivi ; la sauvegarde complète le contient | P2 | Web, Mob |
 | [RLM-026](#rlm-026) | Supprimer le suivi | P1 | Web, Mob |
 | [RLM-027](#rlm-027) | Changement de compte sur le même appareil | P1 | Web |
 | [RLM-028](#rlm-028) | Affichage, clavier, libellés, anglais | P2 | Web, Mob |
 | [RLM-029](#rlm-029) | Appareil détenteur dont le stockage a été effacé | P2 | Web |
+| [RLM-030](#rlm-030) | Versions des stores : l'espace n'existe pas, un suivi créé ailleurs reste intact | P1 | AND, IOS |
 
 Identifiants retirés : aucun.
 
@@ -137,7 +142,7 @@ Identifiants retirés : aucun.
   premier formulaire, **sans question** ; le compte n'en garde que le talon.
 - **Objectif, risque vérifié** : un choix « synchroniser » encore proposé (contradiction C1 de la documentation) ; le
   contenu envoyé au serveur ; un sujet figé par un formulaire abandonné.
-- **Priorité** : P1 · **Plateformes** : Web, Mob, AND, IOS, WIN
+- **Priorité** : P1 · **Plateformes** : Web, Mob, AND, WIN
 - **Préconditions** : chemin P ; le suivi « Reprendre la main » créé et non configuré ([RLM-001](#rlm-001)) ; outils de
   développement → Network, filtre `app_state`.
 - **Données** : nom `Carnet du soir` ; sujet « Tabac » ; intention « Observer, sans cible », à partir de J.
@@ -526,7 +531,7 @@ Identifiants retirés : aucun.
   elle reste « terminée » dix minutes puis disparaît ; aucune marque à l'expiration ; le minuteur de quinze minutes de
   Selene n'est pas touché.
 - **Objectif, risque vérifié** : une pause perdue au rechargement ou remise à cinq minutes ; une pause qui récompense.
-- **Priorité** : P2 · **Plateformes** : Web, Mob, AND, IOS
+- **Priorité** : P2 · **Plateformes** : Web, Mob, AND
 - **Préconditions** : chemin S, `rlm-a-configurer.json` importé ; configurer « Tabac », « Observer, sans cible », à
   partir de J.
 - **Données** : envie avec appui « Marcher quelques minutes ».
@@ -676,7 +681,7 @@ Identifiants retirés : aucun.
   existe encore, il recrée le talon et ne perd rien.
 - **Objectif, risque vérifié** : le contenu lisible depuis un autre appareil (donc passé par le serveur) ; un appareil qui
   efface ce qu'il ne voit pas.
-- **Priorité** : P1 · **Plateformes** : Web, Mob, AND, IOS, WIN
+- **Priorité** : P1 · **Plateformes** : Web, Mob, AND, WIN
 - **Préconditions** : chemin P sur l'appareil 1 (détenteur), avec le suivi de [RLM-003](#rlm-003) ; un appareil 2 (autre
   navigateur ou téléphone) connecté au compte P.
 - **Données** : `2` cigarettes, contexte `NOTE-RLM022`, notées sur l'appareil 1.
@@ -705,7 +710,7 @@ Identifiants retirés : aucun.
   quittent l'appareil et le compte) ; annuler ne déconnecte pas ; la sauvegarde complète contient le suivi ; restaurée,
   elle refait de l'appareil le détenteur.
 - **Objectif, risque vérifié** : perte silencieuse d'un suivi qui n'existe nulle part ailleurs.
-- **Priorité** : P1 · **Plateformes** : Web, Mob, AND, IOS, WIN
+- **Priorité** : P1 · **Plateformes** : Web, Mob, AND, WIN
 - **Préconditions** : chemin P, avec le suivi de [RLM-003](#rlm-003) et au moins une saisie dont le contexte est
   `NOTE-RLM003`.
 - **Données** : aucune autre.
@@ -890,3 +895,38 @@ Identifiants retirés : aucun.
 
 - **État final attendu** : un talon d'un suivi devenu illisible.
 - **Nettoyage** : retirer ce talon (« ✕ », retaper le nom) ; supprimer la sauvegarde téléchargée.
+
+---
+
+<a id="rlm-030"></a>
+### RLM-030 — Versions des stores : l'espace n'existe pas, un suivi créé ailleurs reste intact
+
+- **Fonctionnalité et règle** : l'AAB de Google Play et l'app iOS sont construits sans le type (`SELENE_EDITION=stores`,
+  ADR 32) : ni proposé, compte personnel compris, ni montré, ni partagé avec l'assistant ; un suivi créé dans l'édition
+  complète y est gardé tel quel, une ligne grisée des Réglages le dit, et l'édition complète le retrouve entier ; la
+  suppression dit ce qui part. Une copie gardée sur l'appareil par une version précédente reste protégée à la
+  déconnexion (règle de [RLM-023](#rlm-023)).
+- **Objectif, risque vérifié** : une fonction de santé cachée dans l'app envoyée aux stores (refus par la règle 2.3.1
+  d'Apple, déclarations fausses chez Google) ; un suivi abîmé ou effacé par la version qui ne sait pas l'ouvrir.
+- **Priorité** : P1 · **Plateformes** : AND, IOS
+- **Préconditions** : chemin P sur le web, avec le suivi de [RLM-003](#rlm-003) (gardé sur cet ordinateur) et au moins
+  une saisie dont le contexte est `NOTE-RLM003` ; l'édition des stores installée sur un téléphone : l'AAB par la piste
+  de test interne de Google Play, ou l'app iOS par TestFlight (tous deux envoyés par le workflow *Publication*). À
+  défaut de compte de store : `SELENE_EDITION=stores npm run build:dist && npx cap sync android`, puis lancer depuis
+  Android Studio (un `npm run build:dist` sans la variable, puis `npx cap sync android`, rend ensuite l'édition
+  complète).
+- **Données** : aucune autre.
+- **Automatisés associés** : `TU-EDI-01`, `TU-EDI-03`, `TU-EDI-04`, `TU-EDI-05`, `TU-EDI-06`
+- **Source** : [DOC] [regulation.md](../../regulation.md#absent-des-versions-des-stores) ; [TEST] `tests/edition.test.js`.
+
+| Étape | Action précise | Résultat attendu observable |
+|---|---|---|
+| 1 | Sur le téléphone, se connecter au compte P ; Réglages → Espaces → « + Créer un espace ». | Treize modèles, le dernier « Carnet » ; « Reprendre la main » absent de la grille et des deux groupes de « Modèle ou type », bien que le compte soit personnel. |
+| 2 | Regarder la navigation, puis l'accueil (« Où en sont les choses »). | « Carnet du soir » n'apparaît nulle part. |
+| 3 | Réglages → Espaces : la ligne « Carnet du soir ». | Case d'activation grisée et décochée ; dessous : « Ce suivi a été créé avec une autre version de Selene. Celle-ci ne l'ouvre pas : il est gardé tel quel, sans être lu ni modifié, et reste entier dans la version où il a été créé. » ; pas de « régler ». |
+| 4 | Réglages → Assistant → « Ce que Claude peut lire ». | « Carnet du soir » absent. |
+| 5 | Réglages → Espaces : sur la ligne « Carnet du soir », « ✕ ». | « Supprimer « Carnet du soir » » : « Ici, il n'y a que le nom de ce suivi : son contenu est gardé sur un autre appareil. Si cet appareil existe encore, le suivi y reste entier et son nom reviendra… » ; « Annuler ». |
+| 6 | Sur le téléphone, changer quelque chose d'autre (Réglages → Apparence et rythme → une autre palette) ; puis, sur l'ordinateur, recharger le web et ouvrir « Carnet du soir ». | La palette choisie sur le téléphone est arrivée ; le suivi s'ouvre entier, avec la saisie `NOTE-RLM003`, dans la navigation comme avant. |
+
+- **État final attendu** : compte P inchangé, à la palette près ; le suivi entier sur l'ordinateur.
+- **Nettoyage** : remettre la palette d'origine.

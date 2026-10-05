@@ -1,7 +1,8 @@
 # Selene sous iOS
 
 La même coquille Capacitor que sous Android (docs/android.md), autour de la même page native : un projet Xcode dans
-`native/ios`, dont les plugins arrivent par Swift Package Manager.
+`native/ios`, dont les plugins arrivent par Swift Package Manager. L'app publiée (TestFlight, App Store) est l'édition
+des stores, sans « Reprendre la main » (docs/regulation.md, « Absent des versions des stores », ADR 32).
 
 ## Ce que l'app ajoute
 

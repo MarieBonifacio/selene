@@ -27,6 +27,10 @@ bundled = subprocess.run(["node", str(ROOT / "scripts" / "bundle.mjs")], cwd=ROO
 if bundled.returncode:
     sys.exit(bundled.stderr + "\nAssemblage impossible (esbuild s'installe par `npm ci`)")
 parts = json.loads(bundled.stdout)
+# L'édition des stores (SELENE_EDITION=stores, scripts/bundle.mjs : sans « Reprendre la main ») ne sort que dans dist/ :
+# les fichiers versionnés (selene.html, index.html), que le web et build.py --check lisent, restent l'édition complète.
+if parts["edition"] != "complete" and sys.argv[1:2] != ["--dist"]:
+    sys.exit(f"Édition « {parts['edition']} » : seulement avec --dist (les fichiers versionnés sont l'édition complète)")
 js = parts["platform"] + "__platform.platform.ready(() => {\n" + parts["app"] + "});\n"
 # Le script est posé tel quel dans une balise <script> : « </script » dans une chaîne le fermerait avant sa fin.
 assert "</script" not in js.lower(), "« </script » dans le JavaScript : l'écrire en deux morceaux"
@@ -113,7 +117,7 @@ if sys.argv[1:2] == ["--dist"]:
         shutil.copytree(ROOT / "essai", dist / "web" / "essai", dirs_exist_ok=True)
     for out in ["web", "native"]:  # les polices, avec leurs licences
         shutil.copytree(ROOT / "fonts", dist / out / "fonts", dirs_exist_ok=True)
-    print(f"{dist.relative_to(ROOT) if dist.is_relative_to(ROOT) else dist}: web, artifact, native built")
+    print(f"{dist.relative_to(ROOT) if dist.is_relative_to(ROOT) else dist}: web, artifact, native built ({parts['edition']} edition)")
 elif sys.argv[1:] == ["--check"]:
     stale = [name for name, content in outputs.items() if not (ROOT / name).exists() or (ROOT / name).read_text(encoding="utf-8") != content]
     if stale:

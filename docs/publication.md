@@ -11,9 +11,17 @@ git tag v1.0.0 && git push origin v1.0.0
 
 | Plateforme | Ce que fait le workflow | Secrets nécessaires (sinon, sauté avec un avis) |
 |---|---|---|
-| Android | APK signé (installation directe, joint à la Release) et AAB signé (Google Play, en artefact) | `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` |
+| Android | APK signé (édition complète : installation directe, joint à la Release) et AAB signé (édition des stores : Google Play, en artefact) | `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` |
 | Windows | installateur NSIS joint à la Release, signé si un certificat est fourni | facultatifs : `WINDOWS_CERTIFICATE_BASE64`, `WINDOWS_CERTIFICATE_PASSWORD` |
-| iOS | archive signée, envoyée à TestFlight | `IOS_TEAM_ID`, `APPSTORE_KEY_ID`, `APPSTORE_ISSUER_ID`, `APPSTORE_KEY_P8` |
+| iOS | archive signée (édition des stores), envoyée à TestFlight | `IOS_TEAM_ID`, `APPSTORE_KEY_ID`, `APPSTORE_ISSUER_ID`, `APPSTORE_KEY_P8` |
+
+**Deux éditions.** Ce qu'examinent Google et Apple (l'AAB, l'archive iOS) est l'**édition des stores**, construite sans
+le type « Reprendre la main » (`SELENE_EDITION=stores` ; [regulation.md](regulation.md#absent-des-versions-des-stores),
+ADR 32) ; l'APK de la Release et l'installateur Windows sont l'édition complète. Le workflow vérifie la page embarquée
+dans chaque fichier et échoue si l'édition n'est pas la bonne. Pour essayer l'édition des stores sur un téléphone
+branché, sans passer par un store : `SELENE_EDITION=stores npm run build:dist && npx cap sync android` (ou `ios`), puis
+lancer depuis Android Studio ou Xcode ; un `npm run build:dist` sans la variable, suivi du même `cap sync`, rend
+l'édition complète.
 
 La version vient de l'étiquette : `1.2.3` partout, et un numéro de build croissant (`10203`) que les deux stores
 exigent. Lancé à la main (Actions → Publication → Run workflow, avec une version), il construit et signe sans créer
@@ -57,10 +65,10 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
      Aucune information de santé : « Reprendre la main » est hors de l'offre publique, et ses données ne quittent pas
      l'appareil (docs/regulation.md, « Hors de l'offre publique »). Une donnée de plus qui quitte l'appareil se
      déclare ici, dans le manifeste iOS et dans la politique, le même jour ;
-   - **Avant l'envoi** : exclure le type « Reprendre la main » de la version des stores, à la construction. Le masquer
-     ne suffit pas : la règle 2.3.1 d'Apple refuse les fonctions cachées, et une fonction de santé présente dans l'app
-     appellerait les déclarations ci-dessus ;
-   - Applications de santé : aucune déclaration, Selene n'en est pas une une fois ce type exclu ;
+   - **Ce qui est envoyé** : l'AAB est l'édition des stores, sans le type « Reprendre la main » (exclu à la construction,
+     plus haut) : rien à faire à la main. Le masquer n'aurait pas suffi : la règle 2.3.1 d'Apple refuse les fonctions
+     cachées, et une fonction de santé présente dans l'app appellerait les déclarations ci-dessus ;
+   - Applications de santé : aucune déclaration, Selene n'en est pas une : ce type est absent de l'AAB ;
    - Suppression du compte : dans l'app (Réglages → Compte) ; et, dans le champ « URL de suppression du compte » de la
      section *Sécurité des données*, la page où la demander sans l'app :
      `https://mariebonifacio.github.io/selene/confidentialite.html#supprimer-compte` (le nom de l'app, les étapes, ce
@@ -89,7 +97,9 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
    profil). Son identifiant va dans `APPSTORE_KEY_ID`, l'identifiant de l'émetteur dans `APPSTORE_ISSUER_ID`, le
    contenu du fichier `.p8` (téléchargeable une seule fois) dans `APPSTORE_KEY_P8`.
 5. **TestFlight** : après l'envoi, la version apparaît dans TestFlight (quelques minutes de traitement) ; l'installer
-   par l'app TestFlight sur l'iPhone.
+   par l'app TestFlight sur l'iPhone. C'est l'édition des stores : « Reprendre la main » n'y est pas ; un suivi créé
+   ailleurs y est gardé tel quel, sans être ouvert, et se tient sur l'iPhone par la version web (Safari, ou installée
+   sur l'écran d'accueil).
 6. **La fiche** : `docs/fiches/app-store/` (`fr-FR`, `en-GB`) donne le nom, le sous-titre, le texte promotionnel, la
    description et les mots-clés (100 octets au plus, sans nom d'autre app : règle 2.3.7). Les captures : celles de
    `dist/store/{fr,en}/ios/` (`npm run screenshots`).

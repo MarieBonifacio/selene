@@ -13,7 +13,7 @@ import { openTensions } from "../features/tensions.js";
 import { SYNODIC } from "../scene/moon.js";
 import { render } from "../shell/render.js";
 import { sigil } from "../shell/sigils.js";
-import { S, enabled, label } from "../state/site.js";
+import { S, enabled, label, shownModule } from "../state/site.js";
 import { bilanMode, bilanOffset, periodOf } from "./bilan.js";
 
 /* Planche de lunaison.
@@ -30,7 +30,7 @@ function plancheData(offset, now = Date.now()) {
   const cur = periodOf("lune", offset, now), prev = periodOf("lune", offset + 1, now), s = S(), len = SYNODIC * 86400000;
   const days = []; for (let d = cur.from; d < cur.to; d = addDaysTo(d, 1)) days.push(d);
   const at = new Map(days.map((d, i) => [d, i])), total = days.map(() => 0);
-  const rows = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id)).map(m => {
+  const rows = s.config.modules.filter(shownModule).map(m => {
     const inst = s.modules[m.id], ui = TYPE_UI[inst.type];
     if (!ui || ui.sensitive || isConcordance(inst)) return null;
     const spark = days.map(() => 0);

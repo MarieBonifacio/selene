@@ -867,7 +867,8 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   configuré connectée va sur l'appareil, sans question ; un suivi encore synchronisé est invité à y revenir, jamais
   l'inverse ; la garde de déconnexion n'offre plus que l'export ou l'effacement. Le type sort de l'offre publique
   (`MODULE_TYPES.regulation.personal`) : seul le compte marqué `selene_personnel` dans ses métadonnées serveur le voit
-  proposé. `config.consent` reste lu, pour dire d'où vient un suivi encore synchronisé.
+  proposé. `config.consent` reste lu, pour dire d'où vient un suivi encore synchronisé. Les versions des stores n'ont
+  pas le type du tout (ADR 32).
 
 ### ADR 28 — Selene sans compte dans la version hébergée
 
@@ -972,3 +973,33 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   coquille et jamais vers un téléchargement ; refermée, silence ; refusée, un message). Reste à le voir sur un vrai
   téléphone ([a-faire.md](a-faire.md#essayer-sur-de-vrais-appareils)). Sous Windows (Tauri), le téléchargement de la
   WebView reste le chemin, non vérifié.
+
+### ADR 32 — L'édition des stores, sans « Reprendre la main »
+
+- **Contexte** : depuis le 3 octobre 2026 (ADR 27, révision T3), « Reprendre la main » n'est proposé qu'au compte que
+  le serveur marque `selene_personnel`. Dans une app envoyée à Apple, c'est une fonction cachée qu'un drapeau serveur
+  réveille, ce que refuse la règle 2.3.1 de l'App Store ; chez Google, une fonction de santé présente dans l'AAB
+  appelle des déclarations (données de santé, références au tabac, à l'alcool, aux drogues) que Selene ne veut pas
+  faire. Le compte personnel garde pourtant ses suivis, et le document synchronisé les porte (talons, anciens suivis).
+- **Décision** : deux éditions d'une même source, choisies à l'assemblage. `SELENE_EDITION=stores` fait remplacer par
+  `scripts/bundle.mjs` (un greffon esbuild) `src/app/modules/regulation.js` par `regulation.stores.js` : le type y est
+  enregistré `absent`, sans écran, formulaire, action ni export ; `absentModule` et `shownModule` (`state/site.js`) le
+  tiennent hors de la navigation, de l'accueil, de la palette, du bilan, des rangements et de l'assistant, et
+  `offered` ne le propose à personne. Les Réglages en gardent une ligne grisée, qui dit pourquoi et permet de le
+  supprimer. Le noyau (`core/regulation.js`) reste : il valide et normalise le document, qui revient au serveur
+  comme il en est venu. La garde de déconnexion passe dans `services/device-guard.js`, commune aux deux éditions : une
+  copie locale laissée par une version précédente n'est jamais perdue en silence. Le workflow *Publication* construit
+  l'APK et Windows en édition complète, l'AAB et l'archive iOS en édition des stores, et vérifie la page embarquée
+  dans chaque fichier. `build.py` refuse d'écrire l'édition des stores ailleurs que dans `dist/` : les fichiers
+  versionnés, le web et `build.py --check` restent l'édition complète.
+- **Écarté** : masquer le type par un drapeau (c'est précisément la fonction cachée) ; retirer le type de toutes les
+  éditions (le compte personnel perdrait son outil, et le web n'est pas examiné par un store) ; une édition qui
+  ignorerait les modules de ce type à la lecture (le document renvoyé au serveur les perdrait : un suivi effacé par
+  la version qui ne sait pas l'ouvrir) ; retirer aussi le noyau et les traductions (il faudrait scinder
+  `core/regulation.js` et le catalogue, pour du code inerte qu'aucun chemin ne montre, au prix de la validation des
+  données).
+- **Conséquences** : l'iPhone (TestFlight compris) n'a plus l'espace : le compte personnel le tient par la version web,
+  ou par l'APK sous Android. Un type absent est une notion générale (`TYPE_UI[type].absent`) : une autre fonction
+  réservée pourrait suivre le même chemin. Vérifié par `tests/edition.test.js` (construction, contenu, un compte à deux
+  appareils entre les deux éditions, suppression, déconnexion) ; reste à le constater sur un téléphone au premier
+  envoi ([RLM-030](recette/manuels/reprendre-la-main.md#rlm-030)).

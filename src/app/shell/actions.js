@@ -52,8 +52,9 @@ CLICK["mod-down"] = el => moveMod(el, 1);
    l'assistant, sauf un type sensible (TYPE_UI[type].sensitive) : son partage reste un geste explicite, dans les Réglages.
    Ses réglages de départ sont écrits dans la langue de l'interface. */
 /* Un type proposé à la création : tous, sauf ceux hors de l'offre publique (MODULE_TYPES, personal), réservés au compte
-   personnel. Rien ne disparaît : un module déjà créé reste ouvert. */
-export const offered = type => !MODULE_TYPES[type]?.personal || personalAccount();
+   personnel, et ceux que cette édition n'a pas (TYPE_UI[type].absent : l'édition des stores, docs/regulation.md). Rien
+   ne disparaît : un module déjà créé reste ouvert, ou, dans une édition qui n'a pas son type, gardé tel quel. */
+export const offered = type => !TYPE_UI[type]?.absent && (!MODULE_TYPES[type]?.personal || personalAccount());
 export function addModule(tpl, name) {
   if (!offered(tpl.type)) return;
   if (tpl.type === "programme") {

@@ -111,9 +111,11 @@ clé Anthropic de test, à la dépense plafonnée.
 ### Reprendre la main
 
 **Disponible, restreint** : proposé à la création au seul compte marqué `selene_personnel` ; un suivi existant reste
-ouvert partout ; un nouveau suivi est gardé sur l'appareil, jamais synchronisé. **Envisagé** : l'exclusion du type des
-versions des stores, à la construction (exigée par la règle 2.3.1 d'Apple avant une publication). **Exclu de cette
-livraison**, et donc à ne pas tester : toute série d'abstinence ([regulation.md](../regulation.md#marques-et-récompense-facultatives)).
+ouvert partout dans l'édition complète (web, APK de la Release GitHub, Windows) ; un nouveau suivi est gardé sur
+l'appareil, jamais synchronisé. **Absent des versions des stores** (AAB de Google Play, app iOS, TestFlight compris),
+construites sans le type (règle 2.3.1 d'Apple ; [regulation.md](../regulation.md#absent-des-versions-des-stores)) : un
+suivi créé ailleurs y est gardé tel quel, sans être ouvert (`RLM-030`). **Exclu de cette livraison**, et donc à ne pas
+tester : toute série d'abstinence ([regulation.md](../regulation.md#marques-et-récompense-facultatives)).
 
 ### Plateformes natives
 
@@ -127,7 +129,7 @@ livraison**, et donc à ne pas tester : toute série d'abstinence ([regulation.m
 | Widget d'écran d'accueil | disponible | `AND` |
 | Instance unique, Ctrl+Alt+S, zone de notification | disponible | `WIN` |
 | Installateur Windows signé | partielle : signé seulement si un certificat est fourni aux secrets | `WIN` |
-| Publication dans les stores (workflow `release.yml`) | partielle : chaque plateforme est sautée tant que ses secrets manquent | `AND`, `IOS`, `WIN` |
+| Publication dans les stores (workflow `release.yml`) : APK et Windows en édition complète, AAB et iOS en édition des stores | partielle : chaque plateforme est sautée tant que ses secrets manquent | `AND`, `IOS`, `WIN` |
 
 ### Hors application
 
@@ -146,12 +148,12 @@ contre un projet de préproduction ; il n'est pas une fonctionnalité de l'app.
 
 ## Contradictions entre documentation, code et tests
 
-Relevées pendant l'analyse ; aucune n'a été corrigée ici (la correction revient à la responsable, voir [backlog.md](backlog.md#documentation)).
+Relevées pendant l'analyse ; C1 et C2 ont été corrigées depuis (5 octobre 2026), les autres attendent la responsable (voir [backlog.md](backlog.md#documentation)).
 
 | # | Où | Ce qui est écrit | Ce que font le code et les tests | Conséquence pour la recette |
 |---|---|---|---|---|
-| C1 | README (section « Reprendre la main ») ; [regulation.md](../regulation.md#parcours), étape 2 du parcours | Connectée, on choisit « où le garder » : sur l'appareil, « ou synchronisé avec un accord explicite ». | Aucun choix : un nouveau suivi reste sur l'appareil (`subjectForm`, `TU-REG-27`, `TN-regulation-appareil`). La section « Hors de l'offre publique » du même document le dit. | Les cas suivent le code et la section la plus récente ; l'étape 2 et le README sont périmés. |
-| C2 | README (section « Reprendre la main ») | L'espace est présenté comme un espace facultatif ouvert à toutes et tous. | Il n'est proposé qu'au compte marqué `selene_personnel` (`offered`, `TU-REG-30`). | Les cas d'offre (`RLM-001`, `RLM-002`) distinguent les deux comptes. |
+| C1 | README (section « Reprendre la main ») ; [regulation.md](../regulation.md#parcours), étape 2 du parcours | Connectée, on choisit « où le garder » : sur l'appareil, « ou synchronisé avec un accord explicite ». | Aucun choix : un nouveau suivi reste sur l'appareil (`subjectForm`, `TU-REG-27`, `TN-regulation-appareil`). La section « Hors de l'offre publique » du même document le dit. | Les cas suivent le code et la section la plus récente ; l'étape 2 et le README sont périmés. **Corrigée** le 5 octobre 2026, avec l'édition des stores (README, regulation.md). |
+| C2 | README (section « Reprendre la main ») | L'espace est présenté comme un espace facultatif ouvert à toutes et tous. | Il n'est proposé qu'au compte marqué `selene_personnel` (`offered`, `TU-REG-30`). | Les cas d'offre (`RLM-001`, `RLM-002`) distinguent les deux comptes. **Corrigée** le 5 octobre 2026, avec l'édition des stores (README, regulation.md). |
 | C3 | [evolution-ui.md](../evolution-ui.md#architecture-de-navigation) | Raccourcis `c`, `t`, `g a/b/r`, `j`/`k`, `x`, `e`, `?`, rail de sigils repliable, panneau de détail, double toucher sur Espaces. | Absents du code. | Classés « envisagés », aucun cas. |
 | C4 | [a-faire.md](../a-faire.md#essayer-sur-de-vrais-appareils) | « Les contrôles automatiques sont faits (axe-core sur quinze vues…) ». | Le balayage axe-core a été fait une fois, à la main, le 4 octobre ([evolution-ui.md](../evolution-ui.md)) ; aucun test ne le rejoue. Seuls ses correctifs sont figés (`TN-contraste`, `TN-cibles`, `TN-cibles-ordinateur`). | Couverture d'accessibilité « partielle », pas « automatique » ; automatisation proposée ([backlog.md](backlog.md)). |
 | C5 | [regulation.md](../regulation.md#parcours-manuel-cinq-minutes), étape 1 | « Accueil → Reprendre la main → Ajouter ». | Les modèles de l'accueil ne s'affichent que dans le bloc « Composer ton espace », réservé aux comptes neufs ; un compte existant passe par Réglages → Espaces → Créer un espace. | `RLM-001` passe par les Réglages. |

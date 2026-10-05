@@ -14,7 +14,7 @@ import { gFilter } from "../modules/groups.js";
 import { taskFilters } from "../modules/taches.js";
 import { render } from "./render.js";
 import { ICONS, sigil, tintOf } from "./sigils.js";
-import { S, enabled, label } from "../state/site.js";
+import { S, enabled, label, shownModule } from "../state/site.js";
 import { searchQuery } from "../views/recherche.js";
 
 /* Navigation.
@@ -25,7 +25,7 @@ export const SYSTEM = ["assistant"];
 /* Les espaces actifs, par domaine, dans l'ordre de la navigation ; un domaine apparaît là où apparaît son premier espace. */
 export function domains() {
   const s = S(), out = new Map();
-  for (const m of s.config.modules) if (m.on && !SYSTEM.includes(m.id) && Object.hasOwn(s.modules, m.id)) {
+  for (const m of s.config.modules) if (shownModule(m) && !SYSTEM.includes(m.id)) {
     const g = String(m.group || "").trim(); if (!out.has(g)) out.set(g, []); out.get(g).push(m.id);
   }
   return [...out].map(([name, ids]) => ({ name, ids }));
