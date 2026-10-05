@@ -219,3 +219,18 @@ const baseConfig = mods => ({ name: "Selene", palette: "nigredo", mode: "auto", 
   fs.writeFileSync(`${OUT}/instagram-reels.json`, JSON.stringify(reels, null, 2) + "\n");
   console.log("ok instagram-posts_1.json, instagram-reels.json");
 }
+
+/* ---------- 9. coffre-markdown/ : un petit coffre Obsidian synthétique, pour l'import de notes Markdown ---------- */
+{
+  const dir = `${OUT}/coffre-markdown`;
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(`${dir}/.obsidian`, { recursive: true });
+  const files = {
+    "Le seuil.md": "---\ndate: 2024-01-05\nstatut: hypothèse\naliases: [Seuil]\n---\n# Le seuil\n\nLe paratexte comme [[La lisière|lisière]] du texte.\n\nDeuxième paragraphe.\n",
+    "2024-02-10 Lecture.md": "# La lisière\n\nRenvoie au [[Seuil]].\n![[schema.png]]\nUn titre piégé : <img src=x onerror=alert('recette')>\n",
+    "202403011530 Idée.md": "Une idée datée par son identifiant Zettlr. %% commentaire privé %%\n",
+    ".obsidian/workspace.md": "réglages de l'éditeur : à ne pas importer\n"
+  };
+  for (const [name, text] of Object.entries(files)) fs.writeFileSync(`${dir}/${name}`, text);
+  console.log("ok coffre-markdown/ (" + Object.keys(files).length + " fichiers)");
+}

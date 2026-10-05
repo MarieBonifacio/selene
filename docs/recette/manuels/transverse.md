@@ -346,7 +346,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web
 - **Préconditions** : site publié au commit en recette.
 - **Données** : aucune.
-- **Automatisés associés** : `TU-BLD-03`, `TU-BLD-04`, `TN-compte`, `TN-hors-ligne`
+- **Automatisés associés** : `TU-BLD-03`, `TU-BLD-04`, `TU-BLD-08`, `TU-BLD-09`, `TN-compte`, `TN-hors-ligne`
 - **Source** : [DOC] [compte.md](../../compte.md#politique-de-confidentialité) ; [TEST] `TU-BLD-03`, `TU-BLD-04`.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -356,6 +356,7 @@ Identifiants retirés : aucun.
 | 3 | Comparer avec la liste des hôtes de [TRV-009](#trv-009) et avec Anthropic (assistant). | Chaque service y est nommé. |
 | 4 | Basculer l'interface en anglais ; suivre le lien. | `privacy.html`, même date, mêmes sections. |
 | 5 | Outils de développement : Sources ou Network de la page. | Aucun script chargé par la politique. |
+| 6 | Revenir à `confidentialite.html#supprimer-compte` (puis `privacy.html#delete-account`). | Une section qui permet de demander la suppression de son compte **sans l'app** (exigence de Google Play) : les étapes, « Ce qui est effacé », « Ce qui reste », « Sans pouvoir te connecter », un lien de courriel ; la section des droits y renvoie. Le texte et les liens se lisent bien (contraste). |
 
 - **État final attendu** : interface en anglais.
 - **Nettoyage** : remettre le français.

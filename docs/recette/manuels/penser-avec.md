@@ -27,6 +27,7 @@ sont en août et septembre 2026 : pour le bilan, remonter jusqu'à ces périodes
 | [PEN-013](#pen-013) | Planche de lunaison : impression et téléchargement | P3 | Web |
 | [PEN-014](#pen-014) | Carte céleste des liaisons | P3 | Web, Mob |
 | [PEN-015](#pen-015) | Marges : sur grand écran, sous le texte ailleurs | P3 | Web, Mob |
+| [PEN-016](#pen-016) | Relecture de la semaine | P3 | Web, Mob, ART |
 
 Identifiants retirés : aucun.
 
@@ -399,3 +400,34 @@ Identifiants retirés : aucun.
 
 - **État final attendu** : inchangé.
 - **Nettoyage** : réimporter le jeu d'essai si PEN-002 a été joué.
+
+---
+
+<a id="pen-016"></a>
+### PEN-016 — Relecture de la semaine
+
+- **Fonctionnalité et règle** : quand il y a de quoi relire et que la dernière relecture a sept jours, l'accueil la propose ;
+  la page tire trois choses endormies (au sort, pondérées par l'oubli), montre les tensions ouvertes et les hypothèses
+  qu'aucune source ne documente ; « Relecture faite » la range pour une semaine, sur cet appareil ; elle reste à portée
+  depuis le bilan.
+- **Objectif, risque vérifié** : un rituel qui harcèle (revient chaque jour) ou qui disparaît pour de bon ; une hypothèse
+  documentée présentée comme sans source.
+- **Priorité** : P3 · **Plateformes** : Web, Mob, ART
+- **Préconditions** : jeu d'essai importé dans un profil où aucune relecture n'a été faite.
+- **Données** : aucune.
+- **Automatisés associés** : `TN-relecture`
+- **Source** : [TEST] `tests/browser/relecture.js` ; textes vérifiés sur le jeu d'essai par une sonde Chromium le 5 octobre 2026
+  (les trois choses tirées et leurs durées varient d'un essai et d'un jour à l'autre).
+
+| Étape | Action précise | Résultat attendu observable |
+|---|---|---|
+| 1 | Accueil. | Une ligne « Relecture de la semaine » : « dix minutes : 3 choses endormies, 1 tension ouverte, 2 hypothèses sans source ». |
+| 2 | Cliquer « Relecture de la semaine ». | Le titre de la page devient « Relecture de la semaine — Selene » ; « Dix minutes : ce qui dort, ce qui se contredit, ce qui attend ses preuves. Rien n'est noté ; relire suffit. » ; trois cartes « Trois choses endormies » (espace et nature, texte, « N jours sans y toucher », « voir »), toutes différentes. |
+| 3 | Lire « Tensions ouvertes » et « Hypothèses sans source ». | La tension : « La lisière est au contraire une frontière nette… » contredit « La lisière n'est pas une frontière… », avec « résoudre » et « dossier ». Les hypothèses : « Les sapins gardent la nuit plus longtemps que les hêtres. » (Écriture) et « la brume précède la pluie » (Boîte). |
+| 4 | Revenir à l'accueil, rouvrir la relecture. | Les trois mêmes cartes (le tirage ne change pas à chaque affichage). « Retirer » : un nouveau tirage de trois cartes (avec un petit corpus, certaines peuvent revenir). |
+| 5 | « Relecture faite ». | « Relecture faite. La prochaine, dans une semaine. » ; retour à l'accueil ; la ligne a disparu. |
+| 6 | Bilan. | Un lien vers la relecture y reste. |
+| 7 | Outils de développement : la clé `selene-relecture` (IndexedDB `selene` → `kv` sur le web, Local Storage dans l'artefact) vaut J ; la remplacer par une date d'il y a huit jours ; recharger l'accueil. | La ligne « Relecture de la semaine » revient. |
+
+- **État final attendu** : relecture proposée de nouveau.
+- **Nettoyage** : aucun.

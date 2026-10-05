@@ -40,7 +40,7 @@ pas son exécution, et rien ici ne le prétend.
 | Compilations Android, iOS, Windows | workflows *Android*, *iOS*, *Desktop* | **bloqué** | ni SDK Android, ni Xcode, ni Windows ici ; la CI les compile |
 | Isolation entre comptes | `npm run isolation` | **bloqué** | aucun projet de préproduction ni compte de test fournis |
 | Banc de mesure | `npm run bench` | mesuré (aucun seuil) | accueil 31 ms, motifs 42 ms, bilan 46 ms, planche 38 ms, carte d'un motif 56 ms, recherche 3 ms, sortes 46 ms |
-| Cohérence du cahier | `npm run recette` | **réussi** | 187 cas, 384 tests inventoriés, liens et jeux de données vérifiés |
+| Cohérence du cahier | `npm run recette` | **réussi** | 190 cas, 393 tests inventoriés, liens et jeux de données vérifiés |
 
 Relancés en fin de rédaction sur la branche du cahier (commit `7c4b4f8`, code de l'app identique à `768eb34`) :
 `npm run check` (268 tests Node, 16 tests Deno, build, syntaxe, eslint, i18n) et `npm run test:browser` sous Chromium
@@ -50,6 +50,11 @@ Puis, après la fusion de `main` (`1ca8c4f`, quatorze commits arrivés pendant l
 `npm run check` (277 tests Node, 16 tests Deno) et `npm run test:browser` sous Chromium (73 scénarios, 1 071
 vérifications) : **réussis**. Playwright local : 1.56.1 (le `package.json` fusionné demande 1.63.0 ; la CI utilisera
 celle-ci).
+
+Enfin, le 5 octobre, après la fusion de `main` (`362f379` : exports natifs, import Markdown, relecture de la semaine,
+suppression de compte sans l'app) : `npm run check` (284 tests Node, 16 tests Deno) et `npm run test:browser` sous
+Chromium (75 scénarios, 1 101 vérifications) : **réussis**. La CI de la PR (Chromium, WebKit avec Playwright 1.63, iOS,
+Android, Windows) était verte sur `8810be2`.
 
 ## Sondes ponctuelles dans Chromium
 
@@ -66,21 +71,22 @@ avec des services simulés.
 | Création et configuration par le compte personnel, garde de déconnexion | RLM-001, RLM-003, RLM-023 | anomalies **A6** et **A7** |
 | Stockage de l'appareil effacé, identité gardée | RLM-029 | conforme à ce qu'écrit le code ; question posée |
 | Interface en anglais, section « Confidentialité et données » | RLM-028 | résumé de l'assistant resté en français (question posée) |
+| Import de notes Markdown, relecture de la semaine, sur le jeu d'essai et le coffre de recette | MOD-026, PEN-016 | conforme ; anomalie **A8** (un fichier illisible fait échouer l'import sans message) |
 
 ## Cas manuels
 
-Les 187 cas : **non exécutés**. Ils demandent des appareils réels, le vrai projet Supabase, claude.ai, une clé Anthropic de
+Les 190 cas : **non exécutés**. Ils demandent des appareils réels, le vrai projet Supabase, claude.ai, une clé Anthropic de
 recette ou un lecteur d'écran, qui n'étaient pas disponibles ici.
 
 ## Synthèse
 
 | Priorité | Réussis | Échoués | Bloqués | Non applicables | Non exécutés |
 |---|---|---|---|---|---|
-| P1 | 0 | 0 | 0 | 0 | 69 |
-| P2 | 0 | 0 | 0 | 0 | 78 |
-| P3 | 0 | 0 | 0 | 0 | 40 |
+| P1 | 0 | 0 | 0 | 0 | 70 |
+| P2 | 0 | 0 | 0 | 0 | 79 |
+| P3 | 0 | 0 | 0 | 0 | 41 |
 
-Anomalies relevées : A1 à A7 ([perimetre.md](../perimetre.md#anomalies-et-observations)), aucune corrigée.
+Anomalies relevées : A1 à A8 ([perimetre.md](../perimetre.md#anomalies-et-observations)), aucune corrigée.
 
 ## Réserves
 

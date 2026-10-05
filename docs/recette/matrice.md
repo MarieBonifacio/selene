@@ -2,7 +2,7 @@
 
 De chaque fonctionnalité ou règle, le risque, les cas manuels qui la vérifient, les tests automatiques qui la couvrent,
 la couverture réelle et ce qu'il reste à faire. Une ligne par cas manuel (le titre du cas énonce la règle), puis les
-règles que seuls les tests automatiques vérifient. État au commit `1ca8c4f` ; les cas sont dans [manuels/](manuels/),
+règles que seuls les tests automatiques vérifient. État au commit `362f379` ; les cas sont dans [manuels/](manuels/),
 les tests dans [automatises.md](automatises.md), les actions numérotées dans [backlog.md](backlog.md).
 
 ## États de couverture
@@ -18,7 +18,7 @@ Aucun pourcentage global : une moyenne de couvertures hétérogènes ne mesure r
 | à clarifier | Le résultat attendu dépend d'une question ouverte, marquée [À ARBITRER] dans le cas. |
 | hors périmètre | Ce que la recette ne juge pas (publication sur les stores, production d'images). |
 
-**Décompte des 187 cas manuels** : 8 couvert automatiquement, 170 couvert partiellement, 0 documenté pour recette manuelle, 9 à clarifier.
+**Décompte des 190 cas manuels** : 8 couvert automatiquement, 173 couvert partiellement, 0 documenté pour recette manuelle, 9 à clarifier.
 
 ## Entrée, comptes et session
 
@@ -113,6 +113,7 @@ Cas : [manuels/types-de-module.md](manuels/types-de-module.md).
 | Brouillons : survivent à la fermeture, s'effacent une fois gardés | texte perdu à la fermeture (téléphone qui recharge l'onglet) | [MOD-023](manuels/types-de-module.md#mod-023) | [`TU-MOD-31`](automatises.md#tu-mod-31), [`TN-quotidien`](automatises.md#tn-quotidien), [`TN-navigation`](automatises.md#tn-navigation) | couvert partiellement | Serveur et services simulés, une partie des étapes seulement : garder le cas en recette complète. |
 | Minuteur de quinze minutes et la suite proposée | minuteur qui ne finit pas, ou fin sans suite | [MOD-024](manuels/types-de-module.md#mod-024) | [`TN-en-tete`](automatises.md#tn-en-tete), [`TN-signatures`](automatises.md#tn-signatures), [`TN-recherche-minuteur`](automatises.md#tn-recherche-minuteur), [`TU-MOD-33`](automatises.md#tu-mod-33) | couvert partiellement | Serveur et services simulés, une partie des étapes seulement : garder le cas en recette complète. |
 | Longues listes : cent, puis « Voir les suivants » | liste interminable qui fige le téléphone | [MOD-025](manuels/types-de-module.md#mod-025) | [`TU-MOD-54`](automatises.md#tu-mod-54), [`TN-navigation`](automatises.md#tn-navigation) | couvert partiellement | Serveur et services simulés, une partie des étapes seulement : garder le cas en recette complète. |
+| Importer des notes Markdown (Obsidian, Zettlr) | notes perdues, dupliquées ou mal datées à l'import | [MOD-026](manuels/types-de-module.md#mod-026) | [`TN-import-markdown`](automatises.md#tn-import-markdown), [`TU-MKD-01`](automatises.md#tu-mkd-01), [`TU-MKD-02`](automatises.md#tu-mkd-02), [`TU-MKD-03`](automatises.md#tu-mkd-03), [`TU-MKD-04`](automatises.md#tu-mkd-04) | couvert partiellement | Fichiers en mémoire dans les tests ; un fichier illisible fait échouer tout l'import sans message (A8, à corriger). |
 
 ## Penser avec
 
@@ -135,6 +136,7 @@ Cas : [manuels/penser-avec.md](manuels/penser-avec.md).
 | Planche de lunaison : impression et téléchargement | impression sur plusieurs pages | [PEN-013](manuels/penser-avec.md#pen-013) | [`TN-planche`](automatises.md#tn-planche) | couvert partiellement | Serveur et services simulés, une partie des étapes seulement : garder le cas en recette complète. |
 | Carte céleste des liaisons | carte illisible ou inaccessible au clavier | [PEN-014](manuels/penser-avec.md#pen-014) | [`TN-carte`](automatises.md#tn-carte), [`TU-CART-01`](automatises.md#tu-cart-01), [`TU-CART-02`](automatises.md#tu-cart-02), [`TU-CART-03`](automatises.md#tu-cart-03), [`TU-CART-04`](automatises.md#tu-cart-04), [`TU-CART-05`](automatises.md#tu-cart-05) | couvert partiellement | Serveur et services simulés, une partie des étapes seulement : garder le cas en recette complète. |
 | Marges : sur grand écran, sous le texte ailleurs | information cachée sur téléphone | [PEN-015](manuels/penser-avec.md#pen-015) | [`TN-marges`](automatises.md#tn-marges) | couvert partiellement | Serveur et services simulés, une partie des étapes seulement : garder le cas en recette complète. |
+| Relecture de la semaine | un rituel qui harcèle ou qui disparaît pour de bon | [PEN-016](manuels/penser-avec.md#pen-016) | [`TN-relecture`](automatises.md#tn-relecture) | couvert partiellement | Le tirage est aléatoire : seule sa forme est testée ; relecture à la main sur un vrai corpus. |
 
 ## Données et sauvegardes
 
@@ -267,6 +269,7 @@ Cas : [manuels/plateformes.md](manuels/plateformes.md).
 | Windows : données après fermeture, déconnexion, mise à jour par-dessus | une saisie perdue à la fermeture | [PLT-010](manuels/plateformes.md#plt-010) | [`TN-bureau`](automatises.md#tn-bureau), [`TR-TAU-01`](automatises.md#tr-tau-01) | couvert partiellement | Les tests simulent la coquille native ou claude.ai : recette sur appareil réel ([BL-08](backlog.md#bl-08)). |
 | Artefact claude.ai : démarrage, données, synchronisation | un artefact qui démarre vide à chaque ouverture | [PLT-011](manuels/plateformes.md#plt-011) | [`TU-APP-01`](automatises.md#tu-app-01), [`TU-PLT-05`](automatises.md#tu-plt-05) | couvert partiellement | Les tests simulent la coquille native ou claude.ai : recette sur appareil réel ([BL-11](backlog.md#bl-11)). |
 | Mise en arrière-plan d'une app mobile : ce qui attend part | une saisie restée sur le téléphone parce que l'app a été quittée juste après | [PLT-012](manuels/plateformes.md#plt-012) | [`TU-NAT-05`](automatises.md#tu-nat-05) | couvert partiellement | Les tests simulent la coquille native ou claude.ai : recette sur appareil réel. |
+| Apps mobiles : sauvegarde et exports par la feuille de partage | une sauvegarde qui ne sort jamais du téléphone | [PLT-013](manuels/plateformes.md#plt-013) | [`TN-natif`](automatises.md#tn-natif), [`TU-NAT-10`](automatises.md#tu-nat-10) | couvert partiellement | Les tests simulent la coquille native ou claude.ai : recette sur appareil réel ([BL-07](backlog.md#bl-07)). |
 
 ## Transverse
 
@@ -285,7 +288,7 @@ Cas : [manuels/transverse.md](manuels/transverse.md).
 | Aucune violation de CSP, aucun appel vers un hôte non déclaré | une fonction cassée par la CSP en production seulement | [TRV-009](manuels/transverse.md#trv-009) | [`TN-csp`](automatises.md#tn-csp), [`TU-BLD-02`](automatises.md#tu-bld-02), [`TU-SKY-08`](automatises.md#tu-sky-08) | couvert partiellement | Serveur et services simulés, une partie des étapes seulement : garder le cas en recette complète. |
 | Journal des erreurs anonyme, et son interrupteur | un texte personnel envoyé dans un message d'erreur | [TRV-010](manuels/transverse.md#trv-010) | [`TN-journal`](automatises.md#tn-journal), [`TU-JRN-01`](automatises.md#tu-jrn-01), [`TU-JRN-02`](automatises.md#tu-jrn-02), [`TU-JRN-05`](automatises.md#tu-jrn-05) | couvert automatiquement | Aucune. CI verte : le cas peut sortir d'une non-régression ciblée ; il reste dans la recette complète. |
 | Mesure d'usage de la bêta, et son interrupteur | une mesure qui embarquerait le contenu | [TRV-011](manuels/transverse.md#trv-011) | [`TN-activite`](automatises.md#tn-activite), [`TU-ACT-01`](automatises.md#tu-act-01), [`TU-ACT-02`](automatises.md#tu-act-02), [`TU-ACT-03`](automatises.md#tu-act-03) | couvert partiellement | Serveur et services simulés, une partie des étapes seulement : garder le cas en recette complète ([BL-05](backlog.md#bl-05)). |
-| Politique de confidentialité | une politique qui ne correspond plus à l'app (un service appelé sans être annoncé) | [TRV-012](manuels/transverse.md#trv-012) | [`TU-BLD-03`](automatises.md#tu-bld-03), [`TU-BLD-04`](automatises.md#tu-bld-04), [`TN-compte`](automatises.md#tn-compte), [`TN-hors-ligne`](automatises.md#tn-hors-ligne) | couvert partiellement | Serveur et services simulés, une partie des étapes seulement : garder le cas en recette complète. |
+| Politique de confidentialité | une politique qui ne correspond plus à l'app (un service appelé sans être annoncé) | [TRV-012](manuels/transverse.md#trv-012) | [`TU-BLD-03`](automatises.md#tu-bld-03), [`TU-BLD-04`](automatises.md#tu-bld-04), [`TU-BLD-08`](automatises.md#tu-bld-08), [`TU-BLD-09`](automatises.md#tu-bld-09), [`TN-compte`](automatises.md#tn-compte), [`TN-hors-ligne`](automatises.md#tn-hors-ligne) | couvert partiellement | Serveur et services simulés, une partie des étapes seulement : garder le cas en recette complète. |
 | Page publique de test | une mesure qui deviendrait un traceur | [TRV-013](manuels/transverse.md#trv-013) | [`TN-essai`](automatises.md#tn-essai), [`TU-BLD-05`](automatises.md#tu-bld-05) | couvert automatiquement | Aucune. CI verte : le cas peut sortir d'une non-régression ciblée ; il reste dans la recette complète. |
 | Téléphone et ordinateur : rien ne déborde | un bouton hors de l'écran | [TRV-014](manuels/transverse.md#trv-014) | [`TN-reglages`](automatises.md#tn-reglages), [`TN-en-tete`](automatises.md#tn-en-tete), [`TN-regulation`](automatises.md#tn-regulation), [`TN-identite`](automatises.md#tn-identite) | couvert partiellement | Serveur et services simulés, une partie des étapes seulement : garder le cas en recette complète ([BL-04](backlog.md#bl-04)). |
 | États vides | un écran vide pris pour un bug ou une perte de données | [TRV-015](manuels/transverse.md#trv-015) | [`TN-budget`](automatises.md#tn-budget), [`TN-notes`](automatises.md#tn-notes) | couvert partiellement | Serveur et services simulés, une partie des étapes seulement : garder le cas en recette complète. |

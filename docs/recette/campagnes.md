@@ -90,7 +90,8 @@ demi-journée selon la PR.
    | `src/app/shell/`, `src/app/views/`, `src/app/i18n/` | [navigation-reglages.md](manuels/navigation-reglages.md) |
    | `src/app/registry.js`, `src/core/domain.js` (registre, modèles) | [espaces.md](manuels/espaces.md) |
    | `src/app/modules/<type>.js`, `src/core/domain.js` (règles d'un type) | [types-de-module.md](manuels/types-de-module.md), cas du type |
-   | `src/app/features/` (motifs, carte, dérive, sortes, planche, bilan) | [penser-avec.md](manuels/penser-avec.md) |
+   | `src/app/features/` (motifs, carte, dérive, sortes, planche, bilan, relecture) | [penser-avec.md](manuels/penser-avec.md) |
+   | `src/core/markdown.js` (import de notes), `src/core/biblio.js` (export des sources) | [MOD-026](manuels/types-de-module.md#mod-026), [EXT-020](manuels/connexions.md#ext-020) |
    | `src/core/backup.js`, migrations, `SCHEMA_VERSION` | [donnees-sauvegardes.md](manuels/donnees-sauvegardes.md) **et** [synchronisation.md](manuels/synchronisation.md) |
    | `src/app/state/`, fusion, `src/platform.js` | [synchronisation.md](manuels/synchronisation.md), [donnees-sauvegardes.md](manuels/donnees-sauvegardes.md) |
    | Sources, musique, ciel, radar, Instagram, passeur, Dehors, veille, calendrier, Zotero | [connexions.md](manuels/connexions.md), cas du service |

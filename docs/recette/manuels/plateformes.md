@@ -25,6 +25,7 @@ moyens, les cas concernés sont **bloqués**, jamais réussis.
 | [PLT-010](#plt-010) | Windows : données après fermeture, déconnexion, mise à jour par-dessus | P1 | WIN |
 | [PLT-011](#plt-011) | Artefact claude.ai : démarrage, données, synchronisation | P2 | ART |
 | [PLT-012](#plt-012) | Mise en arrière-plan d'une app mobile : ce qui attend part | P2 | AND, IOS |
+| [PLT-013](#plt-013) | Apps mobiles : sauvegarde et exports par la feuille de partage | P1 | AND, IOS |
 
 Identifiants retirés : aucun.
 
@@ -355,3 +356,33 @@ Identifiants retirés : aucun.
 
 - **État final attendu** : une note de plus.
 - **Nettoyage** : la supprimer.
+
+---
+
+<a id="plt-013"></a>
+### PLT-013 — Apps mobiles : sauvegarde et exports par la feuille de partage
+
+- **Fonctionnalité et règle** : dans les apps Android et iOS, la WebView ne télécharge rien d'elle-même ; chaque export
+  (sauvegarde, Markdown, dossier, planche, BibTeX) est écrit dans le cache de l'app puis ouvre la feuille de partage du
+  système (« Enregistrer » dans Fichiers ou Drive, AirDrop, Mail) ; refermer la feuille n'est pas une erreur ; une
+  écriture refusée est dite ; l'export précédent est effacé du cache.
+- **Objectif, risque vérifié** : une sauvegarde qui ne sort jamais du téléphone (la seule assurance contre la perte d'un
+  suivi gardé sur l'appareil) ; un export qui échoue en silence.
+- **Priorité** : P1 · **Plateformes** : AND, IOS
+- **Préconditions** : app installée au commit en recette, connectée au compte A (jeu d'essai) ; un ordinateur avec la version
+  web en mode « sans compte » pour l'étape 5.
+- **Données** : aucune.
+- **Automatisés associés** : `TN-natif`, `TU-NAT-10`
+- **Source** : [DOC] [android.md](../../android.md), [ios.md](../../ios.md) (« Les exports ») ; [TEST] `tests/browser/natif.js`
+  (coquille simulée), `TU-NAT-10`.
+
+| Étape | Action précise | Résultat attendu observable |
+|---|---|---|
+| 1 | Réglages → Compte et données → Sauvegarde → « Exporter ». | La feuille de partage du système s'ouvre avec un fichier `selene-<J>.json` ; aucun téléchargement ailleurs. |
+| 2 | Android : « Enregistrer » dans Fichiers (ou Drive) ; iOS : « Enregistrer dans Fichiers ». Ouvrir le fichier enregistré. | Le fichier existe ; il contient « Chantier » et les autres espaces. |
+| 3 | « Exporter » de nouveau, puis refermer la feuille sans rien choisir. | Aucun message ; l'app reste utilisable. |
+| 4 | Sources → « Exporter en BibTeX » ; Bilan → planche → la télécharger. | Chaque fois la feuille de partage, avec `sources-<J>.bib`, puis le fichier de la planche. |
+| 5 | Envoyer le fichier de l'étape 2 sur l'ordinateur (Drive, courriel à soi-même) et l'importer dans la version web. | « Sauvegarde importée. » ; les espaces du compte A apparaissent. |
+
+- **État final attendu** : inchangé dans l'app ; des fichiers enregistrés sur le téléphone.
+- **Nettoyage** : supprimer les fichiers enregistrés ; réimporter le jeu d'essai sur la version web si besoin.

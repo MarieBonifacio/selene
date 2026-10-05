@@ -1,6 +1,6 @@
 # Périmètre de la recette
 
-Ce qui est réellement dans Selene au commit de référence (`768eb34`, 4 octobre 2026, complété jusqu'à `1ca8c4f`), d'après le code, les tests et la
+Ce qui est réellement dans Selene au commit de référence (`768eb34`, 4 octobre 2026, complété jusqu'à `362f379`, 5 octobre), d'après le code, les tests et la
 documentation lus ensemble. Quand ils divergent, la divergence est notée plus bas plutôt que tranchée en silence.
 
 Statuts : **disponible** (dans `main`, atteignable par l'interface), **partielle** (une partie seulement est livrée, ou elle
@@ -95,7 +95,10 @@ fixe jusqu'en 2030, sans réseau), pluie sur les tâches, radar culturel (OpenAg
 est refusée), import Instagram (sur l'appareil, aussi dans l'artefact), passeur, Dehors, Artist Watch, veille de recherche
 (OpenAlex), « ce que tes sources ont en commun », calendrier iCal, Zotero en lecture seule, « Envoyer à Selene » (partage
 Android, favori, Raccourci iOS, liens `selene://`). Depuis `89d1ba0` : l'**export des sources en BibTeX et en CSL-JSON** (sur l'appareil, sans service). Depuis
-`14e1961` : dans les apps, « Ma position » ne demande que la **position approximative**. Le passeur et Dehors exigent un compte connecté **et** que le compte
+`14e1961` : dans les apps, « Ma position » ne demande que la **position approximative**. Depuis `a5929fc` : dans les apps,
+les **exports passent par la feuille de partage** du système. Depuis `7ffb4ce` : l'**import de notes Markdown** (Obsidian,
+Zettlr) dans un module de notes. Depuis `f2c7009` : la **relecture de la semaine** (accueil, bilan). Depuis `c2f3610` : la
+politique de confidentialité permet de **demander la suppression d'un compte sans l'app**. Le passeur et Dehors exigent un compte connecté **et** que le compte
 figure dans `PASSEUR_USERS` : pour un compte de recette, c'est un réglage serveur à faire (partielle, de ce point de vue).
 
 ### Assistant
@@ -167,6 +170,7 @@ Constatées, pas corrigées. Chacune est à qualifier par un ticket.
 | A5 | Typographie des dates abrégées en fin de phrase : « Objectif enregistré, à partir du 14 oct.. D'ici là, rien ne change. », « Supprimé : 1 verre standard le 10 sept.. Cette journée est à reconfirmer. » (point doublé) ; « à partir du 1 septembre 2026 » (au lieu de « 1er ») ; le résumé destiné à l'assistant, montré tel quel à la personne avant le partage, écrit « au plus 1.5 verres standard » et « 0 verres standard ». Aucun effet sur les données. | Sonde Chromium avec `donnees/rlm-en-cours.json` (4 octobre) ; voir [RLM-013](manuels/reprendre-la-main.md#rlm-013), [RLM-014](manuels/reprendre-la-main.md#rlm-014), [RLM-021](manuels/reprendre-la-main.md#rlm-021) | P3 |
 | A6 | Un suivi « Reprendre la main » tout juste créé par une personne connectée, pas encore configuré, affiche dans « Confidentialité et données » : « Encore synchronisé avec ton compte, depuis sa création : sur le serveur de Selene… garde-le sur un appareil », avec le bouton « Garder sur cet appareil seulement… ». Il n'a encore aucun contenu (le serveur n'en a que le nom) et passe sur l'appareil dès la configuration : rien ne fuit, mais le texte contredit la promesse « gardé sur l'appareil » au moment où la personne le lit pour la première fois. | Sonde Chromium, compte personnel sur faux Supabase (4 octobre) ; voir [RLM-003](manuels/reprendre-la-main.md#rlm-003) | P3, [À ARBITRER] |
 | A7 | Se déconnecter en choisissant « L'effacer définitivement » (garde de déconnexion) efface le contenu du suivi de l'appareil, mais **son talon reste sur le compte** (nom, appareil détenteur). De retour sur le même appareil, l'espace affiche « Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi. » : un effacement voulu se présente comme un accident, et le nom d'un suivi « effacé définitivement » survit. | Sonde Chromium, compte personnel sur faux Supabase : talons lus sur le faux serveur après la déconnexion, puis écran au retour (4 octobre) ; voir [RLM-023](manuels/reprendre-la-main.md#rlm-023) | P3, [À ARBITRER] : retirer aussi le talon quand la personne efface ? |
+| A8 | Import de notes Markdown : si le navigateur ne peut pas lire un des fichiers choisis (fichier déplacé, supprimé ou resté dans un nuage après sa sélection), **tout l'import échoue sans message** : `Promise.all` sur `f.text()` rejette, et la promesse n'est rattrapée nulle part (`src/app/modules/notes.js`, `importMarkdown`, et le gestionnaire `notes-md`). La personne ne voit rien se passer ; le journal des erreurs reçoit l'erreur. | Sonde Chromium (5 octobre) : fichiers donnés par chemin, dont un au nom accentué que l'outil de test ne relisait pas (artefact de l'outil, qui a déclenché la condition) : « The requested file could not be read » en erreur de page, aucun message. Les mêmes fichiers donnés en mémoire s'importent entiers. Cause lue dans le code. Voir [MOD-026](manuels/types-de-module.md#mod-026) | P3 |
 
 ## Points à arbitrer
 

@@ -193,7 +193,7 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 Constatées pendant la mise en place du cahier, décrites avec leur preuve dans
 [perimetre.md](perimetre.md#anomalies-et-observations) : A1 (WebKit, `activite.js`, voir [BL-05](#bl-05)), A2 (à surveiller),
 A3 (message d'un import refusé), A4 (assistant, voir [BL-06](#bl-06)), A5 (typographie des dates : « oct.. », « 1 septembre »,
-« 1.5 verres »), A6 (texte « encore synchronisé » sur un suivi neuf), A7 (talon après effacement, voir [BL-02](#bl-02)).
+« 1.5 verres »), A6 (texte « encore synchronisé » sur un suivi neuf), A7 (talon après effacement, voir [BL-02](#bl-02)), A8 (import Markdown : un fichier illisible fait échouer tout l'import sans message).
 Aucune n'a été corrigée : chacune devient un ticket, ou est classée « comportement voulu » par la responsable, et le cas
 concerné est mis à jour en conséquence ([maintenance.md](maintenance.md)).
 

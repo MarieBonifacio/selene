@@ -37,6 +37,7 @@ Arc, Carnet, et une Boîte de six notes. Les opérations du Budget sont en septe
 | [MOD-023](#mod-023) | Brouillons : survivent à la fermeture, s'effacent une fois gardés | P2 | Web, Mob, AND, IOS |
 | [MOD-024](#mod-024) | Minuteur de quinze minutes et la suite proposée | P3 | Web, Mob |
 | [MOD-025](#mod-025) | Longues listes : cent, puis « Voir les suivants » | P3 | Web, Mob |
+| [MOD-026](#mod-026) | Importer des notes Markdown (Obsidian, Zettlr) | P2 | Web, Mob, ART |
 
 Identifiants retirés : aucun.
 
@@ -654,4 +655,37 @@ Identifiants retirés : aucun.
 | 3 | Mesurer à l'œil le temps d'ouverture de la boîte sur téléphone. | Moins de deux secondes (repère indicatif, voir TRV-007). |
 
 - **État final attendu** : inchangé.
+- **Nettoyage** : réimporter le jeu d'essai.
+
+---
+
+<a id="mod-026"></a>
+### MOD-026 — Importer des notes Markdown (Obsidian, Zettlr)
+
+- **Fonctionnalité et règle** : dans les réglages d'un module de notes, « Importer des notes Markdown » (des fichiers) ou
+  « …ou tout un dossier » (un coffre) : chaque fichier `.md` devient une note, titre en première ligne, datée par son
+  en-tête (`date`, `created`), sinon par son nom (date ou identifiant Zettlr), sinon par le fichier ; `statut: hypothèse`
+  lui donne son statut ; un lien `[[…]]` vers une autre note du lot (ou déjà importée) devient « fait écho à » ; une image
+  intégrée et les commentaires disparaissent ; `.obsidian` et `.trash` sont ignorés ; une confirmation dit combien, de
+  quand à quand, où ; un second import n'ajoute que ce qui manque ; tout est lu sur l'appareil.
+- **Objectif, risque vérifié** : notes perdues ou dupliquées à l'import ; dates fausses ; réglages de l'éditeur importés
+  comme des notes ; texte piégé interprété ; contenu envoyé à un service.
+- **Priorité** : P2 · **Plateformes** : Web, Mob, ART
+- **Préconditions** : jeu d'essai (le Carnet n'a qu'une note) ; le dossier [`donnees/coffre-markdown/`](../donnees/coffre-markdown/)
+  copié sur l'appareil (trois notes et un `.obsidian/workspace.md`) ; Network ouvert.
+- **Données** : les fichiers `Le seuil.md`, `2024-02-10 Lecture.md`, `202403011530 Idée.md`, puis le dossier entier.
+- **Automatisés associés** : `TN-import-markdown`, `TU-MKD-01`, `TU-MKD-02`, `TU-MKD-03`, `TU-MKD-04`
+- **Source** : [DOC] [connexions.md](../../connexions.md) (venir d'Obsidian ou de Zettlr) ; [TEST] `tests/browser/import-markdown.js`,
+  `tests/markdown.test.js` ; textes vérifiés par une sonde Chromium le 5 octobre 2026.
+
+| Étape | Action précise | Résultat attendu observable |
+|---|---|---|
+| 1 | Réglages → Espaces → « régler » sous Carnet. | « Importer des notes Markdown » et « …ou tout un dossier », avec l'explication « Un coffre Obsidian, un dossier Zettlr ou quelques fichiers .md : chaque fichier devient une note… Les fichiers sont lus sur cet appareil ; un second import n'ajoute que ce qui manque. » |
+| 2 | « Importer des notes Markdown » → choisir les trois fichiers. | « Importer 3 notes (du 5 janvier 2024 au 1 mars 2024) dans Carnet ? 2 liens [[…]] deviennent « fait écho à ». » |
+| 3 | « Annuler ». | Le Carnet n'a toujours qu'une note. |
+| 4 | Refaire l'étape 2, « Confirmer ». | « 3 notes importées dans Carnet. 2 liens. » ; aucune requête dans Network. |
+| 5 | Ouvrir le Carnet. | « Le seuil » (5 janv.) : « Le paratexte comme lisière du texte. », statut hypothèse, « fait écho à « La lisière… » » ; « La lisière » (10 févr.) : « Renvoie au Seuil. », sans « schema.png », et `<img src=x onerror=alert('recette')>` affiché en texte, sans alerte ; « 202403011530 Idée » (1er mars 2024) sans « commentaire privé ». |
+| 6 | Réglages → « …ou tout un dossier » → choisir le dossier `coffre-markdown`. | « Rien de nouveau : ces notes sont déjà là. », sans question ; `workspace.md` n'est pas devenu une note. |
+
+- **État final attendu** : le Carnet a quatre notes.
 - **Nettoyage** : réimporter le jeu d'essai.

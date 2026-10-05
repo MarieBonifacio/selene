@@ -1,7 +1,7 @@
 # Inventaire des tests automatiques
 
 Ce que les tests de Selene vérifient réellement, lu dans le corps de chaque test et non dans son seul nom ; ce qu'ils
-simulent ; où et quand ils tournent ; ce qu'ils ne prouvent pas. État au commit `1ca8c4f` (4 octobre 2026 ; rédigé sur `768eb34`, complété des tests ajoutés ou modifiés depuis). Les
+simulent ; où et quand ils tournent ; ce qu'ils ne prouvent pas. État au commit `362f379` (5 octobre 2026 ; rédigé sur `768eb34`, complété des tests ajoutés ou modifiés depuis). Les
 automatisations seulement proposées sont dans [backlog.md](backlog.md), jamais ici.
 
 Identifiants retirés : aucun.
@@ -10,8 +10,8 @@ Identifiants retirés : aucun.
 
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
-| Tests unitaires et d'intégration Node | `npm test` | 277 tests, 28 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
-| Scénarios de navigateur | `npm run test:browser` | 73 scénarios `tests/browser/*.js`, environ 1 034 appels de vérification dans le code | oui : *Check › browser*, Chromium **et** WebKit | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
+| Tests unitaires et d'intégration Node | `npm test` | 284 tests, 29 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
+| Scénarios de navigateur | `npm run test:browser` | 75 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium **et** WebKit | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
 | Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
@@ -196,6 +196,8 @@ sans navigateur.
 | <a id="tu-bld-05"></a>`TU-BLD-05` | page publique de test (E3) : statique, son script et ses styles autorisés par leur empreinte, Supabase seul en réseau | `essai.html` : un seul script et deux feuilles de style autorisés par empreinte, rien d'inline, réseau limité au projet Supabase, aucun stockage ni cookie, images et aperçu publiés, « Essayer sans compte » vers `index.html#sans-compte`, prix affiché. | [TRV-013](manuels/transverse.md#trv-013) |
 | <a id="tu-bld-06"></a>`TU-BLD-06` | le script produit ne dépend pas de la machine : aucun chemin absolu | Le script produit ne contient aucun chemin absolu de la machine de build. | — |
 | <a id="tu-bld-07"></a>`TU-BLD-07` | natif : l’amorçage puis le même script, sans service worker ni manifeste | La page native contient l'amorçage puis le même script que le web, sans service worker ni manifeste ; chaque CSP n'autorise que ses propres scripts. | — |
+| <a id="tu-bld-08"></a>`TU-BLD-08` | supprimer son compte sans l’app : une adresse à donner à Google Play, dans les deux langues | Les deux politiques ont une section « supprimer son compte » (étapes, ce qui est effacé, ce qui reste, sans pouvoir se connecter) avec un courriel de demande ; la section des droits y renvoie ; `docs/publication.md` donne cette adresse pour la Play Console. | [TRV-012](manuels/transverse.md#trv-012) |
+| <a id="tu-bld-09"></a>`TU-BLD-09` | politique de confidentialité : le texte et les liens se lisent (4,5:1 au moins, WCAG AA), dans les deux langues | Le texte, le texte secondaire et les liens des deux politiques gardent un contraste de 4,5:1 sur leur fond. | [TRV-012](manuels/transverse.md#trv-012) |
 
 ### Carte céleste — `tests/carte.test.js`
 
@@ -401,6 +403,19 @@ sans navigateur.
 | <a id="tu-mod-61"></a>`TU-MOD-61` | new templates contain no personal data or imposed budget and care presets | Les modèles ne contiennent aucune entrée ni donnée personnelle, ni enveloppe ni soin imposés. | [ESP-001](manuels/espaces.md#esp-001) |
 | <a id="tu-mod-62"></a>`TU-MOD-62` | programme installation waits for a chosen practice and validates its settings | Le modèle Protocole ne crée rien tant que le formulaire n'est pas validé ; 9 séances par semaine refusées ; les valeurs saisies sont gardées. | [ESP-004](manuels/espaces.md#esp-004) |
 
+### Notes Markdown (Obsidian, Zettlr) — `tests/markdown.test.js`
+
+- **Niveau** : Unitaire pur (U). **Sujet** : `src/core/markdown.js` (`frontMatter`, `mdNote`, `mdImport`).
+- **Simulé** : Rien.
+- **Limites** : La lecture des fichiers par le navigateur (`File.text()`) est hors de ces tests ; voir `TN-import-markdown` et l'anomalie A8.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-mkd-01"></a>`TU-MKD-01` | en-tête YAML : clés, guillemets, listes en ligne et en lignes ; sans en-tête, le texte tel quel | L'en-tête YAML (clés, guillemets, listes en ligne ou en lignes, fins de ligne Windows, marque d'ordre des octets) ; sans en-tête, le texte tel quel. | [MOD-026](manuels/types-de-module.md#mod-026) |
+| <a id="tu-mkd-02"></a>`TU-MKD-02` | une note : titre (en-tête, puis « # », puis nom), corps sans le titre répété, date, statut | Titre pris dans l'en-tête, puis le premier « # », puis le nom ; corps sans titre répété ni lignes vides en trop ; date de l'en-tête, du nom, d'un identifiant Zettelkasten, sinon du fichier ; une date impossible refusée ; statut épistémique en français ou en anglais. | [MOD-026](manuels/types-de-module.md#mod-026) |
+| <a id="tu-mkd-03"></a>`TU-MKD-03` | liens [[…]] : l’alias ou la cible dans le texte, une image intégrée retirée, commentaires effacés | Un lien `[[…]]` laisse son alias ou sa cible dans le texte ; une image intégrée et les commentaires (`%% %%`, `<!-- -->`) disparaissent ; une note trop longue est coupée, et marquée comme telle. | [MOD-026](manuels/types-de-module.md#mod-026) |
+| <a id="tu-mkd-04"></a>`TU-MKD-04` | un coffre : Markdown seul, hors .obsidian et .trash, doublons écartés, ordre des dates, liens résolus | Un coffre : seulement les `.md`, hors `.obsidian` et `.trash`, doublons écartés, notes dans l'ordre des dates, liens résolus par titre ou alias (ni vers soi, ni vers une note inconnue, ni deux fois), liens vers une note déjà importée retrouvés sans la recréer. | [MOD-026](manuels/types-de-module.md#mod-026) |
+
 ### MusicBrainz — `tests/musique.test.js`
 
 - **Niveau** : Unitaire pur (U). **Sujet** : `src/core/musique.js`.
@@ -430,6 +445,7 @@ sans navigateur.
 | <a id="tu-nat-07"></a>`TU-NAT-07` | liens selene:// (iOS, Android) : partage rangé dans la file, capture relayée, autres ignorés | Un lien `selene://share` est rangé pour la page (`selene-share`), `selene://capture` relayé ; les autres schémas ignorés. | [EXT-017](manuels/connexions.md#ext-017), [PLT-004](manuels/plateformes.md#plt-004), [PLT-008](manuels/plateformes.md#plt-008) |
 | <a id="tu-nat-08"></a>`TU-NAT-08` | notifications : la liste donnée remplace tout ce qui était programmé, avec de vraies dates ; haptique légère | La liste de notifications remplace tout ce qui était programmé, avec de vraies dates (`Date`) ; liste vide = tout annuler ; retour haptique léger. | [PLT-005](manuels/plateformes.md#plt-005) |
 | <a id="tu-nat-09"></a>`TU-NAT-09` | widget (Android) : la lune et des lignes de texte, rien d’autre, vers le plugin de l’app | Le widget Android reçoit la lune et des lignes de texte, rien d'autre. | [PLT-006](manuels/plateformes.md#plt-006) |
+| <a id="tu-nat-10"></a>`TU-NAT-10` | fichiers donnés : écrits dans le cache de l’app, un seul à la fois, puis confiés à la feuille de partage | Un export est écrit dans le cache de l'app puis confié à la feuille de partage ; au lancement et avant chaque export, l'ancien est effacé ; un nom piégé ne sort pas du dossier ; une feuille refermée remonte à la page comme un refus. | [PLT-013](manuels/plateformes.md#plt-013) |
 
 ### Couche plateforme : stockage, secrets, secours — `tests/platform.test.js`
 
@@ -788,6 +804,15 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Vérifie** : compteur de la boîte ; « à trier » sur l'accueil ; capture rapide par Entrée ; destinations selon ce que chaque type accepte ; vers le Chantier, le formulaire de tâche ; désigner une autre boîte retire l'ancienne désignation ; sans boîte, une explication.
 - **Cas manuels** : [ESP-009](manuels/espaces.md#esp-009), [MOD-014](manuels/types-de-module.md#mod-014), [MOD-015](manuels/types-de-module.md#mod-015), [TRV-015](manuels/transverse.md#trv-015)
 
+<a id="tn-import-markdown"></a>
+#### `TN-import-markdown` — Venir d'Obsidian ou de Zettlr
+
+- **Fichier** : [`tests/browser/import-markdown.js`](../../tests/browser/import-markdown.js) · **mode** A · **écran** O
+- **Conditions** : Données de démonstration avec un Carnet ; trois fichiers Markdown en mémoire, puis un dossier temporaire avec `.obsidian` et une image.
+- **Vérifie** : dans les réglages d'un module de notes, des fichiers ou tout un dossier ; confirmation qui dit combien, de quand à quand, où, et les liens ; annulé : rien ; importé : titre en première ligne, date de l'en-tête ou du nom, statut « hypothèse », lien remplacé par son alias, image intégrée retirée, `[[…]]` devenus « fait écho à » dans les deux sens, et le message le dit ; une note longue montre son début (« la suite ») ; paragraphes gardés ; texte piégé affiché en texte ; réimport : « Rien de nouveau », sans question ; un dossier : `.obsidian` et images laissés, un lien vers une note déjà importée la retrouve ; aucun appel réseau.
+- **Limites** : Fichiers en mémoire : un fichier que le navigateur ne peut pas lire n'est pas testé (A8, [perimetre.md](perimetre.md#anomalies-et-observations)).
+- **Cas manuels** : [MOD-026](manuels/types-de-module.md#mod-026)
+
 <a id="tn-atelier-capture"></a>
 #### `TN-atelier-capture` — Atelier d'écriture et capture qui comprend
 
@@ -916,6 +941,15 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Vérifie** : numéro, règle, quartiers, ligne par espace, motifs apparus, « Venu du dehors », statuts, tension ; lunaison précédente et retour ; impression du navigateur ; fichier téléchargé autonome sans script ; impression sans barre ni boutons ; une seule page A4 (Chromium seulement : `page.pdf`) ; lisible sur téléphone ; motif piégé inerte.
 - **Limites** : La vérification d'une seule page A4 ne tourne que dans Chromium.
 - **Cas manuels** : [PEN-013](manuels/penser-avec.md#pen-013), [TRV-008](manuels/transverse.md#trv-008)
+
+<a id="tn-relecture"></a>
+#### `TN-relecture` — Relecture de la semaine
+
+- **Fichier** : [`tests/browser/relecture.js`](../../tests/browser/relecture.js) · **mode** A · **écran** O
+- **Conditions** : Un Carnet avec deux hypothèses (l'une documentée par une source), deux notes anciennes en tension, un espace Sources.
+- **Vérifie** : l'accueil propose la relecture avec ce qui attend (choses endormies, tension, hypothèse sans source) ; la page s'ouvre, le titre de la page la nomme ; trois choses endormies différentes, un tirage stable d'un rendu à l'autre ; la tension ouverte et ses deux entrées ; l'hypothèse sans source, pas celle qu'une source documente ; « Retirer » refait le tirage ; « Relecture faite » : retour à l'accueil, jour retenu sur l'appareil, ligne disparue pour une semaine, message ; toujours à portée depuis le bilan ; elle revient sept jours plus tard.
+- **Limites** : Le tirage est aléatoire et pondéré : le test vérifie sa forme, pas les choses tirées.
+- **Cas manuels** : [PEN-016](manuels/penser-avec.md#pen-016)
 
 <a id="tn-carte"></a>
 #### `TN-carte` — Carte céleste
@@ -1190,9 +1224,9 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/natif.js`](../../tests/browser/natif.js) · **mode** N · **écran** O
 - **Conditions** : `window.seleneNative` : deux coffres asynchrones côté Node ; faux Supabase.
-- **Vérifie** : données et session lues depuis les coffres, rien dans localStorage, tout relu après relance ; la page envoie au widget la lune et trois lignes au plus ; notifications proposées, activées : la semaine programmée à 8 h 30 en texte brut ; changer l'heure reprogramme ; haptique à la capture.
+- **Vérifie** : données et session lues depuis les coffres, rien dans localStorage, tout relu après relance ; la page envoie au widget la lune et trois lignes au plus ; notifications proposées, activées : la semaine programmée à 8 h 30 en texte brut ; changer l'heure reprogramme ; haptique à la capture. ; sauvegarde et exports confiés à la feuille de partage de la coquille, jamais à un téléchargement ; feuille refermée : rien ne s'affiche ; écriture refusée : la personne le sait.
 - **Limites** : Aucune vraie coquille Capacitor : le pont est simulé.
-- **Cas manuels** : [PLT-003](manuels/plateformes.md#plt-003), [PLT-005](manuels/plateformes.md#plt-005), [PLT-006](manuels/plateformes.md#plt-006)
+- **Cas manuels** : [PLT-003](manuels/plateformes.md#plt-003), [PLT-005](manuels/plateformes.md#plt-005), [PLT-006](manuels/plateformes.md#plt-006), [PLT-013](manuels/plateformes.md#plt-013)
 
 <a id="tn-bureau"></a>
 #### `TN-bureau` — App de bureau simulée

@@ -21,6 +21,7 @@ compte », ou sur un compte de recette dédié, jamais sur un compte qui porte d
 | [rlm-synchronise-ancien.json](rlm-synchronise-ancien.json) | « Carnet du soir », tabac, observer, **encore synchronisé** avec un accord daté du 1er septembre 2026 (`storage: "account"`, `consent`), 3 cigarettes le 15 septembre (« Pause café »). | [RLM-024](../manuels/reprendre-la-main.md#rlm-024) |
 | [instagram-posts_1.json](instagram-posts_1.json) | Un export Instagram synthétique, avec l'encodage abîmé de Meta (« PhalÃ¨ne… » pour « Phalène… ») et un carrousel dont le titre contient `<img src=x onerror=alert('recette')>`. | [EXT-011](../manuels/connexions.md#ext-011), [TRV-008](../manuels/transverse.md#trv-008) |
 | [instagram-reels.json](instagram-reels.json) | Un reel daté du 21 juin 2026, sans titre. | [EXT-011](../manuels/connexions.md#ext-011) |
+| [coffre-markdown/](coffre-markdown/) | Un petit coffre Obsidian : « Le seuil.md » (en-tête : date du 5 janvier 2024, `statut: hypothèse`, alias « Seuil », lien `[[La lisière\|lisière]]`), « 2024-02-10 Lecture.md » (date dans le nom, lien `[[Seuil]]`, image intégrée, texte piégé), « 202403011530 Idée.md » (identifiant Zettlr, commentaire `%% %%`), et `.obsidian/workspace.md`, à ignorer. | [MOD-026](../manuels/types-de-module.md#mod-026) |
 
 <a id="volume"></a>
 ## Volume
