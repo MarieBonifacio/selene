@@ -73,8 +73,9 @@ export const steps = {
 };
 
 /* ---- côté émulateur ---- */
-const adb = (...args) => execFileSync("adb", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
-const adbBuffer = (...args) => execFileSync("adb", args, { maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"] });
+// Chaque appel est borné (trois minutes : une installation d'APK y tient) : un émulateur figé fait échouer, il ne bloque pas.
+const adb = (...args) => execFileSync("adb", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 180000 });
+const adbBuffer = (...args) => execFileSync("adb", args, { maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"], timeout: 180000 });
 const pid = () => { try { return adb("shell", "pidof", PKG).trim().split(/\s+/)[0] || null; } catch { return null; } };
 let port = 9222;
 /* Lancer l'app et s'attacher à sa page (une nouvelle prise, et un nouveau port, à chaque processus). */

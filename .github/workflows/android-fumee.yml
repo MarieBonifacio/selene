@@ -50,32 +50,45 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Émulateur démarré
+      # Le SDK de l'émulateur, puis ce que l'émulateur pense de l'accélération : sans KVM, il refuse de démarrer, et le dit.
+      - name: SDK de l'émulateur
+        timeout-minutes: 15
         run: |
           sdk="$ANDROID_HOME/cmdline-tools/latest/bin"
-          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"; export PATH="$ANDROID_HOME/platform-tools:$PATH"
-          yes | "$sdk/sdkmanager" --licenses > /dev/null
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          yes | "$sdk/sdkmanager" --licenses > /dev/null || true
           "$sdk/sdkmanager" --install emulator "$IMAGE" > /dev/null
           echo no | "$sdk/avdmanager" create avd -n fumee -k "$IMAGE" -d pixel_6 --force
+          ls -l /dev/kvm || true
+          "$ANDROID_HOME/emulator/emulator" -accel-check || true
+      # Chaque attente est bornée : un émulateur qui ne démarre pas échoue en quelques minutes, avec la fin de son journal.
+      - name: Émulateur démarré
+        timeout-minutes: 15
+        run: |
           nohup "$ANDROID_HOME/emulator/emulator" -avd fumee -no-window -no-audio -no-boot-anim -no-snapshot \
             -gpu swiftshader_indirect -camera-back none -camera-front none > "$RUNNER_TEMP/emulateur.log" 2>&1 &
-          adb wait-for-device
+          if ! timeout 300 adb wait-for-device; then
+            echo "::error::L'émulateur n'a pas rejoint adb en cinq minutes."; tail -80 "$RUNNER_TEMP/emulateur.log"; exit 1
+          fi
           for i in $(seq 1 120); do
-            [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] && break; sleep 5
+            [ "$(timeout 10 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] && break; sleep 5
           done
-          if [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" != "1" ]; then
-            echo "::error::L'émulateur n'a pas démarré en dix minutes."; tail -50 "$RUNNER_TEMP/emulateur.log"; exit 1
+          if [ "$(timeout 10 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" != "1" ]; then
+            echo "::error::L'émulateur n'a pas fini de démarrer en dix minutes."; tail -80 "$RUNNER_TEMP/emulateur.log"; exit 1
           fi
           for k in window_animation_scale transition_animation_scale animator_duration_scale; do adb shell settings put global $k 0; done
           adb shell input keyevent 82
       - name: Fumée
+        timeout-minutes: 10
         run: node scripts/android-fumee.mjs "$RUNNER_TEMP/complet.apk" "$RUNNER_TEMP/stores.apk" "$RUNNER_TEMP/fumee"
       - name: Journal de l'émulateur
         if: always()
+        timeout-minutes: 2
         run: |
           mkdir -p "$RUNNER_TEMP/fumee"
-          adb logcat -d > "$RUNNER_TEMP/fumee/logcat.txt" 2>/dev/null || true
+          timeout 30 adb logcat -d > "$RUNNER_TEMP/fumee/logcat.txt" 2>/dev/null || true
           cp "$RUNNER_TEMP/emulateur.log" "$RUNNER_TEMP/fumee/" 2>/dev/null || true
+          tail -40 "$RUNNER_TEMP/emulateur.log" 2>/dev/null || true
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
