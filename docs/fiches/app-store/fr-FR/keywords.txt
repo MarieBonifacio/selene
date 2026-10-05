@@ -1,0 +1,1 @@
+thèse,mémoire,doctorat,écriture,notes,recherche,sources,bibliographie,bibtex,doi,markdown

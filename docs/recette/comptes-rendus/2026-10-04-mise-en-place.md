@@ -110,5 +110,5 @@ durée) et **A7** (le talon d'un suivi effacé à la déconnexion), qui attend u
 
 **A7** (le talon d'un suivi effacé à la déconnexion) a été corrigée par la PR #101, après décision de la responsable :
 l'effacement retire aussi le nom du compte. Deux tests le vérifient, tous deux en échec sur l'ancien code (`TU-REG-38`, fin de
-`TN-regulation-appareil`). Pendant la vérification de cette PR, un échec isolé de `dehors.js` a été consigné comme **A9**
+`TN-regulation-appareil`). Pendant la vérification de cette PR, un échec isolé de `dehors.js` a été consigné comme **A10**
 (délai fixe au démarrage du scénario, sans lien avec le correctif).

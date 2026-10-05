@@ -1,0 +1,30 @@
+Selene est un carnet de recherche pour les longs projets d'écriture : une thèse, un livre, une série d'articles. Il garde tes fragments, tes sources et tes hypothèses reliés, et te rend ce que tu avais oublié, jusqu'au dernier chapitre.
+
+LE TEXTE, CHAPITRE PAR CHAPITRE
+• Un compteur de mots, son objectif et son rythme ; chaque chapitre avec son avancement.
+• Des fragments rattachés à leur chapitre ; une version modifiée garde l'ancienne lisible dessous.
+• « Je m'arrête ici… » : le prochain geste, noté en partant, retrouvé au retour.
+
+LES SOURCES, RELIÉES
+• Un lien ou un DOI suffit : titre, auteurs, revue et date se complètent.
+• Chaque source se relie au fragment qu'elle documente.
+• Ta bibliothèque Zotero, en lecture seule.
+• Export BibTeX et CSL-JSON, pour LaTeX, Zotero, Zettlr ou Pandoc.
+
+PENSER AVEC CE QUE TU AS ÉCRIT
+• Un statut pour chaque idée : observé, hypothèse, interprétation, inexpliqué.
+• Des liens entre les entrées : dérive de, contredit, fait écho à, documente.
+• Les tensions ouvertes : deux idées qui se contredisent, en attente d'une synthèse.
+• La relecture de la semaine : dix minutes avec ce qui dort, ce qui se contredit et ce qui attend ses preuves.
+• La recherche parcourt tout le carnet, statuts et dates compris.
+
+ENTRER ET SORTIR LIBREMENT
+• Tes notes Markdown d'Obsidian ou de Zettlr s'importent, liens [[…]] compris.
+• Tout s'exporte, à tout moment : une sauvegarde complète, du Markdown, un dossier prêt à relire.
+
+CE QUE SELENE NE FAIT PAS
+• Ni publicité, ni traceur. Rien ne mesure ce que tu écris.
+• Pas de compte obligatoire : Selene marche entière sur ton appareil, même hors ligne. Un compte sert seulement à retrouver ton carnet sur tes autres appareils.
+• Pas d'intelligence artificielle imposée.
+
+Le code est public. Politique de confidentialité : https://mariebonifacio.github.io/selene/confidentialite.html

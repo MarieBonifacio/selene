@@ -1,0 +1,1 @@
+thesis,dissertation,phd,writing,notes,research,sources,bibliography,bibtex,doi,markdown,chapter
