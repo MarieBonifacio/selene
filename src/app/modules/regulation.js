@@ -8,6 +8,7 @@ import { REGULATION_COMPARE_MIN, addDays, addRegulationGoal, closeRegulationDay,
   regulationSnapshot, regulationStart, regulationSubjectConflict, regulationSummary, regulationSupports, saveRegulationEvent, saveRegulationTotal, setRegulationPlan, setupRegulation,
   startRegulationPause, stopRegulationPause, urgeActionId, regulationOnDevice } from "../../core/regulation.js";
 import { createBackup } from "../../core/backup.js";
+import { deleteModuleInstance } from "../../core/domain.js";
 import { hosted } from "../../platform.js";
 import { registerType } from "../registry.js";
 import { $, esc, paged, toast, toastAction, toastUndo } from "../lib/dom.js";
@@ -162,6 +163,19 @@ async function chooseDevice(id, confirm = false) {
   return true;
 }
 const exportBackup = () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, withLocal(site.data)), "application/json", tr`Sauvegarde Selene`);
+/* « L'effacer définitivement » : le contenu part, et son talon avec lui. Un nom resté sur le compte survivrait à un
+   effacement voulu et se présenterait, au retour, comme un accident (« ses données n'y sont plus »). La copie locale
+   d'abord : tant qu'elle existe, absorbDeviceTrackers rend son talon au site. Le talon quitte le serveur avec la
+   synchronisation que la déconnexion fait avant de vider l'appareil (authSignOut). */
+function eraseTrackers(ids) {
+  const s = S();
+  for (const id of ids) {
+    forgetLocal(id);
+    if (Object.hasOwn(s.modules, id)) deleteModuleInstance(s.modules, s.config.modules, id);
+    delete s.config.labels[id]; delete s.config.groups[id]; delete s.config.assistant.share[id];
+  }
+  save();
+}
 /* Avant une déconnexion (qui vide l'appareil) : ce qui n'existe qu'ici est exporté ou effacé, au choix.
    Rend faux si la personne annule : on ne se déconnecte pas. */
 export function deviceSignOutGuard() {
@@ -174,7 +188,9 @@ export function deviceSignOutGuard() {
       if (v.what === "export") { // un téléchargement qui échoue ne déconnecte pas : rien n'est encore effacé
         try { await exportBackup(); return resolve(true); } catch (e) { toast(errMsg(e, tr`Sauvegarde non téléchargée : rien n'a été effacé.`)); return resolve(false); }
       }
-      resolve(await ask(tr`Effacer définitivement ${names} ? Il n'en existe aucune autre copie.`));
+      const ok = await ask(tr`Effacer définitivement ${names} ? Il n'en existe aucune autre copie.`);
+      if (ok) eraseTrackers(ids);
+      resolve(ok);
     }, tr`${names} : gardé sur cet appareil seulement, nulle part ailleurs. Se déconnecter vide cet appareil.`);
     const d = $("#dlg"), onClose = () => { d.removeEventListener("close", onClose); if (d.returnValue !== "save") resolve(false); };
     if (d && d.addEventListener) d.addEventListener("close", onClose);

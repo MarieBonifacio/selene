@@ -4,7 +4,8 @@
    - à la configuration, aucun choix : sur l'appareil ; le serveur ne reçoit que le talon (nom, présence) ;
    - l'autre appareil voit le nom, pas le contenu ; le supprimer de là prévient qu'il ne retire que le nom ;
    - aucun bouton ne synchronise le suivi (un suivi encore synchronisé : tests/regulation.test.js) ;
-   - se déconnecter avec un suivi gardé ici : la garde propose l'export ou l'effacement ; effacer vide l'appareil.
+   - se déconnecter avec un suivi gardé ici : la garde propose l'export ou l'effacement ; effacer vide l'appareil et retire
+     aussi le talon du compte.
    Lancé par tests/browser/run.js. */
 const { engine, BASE, launchOptions, check, storeJSON } = require('./helpers');
 const rows = new Map();
@@ -107,6 +108,7 @@ async function device(browser, errs, personnel = true, id = 'u1') {
     check((await ask(true)).includes('aucune autre copie'), 'effacer : une dernière confirmation');
     await p.waitForSelector('#authForm');
     check((await storeJSON(p, 'selene-local-v1').catch(() => null))?.modules?.['reprendre-la-main'] == null, 'déconnectée : plus rien du suivi sur l’appareil');
+    check(!!JSON.parse(server()).modules && JSON.parse(server()).modules['reprendre-la-main'] === undefined && !server().includes('Carnet du soir'), 'effacé : le nom du suivi a aussi quitté le compte (plus de talon)');
     check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   } catch (e) { console.log('  ✗', e.stack.split('\n').slice(0, 3).join(' ')); process.exitCode = 1; } finally { await browser.close(); }
 })();

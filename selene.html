@@ -717,7 +717,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "c3ce4ff1a7";
+const SELENE_BUILD = "8c9881d599";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -6536,6 +6536,17 @@ ${sub2.about()}`);
     return true;
   }
   var exportBackup = () => downloadFile(`selene-${todayISO()}.json`, createBackup(board.data, withLocal(site.data)), "application/json", tr`Sauvegarde Selene`);
+  function eraseTrackers(ids2) {
+    const s = S();
+    for (const id of ids2) {
+      forgetLocal(id);
+      if (Object.hasOwn(s.modules, id)) deleteModuleInstance(s.modules, s.config.modules, id);
+      delete s.config.labels[id];
+      delete s.config.groups[id];
+      delete s.config.assistant.share[id];
+    }
+    save();
+  }
   function deviceSignOutGuard() {
     const ids2 = localIds();
     if (!ids2.length) return Promise.resolve(true);
@@ -6558,7 +6569,9 @@ ${sub2.about()}`);
               return resolve(false);
             }
           }
-          resolve(await ask(tr`Effacer définitivement ${names} ? Il n'en existe aucune autre copie.`));
+          const ok = await ask(tr`Effacer définitivement ${names} ? Il n'en existe aucune autre copie.`);
+          if (ok) eraseTrackers(ids2);
+          resolve(ok);
         },
         tr`${names} : gardé sur cet appareil seulement, nulle part ailleurs. Se déconnecter vide cet appareil.`
       );
