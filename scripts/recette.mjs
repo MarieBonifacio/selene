@@ -117,8 +117,9 @@ for (const [a, cases] of autos) for (const id of cases) {
 // Chaque test du dépôt a sa ligne ; un nom d'inventaire sans test serait une invention.
 const listedName = name => autoText.includes(name) || autoText.includes(name.replace(/\|/g, "\\|"));
 const testsDir = path.join(ROOT, "tests");
-let nodeTests = 0;
+let nodeTests = 0, nodeFiles = 0;
 for (const f of fs.readdirSync(testsDir).filter(x => x.endsWith(".test.js"))) {
+  nodeFiles++;
   for (const m of read(path.join(testsDir, f)).matchAll(/^\s*test\((['"`])(.+?)\1/gm)) {
     nodeTests++;
     if (!listedName(m[2])) fail(`tests/${f}`, `test « ${m[2]} » absent de l'inventaire`, howTest("TU", `tests/${f}`));
@@ -141,21 +142,45 @@ for (const d of fs.readdirSync(fnDir).filter(x => fs.statSync(path.join(fnDir, x
 const rust = read(path.join(ROOT, "native/tauri/src/main.rs"));
 const rustTests = [...rust.matchAll(/#\[test\]\s*fn (\w+)/g)].map(m => m[1]);
 for (const name of rustTests) if (!autoText.includes(`| ${name} |`)) fail("native/tauri/src/main.rs", `test ${name} absent de l'inventaire`, "ajouter une ligne TR-TAU-nn (numéro libre suivant) dans la section « Cœur Rust de l'app Windows » de docs/recette/automatises.md");
+// Les totaux du tableau de tête de l'inventaire suivent le dépôt : deux PR fusionnées qui ajoutent chacune un test changent
+// la même ligne de la même façon (289 → 290), sans conflit, et le total juste (291) n'est écrit nulle part.
+const total = (re, real, what) => {
+  const m = autoText.match(re);
+  if (!m) fail("docs/recette/automatises.md", `total des ${what} introuvable dans le tableau de tête`);
+  else if (+m[1] !== real) fail("docs/recette/automatises.md", `tableau de tête : ${m[1]} ${what} annoncés, ${real} dans le dépôt`, `écrire ${real}`);
+};
+total(/\| `npm test` \| (\d+) tests/, nodeTests, "tests Node");
+total(/\| `npm test` \| \d+ tests, (\d+) fichiers/, nodeFiles, "fichiers de tests Node");
+total(/\| `npm run test:browser` \| (\d+) scénarios/, scenarios.length, "scénarios de navigateur");
+total(/\| `npm run test:functions` \| (\d+) tests/, denoTests, "tests Deno");
+total(/\| `cargo test[^|]*\| (\d+) tests/, rustTests.length, "tests Rust");
 
 /* ---------- matrice de traçabilité ---------- */
 // Chaque cas y a sa ligne, une seule, avec les mêmes tests automatiques que le cas, et un état défini.
 const COVERAGE = ["couvert automatiquement", "couvert partiellement", "documenté pour recette manuelle", "non couvert", "à clarifier", "hors périmètre"];
-const matrix = read(path.join(REC, "matrice.md")), inMatrix = new Map();
+const matrix = read(path.join(REC, "matrice.md")), inMatrix = new Map(), states = new Map();
 for (const line of matrix.split("\n").filter(l => /^\| .* \| \[[A-Z]{3}-\d{3}\]\(manuels\//.test(l))) {
   const cells = line.split(" | "), id = cells[2].match(/\[([A-Z]{3}-\d{3})\]/)[1];
   if (inMatrix.has(id)) fail("docs/recette/matrice.md", `${id} : deux lignes`);
   inMatrix.set(id, true);
   if (!COVERAGE.includes(cells[4])) fail("docs/recette/matrice.md", `${id} : état « ${cells[4]} » inconnu`);
+  states.set(cells[4], (states.get(cells[4]) || 0) + 1);
   const listedAutos = new Set([...cells[3].matchAll(/`(T[UNDRS]-[A-Za-z0-9-]+)`/g)].map(m => m[1])), own = manual.get(id);
   if (own && (listedAutos.size !== own.autos.size || [...own.autos].some(a => !listedAutos.has(a)))) fail("docs/recette/matrice.md", `${id} : tests automatiques différents de ceux du cas`);
 }
 for (const id of manual.keys()) if (!inMatrix.has(id)) fail("docs/recette/matrice.md", `${id} absent`);
 for (const id of inMatrix.keys()) if (!manual.has(id)) fail("docs/recette/matrice.md", `${id} : aucun cas de ce nom`);
+// Le décompte annoncé sous la définition des états suit les lignes (même raison que les totaux de l'inventaire).
+const said = matrix.match(/\*\*Décompte des (\d+) cas manuels\*\* : ([^\n]+)/);
+if (!said) fail("docs/recette/matrice.md", "décompte des cas introuvable", "garder la ligne « **Décompte des N cas manuels** : … » sous la définition des états");
+else {
+  if (+said[1] !== inMatrix.size) fail("docs/recette/matrice.md", `décompte : ${said[1]} cas annoncés, ${inMatrix.size} lignes`, `écrire ${inMatrix.size}`);
+  const announced = new Map([...said[2].matchAll(/(\d+) ([^,.]+)/g)].map(m => [m[2].trim(), +m[1]]));
+  for (const st of COVERAGE) {
+    const real = states.get(st) || 0, ann = announced.get(st) || 0;
+    if (real !== ann) fail("docs/recette/matrice.md", `décompte : ${ann} « ${st} » annoncés, ${real} dans les lignes`, `écrire ${real} ${st}`);
+  }
+}
 
 /* ---------- liens relatifs et ancres ---------- */
 // L'ancre d'un titre telle que GitHub la calcule : minuscules, ponctuation retirée (lettres accentuées gardées),
