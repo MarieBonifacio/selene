@@ -317,6 +317,7 @@ installe par `npm ci`, et les scripts npm sont les seules commandes, en local co
 | `npm run lint` | eslint sur chaque module (`src/`, `sourceType: "module"`), l'amorçage natif, `scripts/` et `sw.js` |
 | `npm run i18n` | les textes marqués pour la traduction confrontés aux dictionnaires : orphelins, valeurs `{n}`, langues proposées complètes ; ADR 25 |
 | `npm run test:functions` | types et tests Deno des fonctions Supabase (passeur, assistant) |
+| `npm run recette` | le cahier de recette (`docs/recette/`) d'accord avec les tests, les liens et les jeux de données : sans réseau ni navigateur, quelques secondes ; en CI, un job à part sur les pull requests |
 | `npm run test:browser` | parcours Playwright dans Chromium (`npx playwright install chromium` une fois) ; `SELENE_BROWSER=webkit` pour WebKit |
 | `npm run check` / `check:all` | tout sauf le navigateur / tout |
 

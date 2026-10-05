@@ -28,6 +28,23 @@ jobs:
         run: npm run lint
       - name: Traductions (textes marqués, dictionnaires)
         run: npm run i18n
+  recette:
+    # Le cahier de recette (docs/recette) dit-il encore vrai ? `npm run recette` confronte ses cas, son inventaire et sa
+    # matrice aux tests, aux liens et aux jeux de données du dépôt : quelques secondes, sans réseau, sans navigateur et
+    # sans `npm ci` (le script n'importe que du code du dépôt). Un job à part : un cahier en retard se lit seul, il ne
+    # masque pas un code cassé et n'en est pas un. Sur les pull requests et à la demande de *Check* ; jamais quand
+    # pages.yml appelle ce workflow (`github.workflow` y est « Pages ») : un cahier en retard ne doit pas empêcher de
+    # publier le site. Rendre ce job obligatoire (ou non) pour fusionner est un réglage de protection de branche.
+    if: github.event_name == 'pull_request' || github.workflow == 'Check'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - name: Cahier de recette (cohérence avec les tests, les liens, les jeux de données)
+        run: npm run recette
   passeur:
     # Les fonctions Supabase Edge (passeur, assistant : docs/passeur.md, docs/assistant.md) : types et tests, avec Deno.
     runs-on: ubuntu-latest
