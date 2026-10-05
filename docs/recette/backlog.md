@@ -40,6 +40,8 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 - **Dépendances** : aucune (helpers existants `storeSet`, `storeJSON`).
 - **Bénéfice attendu** : un chemin de perte de données sensible vérifié à chaque PR ; RLM-029 passe à « couvert
   partiellement ».
+- **État** : étapes 1 à 3 en place le 5 octobre 2026 (`TN-regulation-perdu`). RLM-029 reste « à clarifier » tant que son
+  étape 4 (l'identité de l'appareil perdue elle aussi) attend sa décision.
 
 <a id="bl-02"></a>
 ### BL-02 — Figer le sort du talon après « L'effacer définitivement » (fait le 5 octobre 2026)
