@@ -11,7 +11,7 @@ Identifiants retirés : aucun.
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
 | Tests unitaires et d'intégration Node | `npm test` | 297 tests, 30 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
-| Scénarios de navigateur | `npm run test:browser` | 75 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium **et** WebKit | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
+| Scénarios de navigateur | `npm run test:browser` | 76 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium **et** WebKit | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
 | Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
@@ -1248,6 +1248,14 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Conditions** : Deux appareils du même compte, faux Supabase lu directement.
 - **Vérifie** : compte ordinaire : non proposé à l'accueil ni dans les Réglages ; aucun choix de stockage ; le serveur connaît le nom, ni note, ni sujet, ni objectif ; contenu dans le stockage local ; B voit le nom, pas le contenu ; supprimer de B prévient qu'on ne retire que le nom ; déconnexion : la garde nomme ce qui n'existe qu'ici ; annuler ne déconnecte pas ; effacer demande une dernière confirmation ; ensuite plus rien sur l'appareil, **et le nom du suivi a aussi quitté le compte** (le site lu sur le faux serveur n'a plus le module).
 - **Cas manuels** : [RLM-002](manuels/reprendre-la-main.md#rlm-002), [RLM-003](manuels/reprendre-la-main.md#rlm-003), [RLM-022](manuels/reprendre-la-main.md#rlm-022), [RLM-023](manuels/reprendre-la-main.md#rlm-023)
+
+<a id="tn-regulation-perdu"></a>
+#### `TN-regulation-perdu` — Reprendre la main, l'appareil détenteur a perdu son stockage
+
+- **Fichier** : [`tests/browser/regulation-perdu.js`](../../tests/browser/regulation-perdu.js) · **mode** H · **écran** O
+- **Conditions** : Compte personnel, faux Supabase lu directement ; seul `selene-local-v1` est effacé du stockage (l'identité de l'appareil reste).
+- **Vérifie** : la sauvegarde complète contient le suivi gardé ici ; après l'effacement et un rechargement, l'espace avoue la perte et propose la restauration, sans contenu ni l'explication d'un autre appareil ; l'identité de l'appareil est restée ; la sauvegarde réimportée (après confirmation) rend le suivi entier, de nouveau gardé ici, sans rien envoyer au compte ; perdu encore, le retrait par les Réglages ne prévient pas comme un autre appareil, le dit, et le nom quitte le compte ; aucune erreur JavaScript.
+- **Cas manuels** : [RLM-029](manuels/reprendre-la-main.md#rlm-029)
 
 <a id="tn-natif"></a>
 #### `TN-natif` — Coquille native simulée

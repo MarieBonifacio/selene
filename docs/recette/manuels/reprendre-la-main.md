@@ -883,8 +883,8 @@ Identifiants retirés : aucun.
 - **Préconditions** : chemin P, avec un suivi configuré et une saisie de contexte `NOTE-RLM029` ; une sauvegarde complète
   téléchargée juste avant (Réglages → Compte et données → Sauvegarde → Exporter).
 - **Données** : aucune autre.
-- **Automatisés associés** : aucun (lacune notée dans [backlog.md](../backlog.md)).
-- **Source** : [CODE] `elsewhereHTML` ; observé par une sonde Chromium le 4 octobre 2026 (étape 1) ; [À ARBITRER] étape 4.
+- **Automatisés associés** : `TN-regulation-perdu` (étapes 1 à 3)
+- **Source** : [CODE] `elsewhereHTML` ; [TEST] `tests/browser/regulation-perdu.js` (étapes 1 à 3, depuis le 5 octobre 2026) ; [À ARBITRER] étape 4.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
