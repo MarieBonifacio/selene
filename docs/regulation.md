@@ -318,7 +318,9 @@ Trois questions distinctes, à ne pas confondre :
 
 ### Parcours manuel (cinq minutes)
 
-1. Connectée au compte marqué `selene_personnel` : Accueil → « Reprendre la main » → Ajouter ; ouvrir l'espace.
+1. Connectée au compte marqué `selene_personnel`, sur le web ou l'APK (pas une app des stores) : Réglages → Espaces →
+   « + Créer un espace » → « Reprendre la main » (le dernier des modèles) ; ouvrir l'espace. (L'accueil ne propose
+   les modèles qu'à un compte neuf.)
    Réglages → Assistant : la case du suivi est décochée. Sur un autre compte, l'espace n'est pas proposé.
 2. « Commencer » : nommer, choisir **Alcool** ; lire l'information sur le sevrage ; « Réduire », limite 2.
 3. « Noter une consommation » 1,5 ; « Faire mon point du jour » : la date et « 1,5 verre standard au total » s'affichent ;

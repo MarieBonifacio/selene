@@ -38,9 +38,10 @@ connaît pas le format 8 et refuse d'écrire.
   déconnexion, mise à jour par-dessus ([desktop.md](desktop.md#tester)).
 - [ ] **La PWA installée sur iPhone** et **l'artefact claude.ai** ([architecture.md](architecture.md), « Hors CI »).
 - [ ] **Un lecteur d'écran, une heure** (VoiceOver sur iPhone ou Mac, TalkBack sur Android, NVDA sur Windows) :
-  capturer une note, ajouter une source, la retrouver par la recherche, sans regarder l'écran. Les contrôles
-  automatiques sont faits (axe-core sur quinze vues, titres, focus : [evolution-ui.md](evolution-ui.md)) ; reste à
-  entendre. À vérifier en particulier : le nom de l'écran annoncé à chaque changement (« Écriture — Selene », puis le
+  capturer une note, ajouter une source, la retrouver par la recherche, sans regarder l'écran. Le balayage
+  axe-core de quinze vues a été fait une fois, à la main, le 4 octobre ([evolution-ui.md](evolution-ui.md)) : ses
+  correctifs sont figés par des tests (contraste, cibles), le balayage lui-même ne se rejoue pas encore
+  ([BL-04](recette/backlog.md#bl-04)) ; les titres d'écran et le focus sont testés. Reste à entendre. À vérifier en particulier : le nom de l'écran annoncé à chaque changement (« Écriture — Selene », puis le
   titre de l'écran) ; « Supprimé… Annuler » annoncé, et ⌘Z / Ctrl+Z qui annule ; « Recherche… » puis « Trouvée : … »
   en ajoutant une source. Ce qui reste muet ou se répète : ouvrir un ticket, en nommant le lecteur et l'appareil.
 
