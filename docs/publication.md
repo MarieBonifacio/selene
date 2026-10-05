@@ -61,7 +61,11 @@ Les secrets se posent dans GitHub : Settings → Secrets and variables → Actio
      ne suffit pas : la règle 2.3.1 d'Apple refuse les fonctions cachées, et une fonction de santé présente dans l'app
      appellerait les déclarations ci-dessus ;
    - Applications de santé : aucune déclaration, Selene n'en est pas une une fois ce type exclu ;
-   - Suppression du compte : dans l'app (Réglages → Compte), et l'adresse de la politique pour la demander ;
+   - Suppression du compte : dans l'app (Réglages → Compte) ; et, dans le champ « URL de suppression du compte » de la
+     section *Sécurité des données*, la page où la demander sans l'app :
+     `https://mariebonifacio.github.io/selene/confidentialite.html#supprimer-compte` (le nom de l'app, les étapes, ce
+     qui est effacé et ce qui reste, comme Google le demande). Les données supprimées : toutes, sauf le journal des
+     erreurs, qui n'est pas lié au compte ;
    - Publicités : non. Public cible : adultes. Questionnaire de classification : aucun contenu sensible, « Reprendre la
      main » exclu de la version envoyée. S'il y restait, il faudrait déclarer des références au tabac, à l'alcool et aux
      drogues, ce qui peut relever l'âge minimal.

@@ -59,6 +59,30 @@ test('politique de confidentialité : publiée avec le site (en français et en 
   assert.match(fs.readFileSync('src/app/views/reglages.js', 'utf8'), /privacy\.html/);
 });
 
+test('supprimer son compte sans l’app : une adresse à donner à Google Play, dans les deux langues', () => {
+  // Google Play demande une page web où demander la suppression d'un compte sans réinstaller l'app : le nom de l'app,
+  // les étapes, ce qui est effacé et ce qui reste. publication.md donne cette adresse pour la Play Console.
+  for (const [x, id, words] of [[read('web/confidentialite.html'), 'supprimer-compte', ['Selene', 'Supprimer mon compte', 'Ce qui est effacé', 'Ce qui reste', 'Sans pouvoir te connecter']],
+    [read('web/privacy.html'), 'delete-account', ['Selene', 'Delete my account', 'What is erased', 'What remains', 'If you cannot sign in']]]) {
+    const at = x.indexOf(`<h2 id="${id}">`);
+    assert.ok(at > 0, `section #${id}`);
+    const sec = x.slice(at, x.indexOf('<h2', at + 4));
+    for (const w of words) assert.ok(sec.includes(w), `« ${w} » dans #${id}`);
+    assert.match(sec, /href="mailto:mariebonifacio\.pro@gmail\.com\?subject=/);
+    assert.match(x, new RegExp(`href="#${id}"`), 'la section des droits y renvoie');
+  }
+  assert.match(fs.readFileSync('docs/publication.md', 'utf8'), /confidentialite\.html#supprimer-compte/);
+});
+
+test('politique de confidentialité : le texte et les liens se lisent (4,5:1 au moins, WCAG AA), dans les deux langues', () => {
+  const lum = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  for (const f of ['confidentialite.html', 'privacy.html']) {
+    const root = fs.readFileSync(f, 'utf8').match(/:root \{([^}]*)\}/)[1], v = k => root.match(new RegExp(`--${k}: (#[0-9a-f]{6})`))[1];
+    for (const k of ['ink', 'muted', 'acc']) assert.ok(ratio(v(k), v('bg')) >= 4.5, `${f} : --${k} sur --bg, ${ratio(v(k), v('bg')).toFixed(2)}:1`);
+  }
+});
+
 test('politique de confidentialité : ce que demande l’article 13 du RGPD, dans les deux langues', () => {
   const versions = [
     [read('web/confidentialite.html'), ['Qui en est responsable', 'Pourquoi, et sur quelle base', 'Combien de temps', "Hors de l'Union européenne", 'Tes droits']],

@@ -26,11 +26,14 @@ connaît pas le format 8 et refuse d'écrire.
   proposé au seul compte marqué personnel, aucun choix de stockage, l'autre appareil qui n'affiche que le nom, aucun
   bouton vers le compte, la garde à la déconnexion.
 - [ ] **Android**, avec l'APK de la course *Android* : lancement à froid, hors ligne puis en ligne, partage depuis
-  Chrome, bouton retour, rotation, clavier, synchronisation avec la PWA, et Réglages → Ciel et alentours →
-  « Ma position » (Android 12 ou plus : l'accord demandé, puis le lieu « Ma position ») ([android.md](android.md#tester)).
+  Chrome, bouton retour, rotation, clavier, synchronisation avec la PWA, Réglages → Ciel et alentours →
+  « Ma position » (Android 12 ou plus : l'accord demandé, puis le lieu « Ma position »), et Réglages → Sauvegarde →
+  Exporter : la feuille de partage s'ouvre, « Enregistrer » dans Fichiers ou Drive donne un `.json` que l'on peut
+  réimporter (ADR 31) ([android.md](android.md#tester)).
 - [ ] **iPhone**, par TestFlight une fois le compte Apple ouvert : lancement à froid, hors ligne puis en ligne,
-  Raccourci de partage, rotation, clavier, encoches, synchronisation, et « Ma position » (la phrase d'iOS dans la
-  langue du téléphone, puis le lieu) ([ios.md](ios.md#tester)).
+  Raccourci de partage, rotation, clavier, encoches, synchronisation, « Ma position » (la phrase d'iOS dans la
+  langue du téléphone, puis le lieu), et Réglages → Sauvegarde → Exporter (la feuille de partage, puis « Enregistrer
+  dans Fichiers ») ([ios.md](ios.md#tester)).
 - [ ] **Windows**, avec l'installateur de la course *Desktop* : premier lancement, données relues après fermeture,
   déconnexion, mise à jour par-dessus ([desktop.md](desktop.md#tester)).
 - [ ] **La PWA installée sur iPhone** et **l'artefact claude.ai** ([architecture.md](architecture.md), « Hors CI »).

@@ -63,6 +63,7 @@ chargeant (`VIEWS`, `SHEETS`, `CLICK`, `CHANGE`) vivent dans `src/app/registry.j
 | `agenda.js` | calendrier dédié, pur : lecture iCalendar (fuseaux, journées entières), récurrences dépliées sur une fenêtre | — |
 | `zotero.js` | Zotero, pur : ce que permet une clé, une fiche traduite en Source (DOI, revue, auteurs, lien vers la fiche) | — |
 | `biblio.js` | les sources en BibTeX et en CSL-JSON, pur : genre reconnu dans chaque langue, auteurs redécoupés, clés de citation, échappement LaTeX | `sources.js` |
+| `markdown.js` | venir d'Obsidian ou de Zettlr, pur : en-tête YAML, titre, date (en-tête, nom, fichier), statut épistémique, liens `[[…]]` résolus entre les notes du lot et vers celles déjà là | — |
 
 L'interface est rangée par **fonctionnalité** : ce qui sert une même chose (sa vue, son état, ses actions) vit dans
 le même fichier, et chaque fichier commence par une phrase qui dit son rôle.
@@ -210,6 +211,11 @@ Trois fonctionnalités s'appuient directement sur ce qui précède, sans rien y 
   jours de silence) sur trois bassins déjà calculés ailleurs — fragments/notes via `editedAt || date`, tensions
   via `openTensions()`, motifs via `concordance()` + `fallow()`. Rien n'est stocké ; l'état affiché (`sortesLast`)
   est une variable de module, oubliée à la fermeture de l'onglet.
+- **Relecture de la semaine** (`#bilan/relecture`, `features/relecture.js`, idée 4 de l'audit) : trois tirages des sortes
+  sans remise (hors tensions), les tensions ouvertes (`tensionSection()`), les hypothèses qu'aucun lien « documente »
+  ne vise (`backlinks()`). Le tirage vit le temps de la visite ; « Relecture faite » garde le jour sur l'appareil
+  (`selene-relecture`), et l'accueil repropose la page sept jours plus tard, s'il y a de quoi relire. Rien n'est compté
+  ni synchronisé.
 - **Test lunaire** (`lunarTest`, `features/lunar.js`) : un test de Rayleigh sur le même corpus que la dérive lexicale (`ui.texts()`
   de chaque module non-concordance). Piège rencontré en écrivant `sortesPool` : un `if` sans accolades dans une
   boucle peut capturer le `else if` suivant (*dangling else*) et rendre une branche entière inatteignable sans la
@@ -940,3 +946,28 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   la réponse à une opposition se font dans l'éditeur SQL ([compte.md](compte.md#mesure-dusage-bêta)). Tant que la table
   n'existe pas sur le projet, rien n'est compté. Un appareil sans activation utilisateur connue (navigateur ancien)
   compte tout enregistrement qui change le contenu.
+
+### ADR 31 — Donner un fichier dans les apps mobiles : la feuille de partage du système
+
+- **Contexte** : chaque export (sauvegarde complète, Markdown, dossier, planche, BibTeX, CSL-JSON, suivi) passait par
+  `lib/download.js` : le partage du navigateur s'il accepte des fichiers, sinon un lien `<a download>` vers un `blob:`.
+  Dans les coquilles Capacitor, ni l'un ni l'autre ne marche : la WebView d'Android n'a pas l'API Web Share, et
+  Capacitor ne lui donne pas de `DownloadListener` (un téléchargement y est ignoré, sans erreur) ; sous iOS, Capacitor
+  confie un lien qui n'est pas celui de l'app au système, qui ne sait pas ouvrir un `blob:`. Trouvé en lisant les
+  sources de Capacitor 8 (4 octobre 2026), jamais vu sur un appareil : aucun n'a encore lancé l'app. Or, sans compte,
+  la sauvegarde est la seule copie de ses données.
+- **Décision** : dans une coquille, `platform.files.share(nom, données, titre)`. L'amorçage écrit le fichier dans le
+  cache de l'app (`@capacitor/filesystem`, dossier `exports`, un seul fichier à la fois, vidé au lancement), puis le
+  confie à la feuille de partage du système (`@capacitor/share`) : « Enregistrer dans Fichiers », Drive, e-mail… Android
+  le lit par le `FileProvider` de l'app (le cache est dans `file_paths.xml`). Refermer la feuille n'est pas une erreur ;
+  une écriture refusée le dit. Le web et l'artefact ne changent pas.
+- **Écarté** : un `DownloadListener` et un `WKDownloadDelegate` écrits à la main (du Java et du Swift à tenir, pour
+  deux comportements différents) ; le dossier Documents public d'Android (le stockage cloisonné le rend incertain selon
+  la version, et la personne ne sait pas où le fichier est allé) ; laisser l'app sans export (la portabilité est promise
+  à tous, et l'offre gratuite sans compte en dépend).
+- **Conséquences** : un plugin de plus, officiel, sans accès réseau ni API à justifier pour Apple. Un export ne laisse
+  pas de copie durable dans l'app : il vit dans le cache jusqu'au suivant ou au prochain lancement. Testé par
+  `tests/native-boot.test.js` (cache, nom, feuille, refus) et `tests/browser/natif.js` (la sauvegarde part vers la
+  coquille et jamais vers un téléchargement ; refermée, silence ; refusée, un message). Reste à le voir sur un vrai
+  téléphone ([a-faire.md](a-faire.md#essayer-sur-de-vrais-appareils)). Sous Windows (Tauri), le téléchargement de la
+  WebView reste le chemin, non vérifié.

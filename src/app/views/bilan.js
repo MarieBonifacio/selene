@@ -9,6 +9,7 @@ import { epLabel } from "../lib/labels.js";
 import { driftSection } from "../features/derive.js";
 import { epCounts } from "../features/links.js";
 import { lunarSection } from "../features/lunar.js";
+import { relectureView } from "../features/relecture.js";
 import { tensionSection } from "../features/tensions.js";
 import { NEW_MOON_REF, SYNODIC } from "../scene/moon.js";
 import { routeOf } from "../shell/nav.js";
@@ -41,6 +42,7 @@ export function periodOf(mode, offset, now = Date.now()) {
 }
 VIEWS.bilan = () => {
   if (routeOf().entry === "planche") return plancheView();
+  if (routeOf().entry === "relecture") return relectureView();
   const mode = bilanMode(), cur = periodOf(mode, bilanOffset), prev = periodOf(mode, bilanOffset + 1), s = S();
   const rows = s.config.modules.filter(m => m.on && Object.hasOwn(s.modules, m.id) && TYPE_UI[s.modules[m.id].type].review && !TYPE_UI[s.modules[m.id].type].sensitive).map(m => { // un suivi sensible n'a pas de ligne, même vide
     const inst = s.modules[m.id], review = TYPE_UI[inst.type].review, r = review(inst, cur.from, cur.to), p = review(inst, prev.from, prev.to);
@@ -52,6 +54,7 @@ VIEWS.bilan = () => {
   return `<div class="row" style="margin-bottom:6px"><h2 style="margin:0">${tr`Bilan`}</h2><span class="spacer"></span>${tab("lune", tr`Cycle lunaire`)}${tab("mois", tr`Mois`)}<button class="btn ghost sm" data-act="planche-open" title="${tr`Le cycle en planche A4, à imprimer ou enregistrer en PDF`}">${tr`Planche`}</button></div>
   <div class="row" style="margin-bottom:18px"><button class="btn ghost" data-act="bilan-nav" data-d="1" aria-label="${tr`Période précédente`}">‹</button><b style="text-transform:none">${esc(cur.name)}</b>${bilanOffset ? `<button class="btn ghost" data-act="bilan-nav" data-d="-1" aria-label="${tr`Période suivante`}">›</button>` : ""}</div>
   <p class="hint">${tr`Ce qui s'est passé dans chaque module pendant la période, et, en face, la période d'avant. Aucune note, aucun trophée : les chiffres suffisent à culpabiliser.`}</p>
+  <p class="hint relecture-go"><a class="btn ghost sm" href="#bilan/relecture">${tr`Relecture de la semaine`}</a> ${tr`dix minutes : ce qui dort, ce qui se contredit, ce qui attend ses preuves`}</p>
   <section>${rows || `<p class="empty">${tr`Aucun module à résumer.`}</p>`}</section>
   ${epLine ? `<section><h3>${tr`Statut des idées notées`}</h3><p class="hint">${tr`Ce qu'elles revendiquent de savoir. Une hypothèse n'est pas une faiblesse, c'est une dette à rembourser.`}</p><div class="row">${epLine}</div></section>` : ""}
   ${driftSection(mode, cur)}
