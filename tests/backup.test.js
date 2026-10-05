@@ -72,6 +72,29 @@ test('a backup from a newer schema is refused with an explicit message', () => {
   assert.throws(() => api.parseBackup(JSON.stringify(d)), /plus récente/);
 });
 
+test('un fichier refusé dit pourquoi : pas du JSON, pas une sauvegarde, contenu invalide, version trop récente', () => {
+  const { errMsg } = require('../src/app/lib/labels.js');
+  const refus = text => { try { api.parseBackup(text); } catch (e) { return e; } return assert.fail('un refus était attendu'); };
+  const piege = valid(); piege.site.config.modules[0].id = 'x"><img src=x onerror=alert(1)>';
+  const recente = valid(); recente.site.schemaVersion = 99;
+  const cas = {
+    'pas du JSON': [refus('{ceci n’est pas du json'), 'backup-not-json', /ne se lit pas comme une sauvegarde/],
+    'du JSON qui n’est pas une sauvegarde': [refus('{"nom":"autre chose"}'), 'backup-format', /n'est pas une sauvegarde Selene/],
+    'un contenu piégé (identifiant de module)': [refus(JSON.stringify(piege)), 'backup-invalid', /contenu de cette sauvegarde n'est pas valide/],
+    'un contenu abîmé (tâches absentes)': [refus('{"format":"selene-v1","board":{"tasks":null},"site":{"config":{}}}'), 'backup-invalid', /contenu de cette sauvegarde n'est pas valide/],
+    'une version plus récente': [refus(JSON.stringify(recente)), 'backup-too-new', /plus récente/]
+  };
+  for (const [what, [e, code, wording]] of Object.entries(cas)) { assert.equal(e.code, code, what); assert.match(errMsg(e), wording, what); }
+  assert.equal(new Set(Object.values(cas).map(([e]) => errMsg(e))).size, 4, 'quatre causes distinctes, quatre phrases (le contenu abîmé et le contenu piégé n’en font qu’une)');
+  for (const k of ['pas du JSON', 'du JSON qui n’est pas une sauvegarde', 'un contenu piégé (identifiant de module)', 'un contenu abîmé (tâches absentes)'])
+    assert.match(errMsg(cas[k][0]), /Rien n'a été importé\./, `${k} : la personne sait que rien n'a changé`);
+  // Le champ fautif ne s'affiche pas, il reste dans le message technique (journal, tests).
+  const affiche = errMsg(cas['un contenu piégé (identifiant de module)'][0]);
+  assert.doesNotMatch(affiche, /identifiant|module|<img/);
+  assert.match(cas['un contenu piégé (identifiant de module)'][0].message, /Module : identifiant invalide/);
+  assert.match(cas['un contenu abîmé (tâches absentes)'][0].message, /Tâches invalide/);
+});
+
 test('connexions externes : Dehors et le radar, validés comme le reste', () => {
   const ok = d => api.parseBackup(JSON.stringify(d)), feed = extra => ({ id: 'f1', url: 'https://revue.example/feed.xml', title: 'Revue', mod: 'ecriture', seen: 1, ...extra });
   const d = valid(); d.site.config.dehors = { feeds: [feed()], artists: true, artistsSeen: 5, research: [{ id: 'r1', kind: 'q', q: 'depersonalization', mod: 'ecriture', seen: 3 }, { id: 'r2', kind: 'author', q: 'A5023888391', name: 'Anna Ciaunica' }] }; d.site.config.radar = { words: 'poésie, jazz' };

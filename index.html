@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-SLDr7pFoVXlbdx7KfXpQakmZQptQcAW8OdI6HwYFAEg=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ySMxn3xvHvJuS/k8xjjgpF6fsFRFcio4t2mctOwLbjU=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -750,7 +750,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "f78238d604";
+const SELENE_BUILD = "c3ce4ff1a7";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -2761,6 +2761,7 @@ var __selene = (() => {
     "Ce suivi reste sur cet appareil : Selene ne synchronise pas les suivis de santé, ton compte n'en garde que le nom. Seule la sauvegarde de ton appareil (Google ou iCloud), si tu l'as activée, peut l'inclure.": "This tracker stays on this device: Selene does not sync health trackers, and your account keeps only its name. Only your device's backup (Google or iCloud), if you turned it on, may include it.",
     "Encore synchronisé avec ton compte, selon ton accord du {0} : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.": "Still synced with your account, under your consent of {0}: on Selene's server (hosted by Supabase), readable by your account only, not end-to-end encrypted. Selene no longer syncs health trackers: keep it on a device, and its content will then leave the server.",
     "Encore synchronisé avec ton compte, depuis sa création : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.": "Still synced with your account, since it was created: on Selene's server (hosted by Supabase), readable by your account only, not end-to-end encrypted. Selene no longer syncs health trackers: keep it on a device, and its content will then leave the server.",
+    "Pas encore configuré : ton compte n'en garde que le nom. Quand tu auras choisi ce que tu veux suivre, son contenu restera sur cet appareil seulement, sans passer par le serveur de Selene.": "Not set up yet: your account keeps only its name. Once you have chosen what you want to track, its content will stay on this device only, without going through Selene's server.",
     "Ce suivi doit revenir sur un appareil": "This tracker should go back to a device",
     "Selene ne synchronise plus les suivis de santé. Celui-ci l'est encore : garde-le sur l'appareil de ton choix, et son contenu quittera ton compte. Tant que tu n'as pas choisi, rien ne change.": "Selene no longer syncs health trackers. This one still is: keep it on the device of your choice, and its content will leave your account. Until you choose, nothing changes.",
     "Garder sur cet appareil seulement…": "Keep on this device only…",
@@ -3035,6 +3036,9 @@ var __selene = (() => {
     "Remplacer tout l'état actuel par celui du fichier ?": "Replace everything here with the contents of the file?",
     "Sauvegarde importée.": "Backup imported.",
     "Fichier illisible ou pas une sauvegarde Selene.": "Unreadable file, or not a Selene backup.",
+    "Ce fichier n'est pas une sauvegarde Selene. Rien n'a été importé.": "This file is not a Selene backup. Nothing was imported.",
+    "Ce fichier ne se lit pas comme une sauvegarde : il est peut-être abîmé ou incomplet. Rien n'a été importé.": "This file does not read as a backup: it may be damaged or incomplete. Nothing was imported.",
+    "Le contenu de cette sauvegarde n'est pas valide : le fichier est peut-être abîmé ou a été modifié. Rien n'a été importé.": "The contents of this backup are not valid: the file may be damaged or have been edited. Nothing was imported.",
     "Chaque matin à {0}, s'il y a quelque chose. Sinon, la paix.": "Every morning at {0}, if there's anything. Otherwise, peace.",
     "Notifications refusées : elles s'autorisent dans les réglages du téléphone.": "Notifications refused: they can be allowed in the phone's settings.",
     "Les notifications ne sont pas disponibles ici.": "Notifications aren't available here.",
@@ -4929,7 +4933,9 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     "type-unknown": () => tr`Type de module inconnu`,
     "module-missing": () => tr`Module introuvable`,
     "backup-too-big": () => tr`Sauvegarde trop volumineuse`,
-    "backup-format": () => tr`Fichier illisible ou pas une sauvegarde Selene.`,
+    "backup-format": () => tr`Ce fichier n'est pas une sauvegarde Selene. Rien n'a été importé.`,
+    "backup-not-json": () => tr`Ce fichier ne se lit pas comme une sauvegarde : il est peut-être abîmé ou incomplet. Rien n'a été importé.`,
+    "backup-invalid": () => tr`Le contenu de cette sauvegarde n'est pas valide : le fichier est peut-être abîmé ou a été modifié. Rien n'a été importé.`,
     "backup-too-new": () => tr`Sauvegarde créée par une version plus récente de Selene : mets l'application à jour d'abord.`,
     // Reprendre la main (core/regulation.js) : ce qu'il faut corriger, pas seulement ce qui est refusé.
     "reg-setup": () => tr`Choisis d'abord ce que tu veux suivre.`,
@@ -5868,7 +5874,19 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   };
   function parseBackup(text) {
     if (typeof text !== "string" || text.length > 5e6) throw coreError("backup-too-big", "Sauvegarde trop volumineuse");
-    const data = JSON.parse(text);
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      throw coreError("backup-not-json", `Le fichier n'est pas du JSON valide : ${e.message}`);
+    }
+    try {
+      return checkBackup(data);
+    } catch (e) {
+      throw e && typeof e.code === "string" ? e : coreError("backup-invalid", e && e.message ? e.message : "Contenu de sauvegarde invalide");
+    }
+  }
+  function checkBackup(data) {
     if (!record(data) || data.format !== "selene-v1" || !record(data.board) || !record(data.site)) throw coreError("backup-format", "Format de sauvegarde invalide");
     const { board: board2, site: site2 } = data;
     if (site2.schemaVersion != null && !(Number.isInteger(site2.schemaVersion) && site2.schemaVersion >= 1)) throw coreError("backup-format", "Version de format invalide");
@@ -6733,6 +6751,7 @@ ${tr`Notes, envies, déclencheurs et appuis restent ici. Arrêter le partage plu
     const stub = S().modules[id], c = stub.config;
     if (!synced()) return tr`Sur cet appareil : sans compte, rien n'est envoyé au serveur de Selene.`;
     if (regulationOnDevice(stub)) return tr`Sur cet appareil seulement. Ton compte n'en garde que le nom, pour que tes autres appareils sachent qu'il existe : son contenu ne passe pas par le serveur. La sauvegarde de cet appareil (Google, iCloud…), si tu l'as activée, peut l'inclure : elle relève de ton compte Google ou Apple, pas de Selene. Ce n'est pas un coffre chiffré : quiconque ouvre cet appareil déverrouillé peut lire son stockage. Perdre l'appareil peut faire perdre le suivi : exporte-le de temps en temps.`;
+    if (!subjectOf(stub) && !c.consent) return tr`Pas encore configuré : ton compte n'en garde que le nom. Quand tu auras choisi ce que tu veux suivre, son contenu restera sur cet appareil seulement, sans passer par le serveur de Selene.`;
     if (c.consent) return tr`Encore synchronisé avec ton compte, selon ton accord du ${fmt(iso(new Date(c.consent.at)), { day: "numeric", month: "long", year: "numeric" })} : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.`;
     return tr`Encore synchronisé avec ton compte, depuis sa création : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.`;
   }

@@ -625,6 +625,21 @@ test('sur cet appareil seulement, sans question : le serveur ne reçoit que le t
   app.site.disconnect(); app.board.disconnect();
 });
 
+test('un suivi neuf, pas encore configuré, ne se dit pas « encore synchronisé » ; il le devient sur l’appareil à la configuration', async () => {
+  const server = fakeSupabase(), app = personal({ fetch: server.fetch }); await settle();
+  app.addModule(app.localTemplate(app.MODULE_TEMPLATES.find(t => t.id === 'regulation')), 'Reprendre la main');
+  const id = app.S().config.modules[app.S().config.modules.length - 1].id;
+  assert.equal(app.S().modules[id].config.subject, null, 'pas encore configuré');
+  const neuf = app.TYPE_UI.regulation.view(id);
+  assert.match(neuf, /Pas encore configuré : ton compte n'en garde que le nom\. Quand tu auras choisi ce que tu veux suivre, son contenu restera sur cet appareil seulement/);
+  assert.doesNotMatch(neuf, /Encore synchronisé|depuis sa création|quittera alors le serveur/, 'rien à synchroniser, rien ne « quittera » le serveur');
+  await app.CLICK['rlm-setup']({ dataset: { mod: id } }); await app.form({ name: 'Carnet', subject: 'alcool' });
+  const configure = app.TYPE_UI.regulation.view(id);
+  assert.match(configure, /Sur cet appareil seulement\. Ton compte n'en garde que le nom/, 'ce que le texte promettait est ce qui arrive');
+  assert.doesNotMatch(configure, /Pas encore configuré|Encore synchronisé/);
+  app.site.disconnect(); app.board.disconnect();
+});
+
 test('plus de synchronisation : ni choix du compte à la création, ni action pour y revenir', async () => {
   const server = fakeSupabase(), app = personal({ fetch: server.fetch }); await settle();
   app.addModule(app.localTemplate(app.MODULE_TEMPLATES.find(t => t.id === 'regulation')), 'Reprendre la main');

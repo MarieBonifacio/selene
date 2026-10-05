@@ -47,7 +47,9 @@ export const CORE_ERRORS = {
   "type-unknown": () => tr`Type de module inconnu`,
   "module-missing": () => tr`Module introuvable`,
   "backup-too-big": () => tr`Sauvegarde trop volumineuse`,
-  "backup-format": () => tr`Fichier illisible ou pas une sauvegarde Selene.`,
+  "backup-format": () => tr`Ce fichier n'est pas une sauvegarde Selene. Rien n'a été importé.`,
+  "backup-not-json": () => tr`Ce fichier ne se lit pas comme une sauvegarde : il est peut-être abîmé ou incomplet. Rien n'a été importé.`,
+  "backup-invalid": () => tr`Le contenu de cette sauvegarde n'est pas valide : le fichier est peut-être abîmé ou a été modifié. Rien n'a été importé.`,
   "backup-too-new": () => tr`Sauvegarde créée par une version plus récente de Selene : mets l'application à jour d'abord.`,
   // Reprendre la main (core/regulation.js) : ce qu'il faut corriger, pas seulement ce qui est refusé.
   "reg-setup": () => tr`Choisis d'abord ce que tu veux suivre.`,

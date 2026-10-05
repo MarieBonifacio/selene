@@ -315,6 +315,8 @@ function whereText(id) {
   const stub = S().modules[id], c = stub.config;
   if (!synced()) return tr`Sur cet appareil : sans compte, rien n'est envoyé au serveur de Selene.`;
   if (regulationOnDevice(stub)) return tr`Sur cet appareil seulement. Ton compte n'en garde que le nom, pour que tes autres appareils sachent qu'il existe : son contenu ne passe pas par le serveur. La sauvegarde de cet appareil (Google, iCloud…), si tu l'as activée, peut l'inclure : elle relève de ton compte Google ou Apple, pas de Selene. Ce n'est pas un coffre chiffré : quiconque ouvre cet appareil déverrouillé peut lire son stockage. Perdre l'appareil peut faire perdre le suivi : exporte-le de temps en temps.`;
+  // Un suivi neuf n'a rien à synchroniser : le serveur n'en a que le nom, et la configuration le gardera sur l'appareil.
+  if (!subjectOf(stub) && !c.consent) return tr`Pas encore configuré : ton compte n'en garde que le nom. Quand tu auras choisi ce que tu veux suivre, son contenu restera sur cet appareil seulement, sans passer par le serveur de Selene.`;
   if (c.consent) return tr`Encore synchronisé avec ton compte, selon ton accord du ${fmt(iso(new Date(c.consent.at)), { day: "numeric", month: "long", year: "numeric" })} : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.`;
   return tr`Encore synchronisé avec ton compte, depuis sa création : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.`;
 }

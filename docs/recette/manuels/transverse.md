@@ -243,7 +243,7 @@ Identifiants retirés : aucun.
 | 1 | Accueil : capturer le piège. Chantier : créer une tâche intitulée par la seconde donnée. Motifs : ajouter un motif nommé par le piège. Réglages → Espaces : renommer « Carnet » par le piège. | Partout, le texte s'affiche tel quel, chevrons visibles ; aucune image cassée, aucune alerte. |
 | 2 | Parcourir Accueil, Boîte, Chantier, Motifs, la navigation, la palette (Ctrl+K, taper `TRV008`), la recherche `TRV008`, le Bilan, la planche. | Même constat dans chaque vue ; console : aucune exécution, aucun message `TRV008`. |
 | 3 | Planche → télécharger le fichier ; l'ouvrir dans le navigateur. | Le piège y est du texte ; aucune alerte. |
-| 4 | Importer [`donnees/refus-hostile.json`](../donnees/refus-hostile.json). | Refusé : « Fichier illisible ou pas une sauvegarde Selene. » ; rien ne change. |
+| 4 | Importer [`donnees/refus-hostile.json`](../donnees/refus-hostile.json). | Refusé : « Le contenu de cette sauvegarde n'est pas valide : le fichier est peut-être abîmé ou a été modifié. Rien n'a été importé. » ; rien ne change. |
 | 5 | Importer l'export Instagram de recette ([EXT-011](connexions.md#ext-011)). | Le titre « Trois ailes <img src=x onerror=alert('recette')> » s'affiche en texte. |
 | 6 | Artefact : refaire l'étape 1 pour la capture. | Même constat. |
 
