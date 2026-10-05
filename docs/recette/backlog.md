@@ -15,7 +15,7 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 | [BL-03](#bl-03) | Rejouer l'isolation entre comptes chaque semaine en CI | automatisation | P1 | TRV-016 |
 | [BL-04](#bl-04) | Balayage d'accessibilité rejoué à chaque PR | automatisation | P2 | TRV-001, TRV-002, TRV-003, TRV-006, TRV-014 |
 | [BL-05](#bl-05) | Stabiliser `tests/browser/activite.js` sous WebKit | fiabilité de la CI | P2 | TRV-011 |
-| [BL-06](#bl-06) | Assistant : dire « non déployé » ou « injoignable », et le tester | correctif puis automatisation | P2 | AST-007 |
+| [BL-06](#bl-06) | ~~Assistant : dire « non déployé » ou « injoignable », et le tester~~ (fait) | correctif puis automatisation | P2 | AST-007 |
 | [BL-07](#bl-07) | Fumée de l'app Android sur émulateur, en CI | automatisation | P2 | PLT-003, PLT-004 |
 | [BL-08](#bl-08) | Fumée de l'app Windows installée, en CI | automatisation | P3 | PLT-009, PLT-010 |
 | [BL-09](#bl-09) | Seuils de performance sur le jeu de volume | décision puis automatisation | P2 | TRV-007 |
@@ -97,7 +97,7 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
   confirmer sur une série d'exécutions WebKit de la CI ; si elle tient, barrer cet élément.
 
 <a id="bl-06"></a>
-### BL-06 — Assistant : dire « non déployé » ou « injoignable », et le tester
+### BL-06 — Assistant : dire « non déployé » ou « injoignable », et le tester (fait le 5 octobre 2026)
 
 - **Risque couvert** : anomalie [A4](perimetre.md#anomalies-et-observations) : après un 404 ou un 503 de la fonction, coller une
   clé affiche « L'assistant hébergé demande d'être connectée à ton compte. » alors que la personne l'est ; la vue dit
@@ -107,6 +107,7 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 - **Niveau** : scénario de navigateur (mode H).
 - **Dépendances** : le correctif (produit).
 - **Bénéfice attendu** : une panne de déploiement diagnostiquée en une phrase plutôt qu'en un ticket.
+- **Fait** : la vue Assistant et les Réglages disent « Assistant non déployé (voir docs/assistant.md). » (404), « Assistant non configuré. » (503) ou « Assistant injoignable (hors ligne, ou pas encore déployé). » ; coller une clé donne la même cause. Le diagnostic ne redessine la page qu'une fois, là où il se lit, et la pause de cinq minutes empêche toute boucle (la régression du 30 septembre reste gardée par le même scénario). Tests : `TN-assistant-injoignable` (404, 503, injoignable).
 
 <a id="bl-07"></a>
 ### BL-07 — Fumée de l'app Android sur émulateur, en CI
@@ -192,9 +193,9 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 
 Constatées pendant la mise en place du cahier, décrites avec leur preuve dans
 [perimetre.md](perimetre.md#anomalies-et-observations) : A1 (WebKit, `activite.js`, voir [BL-05](#bl-05)), A2 (à surveiller),
-A3 (message d'un import refusé), A4 (assistant, voir [BL-06](#bl-06)), A5 (typographie des dates : « oct.. », « 1 septembre »,
-« 1.5 verres »), A6 (texte « encore synchronisé » sur un suivi neuf), A7 (talon après effacement, voir [BL-02](#bl-02)), A8 (import Markdown : un fichier illisible fait échouer tout l'import sans message).
-Aucune n'a été corrigée : chacune devient un ticket, ou est classée « comportement voulu » par la responsable, et le cas
+A3 (message d'un import refusé), A4 (assistant, voir [BL-06](#bl-06) : **corrigée**), A5 (typographie des dates : « oct.. », « 1 septembre »,
+« 1.5 verres » : **corrigée**), A6 (texte « encore synchronisé » sur un suivi neuf), A7 (talon après effacement, voir [BL-02](#bl-02)), A8 (import Markdown : un fichier illisible fait échouer tout l'import sans message : **corrigée**).
+A4, A5 et A8 ont été corrigées le 5 octobre 2026 (leurs cas et leurs tests mis à jour dans la même PR). Pour les autres (A3, A6, A7), rien n'est corrigé : chacune devient un ticket, ou est classée « comportement voulu » par la responsable, et le cas
 concerné est mis à jour en conséquence ([maintenance.md](maintenance.md)).
 
 <a id="documentation"></a>

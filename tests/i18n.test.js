@@ -219,3 +219,26 @@ test('les noms tr, trp, trn et N_ sont réservés dans src/app : aucune variable
   }
   assert.deepEqual(bad, []);
 });
+
+test('dates : en français, le premier du mois s’écrit « 1er » (avec un mois en lettres seulement) ; en anglais, rien ne change', () => {
+  const { fmt } = require('../src/app/lib/format.js');
+  const long = { day: 'numeric', month: 'long', year: 'numeric' };
+  applyLang('fr', BOTH);
+  assert.equal(fmt('2026-09-01', long), '1er septembre 2026');
+  assert.equal(fmt('2026-09-01'), '1er sept.', 'la forme courte aussi');
+  assert.equal(fmt('2026-09-01', { weekday: 'long', ...long }), 'mardi 1er septembre 2026');
+  assert.equal(fmt('2026-10-01', { day: 'numeric', month: 'long' }), '1er octobre');
+  assert.equal(fmt('2026-09-02', long), '2 septembre 2026');
+  assert.equal(fmt('2026-09-11', long), '11 septembre 2026', '11 n’est pas un premier');
+  assert.equal(fmt('2026-09-21', long), '21 septembre 2026', '21 non plus');
+  assert.equal(fmt('2026-09-01', { day: '2-digit', month: '2-digit' }), '01/09', 'sans mois en lettres, la date numérique reste telle quelle');
+  assert.equal(fmt(''), '');
+  applyLang('en', BOTH);
+  try {
+    const intl = (d, o) => new Date(d + 'T12:00').toLocaleDateString(uiLocale(), o);
+    assert.equal(fmt('2026-09-01', long), intl('2026-09-01', long), 'la date que donne la langue, sans « 1er »');
+    assert.doesNotMatch(fmt('2026-09-01', long), /1er/);
+    assert.equal(fmt('2026-09-01'), intl('2026-09-01', { day: 'numeric', month: 'short' }));
+  }
+  finally { applyLang('fr', BOTH); }
+});

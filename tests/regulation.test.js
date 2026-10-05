@@ -20,6 +20,32 @@ const use = (c, inst, id, value = 2, date = TODAY, at = 10) => c.saveRegulationE
 const confirm = (c, inst, date = TODAY, at = 20) => c.closeRegulationDay(inst, date, c.regulationSnapshot(inst, date), TODAY, at, 'Europe/Paris');
 const backup = (c, inst) => JSON.stringify({ format: 'selene-v1', board: { tasks: [] }, site: { schemaVersion: c.SCHEMA_VERSION, config: { modules: [{ id: 'suivi', on: true }] }, modules: { suivi: inst } } });
 
+/* ---------------- le résumé que reçoit l'assistant ---------------- */
+
+test('résumé de l’assistant : en français, virgule décimale, 0 et 1 au singulier, sans note ni appui', async () => {
+  const c = await core, inst = tracker(c, 'alcool', { mode: 'reduire', limit: 1.5 });
+  // Rien de noté : zéro est au singulier, et une moyenne sans journée complète n'a pas d'objet.
+  let s = c.regulationSummary(inst, 'SUIVI', TODAY);
+  assert.match(s, /^\nSUIVI : suivi personnel autodéclaratif \(alcool, en verres standard \(10 g d'alcool pur\)\)\. Objectif choisi : au plus 1,5 verre standard par jour\./, 'une limite décimale : virgule, singulier');
+  assert.match(s, /7 jours suivis, 0 journée complète, 7 inconnues ou à reconfirmer/);
+  assert.match(s, /déclaré en tout : 0 verre standard ; moyenne par journée complète : sans objet ; objectif atteint 0 fois sur 0 journée évaluable\./);
+  // Deux journées confirmées : 1,5 puis 3 verres. Le pluriel commence à 2 ; la moyenne (2,25) s'écrit avec une virgule.
+  c.saveRegulationEvent(inst, { kind: 'use', date: TODAY, value: 1.5, note: 'NOTE_SECRETE' }, 'u1', TODAY, 10, 'Europe/Paris'); confirm(c, inst, TODAY, 11);
+  use(c, inst, 'u2', 3, '2026-09-29', 12); confirm(c, inst, '2026-09-29', 13);
+  s = c.regulationSummary(inst, 'SUIVI', TODAY);
+  assert.match(s, /7 jours suivis, 2 journées complètes, 5 inconnues ou à reconfirmer/);
+  assert.match(s, /déclaré en tout : 4,5 verres standard ; moyenne par journée complète : 2,25 verres standard ; objectif atteint 1 fois sur 2 journées évaluables\./);
+  assert.doesNotMatch(s, /\d\.\d/, 'aucun point décimal : le texte est français');
+  assert.doesNotMatch(s, /NOTE_SECRETE/, 'jamais une note');
+  assert.match(s, /Un arrêt brutal ou une réduction rapide peuvent être dangereux/, 'l’alcool garde son avertissement');
+  // Les autres sujets, et l'arrêt.
+  const t = tracker(c, 'tabac', { mode: 'arreter' }); use(c, t, 'c1', 1);
+  assert.match(c.regulationSummary(t, 'T', TODAY), /Objectif choisi : viser l'arrêt\..*déclaré en tout : 1 cigarette ;/);
+  const r = tracker(c, 'reseaux', { mode: 'reduire', limit: 90 }); use(c, r, 'm1', 90);
+  assert.match(c.regulationSummary(r, 'R', TODAY), /au plus 90 minutes déclarées par jour\..*déclaré en tout : 90 minutes déclarées ;/);
+  assert.match(c.regulationSummary(fresh(c), 'N', TODAY), /pas encore configuré\.$/);
+});
+
 /* ---------------- configuration, unités, intentions ---------------- */
 
 test('un suivi naît sans sujet ; le sujet et la première version d’objectif se choisissent ensemble, puis le sujet est figé', async () => {
@@ -504,7 +530,7 @@ test('partage choisi : un résumé explicite seulement, confirmé sur son texte 
   assert.equal(app.S().config.assistant.share[id], true);
   const ctx = app.contextText();
   assert.match(ctx, /SUIVI PRIVÉ : suivi personnel autodéclaratif \(alcool, en verres standard/);
-  assert.match(ctx, /objectif atteint \d+ fois sur \d+ journées évaluables/);
+  assert.match(ctx, /objectif atteint \d+ fois sur \d+ journées? évaluables?\./);
   assert.match(ctx, /Ne propose ni diagnostic, ni calendrier de sevrage, ni dose/);
   assert.deepEqual(leaks(ctx), [], 'ni notes, ni déclencheurs, ni appuis, ni récompense');
   app.CLICK['rlm-share']({ dataset: { mod: id }, closest: () => null });

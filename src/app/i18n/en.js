@@ -777,6 +777,9 @@ export default {
   "Aucune publication dans ce fichier. C'est posts_1.json ou reels.json qu'il faut.": "No posts in this file. You need posts_1.json or reels.json.",
   "Importer {0} publication (du {1} au {2}) dans {3}, au statut « {4} » ?": { one: "Import {0} post (from {1} to {2}) into {3}, with the status “{4}”?", other: "Import {0} posts (from {1} to {2}) into {3}, with the status “{4}”?" },
   "{0} déjà là, ignorée.": { one: "{0} already here, skipped.", other: "{0} already here, skipped." },
+  "{0} fichier illisible, ignoré.": { one: "{0} unreadable file, skipped.", other: "{0} unreadable files, skipped." },
+  "Aucun de ces fichiers n'a pu être lu : ils ont peut-être été déplacés ou supprimés depuis leur choix.": "None of these files could be read: they may have been moved or deleted since you chose them.",
+  "L'import n'a pas pu aller au bout.": "The import could not be completed.",
   "{0} publication importée dans {1}.": { one: "{0} post imported into {1}.", other: "{0} posts imported into {1}." },
   "« {0} » existe déjà.": "“{0}” already exists.",
   // modules/cumul.js

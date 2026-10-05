@@ -423,7 +423,7 @@ Identifiants retirés : aucun.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Journal : « suppr. » sur « 1 verre standard » du 10 sept. | Message « Supprimé : 1 verre standard le 10 sept.. Cette journée est à reconfirmer. » avec « Annuler » (le point doublé est l'anomalie [A5](../perimetre.md#anomalies-et-observations)) ; la ligne « Journée confirmée » du 10 devient « Confirmation à refaire : la journée a changé depuis ». |
+| 1 | Journal : « suppr. » sur « 1 verre standard » du 10 sept. | Message « Supprimé : 1 verre standard le 10 septembre 2026. Cette journée est à reconfirmer. » avec « Annuler » (la date en lettres, un seul point : anomalie [A5](../perimetre.md#anomalies-et-observations), corrigée) ; la ligne « Journée confirmée » du 10 devient « Confirmation à refaire : la journée a changé depuis ». |
 | 2 | « Annuler » dans les secondes qui suivent. | « Rétabli. Rien ne s'est passé. » ; la saisie revient ; la ligne du 10 redevient « Journée confirmée ». |
 | 3 | « laisser inconnue » sur « Journée confirmée » du 11 sept. | « La journée du 11 sept. redevient inconnue. » avec « Annuler » ; la ligne disparaît. |
 | 4 | « suppr. » sur l'envie du 11, puis sur l'action du 11. | « Envie du 11 sept. supprimée. » puis « Action du 11 sept. supprimée. » |
@@ -443,14 +443,14 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob
 - **Préconditions** : chemin S, `rlm-en-cours.json` importé.
 - **Données** : « Réduire… » `1` à partir de `J+10` ; date `J+400` ; `2` verres à `J-1` ; « Réduire… » `5` à partir de `J-1`.
-- **Automatisés associés** : `TU-REG-10`, `TU-REG-04`
+- **Automatisés associés** : `TU-REG-10`, `TU-REG-04`, `TU-I18N-18`
 - **Source** : [DOC] [regulation.md](../../regulation.md#règles) (objectifs versionnés) ; [TEST] `TU-REG-10` ; vérifié par
   une sonde Chromium le 4 octobre 2026.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Lire « Mes objectifs » ; déplier « Historique : 2 versions ». | « En ce moment : au plus 1,5 verre standard par jour. » ; « à partir du 20 septembre 2026 : au plus 1,5 verre standard par jour (choisi le 20 sept.) », « à partir du 1 septembre 2026 : au plus 2 verres standard par jour (choisi le 1 sept.) » ; « Début du suivi : 1 septembre 2026. » |
-| 2 | « Faire évoluer mon objectif » : « Réduire… », limite `1`, à partir de `J+10`. | « Objectif enregistré, à partir du <J+10>. D'ici là, rien ne change. » (comportement actuel : point doublé après le mois abrégé, anomalie A5) ; en-tête inchangé « Alcool · au plus 1,5 verre standard par jour », suivi de « À partir du <J+10> : au plus 1 verre standard par jour. » ; « Historique : 3 versions », la plus récente en tête « (choisi le <J>) ». |
+| 1 | Lire « Mes objectifs » ; déplier « Historique : 2 versions ». | « En ce moment : au plus 1,5 verre standard par jour. » ; « à partir du 20 septembre 2026 : au plus 1,5 verre standard par jour (choisi le 20 sept.) », « à partir du 1er septembre 2026 : au plus 2 verres standard par jour (choisi le 1er sept.) » ; « Début du suivi : 1er septembre 2026. » |
+| 2 | « Faire évoluer mon objectif » : « Réduire… », limite `1`, à partir de `J+10`. | « Objectif enregistré, à partir du <J+10 en lettres, avec l'année, par exemple 14 octobre 2026>. D'ici là, rien ne change. » (un seul point : anomalie A5, corrigée) ; en-tête inchangé « Alcool · au plus 1,5 verre standard par jour », suivi de « À partir du <J+10> : au plus 1 verre standard par jour. » ; « Historique : 3 versions », la plus récente en tête « (choisi le <J>) ». |
 | 3 | « Faire évoluer mon objectif » avec la date `J+400`. | Le formulaire se ferme ; « Choisis une date valide. Une consommation, une envie ou une action ne se déclarent pas à l'avance. » ; toujours 3 versions. [À ARBITRER] : ce message parle de consommation pour une date d'objectif trop lointaine. |
 | 4 | Noter `2` à `J-1`, confirmer `J-1`. | J-1 « complète : 2 verres standard · au-delà de l'objectif », « objectif du jour : au plus 1,5 verre standard par jour ». |
 | 5 | « Faire évoluer mon objectif » : « Réduire… » `5` à partir de `J-1`. | J-1 garde « au-delà de l'objectif » et « objectif du jour : au plus 1,5 verre standard par jour » ; l'en-tête devient « Alcool · au plus 5 verres standard par jour ». |
@@ -650,13 +650,13 @@ Identifiants retirés : aucun.
   assistant activé et clé de recette enregistrée ([AST-001](assistant.md#ast-001)) ; Network filtré sur
   `functions/v1/assistant`.
 - **Données** : question `Bonjour ?`.
-- **Automatisés associés** : `TU-REG-23`, `TN-regulation`
+- **Automatisés associés** : `TU-REG-23`, `TU-REG-36`, `TN-regulation`
 - **Source** : [DOC] [regulation.md](../../regulation.md#confidentialité) (assistant) ; [TEST] `TU-REG-23`,
   `tests/browser/regulation.js` ; vérifié par une sonde Chromium le 4 octobre 2026.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | « Carnet du soir » → « Confidentialité et données ». | « Non partagé : l'assistant ne reçoit rien de ce suivi. Si tu le partages, il recevra ce résumé, et rien d'autre : » puis « CARNET DU SOIR : suivi personnel autodéclaratif (alcool, en verres standard (10 g d'alcool pur)). Objectif choisi : au plus 1.5 verres standard… » (typographie : anomalie A5) ; aucune occurrence de « Repas de famille », « Après le travail », « Marcher ». |
+| 1 | « Carnet du soir » → « Confidentialité et données ». | « Non partagé : l'assistant ne reçoit rien de ce suivi. Si tu le partages, il recevra ce résumé, et rien d'autre : » puis « CARNET DU SOIR : suivi personnel autodéclaratif (alcool, en verres standard (10 g d'alcool pur)). Objectif choisi : au plus 1,5 verre standard par jour. Sept derniers jours : 7 jours suivis, 0 journée complète, 7 inconnues ou à reconfirmer (une journée inconnue ne vaut pas zéro) ; déclaré en tout : 0 verre standard ; moyenne par journée complète : sans objet ; objectif atteint 0 fois sur 0 journée évaluable. Notes, envies… » (virgule décimale, 0 et 1 au singulier : anomalie A5, corrigée ; ces chiffres supposent que la dernière saisie du jeu date de plus de sept jours) ; aucune occurrence de « Repas de famille », « Après le travail », « Marcher ». |
 | 2 | « Partager ce résumé avec l'assistant… » ; lire ; « Annuler ». | « Partager avec l'assistant ce résumé de « Carnet du soir » ? Il partira tel quel à chaque question : », le même résumé, puis « Notes, envies, déclencheurs et appuis restent ici. Arrêter le partage plus tard n'efface pas ce qui aura déjà été envoyé. » ; après « Annuler », toujours « Non partagé ». |
 | 3 | Réglages → Assistant → cocher « Carnet du soir » dans « Ce que Claude peut lire ». | La case se décoche aussitôt et la même boîte s'ouvre ; « Confirmer » → « Résumé partagé avec l'assistant. » ; la case reste cochée. |
 | 4 | Assistant : envoyer la question ; lire `requete.system`. | Contient « CARNET DU SOIR : suivi personnel autodéclaratif (alcool » ; ne contient ni « Repas de famille », ni « Après le travail », ni « Marcher quelques minutes ». |
@@ -744,7 +744,7 @@ Identifiants retirés : aucun.
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Appareil 1 : importer le jeu ; ouvrir « Carnet du soir ». | Bandeau « Ce suivi doit revenir sur un appareil » : « Selene ne synchronise plus les suivis de santé. Celui-ci l'est encore : garde-le sur l'appareil de ton choix, et son contenu quittera ton compte. Tant que tu n'as pas choisi, rien ne change. » et « Le garder sur cet appareil seulement… ». |
-| 2 | Déplier « Confidentialité et données ». | « Encore synchronisé avec ton compte, selon ton accord du 1 septembre 2026 : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout… » |
+| 2 | Déplier « Confidentialité et données ». | « Encore synchronisé avec ton compte, selon ton accord du 1er septembre 2026 : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout… » |
 | 3 | Appareil 2 : recharger, ouvrir l'espace ; attendre deux minutes sur les deux appareils. | L'appareil 2 voit le même bandeau et la saisie « 3 cigarettes » « Pause café » ; rien ne change de soi-même. |
 | 4 | Appareil 1 : « Le garder sur cet appareil seulement… » ; lire ; « Confirmer ». | « Garder « Carnet du soir » sur cet appareil seulement ? À la prochaine synchronisation, ses données quittent ton compte… Les sauvegardes techniques de l'hébergeur peuvent encore le contenir 30 jours au plus… » ; puis « « Carnet du soir » est gardé sur cet appareil seulement. » ; plus de bandeau ; « Sur cet appareil seulement… » ; aucun bouton pour revenir en arrière. |
 | 5 | Network : la `PATCH` suivante vers `app_state`. | L'espace n'y a plus que `"storage":"device"`, `holder`, `"subject":null`, `"entries":[]` ; pas de « Pause café ». |

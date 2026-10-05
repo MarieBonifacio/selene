@@ -11,7 +11,7 @@ import { todayISO } from "../lib/format.js";
 import { N_, collate, langChoices, tr, uiLang, uiLocale } from "../i18n/index.js";
 import { localTemplate } from "../lib/labels.js";
 import { agendaSettingsHTML } from "../features/agenda.js";
-import { assistantKnown } from "../features/assistant.js";
+import { assistantKnown, assistantProbleme } from "../features/assistant.js";
 import { notifySettingsHTML } from "../features/digest.js";
 import { radarSettingsHTML } from "../features/radar.js";
 import { shareSettingsHTML } from "../features/share.js";
@@ -117,6 +117,7 @@ function assistantHTML(s) {
   const a = s.config.assistant, known = assistantKnown();
   return `<section id="assistant-cfg"><p class="hint">${tr`Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.`}</p>
     ${authReady() && !authSession ? `<p class="hint">${tr`Sans compte, pas d'assistant : ta clé serait gardée sur le serveur, attachée à un compte.`} <button type="button" class="btn ghost sm" data-act="auth-open">${tr`Créer un compte ou me connecter`}</button></p>` : ""}
+    ${signedIn() && assistantProbleme() ? `<p class="hint" role="status">${esc(assistantProbleme())}</p>` : ""}
     <div class="field-row">${signedIn() ? field(known?.cle ? tr`Clé API Anthropic (enregistrée : ${known.indice || ""})` : tr`Clé API Anthropic`, id => `<input type="password" aria-labelledby="${id}" data-act="as-key" value="" placeholder="${known?.cle ? tr`Coller une autre clé pour la remplacer` : "sk-ant-…"}" autocomplete="off">`, { tip: TIPS.assistantKey }) : ""}
     ${field(tr`Modèle`, id => `<select aria-labelledby="${id}" data-act="as-model">${[["claude-haiku-4-5-20251001", tr`Haiku 4.5, rapide et peu cher`], ["claude-sonnet-5", tr`Sonnet 5, équilibré`], ["claude-opus-5-5", tr`Opus 5.5, le plus capable`]].map(([k, l]) => opt(k, l, a.model)).join("")}</select>`, { tip: TIPS.assistantModel })}</div>
     <div class="row" style="margin-top:12px"><label class="check-l"><input type="checkbox" data-act="as-actions" ${a.actions ? "checked" : ""}>${tr`Autoriser Claude à modifier le tableau de bord (tâches, capture, budget)`}</label>${tip(TIPS.assistantActions, about(tr`Autoriser Claude à modifier le tableau de bord`))}</div>

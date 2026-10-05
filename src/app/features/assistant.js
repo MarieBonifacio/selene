@@ -14,6 +14,7 @@ import { allTasks } from "../modules/taches.js";
 import { moon } from "../scene/moon.js";
 import { SUPABASE_ANON_KEY, SUPABASE_URL, authReady, authRefreshIfNeeded, authSession } from "../services/auth.js";
 import { sampleNS } from "../services/host.js";
+import { routeOf } from "../shell/nav.js";
 import { render } from "../shell/render.js";
 import { S, enabled, label, site } from "../state/site.js";
 import { ask } from "../ui/dialogs.js";
@@ -23,21 +24,26 @@ export let chatBusy = false;
    si la fonction n'est pas déployée (on n'insiste pas). Une demande qui échoue (hors ligne, fonction injoignable,
    refus CORS) n'est pas refaite avant ASSISTANT_PAUSE : la page, qui la déclenche en se dessinant, la relancerait
    sinon à chaque rendu. */
-let assistantCle = null, assistantEtat = "", assistantDemande = null, assistantPause = 0;
+let assistantCle = null, assistantEtat = "", assistantAbsent = 0, assistantDemande = null, assistantPause = 0; // assistantAbsent : 404 ou 503, ce que la fonction a répondu
 const ASSISTANT_PAUSE = 5 * 60000;
 export const assistantSetCle = r => { assistantCle = r; }; // l'état de la clé, tel que le serveur vient de le dire
 const assistantPret = () => hosted() && authReady() && !!authSession && assistantEtat !== "absent";
+/* Ce qui empêche l'assistant hébergé de répondre, dit en une phrase (ou rien) : la fonction n'est pas déployée (404) ou pas
+   configurée (503) : elle ne répondra pas, inutile d'insister ; ou elle est injoignable (hors ligne, refus CORS…). Une
+   personne connectée à qui l'on répond « connecte-toi » ne comprend pas ce qui manque. */
+export const assistantProbleme = () => !hosted() ? "" : assistantEtat === "absent" ? (assistantAbsent === 503 ? tr`Assistant non configuré.` : tr`Assistant non déployé (voir docs/assistant.md).`)
+  : assistantEtat === "injoignable" ? tr`Assistant injoignable (hors ligne, ou pas encore déployé).` : "";
 export async function assistantCall(corps, delai = 15000) {
-  if (!assistantPret()) throw new Error(tr`L'assistant hébergé demande d'être connectée à ton compte.`);
+  if (!assistantPret()) throw new Error(assistantProbleme() && authReady() && authSession ? assistantProbleme() : tr`L'assistant hébergé demande d'être connectée à ton compte.`);
   const s = await authRefreshIfNeeded(); if (!s) throw new Error(tr`Session expirée : reconnecte-toi.`);
   const ac = new AbortController(), t = setTimeout(() => ac.abort(), delai);
   let r;
   try {
     r = await fetch(`${SUPABASE_URL}/functions/v1/assistant`, { method: "POST", signal: ac.signal,
       headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${s.access_token}` }, body: JSON.stringify(corps) });
-  } catch { throw new Error(ac.signal.aborted ? tr`Claude met trop de temps à répondre.` : tr`Assistant injoignable (hors ligne, ou pas encore déployé).`); } finally { clearTimeout(t); }
+  } catch { if (!ac.signal.aborted) assistantEtat = "injoignable"; throw new Error(ac.signal.aborted ? tr`Claude met trop de temps à répondre.` : tr`Assistant injoignable (hors ligne, ou pas encore déployé).`); } finally { clearTimeout(t); }
   const j = await r.json().catch(() => ({}));
-  if (r.status === 404 || r.status === 503) { assistantEtat = "absent"; throw r.status === 404 ? new Error(tr`Assistant non déployé (voir docs/assistant.md).`) : serverError(j, tr`Assistant non configuré.`); }
+  if (r.status === 404 || r.status === 503) { assistantEtat = "absent"; assistantAbsent = r.status; throw r.status === 404 ? new Error(tr`Assistant non déployé (voir docs/assistant.md).`) : serverError(j, tr`Assistant non configuré.`); }
   if (j && j.code === "sans-cle") assistantCle = { cle: false };
   if (!r.ok) throw serverError(j, tr`erreur ${r.status}`);
   assistantEtat = "ok";
@@ -49,16 +55,18 @@ function assistantRefresh() {
   if (!assistantPret() || assistantDemande || Date.now() < assistantPause) return assistantDemande;
   const ancienne = platform.secrets.get("selene-api-key");
   assistantDemande = (async () => {
-    const avant = assistantCle;
+    const avant = assistantCle, avantProbleme = assistantProbleme();
     try {
       if (ancienne) {
         try { assistantCle = await assistantCall({ action: "cle", cle: ancienne }); platform.secrets.remove("selene-api-key"); }
         catch (e) { if (["cle", "pas-une-cle"].includes(e.code) || /refuse|clé d'API/.test(e.message)) platform.secrets.remove("selene-api-key"); throw e; } // le texte : un serveur d'avant les codes
       } else assistantCle = await assistantCall({ action: "etat" });
     } catch { assistantPause = Date.now() + ASSISTANT_PAUSE; } finally { assistantDemande = null; }
-    // Redessiner seulement si la réponse change ce qu'on montre : jamais après un échec, qui ne change rien (et un
-    // rendu redemanderait aussitôt : la boucle qui rendait tous les boutons inertes, le 30 septembre 2026).
-    if (assistantCle !== avant) render();
+    // Redessiner seulement si la réponse change ce qu'on montre : jamais après un échec qui ne change rien (et un rendu
+    // redemanderait aussitôt : la boucle qui rendait tous les boutons inertes, le 30 septembre 2026). Un échec qui change
+    // ce qu'on dit (« non déployé », « injoignable » : la première fois seulement) redessine une fois, et seulement là où
+    // cela se lit ; la pause de cinq minutes empêche que ce rendu redemande.
+    if (assistantCle !== avant || (assistantProbleme() !== avantProbleme && ["assistant", "reglages"].includes(routeOf().view))) render();
   })();
   return assistantDemande;
 }
@@ -164,7 +172,7 @@ export async function sendChat(text) {
 const ideaChip = () => { const id = Object.keys(S().modules).find(k => S().modules[k].type === "collection" && S().modules[k].config.display === "colonnes" && enabled(k)); return id ? [tr`Propose trois idées pour ${label(id)}`] : []; };
 VIEWS.assistant = () => {
   const b = backend(), a = S().config.assistant, log = chatLog.get();
-  const status = b === "sample" ? tr`Branché via claude.ai : aucune clé requise, la première question te demandera ton accord.` : b === "api" ? tr`Branché via ta clé API, modèle ${esc(a.model)}. Chaque échange est facturé sur ton compte.` : hosted() ? tr`Pas encore branché. Colle ta clé API dans ${`<a href="#reglages">${tr`Réglages`}</a>`}.` : tr`Indisponible dans cette vue.`;
+  const status = b === "sample" ? tr`Branché via claude.ai : aucune clé requise, la première question te demandera ton accord.` : b === "api" ? tr`Branché via ta clé API, modèle ${esc(a.model)}. Chaque échange est facturé sur ton compte.` : hosted() ? (assistantProbleme() ? esc(assistantProbleme()) : tr`Pas encore branché. Colle ta clé API dans ${`<a href="#reglages">${tr`Réglages`}</a>`}.`) : tr`Indisponible dans cette vue.`;
   const shared = Object.entries(a.share).filter(([k, v]) => v && enabled(k)).map(([k]) => label(k)).join(", ") || tr`rien`;
   return `<div class="row"><h2 style="margin:0">${esc(label("assistant"))}</h2><span class="spacer"></span>${log.length ? `<button class="btn ghost sm" data-act="chat-clear">${tr`Effacer la conversation`}</button>` : ""}</div>
   <p class="status">${status}<br>${tr`Données partagées : ${esc(shared)}.`} ${a.actions ? tr`Peut agir sur le tableau de bord.` : tr`Lecture seule.`}</p>

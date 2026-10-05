@@ -674,18 +674,19 @@ Identifiants retirés : aucun.
 - **Préconditions** : jeu d'essai (le Carnet n'a qu'une note) ; le dossier [`donnees/coffre-markdown/`](../donnees/coffre-markdown/)
   copié sur l'appareil (trois notes et un `.obsidian/workspace.md`) ; Network ouvert.
 - **Données** : les fichiers `Le seuil.md`, `2024-02-10 Lecture.md`, `202403011530 Idée.md`, puis le dossier entier.
-- **Automatisés associés** : `TN-import-markdown`, `TU-MKD-01`, `TU-MKD-02`, `TU-MKD-03`, `TU-MKD-04`
+- **Automatisés associés** : `TN-import-markdown`, `TU-MKD-01`, `TU-MKD-02`, `TU-MKD-03`, `TU-MKD-04`, `TU-MKD-05`
 - **Source** : [DOC] [connexions.md](../../connexions.md) (venir d'Obsidian ou de Zettlr) ; [TEST] `tests/browser/import-markdown.js`,
   `tests/markdown.test.js` ; textes vérifiés par une sonde Chromium le 5 octobre 2026.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Réglages → Espaces → « régler » sous Carnet. | « Importer des notes Markdown » et « …ou tout un dossier », avec l'explication « Un coffre Obsidian, un dossier Zettlr ou quelques fichiers .md : chaque fichier devient une note… Les fichiers sont lus sur cet appareil ; un second import n'ajoute que ce qui manque. » |
-| 2 | « Importer des notes Markdown » → choisir les trois fichiers. | « Importer 3 notes (du 5 janvier 2024 au 1 mars 2024) dans Carnet ? 2 liens [[…]] deviennent « fait écho à ». » |
+| 2 | « Importer des notes Markdown » → choisir les trois fichiers. | « Importer 3 notes (du 5 janvier 2024 au 1er mars 2024) dans Carnet ? 2 liens [[…]] deviennent « fait écho à ». » |
 | 3 | « Annuler ». | Le Carnet n'a toujours qu'une note. |
 | 4 | Refaire l'étape 2, « Confirmer ». | « 3 notes importées dans Carnet. 2 liens. » ; aucune requête dans Network. |
 | 5 | Ouvrir le Carnet. | « Le seuil » (5 janv.) : « Le paratexte comme lisière du texte. », statut hypothèse, « fait écho à « La lisière… » » ; « La lisière » (10 févr.) : « Renvoie au Seuil. », sans « schema.png », et `<img src=x onerror=alert('recette')>` affiché en texte, sans alerte ; « 202403011530 Idée » (1er mars 2024) sans « commentaire privé ». |
 | 6 | Réglages → « …ou tout un dossier » → choisir le dossier `coffre-markdown`. | « Rien de nouveau : ces notes sont déjà là. », sans question ; `workspace.md` n'est pas devenu une note. |
 
+- **Un fichier illisible** (déplacé ou supprimé après son choix, resté dans un nuage hors ligne) est ignoré et compté : « … 1 fichier illisible, ignoré. » à la confirmation et après l'import ; si aucun fichier n'est lisible : « Aucun de ces fichiers n'a pu être lu : ils ont peut-être été déplacés ou supprimés depuis leur choix. ». Pas reproductible à la main de façon fiable : couvert par `TN-import-markdown` et `TU-MKD-05` (anomalie A8, corrigée).
 - **État final attendu** : le Carnet a quatre notes.
 - **Nettoyage** : réimporter le jeu d'essai.

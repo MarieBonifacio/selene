@@ -106,6 +106,17 @@ const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_
     check(msg.includes('3,5 verres standard au total'), 'reconfirmation sur le total réellement à jour');
     check((await inst()).entries.some(e => e.id === `day-${yesterday}`), 'veille confirmée');
 
+    console.log('dates dans les messages : jamais « oct.. », toujours en lettres');
+    const dans20 = await p.evaluate(() => { const d = new Date(); d.setDate(d.getDate() + 20); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); });
+    await p.click('[data-act="rlm-goal"]'); await p.selectOption('#form [name="mode"]', 'arreter'); await fill({ date: dans20 }); await submit();
+    const futur = await toast();
+    check(/^Objectif enregistré, à partir du \d{1,2}(er)? \p{L}+ \d{4}\. D'ici là, rien ne change\.$/u.test(futur), `objectif à venir : la date en lettres, un seul point (${futur})`);
+    await p.locator('li.item:has([data-act="rlm-del"])', { hasText: 'verre standard' }).first().locator('[data-act="rlm-del"]').evaluate(e => e.click()); await settle(); // « suppr. » est caché au repos sur un écran tactile
+    const supprime = await toast();
+    check(/^Supprimé : .* le \d{1,2}(er)? \p{L}+ \d{4}\./u.test(supprime) && !supprime.includes('..'), `suppression : la date en lettres, pas « sept.. » (${supprime})`);
+    await p.click('#toast button'); await settle(); // « Annuler » : la saisie revient, la suite du scénario la retrouve
+    check((await toast()).includes('Rétabli'), 'annulée : rétablie');
+
     console.log('envie, pause persistée, « je l’ai fait », marques');
     await p.click('[data-act="rlm-urge"]');
     check((await p.textContent('#form')).includes('ni un écart ni un échec'), 'une envie n’est pas un échec');
