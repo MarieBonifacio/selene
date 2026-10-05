@@ -180,9 +180,12 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
   pas de `npm ci`, pas de navigateur, pas de réseau. Chaque écart devient une annotation rattachée au fichier fautif, avec
   le geste qui le corrige et, pour un test à inventorier, l'identifiant libre à lui donner ; la liste complète est dans le
   résumé du job. `npm run recette` fait aussi partie de `npm run check`, donc du geste local habituel.
-- **Reste à la responsable** : rendre ce job **obligatoire** pour fusionner (Settings → Branches → règle de protection →
-  *Require status checks* → `recette`) ou le laisser consultatif. Le cahier ne dit pas lequel : c'est un choix de rigueur
-  contre friction.
+- **Décision de la responsable (5 octobre 2026)** : le job est **obligatoire** pour fusionner. C'est un réglage du
+  dépôt, pas un fichier : il n'est appliqué que lorsqu'il est fait dans Settings → Branches → règle de protection de
+  `main` → *Require status checks to pass* → `recette` (proposé dans la liste une fois que le job a tourné sur une pull
+  request). Tant que ce n'est pas fait, le job reste consultatif ; le cahier ne peut pas le vérifier depuis le dépôt.
+  Il ne bloque que les pull requests : il ne tourne pas quand `pages.yml` appelle *Check*, pour qu'un cahier en retard
+  n'empêche jamais de publier.
 
 <a id="bl-13"></a>
 ### BL-13 — Firefox : cible ou non ?
@@ -235,7 +238,7 @@ Les questions marquées [À ARBITRER] dans les cas, et ce qu'elles bloquent :
 | Que fait claude.ai de l'espace `db` d'un artefact ? | [PLT-011](manuels/plateformes.md#plt-011) | l'étape 4 |
 | Marquer `selene_personnel` un compte de recette (P) ? | `RLM-*` (chemin P) | les cas d'offre et de stockage |
 | Une dépendance de développement pour l'accessibilité ? | — | [BL-04](#bl-04) |
-| ~~`npm run recette` en CI ?~~ : oui, fait | — | [BL-12](#bl-12) |
+| ~~`npm run recette` en CI ?~~ : oui, fait, et obligatoire pour fusionner (réglage du dépôt à appliquer) | — | [BL-12](#bl-12) |
 | Firefox ? | — | [BL-13](#bl-13) |
 
 Les questions ouvertes d'avant ce cahier ([ESP-006](manuels/espaces.md#esp-006), [SYN-006](manuels/synchronisation.md#syn-006))
