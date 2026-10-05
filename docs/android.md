@@ -69,7 +69,12 @@ L'app a pour origine `https://localhost`. Les fonctions Supabase (passeur, assis
 
 `tests/native-boot.test.js` éprouve l'amorçage avec de faux plugins (fichiers, écriture interrompue, secrets
 préfixés, bouton retour, mise en pause) ; `tests/browser/natif.js` fait tourner la page native sur des coffres
-simulés derrière un pont asynchrone ; le workflow *Android* compile l'APK à chaque PR concernée. L'essai sur un vrai
-téléphone reste à faire à la main : lancement à froid, hors ligne puis en ligne, partage depuis Chrome, bouton retour,
+simulés derrière un pont asynchrone ; le workflow *Android* compile l'APK à chaque PR concernée. Le workflow *Android
+sur émulateur* (`android-fumee.yml`, `scripts/android-fumee.mjs`) l'installe sur un émulateur hors ligne (Android 15) et
+pilote sa WebView par le protocole de débogage de Chrome : écran d'entrée, une note capturée sans compte, l'app tuée
+puis relancée (la note est là, le coffre `files/selene` sans fichier temporaire resté), puis la mise à jour par l'APK
+de l'édition des stores (la note survit, sans « Reprendre la main »). Il tourne quand la coquille ou ce qui l'assemble
+change, et sur `main` ; ses captures sont dans l'artefact `android-fumee`. L'essai sur un vrai téléphone reste à faire
+à la main : lancement à froid, hors ligne puis en ligne, partage depuis Chrome, bouton retour,
 rotation, clavier, synchronisation avec la PWA, et un export (Réglages → Sauvegarde → Exporter : la feuille de
 partage, puis « Enregistrer »).

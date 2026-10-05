@@ -1,0 +1,102 @@
+name: Android sur émulateur
+# Fumée de l'app Android (BL-07 du cahier de recette ; scripts/android-fumee.mjs) : l'APK de débogage, installé sur un
+# émulateur, démarre sur son écran d'entrée ; une note capturée sans compte survit à l'app tuée puis relancée (le coffre
+# de fichiers natif), puis à la mise à jour par l'APK de l'édition des stores. L'émulateur est hors ligne : rien ne part
+# vers le vrai serveur. Un quart d'heure : seulement quand la coquille ou ce qui l'assemble change, et sur main.
+on:
+  pull_request:
+    paths: ['src/native/**', 'src/platform.js', 'native/android/**', 'capacitor.config.json', 'package.json', 'package-lock.json',
+      'build.py', 'scripts/bundle.mjs', 'scripts/android-fumee.mjs', '.github/workflows/android-fumee.yml']
+  push:
+    branches: [main]
+    paths: ['src/**', 'native/android/**', 'capacitor.config.json', 'package.json', 'package-lock.json', 'build.py',
+      'scripts/bundle.mjs', 'scripts/android-fumee.mjs', '.github/workflows/android-fumee.yml']
+  workflow_dispatch:
+concurrency:
+  group: android-fumee-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+permissions:
+  contents: read
+env:
+  IMAGE: system-images;android-35;google_apis;x86_64
+jobs:
+  emulateur:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - run: npm ci
+      # Deux APK de débogage, signés par la même clé de débogage du runner : le second met le premier à jour.
+      - name: APK de débogage, édition complète puis édition des stores
+        run: |
+          npm run build:dist && npx cap sync android
+          (cd native/android && ./gradlew assembleDebug --no-daemon)
+          cp native/android/app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/complet.apk"
+          SELENE_EDITION=stores npm run build:dist && npx cap sync android
+          (cd native/android && ./gradlew assembleDebug --no-daemon)
+          cp native/android/app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/stores.apk"
+      # L'accélération matérielle (KVM) des runners Ubuntu, ouverte à l'utilisateur du job.
+      - name: KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      # Le SDK de l'émulateur, puis ce que l'émulateur pense de l'accélération : sans KVM, il refuse de démarrer, et le dit.
+      - name: SDK de l'émulateur
+        timeout-minutes: 15
+        run: |
+          sdk="$ANDROID_HOME/cmdline-tools/latest/bin"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          # Un seul dossier d'appareils virtuels pour avdmanager et l'émulateur : les outils récents rangent les leurs
+          # sous ~/.config/.android, où l'émulateur ne les cherche pas (« Unknown AVD name »).
+          export ANDROID_AVD_HOME="$HOME/.android/avd"; mkdir -p "$ANDROID_AVD_HOME"
+          echo "ANDROID_AVD_HOME=$ANDROID_AVD_HOME" >> "$GITHUB_ENV"
+          yes | "$sdk/sdkmanager" --licenses > /dev/null || true
+          "$sdk/sdkmanager" --install emulator "$IMAGE" > /dev/null
+          echo no | "$sdk/avdmanager" create avd -n fumee -k "$IMAGE" -d pixel_6 --force
+          "$ANDROID_HOME/emulator/emulator" -list-avds | grep -qx fumee || { echo "::error::L'appareil virtuel « fumee » est introuvable pour l'émulateur."; exit 1; }
+          ls -l /dev/kvm || true
+          "$ANDROID_HOME/emulator/emulator" -accel-check || true
+      # Chaque attente est bornée : un émulateur qui ne démarre pas échoue en quelques minutes, avec la fin de son journal.
+      - name: Émulateur démarré
+        timeout-minutes: 15
+        run: |
+          nohup "$ANDROID_HOME/emulator/emulator" -avd fumee -no-window -no-audio -no-boot-anim -no-snapshot \
+            -gpu swiftshader_indirect -camera-back none -camera-front none > "$RUNNER_TEMP/emulateur.log" 2>&1 &
+          if ! timeout 300 adb wait-for-device; then
+            echo "::error::L'émulateur n'a pas rejoint adb en cinq minutes."; tail -80 "$RUNNER_TEMP/emulateur.log"; exit 1
+          fi
+          for i in $(seq 1 120); do
+            [ "$(timeout 10 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] && break; sleep 5
+          done
+          if [ "$(timeout 10 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" != "1" ]; then
+            echo "::error::L'émulateur n'a pas fini de démarrer en dix minutes."; tail -80 "$RUNNER_TEMP/emulateur.log"; exit 1
+          fi
+          for k in window_animation_scale transition_animation_scale animator_duration_scale; do adb shell settings put global $k 0; done
+          adb shell input keyevent 82
+      - name: Fumée
+        timeout-minutes: 10
+        run: node scripts/android-fumee.mjs "$RUNNER_TEMP/complet.apk" "$RUNNER_TEMP/stores.apk" "$RUNNER_TEMP/fumee"
+      - name: Journal de l'émulateur
+        if: always()
+        timeout-minutes: 2
+        run: |
+          mkdir -p "$RUNNER_TEMP/fumee"
+          timeout 30 adb logcat -d > "$RUNNER_TEMP/fumee/logcat.txt" 2>/dev/null || true
+          cp "$RUNNER_TEMP/emulateur.log" "$RUNNER_TEMP/fumee/" 2>/dev/null || true
+          tail -40 "$RUNNER_TEMP/emulateur.log" 2>/dev/null || true
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: android-fumee
+          path: ${{ runner.temp }}/fumee
+          retention-days: 14

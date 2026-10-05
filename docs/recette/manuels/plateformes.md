@@ -96,7 +96,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : téléphone (ou émulateur) Android de recette ; APK `selene-android-debug` du commit en recette ; pour
   l'étape 4, `adb` relié au téléphone.
 - **Données** : capture `Hors ligne PLT-003`.
-- **Automatisés associés** : `TN-natif`, `TU-NAT-02`, `TU-NAT-03`, `TU-PLT-07`, `TU-PLT-09`
+- **Automatisés associés** : `TN-natif`, `TU-NAT-02`, `TU-NAT-03`, `TU-PLT-07`, `TU-PLT-09`, `TS-ANDROID-FUMEE`
 - **Source** : [DOC] [android.md](../../android.md#ce-que-lapp-ajoute-à-la-pwa) (« L'essai sur un vrai téléphone reste à
   faire à la main ») ; [TEST] `tests/browser/natif.js` (coffres simulés).
 

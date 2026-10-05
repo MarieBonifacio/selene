@@ -129,6 +129,14 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
   exécution : limiter aux PR qui touchent `src/native/`, `native/android/` ou la page native.
 - **Bénéfice attendu** : le lancement à froid et la persistance vérifiés avant chaque version Android ; le reste de PLT-003
   et PLT-004 (partage, rotation, clavier) reste manuel.
+- **État** : en place le 5 octobre 2026 (`TS-ANDROID-FUMEE`) : workflow *Android sur émulateur*, sans action tierce
+  (sdkmanager et l'émulateur du SDK du runner), émulateur Android 15 hors ligne ; la WebView est pilotée par le
+  protocole de débogage de Chrome (`scripts/android-fumee.mjs`, sans dépendance). Il éprouve aussi la mise à jour vers
+  l'APK de l'édition des stores. Ni session connectée, ni synchronisation : elles demanderaient un faux serveur joignable
+  depuis l'émulateur. Premier passage vert le 5 octobre 2026 (PR #105) : le premier lancement réel de l'app, en
+  2 min 40. Mis au point en chemin : `ANDROID_AVD_HOME` commun à avdmanager et à l'émulateur (sinon « Unknown AVD
+  name »), chaque attente bornée, et le coffre jugé au repos (deux `.tmp` d'écritures en route avaient été vus une fois,
+  juste après une navigation).
 
 <a id="bl-08"></a>
 ### BL-08 — Fumée de l'app Windows installée, en CI
