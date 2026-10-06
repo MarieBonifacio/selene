@@ -94,3 +94,22 @@ test('A18 : data of another account on the device is never shown under this sess
   assert.doesNotMatch(app.nodes.get('#main').innerHTML, /authForm/);
   app.site.disconnect(); app.board.disconnect();
 });
+
+/* A24 du cahier de recette : le réseau revient (online) pendant le branchement du démarrage, parti hors ligne. Le
+   branchement en cours échoue ; celui que demandait le retour du réseau ne doit pas se perdre avec lui (jusqu'à
+   5 min d'attente, le minuteur). Chaque requête garde l'état du réseau à son départ : celles d'avant le retour
+   échouent même relâchées après. */
+test('A24 : the network back during a failing connect: the sync resumes at once, not at the 5-minute timer', async () => {
+  const server = fakeSupabase();
+  let failing = true, release;
+  const gate = new Promise(r => { release = r; });
+  const fetch = (url, opts) => { const doomed = failing; return gate.then(() => { if (doomed) throw new TypeError('Failed to fetch'); return server.fetch(url, opts); }); };
+  const app = launchHosted({ fetch });
+  await settle();
+  assert.equal(server.calls.length, 0, 'the boot connect is still in flight');
+  failing = false; app.fire('online'); await settle();
+  release(); await settle(100);
+  assert.ok(app.site.db && app.board.db, 'synced, without waiting for the timer');
+  assert.equal(app.nodes.get('#saving').textContent, '');
+  app.site.disconnect(); app.board.disconnect();
+});

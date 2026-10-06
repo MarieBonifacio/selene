@@ -106,7 +106,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob, AND, IOS, WIN
 - **Préconditions** : A1 et A2 connectés.
 - **Données** : sur A1 hors ligne : une capture, un fragment, une dépense de 9 €.
-- **Automatisés associés** : `TU-SYN-07`, `TU-SYN-10`, `TU-AUTH-01`, `TN-hors-ligne-reel`
+- **Automatisés associés** : `TU-SYN-07`, `TU-SYN-10`, `TU-AUTH-01`, `TU-AUTH-09`, `TN-hors-ligne-reel`
 - **Source** : [DOC] README, « Comptes et synchronisation » ; [TEST] `TU-SYN-07`, `TU-SYN-10`, `tests/browser/hors-ligne-reel.js`.
 
 | Étape | Action précise | Résultat attendu observable |

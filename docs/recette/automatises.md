@@ -10,7 +10,7 @@ Identifiants retirés : aucun.
 
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
-| Tests unitaires et d'intégration Node | `npm test` | 319 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
+| Tests unitaires et d'intégration Node | `npm test` | 320 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
 | Scénarios de navigateur | `npm run test:browser` | 81 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent et au processeur ralenti | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
@@ -166,7 +166,7 @@ sans navigateur.
 ### Session et rafraîchissement du jeton — `tests/auth.test.js`
 
 - **Niveau** : Intégration simulée (I-H). **Sujet** : `src/app/services/auth.js`.
-- **Simulé** : Build hébergé dans une VM, `fetch` remplacé (panne réseau, 503, 400, faux PostgREST), minuteurs déclenchés à la main.
+- **Simulé** : Build hébergé dans une VM, `fetch` remplacé (panne réseau, 503, 400, faux PostgREST), minuteurs et événement `online` déclenchés à la main.
 - **Limites** : Supabase Auth réel jamais appelé ; l'écran de connexion n'est vu que par la présence de `authForm` dans le HTML.
 
 | Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
@@ -179,6 +179,7 @@ sans navigateur.
 | <a id="tu-auth-06"></a>`TU-AUTH-06` | offline boot recovers: sync resumes on the next keep-alive once the network is back | Démarrage hors ligne puis retour du réseau : au tour suivant du minuteur de 5 min, le jeton est rafraîchi, les stores reliés, l'indicateur se vide. | [CPT-012](manuels/entree-et-comptes.md#cpt-012) |
 | <a id="tu-auth-07"></a>`TU-AUTH-07` | A18 : a signed-in device opens on the app, not on the entry screen, even while the server is slow | Serveur retenu : dès le démarrage, l'app (pas `authForm`), avant toute réponse du serveur ; une fois le serveur relâché, les deux documents branchés, toujours l'app. Échoue sans la lecture de la session avant le premier rendu. | [CPT-012](manuels/entree-et-comptes.md#cpt-012) |
 | <a id="tu-auth-08"></a>`TU-AUTH-08` | A18 : data of another account on the device is never shown under this session: entry screen until the switch | Une session gardée pour u1, des données d'appareil de u0 (`selene-auth-last-uid`) : l'écran d'entrée tant que le serveur n'a pas répondu, pas les données de u0 ; après le changement de compte (`authConnectStores`), connecté et synchronisé. | [CPT-012](manuels/entree-et-comptes.md#cpt-012), [CPT-014](manuels/entree-et-comptes.md#cpt-014) |
+| <a id="tu-auth-09"></a>`TU-AUTH-09` | A24 : the network back during a failing connect: the sync resumes at once, not at the 5-minute timer | Démarrage hors ligne, serveur retenu : le réseau revient (`online`) pendant le branchement du démarrage, dont les requêtes, parties hors ligne, échouent une fois relâchées ; les deux documents se branchent aussitôt, sans attendre le minuteur, et l'indicateur se vide. Échoue sans le correctif d'A24. | [CPT-012](manuels/entree-et-comptes.md#cpt-012), [SYN-004](manuels/synchronisation.md#syn-004) |
 
 ### Sauvegardes : format et refus — `tests/backup.test.js`
 
@@ -1122,7 +1123,7 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Fichier** : [`tests/browser/hors-ligne-reel.js`](../../tests/browser/hors-ligne-reel.js) · **mode** H · **écran** O
 - **Conditions** : Un compte connecté sur un faux Supabase, le service worker permis ; une première visite, puis le réseau coupé (`setOffline`) et le serveur de fichiers rendu injoignable par une route, que Chromium applique au service worker.
 - **Vérifie** : en ligne, une capture part au serveur ; le service worker tient la page ; sous Chromium, hors ligne et rechargée, l'app s'ouvre depuis le cache, pas l'écran d'entrée, avec ses données ; une capture hors ligne affiche « Non synchronisé — enregistré sur cet appareil seulement » et rien ne part ; au retour du réseau, elle arrive au serveur sans rien perdre et l'indicateur s'efface. Cache vidé avant le rechargement, le scénario échoue (vérifié).
-- **Limites** : Sous Firefox, le service worker échappe à la coupure simulée : le rechargement hors ligne n'y est pas éprouvé (le scénario le dit), le reste l'est. Sous WebKit, le scénario n'est pas joué, et le dit : une page tenue par le service worker y échappe aux routes de Playwright, et ses requêtes partaient vers le vrai serveur (A20 du [périmètre](perimetre.md#anomalies-et-observations)). Ni mode Avion, ni PWA installée, ni appareil réel.
+- **Limites** : Sous Firefox, le service worker échappe à la coupure simulée : le rechargement hors ligne n'y est pas éprouvé (le scénario le dit), le reste l'est. Sous WebKit, le scénario n'est pas joué, et le dit : une page tenue par le service worker y échappe aux routes de Playwright, et ses requêtes partaient vers le vrai serveur (A20 du [périmètre](perimetre.md#anomalies-et-observations)). Le moment du retour du réseau, relatif au branchement du démarrage, n'est pas maîtrisé : le scénario n'a pris A24 que sous le processeur ralenti, que `TU-AUTH-09` prouve à coup sûr. Ni mode Avion, ni PWA installée, ni appareil réel.
 - **Cas manuels** : [SYN-004](manuels/synchronisation.md#syn-004), [SYN-010](manuels/synchronisation.md#syn-010)
 
 <a id="tn-injection"></a>

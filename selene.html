@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "77235c46c8";
+const SELENE_BUILD = "e89dd80a46";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -6763,10 +6763,22 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     }
   };
   var authConnecting = null;
+  var authConnectAgain = false;
   function authConnectStores() {
-    if (!authConnecting) authConnecting = authConnectStoresNow().finally(() => {
-      authConnecting = null;
-    });
+    if (authConnecting) {
+      authConnectAgain = true;
+      return authConnecting;
+    }
+    authConnecting = (async () => {
+      try {
+        do {
+          authConnectAgain = false;
+          await authConnectStoresNow();
+        } while (authConnectAgain && authSession && (!board.db || !site.db));
+      } finally {
+        authConnecting = null;
+      }
+    })();
     return authConnecting;
   }
   async function authConnectStoresNow() {

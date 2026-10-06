@@ -535,7 +535,8 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   lue avant qu'elle annonce la suppression) et `zotero.js` (la recherche vérifiée 500 ms après le clic) ; à ×6,
   `radar.js` (le passeur, 500 ms après le clic) et `mot-de-passe.js`, qui dépasse alors seulement les 3 minutes du
   lanceur, sans erreur. Les trois premiers attendent désormais l'état ; ×4 garde de la marge (`mot-de-passe.js` : 33 s
-  seul).
+  seul). Son premier passage en CI a trouvé mieux qu'un délai fixe : une régression de l'app, A24 (le retour du réseau
+  perdu pendant un branchement en cours), corrigée dans la même PR.
 
 ---
 

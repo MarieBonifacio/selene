@@ -241,10 +241,17 @@ const supabaseDb = {
   }
 };
 /* Un seul branchement à la fois : le démarrage (authBoot), un retour au premier plan ou du réseau (authKeepAlive)
-   peuvent le demander ensemble, maintenant que la session est là dès le premier rendu (A18). */
-let authConnecting = null;
+   peuvent le demander ensemble, maintenant que la session est là dès le premier rendu (A18). Une demande arrivée
+   pendant un branchement en cours en vaut une nouvelle, si celui-ci échoue : le réseau revenu pendant un branchement
+   parti hors ligne ne doit pas attendre le minuteur de 5 min (A24). */
+let authConnecting = null, authConnectAgain = false;
 function authConnectStores() {
-  if (!authConnecting) authConnecting = authConnectStoresNow().finally(() => { authConnecting = null; });
+  if (authConnecting) { authConnectAgain = true; return authConnecting; }
+  authConnecting = (async () => {
+    try {
+      do { authConnectAgain = false; await authConnectStoresNow(); } while (authConnectAgain && authSession && (!board.db || !site.db));
+    } finally { authConnecting = null; }
+  })();
   return authConnecting;
 }
 async function authConnectStoresNow() {
