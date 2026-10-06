@@ -148,23 +148,27 @@ Identifiants retirés : aucun.
 <a id="syn-006"></a>
 ### SYN-006 — Un espace supprimé sur un appareil ne revient pas
 
-- **Fonctionnalité et règle** : un module supprimé reste supprimé sur l'autre appareil ; la normalisation ne recrée jamais un
-  module absent.
+- **Fonctionnalité et règle** : un module supprimé reste supprimé sur l'autre appareil, même si celui-ci l'a modifié hors
+  ligne entre-temps : la suppression gagne (décision du 6 octobre 2026), grâce à une pierre tombale (`config.deleted`,
+  une empreinte de l'identifiant et la date) ; l'appareil qui perd ses modifications le dit ; la normalisation ne recrée
+  jamais un module absent.
 - **Objectif, risque vérifié** : espace qui ressuscite (et ses données avec).
 - **Priorité** : P1 · **Plateformes** : Web, Mob
 - **Préconditions** : A1 et A2 à jour ; A2 hors ligne.
 - **Données** : espace « Arc ».
-- **Automatisés associés** : `TU-SYN-05`, `TU-MOD-02`
-- **Source** : [DOC] [architecture.md](../../architecture.md#normalisation-à-lentrée-lecture-pure) ; [TEST] `TU-SYN-05`.
+- **Automatisés associés** : `TU-SYN-05`, `TU-SYN-22`, `TU-SYN-23`, `TU-MOD-02`
+- **Source** : [DOC] [architecture.md](../../architecture.md#normalisation-à-lentrée-lecture-pure) (ADR 34) ; [CODE]
+  `buryDeleted` (`core/domain.js`) ; [TEST] `TU-SYN-05`, `TU-SYN-22`, `TU-SYN-23` ; anomalie A13 : avant le
+  6 octobre 2026, l'espace revenait sur les deux appareils, avec la modification d'A2.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | A1 : supprimer « Arc » (nom retapé). | « « Arc » supprimé. » |
+| 1 | A1 : supprimer « Arc » (nom retapé). | La confirmation dit « … la suppression définitive de ses données, sur tous tes appareils. » ; puis « « Arc » supprimé. » |
 | 2 | A2 (hors ligne) : ouvrir Arc et y placer un élément. | Accepté localement. |
-| 3 | A2 : rétablir le réseau, attendre 30 s. | [À ARBITRER] La règle dit qu'un module supprimé reste supprimé ; une modification faite ailleurs pendant ce temps est-elle perdue (comportement attendu par `TU-SYN-05`), ou l'espace doit-il revenir ? Noter l'observé. |
-| 4 | Recharger A1 et A2. | Les deux appareils sont dans le même état (Arc présent sur les deux, ou absent sur les deux) ; aucune erreur. |
+| 3 | A2 : rétablir le réseau, attendre 30 s. | Arc disparaît d'A2 : « « Arc » a été supprimé depuis un autre appareil ; tes modifications d'ici n'ont pas été gardées. » |
+| 4 | Recharger A1 et A2. | Arc est absent des deux appareils, navigation comprise ; aucune erreur. |
 
-- **État final attendu** : un état identique sur les deux appareils.
+- **État final attendu** : Arc absent des deux appareils.
 - **Nettoyage** : réimporter le jeu d'essai.
 
 ---

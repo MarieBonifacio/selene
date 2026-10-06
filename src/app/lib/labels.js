@@ -59,6 +59,7 @@ export const CORE_ERRORS = {
   "reg-limit": () => tr`Pour réduire, indique une limite quotidienne positive dans l'unité du suivi. Pour zéro, choisis plutôt de viser l'arrêt.`,
   "reg-quantity": a => regQuantityHint(a.subject),
   "reg-date": () => tr`Choisis une date valide. Une consommation, une envie ou une action ne se déclarent pas à l'avance.`,
+  "reg-goal-date": () => tr`Choisis une date d'effet valide : passée, aujourd'hui, ou au plus tard dans un an.`,
   "reg-day-max": () => tr`Une journée compte 1440 minutes : ce total les dépasserait.`,
   "reg-intensity": () => tr`L'intensité va de 0 à 10, ou reste vide.`,
   "reg-entry": () => tr`Saisie invalide.`,

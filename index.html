@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-aXJ5Bu+l8wf+zFjfLdvWTUf5ZOEk53ixuhol+CEMrZo=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-FuLcXjTJ6aTfEtPOXdjGQzWy43WB+I8m3jqPjbXqznM=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -750,7 +750,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "bc59dd3396";
+const SELENE_BUILD = "71826adc05";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1141,6 +1141,7 @@ var __selene = (() => {
     SUPABASE_URL: () => SUPABASE_URL,
     SYNODIC: () => SYNODIC,
     SYSTEM: () => SYSTEM,
+    TOMBSTONE_TTL: () => TOMBSTONE_TTL,
     TOOLS: () => TOOLS,
     TYPE_UI: () => TYPE_UI,
     VIEWS: () => VIEWS,
@@ -1205,6 +1206,7 @@ var __selene = (() => {
     bridgeSave: () => bridgeSave,
     bridgeStale: () => bridgeStale,
     budMonths: () => budMonths,
+    buryDeleted: () => buryDeleted,
     captureIntent: () => captureIntent,
     carteLayout: () => carteLayout,
     carteNeighbourhood: () => carteNeighbourhood,
@@ -1251,6 +1253,7 @@ var __selene = (() => {
     deleteModuleInstance: () => deleteModuleInstance,
     deleteWord: () => deleteWord,
     deriveBanner: () => deriveBanner,
+    describeDevice: () => describeDevice,
     deviceId: () => deviceId,
     deviceSignOutGuard: () => deviceSignOutGuard,
     diffDays: () => diffDays,
@@ -1559,6 +1562,7 @@ var __selene = (() => {
     toastUndo: () => toastUndo,
     todayISO: () => todayISO,
     todayTasks: () => todayTasks,
+    tombKey: () => tombKey,
     topFrame: () => topFrame,
     totalOf: () => totalOf,
     trackBack: () => trackBack,
@@ -2759,9 +2763,19 @@ var __selene = (() => {
     "Effacer définitivement {0} ? Il n'en existe aucune autre copie.": "Erase {0} for good? No other copy exists.",
     "{0} : gardé sur cet appareil seulement, nulle part ailleurs. Se déconnecter vide cet appareil.": "{0}: kept on this device only, nowhere else. Signing out empties this device.",
     "Sur cet appareil : sans compte, rien n'est envoyé au serveur de Selene.": "On this device: without an account, nothing is sent to Selene's server.",
-    "Sur cet appareil seulement. Ton compte n'en garde que le nom, pour que tes autres appareils sachent qu'il existe : son contenu ne passe pas par le serveur. La sauvegarde de cet appareil (Google, iCloud…), si tu l'as activée, peut l'inclure : elle relève de ton compte Google ou Apple, pas de Selene. Ce n'est pas un coffre chiffré : quiconque ouvre cet appareil déverrouillé peut lire son stockage. Perdre l'appareil peut faire perdre le suivi : exporte-le de temps en temps.": "On this device only. Your account keeps only its name, so your other devices know it exists: its content does not go through the server. This device's backup (Google, iCloud…), if you turned it on, may include it: that is up to your Google or Apple account, not Selene. It is not an encrypted vault: anyone who opens this device unlocked can read its storage. Losing the device may mean losing the tracker: export it from time to time.",
     "Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi.": "This tracker was meant to be kept on this device, but its data is no longer here (browser or app storage cleared?). A full backup made here can restore it; otherwise, you can remove this tracker.",
-    "Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là. Appareil perdu, ou Selene réinstallée ? Tu peux retirer ce nom dans les réglages.": "This tracker is kept on another of your devices, and only there: its content does not go through your account. Open it on that device. Device lost, or Selene reinstalled? You can remove this name in settings.",
+    "Choisis une date d'effet valide : passée, aujourd'hui, ou au plus tard dans un an.": "Choose a valid start date: past, today, or at most one year ahead.",
+    "Sur cet appareil seulement. Ton compte n'en garde que le nom, et de quoi reconnaître cet appareil (navigateur ou app, système, date), pour que tes autres appareils sachent qu'il existe et où : son contenu ne passe pas par le serveur. La sauvegarde de cet appareil (Google, iCloud…), si tu l'as activée, peut l'inclure : elle relève de ton compte Google ou Apple, pas de Selene. Ce n'est pas un coffre chiffré : quiconque ouvre cet appareil déverrouillé peut lire son stockage. Perdre l'appareil peut faire perdre le suivi : exporte-le de temps en temps.": "On this device only. Your account keeps only its name, and enough to recognise this device (browser or app, system, date), so your other devices know it exists and where: its content does not go through the server. This device's backup (Google, iCloud…), if you turned it on, may include it: that is up to your Google or Apple account, not Selene. It is not an encrypted vault: anyone who opens this device unlocked can read its storage. Losing the device may mean losing the tracker: export it from time to time.",
+    "Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là.": "This tracker is kept on another of your devices, and only there: its content does not go through your account. Open it on that device.",
+    "Si c'est celui-ci et que son stockage a été effacé (données du navigateur ou de l'app), une sauvegarde complète faite ici le restaure. Sinon (appareil perdu, Selene réinstallée), tu peux retirer ce nom dans les réglages.": "If it is this one and its storage was cleared (browser or app data), a full backup made here restores it. Otherwise (device lost, Selene reinstalled), you can remove this name in settings.",
+    "Il le garde sur : {0}, depuis le {1}.": "It is kept on: {0}, since {1}.",
+    "Il le garde sur : {0}.": "It is kept on: {0}.",
+    "Envoyé tel quel, en français : les consignes de l'assistant sont écrites en français.": "Sent word for word, in French: the assistant's instructions are written in French.",
+    "Cet espace ne s'ouvre pas dans cette version de Selene.": "This space does not open in this version of Selene.",
+    "« {0} » est désactivé : Réglages → Espaces pour le rouvrir.": "“{0}” is turned off: Settings → Spaces to turn it back on.",
+    "« {0} » a été supprimé depuis un autre appareil ; tes modifications d'ici n'ont pas été gardées.": "“{0}” was deleted from another device; your changes made here were not kept.",
+    "{0} ont été supprimés depuis un autre appareil ; tes modifications d'ici n'ont pas été gardées.": "{0} were deleted from another device; your changes made here were not kept.",
+    "Retape « {0} » pour confirmer la suppression définitive de ses données, sur tous tes appareils.": "Type “{0}” again to confirm the permanent deletion of its data, on all your devices.",
     "Le garder sur cet appareil seulement…": "Keep it on this device only…",
     "Ce suivi reste sur cet appareil : Selene ne synchronise pas les suivis de santé, ton compte n'en garde que le nom. Seule la sauvegarde de ton appareil (Google ou iCloud), si tu l'as activée, peut l'inclure.": "This tracker stays on this device: Selene does not sync health trackers, and your account keeps only its name. Only your device's backup (Google or iCloud), if you turned it on, may include it.",
     "Encore synchronisé avec ton compte, selon ton accord du {0} : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.": "Still synced with your account, under your consent of {0}: on Selene's server (hosted by Supabase), readable by your account only, not end-to-end encrypted. Selene no longer syncs health trackers: keep it on a device, and its content will then leave the server.",
@@ -3700,9 +3714,10 @@ var __selene = (() => {
     goals: [],
     entries: []
   });
-  function regulationStub(inst, holder) {
+  function regulationStub(inst, holder, about2 = {}) {
     const d = regulationDefaults();
-    return { type: inst.type, label: inst.label, config: { ...d.config, storage: "device", holder }, goals: [], entries: [] };
+    const known = { ...about2.name ? { holderName: about2.name } : {}, ...about2.since ? { holderSince: about2.since } : {} };
+    return { type: inst.type, label: inst.label, config: { ...d.config, storage: "device", holder, ...known }, goals: [], entries: [] };
   }
   var regulationOnDevice = (inst) => !!inst && !!inst.config && inst.config.storage === "device";
   function normalizeRegulation(inst) {
@@ -3741,7 +3756,7 @@ var __selene = (() => {
   function validateRegulation(inst, v) {
     const c = inst.config;
     if (c.subject !== null && !Object.hasOwn(REGULATION_SUBJECTS, c.subject) || !Array.isArray(c.supports) || c.supports.length > 30 || c.supports.some((x) => !shortText(x, 120)) || typeof c.rewards !== "boolean" || !shortText(c.reward, 200) || !Number.isInteger(c.rewardAt) || c.rewardAt < 1 || c.rewardAt > 365) v.fail("réglages du suivi");
-    if (c.storage != null && !REGULATION_STORAGES.includes(c.storage) || c.holder != null && !identifier(c.holder) || c.consent != null && !(c.consent && typeof c.consent === "object" && finite(c.consent.at, 0, Infinity) && Number.isInteger(c.consent.version) && c.consent.version >= 1))
+    if (c.storage != null && !REGULATION_STORAGES.includes(c.storage) || c.holder != null && !identifier(c.holder) || c.holderName != null && !shortText(c.holderName, 80) || c.holderSince != null && !validDate(c.holderSince) || c.consent != null && !(c.consent && typeof c.consent === "object" && finite(c.consent.at, 0, Infinity) && Number.isInteger(c.consent.version) && c.consent.version >= 1))
       v.fail("stockage du suivi");
     const goals = v.list(inst.goals, "objectifs");
     for (const g of goals) {
@@ -3783,7 +3798,7 @@ var __selene = (() => {
     }
   }
   function effectDate(date, today) {
-    if (!validDate(date) || !validDate(today) || date > addDays(today, 366)) throw coreError("reg-date", "Date invalide ou à venir");
+    if (!validDate(date) || !validDate(today) || date > addDays(today, 366)) throw coreError("reg-goal-date", "Date d'effet invalide ou à plus d'un an");
     return date;
   }
   function setupRegulation(inst, input, goalId, today, now) {
@@ -4614,11 +4629,35 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       inst.config[k] = v && typeof v === "object" && !Array.isArray(v) && inst.config[k] && typeof inst.config[k] === "object" ? { ...inst.config[k], ...v } : v;
     return inst;
   }
-  function deleteModuleInstance(modules, moduleList, id) {
+  function deleteModuleInstance(modules, moduleList, id, deleted = null, now = Date.now()) {
     if (!Object.hasOwn(modules, id)) throw coreError("module-missing", "Module introuvable");
     delete modules[id];
     const i = moduleList.findIndex((m) => m.id === id);
     if (i >= 0) moduleList.splice(i, 1);
+    if (deleted) deleted[tombKey(id)] = now;
+  }
+  function tombKey(id) {
+    let a = 2166136261, b = 2538058380;
+    for (let i = 0; i < id.length; i++) {
+      const c = id.charCodeAt(i);
+      a = Math.imul(a ^ c, 16777619) >>> 0;
+      b = Math.imul(b ^ c, 1540483477) >>> 0;
+    }
+    return "t" + a.toString(16).padStart(8, "0") + b.toString(16).padStart(8, "0");
+  }
+  var TOMBSTONE_TTL = 400 * 864e5;
+  function buryDeleted(doc, now = Date.now(), keep = () => false) {
+    const dead = doc.config && doc.config.deleted, out = [];
+    if (!dead || typeof dead !== "object") return out;
+    for (const [k, at] of Object.entries(dead)) if (!(now - at < TOMBSTONE_TTL)) delete dead[k];
+    for (const id of Object.keys(doc.modules || {})) {
+      if (!Object.hasOwn(dead, tombKey(id)) || keep(id)) continue;
+      out.push([id, doc.config.labels && doc.config.labels[id] || doc.modules[id].label || id]);
+      delete doc.modules[id];
+      doc.config.modules = doc.config.modules.filter((m) => m.id !== id);
+      for (const map of [doc.config.labels, doc.config.groups, doc.config.assistant && doc.config.assistant.share]) if (map) delete map[id];
+    }
+    return out;
   }
 
   // src/core/sky.js
@@ -4954,6 +4993,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     "reg-limit": () => tr`Pour réduire, indique une limite quotidienne positive dans l'unité du suivi. Pour zéro, choisis plutôt de viser l'arrêt.`,
     "reg-quantity": (a) => regQuantityHint(a.subject),
     "reg-date": () => tr`Choisis une date valide. Une consommation, une envie ou une action ne se déclarent pas à l'avance.`,
+    "reg-goal-date": () => tr`Choisis une date d'effet valide : passée, aujourd'hui, ou au plus tard dans un an.`,
     "reg-day-max": () => tr`Une journée compte 1440 minutes : ce total les dépasserait.`,
     "reg-intensity": () => tr`L'intensité va de 0 à 10, ou reste vide.`,
     "reg-entry": () => tr`Saisie invalide.`,
@@ -5237,6 +5277,19 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     }
     return id;
   }
+  function describeDevice(ua, runtime) {
+    const os = /Android/.test(ua) ? "Android" : /iPhone|iPod/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Windows/.test(ua) ? "Windows" : /CrOS/.test(ua) ? "ChromeOS" : /Macintosh|Mac OS X/.test(ua) ? "Mac" : /Linux/.test(ua) ? "Linux" : "";
+    const shell = ["capacitor", "tauri", "native"].includes(runtime) ? "App Selene" : /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "";
+    return [shell, os].filter(Boolean).join(" · ");
+  }
+  var deviceName = () => {
+    try {
+      return describeDevice(String(navigator.userAgent || ""), platform.runtime());
+    } catch {
+      return "";
+    }
+  };
+  var stubOf = (inst, me, own = inst) => regulationStub(inst, me, { name: deviceName(), since: own && own.config && own.config.holderSince });
   var lastUid = () => {
     try {
       return platform.storage.get(LAST_UID_KEY) || "";
@@ -5258,9 +5311,10 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     const inst = siteDoc.modules[id], me = deviceId(), full = clone(inst);
     full.config.storage = "device";
     full.config.holder = me;
+    full.config.holderSince = todayISO();
     delete full.config.consent;
     local.data.modules[id] = full;
-    siteDoc.modules[id] = regulationStub(inst, me);
+    siteDoc.modules[id] = stubOf(inst, me, full);
     if (!local.data.owner) local.data.owner = lastUid();
     return full;
   }
@@ -5278,7 +5332,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     for (const [id, inst] of Object.entries(siteDoc.modules)) {
       if (!regulationOnDevice(inst) || inst.config.holder !== me) continue;
       const stray = (inst.goals || []).length || (inst.entries || []).length;
-      if (!stray && JSON.stringify(inst.config) === JSON.stringify(regulationStub(inst, me).config)) continue;
+      if (!stray && JSON.stringify(inst.config) === JSON.stringify(stubOf(inst, me, localCopy(id) || inst).config)) continue;
       const own = localCopy(id);
       if (!own) {
         local.data.modules[id] = { ...clone(inst), config: { ...clone(inst.config), storage: "device", holder: me } };
@@ -5287,13 +5341,14 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
         if (!mine) own[list].push(clone(x));
         else if ((x.editedAt || x.at || 0) > (mine.editedAt || mine.at || 0)) own[list][i] = clone(x);
       }
-      siteDoc.modules[id] = regulationStub(inst, me);
+      siteDoc.modules[id] = stubOf(inst, me, localCopy(id));
       changed = true;
       localChanged = true;
     }
     for (const id of localIds()) if (!Object.hasOwn(siteDoc.modules, id)) {
-      siteDoc.modules[id] = regulationStub(localCopy(id), me);
+      siteDoc.modules[id] = stubOf(localCopy(id), me);
       changed = true;
+      if (siteDoc.config && siteDoc.config.deleted) delete siteDoc.config.deleted[tombKey(id)];
     }
     if (localChanged) local.save();
     return changed;
@@ -5342,8 +5397,9 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     const me = deviceId(), modules = {};
     for (const [id, inst] of Object.entries(siteDoc.modules || {})) {
       if (!regulationOnDevice(inst) || !((inst.goals || []).length || (inst.entries || []).length || inst.config.holder === me)) continue;
-      modules[id] = { ...clone(inst), config: { ...clone(inst.config), holder: me } };
-      siteDoc.modules[id] = regulationStub(inst, me);
+      const since = inst.config.holder === me && inst.config.holderSince ? inst.config.holderSince : todayISO();
+      modules[id] = { ...clone(inst), config: { ...clone(inst.config), holder: me, holderSince: since } };
+      siteDoc.modules[id] = stubOf(inst, me, modules[id]);
     }
     return { updatedAt: 0, owner: lastUid(), modules };
   }
@@ -5360,6 +5416,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       boardMerged: true,
       // lang : la langue de l'interface, suivie par le compte ; vide, celle de l'appareil (même valeur partout : le
       // départ reste vierge et identique d'un appareil à l'autre).
+      // deleted : les pierres tombales des espaces supprimés (core/domain.js, buryDeleted).
       config: {
         name: "Selene",
         palette: "nigredo",
@@ -5367,6 +5424,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
         lang: "",
         labels: {},
         groups: {},
+        deleted: {},
         welcome: true,
         modules: [{ id: "inbox", on: true }, { id: "assistant", on: !OFF_BY_DEFAULT.includes("assistant") }],
         assistant: { model: "claude-sonnet-5", actions: true, share: { inbox: true } }
@@ -5386,19 +5444,30 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       for (const f of Object.keys(seed2[k])) if (d[k][f] == null) d[k][f] = seed2[k][f];
     }
     for (const inst of Object.values(d.modules)) if (Object.hasOwn(MODULE_TYPES, inst.type) && MODULE_TYPES[inst.type].normalize) MODULE_TYPES[inst.type].normalize(inst);
+    const gone = buryDeleted(d, Date.now(), (id) => Object.hasOwn(MODULE_DEFS, id));
     if (absorbDeviceTrackers(d)) {
       for (const id of Object.keys(d.modules)) if (!d.config.modules.find((m) => m.id === id)) d.config.modules.push({ id, on: true });
     }
+    for (const [id, name] of gone) if (!Object.hasOwn(d.modules, id)) BURIED.push(name);
     const inbox = inboxId(d.modules);
     for (const [id, inst] of Object.entries(d.modules)) if (inst.type === "notes" && inst.config.inbox && id !== inbox) inst.config.inbox = false;
     return d;
+  }
+  var BURIED = [];
+  function buriedNotice() {
+    if (!BURIED.length) return;
+    const names = BURIED.splice(0);
+    toast(names.length === 1 ? tr`« ${names[0]} » a été supprimé depuis un autre appareil ; tes modifications d'ici n'ont pas été gardées.` : tr`${names.map((n) => `« ${n} »`).join(", ")} ont été supprimés depuis un autre appareil ; tes modifications d'ici n'ont pas été gardées.`);
   }
   var saving = {};
   var storeHooks = (name) => ({ onRemoteChange: () => render(), onStatus: (m) => {
     saving[name] = m;
     setSaving(saving.site || saving.board || "");
   } });
-  var site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite, { ...storeHooks("site"), onSave: () => {
+  var site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite, { ...storeHooks("site"), onRemoteChange: () => {
+    render();
+    buriedNotice();
+  }, onSave: () => {
     for (const f of SAVED) f();
   } });
   function absorbBoard(d) {
@@ -5918,6 +5987,14 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     for (const m of site2.config.modules || []) moduleId(m.id, "Module");
     for (const map of [site2.config.groups, site2.config.labels, site2.config.assistant && site2.config.assistant.share])
       if (map) for (const k of Object.keys(map)) moduleId(k, "Configuration");
+    if (site2.config.deleted != null) {
+      if (!record(site2.config.deleted)) throw new Error("Configuration invalide");
+      for (const [k, at] of Object.entries(site2.config.deleted)) {
+        moduleId(k, "Configuration");
+        num(at, "Suppression", 0);
+        if (at == null) throw new Error("Suppression invalide");
+      }
+    }
     const sections = {
       budget: ["entries", "envelopes"],
       kundalini: ["sessions"],
@@ -6401,7 +6478,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     const s = S();
     for (const id of ids2) {
       forgetLocal(id);
-      if (Object.hasOwn(s.modules, id)) deleteModuleInstance(s.modules, s.config.modules, id);
+      if (Object.hasOwn(s.modules, id)) deleteModuleInstance(s.modules, s.config.modules, id, s.config.deleted);
       delete s.config.labels[id];
       delete s.config.groups[id];
       delete s.config.assistant.share[id];
@@ -9545,11 +9622,12 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   CLICK["mod-del"] = (el) => {
     const id = el.dataset.mod, name = label(id), ui = Object.hasOwn(S().modules, id) ? TYPE_UI[S().modules[id].type] : null;
     const note = ui && ui.deleteNote ? ui.deleteNote(id) : "";
-    openForm(tr`Supprimer « ${name} »`, [{ n: "confirm", l: tr`Retape « ${name} » pour confirmer la suppression définitive de ses données.`, req: true }], {}, (v) => {
+    const ask2 = site.db ? tr`Retape « ${name} » pour confirmer la suppression définitive de ses données, sur tous tes appareils.` : tr`Retape « ${name} » pour confirmer la suppression définitive de ses données.`;
+    openForm(tr`Supprimer « ${name} »`, [{ n: "confirm", l: ask2, req: true }], {}, (v) => {
       if (v.confirm !== name) return toast(tr`Nom incorrect, rien n'a été supprimé.`);
       const s = S();
       if (ui && ui.onDelete) ui.onDelete(id);
-      deleteModuleInstance(s.modules, s.config.modules, id);
+      deleteModuleInstance(s.modules, s.config.modules, id, s.config.deleted);
       delete s.config.labels[id];
       delete s.config.groups[id];
       delete s.config.assistant.share[id];
@@ -10655,14 +10733,18 @@ ${tr`Notes, envies, déclencheurs et appuis restent ici. Arrêter le partage plu
   function whereText(id) {
     const stub = S().modules[id], c = stub.config;
     if (!synced()) return tr`Sur cet appareil : sans compte, rien n'est envoyé au serveur de Selene.`;
-    if (regulationOnDevice(stub)) return tr`Sur cet appareil seulement. Ton compte n'en garde que le nom, pour que tes autres appareils sachent qu'il existe : son contenu ne passe pas par le serveur. La sauvegarde de cet appareil (Google, iCloud…), si tu l'as activée, peut l'inclure : elle relève de ton compte Google ou Apple, pas de Selene. Ce n'est pas un coffre chiffré : quiconque ouvre cet appareil déverrouillé peut lire son stockage. Perdre l'appareil peut faire perdre le suivi : exporte-le de temps en temps.`;
+    if (regulationOnDevice(stub)) return tr`Sur cet appareil seulement. Ton compte n'en garde que le nom, et de quoi reconnaître cet appareil (navigateur ou app, système, date), pour que tes autres appareils sachent qu'il existe et où : son contenu ne passe pas par le serveur. La sauvegarde de cet appareil (Google, iCloud…), si tu l'as activée, peut l'inclure : elle relève de ton compte Google ou Apple, pas de Selene. Ce n'est pas un coffre chiffré : quiconque ouvre cet appareil déverrouillé peut lire son stockage. Perdre l'appareil peut faire perdre le suivi : exporte-le de temps en temps.`;
     if (!subjectOf(stub) && !c.consent) return tr`Pas encore configuré : ton compte n'en garde que le nom. Quand tu auras choisi ce que tu veux suivre, son contenu restera sur cet appareil seulement, sans passer par le serveur de Selene.`;
     if (c.consent) return tr`Encore synchronisé avec ton compte, selon ton accord du ${fmt(iso(new Date(c.consent.at)), { day: "numeric", month: "long", year: "numeric" })} : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.`;
     return tr`Encore synchronisé avec ton compte, depuis sa création : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.`;
   }
   function elsewhereHTML(id) {
     const mine = S().modules[id].config.holder === deviceId();
-    return `<div data-mod="${esc(id)}" class="rlm"><h2>${esc(label(id))}</h2><section><p>${mine ? tr`Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi.` : tr`Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là. Appareil perdu, ou Selene réinstallée ? Tu peux retirer ce nom dans les réglages.`}</p></section></div>`;
+    return `<div data-mod="${esc(id)}" class="rlm"><h2>${esc(label(id))}</h2><section><p>${mine ? tr`Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi.` : `${tr`Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là.`}${holderText(S().modules[id].config)} ${tr`Si c'est celui-ci et que son stockage a été effacé (données du navigateur ou de l'app), une sauvegarde complète faite ici le restaure. Sinon (appareil perdu, Selene réinstallée), tu peux retirer ce nom dans les réglages.`}`}</p></section></div>`;
+  }
+  function holderText(c) {
+    if (!c.holderName) return "";
+    return ` ${c.holderSince ? tr`Il le garde sur : ${c.holderName}, depuis le ${fmt(c.holderSince, { day: "numeric", month: "long", year: "numeric" })}.` : tr`Il le garde sur : ${c.holderName}.`}`;
   }
   var choiceHTML = (id) => synced() && !regulationOnDevice(S().modules[id]) ? `<section class="rlm-choice" aria-labelledby="rlmChoiceH"><h3 id="rlmChoiceH">${tr`Ce suivi doit revenir sur un appareil`}</h3>
     <p>${tr`Selene ne synchronise plus les suivis de santé. Celui-ci l'est encore : garde-le sur l'appareil de ton choix, et son contenu quittera ton compte. Tant que tu n'as pas choisi, rien ne change.`}</p>
@@ -10676,6 +10758,7 @@ ${tr`Notes, envies, déclencheurs et appuis restent ici. Arrêter le partage plu
       <li><b>${tr`Ce qui reste visible.`}</b> ${tr`Le nom de cet espace et sa présence : navigation, accueil, Réglages, palette de commandes. Les détails (quantités, envies, notes, appuis) restent ici : ni recherche, ni motifs, ni dérive lexicale, ni test lunaire, ni bilan général, ni planche de lunaison, ni reprise sur l'accueil, ni liens, ni widget, ni notifications.`}</li>
       <li><b>${tr`L'assistant.`}</b> ${shared ? tr`Partagé : il reçoit ce résumé, et rien d'autre, à chaque question.` : tr`Non partagé : l'assistant ne reçoit rien de ce suivi. Si tu le partages, il recevra ce résumé, et rien d'autre :`}
         <blockquote class="note rlm-quote">${esc(TYPE.context(inst, label(id).toUpperCase()).trim())}</blockquote>
+        ${uiLang() === "fr" ? "" : `<p class="hint">${tr`Envoyé tel quel, en français : les consignes de l'assistant sont écrites en français.`}</p>`}
         ${tr`Arrêter le partage empêche les envois suivants ; cela ne retire pas ce qui a déjà été envoyé (efface la conversation dans l'Assistant si tu veux).`}${enabled("assistant") ? "" : ` ${tr`L'assistant est désactivé en ce moment.`}`}</li>
       <li><b>${tr`Export de ce suivi.`}</b> ${tr`Un fichier JSON lisible, non chiffré : nom, sujet, objectifs et leur historique, journal complet avec les notes, appuis et récompense. Pour le consulter ou le garder ; une restauration passe par la sauvegarde complète.`}</li>
       <li><b>${tr`Suppression.`}</b> ${tr`Supprimer ce suivi efface ses données de cet appareil puis, à la synchronisation suivante, de ton compte et de tes autres appareils. Les sauvegardes et exports déjà téléchargés restent là où tu les as rangés.`}</li>
@@ -10934,7 +11017,12 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
     installModule(tpl, name);
   }
   function createModule(tpl, name) {
-    const s = S(), id = slugId(name, [...s.config.modules.map((x) => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
+    const s = S(), taken = [...s.config.modules.map((x) => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)];
+    let id = slugId(name, taken);
+    while (Object.hasOwn(s.config.deleted || {}, tombKey(id))) {
+      taken.push(id);
+      id = slugId(name, taken);
+    }
     createFromTemplate(s.modules, tpl, name, id, tr);
     s.config.modules.push({ id, on: true });
     s.config.assistant.share[id] = !TYPE_UI[tpl.type]?.sensitive;
@@ -13231,6 +13319,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     if (!renderMemo.has(key)) renderMemo.set(key, compute());
     return renderMemo.get(key);
   }
+  var redirectedFrom = null;
   function render() {
     renderMemo = /* @__PURE__ */ new Map();
     try {
@@ -13262,7 +13351,14 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     }
     let view = routeOf().view;
     const fixed = (v) => v === "accueil" || v === "reglages" || v === "recherche" || v === "bilan" || v === "dehors" && dehorsOn();
+    const asked = view;
     if (!fixed(view) && (!(Object.hasOwn(s.modules, view) || Object.hasOwn(VIEWS, view)) || !enabled(view))) view = "accueil";
+    if (view !== asked && Object.hasOwn(s.modules, asked)) {
+      if (redirectedFrom !== asked) {
+        redirectedFrom = asked;
+        toast(absentModule(asked) ? tr`Cet espace ne s'ouvre pas dans cette version de Selene.` : tr`« ${label(asked)} » est désactivé : Réglages → Espaces pour le rouvrir.`);
+      }
+    } else redirectedFrom = null;
     const inst = !fixed(view) && Object.hasOwn(s.modules, view) ? s.modules[view] : null;
     $("#nav").innerHTML = navHTML(view);
     $("#bar").innerHTML = barHTML(view);

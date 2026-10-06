@@ -60,7 +60,7 @@ function fakeSupabase({ appMetadata } = {}) {
 
 /* `personnel` : le compte marqué selene_personnel par le serveur (docs/regulation.md, « Hors de l'offre publique »).
    `html` : une autre page assemblée que index.html (l'édition des stores, tests/edition.test.js). */
-function launchHosted({ storage = new Map(), fetch, session = 'valid', bare = false, personnel = false, html = null } = {}) {
+function launchHosted({ storage = new Map(), fetch, session = 'valid', bare = false, personnel = false, html = null, navigator = {} } = {}) {
   if (!bare && !storage.has('selene-site-v1')) storage.set('selene-site-v1', DEMO);
   if (session) {
     const expires_at = Math.floor(Date.now() / 1000) + (session === 'valid' ? 3600 : -60);
@@ -92,7 +92,7 @@ function launchHosted({ storage = new Map(), fetch, session = 'valid', bare = fa
   const setTimeoutU = (fn, ms) => { const t = setTimeout(fn, ms); t.unref(); return t; };
   const intervals = new Map(); let n = 0;
   const context = { document, window: { addEventListener() {}, claude: null }, localStorage, location: { hash: '' },
-    navigator: {}, console, Date, Math, setTimeout: setTimeoutU, clearTimeout, AbortController, fetch,
+    navigator, console, Date, Math, setTimeout: setTimeoutU, clearTimeout, AbortController, fetch,
     setInterval: fn => { intervals.set(++n, fn); return n; }, clearInterval: id => intervals.delete(id) };
   const instrumented = (html ? html.match(/<script>\s*([\s\S]*?)<\/script>/)[1] : script).replace(/\}\);\s*\}\)\(\);\s*$/, // dans platform.ready
     'globalThis.__test = { ...__selene, session: () => __selene.authSession, form: v => __selene.formCb(v), formOpen: () => !!__selene.formCb };\n});\n})();'); // form : le formulaire ouvert à cet instant (formCb change)

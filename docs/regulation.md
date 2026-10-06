@@ -218,7 +218,9 @@ Trois questions distinctes, à ne pas confondre :
   le reste du site est synchronisé. Un suivi configuré par une personne connectée est gardé **sur cet appareil
   seulement** : son contenu vit dans un second document local (`selene-local-v1`), que Selene n'envoie jamais (la
   sauvegarde du système de l'appareil peut l'inclure : voir *Limites*) ; le document synchronisé n'en garde qu'un
-  **talon** (nom, présence, appareil détenteur `holder`), ni sujet, ni appuis, ni objectifs, ni journal. Il n'y a plus
+  **talon** (nom, présence, appareil détenteur `holder`, et de quoi le reconnaître : `holderName`, le navigateur ou
+  l'app et le système, « Chrome · Windows », sans version ; `holderSince`, la date où il a pris le suivi), ni sujet, ni
+  appuis, ni objectifs, ni journal. Il n'y a plus
   de choix « sur mon compte » (voir « Hors de l'offre publique »).
 
   Un suivi **encore synchronisé** (un accord daté `config.consent` donné avant le 3 octobre 2026, ou un suivi d'avant
@@ -226,7 +228,10 @@ Trois questions distinctes, à ne pas confondre :
   la synchronisation suivante, le serveur n'a plus que le talon (ses sauvegardes techniques peuvent encore contenir le
   suivi 30 jours au plus, la durée annoncée par la politique de confidentialité). Rien ne change tant que la personne
   n'a pas choisi. Sans compte (artefact claude.ai), rien n'est envoyé : pas de question.
-  - **Autres appareils du compte** : le talon seulement (« gardé sur un autre de tes appareils »), sans contenu. Un
+  - **Autres appareils du compte** : le talon seulement (« gardé sur un autre de tes appareils », puis « Il le garde
+    sur : Chrome · Windows, depuis le … »), sans contenu. Le même message envisage que ce soit cet appareil-ci, vidé
+    (« Effacer les données du site », réinstallation : une nouvelle identité d'appareil), et dit qu'une sauvegarde
+    complète faite ici le restaure (RLM-029, décision du 6 octobre 2026). Un
     appareil resté hors ligne qui renvoie l'ancienne copie : le détenteur reprend ses saisies (la plus récente gagne) et
     le talon redevient vide (`absorbDeviceTrackers`). Supprimer le suivi depuis un autre appareil ne retire que son nom,
     et la confirmation le dit (`deleteNote`) : si le détenteur existe encore, il recrée le talon et ne perd rien (un

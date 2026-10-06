@@ -24,7 +24,7 @@ function eraseTrackers(ids) {
   const s = S();
   for (const id of ids) {
     forgetLocal(id);
-    if (Object.hasOwn(s.modules, id)) deleteModuleInstance(s.modules, s.config.modules, id);
+    if (Object.hasOwn(s.modules, id)) deleteModuleInstance(s.modules, s.config.modules, id, s.config.deleted);
     delete s.config.labels[id]; delete s.config.groups[id]; delete s.config.assistant.share[id];
   }
   site.save(); local.save(); render();

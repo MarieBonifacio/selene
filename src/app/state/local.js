@@ -8,8 +8,9 @@
      - la réconciliation à l'entrée du site (absorbDeviceTrackers) ;
      - la sauvegarde complète et sa restauration (withLocal, splitLocal). */
 import { platform } from "../../platform.js";
+import { tombKey } from "../../core/domain.js";
 import { normalizeRegulation, regulationOnDevice, regulationStub } from "../../core/regulation.js";
-import { uid } from "../lib/format.js";
+import { todayISO, uid } from "../lib/format.js";
 import { clone, makeStore } from "./store.js";
 
 const KEY = "selene-local-v1", DEVICE_KEY = "selene-device-id", LAST_UID_KEY = "selene-auth-last-uid";
@@ -20,6 +21,18 @@ export function deviceId() {
   if (!id || !/^[\w-]{1,64}$/.test(id)) { id = `d${uid()}${uid()}`; try { platform.storage.set(DEVICE_KEY, id); } catch {} }
   return id;
 }
+/* Ce que le talon dit de l'appareil détenteur, pour qu'on le reconnaisse (RLM-029) : le navigateur ou l'app, et le
+   système, sans version ni rien d'autre. */
+export function describeDevice(ua, runtime) {
+  const os = /Android/.test(ua) ? "Android" : /iPhone|iPod/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Windows/.test(ua) ? "Windows"
+    : /CrOS/.test(ua) ? "ChromeOS" : /Macintosh|Mac OS X/.test(ua) ? "Mac" : /Linux/.test(ua) ? "Linux" : "";
+  const shell = ["capacitor", "tauri", "native"].includes(runtime) ? "App Selene" : /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera"
+    : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "";
+  return [shell, os].filter(Boolean).join(" · ");
+}
+const deviceName = () => { try { return describeDevice(String(navigator.userAgent || ""), platform.runtime()); } catch { return ""; } };
+// Le talon d'un suivi gardé ici, d'après sa copie locale (la date où cet appareil l'a pris).
+const stubOf = (inst, me, own = inst) => regulationStub(inst, me, { name: deviceName(), since: own && own.config && own.config.holderSince });
 const lastUid = () => { try { return platform.storage.get(LAST_UID_KEY) || ""; } catch { return ""; } };
 const seed = () => ({ updatedAt: 0, owner: lastUid(), modules: {} });
 function normalizeLocal(d) {
@@ -36,9 +49,9 @@ export const localIds = () => Object.keys(local.data.modules);
    `siteDoc` : le document du site (modifié ici) ; à l'appelant d'enregistrer les deux. */
 export function moveToDevice(siteDoc, id) {
   const inst = siteDoc.modules[id], me = deviceId(), full = clone(inst);
-  full.config.storage = "device"; full.config.holder = me; delete full.config.consent;
+  full.config.storage = "device"; full.config.holder = me; full.config.holderSince = todayISO(); delete full.config.consent;
   local.data.modules[id] = full;
-  siteDoc.modules[id] = regulationStub(inst, me);
+  siteDoc.modules[id] = stubOf(inst, me, full);
   if (!local.data.owner) local.data.owner = lastUid();
   return full;
 }
@@ -56,7 +69,7 @@ export function absorbDeviceTrackers(siteDoc) {
   for (const [id, inst] of Object.entries(siteDoc.modules)) {
     if (!regulationOnDevice(inst) || inst.config.holder !== me) continue;
     const stray = (inst.goals || []).length || (inst.entries || []).length;
-    if (!stray && JSON.stringify(inst.config) === JSON.stringify(regulationStub(inst, me).config)) continue;
+    if (!stray && JSON.stringify(inst.config) === JSON.stringify(stubOf(inst, me, localCopy(id) || inst).config)) continue;
     const own = localCopy(id);
     if (!own) { local.data.modules[id] = { ...clone(inst), config: { ...clone(inst.config), storage: "device", holder: me } }; }
     else for (const list of ["goals", "entries"]) for (const x of inst[list] || []) {
@@ -64,10 +77,13 @@ export function absorbDeviceTrackers(siteDoc) {
       if (!mine) own[list].push(clone(x)); // une saisie faite ailleurs avant le passage sur l'appareil : gardée
       else if ((x.editedAt || x.at || 0) > (mine.editedAt || mine.at || 0)) own[list][i] = clone(x); // la plus récente
     }
-    siteDoc.modules[id] = regulationStub(inst, me);
+    siteDoc.modules[id] = stubOf(inst, me, localCopy(id));
     changed = true; localChanged = true;
   }
-  for (const id of localIds()) if (!Object.hasOwn(siteDoc.modules, id)) { siteDoc.modules[id] = regulationStub(localCopy(id), me); changed = true; }
+  for (const id of localIds()) if (!Object.hasOwn(siteDoc.modules, id)) {
+    siteDoc.modules[id] = stubOf(localCopy(id), me); changed = true;
+    if (siteDoc.config && siteDoc.config.deleted) delete siteDoc.config.deleted[tombKey(id)]; // son nom revient partout
+  }
   if (localChanged) local.save();
   return changed;
 }
@@ -105,8 +121,9 @@ export function splitLocal(siteDoc) {
   const me = deviceId(), modules = {};
   for (const [id, inst] of Object.entries(siteDoc.modules || {})) {
     if (!regulationOnDevice(inst) || !((inst.goals || []).length || (inst.entries || []).length || inst.config.holder === me)) continue;
-    modules[id] = { ...clone(inst), config: { ...clone(inst.config), holder: me } };
-    siteDoc.modules[id] = regulationStub(inst, me);
+    const since = inst.config.holder === me && inst.config.holderSince ? inst.config.holderSince : todayISO();
+    modules[id] = { ...clone(inst), config: { ...clone(inst.config), holder: me, holderSince: since } };
+    siteDoc.modules[id] = stubOf(inst, me, modules[id]);
   }
   return { updatedAt: 0, owner: lastUid(), modules };
 }

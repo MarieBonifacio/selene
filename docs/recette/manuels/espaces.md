@@ -154,18 +154,20 @@ Identifiants retirés : aucun.
 ### ESP-006 — Désactiver puis réactiver un espace : données intactes
 
 - **Fonctionnalité et règle** : décocher « Activer » retire l'espace de la navigation et de l'accueil, sans toucher à ses
-  données ; un espace désactivé n'apporte rien aux sortes.
+  données ; un espace désactivé n'apporte rien aux sortes ; son adresse mène à l'accueil, et le dit (décision du
+  6 octobre 2026).
 - **Objectif, risque vérifié** : la désactivation efface ou cache définitivement des données.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : espace « Carnet » (une note : « Le héron revient chaque matin à la même pierre. »).
-- **Automatisés associés** : `TU-MOD-58`
-- **Source** : [CODE] `mod-on` (`shell/actions.js`) ; [TEST] `TU-MOD-58` (un module désactivé ne contribue pas aux sortes).
+- **Automatisés associés** : `TU-MOD-58`, `TU-MOD-63`
+- **Source** : [CODE] `mod-on` (`shell/actions.js`), `renderNow` (`shell/render.js`) ; [TEST] `TU-MOD-58` (un module
+  désactivé ne contribue pas aux sortes), `TU-MOD-63` (l'adresse d'un espace désactivé).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Décocher « Activer Carnet ». | Carnet disparaît de la navigation et de « Où en sont les choses » ; sa ligne reste dans les Réglages, grisée, son nom toujours modifiable. |
-| 2 | Ouvrir l'adresse `#carnet`. | [À ARBITRER] L'espace s'affiche-t-il quand même, ou l'accueil ? Noter le comportement observé. |
+| 2 | Ouvrir l'adresse `#carnet`. | L'accueil s'affiche, avec « « Carnet » est désactivé : Réglages → Espaces pour le rouvrir. » ; recharger la page ne le répète pas deux fois. |
 | 3 | Recocher « Activer Carnet ». | Carnet revient avec sa note. |
 
 - **État final attendu** : Carnet actif, note intacte.
@@ -182,8 +184,8 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob, AND, IOS, WIN, ART
 - **Préconditions** : jeu d'essai ; pour l'étape 5, connecté sur deux appareils (sinon la sauter).
 - **Données** : espace « Musique ».
-- **Automatisés associés** : `TU-MOD-02`, `TU-SYN-05`, `TN-types`
-- **Source** : [DOC] README, « Modules » ; [TEST] `TU-MOD-02`, `TU-SYN-05`.
+- **Automatisés associés** : `TU-MOD-02`, `TU-SYN-05`, `TU-SYN-22`, `TN-types`
+- **Source** : [DOC] README, « Modules » ; [TEST] `TU-MOD-02`, `TU-SYN-05`, `TU-SYN-22` (pierre tombale).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|

@@ -10,7 +10,7 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 
 | Identifiant | Proposition | Type | Priorité | Cas liés |
 |---|---|---|---|---|
-| [BL-01](#bl-01) | Scénario « l'appareil détenteur a perdu son stockage » | automatisation | P1 | RLM-029 |
+| [BL-01](#bl-01) | ~~Scénario « l'appareil détenteur a perdu son stockage »~~ (fait) | automatisation | P1 | RLM-029 |
 | [BL-02](#bl-02) | ~~Figer le sort du talon après « L'effacer définitivement »~~ (fait, voir ci-dessous) | décision puis automatisation | P1 | RLM-023 |
 | [BL-03](#bl-03) | Rejouer l'isolation entre comptes chaque semaine en CI | automatisation | P1 | TRV-016 |
 | [BL-04](#bl-04) | Balayage d'accessibilité rejoué à chaque PR | automatisation | P2 | TRV-001, TRV-002, TRV-003, TRV-006, TRV-014 |
@@ -40,8 +40,9 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 - **Dépendances** : aucune (helpers existants `storeSet`, `storeJSON`).
 - **Bénéfice attendu** : un chemin de perte de données sensible vérifié à chaque PR ; RLM-029 passe à « couvert
   partiellement ».
-- **État** : étapes 1 à 3 en place le 5 octobre 2026 (`TN-regulation-perdu`). RLM-029 reste « à clarifier » tant que son
-  étape 4 (l'identité de l'appareil perdue elle aussi) attend sa décision.
+- **État** : **fait**. Étapes 1 à 3 en place le 5 octobre 2026 (`TN-regulation-perdu`) ; étape 4 (l'identité de
+  l'appareil perdue elle aussi) tranchée et figée le 6 (`TU-REG-39` : le talon décrit l'appareil détenteur). RLM-029
+  est « couvert partiellement ».
 
 <a id="bl-02"></a>
 ### BL-02 — Figer le sort du talon après « L'effacer définitivement » (fait le 5 octobre 2026)
@@ -265,9 +266,9 @@ Les questions marquées [À ARBITRER] dans les cas, et ce qu'elles bloquent :
 |---|---|---|
 | ~~Un suivi neuf, pas encore configuré, peut-il se dire « encore synchronisé » ? (A6)~~ : non, corrigé le 5 octobre 2026 | [RLM-003](manuels/reprendre-la-main.md#rlm-003) | — |
 | ~~Effacer définitivement un suivi à la déconnexion retire-t-il aussi son nom du compte ? (A7)~~ : oui, corrigé le 5 octobre 2026 | [RLM-023](manuels/reprendre-la-main.md#rlm-023) | — |
-| Le résumé destiné à l'assistant doit-il être traduit à l'affichage ? | [RLM-028](manuels/reprendre-la-main.md#rlm-028) | l'étape 5 |
-| Quel message pour une date d'objectif à plus d'un an ? | [RLM-014](manuels/reprendre-la-main.md#rlm-014) | l'étape 3 |
-| Comment l'app doit-elle dire qu'un appareil vidé est le détenteur ? | [RLM-029](manuels/reprendre-la-main.md#rlm-029) | [BL-01](#bl-01) |
+| ~~Le résumé destiné à l'assistant doit-il être traduit à l'affichage ?~~ : non, c'est le texte envoyé ; l'interface dit qu'il part en français, le 6 octobre 2026 | [RLM-028](manuels/reprendre-la-main.md#rlm-028) | — |
+| ~~Quel message pour une date d'objectif à plus d'un an ?~~ : « Choisis une date d'effet valide : passée, aujourd'hui, ou au plus tard dans un an. », le 6 octobre 2026 | [RLM-014](manuels/reprendre-la-main.md#rlm-014) | — |
+| ~~Comment l'app doit-elle dire qu'un appareil vidé est le détenteur ?~~ : le talon décrit l'appareil détenteur (navigateur ou app, système, date) et le message envisage que ce soit celui-ci, le 6 octobre 2026 | [RLM-029](manuels/reprendre-la-main.md#rlm-029) | — |
 | Quelles vues suivent la date d'elles-mêmes à minuit ? | [TRV-004](manuels/transverse.md#trv-004) | [BL-10](#bl-10) |
 | Quels seuils de réactivité ? | [TRV-007](manuels/transverse.md#trv-007) | [BL-09](#bl-09) |
 | ~~Que doit dire l'assistant quand sa fonction est injoignable ou non déployée ? (A4)~~ : « non déployé », « non configuré » ou « injoignable », corrigé le 5 octobre 2026 (PR #98) | [AST-007](manuels/assistant.md#ast-007) | — |
@@ -277,5 +278,6 @@ Les questions marquées [À ARBITRER] dans les cas, et ce qu'elles bloquent :
 | ~~`npm run recette` en CI ?~~ : oui, fait, et obligatoire pour fusionner (réglage du dépôt à appliquer) | — | [BL-12](#bl-12) |
 | Firefox ? | — | [BL-13](#bl-13) |
 
-Les questions ouvertes d'avant ce cahier ([ESP-006](manuels/espaces.md#esp-006), [SYN-006](manuels/synchronisation.md#syn-006))
-sont posées dans les cas eux-mêmes.
+Les questions ouvertes d'avant ce cahier sont tranchées depuis le 6 octobre 2026 : l'adresse d'un espace désactivé
+mène à l'accueil et le dit ([ESP-006](manuels/espaces.md#esp-006)) ; un espace supprimé reste supprimé, même modifié
+hors ligne ailleurs, qui le dit ([SYN-006](manuels/synchronisation.md#syn-006), anomalie A13, ADR 34).

@@ -114,7 +114,13 @@ test('dates impossibles et à venir refusées pour les événements ; une date d
   assert.equal(c.regulationGoal(inst, TODAY).id, 'g1', 'une version programmée ne s’applique pas avant sa date');
   assert.equal(c.regulationNextGoal(inst, TODAY).id, g.id);
   assert.equal(c.regulationGoal(inst, '2026-10-05').id, 'g2');
-  assert.throws(() => c.addRegulationGoal(inst, { date: '2028-01-01', mode: 'arreter' }, 'g3', TODAY, 3), { code: 'reg-date' }, 'au plus un an d’avance');
+  assert.throws(() => c.addRegulationGoal(inst, { date: '2028-01-01', mode: 'arreter' }, 'g3', TODAY, 3), { code: 'reg-goal-date' }, 'au plus un an d’avance');
+  assert.throws(() => c.addRegulationGoal(inst, { date: '2026-02-30', mode: 'arreter' }, 'g3', TODAY, 3), { code: 'reg-goal-date' });
+  try { c.addRegulationGoal(inst, { date: '2028-01-01', mode: 'arreter' }, 'g3', TODAY, 3); } catch (e) {
+    const msg = require('../src/app/lib/labels.js').errMsg(e);
+    assert.match(msg, /date d'effet.*au plus tard dans un an/, 'le message parle de la date d’effet');
+    assert.doesNotMatch(msg, /consommation/, 'pas des consommations (RLM-014)');
+  }
   assert.throws(() => c.addRegulationGoal(inst, { date: TODAY, mode: 'reduire', limit: '' }, 'g4', TODAY, 4), { code: 'reg-limit' });
   assert.throws(() => c.addRegulationGoal(inst, { date: TODAY, mode: 'reduire', limit: 0 }, 'g5', TODAY, 5), { code: 'reg-limit' }, 'zéro : viser l’arrêt');
   assert.throws(() => c.addRegulationGoal(inst, { date: TODAY, mode: 'reduire', limit: 2.5 }, 'g6', TODAY, 6), { code: 'reg-limit' }, 'des cigarettes entières');
@@ -747,6 +753,38 @@ test('un autre appareil du compte : le nom seulement ; les données renvoyées r
   for (const x of [a, b]) { x.site.disconnect(); x.board.disconnect(); }
 });
 
+test('l’appareil détenteur se reconnaît : le talon dit le navigateur et le système, et depuis quand ; vidé, on le lit sur lui-même', async () => {
+  const UA = { chromeWin: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36' };
+  const server = fakeSupabase(), a = personal({ fetch: server.fetch, navigator: { userAgent: UA.chromeWin } }); await settle();
+  for (const [ua, runtime, name] of [
+    [UA.chromeWin, 'web', 'Chrome · Windows'],
+    ['Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0', 'web', 'Edge · Windows'],
+    ['Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0', 'web', 'Firefox · Linux'],
+    ['Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1', 'web', 'Safari · iPhone'],
+    ['Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15', 'web', 'Safari · Mac'],
+    ['Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36', 'capacitor', 'App Selene · Android'],
+    ['', 'web', '']
+  ]) assert.equal(a.describeDevice(ua, runtime), name, ua);
+  const id = await setupTracker(a); addUse(a, id); await a.site.sync();
+  const stub = serverSite(server).modules[id].config;
+  assert.deepEqual([stub.holderName, stub.holderSince], ['Chrome · Windows', a.todayISO()], 'le talon dit l’appareil et la date, rien d’autre');
+  assert.doesNotMatch(JSON.stringify(serverSite(server)), /NOTE_PRIVEE|alcool/);
+  assert.match(a.TYPE_UI.regulation.view(id), /et de quoi reconnaître cet appareil \(navigateur ou app, système, date\)/, 'ce que le compte en garde est dit');
+  await a.site.sync(); const n = server.calls.length; await a.site.sync();
+  assert.equal(server.calls.filter((c, i) => i >= n && c.startsWith('PATCH')).length, 0, 'un talon stable : rien à réécrire');
+  // Le même navigateur, « Effacer les données du site » : nouvelle identité, donc un autre appareil pour Selene.
+  const wiped = personal({ fetch: server.fetch, navigator: { userAgent: UA.chromeWin } }); await settle();
+  const view = wiped.TYPE_UI.regulation.view(id).replace(/\s+/g, ' ');
+  assert.notEqual(wiped.deviceId(), a.deviceId());
+  assert.match(view, /gardé sur un autre de tes appareils/);
+  assert.match(view, new RegExp(`Il le garde sur : Chrome · Windows, depuis le ${wiped.fmt(a.todayISO(), { day: 'numeric', month: 'long', year: 'numeric' })}\\.`), 'de quoi reconnaître son propre navigateur');
+  assert.match(view, /Si c'est celui-ci et que son stockage a été effacé \(données du navigateur ou de l'app\), une sauvegarde complète faite ici le restaure/);
+  // Un talon d'avant (sans description) : le message sans la phrase de l'appareil.
+  delete wiped.S().modules[id].config.holderName; delete wiped.S().modules[id].config.holderSince;
+  assert.doesNotMatch(wiped.TYPE_UI.regulation.view(id), /Il le garde sur/);
+  for (const x of [a, wiped]) { x.site.disconnect(); x.board.disconnect(); }
+});
+
 test('se déconnecter avec un suivi gardé ici : exporter ou effacer, jamais une perte silencieuse', async () => {
   const server = fakeSupabase(), app = personal({ fetch: server.fetch }); await settle();
   const id = await setupTracker(app, { name: 'Éphémère' }); addUse(app, id);
@@ -817,8 +855,12 @@ test('validation : stockage, appareil détenteur et accord ont une forme contrô
   const stub = c.regulationStub(inst, 'dA');
   assert.deepEqual([stub.config.subject, stub.config.storage, stub.config.holder, stub.entries.length, stub.config.supports.length > 0], [null, 'device', 'dA', 0, true]);
   assert.doesNotThrow(() => c.parseBackup(backup(c, stub)));
+  const described = c.regulationStub(inst, 'dA', { name: 'Chrome · Windows', since: '2026-10-03' });
+  assert.deepEqual([described.config.holderName, described.config.holderSince], ['Chrome · Windows', '2026-10-03']);
+  assert.doesNotThrow(() => c.parseBackup(backup(c, described)));
   for (const [what, mutate] of Object.entries({
     'stockage inconnu': d => { d.config.storage = 'cloud'; }, 'détenteur': d => { d.config.holder = 'a b'; },
-    'accord sans date': d => { d.config.consent = { version: 1 }; }, 'accord sans version': d => { d.config.consent = { at: 1, version: 0 }; }
+    'accord sans date': d => { d.config.consent = { version: 1 }; }, 'accord sans version': d => { d.config.consent = { at: 1, version: 0 }; },
+    'nom d’appareil trop long': d => { d.config.holderName = 'x'.repeat(81); }, 'date de détention': d => { d.config.holderSince = '2026-13-01'; }
   })) { const bad = JSON.parse(backup(c, inst)); mutate(bad.site.modules.suivi); assert.throws(() => c.parseBackup(JSON.stringify(bad)), undefined, what); }
 });
