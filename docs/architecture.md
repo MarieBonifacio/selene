@@ -431,7 +431,8 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   natives prévues tourneront dans WebKit (iOS, Tauri sous macOS et Linux), que la CI n'exécutait pas.
 - **Décision** : `build.py` calcule l'empreinte SHA-256 de chaque script et l'inscrit dans `script-src` ;
   un scénario vérifie qu'aucune vue ne viole la CSP et qu'un script injecté est bloqué. Les parcours de
-  navigateur tournent dans Chromium et WebKit (matrice de `check.yml`, `SELENE_BROWSER`).
+  navigateur tournent dans Chromium et WebKit (matrice de `check.yml`, `SELENE_BROWSER`), et dans Firefox depuis le
+  6 octobre 2026 ([BL-13](recette/backlog.md#bl-13) ; non bloquant jusqu'au 20 octobre).
 - **Écarté** : un fichier `.js` externe (casse l'artefact en un seul fichier) ; un nonce (exige un serveur
   qui en tire un à chaque requête, GitHub Pages sert des fichiers statiques) ; retirer `'unsafe-inline'` de
   `style-src` (l'interface pose plus de 150 attributs `style="…"`, qu'une empreinte ne couvre pas sans

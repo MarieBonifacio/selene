@@ -1,7 +1,7 @@
 # Périmètre de la recette
 
-Ce qui est réellement dans Selene au commit de référence (`768eb34`, 4 octobre 2026, complété jusqu'à `362f379`, 5 octobre), d'après le code, les tests et la
-documentation lus ensemble. Quand ils divergent, la divergence est notée plus bas plutôt que tranchée en silence.
+Ce qui est réellement dans Selene au commit de référence (`768eb34`, 4 octobre 2026, complété jusqu'à `362f379`, 5 octobre, puis relu
+contre `cab3ec8`, 6 octobre), d'après le code, les tests et la documentation lus ensemble. Quand ils divergent, la divergence est notée plus bas plutôt que tranchée en silence.
 
 Statuts : **disponible** (dans `main`, atteignable par l'interface), **partielle** (une partie seulement est livrée, ou elle
 dépend d'un réglage serveur ou d'un compte que le dépôt ne peut pas garantir), **autre branche** (dans une branche ou une
@@ -12,13 +12,13 @@ disponible et le partiel ; l'envisagé figure ici pour qu'on ne le teste pas par
 
 | Cible | Statut | Construite et vérifiée en CI | Essai sur un vrai appareil |
 |---|---|---|---|
-| Site hébergé (`index.html`, GitHub Pages), navigateur d'ordinateur | disponible | build, tests unitaires, 73 scénarios dans Chromium et WebKit ; publié par `pages.yml` seulement si Check est vert | Chromium : oui, par la CI ; Safari : moteur WebKit en CI, pas Safari lui-même |
+| Site hébergé (`index.html`, GitHub Pages), navigateur d'ordinateur | disponible | build, tests unitaires, 78 scénarios dans Chromium, WebKit et Firefox (Firefox non bloquant jusqu'au 20 octobre 2026, [BL-13](backlog.md#bl-13)) ; publié par `pages.yml` seulement si Check est vert | Chromium et Firefox : oui, par la CI ; Safari : moteur WebKit en CI, pas Safari lui-même |
 | PWA installée (iPhone, Android) | disponible | service worker et manifeste vérifiés (`hors-ligne.js`, `build.test.js`) | jamais fait ([a-faire.md](../a-faire.md#essayer-sur-de-vrais-appareils)) |
 | Artefact claude.ai (`selene.html`) | disponible | testé dans une VM Node (faux DOM), jamais dans claude.ai | jamais fait (« Hors CI » dans [architecture.md](../architecture.md#vérification)) |
-| App Android (Capacitor) | disponible, non publiée | APK de débogage compilé, chemin de signature éprouvé avec une clé jetable (`android.yml`) | jamais fait |
+| App Android (Capacitor) | disponible, non publiée | APK de débogage compilé, chemin de signature éprouvé avec une clé jetable (`android.yml`) ; lancé sur un émulateur Android 15 : démarrage, relance, mise à jour vers l'édition des stores (`android-fumee.yml`, [BL-07](backlog.md#bl-07)) | jamais fait |
 | App iOS (Capacitor) | partielle | compilée pour le simulateur, sans signature (`ios.yml`) ; l'installer demande un compte Apple Developer | jamais fait |
-| App Windows (Tauri) | disponible, non publiée | tests Rust et installateur NSIS (`desktop.yml`) ; non signé sans certificat | jamais fait |
-| Firefox | à clarifier | aucun test, aucune mention | — |
+| App Windows (Tauri) | disponible, non publiée | tests Rust et installateur NSIS (`desktop.yml`) ; non signé sans certificat ; installé et lancé sur le runner Windows : données relues après relance, une seule fenêtre ([BL-08](backlog.md#bl-08)) | jamais fait |
+| Firefox sur téléphone | non visé (décision du 6 octobre 2026, [BL-13](backlog.md#bl-13)) | — | — |
 | Tauri sous macOS ou Linux | envisagée | le code le permet (Trousseau, Secret Service), aucune construction | — |
 
 ## Cartographie fonctionnelle
@@ -84,7 +84,7 @@ pendant un mois, à juger fin octobre 2026, [evolution-ui.md](../evolution-ui.md
 | Stockage IndexedDB (web), copie de secours dans localStorage, coffres natifs | disponible | Héb. | ADR 11, ADR 13 |
 | Taille d'un espace : alerte à 3 Mo, refus du serveur au-delà de 5 Mo | partielle : la contrainte serveur n'existe que si elle a été posée sur le projet | Héb. connectées | [compte.md](../compte.md#taille-dun-espace) |
 | Synchronisation Supabase : fusion à trois voies, écriture conditionnelle, relecture toutes les 30 s, envoi à la fermeture | disponible | Héb. connectées | ADR 3, ADR 4 |
-| Synchronisation de l'artefact par la base de claude.ai | disponible, jamais essayée hors VM | `ART` | ADR 1 |
+| Synchronisation de l'artefact par la base de claude.ai, dans l'espace privé de chacun | disponible, jamais essayée hors VM ; anomalie A17 ouverte | `ART` | ADR 1, ADR 33 |
 | Hors-ligne de la PWA (service worker) | disponible | `Web`, `Mob` | `sw.js` |
 
 ### Connexions externes
@@ -135,7 +135,10 @@ tester : toute série d'abstinence ([regulation.md](../regulation.md#marques-et-
 
 La page publique de test (`essai.html` : audience, liste d'attente) est **disponible** et entre dans la recette
 ([transverse.md](manuels/transverse.md)). Le test d'isolation entre comptes (`npm run isolation`) est un outil à lancer
-contre un projet de préproduction ; il n'est pas une fonctionnalité de l'app.
+contre un projet de préproduction ; il n'est pas une fonctionnalité de l'app. Le workflow *Sauvegarde* (la copie chiffrée
+de la base, chaque lundi) non plus : c'est un outil d'exploitation, vérifié par [TRV-017](manuels/transverse.md#trv-017),
+qui n'a encore jamais tourné faute de ses réglages ([a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait)).
+Les pages du cahier publiées en artefact (`npm run recette -- page`) sont des vues du cahier, pas de l'app.
 
 ## Travaux parallèles
 
@@ -161,7 +164,10 @@ Relevées pendant l'analyse ; toutes corrigées depuis, le 5 octobre 2026 (voir 
 
 ## Anomalies et observations
 
-Constatées, pas corrigées. Chacune est à qualifier par un ticket.
+Constatées pendant la recette. Une anomalie corrigée garde sa ligne, complétée par « Corrigée : PR … »
+([maintenance.md](maintenance.md#la-correction-dune-anomalie)) ; une anomalie ouverte est à qualifier par un ticket.
+**Ouvertes au 6 octobre 2026** : A16 et A17 ; à surveiller : A2 et A9. Ce qu'il reste à faire pour chacune est dans le
+[backlog](backlog.md#reste-a-faire).
 
 | # | Constat | Preuve | Gravité proposée |
 |---|---|---|---|
@@ -180,6 +186,8 @@ Constatées, pas corrigées. Chacune est à qualifier par un ticket.
 | A13 | **Espace zombie** : un espace supprimé sur un appareil (A) pendant qu'un autre (B), hors ligne, y ajoutait ou modifiait quelque chose **revenait sur les deux appareils**, avec la modification de B, et retrouvait sa place dans la navigation. Cause : la fusion à trois voies garde une entrée supprimée d'un côté si l'autre l'a modifiée (`core/sync.js`), et la normalisation rend une place dans la navigation à tout module présent. Le cahier posait la question (SYN-006) en croyant que la suppression gagnait déjà, comme `TU-SYN-05` le laisse penser : ce test ne couvre que l'autre appareil sans modification. | Sonde Node, deux appareils sur faux Supabase : B modifie `phidippus` hors ligne, A le supprime ; après synchronisation, présent sur A et B (6 octobre) ; voir [SYN-006](manuels/synchronisation.md#syn-006) | **Corrigée** (ADR 34 : pierres tombales dans `config.deleted`, l'appareil qui perd ses modifications le dit ; tests `TU-SYN-22` et `TU-SYN-23`) ; P1 |
 | A14 | **Premier passage sous Firefox** (PR #111, le 6 octobre) : 74 scénarios sur 78 verts. Quatre échecs, quatre causes. `cibles.js` : les onglets d'une collection et les liens « ouvrir ↗ » des sources n'offraient que 43 px au doigt, un vrai défaut (une marge négative faisait passer le bas des onglets sous la bordure de leur conteneur défilant, que Firefox rogne ; la zone agrandie du lien suivait une ligne plus basse). `secours.js` : le scénario lisait le stockage depuis une adresse absente, à laquelle le serveur des scénarios répond 404 sans contenu, que Firefox ne finit jamais de charger (et que le Chromium du conteneur de développement refuse : c'était l'échec local qu'on croyait propre à l'environnement). `mot-de-passe.js` et `veille.js` : deux contrôles suivaient une pause fixe au lieu d'attendre l'état (comme A11). | Run *Check › browser (firefox)* `37425980591` (6 octobre) | **Corrigée** : les onglets et le lien gardent 44 px dans les trois moteurs ; la page sans script de la politique de confidentialité pour lire le stockage ; attendre l'état, et recopier ce qui s'affiche si la vérification échoue. Second passage (PR #112) : 77 sur 78 ; `veille.js` disait « aucune requête partie » : sous Firefox piloté par Playwright, Tab ne quittait pas le champ de la clé, dont l'enregistrement, qui redessine la page, effaçait ensuite l'ORCID tapé dans le champ suivant ; le scénario quitte désormais le champ autrement si Tab ne l'a pas fait, et le dit dans le journal. Troisième passage : **78 sur 78** (le journal confirme : « Tab n'a pas quitté le champ de la clé »). P3 (Firefox non bloquant jusqu'au 20 octobre) |
 | A15 | **La saisie de l'écran de connexion s'effaçait sous les doigts.** L'écran se redessine aussi sans geste : un autre onglet qui enregistre, la fin du démarrage, la réponse du serveur sur les inscriptions. Il était alors remplacé d'un bloc, et l'adresse et le mot de passe en cours de frappe disparaissaient, avec le curseur. Envoyé ensuite, le formulaire au champ requis vide ne partait pas, sans un mot. Trouvé par Firefox le 6 octobre (PR #115, `mot-de-passe.js` : « envoi non configuré… », message vide), reproduit dans Chromium par un second onglet qui enregistre pendant la frappe. | Run *Check › browser (firefox)* `37434206840` (6 octobre) ; sonde Chromium | **Corrigée** (PR #116) : l'écran se redessine en gardant ce qui est tapé et le curseur ; après un envoi, les mots de passe repartent à vide comme avant. Vérifié par `TN-mot-de-passe` (contrôle « un autre onglet enregistre pendant la frappe »), qui échoue sans le correctif. P2 |
+| A16 | **Test instable** `tests/browser/mot-de-passe.js` sous Firefox, après la correction d'A15. Sur le déploiement de `main` du 6 octobre (`cab3ec8`, fusion de la PR #117, qui ne touche pas l'app), trois contrôles échouent : « envoi non configuré (SMTP intégré de Supabase) : dit, en français » (message affiché vide), « un autre type de lien : le jeton est effacé de l'adresse, rien d'autre », « une invitation : choisir son mot de passe ». Vert sur `729d8bd`, sur la PR #116 et sur la PR #118, au même code d'app. Le job est resté vert (`continue-on-error`, [BL-17](backlog.md#bl-17)) : seul son journal le disait. Cause supposée, lue dans le test et non reproduite (Firefox absent de l'environnement de travail) : `open()` attend 500 ms au lieu d'un état, et `attendre()` avale son propre dépassement de délai, si bien qu'un contrôle lit un écran qui n'est pas encore prêt ; un défaut de l'app n'est pas exclu. | Run *Pages* `37477429918`, job *Check › browser (firefox)* (6 octobre) | P2 (Firefox bloquant le 20 octobre 2026). **Ouverte** |
+| A17 | **Artefact claude.ai : un suivi « Reprendre la main » d'avant le 3 octobre part dans la base de claude.ai.** Un suivi encore marqué synchronisé (`storage: "account"`), arrivé dans l'artefact par une sauvegarde complète, y reste tel quel : l'artefact relié à sa base (capacités `db` et `user`) range tout le document `site`, contenu du suivi compris (saisies, notes), dans `data/users/<id>/site`. L'écran « Confidentialité et données » dit pourtant « Sur cet appareil : sans compte, rien n'est envoyé au serveur de Selene. » et ne propose pas de ramener le suivi sur l'appareil : ce texte (`whereText`) et le bandeau « Ce suivi doit revenir sur un appareil » (`choiceHTML`) dépendent de `synced()`, faux dans l'artefact, qui n'a pas de compte Selene. Vrai à la lettre (le serveur de Selene ne reçoit rien), faux dans ce qu'il laisse croire. Variante non essayée : le même suivi versé dans un compte Selene au premier envoi. | Sonde Node (VM, fausse base qui suit le contrat de claude.ai) avec `donnees/rlm-synchronise-ancien.json` : les écritures vont à `data/users/u-proprio/site`, le suivi y figure avec `storage: "account"` et sa saisie (note « Pause café ») ; lecture de `src/app/modules/regulation.js` et `src/app/services/artifact-db.js` (6 octobre) ; voir [PLT-011](manuels/plateformes.md#plt-011), [RLM-024](manuels/reprendre-la-main.md#rlm-024) | P1 en gravité (des données de santé chez un tiers, contre la promesse « gardé sur l'appareil »), probabilité faible : aucun artefact Selene n'est publié. **Ouverte** ; comportement décidé le 6 octobre : ramené sur l'appareil au chargement, avec un avis ([backlog](backlog.md#decisions)). À corriger avant toute publication de l'artefact |
 
 **Relevé de la CI au 5 octobre** (les 60 derniers runs de *Check* sur les PR, du 2 au 5 octobre, et les 40 derniers
 déploiements *Pages* de `main`, du 1er au 4, plus ceux des PR #97 à #104, le 5) : 7 runs de PR et 5 déploiements en
@@ -210,8 +218,8 @@ résumé destiné à l'assistant (`RLM-028`), le message d'une date d'objectif t
 
 Ce qui n'a pas pu être exécuté dans l'environnement de travail (conteneur Linux, sans appareil) :
 
-- **WebKit** : navigateur non installé (et installation non permise) ; la suite navigateur n'a tourné que dans Chromium.
-  La CI la joue dans les deux moteurs.
+- **WebKit** et **Firefox** : navigateurs non installés (et installation non permise) ; la suite navigateur n'a tourné
+  que dans Chromium. La CI la joue dans les trois moteurs.
 - **Tests Rust** (`cargo test`, `native/tauri`) : Tauri ne compile pas sans `webkit2gtk-4.1`, absent ; la CI les lance sous
   Windows.
 - **Compilations Android et iOS** : ni SDK Android configuré, ni Xcode ; vérifiées par la CI (`android.yml`, `ios.yml`).
