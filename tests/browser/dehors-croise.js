@@ -1,7 +1,7 @@
 /* Scénario de navigateur : motifs croisés dans Dehors (phase 3, vague 7c : docs/connexions.md).
    Version hébergée simulée : faux Supabase, faux passeur qui sert deux flux, OpenAlex simulé pour une veille.
    Lancé par tests/browser/run.js. */
-const { storeJSON, storeSet, storeGet, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeJSON, storeSet, storeGet, ouvrir, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 const col = (label, extra) => ({ type: 'collection', label, config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1, addLabel: 'Ajouter',
   fields: { title: 'Titre', subtitle: 'Auteurs', tag: '', due: '', text: 'Notes' }, ...extra }, entries: [] });
@@ -42,7 +42,10 @@ const WORK = { id: 'https://openalex.org/W50', doi: 'https://doi.org/10.1000/z',
   const cites = JSON.stringify({ works: { '10.1000/a': { id: 'W1', refs: [], authors: [], at: Date.now() } }, titles: {} });
   await ctx.addInitScript(([d, s, uid, c]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); localStorage.setItem('selene-cites', c); } }, [JSON.stringify(demo), session, UID, cites]);
   const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
-  await p.goto(BASE + '/index.html#dehors'); await p.waitForTimeout(2600); // la relecture part 1,5 s après l'ouverture
+  // La relecture part 1,5 s après l'ouverture, une fois l'app démarrée et connectée : attendre ses six éléments, veille
+  // comprise, plutôt qu'un délai (A16 du cahier de recette).
+  const relu = () => document.querySelectorAll('.dehors .item').length >= 6 && document.querySelector('.dehors').textContent.includes('The bodily self revisited');
+  await ouvrir(p, BASE + '/index.html#dehors', relu).catch(() => {});
   const rows = () => p.$$eval('.dehors .item', ls => ls.map(l => ({ t: (l.querySelector('.t-title, b') || {}).textContent.replace(' ↗', ''), why: (l.querySelector('.why') || { textContent: '' }).textContent.replace(/\s+/g, ' ').trim(), row: l.querySelector('.row').textContent })));
 
   console.log('ce qui croise ce que tu gardes passe devant, et dit pourquoi');
@@ -61,7 +64,7 @@ const WORK = { id: 'https://openalex.org/W50', doi: 'https://doi.org/10.1000/z',
 
   console.log('un auteur suivi n’est pas une raison de plus');
   { const d = await storeJSON(p, 'selene-site-v1'); d.config.dehors.research[0].kind = 'author'; d.config.dehors.research[0].q = 'A5023888391'; await storeSet(p, 'selene-site-v1', JSON.stringify(d)); }
-  await p.reload(); await p.waitForTimeout(600);
+  await ouvrir(p, null, relu).catch(() => {});
   r = await rows();
   ok(r[0].t === 'The bodily self revisited' && r[0].why === 'parce que : cite « Depersonalization and the self », de tes sources', `la veille d'un auteur : son nom ne compte pas comme raison (${r[0].why})`);
 

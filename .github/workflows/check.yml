@@ -69,10 +69,19 @@ jobs:
     strategy:
       fail-fast: false # un moteur en échec n'interrompt pas les autres : on veut chaque verdict
       matrix:
-        browser: [chromium, webkit, firefox]
-    name: browser (${{ matrix.browser }})
+        include:
+          - browser: chromium
+          - browser: webkit
+          - browser: firefox
+          # Le démarrage lent (A16 du cahier de recette) : la base de l'app répond avec 1,5 s de retard, si bien qu'un
+          # scénario qui attend un délai au lieu d'un état échoue ici à coup sûr, au lieu d'échouer un jour sur dix sous
+          # un runner chargé. Chromium seul suffit : c'est le scénario qu'il éprouve, pas le moteur.
+          - browser: chromium
+            lent: 1500
+    name: browser (${{ matrix.browser }}${{ matrix.lent && ', démarrage lent' || '' }})
     env:
       SELENE_BROWSER: ${{ matrix.browser }}
+      SELENE_LENT: ${{ matrix.lent || 0 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -94,6 +103,12 @@ jobs:
         if: steps.browser.outputs.cache-hit == 'true'
         run: npx playwright install-deps ${{ matrix.browser }}
       # Firefox, ajouté le 6 octobre 2026 : non bloquant jusqu'au 20 octobre, le temps de repérer ce qui échoue pour une
-      # raison propre au moteur ; ses échecs restent dans le journal et en avertissement. Ensuite, retirer cette ligne.
+      # raison propre au moteur. Ensuite, retirer cette ligne et le pas qui suit.
       - run: npm run test:browser
+        id: scenarios
         continue-on-error: ${{ matrix.browser == 'firefox' }}
+      # Un échec non bloquant laisse le job vert : il doit au moins se voir, sur la page de la PR comme dans le résumé du
+      # run, où run.js a déjà listé les scénarios et les contrôles en échec (BL-17 du cahier de recette).
+      - name: Signaler l'échec non bloquant
+        if: steps.scenarios.outcome == 'failure'
+        run: echo "::warning title=Scénarios en échec sous ${{ matrix.browser }} (non bloquant)::Le job reste vert jusqu'au 20 octobre 2026 (BL-13) ; la liste est dans le résumé du run et à la fin du journal du pas des scénarios. Chaque échec propre au moteur devient une anomalie du cahier de recette."

@@ -7,7 +7,7 @@
    - effacé encore, puis retiré par les Réglages : sans l'avertissement « il n'y a que le nom », et le nom quitte le compte.
    Lancé par tests/browser/run.js. */
 const fs = require('node:fs');
-const { engine, BASE, launchOptions, check, storeGet, storeJSON, storeSet } = require('./helpers');
+const { engine, BASE, launchOptions, check, storeGet, storeJSON, storeSet, ouvrir, entree } = require('./helpers');
 const rows = new Map();
 const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 async function supabase(route) {
@@ -32,13 +32,13 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
     await ctx.route('https://*.supabase.co/**', supabase);
     await ctx.addInitScript(s => { if (!localStorage.getItem('selene-auth-session')) { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', 'u1'); } }, session);
     const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
-    await p.goto(BASE + '/index.html'); await p.waitForTimeout(600);
+    await ouvrir(p, BASE + '/index.html', entree); // connecté : l'app, pas l'écran d'entrée (A16)
     const settle = () => p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     const go = async h => { await p.evaluate(x => { location.hash = x; }, h); await p.waitForFunction(x => location.hash === '#' + x, h); await settle(); };
     const submit = async () => { await p.click('#form button[value="save"]'); await settle(); };
     const ask = async ok => { await p.waitForSelector('#cdlg[open]'); const msg = await p.textContent('#cmsg'); await p.click(`#cdlg button[value="${ok ? 'ok' : 'cancel'}"]`); await settle(); return msg; };
     const waitServer = async test => { for (let i = 0; i < 60 && !test(server()); i++) await p.waitForTimeout(100); return test(server()); };
-    const reload = async () => { await p.reload(); await p.waitForTimeout(600); };
+    const reload = () => ouvrir(p, null, entree);
     const main = async () => (await p.textContent('#main')).replace(/\s+/g, ' ');
 
     console.log('un suivi gardé ici, une saisie, la sauvegarde complète');

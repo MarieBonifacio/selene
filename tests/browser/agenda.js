@@ -1,6 +1,6 @@
 /* Scénario de navigateur : le calendrier dédié (connexions externes, phase 2, vague 6e : docs/connexions.md).
    Version hébergée simulée (faux Supabase, faux passeur qui sert un .ics), horloge fixée. Lancé par tests/browser/run.js. */
-const { storeJSON, storeSet, storeGet, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeJSON, storeSet, storeGet, until, ouvrir, entree, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const UID = '0b8f0c2e-1111-2222-3333-444455556666';
 const ICS = ['BEGIN:VCALENDAR', 'VERSION:2.0',
   'BEGIN:VEVENT', 'UID:a', 'SUMMARY:Chantier : plombier', 'LOCATION:Salle de bain', 'DTSTART;TZID=Europe/Paris:20260929T140000', 'DTEND;TZID=Europe/Paris:20260929T150000', 'END:VEVENT',
@@ -43,10 +43,10 @@ const SECRET = 'https://calendar.example/ical/secret-abc/basic.ics';
 
   console.log('au plus une fois par heure, oublier');
   calls.length = 0;
-  await p.reload(); await p.waitForTimeout(2200);
+  await ouvrir(p, null, entree); await p.waitForTimeout(2200); // une absence ne s'attend pas : le délai court depuis le démarrage (A16)
   ok(!calls.length && (await p.$('.agenda-day')), 'rouvert dans l’heure : servi par le cache, sans appel');
   { const c = await storeJSON(p, 'selene-ics'); c.at = await p.evaluate(() => Date.now()) - 2 * 3600000; /* l'heure de la page (horloge simulée) */ await storeSet(p, 'selene-ics', JSON.stringify(c)); }
-  await p.reload(); await p.waitForTimeout(2200);
+  await ouvrir(p, null, entree); await until(() => calls.length >= 1);
   ok(calls.length === 1, 'plus tard : relu');
   await p.goto(BASE + '/index.html#reglages'); await p.waitForTimeout(300);
   await p.click('[data-act="ics-forget"]'); await p.waitForTimeout(200);
