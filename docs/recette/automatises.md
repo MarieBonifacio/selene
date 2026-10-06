@@ -1353,7 +1353,7 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
 ## États particuliers
 
 - **Stabilisés côté test, à surveiller** : `TN-activite` sous WebKit (A1 : deux échecs le 4 octobre, aucun depuis le
-  correctif en 32 exécutions WebKit de la CI) ; `TN-mot-de-passe` (A11 : deux échecs sur `main` le 4 octobre) et
+  correctif en 32 exécutions WebKit de la CI) ; `TN-mot-de-passe` (A11 : trois échecs sur `main`, les 4 et 5 octobre) et
   `TN-dehors` (A10), qui attendent désormais l'état plutôt qu'un délai ; `TN-regulation` sous WebKit (A9, corrigé par la
   #100) ; `TN-identite` (deux échecs les 2 et 3 octobre, corrigé par `31122f6`). Relevé complet :
   [perimetre.md](perimetre.md#anomalies-et-observations).
