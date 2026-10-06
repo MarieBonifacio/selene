@@ -16,9 +16,9 @@ dont le dépôt ne peut pas savoir s'ils ont eu lieu.
   `docs/regulation.md`. Ce lien n'apparaît pas dans l'interface.
 
 - [ ] **L'artefact claude.ai, à publier avec `db` et `user`** (ADR 33 de [architecture.md](architecture.md)), **pas
-  avant la correction d'A17** (un ancien suivi « Reprendre la main » y partirait dans la base de claude.ai :
-  [anomalie A17](recette/perimetre.md#anomalies-et-observations)). Aucun artefact Selene n'est publié sur le compte au
-  6 octobre 2026. Le jour où il l'est : dans une session Claude Code
+  avant la fusion de la correction d'A17** (PR #121 : un ancien suivi « Reprendre la main » y partait dans la base de
+  claude.ai, [anomalie A17](recette/perimetre.md#anomalies-et-observations)). Aucun artefact Selene n'est publié sur le
+  compte au 6 octobre 2026. Le jour où il l'est : dans une session Claude Code
   ouverte sur ce dépôt, demander « Publie `selene.html` comme artefact avec les capacités `db` et `user` » (ou mettre
   à jour l'artefact existant par son lien, avec les mêmes capacités). Sans `user`, Selene y fonctionne mais ne
   synchronise rien entre navigateurs ; elle ne range jamais rien dans un document partagé. Puis jouer

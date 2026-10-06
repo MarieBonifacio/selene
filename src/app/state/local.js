@@ -56,6 +56,21 @@ export function moveToDevice(siteDoc, id) {
   return full;
 }
 export function forgetLocal(id) { if (localCopy(id)) { delete local.data.modules[id]; local.save(); } }
+/* Là où aucun compte Selene ne le gardait synchronisé (l'artefact claude.ai ; un appareil sans compte qui rejoint un
+   compte), un suivi encore marqué synchronisé, d'avant le 3 octobre 2026 et venu d'une sauvegarde, n'a qu'une place :
+   cet appareil (A17 du cahier de recette). Sinon il partirait, contenu compris, dans la base de claude.ai ou sur le
+   serveur. Chacun passe sur l'appareil, le site n'en garde que le talon. Rend les noms de ceux qui ont changé de place ;
+   à l'appelant d'enregistrer le site. */
+export function keepTrackersHere(siteDoc) {
+  const moved = [];
+  for (const [id, inst] of Object.entries(siteDoc.modules || {})) {
+    if (!inst || inst.type !== "regulation" || regulationOnDevice(inst)) continue;
+    moved.push(inst.label || id);
+    moveToDevice(siteDoc, id);
+  }
+  if (moved.length) local.save();
+  return moved;
+}
 
 /* À l'entrée de chaque version du site (lecture, synchronisation, import), sur l'appareil détenteur :
    - un talon qui porte des données (renvoyées par un appareil resté hors ligne) les rend ici, puis redevient un talon ;

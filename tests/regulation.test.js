@@ -726,6 +726,27 @@ test('un suivi synchronisé d’avant la question : le même bandeau, rien ne ch
   app.site.disconnect(); app.board.disconnect();
 });
 
+/* A17, l'autre porte : un appareil sans compte importe une sauvegarde qui contient un suivi d'avant le 3 octobre, encore
+   marqué synchronisé, puis rejoint un compte (versement, ADR 28). Rien n'en était jamais parti : rien ne doit partir.
+   Jeu de données synthétique du cahier de recette. */
+test('A17 : un appareil sans compte qui rejoint un compte : un ancien suivi synchronisé, venu d’une sauvegarde, reste sur l’appareil ; le compte n’en reçoit que le nom', async () => {
+  const server = fakeSupabase(), app = launchHosted({ session: null, storage: new Map([['selene-sans-compte', '1']]), fetch: server.fetch }); await settle();
+  const d = JSON.parse(fs.readFileSync('docs/recette/donnees/rlm-synchronise-ancien.json', 'utf8')), id = 'carnet-du-soir';
+  app.local.replaceAll(app.splitLocal(d.site)); app.site.replaceAll(d.site); app.board.replaceAll(d.board); // l'import (shell/actions.js)
+  assert.match(app.TYPE_UI.regulation.view(id), /Sur cet appareil : sans compte, rien n'est envoyé au serveur de Selene/, 'sans compte : rien ne part, et c’est dit');
+  assert.equal(server.calls.filter(c => c.includes('app_state')).length, 0);
+  // La connexion : la session gardée, lue au démarrage, verse l'appareil dans le compte (authConnectStores).
+  app.storage.set('selene-auth-session', JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'u1', email: 'a@b.c' } }));
+  await app.authBoot(); await settle(100); await app.site.sync();
+  const stub = serverSite(server).modules[id];
+  assert.deepEqual([stub.config.storage, stub.entries.length, stub.goals.length, stub.config.subject], ['device', 0, 0, null], 'le compte : le talon seul');
+  assert.doesNotMatch(JSON.stringify(serverSite(server)), /Pause café/, 'ni la note');
+  assert.equal(app.localCopy(id).entries[0].note, 'Pause café', 'rien de perdu : sur l’appareil');
+  assert.match(app.$('#toast').textContent, /« Carnet du soir » reste sur cet appareil seulement : Selene ne synchronise plus les suivis de santé, ton compte n'en garde que le nom\./, 'et dit');
+  assert.match(app.TYPE_UI.regulation.view(id), /Sur cet appareil seulement\. Ton compte n'en garde que le nom/);
+  app.site.disconnect(); app.board.disconnect();
+});
+
 test('hors de l’offre publique : l’espace n’est proposé qu’au compte marqué personnel par le serveur', async () => {
   const offeredIn = app => {
     const reg = app.VIEWS.reglages();
