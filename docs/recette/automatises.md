@@ -11,7 +11,7 @@ Identifiants retirés : aucun.
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
 | Tests unitaires et d'intégration Node | `npm test` | 319 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
-| Scénarios de navigateur | `npm run test:browser` | 80 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
+| Scénarios de navigateur | `npm run test:browser` | 81 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
 | Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
@@ -1095,6 +1095,15 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Vérifie** : le service worker tient la page ; le cache garde l'app, pas la dernière page visitée.
 - **Limites** : La coupure réseau simulée par Playwright n'atteint pas le service worker : le cache est lu, la page n'est pas rouverte hors ligne.
 - **Cas manuels** : [SYN-010](manuels/synchronisation.md#syn-010), [PLT-001](manuels/plateformes.md#plt-001), [TRV-012](manuels/transverse.md#trv-012)
+
+<a id="tn-reseau-ferme"></a>
+#### `TN-reseau-ferme` — Le réseau fermé aux scénarios
+
+- **Fichier** : [`tests/browser/reseau-ferme.js`](../../tests/browser/reseau-ferme.js) · **mode** A · **écran** —
+- **Conditions** : Le mandataire fermé de `helpers.js` (`engine.launch`, [BL-21](backlog.md#bl-21)), que tous les scénarios reçoivent ; le service worker permis ; une cible publique en lecture seule, autorisée par la politique de sécurité d'`index.html` (une prévision météo).
+- **Vérifie** : une requête que ni les routes ni le serveur des scénarios ne servent échoue ; une requête routée et le serveur des scénarios sont servis ; une fois la page tenue par le service worker (le chemin d'A20 sous WebKit), la même requête échoue encore. Dans les trois moteurs.
+- **Limites** : L'échec voulu peut s'écrire à la console : seuls les messages qui nomment la cible sont écartés du contrôle « aucune erreur JavaScript ». Ne dit rien des tests Node (`tests/*.test.js`), qui n'ouvrent pas de navigateur, ni de `npm run isolation`, qui vise la préproduction exprès.
+- **Cas manuels** : —
 
 <a id="tn-sauvegarde-complete"></a>
 #### `TN-sauvegarde-complete` — La sauvegarde complète, geste entier, sur deux appareils

@@ -25,7 +25,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | ~~A18 : au lancement d'un appareil connecté, l'écran d'entrée s'affiche jusqu'aux premières réponses du serveur~~ (fait le 6 octobre 2026, PR #122) | une session | P2 | — | [A18](perimetre.md#anomalies-et-observations) |
 | ~~A16 : `tests/browser/mot-de-passe.js` instable sous Firefox~~ (fait le 6 octobre 2026, PR #120) | une session | P2 | — | [A16](perimetre.md#anomalies-et-observations) |
 | ~~BL-17 : un échec sous Firefox ne se voit pas (le job reste vert)~~ (fait le 6 octobre 2026, PR #120) | une session | P2 | — | [BL-17](#bl-17) |
-| BL-21 : fermer le réseau aux scénarios de navigateur (sous WebKit, une page tenue par le service worker échappe aux routes, et ses requêtes vont au vrai serveur) | une session | P2 | — | [BL-21](#bl-21), [A20](perimetre.md#anomalies-et-observations) |
+| ~~BL-21 : fermer le réseau aux scénarios de navigateur (sous WebKit, une page tenue par le service worker échappe aux routes, et ses requêtes vont au vrai serveur)~~ (fait le 6 octobre 2026, PR #124) | une session | P2 | — | [BL-21](#bl-21), [A20](perimetre.md#anomalies-et-observations) |
 
 ### À automatiser
 
@@ -108,7 +108,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 | [BL-18](#bl-18) | La page du cahier à cocher sous contrôle de la CI (si la PR #118 est fusionnée) | outillage | P3 | tous |
 | [BL-19](#bl-19) | Matrice : nommer les étapes que les tests ne couvrent pas | traçabilité | P3 | les 73 cas P1 d'abord |
 | [BL-20](#bl-20) | ~~Un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait) | outillage | P3 | onze étapes, voir ci-dessous |
-| [BL-21](#bl-21) | Fermer le réseau aux scénarios de navigateur | hygiène des essais | P2 | tous les scénarios ; A20 |
+| [BL-21](#bl-21) | ~~Fermer le réseau aux scénarios de navigateur~~ (fait) | hygiène des essais | P2 | tous les scénarios ; A20 |
 
 ---
 
@@ -350,7 +350,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   montraient pas (A15, corrigé par la PR #116). Le job « vert » ne le disait pas : avant de le rendre bloquant, lire son
   journal reste le seul moyen de savoir.
 - **Condition proposée pour le 20 octobre** (à confirmer par la responsable) : A16 corrigé, puis vingt passages Firefox
-  consécutifs sans échec : l'avertissement de [BL-17](#bl-17) absent, ou « 80 scénarios, tous verts. » à la fin du
+  consécutifs sans échec : l'avertissement de [BL-17](#bl-17) absent, ou « 81 scénarios, tous verts. » à la fin du
   journal du pas ; sinon, décaler la date plutôt que rendre bloquant un scénario instable, qui apprendrait à
   relancer la CI sans la lire.
 
@@ -492,6 +492,11 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 - **Dépendances** : aucune.
 - **Bénéfice attendu** : aucune requête de test ne peut sortir de la CI, quel que soit le moteur ; un scénario qui
   oublie une route échoue au lieu de parler au vrai serveur.
+- **État** : **fait** le 6 octobre 2026 (PR #124). Le mandataire est donné à chaque lancement par `engine.launch`
+  (`helpers.js`), donc à tous les scénarios ; `TN-reseau-ferme` le vérifie dans les trois moteurs, page tenue par le
+  service worker comprise, et a échoué en CI le mandataire retiré (mutation, le réseau des runners étant ouvert).
+  `hors-ligne-reel.js` reste non joué sous WebKit : ses requêtes y échoueraient désormais au lieu de partir, sans
+  atteindre le faux serveur.
 
 ---
 
