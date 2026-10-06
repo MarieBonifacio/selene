@@ -1100,9 +1100,9 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-reseau-ferme` — Le réseau fermé aux scénarios
 
 - **Fichier** : [`tests/browser/reseau-ferme.js`](../../tests/browser/reseau-ferme.js) · **mode** A · **écran** —
-- **Conditions** : Le mandataire fermé de `helpers.js` (`engine.launch`, [BL-21](backlog.md#bl-21)), que tous les scénarios reçoivent ; le service worker permis ; une cible publique en lecture seule, autorisée par la politique de sécurité d'`index.html` (une prévision météo).
+- **Conditions** : Le mandataire fermé de `helpers.js` (`engine.launch`, [BL-21](backlog.md#bl-21)), que tous les scénarios reçoivent ; une cible publique en lecture seule, autorisée par la politique de sécurité d'`index.html` (une prévision météo). Deux temps : le service worker bloqué, puis permis (sous Firefox et WebKit, une requête vers un autre hôte passe par le service worker, que les routes n'atteignent pas).
 - **Vérifie** : une requête que ni les routes ni le serveur des scénarios ne servent échoue ; une requête routée et le serveur des scénarios sont servis ; une fois la page tenue par le service worker (le chemin d'A20 sous WebKit), la même requête échoue encore. Dans les trois moteurs.
-- **Limites** : L'échec voulu peut s'écrire à la console : seuls les messages qui nomment la cible sont écartés du contrôle « aucune erreur JavaScript ». Ne dit rien des tests Node (`tests/*.test.js`), qui n'ouvrent pas de navigateur, ni de `npm run isolation`, qui vise la préproduction exprès.
+- **Limites** : L'échec voulu peut s'écrire à la console : seuls les messages qui nomment la cible sont écartés du contrôle « aucune erreur JavaScript ». Le mandataire retiré (mutation du 6 octobre 2026, CI de la PR #124), le scénario échoue dans les quatre jobs : la cible répond 200. Le journal de chaque scénario nomme toute requête arrêtée par le mandataire (« · réseau fermé : … »). Ne dit rien des tests Node (`tests/*.test.js`), qui n'ouvrent pas de navigateur, ni de `npm run isolation`, qui vise la préproduction exprès.
 - **Cas manuels** : —
 
 <a id="tn-sauvegarde-complete"></a>
@@ -1135,7 +1135,7 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-csp` — Politique de sécurité du contenu
 
 - **Fichier** : [`tests/browser/csp.js`](../../tests/browser/csp.js) · **mode** A puis H · **écran** —
-- **Conditions** : —
+- **Conditions** : Un faux Supabase pour la page hébergée (avant BL-21, elle lisait les réglages d'inscription du vrai projet).
 - **Vérifie** : deux empreintes, pas de `'unsafe-inline'` ; le script principal et celui du service worker s'exécutent ; polices du site ; 12 vues sans violation ; un `onerror=` ou un `<script>` injecté ne s'exécute pas et le navigateur le signale.
 - **Cas manuels** : [CPT-001](manuels/entree-et-comptes.md#cpt-001), [TRV-008](manuels/transverse.md#trv-008), [TRV-009](manuels/transverse.md#trv-009)
 

@@ -13,6 +13,8 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   // Version hébergée pour de vrai (pas de window.claude) : écran de connexion, et le script du service worker,
   // le second script de la page, doit s'exécuter (espion sur register, posé avant tout script de la page).
   const h = await b.newPage(); h.on('pageerror', e => errs.push(e.message));
+  // Un faux Supabase : sans lui, la page lisait les réglages d'inscription du vrai projet (BL-21, A20).
+  await h.route('https://*.supabase.co/**', r => r.fulfill({ contentType: 'application/json', body: r.request().method() === 'GET' ? '{"disable_signup":false}' : '{}' }));
   const outside = [], fontsLoaded = [];
   h.on('request', r => { if (/googleapis|gstatic/.test(r.url())) outside.push(r.url()); });
   h.on('response', r => { if (/\/fonts\/[^/]+\.woff2$/.test(r.url()) && r.ok()) fontsLoaded.push(r.url()); });

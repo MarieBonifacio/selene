@@ -38,11 +38,21 @@ const slow = async x => { if (LENT) await x.addInitScript(slowIdb, LENT); return
    Playwright servent ne part jamais ; une requête qu'elles ne voient pas (sous WebKit, celles d'une page tenue par le
    service worker : A20) ou qu'un scénario a oublié de router n'atteint aucun vrai serveur, dans aucun moteur. */
 const FERME = { server: 'http://127.0.0.1:9', bypass: '127.0.0.1,localhost' };
+// Le journal du scénario nomme chaque requête arrêtée par le mandataire : une route oubliée se voit, même là où le moteur
+// ne compte pas l'échec comme une erreur de la page (Chromium, Firefox). Une route qui abandonne exprès, ou la coupure
+// simulée (setOffline), ne s'écrit pas.
+const temoin = x => {
+  x.on('requestfailed', r => {
+    const t = (r.failure() || {}).errorText || '', u = new URL(r.url());
+    if (!/^(127\.0\.0\.1|localhost)$/.test(u.hostname) && /proxy|could ?n[o']t connect/i.test(t)) console.log(`  · réseau fermé : ${u.host}${u.pathname} (${t})`);
+  });
+  return x;
+};
 const engine = {
   async launch(options = {}) {
     const b = await playwright[ENGINE].launch({ proxy: FERME, ...options }), newContext = b.newContext.bind(b), newPage = b.newPage.bind(b);
-    b.newContext = async (o = {}) => slow(await newContext({ ...LOCALE, ...o }));
-    b.newPage = async (o = {}) => slow(await newPage({ ...LOCALE, ...o }));
+    b.newContext = async (o = {}) => temoin(await slow(await newContext({ ...LOCALE, ...o })));
+    b.newPage = async (o = {}) => temoin(await slow(await newPage({ ...LOCALE, ...o })));
     return b;
   }
 };
