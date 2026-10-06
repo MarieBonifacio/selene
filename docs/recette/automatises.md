@@ -10,7 +10,7 @@ Identifiants retirés : aucun.
 
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
-| Tests unitaires et d'intégration Node | `npm test` | 316 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
+| Tests unitaires et d'intégration Node | `npm test` | 318 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
 | Scénarios de navigateur | `npm run test:browser` | 78 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
@@ -174,6 +174,8 @@ sans navigateur.
 | <a id="tu-auth-04"></a>`TU-AUTH-04` | successful refresh connects both stores to Supabase | Un rafraîchissement réussi relie les deux stores au serveur, en un seul appel `/token`. | — |
 | <a id="tu-auth-05"></a>`TU-AUTH-05` | concurrent refreshes share one request (refresh tokens are single-use) | Trois rafraîchissements simultanés ne font qu'une requête (les jetons de rafraîchissement sont à usage unique). | — |
 | <a id="tu-auth-06"></a>`TU-AUTH-06` | offline boot recovers: sync resumes on the next keep-alive once the network is back | Démarrage hors ligne puis retour du réseau : au tour suivant du minuteur de 5 min, le jeton est rafraîchi, les stores reliés, l'indicateur se vide. | [CPT-012](manuels/entree-et-comptes.md#cpt-012) |
+| <a id="tu-auth-07"></a>`TU-AUTH-07` | A18 : a signed-in device opens on the app, not on the entry screen, even while the server is slow | Serveur retenu : dès le démarrage, l'app (pas `authForm`), avant toute réponse du serveur ; une fois le serveur relâché, les deux documents branchés, toujours l'app. Échoue sans la lecture de la session avant le premier rendu. | [CPT-012](manuels/entree-et-comptes.md#cpt-012) |
+| <a id="tu-auth-08"></a>`TU-AUTH-08` | A18 : data of another account on the device is never shown under this session: entry screen until the switch | Une session gardée pour u1, des données d'appareil de u0 (`selene-auth-last-uid`) : l'écran d'entrée tant que le serveur n'a pas répondu, pas les données de u0 ; après le changement de compte (`authConnectStores`), connecté et synchronisé. | [CPT-012](manuels/entree-et-comptes.md#cpt-012), [CPT-014](manuels/entree-et-comptes.md#cpt-014) |
 
 ### Sauvegardes : format et refus — `tests/backup.test.js`
 

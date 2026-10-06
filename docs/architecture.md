@@ -272,7 +272,12 @@ sans rien supprimer. L'import d'une sauvegarde remplace au lieu de fusionner (`r
 ### Session
 
 Seul un refus explicite du serveur (400 / 401 au rafraîchissement) met fin à la session ; réseau
-coupé ou 5xx laissent l'app travailler en local, avec « Non synchronisé » affiché. Le jeton est
+coupé ou 5xx laissent l'app travailler en local, avec « Non synchronisé » affiché. La session gardée sur
+l'appareil se lit avant le premier rendu, si les données de l'appareil sont celles de ce compte
+(`selene-auth-last-uid`) : la personne connectée retrouve aussitôt son Selene, et la synchronisation suit
+(A18 du cahier de recette ; avant le 6 octobre 2026, l'écran d'entrée restait affiché jusqu'aux premières
+réponses du serveur). Un seul branchement des documents à la fois, même demandé par le démarrage et par un
+retour au premier plan ensemble. Le jeton est
 rafraîchi s'il lui reste moins de 10 min (vérification toutes les 5 min), jamais deux fois en même
 temps (les refresh tokens sont à usage unique). La déconnexion pousse d'abord les modifications en
 attente (et demande confirmation si c'est impossible), puis efface de l'appareil les données, la base

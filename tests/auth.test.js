@@ -67,3 +67,30 @@ test('offline boot recovers: sync resumes on the next keep-alive once the networ
   assert.ok(app.board.db && app.site.db);
   assert.equal(app.nodes.get('#saving').textContent, '');
 });
+
+// A18 du cahier de recette : la session gardée se lit avant le premier rendu. Le serveur est retenu jusqu'à `release`.
+const held = server => { let release; const gate = new Promise(r => { release = r; }); return { release, fetch: async (url, opts) => { await gate; return server.fetch(url, opts); } }; };
+
+test('A18 : a signed-in device opens on the app, not on the entry screen, even while the server is slow', async () => {
+  const server = fakeSupabase(), slow = held(server);
+  const app = launchHosted({ fetch: slow.fetch });
+  await settle();
+  assert.doesNotMatch(app.nodes.get('#main').innerHTML, /authForm/, 'the app at once, with what the device keeps');
+  assert.equal(server.calls.filter(c => c.includes('app_state')).length, 0, 'the server has answered nothing yet');
+  slow.release(); await settle(100);
+  assert.ok(app.site.db && app.board.db, 'then the sync');
+  assert.doesNotMatch(app.nodes.get('#main').innerHTML, /authForm/);
+  app.site.disconnect(); app.board.disconnect();
+});
+
+test('A18 : data of another account on the device is never shown under this session: entry screen until the switch', async () => {
+  const server = fakeSupabase(), slow = held(server);
+  const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'u1', email: 'a@b.c' } });
+  const app = launchHosted({ session: null, storage: new Map([[SESSION_KEY, session], ['selene-auth-last-uid', 'u0']]), fetch: slow.fetch });
+  await settle();
+  assert.match(app.nodes.get('#main').innerHTML, /authForm/, 'the device data belongs to u0: not shown to u1');
+  slow.release(); await settle(100);
+  assert.ok(app.session() && app.site.db, 'after the switch, signed in and synced');
+  assert.doesNotMatch(app.nodes.get('#main').innerHTML, /authForm/);
+  app.site.disconnect(); app.board.disconnect();
+});

@@ -61,7 +61,8 @@ async function until(cond, ms = 10000) {
 /* Ouvrir l'app (une adresse), ou la recharger (sans adresse), et attendre qu'elle ait démarré plutôt qu'un délai : sur
    le web, elle ne démarre qu'une fois IndexedDB ouverte, après l'événement load où goto et reload rendent la main
    (A16 du cahier de recette). `etat` dit ce qu'il faut voir : par défaut, un premier rendu (`demarree`) ; `entree` pour
-   un appareil connecté, dont l'écran d'entrée reste affiché tant que sa session n'a pas fini de se brancher (A18). */
+   un appareil connecté : l'app elle-même, pas l'écran d'entrée (que la session y passe aussitôt depuis A18, ou qu'elle
+   attende un changement de compte). */
 const demarree = () => !!document.querySelector('#main > *');
 const entree = () => !!document.querySelector('#nav > *') && !document.querySelector('#authForm');
 async function ouvrir(p, url, etat = demarree) {
