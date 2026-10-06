@@ -49,12 +49,15 @@ const WORK = (n, extra = {}) => ({ id: `https://openalex.org/W${n}`, doi: `https
 
   console.log('un auteur, avec une clé');
   await p.click('text=Clé OpenAlex (facultative)'); await p.fill('[data-act="oa-key"]', 'ma-cle-secrete'); await p.press('[data-act="oa-key"]', 'Tab');
-  await p.waitForFunction(() => (document.querySelector('#toast') || {}).textContent?.includes('Clé OpenAlex gardée'), null, { timeout: 10000 }).catch(() => {});
+  /* La clé est gardée quand on quitte le champ (change). Sous Firefox piloté par Playwright, Tab peut ne pas le quitter :
+     l'enregistrement, qui redessine la page, arrivait alors au champ suivant et effaçait ce qu'on venait d'y taper. */
+  const gardee = () => p.waitForFunction(() => (document.querySelector('#toast') || {}).textContent?.includes('Clé OpenAlex gardée'), null, { timeout: 5000 }).then(() => true, () => false);
+  if (!await gardee()) { console.log('    (Tab n’a pas quitté le champ de la clé : il le quitte autrement)'); await p.locator('[data-act="oa-key"]').blur(); await gardee(); }
   const avant = oa.length;
   await watch('https://orcid.org/0000-0002-1825-0097');
-  const a = oa.length > avant ? oa[oa.length - 1] : null, filtre = a ? a.searchParams.get('filter') || '' : '';
+  const a = oa.length > avant ? oa[oa.length - 1] : null, filtre = a ? a.searchParams.get('filter') || '' : '', dit = ((await p.textContent('#toast')) || '').trim();
   ok(filtre.startsWith('author.orcid:0000-0002-1825-0097,') && a.searchParams.get('api_key') === 'ma-cle-secrete', 'un ORCID : filtre auteur, et la clé saisie'
-    + (a ? (filtre.startsWith('author.orcid') ? (a.searchParams.get('api_key') ? '' : ' (requête sans clé)') : ` (filtre : ${filtre})`) : ' (aucune requête partie)'));
+    + (a ? (filtre.startsWith('author.orcid') ? (a.searchParams.get('api_key') ? '' : ' (requête sans clé)') : ` (filtre : ${filtre})`) : ` (aucune requête partie ; message : « ${dit} »)`));
   const veilles = (await data()).config.dehors.research.length;
   ok(!JSON.stringify(await data()).includes('ma-cle-secrete') && veilles === 2, 'la clé n’est pas dans les données synchronisées ; les veilles, si' + (veilles === 2 ? '' : ` (${veilles} veille(s))`));
   await watch('Depersonalization');
