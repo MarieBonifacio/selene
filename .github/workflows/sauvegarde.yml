@@ -1,0 +1,63 @@
+name: Sauvegarde
+# La copie chiffrée de la base Supabase (T4 de l'audit ; docs/compte.md, « Sauvegarder la base ») : chaque lundi et à
+# la demande. Sur l'offre gratuite, Supabase n'en garde aucune : c'est la seule. scripts/sauvegarde.sh vide rôles,
+# schéma et données par la CLI Supabase et les chiffre pour une clé publique age (variable SAUVEGARDE_CLE_AGE) avant
+# que rien ne quitte son dossier temporaire. L'artefact, téléchargeable par qui voit le dépôt public, ne s'ouvre
+# qu'avec la clé privée, gardée hors de GitHub ; il est effacé au bout de 30 jours, la durée que promet la politique
+# de confidentialité. Sans réglages, la planification est sautée avec un avis ; un lancement à la main échoue en le
+# disant. Rien n'est écrit dans la base : un vidage ne fait que lire.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 3 * * 1' # le lundi à 3 h 23 UTC : hors des heures d'usage, et pas à l'heure ronde, où GitHub s'engorge
+concurrency: sauvegarde
+permissions:
+  contents: read
+jobs:
+  sauvegarde:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      AGE_RECIPIENT: ${{ vars.SAUVEGARDE_CLE_AGE }}
+    steps:
+      - name: Réglages présents ?
+        id: cfg
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          missing=""
+          [ -n "$SUPABASE_DB_URL" ] || missing="le secret SUPABASE_DB_URL"
+          [ -n "$AGE_RECIPIENT" ] || missing="${missing:+$missing et }la variable SAUVEGARDE_CLE_AGE"
+          if [ -n "$missing" ]; then
+            if [ "$EVENT" = "schedule" ]; then
+              echo "::notice::Pas de sauvegarde : il manque $missing (docs/compte.md, « Sauvegarder la base »)."
+              echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0
+            fi
+            echo "::error::Il manque $missing (Settings → Secrets and variables → Actions ; docs/compte.md, « Sauvegarder la base »)."; exit 1
+          fi
+          # GitHub masque le secret entier dans les journaux ; le mot de passe seul, s'il y paraissait, l'est aussi.
+          python3 -c 'import os, urllib.parse as u; p = u.urlsplit(os.environ["SUPABASE_DB_URL"]).password or ""; print(p); print(u.unquote(p))' |
+            while IFS= read -r line; do if [ -n "$line" ]; then echo "::add-mask::$line"; fi; done
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.cfg.outputs.ok == 'true'
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        if: steps.cfg.outputs.ok == 'true'
+        with:
+          version: 2.118.0 # la même que Compte, Assistant et Passeur
+      - name: age
+        if: steps.cfg.outputs.ok == 'true'
+        run: command -v age >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq age >/dev/null; }
+      - name: Vider et chiffrer
+        if: steps.cfg.outputs.ok == 'true'
+        run: bash scripts/sauvegarde.sh "$RUNNER_TEMP/sauvegarde"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: steps.cfg.outputs.ok == 'true'
+        with:
+          name: selene-base
+          path: ${{ runner.temp }}/sauvegarde/*.age
+          retention-days: 30
+          if-no-files-found: error

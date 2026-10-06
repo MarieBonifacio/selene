@@ -18,7 +18,7 @@ Aucun pourcentage global : une moyenne de couvertures hétérogènes ne mesure r
 | à clarifier | Le résultat attendu dépend d'une question ouverte, marquée [À ARBITRER] dans le cas. |
 | hors périmètre | Ce que la recette ne juge pas (publication sur les stores, production d'images). |
 
-**Décompte des 191 cas manuels** : 8 couvert automatiquement, 183 couvert partiellement, 0 documenté pour recette manuelle, 0 à clarifier.
+**Décompte des 192 cas manuels** : 8 couvert automatiquement, 184 couvert partiellement, 0 documenté pour recette manuelle, 0 à clarifier.
 
 ## Entrée, comptes et session
 
@@ -294,6 +294,7 @@ Cas : [manuels/transverse.md](manuels/transverse.md).
 | Téléphone et ordinateur : rien ne déborde | un bouton hors de l'écran | [TRV-014](manuels/transverse.md#trv-014) | [`TN-reglages`](automatises.md#tn-reglages), [`TN-en-tete`](automatises.md#tn-en-tete), [`TN-regulation`](automatises.md#tn-regulation), [`TN-identite`](automatises.md#tn-identite), [`TN-accessibilite`](automatises.md#tn-accessibilite) | couvert partiellement | Serveur et services simulés, une partie des étapes seulement : garder le cas en recette complète ([BL-04](backlog.md#bl-04)). |
 | États vides | un écran vide pris pour un bug ou une perte de données | [TRV-015](manuels/transverse.md#trv-015) | [`TN-budget`](automatises.md#tn-budget), [`TN-notes`](automatises.md#tn-notes) | couvert partiellement | Serveur et services simulés, une partie des étapes seulement : garder le cas en recette complète. |
 | Isolation entre comptes sur le vrai projet | un compte qui lit l'espace d'un autre : la fuite la plus grave possible | [TRV-016](manuels/transverse.md#trv-016) | [`TU-ISO-01`](automatises.md#tu-iso-01), [`TS-ISOLATION`](automatises.md#ts-isolation) | couvert partiellement | Règle vérifiée par des tests unitaires ; aucun scénario de navigateur ne vérifie l'écran ([BL-03](backlog.md#bl-03)). |
+| Sauvegarde de la base | une base perdue sans copie ; une sauvegarde qui ne se restaure pas ; une copie lisible depuis le dépôt public | [TRV-017](manuels/transverse.md#trv-017) | [`TU-SAV-01`](automatises.md#tu-sav-01), [`TU-SAV-02`](automatises.md#tu-sav-02), [`TU-SAV-03`](automatises.md#tu-sav-03), [`TS-SAUVEGARDE`](automatises.md#ts-sauvegarde) | couvert partiellement | Le script et le workflow sont vérifiés avec une fausse CLI ; la restauration (comptes compris) ne l'est qu'à la main, sur un projet neuf. Rien ne tourne tant que la clé et l'adresse ne sont pas réglées ([a-faire](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait)). |
 
 ## Règles vérifiées seulement par l'automatique
 

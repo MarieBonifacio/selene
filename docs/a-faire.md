@@ -64,6 +64,15 @@ connaît pas le format 8 et refuse d'écrire.
 
 ## Régler le projet Supabase *(si ce n'est pas déjà fait)*
 
+- [ ] **Sauvegarder la base, avant tout le reste** (P1) : sur l'offre gratuite, Supabase n'en garde aucune. Le workflow
+  *Sauvegarde* la copie chiffrée chaque lundi, une fois réglés une clé age, la variable `SAUVEGARDE_CLE_AGE` et le
+  secret `SUPABASE_DB_URL` (dix minutes) ; puis un *Run workflow*, et un exercice de restauration sur un projet neuf,
+  supprimé ensuite ([compte.md](compte.md#sauvegarder-la-base), cas [TRV-017](recette/manuels/transverse.md#trv-017)). La clé privée ne va jamais dans GitHub : la perdre rend
+  toutes les sauvegardes illisibles.
+- [ ] **L'offre Pro de Supabase** (25 $ par mois : une sauvegarde par jour, pas de mise en pause), **avant d'inviter les
+  bêta-testeurs** : leurs données ne doivent pas dépendre d'un vidage hebdomadaire. Décision de budget.
+- [ ] **Mettre Postgres à jour** (*Settings* → *Infrastructure*), **après** une sauvegarde réussie, jamais avant : le
+  projet tourne en 17.6, une version corrective plus récente est proposée (T18 de l'audit).
 - [ ] **SMTP d'abord**, puis les adresses de retour (*URL Configuration*), puis la traduction des modèles d'e-mail :
   sans SMTP, les liens « mot de passe oublié » et les invitations n'atteignent que l'équipe du projet
   ([compte.md](compte.md#mot-de-passe-oublié-invitation)).

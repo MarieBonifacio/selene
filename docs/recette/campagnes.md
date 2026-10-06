@@ -100,7 +100,8 @@ demi-journée selon la PR.
    | `src/core/regulation.js`, `src/app/modules/regulation.js`, `src/app/state/local.js` | [reprendre-la-main.md](manuels/reprendre-la-main.md), **tous les P1** |
    | `src/native/`, `native/android/`, `native/ios/`, `native/tauri/` | [plateformes.md](manuels/plateformes.md), cas de la plateforme |
    | `build.py`, CSP, `sw.js`, `confidentialite.html`, `privacy.html`, `essai.html` | [TRV-009](manuels/transverse.md#trv-009), [TRV-012](manuels/transverse.md#trv-012), [TRV-013](manuels/transverse.md#trv-013) |
-   | `supabase/schema.sql` | [TRV-016](manuels/transverse.md#trv-016), [synchronisation.md](manuels/synchronisation.md) |
+   | `supabase/schema.sql` | [TRV-016](manuels/transverse.md#trv-016), [TRV-017](manuels/transverse.md#trv-017), [synchronisation.md](manuels/synchronisation.md) |
+   | `scripts/sauvegarde.sh`, `.github/workflows/sauvegarde.yml` | [TRV-017](manuels/transverse.md#trv-017) |
 
 3. Dans ces domaines : les cas P1 et P2. Un cas *couvert automatiquement* ([matrice.md](matrice.md)) peut être sauté si
    la CI de la PR est verte et si la PR ne modifie pas ses tests ; le compte rendu le dit.
@@ -128,8 +129,8 @@ et une demi-journée pour l'artefact.
 4. Connexions (EXT), assistant (AST).
 5. « Reprendre la main » (RLM) : le chemin S pour l'usage quotidien, puis le chemin P (compte P, deux appareils).
 6. Plateformes (PLT) sur appareils réels ; artefact.
-7. Le reste du transverse : TRV-004, TRV-005, TRV-007, TRV-008, TRV-010, TRV-011, TRV-013, TRV-015, TRV-016 (ce
-   dernier par la personne qui administre Supabase).
+7. Le reste du transverse : TRV-004, TRV-005, TRV-007, TRV-008, TRV-010, TRV-011, TRV-013, TRV-015, TRV-016 et TRV-017
+   (ces deux derniers par la personne qui administre Supabase).
 
 **Critères de sortie** :
 
