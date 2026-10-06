@@ -156,6 +156,6 @@ async function main([full, stores, shots]) {
   if (failed) throw new Error(`${failed} vérification(s) en échec`);
   console.log("Fumée verte.");
 }
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main(process.argv.slice(2)).catch(e => { console.log("  ✗", e.message); process.exit(1); });
 }

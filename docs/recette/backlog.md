@@ -156,6 +156,10 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 - **Dépendances** : `tauri-driver` et le pilote de WebView2 ; le raccourci global et la zone de notification restent
   manuels.
 - **Bénéfice attendu** : la persistance et l'instance unique vérifiées à chaque version.
+- **État** : en place le 6 octobre 2026 (`TS-WIN-FUMEE`, `scripts/windows-fumee.mjs`), sans `tauri-driver` : WebView2
+  ouvre le protocole de débogage de Chrome sur demande (`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`), et le script reprend
+  les étapes de la fumée Android. Le projet Supabase de l'app est rendu injoignable sur le runner (fichier `hosts`)
+  avant l'essai.
 
 <a id="bl-09"></a>
 ### BL-09 — Seuils de performance sur le jeu de volume
@@ -244,7 +248,7 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
   bloquant jusqu'au 20 octobre (`continue-on-error` sur le pas des scénarios, pour Firefox seulement), puis bloquant :
   retirer la ligne dans `check.yml` (voir [a-faire.md](../a-faire.md#tout-de-suite-une-minute)). README : « Navigateurs pris
   en charge ». Premier passage (PR #111) : 74 scénarios sur 78 ; les quatre échecs ont chacun leur cause, corrigée
-  (anomalie A14 de [perimetre.md](perimetre.md#anomalies-et-observations)).
+  (anomalie A14 de [perimetre.md](perimetre.md#anomalies-et-observations)). Après correction (PR #112) : 78 sur 78.
 
 ---
 

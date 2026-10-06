@@ -1,13 +1,14 @@
 name: Desktop
 # Construit l'installateur Windows de Selene (Tauri 2, docs/desktop.md) : la page native (dist/native) dans la
 # WebView du système (WebView2), et le cœur Rust (native/tauri) : ses tests, puis l'installateur NSIS, déposé en
-# artefact. Les runners Windows de GitHub ont déjà Rust et WebView2.
+# artefact. Les runners Windows de GitHub ont déjà Rust et WebView2. Puis la fumée de l'app installée (BL-08,
+# scripts/windows-fumee.mjs) : installée en silence, lancée, relancée, une seule instance.
 on:
   pull_request:
-    paths: ['src/**', 'native/tauri/**', 'package.json', 'package-lock.json', 'build.py', '.github/workflows/desktop.yml']
+    paths: ['src/**', 'native/tauri/**', 'package.json', 'package-lock.json', 'build.py', 'scripts/windows-fumee.mjs', 'scripts/android-fumee.mjs', '.github/workflows/desktop.yml']
   push:
     branches: [main]
-    paths: ['src/**', 'native/tauri/**', 'package.json', 'package-lock.json', 'build.py', '.github/workflows/desktop.yml']
+    paths: ['src/**', 'native/tauri/**', 'package.json', 'package-lock.json', 'build.py', 'scripts/windows-fumee.mjs', 'scripts/android-fumee.mjs', '.github/workflows/desktop.yml']
   workflow_dispatch:
 concurrency:
   group: desktop-${{ github.ref }}
@@ -44,4 +45,24 @@ jobs:
         with:
           name: selene-windows
           path: native/tauri/target/release/bundle/nsis/*.exe
+          retention-days: 14
+      # Rien de la fumée ne part vers le vrai serveur : le projet Supabase de l'app (lu dans auth.js) ne se résout plus.
+      - name: Projet Supabase injoignable pour la fumée
+        shell: pwsh
+        run: |
+          $ref = (Select-String -Path src/app/services/auth.js -Pattern 'https://([a-z0-9]+)\.supabase\.co').Matches[0].Groups[1].Value
+          Add-Content -Path "$env:SystemRoot\System32\drivers\etc\hosts" -Value "0.0.0.0 $ref.supabase.co`n:: $ref.supabase.co"
+          ipconfig /flushdns | Out-Null
+          if ((Resolve-DnsName "$ref.supabase.co" -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -and $_.IPAddress -notin @('0.0.0.0', '::') })) { Write-Error "le projet se résout encore"; exit 1 }
+      - name: Fumée de l'app installée
+        timeout-minutes: 10
+        shell: pwsh
+        run: |
+          $setup = (Get-ChildItem native/tauri/target/release/bundle/nsis/*-setup.exe | Select-Object -First 1).FullName
+          node scripts/windows-fumee.mjs "$setup" "$env:RUNNER_TEMP/fumee-windows"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: fumee-windows
+          path: ${{ runner.temp }}/fumee-windows
           retention-days: 14

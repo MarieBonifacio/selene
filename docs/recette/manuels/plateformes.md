@@ -260,7 +260,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : PC Windows 10 ou 11 de recette ; installateur `selene-windows` du commit en recette, installé
   (SmartScreen : « Informations complémentaires » → « Exécuter quand même ») ; connectée au compte A.
 - **Données** : dans la boîte de dialogue Exécuter (Win+R) : `selene://share?url=https%3A%2F%2Fexemple.org%2Fplt-009&title=%3C%2Fscript%3E%22Titre%22`.
-- **Automatisés associés** : `TN-bureau`, `TU-NAT-06`, `TR-TAU-02`, `TR-TAU-03`, `TS-WIN-NSIS`
+- **Automatisés associés** : `TN-bureau`, `TU-NAT-06`, `TR-TAU-02`, `TR-TAU-03`, `TS-WIN-NSIS`, `TS-WIN-FUMEE`
 - **Source** : [DOC] [desktop.md](../../desktop.md#ce-que-lapp-ajoute) ; [TEST] `tests/browser/bureau.js`, `cargo test`.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -290,7 +290,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : [PLT-009](#plt-009) étape 1 ; un installateur d'un commit plus récent (ou le même, réinstallé) pour
   l'étape 5.
 - **Données** : capture `Avant de quitter PLT-010`.
-- **Automatisés associés** : `TN-bureau`, `TR-TAU-01`
+- **Automatisés associés** : `TN-bureau`, `TR-TAU-01`, `TS-WIN-FUMEE`
 - **Source** : [DOC] [desktop.md](../../desktop.md) (« L'essai de la fenêtre elle-même reste à faire à la main ») ;
   [TEST] `TR-TAU-01` (encodage des noms).
 
