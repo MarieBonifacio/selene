@@ -25,7 +25,14 @@ const WORK = (n, extra = {}) => ({ id: `https://openalex.org/W${n}`, doi: `https
   const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + '/index.html#dehors'); await p.waitForTimeout(800);
   const data = () => storeJSON(p, 'selene-site-v1');
-  const watch = async (q, mod = '') => { await p.fill('#oaIn', q); await p.selectOption('#oaMod', mod); await p.click('[data-act="oa-add"]'); await p.waitForTimeout(700); };
+  /* Ajouter une veille, puis attendre sa requête à OpenAlex (ou le refus d'un doublon) avant de laisser la page la rendre :
+     une attente d'état plutôt qu'un délai seul (premier passage sous Firefox, le 6 octobre 2026). */
+  const watch = async (q, mod = '') => {
+    const n = oa.length;
+    await p.fill('#oaIn', q); await p.selectOption('#oaMod', mod); await p.click('[data-act="oa-add"]');
+    for (let i = 0; i < 100 && oa.length === n && !((await p.textContent('#toast')) || '').includes('Déjà en veille'); i++) await p.waitForTimeout(100);
+    await p.waitForTimeout(700);
+  };
 
   console.log('une recherche, sans clé');
   ok(!oa.length, 'rien n’est demandé avant la première veille');
@@ -41,11 +48,15 @@ const WORK = (n, extra = {}) => ({ id: `https://openalex.org/W${n}`, doi: `https
   ok((await p.getAttribute('[data-item="W2"] a', 'href')) === 'https://openalex.org/W2', 'sans DOI : la notice OpenAlex');
 
   console.log('un auteur, avec une clé');
-  await p.click('text=Clé OpenAlex (facultative)'); await p.fill('[data-act="oa-key"]', 'ma-cle-secrete'); await p.press('[data-act="oa-key"]', 'Tab'); await p.waitForTimeout(200);
+  await p.click('text=Clé OpenAlex (facultative)'); await p.fill('[data-act="oa-key"]', 'ma-cle-secrete'); await p.press('[data-act="oa-key"]', 'Tab');
+  await p.waitForFunction(() => (document.querySelector('#toast') || {}).textContent?.includes('Clé OpenAlex gardée'), null, { timeout: 10000 }).catch(() => {});
+  const avant = oa.length;
   await watch('https://orcid.org/0000-0002-1825-0097');
-  const a = oa[oa.length - 1];
-  ok(a.searchParams.get('filter').startsWith('author.orcid:0000-0002-1825-0097,') && a.searchParams.get('api_key') === 'ma-cle-secrete', 'un ORCID : filtre auteur, et la clé saisie');
-  ok(!JSON.stringify(await data()).includes('ma-cle-secrete') && (await data()).config.dehors.research.length === 2, 'la clé n’est pas dans les données synchronisées ; les veilles, si');
+  const a = oa.length > avant ? oa[oa.length - 1] : null, filtre = a ? a.searchParams.get('filter') || '' : '';
+  ok(filtre.startsWith('author.orcid:0000-0002-1825-0097,') && a.searchParams.get('api_key') === 'ma-cle-secrete', 'un ORCID : filtre auteur, et la clé saisie'
+    + (a ? (filtre.startsWith('author.orcid') ? (a.searchParams.get('api_key') ? '' : ' (requête sans clé)') : ` (filtre : ${filtre})`) : ' (aucune requête partie)'));
+  const veilles = (await data()).config.dehors.research.length;
+  ok(!JSON.stringify(await data()).includes('ma-cle-secrete') && veilles === 2, 'la clé n’est pas dans les données synchronisées ; les veilles, si' + (veilles === 2 ? '' : ` (${veilles} veille(s))`));
   await watch('Depersonalization');
   ok((await p.textContent('#toast')).includes('Déjà en veille'), 'une veille en double : dit');
 
