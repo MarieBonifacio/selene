@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-861Et3WX6YLQctLohLhsR5hsL18IC73E92rAZyz8UhY=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-N0Ch22BUfKvo4l4SzoSs5DgM1zogwa28cKyvjCEr33c=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -750,7 +750,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "2e805ca91e";
+const SELENE_BUILD = "59b4a981f7";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -3331,7 +3331,7 @@ var __selene = (() => {
     "cet appareil": "this device",
     "Ce réglage reste sur cet appareil : il ne suit pas ton compte.": "This setting stays on this device: it doesn't follow your account.",
     "Coche pour afficher, renomme sur place, range par domaine, ordonne avec ↑ ↓, et ✕ pour supprimer.": "Tick to show, rename in place, file by domain, order with ↑ ↓, and ✕ to delete.",
-    "Régler « {0} »": "Adjust “{0}”",
+    ", pour « {0} »": ", for “{0}”",
     "réglé au chapitre Assistant": "set in the Assistant chapter",
     "Créer un espace": "Create a space",
     "D'un modèle": "From a template",
@@ -9397,7 +9397,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     get reglerShort() {
       return tr`régler`;
     },
-    regler: (name) => tr`Régler « ${name} »`,
+    // La fin du nom accessible de « régler » : le texte visible d'abord, puis l'espace (WCAG 2.5.3, l'étiquette dans le nom).
+    regler: (name) => tr`, pour « ${name} »`,
     get assistantHere() {
       return tr`réglé au chapitre Assistant`;
     },
@@ -9487,7 +9488,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     const settings = enabled(m.id) && (inst || grouperFor(m.id));
     return `<div class="modblock ${tintOf(m.id)}${m.on && !absent ? "" : " off"}">
     <div class="set mod" data-i="${i}"><label class="tap"><input type="checkbox" data-act="mod-on" ${m.on && !absent ? "checked" : ""}${absent ? " disabled" : ""} aria-label="${tr`Activer ${esc(name)}`}"></label><div class="mod-name">${sigil(m.id)}<input data-act="mod-label" value="${esc(name)}" aria-label="${tr`Nom du module`}"></div>${sys ? "<span></span>" : `<input class="grp-in" data-act="mod-group" value="${esc(m.group || "")}" list="domainList" maxlength="40" placeholder="${esc(TEXTS.domaine)}" aria-label="${tr`Domaine de ${esc(name)}`}">`}<div class="row">${inst ? `<button class="btn ghost sm" data-act="mod-del" data-mod="${esc(m.id)}" aria-label="${tr`Supprimer définitivement`}" title="${tr`Supprimer définitivement`}">✕</button>` : ""}<button class="btn ghost sm" data-act="mod-up" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="mod-down" aria-label="${tr`Descendre`}">↓</button></div></div>
-    ${absent ? `<div class="mreg-note">${TYPE_UI[inst.type].settings(m.id, inst)}</div>` : settings ? `<details id="mreg-${esc(m.id)}" data-mod="${esc(m.id)}" class="mreg"><summary aria-label="${esc(TEXTS.regler(name))}">${esc(TEXTS.reglerShort)}${inst ? `<span class="mreg-type">${esc(typeName(inst.type))}</span>` : ""}</summary><div class="mreg-body">${moduleSettingsHTML(m.id)}</div></details>` : sys && m.on ? `<p class="mreg-note"><button type="button" class="btn ghost sm" data-act="reg-goto" data-to="reg-assistant">› ${esc(TEXTS.assistantHere)}</button></p>` : ""}
+    ${absent ? `<div class="mreg-note">${TYPE_UI[inst.type].settings(m.id, inst)}</div>` : settings ? `<details id="mreg-${esc(m.id)}" data-mod="${esc(m.id)}" class="mreg"><summary>${esc(TEXTS.reglerShort)}${inst ? `<span class="mreg-type">${esc(typeName(inst.type))}</span>` : ""}<span class="sr">${esc(TEXTS.regler(name))}</span></summary><div class="mreg-body">${moduleSettingsHTML(m.id)}</div></details>` : sys && m.on ? `<p class="mreg-note"><button type="button" class="btn ghost sm" data-act="reg-goto" data-to="reg-assistant">› ${esc(TEXTS.assistantHere)}</button></p>` : ""}
   </div>`;
   }
   function espacesHTML(s, c) {

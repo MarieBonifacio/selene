@@ -1749,7 +1749,7 @@ export default {
   "cet appareil": "this device",
   "Ce réglage reste sur cet appareil : il ne suit pas ton compte.": "This setting stays on this device: it doesn't follow your account.",
   "Coche pour afficher, renomme sur place, range par domaine, ordonne avec ↑ ↓, et ✕ pour supprimer.": "Tick to show, rename in place, file by domain, order with ↑ ↓, and ✕ to delete.",
-  "Régler « {0} »": "Adjust “{0}”",
+  ", pour « {0} »": ", for “{0}”",
   "réglé au chapitre Assistant": "set in the Assistant chapter",
   "Créer un espace": "Create a space",
   "D'un modèle": "From a template",

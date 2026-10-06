@@ -76,7 +76,8 @@ export const TEXTS = {
   get domaine() { return tr`Domaine`; },
   get suppr() { return tr`Supprimer`; },
   get reglerShort() { return tr`régler`; },
-  regler: name => tr`Régler « ${name} »`,
+  // La fin du nom accessible de « régler » : le texte visible d'abord, puis l'espace (WCAG 2.5.3, l'étiquette dans le nom).
+  regler: name => tr`, pour « ${name} »`,
   get assistantHere() { return tr`réglé au chapitre Assistant`; },
   get create() { return tr`Créer un espace`; },
   get fromTemplate() { return tr`D'un modèle`; },

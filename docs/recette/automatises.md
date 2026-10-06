@@ -11,7 +11,7 @@ Identifiants retirés : aucun.
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
 | Tests unitaires et d'intégration Node | `npm test` | 307 tests, 31 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
-| Scénarios de navigateur | `npm run test:browser` | 77 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium **et** WebKit | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
+| Scénarios de navigateur | `npm run test:browser` | 78 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium **et** WebKit | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
 | Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
@@ -1082,6 +1082,14 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Conditions** : —
 - **Vérifie** : deux empreintes, pas de `'unsafe-inline'` ; le script principal et celui du service worker s'exécutent ; polices du site ; 12 vues sans violation ; un `onerror=` ou un `<script>` injecté ne s'exécute pas et le navigateur le signale.
 - **Cas manuels** : [CPT-001](manuels/entree-et-comptes.md#cpt-001), [TRV-008](manuels/transverse.md#trv-008), [TRV-009](manuels/transverse.md#trv-009)
+
+<a id="tn-accessibilite"></a>
+#### `TN-accessibilite` — Balayage axe-core des vues principales
+
+- **Fichier** : [`tests/browser/accessibilite.js`](../../tests/browser/accessibilite.js) · **mode** A · **écran** O
+- **Conditions** : axe-core 4.14.0 (dépendance de développement figée, MPL-2.0, jamais embarquée), règles WCAG 2.0, 2.1 et 2.2 A et AA ; en clair puis en sombre (`colorScheme`) ; `bypassCSP` pour injecter axe.
+- **Vérifie** : aucune violation « serious » ni « critical » sur l'accueil, la Boîte, chaque type d'espace du jeu d'essai (Chantier, Écriture, Kundalini, Phidippus, Moth, Musique, Budget), la recherche, le bilan, les Réglages, et le formulaire d'une tâche ouvert ; les exceptions, aucune à ce jour, sont listées dans le test avec leur raison ; aucune erreur JavaScript.
+- **Cas manuels** : [TRV-001](manuels/transverse.md#trv-001), [TRV-002](manuels/transverse.md#trv-002), [TRV-003](manuels/transverse.md#trv-003), [TRV-006](manuels/transverse.md#trv-006), [TRV-014](manuels/transverse.md#trv-014)
 
 <a id="tn-contraste"></a>
 #### `TN-contraste` — Contraste d'un espace éteint

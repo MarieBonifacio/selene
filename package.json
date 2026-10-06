@@ -37,6 +37,7 @@
     "@capacitor/local-notifications": "8.3.1",
     "@capacitor/share": "8.0.3",
     "@tauri-apps/cli": "2.12.1",
+    "axe-core": "4.14.0",
     "deno": "2.9.6",
     "esbuild": "0.28.2",
     "eslint": "10.11.0",

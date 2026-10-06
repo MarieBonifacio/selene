@@ -46,7 +46,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : un lecteur d'écran réel : NVDA (Windows, Chrome), VoiceOver (macOS, Safari ; iOS), ou TalkBack
   (Android) ; l'écran éteint ou masqué pendant les étapes 2 à 6 (« rideau d'écran » de VoiceOver, ou luminosité à zéro).
 - **Données** : capture `Lu sans voir TRV-001` ; recherche `lisière`.
-- **Automatisés associés** : `TN-ecran-lu`, `TN-annuler`
+- **Automatisés associés** : `TN-ecran-lu`, `TN-annuler`, `TN-accessibilite`
 - **Source** : [TEST] `tests/browser/ecran-lu.js`, `tests/browser/annuler.js` ; [DOC]
   [evolution-ui.md](../../evolution-ui.md).
 
@@ -74,7 +74,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, WIN
 - **Préconditions** : souris débranchée ou laissée de côté.
 - **Données** : tâche `Clavier TRV-002`.
-- **Automatisés associés** : `TN-ecran-lu`, `TN-carte`, `TN-ecrans`, `TN-regulation`
+- **Automatisés associés** : `TN-ecran-lu`, `TN-carte`, `TN-ecrans`, `TN-regulation`, `TN-accessibilite`
 - **Source** : [TEST] les scénarios cités ; [DOC] README (« `[` et `]` sur la carte qui a le focus »).
 
 | Étape | Action précise | Résultat attendu observable |
@@ -101,7 +101,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P3 · **Plateformes** : Web, Mob
 - **Préconditions** : un téléphone réel (ou l'émulation 390 × 844 avec le toucher activé) ; un ordinateur.
 - **Données** : aucune.
-- **Automatisés associés** : `TN-cibles`, `TN-cibles-ordinateur`, `TN-interface`
+- **Automatisés associés** : `TN-cibles`, `TN-cibles-ordinateur`, `TN-interface`, `TN-accessibilite`
 - **Source** : [TEST] `tests/browser/cibles.js`, `tests/browser/cibles-ordinateur.js`, `tests/browser/interface.js`.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -182,7 +182,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : outils de développement → Rendering ; un lieu réglé pour le ciel avec la météo
   ([EXT-007](connexions.md#ext-007)).
 - **Données** : aucune.
-- **Automatisés associés** : `TN-contraste`, `TN-ciel-vivant`, `TU-SKY-07`
+- **Automatisés associés** : `TN-contraste`, `TN-ciel-vivant`, `TU-SKY-07`, `TN-accessibilite`
 - **Source** : [TEST] `tests/browser/contraste.js`, `tests/browser/ciel-vivant.js`, `TU-SKY-07`.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -404,7 +404,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : émulation des outils de développement (320 × 640, 390 × 844, 1 280 × 900) et un téléphone réel.
 - **Données** : aucune.
-- **Automatisés associés** : `TN-reglages`, `TN-en-tete`, `TN-regulation`, `TN-identite`
+- **Automatisés associés** : `TN-reglages`, `TN-en-tete`, `TN-regulation`, `TN-identite`, `TN-accessibilite`
 - **Source** : [TEST] les scénarios cités.
 
 | Étape | Action précise | Résultat attendu observable |
