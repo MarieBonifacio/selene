@@ -154,3 +154,16 @@ test('un projet Supabase de préproduction (la recette) : seulement dans dist/, 
   }
   fs.rmSync(out, { recursive: true, force: true });
 });
+
+test('la fumée Windows : seule sa variante ouvre un port de débogage, la configuration publiée jamais', async () => {
+  const { smokeConfig } = await import('../scripts/windows-fumee.mjs');
+  const conf = JSON.parse(fs.readFileSync('native/tauri/tauri.conf.json', 'utf8'));
+  assert.doesNotMatch(JSON.stringify(conf), /remote-debugging|additionalBrowserArgs/, 'l’app publiée n’ouvre rien');
+  const variant = smokeConfig(conf).app.windows;
+  assert.equal(variant.length, conf.app.windows.length);
+  variant.forEach((w, i) => {
+    const { additionalBrowserArgs, ...rest } = w;
+    assert.deepEqual(rest, conf.app.windows[i], 'la même fenêtre, recopiée');
+    assert.match(additionalBrowserArgs, /^--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --remote-debugging-port=\d+$/, 'les arguments de wry, plus le port');
+  });
+});

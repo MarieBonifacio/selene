@@ -2,17 +2,28 @@
    en silence ; l'app démarre sur son écran d'entrée ; on entre sans compte et on capture une note ; tuée puis relancée,
    l'app la retrouve (le coffre de fichiers du cœur Rust, native/tauri/src/main.rs : %APPDATA%\<identifiant>\selene) ;
    une seconde Selene lancée pendant que la première tourne ne reste pas (une seule instance, qui ramène sa fenêtre).
-   La page est pilotée comme sur Android (scripts/android-fumee.mjs : cdp, waitFor, steps) : WebView2 ouvre le protocole
-   de débogage de Chrome quand WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS le lui demande, sans pilote à installer. Le
-   workflow rend d'abord le projet Supabase injoignable : rien de cet essai ne part vers le vrai serveur.
-   Usage : node scripts/windows-fumee.mjs <installateur .exe> <dossier des captures> */
+   La page est pilotée comme sur Android (scripts/android-fumee.mjs : cdp, waitFor, steps), par le protocole de débogage
+   de Chrome, que WebView2 ouvre sur 127.0.0.1:PORT. Pas par la variable WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS : wry passe
+   ses propres arguments à WebView2, qui ignore alors la variable (constaté le 6 octobre 2026). La fumée installe donc une
+   variante, construite après le dépôt de l'installateur publié et jamais publiée elle-même : la même app, dont la
+   fenêtre ajoute --remote-debugging-port (additionalBrowserArgs de Tauri). Le workflow rend d'abord le projet Supabase
+   injoignable : rien de cet essai ne part vers le vrai serveur.
+   Usage : node scripts/windows-fumee.mjs config <fichier>          (la configuration de la variante, pour tauri build --config)
+           node scripts/windows-fumee.mjs <installateur .exe> <dossier des captures> */
 import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { cdp, steps, waitFor } from "./android-fumee.mjs";
 
-const IDENTIFIER = "io.github.mariebonifacio.selene", EXE = "selene.exe";
+const IDENTIFIER = "io.github.mariebonifacio.selene", EXE = "selene.exe", PORT = 9333;
+// Les arguments que wry donne à WebView2 quand l'app n'en fixe pas : la variante les garde, et ajoute le port.
+const WRY_DEFAULT_ARGS = "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection";
+/* La configuration de la variante : les fenêtres de native/tauri/tauri.conf.json, telles quelles, plus le port de
+   débogage (un tableau se remplace en entier dans une fusion de configuration : on les recopie, on ne les réécrit pas). */
+export function smokeConfig(conf) {
+  return { app: { windows: conf.app.windows.map(w => ({ ...w, additionalBrowserArgs: `${WRY_DEFAULT_ARGS} --remote-debugging-port=${PORT}` })) } };
+}
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const hex = s => Buffer.from(s, "utf8").toString("hex");
 // Chaque commande système est bornée : un installateur ou un processus figé fait échouer, il ne bloque pas.
@@ -28,9 +39,9 @@ const processes = () => { try { return run("tasklist", ["/FI", `IMAGENAME eq ${E
 const kill = () => { try { run("taskkill", ["/IM", EXE, "/F", "/T"]); } catch {} };
 /* Démarrer l'app, sa sortie dans un fichier du dossier des captures (une panique du cœur Rust s'y lit), et savoir quand
    elle s'arrête. Le débogage de WebView2 est demandé par la variable d'environnement, sur un port neuf à chaque fois. */
-function start(exe, port, shots) {
-  const log = path.join(shots, `selene-${port}.log`), fd = fs.openSync(log, "w");
-  const child = spawn(exe, [], { stdio: ["ignore", fd, fd], env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}` } });
+function start(exe, name, shots) {
+  const log = path.join(shots, `selene-${name}.log`), fd = fs.openSync(log, "w");
+  const child = spawn(exe, [], { stdio: ["ignore", fd, fd] });
   const state = { child, log, exited: null };
   child.on("exit", code => { state.exited = code ?? "signal"; });
   child.on("error", e => { state.exited = e.message; });
@@ -44,8 +55,8 @@ function diagnose(port) {
   console.log(`    port ${port} : ` + (ps(`Get-NetTCPConnection -State Listen -LocalPort ${port} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess`) || "(personne n'écoute)"));
 }
 /* Lancer l'app et s'attacher à sa page. */
-async function launch(exe, port, shots) {
-  const app = start(exe, port, shots);
+async function launch(exe, name, shots, port = PORT) {
+  const app = start(exe, name, shots);
   for (const end = Date.now() + 60000; Date.now() < end; await sleep(500)) {
     if (app.exited !== null) throw new Error(`l'app s'est arrêtée (${app.exited}) : ${fs.readFileSync(app.log, "utf8").trim().slice(-600) || "rien sur sa sortie"}`);
     let list = [];
@@ -59,6 +70,12 @@ async function launch(exe, port, shots) {
 }
 
 async function main([installer, shots]) {
+  if (installer === "config") {
+    const conf = JSON.parse(fs.readFileSync(new URL("../native/tauri/tauri.conf.json", import.meta.url), "utf8"));
+    fs.writeFileSync(shots, JSON.stringify(smokeConfig(conf), null, 2));
+    console.log(`variante de la fumée : ${shots}`);
+    return;
+  }
   if (!installer || !shots) throw new Error("usage : node scripts/windows-fumee.mjs <installateur .exe> <dossier des captures>");
   fs.mkdirSync(shots, { recursive: true });
   let failed = 0;
@@ -72,7 +89,7 @@ async function main([installer, shots]) {
   for (let i = 0; i < 30 && !exe; i++) { exe = findInstalled(); if (!exe) await sleep(1000); }
   check(!!exe, `installée : ${exe || "introuvable sous %LOCALAPPDATA% et %ProgramFiles%"}`);
   if (!exe) throw new Error("rien à lancer");
-  let page = await launch(exe, 9333, shots);
+  let page = await launch(exe, "1", shots);
   await steps.entrance(page);
   check(true, "l'écran d'entrée s'affiche");
   const runtime = await page.evaluate("window.seleneNative && window.seleneNative.runtime");
@@ -87,7 +104,7 @@ async function main([installer, shots]) {
   console.log("tuée, puis relancée");
   kill(); await sleep(2000);
   check(processes() === 0, "plus aucune Selene après l'avoir tuée");
-  page = await launch(exe, 9334, shots);
+  page = await launch(exe, "2", shots);
   await steps.noteKept(page);
   check(true, "la note est là, sans repasser par l'écran d'entrée");
   const files = fs.existsSync(vault) ? fs.readdirSync(vault) : [];
@@ -96,7 +113,7 @@ async function main([installer, shots]) {
   await shot(page, "3-relance.png");
 
   console.log("une seconde Selene");
-  const second = start(exe, 9335, shots);
+  const second = start(exe, "seconde", shots);
   for (let i = 0; i < 20 && second.exited === null; i++) await sleep(500);
   check(second.exited !== null, `la seconde s'arrête d'elle-même${second.exited === null ? " (elle tourne encore)" : ""}`);
   check(processes() === 1, `une seule Selene tourne (${processes()})`);

@@ -156,9 +156,10 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 - **Dépendances** : `tauri-driver` et le pilote de WebView2 ; le raccourci global et la zone de notification restent
   manuels.
 - **Bénéfice attendu** : la persistance et l'instance unique vérifiées à chaque version.
-- **État** : en place le 6 octobre 2026 (`TS-WIN-FUMEE`, `scripts/windows-fumee.mjs`), sans `tauri-driver` : WebView2
-  ouvre le protocole de débogage de Chrome sur demande (`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`), et le script reprend
-  les étapes de la fumée Android. Le projet Supabase de l'app est rendu injoignable sur le runner (fichier `hosts`)
+- **État** : en place le 6 octobre 2026 (`TS-WIN-FUMEE`, `scripts/windows-fumee.mjs`), sans `tauri-driver` : une
+  variante de l'app, construite après le dépôt de l'installateur publié et jamais déposée, ouvre le protocole de débogage
+  de Chrome (`additionalBrowserArgs` ; la variable `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` est ignorée quand wry fixe ses
+  propres arguments, constaté au deuxième essai), et le script reprend les étapes de la fumée Android. Le projet Supabase de l'app est rendu injoignable sur le runner (fichier `hosts`)
   avant l'essai.
 
 <a id="bl-09"></a>

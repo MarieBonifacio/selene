@@ -260,7 +260,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : PC Windows 10 ou 11 de recette ; installateur `selene-windows` du commit en recette, installé
   (SmartScreen : « Informations complémentaires » → « Exécuter quand même ») ; connectée au compte A.
 - **Données** : dans la boîte de dialogue Exécuter (Win+R) : `selene://share?url=https%3A%2F%2Fexemple.org%2Fplt-009&title=%3C%2Fscript%3E%22Titre%22`.
-- **Automatisés associés** : `TN-bureau`, `TU-NAT-06`, `TR-TAU-02`, `TR-TAU-03`, `TS-WIN-NSIS`, `TS-WIN-FUMEE`
+- **Automatisés associés** : `TN-bureau`, `TU-NAT-06`, `TR-TAU-02`, `TR-TAU-03`, `TS-WIN-NSIS`, `TS-WIN-FUMEE`, `TU-BLD-11`
 - **Source** : [DOC] [desktop.md](../../desktop.md#ce-que-lapp-ajoute) ; [TEST] `tests/browser/bureau.js`, `cargo test`.
 
 | Étape | Action précise | Résultat attendu observable |

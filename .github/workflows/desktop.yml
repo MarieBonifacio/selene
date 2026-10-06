@@ -46,6 +46,15 @@ jobs:
           name: selene-windows
           path: native/tauri/target/release/bundle/nsis/*.exe
           retention-days: 14
+      # La variante de la fumée : la même app, dont la WebView2 ouvre le protocole de débogage sur 127.0.0.1:9333
+      # (additionalBrowserArgs ; wry passe ses propres arguments à WebView2, qui ignore alors la variable
+      # WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS). Construite après le dépôt de l'installateur publié, jamais déposée.
+      - name: Variante de la fumée (débogage de la WebView2)
+        working-directory: native/tauri
+        shell: pwsh
+        run: |
+          node ../../scripts/windows-fumee.mjs config "$env:RUNNER_TEMP/tauri.fumee.json"
+          npx tauri build --ci --config "$env:RUNNER_TEMP/tauri.fumee.json"
       # Rien de la fumée ne part vers le vrai serveur : le projet Supabase de l'app (lu dans auth.js) ne se résout plus.
       - name: Projet Supabase injoignable pour la fumée
         shell: pwsh
