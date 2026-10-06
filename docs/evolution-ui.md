@@ -244,7 +244,9 @@ plutôt qu'une pluie périmée. La CSP hébergée (`build.py`) devra autoriser `
 - [x] À la souris, WCAG 2.5.8 (AA) : une cible de moins de 24 px garde un cercle de 24 px d'air, sans autre cible
   dedans (`tests/browser/cibles-ordinateur.js`, douze écrans, volets ouverts). Balayage axe-core du 4 octobre 2026,
   quinze vues, téléphone et ordinateur, clair et sombre : seul relevé, deux cases empilées à 24 px dans les réglages
-  d'une collection, écartées.
+  d'une collection, écartées. Rejoué à chaque PR depuis le 6 octobre 2026 (`tests/browser/accessibilite.js`, axe-core
+  en dépendance de développement) : il a aussitôt relevé, dans Réglages → Espaces, des boutons « régler » dont le nom
+  accessible ne commençait pas par le texte visible (WCAG 2.5.3) ; le texte visible vient désormais d'abord.
 - [x] Étoile inactive et bordures de champs visibles (`--rule-strong`).
 - [x] Couleurs sémantiques séparées : `--ok` vert-de-gris, `--warn` résine, `--alarm` cinabre, `--info` ardoise ; étiquettes neutres à point.
 - [x] Actions de ligne en divulgation progressive (survol ou focus sur ordinateur, toucher de la ligne sur téléphone).

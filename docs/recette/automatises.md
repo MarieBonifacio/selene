@@ -10,8 +10,8 @@ Identifiants retirés : aucun.
 
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
-| Tests unitaires et d'intégration Node | `npm test` | 306 tests, 31 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
-| Scénarios de navigateur | `npm run test:browser` | 76 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium **et** WebKit | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
+| Tests unitaires et d'intégration Node | `npm test` | 307 tests, 31 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
+| Scénarios de navigateur | `npm run test:browser` | 78 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium **et** WebKit | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
 | Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
@@ -443,6 +443,7 @@ sans navigateur.
 | <a id="tu-mod-61"></a>`TU-MOD-61` | new templates contain no personal data or imposed budget and care presets | Les modèles ne contiennent aucune entrée ni donnée personnelle, ni enveloppe ni soin imposés. | [ESP-001](manuels/espaces.md#esp-001) |
 | <a id="tu-mod-62"></a>`TU-MOD-62` | programme installation waits for a chosen practice and validates its settings | Le modèle Protocole ne crée rien tant que le formulaire n'est pas validé ; 9 séances par semaine refusées ; les valeurs saisies sont gardées. | [ESP-004](manuels/espaces.md#esp-004) |
 | <a id="tu-mod-63"></a>`TU-MOD-63` | l’adresse d’un espace désactivé mène à l’accueil, et le dit une fois par visite ; une adresse inconnue, sans un mot | Ouvert, l'espace s'affiche ; désactivé, son adresse mène à l'accueil et « « Chantier » est désactivé : Réglages → Espaces pour le rouvrir. » s'affiche une fois (un autre rendu ne le répète pas, revenir à l'adresse le redit) ; une adresse qui ne désigne aucun espace mène à l'accueil sans message. | [ESP-006](manuels/espaces.md#esp-006) |
+| <a id="tu-mod-64"></a>`TU-MOD-64` | minuit : chaque vue suit la date d’elle-même, une minute après au plus ; jamais sous un formulaire ouvert ni pendant une saisie | Horloge simulée : sur le Chantier, rien avant minuit ; passé minuit, pas de rendu tant qu'un formulaire est ouvert (son contenu reste) ou qu'un champ est en cours de saisie ; la minute suivante, l'en-tête dit « mercredi 7 octobre » ; ensuite, plus de rendu à chaque minute. | [TRV-004](manuels/transverse.md#trv-004) |
 
 ### Notes Markdown (Obsidian, Zettlr) — `tests/markdown.test.js`
 
@@ -901,6 +902,14 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Vérifie** : raccourci annoncé (`aria-keyshortcuts`) ; survolé ou focalisé, le message reste au-delà de six secondes ; Entrée annule ; Ctrl+Z hors d'un champ annule ; dans un champ, non ; ⌘Z aussi ; message parti : plus rien.
 - **Cas manuels** : [MOD-022](manuels/types-de-module.md#mod-022), [TRV-001](manuels/transverse.md#trv-001)
 
+<a id="tn-minuit"></a>
+#### `TN-minuit` — Minuit, l'app restée ouverte
+
+- **Fichier** : [`tests/browser/minuit.js`](../../tests/browser/minuit.js) · **mode** A · **écran** O
+- **Conditions** : Horloge simulée (`page.clock`) à 23 h 58, fuseau `Europe/Paris` ; la vue Kundalini (un protocole commencé), pas l'accueil.
+- **Vérifie** : avant minuit, le 6 octobre ; un formulaire ouvert avant minuit garde sa date par défaut et ses valeurs, et la page attend qu'il se ferme ; fermé, l'en-tête passe au 7 octobre une minute après au plus, sans geste, sur la même vue ; une capture faite après minuit porte la nouvelle date ; aucune erreur JavaScript.
+- **Cas manuels** : [TRV-004](manuels/transverse.md#trv-004)
+
 <a id="tn-en-tete"></a>
 #### `TN-en-tete` — En-tête et minuteur
 
@@ -1073,6 +1082,14 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Conditions** : —
 - **Vérifie** : deux empreintes, pas de `'unsafe-inline'` ; le script principal et celui du service worker s'exécutent ; polices du site ; 12 vues sans violation ; un `onerror=` ou un `<script>` injecté ne s'exécute pas et le navigateur le signale.
 - **Cas manuels** : [CPT-001](manuels/entree-et-comptes.md#cpt-001), [TRV-008](manuels/transverse.md#trv-008), [TRV-009](manuels/transverse.md#trv-009)
+
+<a id="tn-accessibilite"></a>
+#### `TN-accessibilite` — Balayage axe-core des vues principales
+
+- **Fichier** : [`tests/browser/accessibilite.js`](../../tests/browser/accessibilite.js) · **mode** A · **écran** O
+- **Conditions** : axe-core 4.14.0 (dépendance de développement figée, MPL-2.0, jamais embarquée), règles WCAG 2.0, 2.1 et 2.2 A et AA ; en clair puis en sombre (`colorScheme`) ; `bypassCSP` pour injecter axe.
+- **Vérifie** : aucune violation « serious » ni « critical » sur l'accueil, la Boîte, chaque type d'espace du jeu d'essai (Chantier, Écriture, Kundalini, Phidippus, Moth, Musique, Budget), la recherche, le bilan, les Réglages, et le formulaire d'une tâche ouvert ; les exceptions, aucune à ce jour, sont listées dans le test avec leur raison ; aucune erreur JavaScript.
+- **Cas manuels** : [TRV-001](manuels/transverse.md#trv-001), [TRV-002](manuels/transverse.md#trv-002), [TRV-003](manuels/transverse.md#trv-003), [TRV-006](manuels/transverse.md#trv-006), [TRV-014](manuels/transverse.md#trv-014)
 
 <a id="tn-contraste"></a>
 #### `TN-contraste` — Contraste d'un espace éteint

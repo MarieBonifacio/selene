@@ -2,13 +2,15 @@
 import { platform } from "../platform.js";
 import { agendaRefresh } from "./features/agenda.js";
 import { dehorsRefresh } from "./features/dehors.js";
+import { $ } from "./lib/dom.js";
+import { todayISO } from "./lib/format.js";
 import { refreshWeather } from "./scene/sky.js";
 import { connectArtifact } from "./services/artifact-db.js";
 import { authBoot, authReady } from "./services/auth.js";
 import { reportError } from "./services/journal.js";
 import { connectHost } from "./services/host.js";
 import { focusEntry, liveRecents, openOn, routeOf } from "./shell/nav.js";
-import { render } from "./shell/render.js";
+import { render, renderedDay } from "./shell/render.js";
 import { local } from "./state/local.js";
 import { S, board, site } from "./state/site.js";
 
@@ -38,7 +40,22 @@ render();
   const t = setTimeout(() => { if (!document.hidden) { if (routeOf().view === "accueil" || S().config.mode === "sun") render(); refreshWeather(); } skyTick(); }, 300000);
   if (t && t.unref) t.unref();
 })();
-document.addEventListener("visibilitychange", () => { if (!document.hidden) { refreshWeather(); dehorsRefresh(); agendaRefresh(); } });
+/* Minuit (TRV-004, BL-10) : chaque vue suit la date d'elle-même, une minute après au plus, et dès le retour au premier
+   plan. Seulement quand le jour a changé depuis le dernier rendu ; jamais pendant une saisie ni sous une boîte ouverte
+   (formulaire, confirmation, feuille, palette) : ce qui est ouvert garde ses valeurs, date comprise, et la page suit à
+   la minute qui suit. */
+function followDay() {
+  if (document.hidden || renderedDay() === todayISO()) return;
+  const ae = document.activeElement;
+  const typing = ae && (ae.tagName === "TEXTAREA" || ae.tagName === "SELECT" || ae.isContentEditable || (ae.tagName === "INPUT" && !["checkbox", "radio", "button", "file"].includes(ae.type)));
+  if (typing || ["#dlg", "#cdlg", "#sheet", "#palette"].some(sel => $(sel).open)) return;
+  render();
+}
+(function dayTick() {
+  const t = setTimeout(() => { followDay(); dayTick(); }, 60000);
+  if (t && t.unref) t.unref();
+})();
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { followDay(); refreshWeather(); dehorsRefresh(); agendaRefresh(); } });
 refreshWeather();
 setTimeout(() => { agendaRefresh(); dehorsRefresh(); }, 1500); // les flux de Dehors, au plus toutes les trois heures, après le premier affichage
 (async () => {

@@ -13,13 +13,13 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 | [BL-01](#bl-01) | ~~Scénario « l'appareil détenteur a perdu son stockage »~~ (fait) | automatisation | P1 | RLM-029 |
 | [BL-02](#bl-02) | ~~Figer le sort du talon après « L'effacer définitivement »~~ (fait, voir ci-dessous) | décision puis automatisation | P1 | RLM-023 |
 | [BL-03](#bl-03) | Rejouer l'isolation entre comptes chaque semaine en CI | automatisation | P1 | TRV-016 |
-| [BL-04](#bl-04) | Balayage d'accessibilité rejoué à chaque PR | automatisation | P2 | TRV-001, TRV-002, TRV-003, TRV-006, TRV-014 |
+| [BL-04](#bl-04) | ~~Balayage d'accessibilité rejoué à chaque PR~~ (fait) | automatisation | P2 | TRV-001, TRV-002, TRV-003, TRV-006, TRV-014 |
 | [BL-05](#bl-05) | ~~Stabiliser `tests/browser/activite.js` sous WebKit~~ (fait, voir ci-dessous) | fiabilité de la CI | P2 | TRV-011 |
 | [BL-06](#bl-06) | ~~Assistant : dire « non déployé » ou « injoignable », et le tester~~ (fait) | correctif puis automatisation | P2 | AST-007 |
 | [BL-07](#bl-07) | Fumée de l'app Android sur émulateur, en CI | automatisation | P2 | PLT-003, PLT-004 |
 | [BL-08](#bl-08) | Fumée de l'app Windows installée, en CI | automatisation | P3 | PLT-009, PLT-010 |
 | [BL-09](#bl-09) | Seuils de performance sur le jeu de volume | décision puis automatisation | P2 | TRV-007 |
-| [BL-10](#bl-10) | Minuit, app ouverte : horloge simulée | décision puis automatisation | P3 | TRV-004 |
+| [BL-10](#bl-10) | ~~Minuit, app ouverte : horloge simulée~~ (fait) | décision puis automatisation | P3 | TRV-004 |
 | [BL-11](#bl-11) | claude.ai : ce qui ne s'automatise pas | lacune assumée | P2 | AST-009, PLT-011 |
 | [BL-12](#bl-12) | ~~`npm run recette` dans la CI~~ (fait, voir ci-dessous) | outillage | P2 | tous |
 | [BL-13](#bl-13) | Firefox : cible ou non ? | décision | P3 | — |
@@ -84,10 +84,13 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
   recherche, bilan, planche, réglages, une boîte de dialogue ouverte), en clair et en sombre, et lance axe-core avec les
   règles WCAG 2.1 A et AA ; zéro violation sérieuse ou critique ; les exceptions justifiées listées dans le test.
 - **Niveau** : scénario de navigateur (mode A), Chromium et WebKit.
-- **Dépendances** : une dépendance de développement (`axe-core`), contraire à l'habitude du dépôt de s'en passer :
-  [À ARBITRER] ; sinon, un sous-ensemble de règles écrit à la main (libellés, rôles, noms accessibles).
+- **Dépendances** : une dépendance de développement, `axe-core` 4.14.0 en version exacte (décision du 6 octobre 2026 :
+  MPL-2.0, sans dépendance, jamais embarquée dans l'application).
 - **Bénéfice attendu** : TRV-001 à TRV-003, TRV-006 et TRV-014 gardent leur part manuelle (lecteur d'écran réel,
   appareil réel), mais les régressions mécaniques sont arrêtées par la CI.
+- **État** : **fait** le 6 octobre 2026 (`TN-accessibilite`). Premier passage : 8 boutons « régler » des Réglages dont
+  le nom accessible ne contenait pas le texte visible (`label-content-name-mismatch`, WCAG 2.5.3), corrigés dans la
+  même PR ; aucune exception.
 
 <a id="bl-05"></a>
 ### BL-05 — Stabiliser `tests/browser/activite.js` sous WebKit (fait, confirmé le 5 octobre 2026)
@@ -176,6 +179,9 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 - **Niveau** : scénario de navigateur.
 - **Dépendances** : la décision de la responsable.
 - **Bénéfice attendu** : un défaut de date invisible en journée, vérifié une fois pour toutes.
+- **État** : **fait** le 6 octobre 2026. Décision : chaque vue suit la date une minute après minuit au plus et au retour
+  au premier plan, jamais sous un formulaire ouvert ni pendant une saisie ; un formulaire ouvert garde ses valeurs.
+  `TU-MOD-64` (Node) et `TN-minuit` (navigateur, `page.clock`).
 
 <a id="bl-11"></a>
 ### BL-11 — claude.ai : ce qui ne s'automatise pas
@@ -269,12 +275,12 @@ Les questions marquées [À ARBITRER] dans les cas, et ce qu'elles bloquent :
 | ~~Le résumé destiné à l'assistant doit-il être traduit à l'affichage ?~~ : non, c'est le texte envoyé ; l'interface dit qu'il part en français, le 6 octobre 2026 | [RLM-028](manuels/reprendre-la-main.md#rlm-028) | — |
 | ~~Quel message pour une date d'objectif à plus d'un an ?~~ : « Choisis une date d'effet valide : passée, aujourd'hui, ou au plus tard dans un an. », le 6 octobre 2026 | [RLM-014](manuels/reprendre-la-main.md#rlm-014) | — |
 | ~~Comment l'app doit-elle dire qu'un appareil vidé est le détenteur ?~~ : le talon décrit l'appareil détenteur (navigateur ou app, système, date) et le message envisage que ce soit celui-ci, le 6 octobre 2026 | [RLM-029](manuels/reprendre-la-main.md#rlm-029) | — |
-| Quelles vues suivent la date d'elles-mêmes à minuit ? | [TRV-004](manuels/transverse.md#trv-004) | [BL-10](#bl-10) |
+| ~~Quelles vues suivent la date d'elles-mêmes à minuit ?~~ : toutes, une minute après au plus, jamais sous un formulaire ouvert ni pendant une saisie, le 6 octobre 2026 | [TRV-004](manuels/transverse.md#trv-004) | — |
 | Quels seuils de réactivité ? | [TRV-007](manuels/transverse.md#trv-007) | [BL-09](#bl-09) |
 | ~~Que doit dire l'assistant quand sa fonction est injoignable ou non déployée ? (A4)~~ : « non déployé », « non configuré » ou « injoignable », corrigé le 5 octobre 2026 (PR #98) | [AST-007](manuels/assistant.md#ast-007) | — |
 | ~~Que fait claude.ai de l'espace `db` d'un artefact ?~~ : ses documents sont partagés avec tous ceux qui ont le lien ; Selene range désormais les siens dans le sous-arbre privé de chacun (A12, ADR 33), le 6 octobre 2026 | [PLT-011](manuels/plateformes.md#plt-011) | — |
 | Marquer `selene_personnel` un compte de recette (P) ? | `RLM-*` (chemin P) | les cas d'offre et de stockage |
-| Une dépendance de développement pour l'accessibilité ? | — | [BL-04](#bl-04) |
+| ~~Une dépendance de développement pour l'accessibilité ?~~ : oui, `axe-core` en version exacte, le 6 octobre 2026 | — | — |
 | ~~`npm run recette` en CI ?~~ : oui, fait, et obligatoire pour fusionner (réglage du dépôt à appliquer) | — | [BL-12](#bl-12) |
 | Firefox ? | — | [BL-13](#bl-13) |
 

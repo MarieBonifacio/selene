@@ -4,6 +4,7 @@ import { approxPlace, sunPosition } from "../../core/sky.js";
 import { SHEETS, TYPE_UI, VIEWS } from "../registry.js";
 import { $, esc, pageSize, toast } from "../lib/dom.js";
 import { applyLang, tr, trp, uiLocale } from "../i18n/index.js";
+import { todayISO } from "../lib/format.js";
 import { bridgeBar, bridgeOpen, setBridgeOpen } from "../features/bridge.js";
 import { dehorsOn } from "../features/dehors.js";
 import { notifySoon } from "../features/digest.js";
@@ -53,8 +54,11 @@ export function memoInRender(key, compute) {
   return renderMemo.get(key);
 }
 let redirectedFrom = null; // l'espace fermé dont l'adresse vient d'être détournée vers l'accueil (dit une fois)
+let renderDay = null;
+// Le jour du dernier rendu : boot.js redessine quand il change (minuit, TRV-004).
+export const renderedDay = () => renderDay;
 export function render() {
-  renderMemo = new Map();
+  renderMemo = new Map(); renderDay = todayISO();
   try { renderNow(); } finally { renderMemo = null; }
   skyWatch();
   notifySoon();
