@@ -30,7 +30,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
-| BL-14 : la sauvegarde complète dans un vrai navigateur, sur deux appareils | une session | P1 | — | [BL-14](#bl-14) |
+| ~~BL-14 : la sauvegarde complète dans un vrai navigateur, sur deux appareils~~ (fait le 6 octobre 2026, PR #123) | une session | P1 | — | [BL-14](#bl-14) |
 | ~~BL-15 : le hors-ligne réel (réseau coupé, page rechargée)~~ (fait le 6 octobre 2026, PR #123) | une session | P1 | — | [BL-15](#bl-15) |
 | BL-03 : l'isolation entre comptes rejouée chaque semaine | une session, une fois la préproduction et ses six secrets en place | P1 | après un premier `npm run isolation` réussi à la main (TRV-016) | [BL-03](#bl-03) |
 | BL-20 : un résultat observable à chaque étape, contrôlé par `npm run recette` | une session | P3 | — | [BL-20](#bl-20) |
@@ -99,7 +99,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 | [BL-11](#bl-11) | claude.ai : ce qui ne s'automatise pas | lacune assumée | P2 | AST-009, PLT-011 |
 | [BL-12](#bl-12) | ~~`npm run recette` dans la CI~~ (fait, voir ci-dessous) | outillage | P2 | tous |
 | [BL-13](#bl-13) | ~~Firefox : cible ou non ?~~ (décidé, en place) | décision | P3 | — |
-| [BL-14](#bl-14) | La sauvegarde complète dans un vrai navigateur, sur deux appareils | automatisation | P1 | DON-002, DON-003, DON-004, DON-005, DON-006 |
+| [BL-14](#bl-14) | ~~La sauvegarde complète dans un vrai navigateur, sur deux appareils~~ (fait) | automatisation | P1 | DON-002, DON-003, DON-004, DON-005, DON-006 |
 | [BL-15](#bl-15) | ~~Le hors-ligne réel : réseau coupé, page rechargée, retour du réseau~~ (fait) | automatisation | P1 | SYN-004, PLT-001, SYN-010 |
 | [BL-16](#bl-16) | Fumée de l'app iOS sur simulateur, en CI | automatisation | P3 | PLT-008 |
 | [BL-17](#bl-17) | ~~Un échec sous Firefox doit se voir tant qu'il n'est pas bloquant~~ (fait) | fiabilité de la CI | P2 | tous |
@@ -342,7 +342,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   montraient pas (A15, corrigé par la PR #116). Le job « vert » ne le disait pas : avant de le rendre bloquant, lire son
   journal reste le seul moyen de savoir.
 - **Condition proposée pour le 20 octobre** (à confirmer par la responsable) : A16 corrigé, puis vingt passages Firefox
-  consécutifs sans échec : l'avertissement de [BL-17](#bl-17) absent, ou « 79 scénarios, tous verts. » à la fin du
+  consécutifs sans échec : l'avertissement de [BL-17](#bl-17) absent, ou « 80 scénarios, tous verts. » à la fin du
   journal du pas ; sinon, décaler la date plutôt que rendre bloquant un scénario instable, qui apprendrait à
   relancer la CI sans la lire.
 
@@ -366,6 +366,8 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 - **Dépendances** : aucune (`setInputFiles` de Playwright, jeux de données existants).
 - **Bénéfice attendu** : cinq cas P1 passent d'une couverture en Node à un geste vérifié dans un vrai navigateur ; reste
   manuel : la feuille de partage des apps et le choix du fichier sur téléphone.
+- **État** : **fait** le 6 octobre 2026 (PR #123, `TN-sauvegarde-complete`), dans les trois moteurs. L'app écrit dans
+  IndexedDB juste après la bulle : le scénario relit le stockage jusqu'à l'état attendu, au lieu de le lire aussitôt.
 
 <a id="bl-15"></a>
 ### BL-15 — Le hors-ligne réel : réseau coupé, page rechargée, retour du réseau

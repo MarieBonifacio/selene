@@ -11,7 +11,7 @@ Identifiants retirés : aucun.
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
 | Tests unitaires et d'intégration Node | `npm test` | 318 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
-| Scénarios de navigateur | `npm run test:browser` | 79 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
+| Scénarios de navigateur | `npm run test:browser` | 80 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
 | Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
@@ -1093,6 +1093,15 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Vérifie** : le service worker tient la page ; le cache garde l'app, pas la dernière page visitée.
 - **Limites** : La coupure réseau simulée par Playwright n'atteint pas le service worker : le cache est lu, la page n'est pas rouverte hors ligne.
 - **Cas manuels** : [SYN-010](manuels/synchronisation.md#syn-010), [PLT-001](manuels/plateformes.md#plt-001), [TRV-012](manuels/transverse.md#trv-012)
+
+<a id="tn-sauvegarde-complete"></a>
+#### `TN-sauvegarde-complete` — La sauvegarde complète, geste entier, sur deux appareils
+
+- **Fichier** : [`tests/browser/sauvegarde-complete.js`](../../tests/browser/sauvegarde-complete.js) · **mode** H · **écran** O
+- **Conditions** : Deux appareils du même compte sur un faux Supabase partagé, puis un appareil sans compte ; les jeux du cahier (`jeu-essai.json`, `ancien-format-1.json`, `refus-version-future.json`, `refus-hostile.json`), choisis par le champ « Importer ».
+- **Vérifie** : importer demande « Remplacer tout l'état actuel par celui du fichier ? », puis « Sauvegarde importée. » ; l'appareil 1 a les treize espaces du jeu, la capture d'avant disparue ; le compte aussi ; l'appareil 2, à la relève, le même état, sans doublon (une seule boîte). Renoncer : aucun « Sauvegarde importée. », rien ne change, rien ne part. Un fichier plus récent, puis un fichier piégé : refusés avec leur message exact, sans confirmation, rien ne part, aucune boîte d'alerte. Sans compte, le format 1 migré au format courant, la tâche, le livre, le fragment, la note et le nom « Aragne » gardés. Mutation vérifiée : un import qui ignore « Annuler » fait échouer trois contrôles.
+- **Limites** : Faux serveur ; ni feuille de partage des apps, ni choix du fichier sur téléphone, ni artefact ; l'affichage de chaque espace migré n'est pas parcouru.
+- **Cas manuels** : [DON-002](manuels/donnees-sauvegardes.md#don-002), [DON-003](manuels/donnees-sauvegardes.md#don-003), [DON-004](manuels/donnees-sauvegardes.md#don-004), [DON-005](manuels/donnees-sauvegardes.md#don-005), [DON-006](manuels/donnees-sauvegardes.md#don-006)
 
 <a id="tn-hors-ligne-reel"></a>
 #### `TN-hors-ligne-reel` — Hors ligne pour de vrai : rechargée sans réseau, puis le retour du réseau

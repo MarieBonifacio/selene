@@ -58,7 +58,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob, AND, IOS, WIN, ART
 - **Préconditions** : compte de recette A connecté sur deux appareils, avec une capture `avant import DON-002`.
 - **Données** : [`donnees/jeu-essai.json`](../donnees/jeu-essai.json).
-- **Automatisés associés** : `TU-SYN-15`, `TU-MOD-25`
+- **Automatisés associés** : `TU-SYN-15`, `TU-MOD-25`, `TN-sauvegarde-complete`
 - **Source** : [DOC] README, « Comptes et synchronisation » ; [DOC] [reglages-aide.js](../../../src/app/views/reglages-aide.js) (« Importer remplace tout l'état actuel… ») ; [TEST] `TU-SYN-15`.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -80,7 +80,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai importé ; une capture `à garder DON-003`.
 - **Données** : [`donnees/ancien-format-1.json`](../donnees/ancien-format-1.json).
-- **Automatisés associés** : `TU-SYN-15`
+- **Automatisés associés** : `TU-SYN-15`, `TN-sauvegarde-complete`
 - **Source** : [CODE] `imp` (`shell/actions.js`) : l'état n'est remplacé qu'après « ok ».
 
 | Étape | Action précise | Résultat attendu observable |
@@ -102,7 +102,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai importé.
 - **Données** : [`donnees/refus-version-future.json`](../donnees/refus-version-future.json) (format 99).
-- **Automatisés associés** : `TU-BAK-07`
+- **Automatisés associés** : `TU-BAK-07`, `TN-sauvegarde-complete`
 - **Source** : [DOC] [architecture.md](../../architecture.md#données) ; [TEST] `TU-BAK-07`. Vérifié dans Chromium le 4 octobre 2026.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -125,7 +125,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : jeu d'essai importé.
 - **Données** : [`donnees/refus-hostile.json`](../donnees/refus-hostile.json) (identifiant de module piégé, texte `<script>`) ;
   un fichier texte quelconque renommé `photo.json` ; un JSON valide sans `format`.
-- **Automatisés associés** : `TU-BAK-02`, `TU-BAK-04`, `TU-BAK-05`, `TU-BAK-09`, `TN-injection`
+- **Automatisés associés** : `TU-BAK-02`, `TU-BAK-04`, `TU-BAK-05`, `TU-BAK-09`, `TN-injection`, `TN-sauvegarde-complete`
 - **Source** : [DOC] [architecture.md](../../architecture.md#sécurité) ; [TEST] `TU-BAK-05`, `TU-BAK-09`. Vérifié dans Chromium les 4 et 5 octobre 2026.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -150,7 +150,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob, ART
 - **Préconditions** : mode sans compte, navigateur aux données effacées.
 - **Données** : [`donnees/ancien-format-1.json`](../donnees/ancien-format-1.json).
-- **Automatisés associés** : `TU-MOD-01`, `TU-MOD-12`, `TU-MOD-17`, `TU-MOD-21`, `TU-SYN-20`
+- **Automatisés associés** : `TU-MOD-01`, `TU-MOD-12`, `TU-MOD-17`, `TU-MOD-21`, `TU-SYN-20`, `TN-sauvegarde-complete`
 - **Source** : [DOC] [architecture.md](../../architecture.md#données) ; [TEST] `TU-MOD-01`. Vérifié dans Chromium le 4 octobre 2026 (étapes 2 à 5).
 
 | Étape | Action précise | Résultat attendu observable |
