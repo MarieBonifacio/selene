@@ -84,7 +84,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob, ART
 - **Préconditions** : jeu d'essai.
 - **Données** : type vide « Collection » nommé `Lectures ESP-003` ; modèle « Tableau de production » sans nom.
-- **Automatisés associés** : `TN-compte-neuf`, `TN-types`, `TU-MOD-03`, `TU-MOD-25`
+- **Automatisés associés** : `TN-compte-neuf`, `TN-types`, `TU-MOD-03`, `TU-MOD-25`, `TN-reglages`
 - **Source** : [DOC] [evolution-ui.md](../../evolution-ui.md#réglages-en-chapitres) ; [TEST] `tests/browser/types.js`, `TU-MOD-03`.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -184,7 +184,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob, AND, IOS, WIN, ART
 - **Préconditions** : jeu d'essai ; pour l'étape 5, connecté sur deux appareils (sinon la sauter).
 - **Données** : espace « Musique ».
-- **Automatisés associés** : `TU-MOD-02`, `TU-SYN-05`, `TU-SYN-22`, `TN-types`
+- **Automatisés associés** : `TU-MOD-02`, `TU-SYN-05`, `TU-SYN-22`, `TN-types`, `TN-reglages`
 - **Source** : [DOC] README, « Modules » ; [TEST] `TU-MOD-02`, `TU-SYN-05`, `TU-SYN-22` (pierre tombale).
 
 | Étape | Action précise | Résultat attendu observable |

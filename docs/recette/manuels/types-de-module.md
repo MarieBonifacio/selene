@@ -156,7 +156,7 @@ Identifiants retirés : aucun.
 |---|---|---|
 | 1 | Ouvrir Budget, « Mois précédent » jusqu'à septembre 2026. | Revenus 2 000,00 €, dépenses 165,00 €, solde 1 835,00 € ; jauge Courses 40 % (120 sur 300), Travaux 9 % (45 sur 500). |
 | 2 | Revenir au mois en cours ; ajouter la dépense des données. | La jauge Courses du mois montre 30 sur 300 ; l'opération est listée. |
-| 3 | Tenter d'ajouter `0`, `-5` puis `abc`. | Chaque fois « Montant invalide » ; aucune opération ajoutée. |
+| 3 | Tenter d'ajouter `0`, puis `-5`, puis taper `abc` dans le montant. | `0` : « Un montant, même symbolique. », aucune opération ajoutée ; `-5` : une dépense de 5,00 € (le sens vient du type choisi, Dépense ou Revenu, pas du signe) ; `abc` : le champ, numérique, ne prend pas de lettres (ou les ignore : « Un montant, même symbolique. »). |
 | 4 | Cliquer l'enveloppe « Courses » du registre. | Seules ses opérations restent ; recliquer défait. |
 | 5 | Ouvrir l'accueil. | La ligne Budget dit « Ce mois-ci : 30,00 € dépensés, solde … ». |
 

@@ -68,6 +68,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | La PR #118 (le cahier à cocher) : la fusionner ? | Oui : outillage seul, CI verte, et c'est le support qui manque pour exécuter une campagne ; puis [BL-18](#bl-18) | avant la première smoke | PR #118 |
 | Un appareil **connecté** qui importe une sauvegarde contenant un suivi encore marqué synchronisé : le ramener sur l'appareil ? Aujourd'hui il redevient synchronisé, contenu compris, et le bandeau propose de le ramener ([RLM-024](manuels/reprendre-la-main.md#rlm-024)) | Oui, à l'import, avec la confirmation du bandeau : aucun chemin ne devrait remettre un suivi sur le serveur. Ce n'est pas fait par A17, parce que la règle « Selene ne choisit pas l'appareil à la place de la personne » vaut pour un compte connecté | avant la bêta | [A17](perimetre.md#anomalies-et-observations) |
 | L'offre Pro de Supabase avant la bêta ? | Oui (une sauvegarde par jour, pas de mise en pause) ; décision de budget | avant d'inviter les bêta-testeurs | [a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait) |
+| Un montant négatif saisi dans le Budget : le compter en valeur absolue, comme aujourd'hui ? | Oui : le sens vient du type choisi (Dépense, Revenu), et saisir une dépense « −12 » est une habitude des relevés bancaires ; la refuser obligerait à la retaper. Le cahier le dit désormais (C7) | aucune | [MOD-005](manuels/types-de-module.md#mod-005), [C7](perimetre.md#contradictions-entre-documentation-code-et-tests) |
 | La carte céleste : la garder ? | Selon le critère écrit d'avance : retirée si elle n'a pas été ouverte pendant un mois | fin octobre 2026 | [evolution-ui.md](../evolution-ui.md#vague-4--les-pistes-expérimentales) |
 
 ### À surveiller
@@ -575,6 +576,7 @@ Les questions marquées [À ARBITRER] dans les cas, et ce qu'elles bloquent :
 | À quelle condition Firefox devient-il bloquant ? Proposition : vingt passages consécutifs sans échec depuis la correction d'A16 (PR #120), sans l'avertissement de [BL-17](#bl-17) ; sinon décaler la date | — | [BL-13](#bl-13) |
 | L'assistant hébergé : le déployer pour la bêta ? Proposition : non, et l'écrire | [AST-001](manuels/assistant.md#ast-001) à [AST-007](manuels/assistant.md#ast-007) | la recette de l'assistant hébergé |
 | La PR #118 (le cahier à cocher) : la fusionner ? Proposition : oui, puis [BL-18](#bl-18) | — | l'exécution des campagnes sur la page |
+| Un montant négatif saisi dans le Budget : le compter en valeur absolue, comme aujourd'hui ? Proposition : oui, le sens vient du type choisi (C7) | [MOD-005](manuels/types-de-module.md#mod-005) | rien : `TN-budget` vérifie le comportement actuel |
 
 Les questions ouvertes d'avant ce cahier sont tranchées depuis le 6 octobre 2026 : l'adresse d'un espace désactivé
 mène à l'accueil et le dit ([ESP-006](manuels/espaces.md#esp-006)) ; un espace supprimé reste supprimé, même modifié

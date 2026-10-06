@@ -142,8 +142,13 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
   console.log('invitation, appareil déjà connecté');
   const i = await open(lien('invite'));
   ok((await i.textContent('#main')).includes('Bienvenue. Choisis le mot de passe de ton compte.'), 'une invitation : choisir son mot de passe');
+  ok(!(await i.evaluate(() => location.href)).includes('jeton-lien'), 'le jeton de l’invitation quitte aussitôt l’adresse');
   await i.fill('#authPw', 'premier-mdp'); await i.fill('#authPw2', 'premier-mdp'); await submit(i); await attendre(i, entree);
   ok(!(await i.$('#authForm')), 'et entrer');
+  const iv = await open(lien('invite', 'jeton-perime')); // une invitation déjà servie : le serveur refuse son jeton (CPT-010, étape 4)
+  await iv.fill('#authPw', 'premier-mdp'); await iv.fill('#authPw2', 'premier-mdp'); await submit(iv, 'Cette invitation a expiré');
+  ok((await note(iv)).includes("Cette invitation a expiré, ou elle a déjà servi : demande qu'on te la renvoie.") && !(await iv.$('#authPw2')) && await iv.isVisible('#authEmail'),
+    'une invitation déjà servie : dit comme telle, et l’écran revient à la connexion');
   const d = await open(lien('recovery'), { session: AUTRE });
   ok(await d.isVisible('#authPw2') && !d.calls.some(c => c.path === '/rest/v1/app_state'), 'déjà connectée à un autre compte : le lien passe d’abord, la session gardée attend');
   await d.click('[data-act="auth-back"]'); await attendre(d, entree); await until(() => d.calls.some(c => c.path === '/rest/v1/app_state' && c.auth === 'Bearer jeton-garde'));

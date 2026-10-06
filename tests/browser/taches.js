@@ -34,6 +34,13 @@ const board = { updatedAt: 9, tasks: [T('t1', 'Poser le velux', { due: today, co
   await p.click('li[data-task="t1"] [data-act="task-open"]'); await p.waitForTimeout(100);
   await p.check('li[data-task="t1"] [data-act="task-step"][data-i="0"]'); await p.waitForTimeout(150);
   ok((await data()).modules.chantier.entries.find(x => x.id === 't1').steps[0].d === true, 'étape cochée');
+  ok((await main()).includes('1/2 étapes'), 'et la tâche dit « 1/2 étapes »');
+  const avant = (await data()).modules.chantier.entries.length; // MOD-001, étape 5 : un titre vide
+  await p.click('[data-act="task-new"]'); await p.fill('#form [name=title]', ''); await p.click('#form button[value=save]'); await p.waitForTimeout(200);
+  ok(await p.evaluate(() => document.querySelector('#dlg').open) && (await data()).modules.chantier.entries.length === avant, 'un titre vide : le formulaire refuse, rien n’est ajouté');
+  await p.click('#form button[value=cancel]'); await p.waitForTimeout(100);
+  await p.reload(); await p.waitForSelector('#nav a'); await go('chantier'); // MOD-001, étape 6
+  ok((await data()).modules.chantier.entries.find(x => x.id === 't1').steps[0].d === true && (await main()).includes('1/2 étapes'), 'rechargé : la tâche et son étape cochée sont toujours là');
   await p.click('li[data-task="t1"] [data-act="task-today"]'); await p.waitForTimeout(150);
   ok((await data()).modules.chantier.entries.find(x => x.id === 't1').today === true, 'troisième tâche du jour acceptée');
   await p.click('[data-act="task-new"]'); await p.fill('#form [name=title]', 'Peindre'); await save();

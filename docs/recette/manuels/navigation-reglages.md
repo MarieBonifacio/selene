@@ -116,7 +116,7 @@ Identifiants retirés : aucun.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Sur ordinateur, hors d'un champ, appuyer sur `/`. | La vue « Chercher » s'ouvre, le curseur dans le champ ; l'onglet du navigateur s'appelle « Recherche — Selene » (ou équivalent). |
+| 1 | Sur ordinateur, hors d'un champ, appuyer sur `/`. | La vue « Chercher » s'ouvre, le curseur dans le champ ; l'onglet du navigateur s'appelle « Chercher — Selene » (le nom donné à Selene dans les Réglages, s'il y en a un, à la place de « Selene »). |
 | 2 | Taper `LISIERE`. | Des résultats dans Écriture (les fragments qui contiennent « lisière »), dans la Boîte (« Écriture : la lisière comme seuil ») et dans Motifs (le motif « lisière » lui-même) ; « lisière » est surligné dans chaque extrait ; la frappe n'a jamais perdu le champ. |
 | 3 | Remplacer par `lisière seuil`. | Deux résultats seulement, ceux qui contiennent les deux mots : le fragment « Toute lisière est un seuil que l'on traverse sans le voir. » et la note « Écriture : la lisière comme seuil ». |
 | 4 | Remplacer par `lisiere zzz`. | « Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire. » |

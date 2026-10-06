@@ -37,6 +37,18 @@ const v4 = { updatedAt: 10, schemaVersion: 4,
   ok((await main()).includes('Budget pro') && (await main()).includes('Aucune opération'), 'un second budget indépendant');
   await p.evaluate(() => location.hash = 'accueil'); await p.waitForTimeout(200);
   ok((await main()).includes('Ce mois-ci : 150,00 € dépensés'), 'résumé d’accueil fourni par le type');
+
+  console.log('montants hors des clous (MOD-005)');
+  await p.evaluate(() => location.hash = 'budget'); await p.waitForSelector('#bAmt');
+  const ops = async () => (await data()).modules.budget.entries.length, n0 = await ops();
+  await p.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+  await p.fill('#bAmt', '0'); await p.click('[data-act="bud-add"]');
+  await p.waitForFunction(() => (document.querySelector('#toast') || {}).textContent?.includes('Un montant'), null, { timeout: 5000 }).catch(() => {});
+  ok((await p.textContent('#toast')).includes('Un montant, même symbolique.') && (await ops()) === n0, 'un montant nul : refusé, et dit');
+  await p.fill('#bAmt', '-5'); await p.fill('#bCat', 'Courses'); await p.click('[data-act="bud-add"]');
+  await p.waitForFunction(n => JSON.parse(localStorage.getItem('selene-site-v1')).modules.budget.entries.length > n, n0, { timeout: 5000 }).catch(() => {});
+  const last = (await data()).modules.budget.entries.at(-1);
+  ok((await ops()) === n0 + 1 && last.amount === 5 && last.type === 'dépense', 'un montant négatif : compté en valeur absolue, le sens vient du type choisi (dépense)');
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

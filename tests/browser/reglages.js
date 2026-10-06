@@ -56,6 +56,23 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   await p.click('.reg-toc [data-act="reg-guide"]'); await p.waitForTimeout(150);
   ok(await p.isVisible('.reg-guide'), 'et se rouvre depuis le sommaire');
 
+  console.log('créer, supprimer un espace (ESP-003, ESP-007)');
+  const bulle = t => p.waitForFunction(x => ((document.querySelector('#toast') || {}).textContent || '').includes(x), t, { timeout: 5000 }).then(() => true, () => false);
+  const nav = () => p.textContent('#nav');
+  await p.evaluate(() => { document.querySelector('#toast').textContent = ''; document.querySelectorAll('#reg-espaces details').forEach(d => { d.open = true; }); });
+  const blocs = () => p.$$eval('#main .modblock', x => x.length), avant = await blocs();
+  await p.selectOption('#newModType', 'taches'); await p.fill('#newModName', ''); await p.click('[data-act="mod-add"]');
+  ok(await bulle('Donne un nom au module.') && (await blocs()) === avant, 'un type vide, sans nom : « Donne un nom au module. », rien n’est créé');
+  const croix = '.set.mod:has(input[data-act="mod-label"][value="Musique"]) [data-act="mod-del"]';
+  const supprimer = async nom => { await p.click(croix); await p.waitForFunction(() => document.querySelector('#dlg').open); const t = await p.textContent('#form'); await p.fill('#form [name="confirm"]', nom); await p.click('#form button[value="save"]'); return t; };
+  const form = await supprimer('musique');
+  ok(form.includes('Retape « Musique » pour confirmer la suppression définitive de ses données.'), 'supprimer : il faut retaper le nom, et le formulaire le dit');
+  ok(await bulle("Nom incorrect, rien n'a été supprimé.") && (await nav()).includes('Musique'), 'une autre casse : « Nom incorrect, rien n’a été supprimé. », Musique reste');
+  await supprimer('Musique');
+  ok(await bulle('« Musique » supprimé.') && !(await nav()).includes('Musique') && !(await p.$(croix)), 'le nom exact : supprimé, hors de la navigation et des Réglages');
+  await p.reload(); await p.waitForSelector('#nav a', { timeout: 10000 });
+  ok(!(await nav()).includes('Musique'), 'rechargé : Musique ne revient pas');
+
   console.log('téléphone');
   const ph = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
   const q = await ph.newPage(); q.on('pageerror', e => errs.push(e.message));

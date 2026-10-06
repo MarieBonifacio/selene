@@ -23,6 +23,9 @@ demo.modules.chantier.entries = [{ id: 't1', title: 'Poser le velux', room: 'Cha
   await p.keyboard.type('ete disso'); await p.clock.runFor(200);
   ok((await main()).includes('1 résultat') && (await p.innerHTML('#main')).includes('<mark>été</mark>'), 'sans accents, tous les mots, passage surligné');
   ok((await p.inputValue('#searchIn')) === 'ete disso' && (await p.evaluate(() => document.activeElement.id)) === 'searchIn', 'la frappe continue sans perdre le champ');
+  ok(/^Chercher — /.test(await p.title()), `l’onglet dit l’écran (« ${await p.title()} »)`);
+  await p.keyboard.type(' zzz'); await p.clock.runFor(200);
+  ok((await main()).includes("Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire."), 'un mot qu’aucun texte ne contient : rien, et c’est dit');
   ok((await p.textContent('#nav')).includes('Chercher'), 'lien « Chercher » dans la navigation');
 
   console.log('minuteur');
