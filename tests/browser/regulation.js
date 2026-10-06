@@ -118,6 +118,7 @@ const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_
     const futur = await toast();
     check(/^Objectif enregistré, à partir du \d{1,2}(er)? \p{L}+ \d{4}\. D'ici là, rien ne change\.$/u.test(futur), `objectif à venir : la date en lettres, un seul point (${futur})`);
     await p.locator('li.item:has([data-act="rlm-del"])', { hasText: 'verre standard' }).first().locator('[data-act="rlm-del"]').evaluate(e => e.click()); await settle(); // « suppr. » est caché au repos sur un écran tactile
+    await p.waitForFunction(() => ((document.querySelector('#toast') || {}).textContent || '').startsWith('Supprimé'), null, { timeout: 10000 }).catch(() => {}); // la bulle d'avant reste, le temps que la suppression parle (BL-22)
     const supprime = await toast();
     check(/^Supprimé : .* le \d{1,2}(er)? \p{L}+ \d{4}\./u.test(supprime) && !supprime.includes('..'), `suppression : la date en lettres, pas « sept.. » (${supprime})`);
     await p.click('#toast button'); await settle(); // « Annuler » : la saisie revient, la suite du scénario la retrouve

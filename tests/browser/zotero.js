@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Zotero en lecture seule (connexions externes, phase 2, vague 6f : docs/connexions.md).
    Version hébergée simulée (faux Supabase, faux passeur), API Zotero simulée. Lancé par tests/browser/run.js. */
-const { storeGet, storeJSON, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeGet, storeJSON, until, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, sources: true, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1,
   fields: { title: 'Titre', subtitle: 'Auteurs', tag: 'Type', due: '', text: 'Résumé' } }, entries: [] };
@@ -75,7 +75,8 @@ const ITEMS = [
   await setKey(c);
   ok(c.passeur.length === 1 && c.passeur[0].genre === 'json' && c.passeur[0].url.includes(`/keys/${KEY}`) && (await c.textContent('#zotero')).includes('Bibliothèque de marie'), 'la vérification passe par le passeur (genre json)');
   await c.evaluate(() => location.hash = 'sources'); await c.waitForTimeout(300);
-  await c.click('[data-act="zot-recent"]'); await c.waitForTimeout(500);
+  await c.click('[data-act="zot-recent"]'); await until(() => c.passeur.length >= 2); // la réponse, pas un délai (BL-22)
+  await c.waitForFunction(() => document.querySelectorAll('.zot-list b').length === 2, null, { timeout: 10000 }).catch(() => {});
   ok(c.passeur.length === 2 && (await c.$$('.zot-list b')).length === 2, 'la recherche aussi');
 
   console.log('clé en écriture, clé refusée');

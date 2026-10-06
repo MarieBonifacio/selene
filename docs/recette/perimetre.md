@@ -215,7 +215,9 @@ La cause commune des échecs qualifiés : un scénario qui attend un délai fixe
 règle des scénarios ([`until`](../../tests/browser/helpers.js), `ouvrir` et `waitForFunction`), écrite dans `helpers.js` ;
 les passages qui l'enfreignent encore cassent quand la machine de la CI est chargée. Depuis le 6 octobre 2026 (A16), le
 job *Check › browser (chromium, démarrage lent)* les débusque à chaque PR : la base de l'app y répond avec 1,5 s de
-retard, et un scénario qui compte sur un délai après l'ouverture y échoue à coup sûr.
+retard, et un scénario qui compte sur un délai après l'ouverture y échoue à coup sûr. Les délais qui suivent un geste lui
+échappaient (A21 à A23) : depuis [BL-22](backlog.md#bl-22), *Check › browser (chromium, processeur ralenti)* rejoue la
+suite le processeur quatre fois plus lent.
 
 ## Points à arbitrer
 

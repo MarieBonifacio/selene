@@ -53,7 +53,8 @@ server.listen(0, '127.0.0.1', async () => {
      bloquant (BL-13), c'est le seul endroit où un échec se voit avec l'avertissement du workflow (BL-17). */
   const summary = process.env.GITHUB_STEP_SUMMARY;
   if (summary && failed.length) {
-    const engineName = (process.env.SELENE_BROWSER || 'chromium') + (Number(process.env.SELENE_LENT) ? `, démarrage lent (${process.env.SELENE_LENT} ms)` : '');
+    const engineName = (process.env.SELENE_BROWSER || 'chromium') + (Number(process.env.SELENE_LENT) ? `, démarrage lent (${process.env.SELENE_LENT} ms)` : '')
+      + (Number(process.env.SELENE_CPU) > 1 ? `, processeur ralenti (×${process.env.SELENE_CPU})` : '');
     const md = [`### ${failed.length}/${scenarios.length} scénario(s) en échec sous ${engineName}`, ''];
     for (const f of failed) { md.push(`- \`${f}\``); for (const l of misses[f]) md.push(`  - ${l.replace(/[<>]/g, c => (c === '<' ? '&lt;' : '&gt;'))}`); }
     try { fs.appendFileSync(summary, md.join('\n') + '\n'); } catch {}

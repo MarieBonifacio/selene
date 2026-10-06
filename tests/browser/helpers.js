@@ -33,6 +33,11 @@ function slowIdb(ms) {
   };
 }
 const slow = async x => { if (LENT) await x.addInitScript(slowIdb, LENT); return x; }; // un contexte, ou une page
+/* SELENE_CPU=<facteur> : le processeur de Chromium ralenti (protocole DevTools), pour débusquer les scénarios qui attendent un
+   délai au lieu d'un état sous une machine chargée (A10, A11, A16, A21 à A23 ; BL-22). Chromium seul ; jamais par défaut. */
+const CPU = ENGINE === 'chromium' ? Math.max(0, Number(process.env.SELENE_CPU) || 0) : 0;
+const brake = async page => { try { const s = await page.context().newCDPSession(page); await s.send('Emulation.setCPUThrottlingRate', { rate: CPU }); } catch {} };
+const cpu = x => { if (CPU > 1) { if (typeof x.on === 'function' && typeof x.pages === 'function') x.on('page', brake); else brake(x); } return x; };
 /* Le réseau fermé (BL-21 du cahier de recette) : tout ce qui ne va pas au serveur des scénarios (127.0.0.1, localhost)
    passe par un mandataire qui n'existe pas (le port 9, jamais ouvert ici), donc échoue. Une requête que les routes de
    Playwright servent ne part jamais ; une requête qu'elles ne voient pas (sous WebKit, celles d'une page tenue par le
@@ -51,8 +56,8 @@ const temoin = x => {
 const engine = {
   async launch(options = {}) {
     const b = await playwright[ENGINE].launch({ proxy: FERME, ...options }), newContext = b.newContext.bind(b), newPage = b.newPage.bind(b);
-    b.newContext = async (o = {}) => temoin(await slow(await newContext({ ...LOCALE, ...o })));
-    b.newPage = async (o = {}) => temoin(await slow(await newPage({ ...LOCALE, ...o })));
+    b.newContext = async (o = {}) => cpu(temoin(await slow(await newContext({ ...LOCALE, ...o }))));
+    b.newPage = async (o = {}) => { const pg = temoin(await slow(await newPage({ ...LOCALE, ...o }))); if (CPU > 1) await brake(pg); return pg; };
     return b;
   }
 };

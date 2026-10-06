@@ -1,5 +1,5 @@
 /* Scénario de navigateur : Radar culturel (connexions externes, phase 1, vague 5d : docs/connexions.md). Lancé par tests/browser/run.js. */
-const { storeSet, storeJSON, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeSet, storeJSON, until, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const LILLE = { name: 'Lille, Hauts-de-France, France', lat: 50.6, lon: 3.1, weather: false, realMoon: true };
 const site = (sky, words) => { const d = JSON.parse(fixture()); d.config.sky = sky; if (words) d.config.radar = { words }; return JSON.stringify(d); };
 const rec = (uid, title, from, to, extra = {}) => ({ uid, title_fr: title, firstdate_begin: from + 'T18:00:00+00:00', lastdate_end: (to || from) + 'T22:00:00+00:00',
@@ -69,7 +69,8 @@ const RESULTS = [
 
   console.log('CORS fermé (comme sur l’ancien portail de la MEL) : le passeur prend le relais');
   const c = await open(LILLE, 'jazz', 'cors', '', true);
-  await c.click('[data-act="radar-open"]'); await c.waitForTimeout(500);
+  await c.click('[data-act="radar-open"]'); await until(() => c.passeur.length >= 1); // la réponse du passeur, pas un délai (BL-22)
+  await c.waitForFunction(() => document.querySelectorAll('#sheet .radar li').length === 5, null, { timeout: 10000 }).catch(() => {});
   ok(c.asked.length === 1 && c.passeur.length === 1 && c.passeur[0].genre === 'json' && c.passeur[0].url.startsWith('https://public.opendatasoft.com/') && (await c.$$('#sheet .radar li')).length === 5, 'lecture directe refusée : le passeur lit l’agenda (genre json), les événements s’affichent');
   await c.keyboard.press('Escape'); await storeSet(c, 'selene-radar', null); await c.click('[data-act="radar-open"]'); await c.waitForTimeout(500);
   ok(c.asked.length === 1 && c.passeur.length === 2, 'la porte fermée est retenue : ensuite, directement par le passeur');
