@@ -71,8 +71,9 @@ connaît pas le format 8 et refuse d'écrire.
   toutes les sauvegardes illisibles.
 - [ ] **L'offre Pro de Supabase** (25 $ par mois : une sauvegarde par jour, pas de mise en pause), **avant d'inviter les
   bêta-testeurs** : leurs données ne doivent pas dépendre d'un vidage hebdomadaire. Décision de budget.
-- [ ] **Mettre Postgres à jour** (*Settings* → *Infrastructure*), **après** une sauvegarde réussie, jamais avant : le
-  projet tourne en 17.6, une version corrective plus récente est proposée (T18 de l'audit).
+- [ ] **Mettre Postgres à jour** (*Project Settings* → *General* → *Service versions*), **après** une sauvegarde
+  réussie, jamais avant : aucun retour en arrière n'est possible. Le projet tournait en 17.6 le 2 octobre, 17.11 était
+  proposée (T18 de l'audit).
 - [ ] **SMTP d'abord**, puis les adresses de retour (*URL Configuration*), puis la traduction des modèles d'e-mail :
   sans SMTP, les liens « mot de passe oublié » et les invitations n'atteignent que l'équipe du projet
   ([compte.md](compte.md#mot-de-passe-oublié-invitation)).
