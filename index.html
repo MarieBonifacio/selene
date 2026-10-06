@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-0iEJRFyuK4pJpbriJCJveNC88C4r++wQ6wMR3nzomkk=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-aXJ5Bu+l8wf+zFjfLdvWTUf5ZOEk53ixuhol+CEMrZo=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -750,7 +750,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "0ef01cd70b";
+const SELENE_BUILD = "bc59dd3396";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1087,6 +1087,7 @@ var __selene = (() => {
   var index_exports = {};
   __export(index_exports, {
     $: () => $,
+    ARTIFACT_UID_KEY: () => ARTIFACT_UID_KEY,
     BUILD: () => BUILD,
     CARTE_MAX: () => CARTE_MAX,
     CHANGE: () => CHANGE,
@@ -1224,6 +1225,7 @@ var __selene = (() => {
     concordanceView: () => concordanceView,
     confirmDay: () => confirmDay,
     confirmSensitiveShare: () => confirmSensitiveShare,
+    connectArtifact: () => connectArtifact,
     connectHost: () => connectHost,
     contentKey: () => contentKey,
     contextText: () => contextText,
@@ -1425,6 +1427,7 @@ var __selene = (() => {
     plancheView: () => plancheView,
     plateHTML: () => plateHTML,
     plural: () => plural,
+    privatePath: () => privatePath,
     projection: () => projection,
     pubDate: () => pubDate,
     radarConf: () => radarConf,
@@ -3154,6 +3157,7 @@ var __selene = (() => {
     // state/store.js
     "Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser": "Selene was updated on another device: reload the page to sync",
     "Non synchronisé — enregistré sur cet appareil seulement": "Not synced — saved on this device only",
+    "Non synchronisé : ce navigateur garde le Selene d'un autre compte claude.ai": "Not synced: this browser holds another claude.ai account's Selene",
     "Trop volumineux pour le serveur : enregistré sur cet appareil seulement (Réglages, Sauvegarde)": "Too large for the server: saved on this device only (Settings, Backup)",
     "Enregistrement…": "Saving…",
     // ui/dialogs.js
@@ -5164,6 +5168,10 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       s.data = normalize(data);
       s.force = true;
       s.save();
+    };
+    s.absorb = (doc) => {
+      s.data = normalize(clone(mergeDocs(null, clone(s.data), clone(doc))));
+      saveLS();
     };
     s.yieldToRemote = () => {
       if (s.data.updatedAt) {
@@ -13399,6 +13407,55 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     if (e.target.dataset && e.target.dataset.draft !== void 0) saveDraft(e.target.closest && e.target.closest("dialog") ? "sheet" : lastView, e.target);
   });
 
+  // src/app/services/artifact-db.js
+  var ARTIFACT_UID_KEY = "selene-artifact-uid";
+  var LEGACY = ["site/state", "board/state"];
+  var privatePath = (uid2, path) => `data/users/${uid2}/${path.split("/")[0]}`;
+  async function connectArtifact() {
+    const db = await platform.claude.use("db");
+    if (!db) return false;
+    const user = await platform.claude.use("user");
+    const uid2 = user ? await user.id() : null;
+    if (!uid2) {
+      setSaving(tr`Non synchronisé — enregistré sur cet appareil seulement`);
+      return false;
+    }
+    const mine = platform.storage.get(ARTIFACT_UID_KEY);
+    if (mine && mine !== uid2) {
+      setSaving(tr`Non synchronisé : ce navigateur garde le Selene d'un autre compte claude.ai`);
+      return false;
+    }
+    const legacy = {};
+    if (!mine) {
+      if (await user.isOwner()) {
+        for (const p of LEGACY) {
+          try {
+            const s = await db.doc(p).get();
+            if (s.exists) legacy[p] = s.data();
+          } catch {
+          }
+        }
+      } else if (site.base || board.base) {
+        site.reset(siteSeed());
+        board.reset({ updatedAt: 0, tasks: [] });
+      }
+    }
+    const own = { doc: (path) => db.doc(privatePath(uid2, path)) };
+    if (legacy[LEGACY[0]]) site.absorb(legacy[LEGACY[0]]);
+    await site.connect(own);
+    if (legacy[LEGACY[1]]) board.absorb(legacy[LEGACY[1]]);
+    await board.connect(own);
+    if (site.db !== own || board.db !== own) return false;
+    platform.storage.set(ARTIFACT_UID_KEY, uid2);
+    for (const p of Object.keys(legacy)) {
+      try {
+        await db.doc(p).delete();
+      } catch {
+      }
+    }
+    return true;
+  }
+
   // src/app/modules/arc.js
   function arcCandidates() {
     const out = [];
@@ -14043,11 +14100,7 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
         }
         return;
       }
-      const db = await platform.claude.use("db");
-      if (db) {
-        await site.connect(db);
-        await board.connect(db);
-      }
+      await connectArtifact();
     } catch {
     }
     try {

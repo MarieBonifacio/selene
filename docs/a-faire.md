@@ -4,7 +4,7 @@ Ce que ni le code ni la CI ne peuvent faire : essayer Selene sur de vrais appare
 stores, tenir les obligations de la responsable du traitement. Une case par démarche, avec un lien vers le détail.
 Une démarche faite : cocher la case, ou retirer la ligne, de préférence dans la PR qui la rend inutile.
 
-Tenue à jour le 4 octobre 2026. Les étapes marquées *(si ce n'est pas déjà fait)* sont des réglages de mise en place
+Tenue à jour le 6 octobre 2026. Les étapes marquées *(si ce n'est pas déjà fait)* sont des réglages de mise en place
 dont le dépôt ne peut pas savoir s'ils ont eu lieu.
 
 ## Tout de suite (une minute)
@@ -14,6 +14,13 @@ dont le dépôt ne peut pas savoir s'ils ont eu lieu.
   Le workflow *Liens* du 3 octobre 2026 a reçu un refus (403) : le site bloque le robot de GitHub, ce qui ne dit rien
   de la page. L'ouvrir dans un navigateur : si elle s'affiche, rien à faire ; sinon, remplacer l'adresse dans
   `docs/regulation.md`. Ce lien n'apparaît pas dans l'interface.
+
+- [ ] **L'artefact claude.ai, à publier avec `db` et `user`** (ADR 33 de [architecture.md](architecture.md)). Aucun
+  artefact Selene n'est publié sur le compte au 6 octobre 2026. Le jour où il l'est : dans une session Claude Code
+  ouverte sur ce dépôt, demander « Publie `selene.html` comme artefact avec les capacités `db` et `user` » (ou mettre
+  à jour l'artefact existant par son lien, avec les mêmes capacités). Sans `user`, Selene y fonctionne mais ne
+  synchronise rien entre navigateurs ; elle ne range jamais rien dans un document partagé. Puis jouer
+  [PLT-011](recette/manuels/plateformes.md#plt-011) avec un compte claude.ai de recette.
 
 ## Essayer sur de vrais appareils
 

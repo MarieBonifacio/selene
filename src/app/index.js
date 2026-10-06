@@ -11,6 +11,7 @@ export * from "./state/drafts.js";
 export * from "./state/local.js";
 export * from "./state/site.js";
 export * from "./state/store.js";
+export * from "./services/artifact-db.js";
 export * from "./services/auth.js";
 export * from "./services/device-guard.js";
 export * from "./services/journal.js";

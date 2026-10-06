@@ -121,6 +121,10 @@ export function makeStore(key, path, seed, normalize = d => d, { onRemoteChange 
   /* Remplacement total voulu (import d'une sauvegarde) : la prochaine synchro écrase le serveur
      au lieu de fusionner — toujours par écriture conditionnelle, donc sans course avec un autre appareil. */
   s.replaceAll = data => { s.data = normalize(data); s.force = true; s.save(); };
+  /* Un document venu d'ailleurs (l'ancien document partagé de l'artefact claude.ai, services/artifact-db.js) versé dans
+     celui-ci, sans base commune : ce qui est noté de part et d'autre reste ; pour une même valeur, le plus récent gagne.
+     Un appareil vierge l'adopte tel quel. */
+  s.absorb = doc => { s.data = normalize(clone(mergeDocs(null, clone(s.data), clone(doc)))); saveLS(); };
   /* Un appareil utilisé sans compte rejoint un compte qui a peut-être déjà ses données. Sans base commune, la fusion garde
      les ajouts des deux côtés, et pour une même valeur (un réglage : palette, nom) le plus récent gagne, donc l'appareil.
      Ici, c'est le compte qui doit l'emporter : la date locale passe à 1. Pas à 0, qui ferait adopter le serveur tel quel

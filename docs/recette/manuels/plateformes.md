@@ -23,7 +23,7 @@ moyens, les cas concernés sont **bloqués**, jamais réussis.
 | [PLT-008](#plt-008) | iOS : lancement, Raccourci de partage, encoches, clavier | P2 | IOS |
 | [PLT-009](#plt-009) | Windows : fenêtre unique, Ctrl+Alt+S, zone de notification | P2 | WIN |
 | [PLT-010](#plt-010) | Windows : données après fermeture, déconnexion, mise à jour par-dessus | P1 | WIN |
-| [PLT-011](#plt-011) | Artefact claude.ai : démarrage, données, synchronisation | P2 | ART |
+| [PLT-011](#plt-011) | Artefact claude.ai : démarrage, données, synchronisation | P1 | ART |
 | [PLT-012](#plt-012) | Mise en arrière-plan d'une app mobile : ce qui attend part | P2 | AND, IOS |
 | [PLT-013](#plt-013) | Apps mobiles : sauvegarde et exports par la feuille de partage | P1 | AND, IOS |
 
@@ -310,29 +310,34 @@ Identifiants retirés : aucun.
 <a id="plt-011"></a>
 ### PLT-011 — Artefact claude.ai : démarrage, données, synchronisation
 
-- **Fonctionnalité et règle** : `selene.html` publié comme artefact démarre sans compte Selene ni écran d'entrée ; ses
-  données vivent dans le stockage de l'artefact et sont reliées à l'espace de noms `db` de claude.ai ; ce qui demande la
-  version hébergée (compte, connexions, passeur) le dit.
+- **Fonctionnalité et règle** : `selene.html` publié comme artefact (capacités `db` et `user`) démarre sans compte
+  Selene ni écran d'entrée ; ses données vivent dans le stockage de l'artefact et dans le sous-arbre privé de la
+  personne qui l'ouvre (`data/users/<id>/site`, `…/board` ; ADR 33), jamais dans un document partagé : partager le
+  lien partage l'outil, pas le carnet ; ce qui demande la version hébergée (compte, connexions, passeur) le dit.
 - **Objectif, risque vérifié** : un artefact qui démarre vide à chaque ouverture ; une fonction hébergée qui échoue sans
-  explication.
-- **Priorité** : P2 · **Plateformes** : ART
-- **Préconditions** : un compte claude.ai de recette ; `selene.html` construit au commit en recette (`python3 build.py`)
-  publié comme artefact ; un second navigateur connecté au même compte claude.ai.
-- **Données** : capture `Artefact PLT-011`.
-- **Automatisés associés** : `TU-APP-01`, `TU-PLT-05`
-- **Source** : [CODE] `src/app/boot.js` (`platform.claude.use("db")`), `src/platform.js` (runtime « artifact ») ; [TEST]
-  `TU-APP-01` (`selene.html` hors de claude.ai) ; [À ARBITRER] l'étape 4 dépend du comportement de claude.ai, non décrit
-  dans le dépôt.
+  explication ; le carnet lu par toute personne à qui l'on donne le lien (A12).
+- **Priorité** : P1 · **Plateformes** : ART
+- **Préconditions** : deux comptes claude.ai de recette, R1 et R2 ; `selene.html` construit au commit en recette
+  (`python3 build.py`), publié par R1 comme artefact avec les capacités `db` et `user` ; un second navigateur connecté
+  à R1 ; un troisième, connecté à R2.
+- **Données** : captures `Artefact PLT-011` (R1) et `Artefact PLT-011 R2` (R2).
+- **Automatisés associés** : `TU-APP-01`, `TU-PLT-05`, `TU-ART-01`, `TU-ART-02`, `TU-ART-03`, `TU-ART-04`, `TU-ART-05`
+- **Source** : [CODE] `src/app/services/artifact-db.js`, `src/app/boot.js`, `src/platform.js` (runtime « artifact ») ;
+  [DOC] ADR 33 de `docs/architecture.md`, contrat `db` de claude.ai (documents partagés par défaut, sous-arbre
+  `data/users/<id>/` privé) ; [TEST] `tests/artifact.test.js` (faux claude.ai).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Ouvrir l'artefact. | Selene s'ouvre directement : pas d'écran d'entrée ; nulle part de bouton « Se connecter » ni « Créer un compte ». |
-| 2 | Garder la capture des données ; recharger l'artefact. | La note est toujours dans la Boîte. |
+| 1 | R1 ouvre l'artefact. | Selene s'ouvre directement : pas d'écran d'entrée ; nulle part de bouton « Se connecter » ni « Créer un compte ». |
+| 2 | Garder la capture `Artefact PLT-011` ; recharger l'artefact. | La note est toujours dans la Boîte. |
 | 3 | Réglages → Connexions. | « Les connexions (Envoyer à Selene, Zotero, le passeur, le calendrier) vivent dans la version web ou l'app installée. L'artefact claude.ai s'en passe. » (voir [EXT-019](connexions.md#ext-019)). |
-| 4 | Ouvrir le même artefact dans le second navigateur. | Comportement attendu d'après le code : la note `Artefact PLT-011` y est. Noter le résultat observé ; s'il diffère, il décrit le fonctionnement de claude.ai, à confirmer. |
+| 4 | Ouvrir le même artefact dans le second navigateur, connecté à R1. | La note `Artefact PLT-011` y est. |
+| 5 | R1 partage l'artefact avec R2 (menu de partage, niveau Contributeur) ; R2 l'ouvre dans le troisième navigateur. | Un Selene vide : ni la note `Artefact PLT-011`, ni le nom ou les espaces de R1. |
+| 6 | R2 garde la capture `Artefact PLT-011 R2` ; R1 recharge l'artefact. | Chez R1, la note de R2 n'apparaît pas ; chez R2, rechargé, elle est là. |
 
-- **État final attendu** : une note de plus dans l'artefact.
-- **Nettoyage** : la supprimer.
+- **État final attendu** : une note de plus dans le Selene de R1, une dans celui de R2 ; aucun document partagé dans
+  l'espace `db` de l'artefact.
+- **Nettoyage** : supprimer l'artefact (cela efface son espace `db`).
 
 ---
 
