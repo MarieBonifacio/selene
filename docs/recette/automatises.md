@@ -1415,7 +1415,8 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
   correctif en 32 exécutions WebKit de la CI) ; `TN-mot-de-passe` (A11 : trois échecs sur `main`, les 4 et 5 octobre ;
   A16 : trois contrôles sous Firefox le 6 octobre, l'app pas encore démarrée, corrigé par la PR #120 avec
   `TN-regulation-appareil`, `TN-regulation-perdu`, `TN-sources`, `TN-dehors-croise`, `TN-dehors`, `TN-artist-watch` et
-  `TN-agenda`, qui comptaient sur le même délai) et
+  `TN-agenda`, qui comptaient sur le même délai ; `TN-parcours-e2`, qui lisait le stockage avant l'écriture, trouvé par
+  le job « démarrage lent ») et
   `TN-dehors` (A10), qui attendent désormais l'état plutôt qu'un délai ; `TN-regulation` sous WebKit (A9, corrigé par la
   #100) ; `TN-identite` (deux échecs les 2 et 3 octobre, corrigé par `31122f6`). Relevé complet :
   [perimetre.md](perimetre.md#anomalies-et-observations).

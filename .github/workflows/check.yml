@@ -107,18 +107,6 @@ jobs:
       - run: npm run test:browser
         id: scenarios
         continue-on-error: ${{ matrix.browser == 'firefox' }}
-      # TEMPORAIRE (A16) : mot-de-passe.js sous Firefox, trois à la fois, sept fois ; retiré avant la fusion.
-      - name: TEMPORAIRE — mot-de-passe.js 21 fois sous Firefox
-        if: matrix.browser == 'firefox' && !cancelled()
-        continue-on-error: true
-        run: |
-          ok=0; ko=0
-          for i in $(seq 7); do
-            for j in 1 2 3; do node tests/browser/run.js mot-de-passe > "boucle-$j.txt" 2>&1 & done
-            wait
-            for j in 1 2 3; do if grep -q "tous verts" "boucle-$j.txt"; then ok=$((ok+1)); else ko=$((ko+1)); grep -E "✗|…" "boucle-$j.txt" || true; fi; done
-          done
-          echo "mot-de-passe.js sous firefox, trois à la fois : $ok verts, $ko en échec sur 21"
       # Un échec non bloquant laisse le job vert : il doit au moins se voir, sur la page de la PR comme dans le résumé du
       # run, où run.js a déjà listé les scénarios et les contrôles en échec (BL-17 du cahier de recette).
       - name: Signaler l'échec non bloquant
