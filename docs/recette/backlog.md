@@ -16,8 +16,8 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 | [BL-04](#bl-04) | ~~Balayage d'accessibilité rejoué à chaque PR~~ (fait) | automatisation | P2 | TRV-001, TRV-002, TRV-003, TRV-006, TRV-014 |
 | [BL-05](#bl-05) | ~~Stabiliser `tests/browser/activite.js` sous WebKit~~ (fait, voir ci-dessous) | fiabilité de la CI | P2 | TRV-011 |
 | [BL-06](#bl-06) | ~~Assistant : dire « non déployé » ou « injoignable », et le tester~~ (fait) | correctif puis automatisation | P2 | AST-007 |
-| [BL-07](#bl-07) | Fumée de l'app Android sur émulateur, en CI | automatisation | P2 | PLT-003, PLT-004 |
-| [BL-08](#bl-08) | Fumée de l'app Windows installée, en CI | automatisation | P3 | PLT-009, PLT-010 |
+| [BL-07](#bl-07) | ~~Fumée de l'app Android sur émulateur, en CI~~ (fait, verte depuis le 5 octobre) | automatisation | P2 | PLT-003, PLT-004 |
+| [BL-08](#bl-08) | ~~Fumée de l'app Windows installée, en CI~~ (fait, verte depuis le 6 octobre) | automatisation | P3 | PLT-009, PLT-010 |
 | [BL-09](#bl-09) | ~~Seuils de performance sur le jeu de volume~~ (fait) | décision puis automatisation | P2 | TRV-007 |
 | [BL-10](#bl-10) | ~~Minuit, app ouverte : horloge simulée~~ (fait) | décision puis automatisation | P3 | TRV-004 |
 | [BL-11](#bl-11) | claude.ai : ce qui ne s'automatise pas | lacune assumée | P2 | AST-009, PLT-011 |
@@ -160,7 +160,9 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
   variante de l'app, construite après le dépôt de l'installateur publié et jamais déposée, ouvre le protocole de débogage
   de Chrome (`additionalBrowserArgs` ; la variable `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` est ignorée quand wry fixe ses
   propres arguments, constaté au deuxième essai), et le script reprend les étapes de la fumée Android. Le projet Supabase de l'app est rendu injoignable sur le runner (fichier `hosts`)
-  avant l'essai.
+  avant l'essai. Premier passage vert le 6 octobre 2026, au troisième essai (PR #113, quatorze secondes de fumée) :
+  installée sous `%LOCALAPPDATA%\Selene`, la note retrouvée après l'app tuée puis relancée, le coffre sans temporaire,
+  une seule Selene après le second lancement, aucune exception JavaScript.
 
 <a id="bl-09"></a>
 ### BL-09 — Seuils de performance sur le jeu de volume

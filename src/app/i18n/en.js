@@ -1077,6 +1077,7 @@ export default {
   "Mesure": "Measure",
   "Ces 7 jours": "These 7 days",
   "Les 7 d'avant": "The 7 before",
+  "Rien à comparer pour l'instant : ce tableau ne compte que les journées confirmées, et aucune ne l'est encore. « Faire mon point du jour », le soir venu, confirme la première.": "Nothing to compare yet: this table only counts confirmed days, and none is confirmed so far. “Review my day”, once evening comes, confirms the first one.",
   "Objectif changé pendant ces deux semaines :": "Goal changed during these two weeks:",
   "à partir du {0}, {1}": "from {0}, {1}",
   "objectif du jour : {0}": "goal for the day: {0}",

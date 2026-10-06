@@ -245,11 +245,16 @@ function periodHTML(id, inst) {
     : cmp.reason === "few" ? tr`Moins de ${REGULATION_COMPARE_MIN} journées complètes dans l'une des périodes : leurs moyennes ne se comparent pas, l'écart dirait surtout ce qui manque.`
     : tr`Les deux périodes ne sont pas renseignées de la même façon (${cur.complete} et ${prev.complete} journées complètes) : leurs moyennes ne se comparent pas telles quelles.`;
   const first = regulationGoalHistory(inst).at(-1), changes = [...prev.goalChanges, ...cur.goalChanges].filter(g => g !== first); // la première version n'est pas un changement
+  /* Sans journée confirmée en deux semaines (le premier jour, typiquement), le tableau ne serait que tirets et zéros :
+     une impression d'échec là où rien n'a encore commencé (U9 de l'audit). Une phrase dit ce qui le remplira ; le geste
+     est à côté, « Faire mon point du jour » et la liste des jours. Sans semaine précédente, sa colonne n'est pas montrée. */
+  const table = !cur.complete && !prev.complete ? `<p class="empty">${tr`Rien à comparer pour l'instant : ce tableau ne compte que les journées confirmées, et aucune ne l'est encore. « Faire mon point du jour », le soir venu, confirme la première.`}</p>`
+    : `<div class="rlm-tablewrap"><table class="rlm-cmp"><thead><tr><th scope="col"><span class="sr">${tr`Mesure`}</span></th><th scope="col">${tr`Ces 7 jours`}</th>${prev.span ? `<th scope="col">${tr`Les 7 d'avant`}</th>` : ""}</tr></thead>
+    <tbody>${rows.map(([l, f]) => `<tr><th scope="row">${l}</th><td>${esc(cell(cur, f))}</td>${prev.span ? `<td>${esc(cell(prev, f))}</td>` : ""}</tr>`).join("")}</tbody></table></div>
+    <p class="hint">${note}</p>`;
   return `<section aria-labelledby="rlmWeekH-${esc(id)}"><h3 id="rlmWeekH-${esc(id)}">${tr`Mes sept derniers jours`}</h3>
     <p class="hint">${tr`Une journée inconnue ne vaut jamais zéro, ni un échec. Les jours d'avant le début du suivi ne comptent pas.`}</p>
-    <div class="rlm-tablewrap"><table class="rlm-cmp"><thead><tr><th scope="col"><span class="sr">${tr`Mesure`}</span></th><th scope="col">${tr`Ces 7 jours`}</th><th scope="col">${tr`Les 7 d'avant`}</th></tr></thead>
-    <tbody>${rows.map(([l, f]) => `<tr><th scope="row">${l}</th><td>${esc(cell(cur, f))}</td><td>${esc(cell(prev, f))}</td></tr>`).join("")}</tbody></table></div>
-    <p class="hint">${note}</p>
+    ${table}
     ${changes.length ? `<p>${tr`Objectif changé pendant ces deux semaines :`} ${changes.map(g => esc(tr`à partir du ${fmt(g.date)}, ${goalText(inst, g)}`)).join(" ; ")}.</p>` : ""}
     <ul class="plain rlm-days">${[...cur.days].reverse().map(d => `<li class="item" data-date="${esc(d.date)}"><span class="jdate">${fmt(d.date, { weekday: "short", day: "numeric" })}</span><div>${esc(dayStatus(inst, d))}${d.goal && d.met !== null ? `<div class="meta"><span>${esc(tr`objectif du jour : ${goalText(inst, d.goal)}`)}</span></div>` : ""}</div>
       <div class="row">${d.complete ? "" : `<button class="btn ghost sm" data-act="rlm-day-at" data-date="${esc(d.date)}" aria-label="${esc(tr`Confirmer le ${longDate(d.date)}`)}">${tr`confirmer`}</button>`}</div></li>`).join("") || `<li class="empty">${tr`Le suivi commence avec ta première saisie ou ton premier objectif.`}</li>`}</ul>

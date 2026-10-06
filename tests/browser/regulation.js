@@ -71,6 +71,8 @@ const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_
     check((await main()).includes('pas encore confirmée'), 'aujourd’hui : inconnue, pas zéro');
     for (const name of ['J\'ai une envie', 'Noter une consommation / durée', 'J\'ai réalisé une action', 'Faire mon point du jour'])
       check(await p.getByRole('button', { name, exact: true }).count() === 1, `action principale : ${name}`);
+    // U9 : le premier jour, rien de confirmé, une phrase au lieu d'un tableau de tirets ; le geste reste l'action principale.
+    check((await main()).includes('Rien à comparer pour l\'instant') && !(await p.$('.rlm-cmp')), 'sept derniers jours, le premier jour : une phrase, pas de tableau vide');
 
     console.log('saisies, total quotidien, confirmation, réouverture');
     await p.click('[data-act="rlm-use"]'); await fill({ value: '1.5', note: 'CONFIDENTIEL_BROWSER' }); await submit();
@@ -80,6 +82,7 @@ const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_
     let msg = await ask(true);
     check(/1,5 verre standard au total/.test(msg) && /toutes les consommations/.test(msg), 'avant de confirmer : la date et le total exacts');
     check((await main()).includes('journée confirmée'), 'journée confirmée par un geste explicite');
+    check(await p.$$eval('.rlm-cmp thead th', t => t.length) === 2 && !(await main()).includes('Rien à comparer'), 'une journée confirmée : le tableau, sans colonne pour une semaine d’avant qui n’existe pas');
     await p.click('[data-act="rlm-use"]'); await fill({ value: '1' }); await submit();
     check((await toast()).includes('à reconfirmer'), 'nouvelle consommation après confirmation : demande de reconfirmer');
     check((await main()).includes('à reconfirmer'), 'la journée n’est plus comptée comme complète');

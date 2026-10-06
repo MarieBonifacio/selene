@@ -566,6 +566,38 @@ test('l’écran du module : textes échappés, quatre actions, alcool informé 
   assert.match(app.TYPE_UI.regulation.view(sid), /Le suivi commence|Mes sept derniers jours/);
 });
 
+test('mes sept derniers jours : rien de confirmé, une phrase au lieu du tableau ; sans semaine d’avant, pas sa colonne (U9)', () => {
+  const app = launch(), today = app.todayISO();
+  const tracker = (name, start) => {
+    app.installModule({ type: 'regulation' }, name);
+    const id = app.S().config.modules.at(-1).id, inst = app.S().modules[id];
+    app.setupRegulation(inst, { subject: 'tabac', date: start, mode: 'observer' }, 'g', today, 1);
+    return { id, inst, week: () => app.TYPE_UI.regulation.view(id).match(/<section aria-labelledby="rlmWeekH-[^]*?<\/section>/)[0] };
+  };
+  const confirm = (inst, date) => app.closeRegulationDay(inst, date, app.regulationSnapshot(inst, date), today, 2, 'Europe/Paris');
+  const cells = w => (w.match(/<td>/g) || []).length;
+
+  const t = tracker('Premier jour', today);
+  let w = t.week();
+  assert.doesNotMatch(w, /<table/, 'le premier jour : pas de tableau de tirets et de zéros');
+  assert.match(w, /Rien à comparer pour l'instant/);
+  assert.match(w, /ne vaut jamais zéro/, 'la règle reste dite');
+  assert.match(w, new RegExp(`data-act="rlm-day-at" data-date="${today}"`), 'le geste : confirmer la journée, dans la liste des jours');
+  confirm(t.inst, today);
+  w = t.week();
+  assert.match(w, /<table class="rlm-cmp">/, 'une journée confirmée : le tableau');
+  assert.doesNotMatch(w, /Les 7 d'avant|Rien à comparer/);
+  assert.equal(cells(w), 6, 'une seule colonne de valeurs');
+  assert.match(w, /Pas encore de semaine précédente/);
+
+  const u = tracker('Commencé il y a huit jours', app.addDaysTo(today, -8));
+  assert.doesNotMatch(u.week(), /<table/, 'deux semaines entamées, aucune journée confirmée : toujours la phrase');
+  confirm(u.inst, app.addDaysTo(today, -7));
+  w = u.week();
+  assert.match(w, /Les 7 d'avant/, 'une semaine d’avant : sa colonne');
+  assert.equal(cells(w), 12);
+});
+
 test('formulaire commun : un champ nombre garde ses bornes par défaut ; un champ date peut refuser l’avenir', () => {
   const app = launch();
   app.openForm('Essai', [{ n: 'a', l: 'A', t: 'number' }, { n: 'b', l: 'B', t: 'number', step: 0.01, min: 0.01, max: 100 }, { n: 'c', l: 'C', t: 'date', max: '2026-09-30' }, { n: 'd', l: 'D', t: 'date' }], {}, () => {});

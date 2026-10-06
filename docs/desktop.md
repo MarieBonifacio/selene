@@ -57,6 +57,6 @@ Windows), autorisé dans la CSP de la page native seulement.
 `tests/native-boot.test.js` vérifie que l'amorçage appelle les six commandes avec les bons arguments ; les tests Rust
 (`cargo test`) vérifient l'encodage des noms de fichiers ; le workflow *Desktop* compile et teste sous Windows, produit
 l'installateur, puis l'installe et le lance (`scripts/windows-fumee.mjs`, BL-08 du cahier de recette) : écran
-d'entrée, une note capturée sans compte et relue après l'app tuée puis relancée, une seule instance. Restent à faire à
-la main : la déconnexion (les secrets quittent le Gestionnaire d'identification), la mise à jour par-dessus, le
-raccourci global et la zone de notification.
+d'entrée, une note capturée sans compte et relue après l'app tuée puis relancée, une seule instance (vert depuis le
+6 octobre 2026). Restent à faire à la main : la déconnexion (les secrets quittent le Gestionnaire d'identification), la
+mise à jour par-dessus, le raccourci global et la zone de notification.
