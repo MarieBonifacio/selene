@@ -10,8 +10,8 @@ Identifiants retirés : aucun.
 
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
-| Tests unitaires et d'intégration Node | `npm test` | 318 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
-| Scénarios de navigateur | `npm run test:browser` | 80 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
+| Tests unitaires et d'intégration Node | `npm test` | 319 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
+| Scénarios de navigateur | `npm run test:browser` | 81 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
 | Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
@@ -77,6 +77,7 @@ ou Windows. (Firefox l'est depuis le 6 octobre 2026, dans *Check › browser*.)
 | *Desktop* (`desktop.yml`) | idem, chemins Tauri | `cargo test --locked`, puis installateur NSIS, puis la fumée de l'app installée (`TS-WIN-FUMEE`) ; captures en artefact | Windows |
 | *Assistant*, *Compte*, *Passeur* | push sur `main` touchant leur fonction ou `_shared` ; à la demande | `test:functions` puis déploiement ; sautés avec un avis si les secrets manquent | Ubuntu |
 | *Liens* (`liens.yml`) | le 3 de chaque mois à 6 h 17 UTC ; à la demande | `npm run liens` | Ubuntu |
+| *Isolation* (`isolation.yml`) | le lundi à 4 h 41 UTC ; push sur `main` touchant `supabase/schema.sql`, le script ou le workflow ; à la demande | `npm run isolation` contre le projet de préproduction (`TS-ISOLATION`) ; sauté avec un avis tant que les six secrets `ISOLATION_*` manquent (jamais lancé au 6 octobre 2026) ; un échec rend le run rouge | Ubuntu, Node de `.nvmrc` |
 | *Sauvegarde* (`sauvegarde.yml`) | le lundi à 3 h 23 UTC ; à la demande | `scripts/sauvegarde.sh` : la base vidée en lecture seule et chiffrée pour la clé publique age (`TS-SAUVEGARDE`) ; seule l'archive chiffrée est publiée en artefact, 30 jours ; sautée avec un avis tant que ses réglages manquent (jamais lancée au 6 octobre 2026) | Ubuntu, CLI Supabase |
 | *Publication* (`release.yml`) | étiquette `v*` ; à la demande | APK et AAB signés, installateur Windows, archive iOS pour TestFlight ; chaque plateforme sautée sans ses secrets | Ubuntu, Windows, macOS |
 | *Captures* (`screenshots.yml`) | à la demande | captures des stores | Ubuntu |
@@ -357,6 +358,7 @@ sans navigateur.
 | <a id="tu-iso-07"></a>`TU-ISO-07` | isolation : un refus pour une autre raison que la règle reste douteux | Un refus pour une autre raison que la règle (409…) est marqué douteux (code 2). | — |
 | <a id="tu-iso-08"></a>`TU-ISO-08` | isolation : les écritures à refuser ne demandent rien en retour, comme un compte malveillant | Les écritures à refuser demandent `return=minimal`, comme un compte malveillant. | — |
 | <a id="tu-iso-09"></a>`TU-ISO-09` | isolation : le script est déclaré et documenté, chaque variable nommée | Le script est déclaré dans `package.json`, documenté, chaque variable d'environnement nommée. | — |
+| <a id="tu-iso-10"></a>`TU-ISO-10` | workflow Isolation : chaque lundi, aux règles changées et à la demande ; lecture seule ; sans secrets, sauté ou en échec selon qui le lance | Le workflow lu tel quel : à la demande, planifié, rejoué quand `schema.sql`, le script ou le workflow changent sur `main` ; jeton en lecture seule ; actions épinglées par empreinte ; les six variables viennent des secrets ; ni `set -x` ni écho d'un secret ; il lance `npm run isolation`. Son premier pas, joué dans bash : sans secrets, planifié ou poussé, sauté avec un avis qui nomme ce qui manque ; lancé à la main, en échec, et dit ; avec les six, prêt. | [TRV-016](manuels/transverse.md#trv-016) |
 
 ### Journal des erreurs — `tests/journal.test.js`
 
@@ -1091,8 +1093,17 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Fichier** : [`tests/browser/hors-ligne.js`](../../tests/browser/hors-ligne.js) · **mode** H · **écran** O
 - **Conditions** : L'app, puis la politique et la page de présentation ouvertes.
 - **Vérifie** : le service worker tient la page ; le cache garde l'app, pas la dernière page visitée.
-- **Limites** : La coupure réseau simulée par Playwright n'atteint pas le service worker : le cache est lu, la page n'est pas rouverte hors ligne.
+- **Limites** : La coupure réseau simulée par Playwright n'atteint pas le service worker : le cache est lu, la page n'est pas rouverte hors ligne. Sous WebKit, la page de test, tenue par le service worker, échappe aux routes : sa mesure d'audience partait vers le vrai projet jusqu'à BL-21 (A20) ; le réseau fermé l'arrête, et le journal le dit.
 - **Cas manuels** : [SYN-010](manuels/synchronisation.md#syn-010), [PLT-001](manuels/plateformes.md#plt-001), [TRV-012](manuels/transverse.md#trv-012)
+
+<a id="tn-reseau-ferme"></a>
+#### `TN-reseau-ferme` — Le réseau fermé aux scénarios
+
+- **Fichier** : [`tests/browser/reseau-ferme.js`](../../tests/browser/reseau-ferme.js) · **mode** A · **écran** —
+- **Conditions** : Le mandataire fermé de `helpers.js` (`engine.launch`, [BL-21](backlog.md#bl-21)), que tous les scénarios reçoivent ; une cible publique en lecture seule, autorisée par la politique de sécurité d'`index.html` (une prévision météo). Deux temps : le service worker bloqué, puis permis (sous Firefox et WebKit, une requête vers un autre hôte passe par le service worker, que les routes n'atteignent pas).
+- **Vérifie** : une requête que ni les routes ni le serveur des scénarios ne servent échoue ; une requête routée et le serveur des scénarios sont servis ; une fois la page tenue par le service worker (le chemin d'A20 sous WebKit), la même requête échoue encore. Dans les trois moteurs.
+- **Limites** : L'échec voulu peut s'écrire à la console : seuls les messages qui nomment la cible sont écartés du contrôle « aucune erreur JavaScript ». Le mandataire retiré (mutation du 6 octobre 2026, CI de la PR #124), le scénario échoue dans les quatre jobs : la cible répond 200. Le journal de chaque scénario nomme toute requête arrêtée par le mandataire (« · réseau fermé : … »). Ne dit rien des tests Node (`tests/*.test.js`), qui n'ouvrent pas de navigateur, ni de `npm run isolation`, qui vise la préproduction exprès.
+- **Cas manuels** : —
 
 <a id="tn-sauvegarde-complete"></a>
 #### `TN-sauvegarde-complete` — La sauvegarde complète, geste entier, sur deux appareils
@@ -1124,7 +1135,7 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-csp` — Politique de sécurité du contenu
 
 - **Fichier** : [`tests/browser/csp.js`](../../tests/browser/csp.js) · **mode** A puis H · **écran** —
-- **Conditions** : —
+- **Conditions** : Un faux Supabase pour la page hébergée (avant BL-21, elle lisait les réglages d'inscription du vrai projet).
 - **Vérifie** : deux empreintes, pas de `'unsafe-inline'` ; le script principal et celui du service worker s'exécutent ; polices du site ; 12 vues sans violation ; un `onerror=` ou un `<script>` injecté ne s'exécute pas et le navigateur le signale.
 - **Cas manuels** : [CPT-001](manuels/entree-et-comptes.md#cpt-001), [TRV-008](manuels/transverse.md#trv-008), [TRV-009](manuels/transverse.md#trv-009)
 
@@ -1212,7 +1223,7 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-cites` — Ce que tes sources ont en commun
 
 - **Fichier** : [`tests/browser/cites.js`](../../tests/browser/cites.js) · **mode** H · **écran** O
-- **Conditions** : OpenAlex simulé.
+- **Conditions** : OpenAlex simulé ; chaque contrôle attend les requêtes ou l'écriture qu'il lit (A21).
 - **Vérifie** : rien avant le clic ; deux appels ; OpenAlex ne reçoit que des DOI ; références communes (tes sources exclues), couplage, auteurs qui reviennent ; titres piégés inertes ; résultat sur l'appareil seulement ; garder une référence ; suivre un auteur dans la veille ; cache ; une seule source à DOI : pas de bouton.
 - **Cas manuels** : [EXT-018](manuels/connexions.md#ext-018)
 
@@ -1419,9 +1430,9 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
 | <a id="ts-i18n"></a>`TS-I18N` | `npm run i18n` | Chaque texte marqué a sa traduction anglaise, sans orphelin, valeurs `{n}` comprises. | oui, *Check* | Ne juge pas la qualité des traductions. | — |
 | <a id="ts-deno-check"></a>`TS-DENO-CHECK` | `deno check` (dans `test:functions`) | Typage des fonctions serveur. | oui, *Check › passeur* | — | — |
 | <a id="ts-liens"></a>`TS-LIENS` | `npm run liens` | Les adresses de santé citées répondent ; une page disparue fait échouer. | planifié : le 3 de chaque mois | Un site qui refuse le robot n'est qu'annoté (lien ameli, [a-faire.md](../a-faire.md#tout-de-suite-une-minute)). | — |
-| <a id="ts-isolation"></a>`TS-ISOLATION` | `npm run isolation` | Douze requêtes interdites refusées par un vrai projet Supabase de préproduction. | **non** : à lancer à la main | Ne prouve rien sur la production tant que ses règles n'ont pas été comparées ([compte.md](../compte.md#vérifier-lisolation-entre-comptes)). | [TRV-016](manuels/transverse.md#trv-016) |
+| <a id="ts-isolation"></a>`TS-ISOLATION` | `npm run isolation`, et le workflow *Isolation* | Douze requêtes interdites refusées par un vrai projet Supabase de préproduction. | planifié : chaque lundi, à chaque changement des règles sur `main`, et à la demande ; **sauté** tant que les six secrets `ISOLATION_*` manquent ; à la main, sur son poste | Ne prouve rien sur la production tant que ses règles n'ont pas été comparées ([compte.md](../compte.md#vérifier-lisolation-entre-comptes)). | [TRV-016](manuels/transverse.md#trv-016) |
 | <a id="ts-bench"></a>`TS-BENCH` | `npm run bench` | Le rendu des vues sur 5 500 textes (1,92 M caractères, document de 2,59 Mo) dans une VM Node : la médiane de cinq passages, après une chauffe ; échoue si une mesure dépasse 150 ms (décision du 6 octobre 2026, BL-09). Le 6 octobre : accueil 43 ms, motifs 33 ms, bilan 46 ms, planche 37 ms, carte d'un motif 53 ms, recherche 4 ms, tirage des sortes 43 ms. | **oui** : *Check › build-and-test*, à chaque PR et avant chaque déploiement | Faux DOM : ni mise en page ni peinture ; compter 3 à 5 fois plus sur téléphone selon le script. | [TRV-007](manuels/transverse.md#trv-007) |
-| <a id="ts-recette"></a>`TS-RECETTE` | `npm run recette` | Cohérence du cahier de recette : identifiants, format des cas, lien cas ↔ tests dans les deux sens, présence de chaque test du dépôt dans l'inventaire, totaux du tableau de tête, matrice et son décompte par état, liens et ancres, jeux de données importables ou refusés ([maintenance.md](maintenance.md#la-vérification-de-cohérence)). | **oui** : *Check › recette*, sur les PR (jamais avant un déploiement de *Pages*) ; aussi dans `npm run check` | Ne lance aucun test et ne juge pas la justesse d'un résultat attendu. | — |
+| <a id="ts-recette"></a>`TS-RECETTE` | `npm run recette` | Cohérence du cahier de recette : identifiants, format des cas (un résultat attendu à chaque étape), lien cas ↔ tests dans les deux sens, présence de chaque test du dépôt dans l'inventaire, totaux du tableau de tête, matrice et son décompte par état, liens et ancres, jeux de données importables ou refusés ([maintenance.md](maintenance.md#la-vérification-de-cohérence)). | **oui** : *Check › recette*, sur les PR (jamais avant un déploiement de *Pages*) ; aussi dans `npm run check` | Ne lance aucun test et ne juge pas la justesse d'un résultat attendu. | — |
 | <a id="ts-apk"></a>`TS-APK` | workflow *Android* | L'APK de débogage se construit ; le chemin de signature de la publication fonctionne (clé jetable, `apksigner verify`). | oui, filtré par chemins | Aucun lancement de l'app. | — |
 | <a id="ts-android-fumee"></a>`TS-ANDROID-FUMEE` | workflow *Android sur émulateur* (`scripts/android-fumee.mjs`) | Sur un émulateur Android 15 hors ligne, l'APK de débogage démarre dans la coquille Capacitor sur son écran d'entrée ; une note capturée sans compte survit à l'app tuée puis relancée (sans repasser par l'écran d'entrée ; `files/selene` contient `selene-site-v1`, et aucun `.tmp` n'y reste au repos : un `.tmp` vu juste après une navigation est une écriture en route, revue après huit secondes sans geste) ; la mise à jour par l'APK de l'édition des stores la garde, et l'édition est la bonne ; aucune exception JavaScript pendant que le script est attaché. | oui, filtré par chemins | Émulateur, pas un téléphone ; ni session connectée, ni synchronisation, ni partage, rotation ou clavier ; les exceptions d'avant l'attache de chaque lancement échappent au script. | [PLT-003](manuels/plateformes.md#plt-003) |
 | <a id="ts-ios-sim"></a>`TS-IOS-SIM` | workflow *iOS* | Le projet iOS et ses plugins compilent pour le simulateur. | oui, filtré par chemins | Aucun lancement, aucune signature. | [PLT-008](manuels/plateformes.md#plt-008) |
@@ -1440,7 +1451,7 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
   `TN-regulation-appareil`, `TN-regulation-perdu`, `TN-sources`, `TN-dehors-croise`, `TN-dehors`, `TN-artist-watch` et
   `TN-agenda`, qui comptaient sur le même délai ; `TN-parcours-e2`, qui lisait le stockage avant l'écriture, trouvé par
   le job « démarrage lent ») ; `TN-agenda` sous WebKit (A19, un rechargement coupait une requête, corrigé par la PR #123
-  comme A1) et
+  comme A1) ; `TN-cites` sous Firefox (A21, une attente fixe, corrigé par la PR #124) et
   `TN-dehors` (A10), qui attendent désormais l'état plutôt qu'un délai ; `TN-regulation` sous WebKit (A9, corrigé par la
   #100) ; `TN-identite` (deux échecs les 2 et 3 octobre, corrigé par `31122f6`). Relevé complet :
   [perimetre.md](perimetre.md#anomalies-et-observations).
@@ -1450,8 +1461,8 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
   sont là.
 - **Non bloquant** : *Check › browser (firefox)*, jusqu'au 20 octobre 2026 au moins ([BL-13](backlog.md#bl-13)) ; un échec y
   laisse le job vert, avec un avertissement et la liste dans le résumé du job ([BL-17](backlog.md#bl-17)).
-- **Hors CI** : `TS-ISOLATION`, `TS-CAPTURES` ; `TS-LIENS` seulement une fois par mois ; `TS-SAUVEGARDE` chaque lundi, sauté tant
-  que ses réglages manquent. (`TS-BENCH` est en CI depuis le 6 octobre 2026.)
+- **Hors CI** : `TS-CAPTURES` ; `TS-LIENS` seulement une fois par mois ; `TS-SAUVEGARDE` et `TS-ISOLATION` chaque lundi,
+  sautés tant que leurs réglages manquent. (`TS-BENCH` est en CI depuis le 6 octobre 2026.)
 - **Désactivé, ignoré, sans assertion** : aucun.
 - **Playwright** : 1.63.0 depuis la fusion de la PR #78 (`5197c5f`) ; les navigateurs de la CI sont les siens.
 

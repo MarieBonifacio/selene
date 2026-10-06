@@ -88,8 +88,8 @@ Identifiants retirés : aucun.
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Couper le réseau sur A1 et A2. | « Non synchronisé » des deux côtés. |
-| 2 | A1 : supprimer « Appeler le plombier » (laisser passer « Annuler ») et « Poser une étagère ». | — |
-| 3 | A2 : modifier « Appeler le plombier » (note `urgent, mardi`). | — |
+| 2 | A1 : supprimer « Appeler le plombier » (laisser passer « Annuler ») et « Poser une étagère ». | Les deux tâches disparaissent de la liste d'A1 ; « Non synchronisé » reste affiché. |
+| 3 | A2 : modifier « Appeler le plombier » (note `urgent, mardi`). | Sur A2, « Appeler le plombier » porte la note `urgent, mardi` ; « Non synchronisé » reste affiché. |
 | 4 | Rétablir le réseau sur A1, attendre, puis sur A2, attendre 30 s ; revenir sur A1. | Sur les deux : « Appeler le plombier » existe avec la note `urgent, mardi` ; « Poser une étagère » est supprimée. |
 
 - **État final attendu** : une tâche supprimée, une conservée modifiée.
@@ -201,7 +201,7 @@ Identifiants retirés : aucun.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Version courante (A1) : ajouter une note (le serveur passe au format 8). | — |
+| 1 | Version courante (A1) : ajouter une note (le serveur passe au format 8). | La note s'affiche sur A1, et l'indicateur d'enregistrement s'efface (partie au serveur). |
 | 2 | Ancienne version (A2), même compte : attendre la synchronisation. | L'indicateur dit « Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser ». |
 | 3 | A2 : capturer le texte des données. | Gardé sur l'appareil seulement ; rien n'est écrit au serveur. |
 | 4 | A1 : vérifier. | Aucune donnée abîmée ; la capture de A2 n'est pas arrivée. |
@@ -224,7 +224,7 @@ Identifiants retirés : aucun.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Hors ligne, chacun désigne sa boîte. | — |
+| 1 | Hors ligne, chacun désigne sa boîte. | Sur A1, « Carnet » a « Boîte de réception » coché ; sur A2, `Vrac SYN-008` ; « Non synchronisé » des deux côtés. |
 | 2 | Rétablir le réseau, attendre la synchronisation des deux. | Une seule boîte désignée sur les deux appareils (la même) ; la capture rapide va dans celle-ci. |
 
 - **État final attendu** : une boîte.

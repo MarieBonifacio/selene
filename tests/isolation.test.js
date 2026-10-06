@@ -196,3 +196,40 @@ test('isolation : le script est déclaré et documenté, chaque variable nommée
   assert.match(doc, /## Vérifier l'isolation entre comptes/);
   for (const v of VARIABLES) assert.ok(doc.includes(v), `${v} expliquée dans docs/compte.md`);
 });
+
+/* Le workflow Isolation (BL-03 du cahier de recette) : lu tel quel, et son premier pas joué dans bash, sans réseau. */
+test('workflow Isolation : chaque lundi, aux règles changées et à la demande ; lecture seule ; sans secrets, sauté ou en échec selon qui le lance', () => {
+  const { spawnSync } = require('node:child_process');
+  const os = require('node:os');
+  const path = require('node:path');
+  const wf = fs.readFileSync('.github/workflows/isolation.yml', 'utf8');
+  assert.match(wf, /^\s+workflow_dispatch:/m);
+  assert.match(wf, /^\s+- cron: '[^']+'/m, 'planifié');
+  assert.match(wf, /paths: \[supabase\/schema\.sql, scripts\/isolation\.mjs, \.github\/workflows\/isolation\.yml\]/, 'rejoué quand les règles changent');
+  assert.match(wf, /^permissions:\n\s+contents: read\n/m, 'le jeton du dépôt en lecture seule');
+  const uses = [...wf.matchAll(/uses: (\S+)/g)].map(m => m[1]);
+  assert.ok(uses.length >= 2);
+  for (const u of uses) assert.match(u, /^[\w.-]+\/[\w.-]+@[0-9a-f]{40}$/, `${u} : épinglée par empreinte`);
+  const vars = ['ISOLATION_URL', 'ISOLATION_CLE', 'ISOLATION_A_EMAIL', 'ISOLATION_A_MOT_DE_PASSE', 'ISOLATION_B_EMAIL', 'ISOLATION_B_MOT_DE_PASSE'];
+  for (const v of vars) assert.match(wf, new RegExp(`${v}: \\$\\{\\{ secrets\\.${v} \\}\\}`), `${v} : un secret`);
+  assert.doesNotMatch(wf, /set -x|--debug|echo "\$ISOLATION/, 'aucun secret écrit dans le journal');
+  assert.match(wf, /run: npm run isolation\n/);
+  // Le pas « Réglages présents ? », joué tel quel.
+  const step = wf.slice(wf.indexOf('- name: Réglages présents ?'));
+  const script = step.slice(step.indexOf('run: |') + 'run: |'.length, step.indexOf('      - uses:')).split('\n').map(l => l.replace(/^ {10}/, '')).join('\n');
+  const play = (event, env = {}) => {
+    const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'selene-isolation-')), 'out');
+    fs.writeFileSync(out, '');
+    const clean = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('ISOLATION_')));
+    const r = spawnSync('bash', ['-e', '-c', script], { env: { ...clean, ...env, EVENT: event, GITHUB_OUTPUT: out }, encoding: 'utf8' });
+    return { code: r.status, out: fs.readFileSync(out, 'utf8'), log: r.stdout + r.stderr };
+  };
+  const planifie = play('schedule');
+  assert.equal(planifie.code, 0); assert.match(planifie.out, /ok=false/); assert.match(planifie.log, /::notice::Pas de test d'isolation : il manque les secrets ISOLATION_URL, ISOLATION_CLE/);
+  assert.equal(play('push').code, 0, 'l’envoi sur main sans réglages : sauté aussi');
+  const main = play('workflow_dispatch');
+  assert.equal(main.code, 1, 'lancé à la main sans réglages : en échec, et dit'); assert.match(main.log, /::error::Il manque les secrets/);
+  const complet = play('schedule', Object.fromEntries(vars.map(v => [v, 'x'])));
+  assert.equal(complet.code, 0); assert.match(complet.out, /ok=true/);
+  assert.doesNotMatch(complet.log, /x\b.*x\b/, 'aucune valeur répétée dans le journal');
+});

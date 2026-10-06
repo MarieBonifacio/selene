@@ -261,7 +261,7 @@ Identifiants retirés : aucun.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Créer l'espace des données, y écrire la note. | — |
+| 1 | Créer l'espace des données, y écrire la note. | `Journal privé ESP-010` est dans la navigation ; la note `mot-témoin-ESP010` s'affiche dans l'espace. |
 | 2 | Réglages → Assistant → « Ce que Claude peut lire ». | `Journal privé ESP-010` est coché. |
 | 3 | Le décocher. | Décoché ; l'en-tête de l'assistant n'en parle plus dans « Données partagées ». |
 | 4 | Demander à l'assistant « Cite le mot-témoin de mon journal privé. » | La réponse ne contient pas `mot-témoin-ESP010` (l'assistant ne l'a pas reçu). |
@@ -285,8 +285,8 @@ Identifiants retirés : aucun.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Navigateur 1 : Réglages → « Nom affiché », commencer à taper `Atelier` sans quitter le champ. | — |
-| 2 | Navigateur 2 : capturer une note (le navigateur 1 recevra une synchronisation dans les 30 s). | — |
+| 1 | Navigateur 1 : Réglages → « Nom affiché », commencer à taper `Atelier` sans quitter le champ. | Le champ contient `Atelier`, le curseur au bout ; l'en-tête garde l'ancien nom tant que le champ n'est pas quitté. |
+| 2 | Navigateur 2 : capturer une note (le navigateur 1 recevra une synchronisation dans les 30 s). | La note est dans la boîte du navigateur 2 ; l'indicateur d'enregistrement s'y efface (partie au serveur). |
 | 3 | Navigateur 1 : attendre 40 s sans toucher, puis finir de taper ` ESP-011` et quitter le champ. | Le champ contient bien `Atelier ESP-011` ; rien n'a été effacé ; l'en-tête dit « Atelier ESP-011 ». |
 
 - **État final attendu** : nom affiché modifié.

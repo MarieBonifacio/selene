@@ -208,7 +208,7 @@ Identifiants retirés : aucun.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Ouvrir Selene dans deux onglets. | — |
+| 1 | Ouvrir Selene dans deux onglets. | Les deux onglets affichent le jeu d'essai, les mêmes espaces, sans écran d'entrée. |
 | 2 | Onglet 1 : capturer le texte des données. | Onglet 2 : la capture apparaît dans la boîte en quelques secondes, sans recharger. |
 | 3 | Outils → Application → IndexedDB → `selene` → `kv`. | Les clés `selene-site-v1` (et sa base `-base` si connecté) ; Local Storage ne contient que des secrets et réglages d'appareil, pas `selene-site-v1`. |
 | 4 | Quitter complètement le navigateur, le relancer, rouvrir Selene. | La capture est là. |

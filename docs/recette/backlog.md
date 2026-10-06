@@ -25,7 +25,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | ~~A18 : au lancement d'un appareil connecté, l'écran d'entrée s'affiche jusqu'aux premières réponses du serveur~~ (fait le 6 octobre 2026, PR #122) | une session | P2 | — | [A18](perimetre.md#anomalies-et-observations) |
 | ~~A16 : `tests/browser/mot-de-passe.js` instable sous Firefox~~ (fait le 6 octobre 2026, PR #120) | une session | P2 | — | [A16](perimetre.md#anomalies-et-observations) |
 | ~~BL-17 : un échec sous Firefox ne se voit pas (le job reste vert)~~ (fait le 6 octobre 2026, PR #120) | une session | P2 | — | [BL-17](#bl-17) |
-| BL-21 : fermer le réseau aux scénarios de navigateur (sous WebKit, une page tenue par le service worker échappe aux routes, et ses requêtes vont au vrai serveur) | une session | P2 | — | [BL-21](#bl-21), [A20](perimetre.md#anomalies-et-observations) |
+| ~~BL-21 : fermer le réseau aux scénarios de navigateur (sous WebKit, une page tenue par le service worker échappe aux routes, et ses requêtes vont au vrai serveur)~~ (fait le 6 octobre 2026, PR #124) | une session | P2 | — | [BL-21](#bl-21), [A20](perimetre.md#anomalies-et-observations) |
 
 ### À automatiser
 
@@ -33,8 +33,8 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 |---|---|---|---|---|
 | ~~BL-14 : la sauvegarde complète dans un vrai navigateur, sur deux appareils~~ (fait le 6 octobre 2026, PR #123) | une session | P1 | — | [BL-14](#bl-14) |
 | ~~BL-15 : le hors-ligne réel (réseau coupé, page rechargée)~~ (fait le 6 octobre 2026, PR #123) | une session | P1 | — | [BL-15](#bl-15) |
-| BL-03 : l'isolation entre comptes rejouée chaque semaine | une session, une fois la préproduction et ses six secrets en place | P1 | après un premier `npm run isolation` réussi à la main (TRV-016) | [BL-03](#bl-03) |
-| BL-20 : un résultat observable à chaque étape, contrôlé par `npm run recette` | une session | P3 | — | [BL-20](#bl-20) |
+| ~~BL-03 : l'isolation entre comptes rejouée chaque semaine~~ (fait le 6 octobre 2026, PR #124 : le workflow attend ses six secrets, plus bas) | une session | P1 | — | [BL-03](#bl-03) |
+| ~~BL-20 : un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait le 6 octobre 2026, PR #124) | une session | P3 | — | [BL-20](#bl-20) |
 | BL-19 : nommer, dans la matrice, les étapes que les tests ne couvrent pas | une session | P3 | les 73 cas P1 d'abord | [BL-19](#bl-19) |
 | BL-18 : la page du cahier à cocher sous contrôle de la CI | une session | P3 | si la PR #118 est fusionnée | [BL-18](#bl-18) |
 | BL-16 : la fumée de l'app iOS sur simulateur | une session | P3 | avant la première version iOS | [BL-16](#bl-16) |
@@ -54,6 +54,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| Les six secrets `ISOLATION_*` du workflow *Isolation* (les valeurs de `.env.isolation`) | la personne qui administre Supabase | P1 | après le premier `npm run isolation` réussi à la main (TRV-016) | [compte.md](../compte.md#vérifier-lisolation-entre-comptes), [BL-03](#bl-03) |
 | Protéger `main` : PR obligatoire, contrôles `recette` et `build-and-test` requis | la personne qui administre le dépôt | P2 | dès que possible : `main` n'est pas protégée au 6 octobre 2026 | [BL-12](#bl-12), [a-faire.md](../a-faire.md#tout-de-suite-une-minute) |
 | Firefox bloquant : retirer `continue-on-error` de `check.yml` | une session, à la demande | P2 | le 20 octobre 2026, si la condition proposée plus bas est remplie | [BL-13](#bl-13) |
 | Les réglages du projet Supabase (SMTP, fonction `compte`, tables, compte personnel marqué, Postgres, offre Pro) | la personne qui administre Supabase | P1 et P2 | voir chaque ligne | [a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait) |
@@ -89,7 +90,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 |---|---|---|---|---|
 | [BL-01](#bl-01) | ~~Scénario « l'appareil détenteur a perdu son stockage »~~ (fait) | automatisation | P1 | RLM-029 |
 | [BL-02](#bl-02) | ~~Figer le sort du talon après « L'effacer définitivement »~~ (fait, voir ci-dessous) | décision puis automatisation | P1 | RLM-023 |
-| [BL-03](#bl-03) | Rejouer l'isolation entre comptes chaque semaine en CI | automatisation | P1 | TRV-016 |
+| [BL-03](#bl-03) | ~~Rejouer l'isolation entre comptes chaque semaine en CI~~ (fait, en attente de ses secrets) | automatisation | P1 | TRV-016 |
 | [BL-04](#bl-04) | ~~Balayage d'accessibilité rejoué à chaque PR~~ (fait) | automatisation | P2 | TRV-001, TRV-002, TRV-003, TRV-006, TRV-014 |
 | [BL-05](#bl-05) | ~~Stabiliser `tests/browser/activite.js` sous WebKit~~ (fait, voir ci-dessous) | fiabilité de la CI | P2 | TRV-011 |
 | [BL-06](#bl-06) | ~~Assistant : dire « non déployé » ou « injoignable », et le tester~~ (fait) | correctif puis automatisation | P2 | AST-007 |
@@ -106,8 +107,8 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 | [BL-17](#bl-17) | ~~Un échec sous Firefox doit se voir tant qu'il n'est pas bloquant~~ (fait) | fiabilité de la CI | P2 | tous |
 | [BL-18](#bl-18) | La page du cahier à cocher sous contrôle de la CI (si la PR #118 est fusionnée) | outillage | P3 | tous |
 | [BL-19](#bl-19) | Matrice : nommer les étapes que les tests ne couvrent pas | traçabilité | P3 | les 73 cas P1 d'abord |
-| [BL-20](#bl-20) | Un résultat observable à chaque étape, contrôlé par `npm run recette` | outillage | P3 | onze étapes, voir ci-dessous |
-| [BL-21](#bl-21) | Fermer le réseau aux scénarios de navigateur | hygiène des essais | P2 | tous les scénarios ; A20 |
+| [BL-20](#bl-20) | ~~Un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait) | outillage | P3 | onze étapes, voir ci-dessous |
+| [BL-21](#bl-21) | ~~Fermer le réseau aux scénarios de navigateur~~ (fait) | hygiène des essais | P2 | tous les scénarios ; A20 |
 
 ---
 
@@ -158,6 +159,11 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 - **Dépendances** : le projet de préproduction (docs/compte.md) ; six secrets GitHub (`ISOLATION_*`), jamais une clé
   secrète ; la comparaison des règles avec la production reste manuelle.
 - **Bénéfice attendu** : une régression des règles RLS vue dans la semaine, pas au premier incident.
+- **État** : **fait** le 6 octobre 2026 (PR #124) : le workflow *Isolation* (`.github/workflows/isolation.yml`), chaque
+  lundi à 4 h 41 UTC, à chaque changement de `supabase/schema.sql`, du script ou du workflow poussé sur `main`, et à la
+  demande ; lecture seule, actions épinglées, sauté avec un avis tant que ses six secrets manquent, en échec s'il est lancé
+  à la main sans eux (`TU-ISO-10`, qui joue ce premier pas dans bash). Un échec envoie l'e-mail de GitHub. Reste à faire,
+  hors du dépôt : poser les six secrets ([compte.md](../compte.md#vérifier-lisolation-entre-comptes)).
 
 <a id="bl-04"></a>
 ### BL-04 — Balayage d'accessibilité rejoué à chaque PR
@@ -344,7 +350,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   montraient pas (A15, corrigé par la PR #116). Le job « vert » ne le disait pas : avant de le rendre bloquant, lire son
   journal reste le seul moyen de savoir.
 - **Condition proposée pour le 20 octobre** (à confirmer par la responsable) : A16 corrigé, puis vingt passages Firefox
-  consécutifs sans échec : l'avertissement de [BL-17](#bl-17) absent, ou « 80 scénarios, tous verts. » à la fin du
+  consécutifs sans échec : l'avertissement de [BL-17](#bl-17) absent, ou « 81 scénarios, tous verts. » à la fin du
   journal du pas ; sinon, décaler la date plutôt que rendre bloquant un scénario instable, qui apprendrait à
   relancer la CI sans la lire.
 
@@ -462,6 +468,9 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   `scripts/recette.mjs` une étape sans attendu. Une étape de pure préparation dit ce qu'on doit voir avant de continuer.
 - **Niveau** : documentation et outillage du cahier.
 - **Bénéfice attendu** : chaque étape peut échouer, donc chaque *réussi* veut dire quelque chose.
+- **État** : **fait** le 6 octobre 2026 (PR #124). Les onze étapes ont un état observable ; `scripts/recette.mjs` refuse
+  désormais une étape dont le résultat attendu est vide ou « — » (vérifié : DON-008 remis à « — », le contrôle le
+  nomme).
 
 <a id="bl-21"></a>
 ### BL-21 — Fermer le réseau aux scénarios de navigateur
@@ -483,6 +492,19 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 - **Dépendances** : aucune.
 - **Bénéfice attendu** : aucune requête de test ne peut sortir de la CI, quel que soit le moteur ; un scénario qui
   oublie une route échoue au lieu de parler au vrai serveur.
+- **État** : **fait** le 6 octobre 2026 (PR #124). Le mandataire est donné à chaque lancement par `engine.launch`
+  (`helpers.js`), donc à tous les scénarios ; `TN-reseau-ferme` le vérifie dans les trois moteurs, page tenue par le
+  service worker comprise. Le mandataire retiré pour lui seul (mutation, CI de la PR #124), il échoue dans les quatre
+  jobs : la cible répond 200 sur les runners. La même course a montré deux choses : sous Firefox et WebKit, une requête
+  vers un autre hôte passe par le service worker, que les routes n'atteignent pas (le scénario sépare donc les deux
+  temps) ; et `csp.js` lisait, à chaque CI et dans les trois moteurs, les réglages d'inscription du vrai projet
+  (`GET /auth/v1/settings`, sans écriture), faute de faux Supabase : il en a un. Le journal de chaque scénario nomme
+  désormais toute requête arrêtée par le mandataire ; sous Chromium, plus aucune hors de `reseau-ferme.js`. Sous WebKit,
+  le premier passage fermé en a nommé une autre, la plus grave : `hors-ligne.js` ouvre la page de test tenue par le
+  service worker, et sa mesure d'audience (`POST /rest/v1/audience`, une écriture anonyme) partait vers le vrai projet
+  depuis le 3 octobre au soir ; vérification et nettoyage dans [a-faire.md](../a-faire.md) (A20).
+  `hors-ligne-reel.js` reste non joué sous WebKit : ses requêtes y échoueraient désormais au lieu de partir, sans
+  atteindre le faux serveur.
 
 ---
 

@@ -119,7 +119,10 @@ faire) : [backlog de la recette](recette/backlog.md#reste-a-faire).
 - [ ] **Ramener sur un appareil un suivi encore synchronisé**, s'il en existe un : son bandeau « Ce suivi doit revenir
   sur un appareil » le propose. Selene ne synchronise plus les suivis de santé depuis le 3 octobre 2026.
 - [ ] **Le test d'isolation entre comptes**, sur un projet de préproduction, puis la comparaison de ses règles avec
-  celles de la production ([compte.md](compte.md#vérifier-lisolation-entre-comptes)).
+  celles de la production ([compte.md](compte.md#vérifier-lisolation-entre-comptes)). Ensuite, les six valeurs de
+  `.env.isolation` en secrets du dépôt (`ISOLATION_*`, dix minutes) : le workflow *Isolation* le rejoue alors chaque
+  lundi et à chaque changement des règles, et écrit par e-mail s'il échoue
+  ([compte.md](compte.md#vérifier-lisolation-entre-comptes), « Chaque semaine, sans y penser »).
 - [ ] **La table du journal des erreurs** : coller la partie « Le journal des erreurs » de `supabase/schema.sql` dans
   l'éditeur SQL. D'ici là, l'app reçoit un refus et n'envoie rien, sans gêne pour personne
   ([compte.md](compte.md#journal-des-erreurs)).
@@ -152,6 +155,14 @@ dans [essai.md](essai.md).
 - [ ] **Vérifier la page**, après la création des tables : une inscription et une visite de test sous `?src=essai-perso`,
   lues dans l'éditeur SQL, puis effacées ; l'aperçu (image, titre) dans un message
   ([essai.md](essai.md#mettre-en-place-une-fois-dix-minutes)).
+- [ ] **Si la table `audience` existait avant le 6 octobre 2026 au soir : retirer les visites de la CI.** Du 3 octobre
+  (23 h 55 UTC) à la fusion de la PR #124, chaque passage des scénarios sous WebKit a pu y écrire une « visite » de
+  `essai.html`, sans `source` (A20 du [cahier de recette](recette/perimetre.md#anomalies-et-observations) ; le réseau
+  des scénarios est fermé depuis, BL-21). La page n'étant pas encore diffusée, une visite sans `source` d'avant la
+  diffusion vient de la CI ou de vous. Dans l'éditeur SQL du projet, lire d'abord :
+  `select date_trunc('day', at) as jour, count(*) from public.audience where page = 'essai' and evenement = 'visite' and source = '' group by 1 order by 1;`
+  Une erreur « relation does not exist » : la table n'existait pas, rien n'a été écrit, cocher et passer. Sinon, avant
+  la diffusion seulement : `delete from public.audience where page = 'essai' and source = '';`
 - [ ] **Diffuser** dans trois à cinq communautés du public visé, avec un lien et une étiquette `?src=` par communauté ;
   noter où et quand chaque lien a été posté ([essai.md](essai.md#diffuser) ; trois messages types dans
   [validation.md](validation.md#e3--diffuser-la-page-publique)).

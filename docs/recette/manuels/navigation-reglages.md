@@ -339,7 +339,7 @@ Identifiants retirés : aucun.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Dans Écriture, défiler jusqu'au milieu de la liste. | — |
+| 1 | Dans Écriture, défiler jusqu'au milieu de la liste. | Le haut de la liste n'est plus visible ; noter la première entrée visible. |
 | 2 | Aller à l'accueil, puis revenir à Écriture. | La liste est à la même position. |
 | 3 | Revenir à l'accueil. | L'accueil est à sa propre position (en haut), pas à celle d'Écriture. |
 
