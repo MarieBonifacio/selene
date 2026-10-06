@@ -11,7 +11,7 @@ Identifiants retirés : aucun.
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
 | Tests unitaires et d'intégration Node | `npm test` | 318 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
-| Scénarios de navigateur | `npm run test:browser` | 78 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
+| Scénarios de navigateur | `npm run test:browser` | 79 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
 | Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
@@ -1093,6 +1093,15 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Vérifie** : le service worker tient la page ; le cache garde l'app, pas la dernière page visitée.
 - **Limites** : La coupure réseau simulée par Playwright n'atteint pas le service worker : le cache est lu, la page n'est pas rouverte hors ligne.
 - **Cas manuels** : [SYN-010](manuels/synchronisation.md#syn-010), [PLT-001](manuels/plateformes.md#plt-001), [TRV-012](manuels/transverse.md#trv-012)
+
+<a id="tn-hors-ligne-reel"></a>
+#### `TN-hors-ligne-reel` — Hors ligne pour de vrai : rechargée sans réseau, puis le retour du réseau
+
+- **Fichier** : [`tests/browser/hors-ligne-reel.js`](../../tests/browser/hors-ligne-reel.js) · **mode** H · **écran** O
+- **Conditions** : Un compte connecté sur un faux Supabase, le service worker permis ; une première visite, puis le réseau coupé (`setOffline`) et le serveur de fichiers rendu injoignable par une route, que Chromium applique au service worker.
+- **Vérifie** : en ligne, une capture part au serveur ; le service worker tient la page ; sous Chromium, hors ligne et rechargée, l'app s'ouvre depuis le cache, pas l'écran d'entrée, avec ses données ; une capture hors ligne affiche « Non synchronisé — enregistré sur cet appareil seulement » et rien ne part ; au retour du réseau, elle arrive au serveur sans rien perdre et l'indicateur s'efface. Cache vidé avant le rechargement, le scénario échoue (vérifié).
+- **Limites** : Sous WebKit et Firefox, le service worker échappe à la coupure simulée : le rechargement hors ligne n'y est pas éprouvé (le scénario le dit), le reste l'est. Ni mode Avion, ni PWA installée, ni appareil réel.
+- **Cas manuels** : [SYN-004](manuels/synchronisation.md#syn-004), [SYN-010](manuels/synchronisation.md#syn-010)
 
 <a id="tn-injection"></a>
 #### `TN-injection` — Identifiants et nombres piégés

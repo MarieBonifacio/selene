@@ -31,7 +31,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
 | BL-14 : la sauvegarde complète dans un vrai navigateur, sur deux appareils | une session | P1 | — | [BL-14](#bl-14) |
-| BL-15 : le hors-ligne réel (réseau coupé, page rechargée) | une session | P1 | — | [BL-15](#bl-15) |
+| ~~BL-15 : le hors-ligne réel (réseau coupé, page rechargée)~~ (fait le 6 octobre 2026, PR #123) | une session | P1 | — | [BL-15](#bl-15) |
 | BL-03 : l'isolation entre comptes rejouée chaque semaine | une session, une fois la préproduction et ses six secrets en place | P1 | après un premier `npm run isolation` réussi à la main (TRV-016) | [BL-03](#bl-03) |
 | BL-20 : un résultat observable à chaque étape, contrôlé par `npm run recette` | une session | P3 | — | [BL-20](#bl-20) |
 | BL-19 : nommer, dans la matrice, les étapes que les tests ne couvrent pas | une session | P3 | les 73 cas P1 d'abord | [BL-19](#bl-19) |
@@ -100,7 +100,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 | [BL-12](#bl-12) | ~~`npm run recette` dans la CI~~ (fait, voir ci-dessous) | outillage | P2 | tous |
 | [BL-13](#bl-13) | ~~Firefox : cible ou non ?~~ (décidé, en place) | décision | P3 | — |
 | [BL-14](#bl-14) | La sauvegarde complète dans un vrai navigateur, sur deux appareils | automatisation | P1 | DON-002, DON-003, DON-004, DON-005, DON-006 |
-| [BL-15](#bl-15) | Le hors-ligne réel : réseau coupé, page rechargée, retour du réseau | automatisation | P1 | SYN-004, PLT-001, SYN-010 |
+| [BL-15](#bl-15) | ~~Le hors-ligne réel : réseau coupé, page rechargée, retour du réseau~~ (fait) | automatisation | P1 | SYN-004, PLT-001, SYN-010 |
 | [BL-16](#bl-16) | Fumée de l'app iOS sur simulateur, en CI | automatisation | P3 | PLT-008 |
 | [BL-17](#bl-17) | ~~Un échec sous Firefox doit se voir tant qu'il n'est pas bloquant~~ (fait) | fiabilité de la CI | P2 | tous |
 | [BL-18](#bl-18) | La page du cahier à cocher sous contrôle de la CI (si la PR #118 est fusionnée) | outillage | P3 | tous |
@@ -342,7 +342,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   montraient pas (A15, corrigé par la PR #116). Le job « vert » ne le disait pas : avant de le rendre bloquant, lire son
   journal reste le seul moyen de savoir.
 - **Condition proposée pour le 20 octobre** (à confirmer par la responsable) : A16 corrigé, puis vingt passages Firefox
-  consécutifs sans échec : l'avertissement de [BL-17](#bl-17) absent, ou « 78 scénarios, tous verts. » à la fin du
+  consécutifs sans échec : l'avertissement de [BL-17](#bl-17) absent, ou « 79 scénarios, tous verts. » à la fin du
   journal du pas ; sinon, décaler la date plutôt que rendre bloquant un scénario instable, qui apprendrait à
   relancer la CI sans la lire.
 
@@ -382,6 +382,10 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   variante : la constater, ne pas désactiver le scénario.
 - **Dépendances** : aucune.
 - **Bénéfice attendu** : le hors-ligne vérifié à chaque PR ; reste manuel : la PWA installée sur iPhone, le mode Avion.
+- **État** : **fait** le 6 octobre 2026 (PR #123, `TN-hors-ligne-reel`). La coupure de Playwright n'atteint pas le
+  service worker : le serveur de fichiers est aussi rendu injoignable par une route, que Chromium applique au service
+  worker ; le rechargement hors ligne n'est donc éprouvé que sous Chromium, le reste dans les trois moteurs. Cache vidé
+  avant le rechargement, le scénario échoue : il prouve bien que l'app vient du cache.
 
 <a id="bl-16"></a>
 ### BL-16 — Fumée de l'app iOS sur simulateur, en CI
