@@ -8,7 +8,7 @@ const DEHORS = 'https://api.open-meteo.com/v1/forecast?latitude=0&longitude=0&cu
 const ROUTEE = 'https://api.open-meteo.com/v1/sonde-bl21';
 const essai = (p, u) => p.evaluate(async u => { try { return 'servie ' + (await fetch(u)).status; } catch (e) { return 'échoue : ' + e.message; } }, u);
 (async () => {
-  const b = await engine.launch(launchOptions), errs = [];
+  const b = await engine.launch({ ...launchOptions, proxy: undefined }), errs = []; // TEMPORAIRE : mutation BL-21, réseau ouvert
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } }); // service worker permis
   await ctx.route('https://*.supabase.co/**', r => r.fulfill({ contentType: 'application/json', body: r.request().method() === 'GET' ? '{"disable_signup":false}' : '{}' }));
   await ctx.route(ROUTEE, r => r.fulfill({ contentType: 'application/json', body: '{"routee":true}' }));
