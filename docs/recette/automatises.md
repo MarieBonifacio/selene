@@ -1451,7 +1451,8 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
   `TN-regulation-appareil`, `TN-regulation-perdu`, `TN-sources`, `TN-dehors-croise`, `TN-dehors`, `TN-artist-watch` et
   `TN-agenda`, qui comptaient sur le même délai ; `TN-parcours-e2`, qui lisait le stockage avant l'écriture, trouvé par
   le job « démarrage lent ») ; `TN-agenda` sous WebKit (A19, un rechargement coupait une requête, corrigé par la PR #123
-  comme A1) ; `TN-cites` sous Firefox (A21, une attente fixe, corrigé par la PR #124) et
+  comme A1) ; `TN-cites` sous Firefox (A21, une attente fixe, corrigé par la PR #124) ; `TN-natif` sous WebKit (A22, le coffre lu avant
+  que l'écriture y arrive, corrigé par la PR #125) et
   `TN-dehors` (A10), qui attendent désormais l'état plutôt qu'un délai ; `TN-regulation` sous WebKit (A9, corrigé par la
   #100) ; `TN-identite` (deux échecs les 2 et 3 octobre, corrigé par `31122f6`). Relevé complet :
   [perimetre.md](perimetre.md#anomalies-et-observations).

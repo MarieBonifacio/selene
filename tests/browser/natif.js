@@ -45,12 +45,14 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
   console.log('écrire, puis relancer');
   await p.evaluate(() => location.hash = 'ecriture'); await p.waitForTimeout(300);
   await p.evaluate(() => location.hash = 'bilan'); await p.waitForTimeout(300);
-  await p.click('[data-act="bilan-mode"][data-m="mois"]'); await p.waitForTimeout(300);
+  // L'écriture vers le coffre part sans être attendue (platform.js) : on attend qu'elle arrive, pas un délai (A22, WebKit).
+  await p.click('[data-act="bilan-mode"][data-m="mois"]'); await until(() => vaults.storage.get('selene-bilan') === 'mois');
   ok(vaults.storage.get('selene-bilan') === 'mois', 'un réglage part vers le coffre');
   ok(vaults.storage.has('selene-recent'), 'les derniers espaces ouverts aussi');
   ok(await p.evaluate(() => localStorage.length === 0), 'et toujours rien dans localStorage');
   await p.reload(); await p.waitForSelector('#nav a', { timeout: 10000 }).catch(() => {});
-  await p.evaluate(() => location.hash = 'bilan'); await p.waitForTimeout(300);
+  await p.evaluate(() => location.hash = 'bilan');
+  await p.waitForSelector('[data-act="bilan-mode"][data-m="mois"].acc', { timeout: 10000 }).catch(() => {});
   ok(await p.$eval('[data-act="bilan-mode"][data-m="mois"]', el => el.classList.contains('acc')).catch(() => false), 'après relance, le réglage est relu depuis le coffre');
   ok((await p.textContent('#nav')).includes('Phidippus') && vaults.secrets.has('selene-auth-session'), 'le compte reste ouvert : la session est dans le coffre des secrets');
 
