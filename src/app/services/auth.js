@@ -380,7 +380,21 @@ async function authSubmit() {
     authSay(e.code === "signup_disabled" ? tr`Les inscriptions sont fermées : Selene n'ouvre de compte que sur invitation.` : e.message || tr`Connexion impossible.`);
   }
   authBusy = false;
+  authSent = true;
   render();
+}
+/* L'écran de connexion se redessine aussi sans geste : la fin du démarrage, la réponse du serveur sur les inscriptions,
+   un autre onglet qui enregistre. Ce qui est en train d'être tapé reste, le curseur aussi : sinon l'adresse s'effaçait
+   sous les doigts et l'envoi, champ requis vide, échouait sans un mot. Après un envoi, les mots de passe repartent à
+   vide, comme avant ; l'adresse, elle, est gardée par authEmail. */
+let authSent = false;
+export function authPaint(main) {
+  const ae = document.activeElement, kept = authSent || !main.querySelectorAll ? [] : [...main.querySelectorAll("#authForm input[id]")].filter(el => el.value).map(el => [el.id, el.value]);
+  const focus = !authSent && ae && ae.id && main.contains && main.contains(ae) ? ae.id : null;
+  authSent = false;
+  main.innerHTML = authView();
+  for (const [id, value] of kept) { const el = document.getElementById(id); if (el) el.value = value; }
+  if (focus) { const el = document.getElementById(focus); if (el) el.focus(); }
 }
 export function authView() {
   if (authBooted && !authSignupAsked) authAskSignup();

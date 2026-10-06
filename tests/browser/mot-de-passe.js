@@ -1,6 +1,6 @@
 /* Scénario de navigateur : mot de passe oublié, lien de récupération, invitation, et les messages de l'écran de
    connexion. Version hébergée simulée : un faux Supabase Auth. Lancé par tests/browser/run.js. */
-const { storeGet, until, engine, BASE, launchOptions, check } = require('./helpers');
+const { storeGet, storeSet, until, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const UID = '0b8f0c2e-1111-2222-3333-444455556666', AUTRE = '9d1e5b7a-aaaa-bbbb-cccc-ddddeeeeffff';
 const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=${Math.floor(Date.now() / 1000) + 3600}&expires_in=3600&refresh_token=rafraichi&token_type=bearer&type=${type}`;
 (async () => {
@@ -50,6 +50,16 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
 
   console.log('les messages de l’écran de connexion');
   const p = await open();
+  // Un autre onglet enregistre pendant la frappe : l'écran se redessine (platform.storage.watch), la saisie reste. Avant
+  // le correctif, l'adresse et le mot de passe s'effaçaient (échec de Firefox du 6 octobre 2026 : champ requis vide,
+  // envoi bloqué sans un mot).
+  await p.fill('#authEmail', 'iris@exemple.org'); await p.fill('#authPw', 'mauvais-mdp'); await p.focus('#authPw');
+  await p.evaluate(() => { window.__rendus = 0; new MutationObserver(() => window.__rendus++).observe(document.querySelector('#main'), { childList: true }); });
+  const onglet = await p.context().newPage(); await onglet.goto(BASE + '/privacy.html');
+  await storeSet(onglet, 'selene-site-v1', JSON.stringify({ ...JSON.parse(fixture()), updatedAt: Date.now() + 1e6 })); await onglet.close();
+  await attendre(p, () => window.__rendus > 0);
+  const garde = [await p.evaluate(() => window.__rendus), await p.inputValue('#authEmail'), await p.inputValue('#authPw'), await p.evaluate(() => document.activeElement.id)];
+  ok(garde[0] > 0 && garde[1] === 'iris@exemple.org' && garde[2] === 'mauvais-mdp' && garde[3] === 'authPw', 'un autre onglet enregistre pendant la frappe : l’écran se redessine, l’adresse, le mot de passe et le curseur restent' + (garde[0] > 0 ? '' : ' (aucun rendu)'));
   await p.fill('#authEmail', 'iris@exemple.org'); await p.fill('#authPw', 'mauvais-mdp'); await submit(p);
   ok((await note(p)).includes('Invalid login credentials'), 'une connexion refusée : le message reste affiché (il disparaissait au rendu suivant)');
   ok((await p.inputValue('#authEmail')) === 'iris@exemple.org', 'l’adresse tapée reste dans le champ');
