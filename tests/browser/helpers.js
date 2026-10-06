@@ -67,6 +67,8 @@ const entree = () => !!document.querySelector('#nav > *') && !document.querySele
 async function ouvrir(p, url, etat = demarree) {
   if (url) await p.goto(url); else await p.reload();
   await p.waitForFunction(etat, null, { timeout: 15000 });
+  // Les polices aussi (font-display: swap) : tant qu'elles arrivent, la mise en page bouge sous le pointeur.
+  await p.evaluate(() => document.fonts && document.fonts.ready.then(() => true)).catch(() => {});
   return p;
 }
 

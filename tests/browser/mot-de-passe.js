@@ -49,8 +49,17 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
     () => { console.log(`  … pas venu en 10 s : ${String(etat).replace(/\s+/g, ' ').slice(0, 110)}${arg === null ? '' : ` (« ${arg} »)`}`); return false; });
   // Envoyer le formulaire ; quand une réponse du serveur est attendue, attendre son message plutôt qu'un délai.
   const submit = async (p, attendu = null) => {
+    const avant = p.calls.length, vient = a => document.querySelector('#authErr').textContent.includes(a);
     await p.click('#authForm button[type="submit"]');
-    if (attendu) await attendre(p, a => document.querySelector('#authErr').textContent.includes(a), attendu); else await p.waitForTimeout(400);
+    if (!attendu) return p.waitForTimeout(400);
+    if (await attendre(p, vient, attendu)) return;
+    /* Un clic resté sans aucun effet (aucune requête partie, aucun message) : vu une fois en 21 passages sous Firefox
+       (A16), le formulaire prêt et l'adresse remplie. Renvoyé une fois, et dit dans le journal ; si l'app ne répond
+       jamais, la vérification qui suit échoue comme avant. */
+    if (p.calls.length === avant && !(await note(p)).trim()) {
+      console.log('  … clic d’envoi sans effet (aucune requête, aucun message) : renvoyé une fois');
+      await p.click('#authForm button[type="submit"]'); await attendre(p, vient, attendu);
+    }
   };
   const entree = () => !document.querySelector('#authForm'); // l'écran de connexion a cédé la place à l'app
 
