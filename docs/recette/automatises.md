@@ -730,7 +730,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/mot-de-passe.js`](../../tests/browser/mot-de-passe.js) · **mode** H · **écran** O
 - **Conditions** : Faux Supabase Auth (recover, verify, user, settings).
-- **Vérifie** : un autre onglet enregistre pendant la frappe : l'écran se redessine, adresse, mot de passe et curseur gardés (A15) ; connexion refusée : message durable, adresse gardée ; mot de passe oublié : demande avec retour vers la page, réponse neutre ; 429 et SMTP non configuré dits en français ; inscriptions fermées lues une fois : plus de « Créer un compte » ; lien de récupération : le jeton quitte l'adresse ; deux saisies différentes refusées avant envoi ; même mot de passe dit ; lien expiré ou jeton refusé : nouvelle demande proposée ; invitation : choisir son mot de passe puis entrer ; session gardée qui attend puis reprend si on annule ; dix caractères à l'inscription ; ancien mot de passe court : on entre et Selene le dit ; changement vérifié par une connexion fraîche puis envoyé avec l'actuel.
+- **Vérifie** : un autre onglet enregistre pendant la frappe : l'écran se redessine, adresse, mot de passe et curseur gardés (A15) ; connexion refusée : message durable, adresse gardée ; mot de passe oublié : demande avec retour vers la page, réponse neutre ; 429 et SMTP non configuré dits en français ; inscriptions fermées lues une fois : plus de « Créer un compte » ; lien de récupération : le jeton quitte l'adresse ; deux saisies différentes refusées avant envoi ; même mot de passe dit ; lien expiré ou jeton refusé : nouvelle demande proposée ; invitation : choisir son mot de passe puis entrer ; session gardée qui attend puis reprend si on annule ; dix caractères à l'inscription ; ancien mot de passe court : on entre et Selene le dit ; changement vérifié par une connexion fraîche puis envoyé avec l'actuel ; le jeton d'une invitation quitte l'adresse ; une invitation déjà servie : « Cette invitation a expiré, ou elle a déjà servi : demande qu'on te la renvoie. » (CPT-010).
 - **Limites** : Aucun e-mail réel : le contenu et la délivrabilité des courriels restent à essayer à la main.
 - **Cas manuels** : [CPT-006](manuels/entree-et-comptes.md#cpt-006), [CPT-007](manuels/entree-et-comptes.md#cpt-007), [CPT-008](manuels/entree-et-comptes.md#cpt-008), [CPT-009](manuels/entree-et-comptes.md#cpt-009), [CPT-010](manuels/entree-et-comptes.md#cpt-010), [CPT-011](manuels/entree-et-comptes.md#cpt-011), [CPT-016](manuels/entree-et-comptes.md#cpt-016), [CPT-017](manuels/entree-et-comptes.md#cpt-017)
 
@@ -790,8 +790,8 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/reglages.js`](../../tests/browser/reglages.js) · **mode** A · **écran** O, T (390 et 320 px)
 - **Conditions** : Jeu d'essai.
-- **Vérifie** : six chapitres et un sommaire ; chaque espace une fois ; bloc déplié qui le reste ; infobulles au clic, entières dans l'écran, fermées par Échap ou un clic ailleurs ; le sommaire mène au chapitre, le focus suit, le chapitre lu est marqué ; premier accueil repliable et rouvrable ; rien ne déborde, même à 320 px.
-- **Cas manuels** : [NAV-007](manuels/navigation-reglages.md#nav-007), [NAV-008](manuels/navigation-reglages.md#nav-008), [EXT-019](manuels/connexions.md#ext-019), [TRV-014](manuels/transverse.md#trv-014)
+- **Vérifie** : six chapitres et un sommaire ; chaque espace une fois ; bloc déplié qui le reste ; infobulles au clic, entières dans l'écran, fermées par Échap ou un clic ailleurs ; le sommaire mène au chapitre, le focus suit, le chapitre lu est marqué ; premier accueil repliable et rouvrable ; rien ne déborde, même à 320 px ; un type vide sans nom : « Donne un nom au module. », rien de créé ; supprimer un espace fait retaper son nom : une autre casse est refusée (« Nom incorrect, rien n'a été supprimé. »), le nom exact le supprime de la navigation et des Réglages, et il ne revient pas au rechargement (ESP-003, ESP-007).
+- **Cas manuels** : [NAV-007](manuels/navigation-reglages.md#nav-007), [NAV-008](manuels/navigation-reglages.md#nav-008), [EXT-019](manuels/connexions.md#ext-019), [TRV-014](manuels/transverse.md#trv-014), [ESP-003](manuels/espaces.md#esp-003), [ESP-007](manuels/espaces.md#esp-007)
 
 <a id="tn-langue"></a>
 #### `TN-langue` — Langue de l'interface
@@ -847,7 +847,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/taches.js`](../../tests/browser/taches.js) · **mode** A · **écran** —
 - **Conditions** : Données au format 5 avec un `board`.
-- **Vérifie** : tâches du `board` versées dans le module, nom personnalisé gardé, `board` vidé ; échéances, coûts, étapes, filtre par pièce, budget estimé ; troisième tâche du jour acceptée, quatrième refusée, aussi entre deux modules ; réglages : types, coûts désactivés, « Lieu » ; une note rangée ouvre le formulaire de tâche.
+- **Vérifie** : tâches du `board` versées dans le module, nom personnalisé gardé, `board` vidé ; échéances, coûts, étapes, filtre par pièce, budget estimé ; troisième tâche du jour acceptée, quatrième refusée, aussi entre deux modules ; réglages : types, coûts désactivés, « Lieu » ; une note rangée ouvre le formulaire de tâche ; « 1/2 étapes » ; un titre vide refusé par le formulaire ; la tâche et son étape cochée relues après rechargement (MOD-001).
 - **Cas manuels** : [MOD-001](manuels/types-de-module.md#mod-001), [MOD-002](manuels/types-de-module.md#mod-002)
 
 <a id="tn-budget"></a>
@@ -855,7 +855,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/budget.js`](../../tests/browser/budget.js) · **mode** A · **écran** —
 - **Conditions** : Données au format 4 (budget en section).
-- **Vérifie** : revenus, dépenses, solde migrés ; jauge 40 % puis 50 % après ajout ; mois précédent vide ; clic sur une enveloppe filtre ; renommer l'enveloppe renomme ses opérations ; ajout d'enveloppe ; second budget indépendant ; résumé d'accueil.
+- **Vérifie** : revenus, dépenses, solde migrés ; jauge 40 % puis 50 % après ajout ; mois précédent vide ; clic sur une enveloppe filtre ; renommer l'enveloppe renomme ses opérations ; ajout d'enveloppe ; second budget indépendant ; résumé d'accueil ; un montant nul refusé, et dit ; un montant négatif compté en valeur absolue, le sens venant du type (MOD-005).
 - **Cas manuels** : [MOD-005](manuels/types-de-module.md#mod-005), [MOD-006](manuels/types-de-module.md#mod-006), [TRV-015](manuels/transverse.md#trv-015)
 
 <a id="tn-collections"></a>
@@ -952,7 +952,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/recherche-minuteur.js`](../../tests/browser/recherche-minuteur.js) · **mode** A · **écran** —
 - **Conditions** : Horloge simulée pour quinze minutes.
-- **Vérifie** : « / » ouvre la recherche ; sans accents, tous les mots, surlignage ; frappe continue ; fin des 15 min sur un protocole : « Noter 15 min » ; sur l'Écriture : curseur dans le compteur ; tâche finie : coût proposé au budget, dépense ajoutée.
+- **Vérifie** : « / » ouvre la recherche ; sans accents, tous les mots, surlignage ; frappe continue ; fin des 15 min sur un protocole : « Noter 15 min » ; sur l'Écriture : curseur dans le compteur ; tâche finie : coût proposé au budget, dépense ajoutée ; l'onglet dit « Chercher — … » ; un mot qu'aucun texte ne contient : « Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire. » (NAV-004).
 - **Cas manuels** : [NAV-004](manuels/navigation-reglages.md#nav-004), [MOD-003](manuels/types-de-module.md#mod-003), [MOD-024](manuels/types-de-module.md#mod-024)
 
 <a id="tn-signatures"></a>

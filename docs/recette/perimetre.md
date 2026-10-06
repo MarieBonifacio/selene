@@ -152,7 +152,7 @@ Les pages du cahier publiées en artefact (`npm run recette -- page`) sont des v
 
 ## Contradictions entre documentation, code et tests
 
-Relevées pendant l'analyse ; toutes corrigées depuis, le 5 octobre 2026 (voir [backlog.md](backlog.md#documentation)).
+Relevées pendant l'analyse ; toutes corrigées depuis, le 5 octobre 2026 (voir [backlog.md](backlog.md#documentation)). C7 et C8, relevées le 6 octobre en automatisant les étapes que [BL-19](backlog.md#bl-19) a nommées, sont corrigées le même jour, dans le cahier : le code avait raison.
 
 | # | Où | Ce qui est écrit | Ce que font le code et les tests | Conséquence pour la recette |
 |---|---|---|---|---|
@@ -162,6 +162,8 @@ Relevées pendant l'analyse ; toutes corrigées depuis, le 5 octobre 2026 (voir 
 | C4 | [a-faire.md](../a-faire.md#essayer-sur-de-vrais-appareils) | « Les contrôles automatiques sont faits (axe-core sur quinze vues…) ». | Le balayage axe-core a été fait une fois, à la main, le 4 octobre ([evolution-ui.md](../evolution-ui.md)) ; aucun test ne le rejoue. Seuls ses correctifs sont figés (`TN-contraste`, `TN-cibles`, `TN-cibles-ordinateur`). | Couverture d'accessibilité « partielle », pas « automatique » ; automatisation proposée ([backlog.md](backlog.md)). **Corrigée** le 5 octobre 2026. |
 | C5 | [regulation.md](../regulation.md#parcours-manuel-cinq-minutes), étape 1 | « Accueil → Reprendre la main → Ajouter ». | Les modèles de l'accueil ne s'affichent que dans le bloc « Composer ton espace », réservé aux comptes neufs ; un compte existant passe par Réglages → Espaces → Créer un espace. | `RLM-001` passe par les Réglages. **Corrigée** le 5 octobre 2026. |
 | C6 | README, « Vérification locale » | `npm run check` = « build, tests unitaires, syntaxe, eslint, passeur ». | Il lance aussi `npm run i18n` (`package.json`). | Aucune ; à compléter dans le README. **Déjà corrigée** dans le README, constaté le 5 octobre 2026. |
+| C7 | [MOD-005](manuels/types-de-module.md#mod-005), étape 3 | `0`, `-5` et `abc` : chaque fois « Montant invalide », rien d'ajouté. | `0` : « Un montant, même symbolique. » ; `-5` : une dépense de 5 € (`Math.abs`, le sens vient du type choisi) ; `abc` : le champ numérique ne prend pas de lettres (sonde Chromium du 6 octobre). « Montant invalide » est le refus du domaine (`TU-DOM-02`), que le formulaire n'atteint pas. | L'attendu, écrit d'après la règle du domaine, aurait fait échouer une recette juste. Il dit ce que fait le formulaire, vérifié par `TN-budget` ; garder la valeur absolue est proposé au [backlog](backlog.md#decisions). |
+| C8 | [NAV-004](manuels/navigation-reglages.md#nav-004), étape 1 | L'onglet s'appelle « Recherche — Selene » (ou équivalent). | La vue s'intitule « Chercher » : l'onglet dit « Chercher — Selene », ou le nom donné à Selene dans les Réglages (`render.js`). | Un attendu approximatif que nul ne pouvait faire échouer ; il dit le titre exact, vérifié par `TN-recherche-minuteur`. |
 
 ## Anomalies et observations
 
