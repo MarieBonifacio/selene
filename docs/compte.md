@@ -275,6 +275,84 @@ les règles elles-mêmes, y compris une règle trop large que les autres masquen
 `with check (true)` ne laisse rien passer aujourd'hui, parce que la règle de lecture refuse aussi la ligne modifiée ;
 elle cède dès que quelqu'un élargit la lecture.
 
+## Sauvegarder la base
+
+Sur l'offre gratuite, Supabase ne garde **aucune** sauvegarde de la base (T4 de l'audit, P1) : une fausse manœuvre dans
+l'éditeur SQL, une migration ratée ou un incident chez l'hébergeur, et les espaces synchronisés de tous les comptes sont
+perdus. Deux réponses, de la plus simple à la plus économe :
+
+- **L'offre Pro** (25 $ par mois) : une sauvegarde par jour, gardée 7 jours, restaurable depuis le tableau de bord, et
+  un projet qui ne se met plus en pause après une semaine sans visite. Recommandée **avant d'inviter les bêta-testeurs** :
+  à partir de là, ce sont les données d'autres personnes.
+- **D'ici là, le workflow *Sauvegarde*** (`.github/workflows/sauvegarde.yml`, `scripts/sauvegarde.sh`) : chaque lundi
+  et à la demande, la CLI Supabase vide les rôles, le schéma et les données ; l'archive est chiffrée pour une clé publique
+  [age](https://age-encryption.org) avant de quitter son dossier temporaire, puis déposée en artefact pour 30 jours. Le
+  dépôt est public, ses artefacts téléchargeables par n'importe quel compte GitHub : seule la clé privée, gardée hors de
+  GitHub, les ouvre. Le workflow ne fait que lire la base. Il reste utile avec l'offre Pro, comme copie hors de
+  Supabase.
+
+### Mettre en place (une fois, dix minutes)
+
+1. **Une paire de clés age**, sur l'ordinateur de la personne qui administre Supabase (installer age : `brew install age`, `sudo apt install age`, ou
+   `winget install FiloSottile.age`) :
+
+   ```sh
+   age-keygen -o selene-sauvegarde.key
+   ```
+
+   La commande affiche `Public key: age1…`. Le fichier `selene-sauvegarde.key` est la clé privée : le ranger dans un
+   gestionnaire de mots de passe **et** sur un support hors ligne. Perdu, aucune sauvegarde ne s'ouvre plus ; copié par
+   quelqu'un, toutes les sauvegardes se lisent. Il ne va jamais dans GitHub.
+2. **GitHub** → *Settings* → *Secrets and variables* → *Actions* → onglet *Variables* → *New repository variable* :
+   `SAUVEGARDE_CLE_AGE`, la clé **publique** (`age1…`). Le workflow refuse tout ce qui n'y ressemble pas, une clé privée
+   comprise.
+3. **Supabase** → *Connect* → *Session pooler* : copier l'adresse (`postgresql://postgres.<projet>:[YOUR-PASSWORD]@…`).
+   Le *pooler*, pas la connexion directe : sur l'offre gratuite, celle-ci ne parle qu'IPv6, que les machines de GitHub
+   n'ont pas. Remplacer `[YOUR-PASSWORD]` par le mot de passe de la base (*Database* → *Settings* → *Reset database
+   password* s'il est perdu : Selene ne s'en sert nulle part ailleurs, l'app et les fonctions passent par les
+   clés d'API). Puis, dans GitHub, onglet *Secrets* : `SUPABASE_DB_URL`, cette adresse.
+4. **Un premier essai** : *Actions* → *Sauvegarde* → *Run workflow*. Le job dit le nom et la taille du fichier chiffré ;
+   l'artefact `selene-base` apparaît en bas de la page du run. Puis l'exercice de restauration ci-dessous, une fois.
+
+Sans ces deux réglages, le passage du lundi est sauté avec un avis, et un lancement à la main échoue en disant ce qui
+manque. Un schéma vidé sans la table `app_state` fait échouer le job : ce n'est pas la base de Selene (mauvaise
+adresse ?), et une sauvegarde vide ne doit pas passer pour une sauvegarde.
+
+### Restaurer
+
+À faire une fois, pour savoir que la sauvegarde sert à quelque chose ; puis, le jour d'un incident, de la même façon.
+La cible est un **projet Supabase neuf et vide** : ni la production, ni la préproduction, dont les tables existent
+déjà (la restauration recrée tout et s'arrêterait à la première). L'offre gratuite n'a que deux projets actifs : mettre
+la préproduction en pause le temps de l'exercice, puis **supprimer le projet neuf**, qui contient les données réelles
+de tous les comptes. Il faut `psql` (PostgreSQL 17 ou plus récent, comme le serveur) ; le cas
+[TRV-017](recette/manuels/transverse.md#trv-017) du cahier de recette suit ces étapes.
+
+```sh
+age -d -i selene-sauvegarde.key selene-base-AAAA-MM-JJTHHMMZ.tar.gz.age | tar -xzf -
+psql --single-transaction --variable ON_ERROR_STOP=1 \
+  --file roles.sql --file schema.sql \
+  --command 'SET session_replication_role = replica' \
+  --file data.sql \
+  --dbname "<adresse Session pooler du projet neuf>"
+```
+
+Puis, dans le *SQL Editor* des deux projets, `select count(*) from app_state;` et `select count(*) from auth.users;` :
+les mêmes nombres (au moment de la sauvegarde). Si `auth.users` est vide sur la copie, les comptes ne sont pas dans la
+sauvegarde : les lignes d'`app_state` n'auraient plus de propriétaire, et la procédure est à revoir avant de compter
+dessus. Effacer ensuite les fichiers déchiffrés (`roles.sql`, `schema.sql`, `data.sql`) : ils contiennent tout, en
+clair.
+
+### Ce qu'il faut savoir
+
+- **Une semaine au plus** de modifications perdues, avec un passage par semaine. Avant une opération risquée (mise à jour
+  de Postgres, changement de schéma), un *Run workflow* d'abord.
+- **30 jours** : GitHub efface l'artefact seul, comme le promet la politique de confidentialité. Une archive téléchargée
+  s'efface à la main au même terme, sinon une donnée supprimée y survit.
+- **Un workflow planifié s'arrête** quand le dépôt public n'a eu aucune activité pendant 60 jours (GitHub prévient par
+  e-mail) : le réactiver depuis l'onglet *Actions*.
+- Ce n'est pas une sauvegarde à l'instant près : l'offre Pro, puis sa restauration à un instant donné (*PITR*, en
+  option), y répondent.
+
 ## Politique de confidentialité
 
 `confidentialite.html`, à la racine, publiée avec le site : <https://mariebonifacio.github.io/selene/confidentialite.html>.
@@ -295,8 +373,10 @@ Elle remplit l'article 13 du RGPD, et `build.test.js` le vérifie dans les deux 
 
 Ce qu'elle promet, et qu'il faut tenir à la main :
 
-- **Sauvegardes : 30 jours au plus.** Les sauvegardes de l'offre Pro de Supabase (7 jours) le respectent. Une copie
-  manuelle (`supabase db dump`) doit être effacée au bout de 30 jours, sinon une donnée supprimée y survit.
+- **Sauvegardes : 30 jours au plus.** Les sauvegardes de l'offre Pro de Supabase (7 jours) et les artefacts du workflow
+  *Sauvegarde* (30 jours, effacés par GitHub) le respectent. Une copie manuelle (`supabase db dump`, ou une archive
+  téléchargée) doit être effacée au bout de 30 jours, sinon une donnée supprimée y survit
+  ([plus haut](#sauvegarder-la-base)).
 - **E-mails reçus à l'adresse de contact : un an au plus** après le dernier échange.
 - **Journal des erreurs : 30 jours.** Le déclencheur de la table `erreurs` y veille seul.
 - **Liste d'attente : un seul e-mail, à l'ouverture de la bêta, puis effacée** (deux ans au plus : le déclencheur de

@@ -2,7 +2,7 @@
 
 Ce qui traverse toutes les fonctionnalités : accessibilité, dates et fuseaux, volume, sécurité de l'affichage, CSP,
 journaux et mesures, politique de confidentialité, page publique de test, mise en page, états vides, isolation entre
-comptes. Ces cas se rejouent à chaque recette complète ; plusieurs ont un équivalent automatique partiel, aucun n'en a
+comptes, sauvegarde de la base. Ces cas se rejouent à chaque recette complète ; plusieurs ont un équivalent automatique partiel, aucun n'en a
 d'intégral (un lecteur d'écran réel, un vrai téléphone et un vrai projet Supabase échappent aux scénarios simulés).
 
 **Préconditions communes** : version hébergée ; jeu d'essai importé ([donnees/jeu-essai.json](../donnees/jeu-essai.json)) ;
@@ -29,6 +29,7 @@ une requête bloquée reste listée dans Network avec sa charge utile, qu'on lit
 | [TRV-014](#trv-014) | Téléphone et ordinateur : rien ne déborde | P2 | Web, Mob |
 | [TRV-015](#trv-015) | États vides | P3 | Web, Mob |
 | [TRV-016](#trv-016) | Isolation entre comptes sur le vrai projet | P1 | Web |
+| [TRV-017](#trv-017) | Sauvegarde de la base : chiffrée, puis restaurée sur un projet neuf | P1 | Web |
 
 Identifiants retirés : aucun.
 
@@ -471,3 +472,38 @@ Identifiants retirés : aucun.
 
 - **État final attendu** : inchangé (la préproduction garde ses lignes de test).
 - **Nettoyage** : aucun.
+
+---
+
+<a id="trv-017"></a>
+### TRV-017 — Sauvegarde de la base : chiffrée, puis restaurée sur un projet neuf
+
+- **Fonctionnalité et règle** : le workflow *Sauvegarde* vide rôles, schéma et données de la base et ne publie qu'une
+  archive chiffrée pour la clé publique age du projet, gardée 30 jours ; l'archive, déchiffrée par la clé privée, se
+  restaure sur un autre projet et rend les comptes et leurs espaces.
+- **Objectif, risque vérifié** : une base perdue sans copie (l'offre gratuite n'en garde aucune) ; une sauvegarde qui
+  existe mais ne se restaure pas ; une copie lisible par quiconque voit le dépôt public.
+- **Priorité** : P1 · **Plateformes** : Web
+- **Préconditions** : la personne qui administre Supabase et le dépôt ; la clé privée age, la variable
+  `SAUVEGARDE_CLE_AGE` et le secret `SUPABASE_DB_URL` réglés selon
+  [compte.md](../../compte.md#sauvegarder-la-base) ; un projet Supabase **neuf et vide** comme cible, jamais la
+  production ni la préproduction (leurs tables existent déjà : la restauration s'arrêterait à la première) ; l'offre
+  gratuite n'ayant que deux projets actifs, la préproduction mise en pause le temps de l'exercice ; `age` et `psql`
+  (PostgreSQL 17 ou plus récent).
+- **Données** : celles du projet sauvegardé, telles qu'elles sont ; rien n'y est écrit.
+- **Automatisés associés** : `TU-SAV-01`, `TU-SAV-02`, `TU-SAV-03`, `TS-SAUVEGARDE`
+- **Source** : [DOC] [compte.md](../../compte.md#sauvegarder-la-base) ; [TEST] `TU-SAV-01` à `TU-SAV-03` (le script avec
+  une fausse CLI, le workflow lu tel quel) ; chiffrement et déchiffrement par le vrai age éprouvés le 6 octobre 2026
+  sur des vidages synthétiques.
+
+| Étape | Action précise | Résultat attendu observable |
+|---|---|---|
+| 1 | *Actions* → *Sauvegarde* → *Run workflow*. | Job vert ; il écrit « selene-base-….tar.gz.age : … octets, chiffrés » ; l'artefact `selene-base` est en bas du run, avec 30 jours de rétention. Ni l'adresse ni le mot de passe de la base dans le journal. |
+| 2 | Télécharger l'artefact ; essayer de l'ouvrir sans la clé (`age -d` sans `-i`, ou un éditeur de texte). | Illisible : `age` réclame une identité ; aucun nom de table ni texte en clair. |
+| 3 | Le déchiffrer avec la clé privée, puis restaurer sur le projet neuf (commande de compte.md, « Restaurer »). | `psql` finit sans erreur (`ON_ERROR_STOP`). |
+| 4 | Dans le *SQL Editor* de la production et du projet neuf : `select count(*) from app_state;`, `select count(*) from auth.users;`, puis `select user_id, length(site::text) from app_state order by 1 limit 5;`. | Les mêmes résultats des deux côtés (au moment de la sauvegarde). `auth.users` vide sur la copie : la procédure ne rend pas les comptes, ne pas compter sur elle avant de l'avoir corrigée. |
+
+- **État final attendu** : la production est inchangée ; la copie a été vérifiée.
+- **Nettoyage** : **supprimer le projet neuf** (il contient les données réelles de tous les comptes) et rallumer la
+  préproduction ; effacer `roles.sql`, `schema.sql`, `data.sql` et l'archive téléchargée (tout y est en clair une fois
+  déchiffré, et la politique promet 30 jours au plus).
