@@ -34,7 +34,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | ~~BL-14 : la sauvegarde complète dans un vrai navigateur, sur deux appareils~~ (fait le 6 octobre 2026, PR #123) | une session | P1 | — | [BL-14](#bl-14) |
 | ~~BL-15 : le hors-ligne réel (réseau coupé, page rechargée)~~ (fait le 6 octobre 2026, PR #123) | une session | P1 | — | [BL-15](#bl-15) |
 | ~~BL-03 : l'isolation entre comptes rejouée chaque semaine~~ (fait le 6 octobre 2026, PR #124 : le workflow attend ses six secrets, plus bas) | une session | P1 | — | [BL-03](#bl-03) |
-| BL-20 : un résultat observable à chaque étape, contrôlé par `npm run recette` | une session | P3 | — | [BL-20](#bl-20) |
+| ~~BL-20 : un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait le 6 octobre 2026, PR #124) | une session | P3 | — | [BL-20](#bl-20) |
 | BL-19 : nommer, dans la matrice, les étapes que les tests ne couvrent pas | une session | P3 | les 73 cas P1 d'abord | [BL-19](#bl-19) |
 | BL-18 : la page du cahier à cocher sous contrôle de la CI | une session | P3 | si la PR #118 est fusionnée | [BL-18](#bl-18) |
 | BL-16 : la fumée de l'app iOS sur simulateur | une session | P3 | avant la première version iOS | [BL-16](#bl-16) |
@@ -107,7 +107,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 | [BL-17](#bl-17) | ~~Un échec sous Firefox doit se voir tant qu'il n'est pas bloquant~~ (fait) | fiabilité de la CI | P2 | tous |
 | [BL-18](#bl-18) | La page du cahier à cocher sous contrôle de la CI (si la PR #118 est fusionnée) | outillage | P3 | tous |
 | [BL-19](#bl-19) | Matrice : nommer les étapes que les tests ne couvrent pas | traçabilité | P3 | les 73 cas P1 d'abord |
-| [BL-20](#bl-20) | Un résultat observable à chaque étape, contrôlé par `npm run recette` | outillage | P3 | onze étapes, voir ci-dessous |
+| [BL-20](#bl-20) | ~~Un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait) | outillage | P3 | onze étapes, voir ci-dessous |
 | [BL-21](#bl-21) | Fermer le réseau aux scénarios de navigateur | hygiène des essais | P2 | tous les scénarios ; A20 |
 
 ---
@@ -468,6 +468,9 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   `scripts/recette.mjs` une étape sans attendu. Une étape de pure préparation dit ce qu'on doit voir avant de continuer.
 - **Niveau** : documentation et outillage du cahier.
 - **Bénéfice attendu** : chaque étape peut échouer, donc chaque *réussi* veut dire quelque chose.
+- **État** : **fait** le 6 octobre 2026 (PR #124). Les onze étapes ont un état observable ; `scripts/recette.mjs` refuse
+  désormais une étape dont le résultat attendu est vide ou « — » (vérifié : DON-008 remis à « — », le contrôle le
+  nomme).
 
 <a id="bl-21"></a>
 ### BL-21 — Fermer le réseau aux scénarios de navigateur

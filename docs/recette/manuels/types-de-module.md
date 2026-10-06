@@ -600,7 +600,7 @@ Identifiants retirés : aucun.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Taper le brouillon dans le champ de fragment, sans le garder ; fermer l'onglet (ou tuer l'app). | — |
+| 1 | Taper le brouillon dans le champ de fragment, sans le garder ; fermer l'onglet (ou tuer l'app). | Avant de fermer : le brouillon est dans le champ, et la liste des fragments n'a rien de nouveau. |
 | 2 | Rouvrir Selene. | L'accueil propose de reprendre « Écriture … en cours » ; dans Écriture, le champ contient le brouillon. |
 | 3 | « Garder ». | Le fragment est ajouté ; le champ est vide ; l'accueil ne mentionne plus le brouillon. |
 | 4 | Rouvrir l'app. | Le champ est vide. |

@@ -61,6 +61,11 @@ for (const { file, prefix } of FILES) {
     else for (const p of pr[2].split(",").map(x => x.trim())) if (!PLATFORMS.has(p)) fail(at, `plateforme inconnue « ${p} »`);
     const steps = (block.match(/^\| \d+ \| /gm) || []).length;
     if (!steps) fail(at, "aucune étape numérotée");
+    // Chaque étape a son résultat observable (maintenance.md) : une étape sans attendu ne peut pas échouer (BL-20).
+    for (const m of block.matchAll(/^\| (\d+) \| (.*) \|$/gm)) {
+      const cells = m[2].split(" | "), attendu = cells.length > 1 ? cells[cells.length - 1].trim() : "";
+      if (!attendu || /^[—–-]+$/.test(attendu)) fail(at, `étape ${m[1]} : aucun résultat attendu observable (écrire ce qu'on doit voir, même pour une étape de préparation)`);
+    }
     const autoLine = (block.match(/^- \*\*Automatisés associés\*\* : (.*)$/m)?.[1] ?? "");
     const autos = new Set([...autoLine.matchAll(AUTO_ID)].map(m => m[1]));
     if (!autos.size && !/^aucun/.test(autoLine)) fail(at, "« Automatisés associés » : ni identifiant, ni « aucun »");

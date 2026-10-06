@@ -109,7 +109,8 @@ même adresse. C'est une vue : le cahier fait foi ici, et la page dit de quel co
 Ce que `npm run recette` vérifie (`scripts/recette.mjs`, sans réseau ni navigateur, en quelques secondes) :
 
 - les cas : identifiant unique, au préfixe de son fichier, jamais un identifiant retiré, tous les champs du format, au
-  moins une étape numérotée, plateformes connues, table du fichier d'accord avec les cas (priorité, plateformes) ;
+  moins une étape numérotée, un résultat attendu à chaque étape (jamais « — » : une étape sans attendu ne peut pas
+  échouer), plateformes connues, table du fichier d'accord avec les cas (priorité, plateformes) ;
 - l'inventaire : chaque test Node (`test(…)`), chaque scénario de navigateur, chaque test Deno et Rust du dépôt y figure ;
   aucun scénario inventorié n'a disparu ; aucun test retiré n'y est encore décrit ;
 - le lien cas ↔ tests dans les deux sens, et la matrice (une ligne par cas, les mêmes tests, un état défini) ;

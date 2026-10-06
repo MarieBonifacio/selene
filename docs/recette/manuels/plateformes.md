@@ -361,7 +361,7 @@ Identifiants retirés : aucun.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Garder la capture des données, puis immédiatement le geste d'accueil (app en arrière-plan). Ne plus rouvrir l'app. | — |
+| 1 | Garder la capture des données, puis immédiatement le geste d'accueil (app en arrière-plan). Ne plus rouvrir l'app. | Avant le geste, la capture s'affiche dans la Boîte ; puis l'écran d'accueil du téléphone, l'app en arrière-plan. |
 | 2 | Sur l'ordinateur, attendre 30 s (ou recharger). | `Arrière-plan PLT-012` est dans la Boîte. |
 
 - **État final attendu** : une note de plus.
