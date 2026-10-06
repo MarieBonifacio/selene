@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-FuLcXjTJ6aTfEtPOXdjGQzWy43WB+I8m3jqPjbXqznM=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-861Et3WX6YLQctLohLhsR5hsL18IC73E92rAZyz8UhY=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -750,7 +750,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "71826adc05";
+const SELENE_BUILD = "2e805ca91e";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1472,6 +1472,7 @@ var __selene = (() => {
     rememberScroll: () => rememberScroll,
     removeWithUndo: () => removeWithUndo,
     render: () => render,
+    renderedDay: () => renderedDay,
     reportError: () => reportError,
     requireText: () => requireText,
     reservedId: () => reservedId,
@@ -13320,8 +13321,11 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     return renderMemo.get(key);
   }
   var redirectedFrom = null;
+  var renderDay = null;
+  var renderedDay = () => renderDay;
   function render() {
     renderMemo = /* @__PURE__ */ new Map();
+    renderDay = todayISO();
     try {
       renderNow();
     } finally {
@@ -14175,8 +14179,23 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
     }, 3e5);
     if (t && t.unref) t.unref();
   })();
+  function followDay() {
+    if (document.hidden || renderedDay() === todayISO()) return;
+    const ae = document.activeElement;
+    const typing = ae && (ae.tagName === "TEXTAREA" || ae.tagName === "SELECT" || ae.isContentEditable || ae.tagName === "INPUT" && !["checkbox", "radio", "button", "file"].includes(ae.type));
+    if (typing || ["#dlg", "#cdlg", "#sheet", "#palette"].some((sel) => $(sel).open)) return;
+    render();
+  }
+  (function dayTick() {
+    const t = setTimeout(() => {
+      followDay();
+      dayTick();
+    }, 6e4);
+    if (t && t.unref) t.unref();
+  })();
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {
+      followDay();
       refreshWeather();
       dehorsRefresh();
       agendaRefresh();

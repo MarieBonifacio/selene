@@ -118,23 +118,25 @@ Identifiants retirés : aucun.
 <a id="trv-004"></a>
 ### TRV-004 — La date change pendant que l'app est ouverte
 
-- **Fonctionnalité et règle** : laissée ouverte sur l'accueil, Selene se redessine toutes les cinq minutes : passé minuit,
-  la date, la lune, « Aujourd'hui » et le cycle en cours suivent ; une saisie après minuit porte la nouvelle date ; les
-  cycles lunaires se suivent sans trou.
+- **Fonctionnalité et règle** : laissée ouverte, sur n'importe quelle vue, Selene suit la date d'elle-même une minute
+  après minuit au plus, et dès le retour au premier plan (décision du 6 octobre 2026) : la date, la lune, « Aujourd'hui »
+  et le cycle en cours suivent ; jamais pendant une saisie ni sous un formulaire ouvert, qui garde ses valeurs, date par
+  défaut comprise (ce qu'on voit est ce qu'on enregistre) ; une saisie après minuit porte la nouvelle date ; les cycles
+  lunaires se suivent sans trou.
 - **Objectif, risque vérifié** : une app restée ouverte la nuit qui date du jour d'avant ce qu'on note au réveil.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : un ordinateur de recette dont on peut régler l'heure (horloge automatique coupée) ; Selene ouverte
   sur l'accueil ; heure du système réglée à 23 h 55.
 - **Données** : capture `Après minuit TRV-004`.
-- **Automatisés associés** : `TU-MOD-37`
-- **Source** : [CODE] `skyTick` (`src/app/boot.js`, rendu de l'accueil toutes les cinq minutes) ; [TEST] `TU-MOD-37`
-  (cycles sans trou) ; [À ARBITRER] étape 3.
+- **Automatisés associés** : `TU-MOD-37`, `TU-MOD-64`, `TN-minuit`
+- **Source** : [CODE] `followDay` et `dayTick` (`src/app/boot.js`, chaque minute et au retour au premier plan),
+  `renderedDay` (`shell/render.js`) ; [TEST] `TU-MOD-37` (cycles sans trou), `TU-MOD-64`, `TN-minuit` (horloge simulée).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Noter la date affichée par l'en-tête ; laisser l'app ouverte, au premier plan, jusqu'à 00 h 06. | L'en-tête affiche le nouveau jour au plus tard cinq minutes après minuit, sans rechargement. |
+| 1 | Noter la date affichée par l'en-tête ; laisser l'app ouverte, au premier plan, jusqu'à 00 h 02. | L'en-tête affiche le nouveau jour au plus tard une minute après minuit, sans rechargement ni geste. |
 | 2 | Garder la capture des données ; ouvrir la Boîte. | La note porte la nouvelle date. |
-| 3 | Refaire l'étape 1 sur une autre vue (par exemple Chantier). | Comportement actuel lu dans le code : seule la vue d'accueil (ou le mode « Suivre le soleil ») se redessine d'elle-même ; ailleurs, la date change au prochain geste. [À ARBITRER] : est-ce acceptable ? Les dates par défaut des formulaires ouverts avant minuit gardent la veille. |
+| 3 | Refaire l'étape 1 sur une autre vue (par exemple Chantier), puis une troisième fois avec un formulaire ouvert à 23 h 59 (« Noter une séance » dans Kundalini) ; le fermer à 00 h 02. | Sur Chantier, le nouveau jour une minute après minuit au plus. Formulaire ouvert : il garde sa date (la veille) et ses valeurs, la page ne bouge pas ; fermé, l'en-tête suit à la minute qui suit. |
 | 4 | Bilan : lire le cycle lunaire en cours. | Il contient la nouvelle date ; pas de trou entre le cycle précédent et celui-ci. |
 
 - **État final attendu** : une note de plus.

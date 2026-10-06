@@ -19,7 +19,7 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 | [BL-07](#bl-07) | Fumée de l'app Android sur émulateur, en CI | automatisation | P2 | PLT-003, PLT-004 |
 | [BL-08](#bl-08) | Fumée de l'app Windows installée, en CI | automatisation | P3 | PLT-009, PLT-010 |
 | [BL-09](#bl-09) | Seuils de performance sur le jeu de volume | décision puis automatisation | P2 | TRV-007 |
-| [BL-10](#bl-10) | Minuit, app ouverte : horloge simulée | décision puis automatisation | P3 | TRV-004 |
+| [BL-10](#bl-10) | ~~Minuit, app ouverte : horloge simulée~~ (fait) | décision puis automatisation | P3 | TRV-004 |
 | [BL-11](#bl-11) | claude.ai : ce qui ne s'automatise pas | lacune assumée | P2 | AST-009, PLT-011 |
 | [BL-12](#bl-12) | ~~`npm run recette` dans la CI~~ (fait, voir ci-dessous) | outillage | P2 | tous |
 | [BL-13](#bl-13) | Firefox : cible ou non ? | décision | P3 | — |
@@ -176,6 +176,9 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 - **Niveau** : scénario de navigateur.
 - **Dépendances** : la décision de la responsable.
 - **Bénéfice attendu** : un défaut de date invisible en journée, vérifié une fois pour toutes.
+- **État** : **fait** le 6 octobre 2026. Décision : chaque vue suit la date une minute après minuit au plus et au retour
+  au premier plan, jamais sous un formulaire ouvert ni pendant une saisie ; un formulaire ouvert garde ses valeurs.
+  `TU-MOD-64` (Node) et `TN-minuit` (navigateur, `page.clock`).
 
 <a id="bl-11"></a>
 ### BL-11 — claude.ai : ce qui ne s'automatise pas
@@ -269,7 +272,7 @@ Les questions marquées [À ARBITRER] dans les cas, et ce qu'elles bloquent :
 | ~~Le résumé destiné à l'assistant doit-il être traduit à l'affichage ?~~ : non, c'est le texte envoyé ; l'interface dit qu'il part en français, le 6 octobre 2026 | [RLM-028](manuels/reprendre-la-main.md#rlm-028) | — |
 | ~~Quel message pour une date d'objectif à plus d'un an ?~~ : « Choisis une date d'effet valide : passée, aujourd'hui, ou au plus tard dans un an. », le 6 octobre 2026 | [RLM-014](manuels/reprendre-la-main.md#rlm-014) | — |
 | ~~Comment l'app doit-elle dire qu'un appareil vidé est le détenteur ?~~ : le talon décrit l'appareil détenteur (navigateur ou app, système, date) et le message envisage que ce soit celui-ci, le 6 octobre 2026 | [RLM-029](manuels/reprendre-la-main.md#rlm-029) | — |
-| Quelles vues suivent la date d'elles-mêmes à minuit ? | [TRV-004](manuels/transverse.md#trv-004) | [BL-10](#bl-10) |
+| ~~Quelles vues suivent la date d'elles-mêmes à minuit ?~~ : toutes, une minute après au plus, jamais sous un formulaire ouvert ni pendant une saisie, le 6 octobre 2026 | [TRV-004](manuels/transverse.md#trv-004) | — |
 | Quels seuils de réactivité ? | [TRV-007](manuels/transverse.md#trv-007) | [BL-09](#bl-09) |
 | ~~Que doit dire l'assistant quand sa fonction est injoignable ou non déployée ? (A4)~~ : « non déployé », « non configuré » ou « injoignable », corrigé le 5 octobre 2026 (PR #98) | [AST-007](manuels/assistant.md#ast-007) | — |
 | ~~Que fait claude.ai de l'espace `db` d'un artefact ?~~ : ses documents sont partagés avec tous ceux qui ont le lien ; Selene range désormais les siens dans le sous-arbre privé de chacun (A12, ADR 33), le 6 octobre 2026 | [PLT-011](manuels/plateformes.md#plt-011) | — |

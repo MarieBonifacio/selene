@@ -6,7 +6,7 @@ const vm = require('node:vm');
 const html = fs.readFileSync('selene.html', 'utf8');
 const script = html.match(/<script>\s*([\s\S]*?)<\/script>/)[1];
 
-function launch(storage, { claude = null, bare = false } = {}) {
+function launch(storage, { claude = null, bare = false, clock = null } = {}) {
   if (!bare && !storage.has('selene-site-v1')) storage.set('selene-site-v1', fs.readFileSync('tests/fixtures/site-demo.json', 'utf8')); // jeu d'essai riche
   const nodes = new Map();
   const element = id => {
@@ -32,8 +32,9 @@ function launch(storage, { claude = null, bare = false } = {}) {
   };
   const window = { addEventListener() {}, claude };
   const location = { hash: '' };
+  // clock : une horloge simulée ({ Date, setTimeout }) pour le passage de minuit.
   const context = { document, window, localStorage, location,
-    navigator: {}, console, Date, Math, setTimeout, clearTimeout, setInterval, clearInterval };
+    navigator: {}, console, Date: clock ? clock.Date : Date, Math, setTimeout: clock ? clock.setTimeout : setTimeout, clearTimeout, setInterval, clearInterval };
   const instrumented = script.replace(/\}\);\s*\}\)\(\);\s*$/, 'globalThis.__test = { ...__selene, submitModuleForm: values => __selene.formCb(values) };\n});\n})();'); // dans platform.ready
   vm.runInNewContext(instrumented, context);
   const fire = (name, target) => (handlers[name] || []).forEach(fn => fn({ target, preventDefault() {} }));
@@ -1330,4 +1331,30 @@ test('l’adresse d’un espace désactivé mène à l’accueil, et le dit une 
   assert.match(toast.textContent, /est désactivé/, 'revenir à l’adresse le redit');
   toast.textContent = ''; app.location.hash = '#nulle-part'; app.render();
   assert.equal(toast.textContent, '', 'une adresse qui ne désigne aucun espace : rien à dire');
+});
+
+test('minuit : chaque vue suit la date d’elle-même, une minute après au plus ; jamais sous un formulaire ouvert ni pendant une saisie', () => {
+  let now = new Date(2026, 9, 6, 23, 59, 30).getTime();
+  const timers = [];
+  class FakeDate extends Date { constructor(...a) { if (a.length) super(...a); else super(now); } static now() { return now; } }
+  const clock = { Date: FakeDate, setTimeout: (fn, ms) => { timers.push({ fn, ms }); return { unref() {} }; } };
+  const app = launch(new Map(), { claude: { use: async () => null }, clock });
+  const tick = () => { for (const t of timers.splice(0).filter(t => t.ms === 60000)) t.fn(); };
+  const day = () => app.nodes.get('#dateline').textContent;
+  app.location.hash = '#chantier'; app.render(); // une autre vue que l'accueil
+  assert.match(day(), /6 octobre/);
+  tick(); assert.match(day(), /6 octobre/, 'avant minuit, rien ne change');
+  now = new Date(2026, 9, 7, 0, 0, 30).getTime();
+  // Un formulaire ouvert : la page attend, ses valeurs restent.
+  app.nodes.get('#dlg').open = true; app.nodes.get('#main').innerHTML = 'FORMULAIRE_EN_COURS';
+  tick(); assert.match(day(), /6 octobre/, 'sous un formulaire ouvert, pas de rendu'); assert.equal(app.nodes.get('#main').innerHTML, 'FORMULAIRE_EN_COURS');
+  app.nodes.get('#dlg').open = false;
+  // Une saisie en cours : de même.
+  app.document.activeElement = { tagName: 'INPUT', type: 'text' };
+  tick(); assert.match(day(), /6 octobre/, 'pendant une saisie, pas de rendu');
+  app.document.activeElement = null;
+  tick(); assert.match(day(), /mercredi 7 octobre/, 'la minute suivante, la vue suit le nouveau jour');
+  assert.notEqual(app.nodes.get('#main').innerHTML, 'FORMULAIRE_EN_COURS');
+  app.nodes.get('#main').innerHTML = 'RIEN_A_REDESSINER'; tick();
+  assert.equal(app.nodes.get('#main').innerHTML, 'RIEN_A_REDESSINER', 'le jour une fois suivi, plus de rendu à chaque minute');
 });
