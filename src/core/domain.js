@@ -516,9 +516,38 @@ export function createFromTemplate(modules, tpl, name, id, t = null) {
     inst.config[k] = v && typeof v === "object" && !Array.isArray(v) && inst.config[k] && typeof inst.config[k] === "object" ? { ...inst.config[k], ...v } : v;
   return inst;
 }
-export function deleteModuleInstance(modules, moduleList, id) {
+export function deleteModuleInstance(modules, moduleList, id, deleted = null, now = Date.now()) {
   if (!Object.hasOwn(modules, id)) throw coreError("module-missing", "Module introuvable");
   delete modules[id];
   const i = moduleList.findIndex(m => m.id === id);
   if (i >= 0) moduleList.splice(i, 1);
+  if (deleted) deleted[tombKey(id)] = now;
+}
+/* La clé d'une pierre tombale : une empreinte de l'identifiant (tiré du nom de l'espace), pas l'identifiant lui-même :
+   le document ne garde pas, un an durant, le nom d'un espace supprimé. Deux FNV-1a de 32 bits (64 bits en tout) : une
+   collision entre deux espaces d'un même document est sans probabilité pratique. */
+export function tombKey(id) {
+  let a = 0x811c9dc5, b = 0x9747b28c;
+  for (let i = 0; i < id.length; i++) { const c = id.charCodeAt(i); a = Math.imul(a ^ c, 0x01000193) >>> 0; b = Math.imul(b ^ c, 0x5bd1e995) >>> 0; }
+  return "t" + a.toString(16).padStart(8, "0") + b.toString(16).padStart(8, "0");
+}
+/* Les pierres tombales (config.deleted : identifiant → instant de la suppression, SYN-006). Un espace supprimé sur un
+   appareil reste supprimé partout, même si un autre appareil l'a modifié hors ligne entre-temps : sans elle, la fusion à
+   trois voies garde ce qui a été modifié d'un côté (core/sync.js), et l'espace revenait, avec les modifications de
+   l'autre appareil. Une pierre tombale vit un peu plus d'un an : un appareil resté hors ligne plus longtemps peut
+   encore ramener l'espace. `keep(id)` : ce qui ne s'enterre pas (les modules fixes ; un suivi qu'un appareil garde
+   seul et dont il rend le nom, state/local.js). Rend les espaces retirés : [identifiant, nom]. */
+export const TOMBSTONE_TTL = 400 * 864e5;
+export function buryDeleted(doc, now = Date.now(), keep = () => false) {
+  const dead = doc.config && doc.config.deleted, out = [];
+  if (!dead || typeof dead !== "object") return out;
+  for (const [k, at] of Object.entries(dead)) if (!(now - at < TOMBSTONE_TTL)) delete dead[k];
+  for (const id of Object.keys(doc.modules || {})) {
+    if (!Object.hasOwn(dead, tombKey(id)) || keep(id)) continue;
+    out.push([id, (doc.config.labels && doc.config.labels[id]) || doc.modules[id].label || id]);
+    delete doc.modules[id];
+    doc.config.modules = doc.config.modules.filter(m => m.id !== id);
+    for (const map of [doc.config.labels, doc.config.groups, doc.config.assistant && doc.config.assistant.share]) if (map) delete map[id];
+  }
+  return out;
 }

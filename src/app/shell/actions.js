@@ -2,7 +2,7 @@
    installation de modules. */
 import { platform } from "../../platform.js";
 import { parseBackup } from "../../core/backup.js";
-import { MODULE_TYPES, createFromTemplate, inboxId, localizeConfig, slugId } from "../../core/domain.js";
+import { MODULE_TYPES, createFromTemplate, inboxId, localizeConfig, slugId, tombKey } from "../../core/domain.js";
 import { CHANGE, CLICK, TYPE_UI, VIEWS } from "../registry.js";
 import { $, PAGE, pageSize, toast, undoOnKeys } from "../lib/dom.js";
 import { tr } from "../i18n/index.js";
@@ -76,7 +76,10 @@ export function addModule(tpl, name) {
 /* Installe sans passer par le catalogue (offered) : la suite d'addModule, et l'installation d'un module qui existe
    déjà ailleurs (les tests l'utilisent pour un suivi créé avant sa sortie de l'offre publique). */
 function createModule(tpl, name) {
-  const s = S(), id = slugId(name, [...s.config.modules.map(x => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)]);
+  const s = S(), taken = [...s.config.modules.map(x => x.id), ...Object.keys(s.modules), ...Object.keys(VIEWS)];
+  // Jamais l'identifiant d'un espace supprimé : sa pierre tombale retirerait le nouveau (core/domain.js, buryDeleted).
+  let id = slugId(name, taken);
+  while (Object.hasOwn(s.config.deleted || {}, tombKey(id))) { taken.push(id); id = slugId(name, taken); }
   createFromTemplate(s.modules, tpl, name, id, tr);
   s.config.modules.push({ id, on: true });
   s.config.assistant.share[id] = !TYPE_UI[tpl.type]?.sensitive;

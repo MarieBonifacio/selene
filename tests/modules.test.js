@@ -1313,3 +1313,21 @@ test('programme installation waits for a chosen practice and validates its setti
   assert.equal(inst.entries.length, 0);
   app.parseBackup(app.createBackup(app.board.data, app.site.data));
 });
+
+test('l’adresse d’un espace désactivé mène à l’accueil, et le dit une fois par visite ; une adresse inconnue, sans un mot', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const toast = app.nodes.get('#toast') || app.document.querySelector('#toast');
+  app.location.hash = '#chantier'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /data-act="task-new"/, 'ouvert, l’espace s’affiche');
+  app.S().config.modules.find(m => m.id === 'chantier').on = false;
+  toast.textContent = ''; app.location.hash = '#accueil'; app.render(); app.location.hash = '#chantier'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /id="capIn"/, 'l’accueil (sa capture)…');
+  assert.doesNotMatch(app.nodes.get('#main').innerHTML, /data-act="task-new"/, '… pas l’espace');
+  assert.match(toast.textContent, /« Chantier » est désactivé : Réglages → Espaces pour le rouvrir\./);
+  toast.textContent = ''; app.render();
+  assert.equal(toast.textContent, '', 'un autre rendu (une synchronisation) ne le répète pas');
+  app.location.hash = '#accueil'; app.render(); app.location.hash = '#chantier'; app.render();
+  assert.match(toast.textContent, /est désactivé/, 'revenir à l’adresse le redit');
+  toast.textContent = ''; app.location.hash = '#nulle-part'; app.render();
+  assert.equal(toast.textContent, '', 'une adresse qui ne désigne aucun espace : rien à dire');
+});

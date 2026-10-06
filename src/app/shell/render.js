@@ -2,7 +2,7 @@
 import { platform } from "../../platform.js";
 import { approxPlace, sunPosition } from "../../core/sky.js";
 import { SHEETS, TYPE_UI, VIEWS } from "../registry.js";
-import { $, esc, pageSize } from "../lib/dom.js";
+import { $, esc, pageSize, toast } from "../lib/dom.js";
 import { applyLang, tr, trp, uiLocale } from "../i18n/index.js";
 import { bridgeBar, bridgeOpen, setBridgeOpen } from "../features/bridge.js";
 import { dehorsOn } from "../features/dehors.js";
@@ -18,7 +18,7 @@ import { backTo, barHTML, focusEntry, navHTML, noteVisit, routeOf, trackBack } f
 import { closeOverlays, sheetArg, sheetKind } from "./sheets.js";
 import { plateHTML, tintOf } from "./sigils.js";
 import { loadDraft, saveDraft } from "../state/drafts.js";
-import { S, enabled } from "../state/site.js";
+import { S, absentModule, enabled, label } from "../state/site.js";
 
 function applyTheme() {
   const c = S().config, r = document.documentElement;
@@ -52,6 +52,7 @@ export function memoInRender(key, compute) {
   if (!renderMemo.has(key)) renderMemo.set(key, compute());
   return renderMemo.get(key);
 }
+let redirectedFrom = null; // l'espace fermé dont l'adresse vient d'être détournée vers l'accueil (dit une fois)
 export function render() {
   renderMemo = new Map();
   try { renderNow(); } finally { renderMemo = null; }
@@ -75,7 +76,13 @@ function renderNow() {
   let view = routeOf().view;
   // Les vues fixes priment toujours ; hasOwn évite qu'un « #constructor » trouve Object.prototype.
   const fixed = v => v === "accueil" || v === "reglages" || v === "recherche" || v === "bilan" || (v === "dehors" && dehorsOn());
+  const asked = view;
   if (!fixed(view) && (!(Object.hasOwn(s.modules, view) || Object.hasOwn(VIEWS, view)) || !enabled(view))) view = "accueil";
+  /* L'adresse d'un espace qui existe mais ne s'ouvre pas (désactivé, ou absent de cette édition) mène à l'accueil, et le
+     dit une fois par visite de cette adresse (ESP-006) ; une adresse inconnue y mène sans un mot. */
+  if (view !== asked && Object.hasOwn(s.modules, asked)) {
+    if (redirectedFrom !== asked) { redirectedFrom = asked; toast(absentModule(asked) ? tr`Cet espace ne s'ouvre pas dans cette version de Selene.` : tr`« ${label(asked)} » est désactivé : Réglages → Espaces pour le rouvrir.`); }
+  } else redirectedFrom = null;
   const inst = !fixed(view) && Object.hasOwn(s.modules, view) ? s.modules[view] : null;
   $("#nav").innerHTML = navHTML(view);
   $("#bar").innerHTML = barHTML(view);

@@ -123,7 +123,8 @@ ceux qui simulent un vrai compte neuf (`bare: true`).
 `normalizeSite()` (migration des anciens formats, champs ajoutés depuis, entrées de navigation
 manquantes) est passée au store, qui l'applique à **tout ce qui entre** : lecture locale, résultat de
 synchro, import, réinitialisation, mise à jour venue d'un autre onglet. `S()` ne fait que lire.
-Un module absent n'est jamais recréé : il a été supprimé exprès.
+Un module absent n'est jamais recréé : il a été supprimé exprès. Un module présent mais enterré (sa pierre tombale
+dans `config.deleted`) est retiré, même si une fusion l'a gardé parce qu'un autre appareil l'avait modifié (ADR 34).
 
 ### Modules
 
@@ -1030,3 +1031,29 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   personne en lecture seule (Viewer, Commenter) ne peut pas écrire son sous-arbre : son Selene reste dans son
   navigateur. Vérifié par `tests/artifact.test.js` (faux claude.ai qui applique la règle du sous-arbre privé) ; reste
   à le constater dans claude.ai ([PLT-011](recette/manuels/plateformes.md#plt-011)).
+
+### ADR 34 — Les pierres tombales : un espace supprimé ne revient pas
+
+- **Contexte** : la fusion à trois voies garde une entrée supprimée d'un côté si l'autre l'a modifiée (pas de perte
+  silencieuse, `core/sync.js`). Pour une note, c'est voulu ; pour un espace entier, c'était un espace zombie : supprimé
+  sur A pendant que B, hors ligne, y ajoutait quelque chose, il revenait sur les deux appareils, avec la modification de
+  B, et la normalisation lui rendait sa place dans la navigation (anomalie A13, constatée le 6 octobre 2026 ;
+  [SYN-006](recette/manuels/synchronisation.md#syn-006)). La responsable a tranché le même jour : la suppression gagne.
+- **Décision** : supprimer un espace (`deleteModuleInstance`) pose une pierre tombale dans `config.deleted` : une
+  empreinte de son identifiant (`tombKey`, deux FNV-1a de 32 bits ; l'identifiant vient du nom, le document ne le garde
+  donc pas) et l'instant de la suppression. `normalizeSite` applique `buryDeleted` à tout ce qui entre : un espace
+  enterré est retiré, avec son nom personnalisé, ses groupes et son partage avec l'assistant, et l'appareil qui perd
+  ainsi ses modifications le dit (« « … » a été supprimé depuis un autre appareil ; tes modifications d'ici n'ont pas
+  été gardées. »). La confirmation de suppression dit « sur tous tes appareils » quand le document est synchronisé. Un
+  nouvel espace ne reprend jamais l'identifiant d'un espace enterré. Une pierre tombale s'efface après 400 jours.
+  Exceptions : les modules fixes (l'assistant), et un suivi « Reprendre la main » que son appareil détenteur garde
+  encore : il rend son nom au compte et efface la pierre tombale, comme l'annonce la confirmation depuis un autre
+  appareil (ADR 27).
+- **Écarté** : faire gagner la modification (l'intention de supprimer est explicite, le nom retapé ; un espace qui
+  ressuscite est le défaut classique d'une synchronisation) ; demander à l'appareil qui a modifié (il faudrait garder
+  l'espace en suspens, pour une situation rare) ; garder l'identifiant en clair (le nom d'un espace supprimé resterait
+  un an dans le compte).
+- **Conséquences** : une modification faite hors ligne dans un espace supprimé ailleurs est perdue, et dite. Un appareil
+  resté hors ligne plus de 400 jours peut encore ramener un espace. Une version de l'app d'avant cette décision ignore
+  les pierres tombales : à jour, l'autre appareil retire l'espace qu'elle aurait ramené. Vérifié par `TU-SYN-22` et
+  `TU-SYN-23`.

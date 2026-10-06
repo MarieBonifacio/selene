@@ -59,6 +59,11 @@ function checkBackup(data) {
   for (const m of site.config.modules || []) moduleId(m.id, "Module");
   for (const map of [site.config.groups, site.config.labels, site.config.assistant && site.config.assistant.share])
     if (map) for (const k of Object.keys(map)) moduleId(k, "Configuration");
+  // deleted : les pierres tombales des espaces supprimés (identifiant → instant de la suppression), core/domain.js.
+  if (site.config.deleted != null) {
+    if (!record(site.config.deleted)) throw new Error("Configuration invalide");
+    for (const [k, at] of Object.entries(site.config.deleted)) { moduleId(k, "Configuration"); num(at, "Suppression", 0); if (at == null) throw new Error("Suppression invalide"); }
+  }
   const sections = {
     budget: ["entries", "envelopes"], kundalini: ["sessions"],
     ecriture: ["chapters", "sessions", "fragments"], moth: ["posts"],

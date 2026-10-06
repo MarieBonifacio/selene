@@ -212,6 +212,7 @@ const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_
     const t = await main();
     check(t.includes('My last seven days') && t.includes('I have a craving') && t.includes('Privacy and data') && t.includes('standard drink'), 'anglais : écran traduit');
     check(!/Mes sept derniers jours|J'ai une envie|Confidentialité et données/.test(t), 'anglais : aucun texte resté en français');
+    check(t.includes("Sent word for word, in French: the assistant's instructions are written in French."), 'anglais : le résumé destiné à l’assistant reste en français, et c’est dit (RLM-028)');
     check(!(await overflow()), 'anglais : aucun débordement');
     check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   } catch (e) { console.log('  ✗', e.stack.split('\n').slice(0, 3).join(' ')); process.exitCode = 1; } finally { await b.close(); }

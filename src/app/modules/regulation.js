@@ -12,7 +12,7 @@ import { registerType } from "../registry.js";
 import { esc, paged, toast, toastAction, toastUndo } from "../lib/dom.js";
 import { downloadFile } from "../lib/download.js";
 import { fmt, iso, todayISO, uid } from "../lib/format.js";
-import { N_, tr, trn, uiLocale } from "../i18n/index.js";
+import { N_, tr, trn, uiLang, uiLocale } from "../i18n/index.js";
 import { errMsg, regNum } from "../lib/labels.js";
 import { authReady, authSession } from "../services/auth.js";
 import { render } from "../shell/render.js";
@@ -293,7 +293,7 @@ function entryHTML(inst, e) {
 function whereText(id) {
   const stub = S().modules[id], c = stub.config;
   if (!synced()) return tr`Sur cet appareil : sans compte, rien n'est envoyé au serveur de Selene.`;
-  if (regulationOnDevice(stub)) return tr`Sur cet appareil seulement. Ton compte n'en garde que le nom, pour que tes autres appareils sachent qu'il existe : son contenu ne passe pas par le serveur. La sauvegarde de cet appareil (Google, iCloud…), si tu l'as activée, peut l'inclure : elle relève de ton compte Google ou Apple, pas de Selene. Ce n'est pas un coffre chiffré : quiconque ouvre cet appareil déverrouillé peut lire son stockage. Perdre l'appareil peut faire perdre le suivi : exporte-le de temps en temps.`;
+  if (regulationOnDevice(stub)) return tr`Sur cet appareil seulement. Ton compte n'en garde que le nom, et de quoi reconnaître cet appareil (navigateur ou app, système, date), pour que tes autres appareils sachent qu'il existe et où : son contenu ne passe pas par le serveur. La sauvegarde de cet appareil (Google, iCloud…), si tu l'as activée, peut l'inclure : elle relève de ton compte Google ou Apple, pas de Selene. Ce n'est pas un coffre chiffré : quiconque ouvre cet appareil déverrouillé peut lire son stockage. Perdre l'appareil peut faire perdre le suivi : exporte-le de temps en temps.`;
   // Un suivi neuf n'a rien à synchroniser : le serveur n'en a que le nom, et la configuration le gardera sur l'appareil.
   if (!subjectOf(stub) && !c.consent) return tr`Pas encore configuré : ton compte n'en garde que le nom. Quand tu auras choisi ce que tu veux suivre, son contenu restera sur cet appareil seulement, sans passer par le serveur de Selene.`;
   if (c.consent) return tr`Encore synchronisé avec ton compte, selon ton accord du ${fmt(iso(new Date(c.consent.at)), { day: "numeric", month: "long", year: "numeric" })} : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout. Selene ne synchronise plus les suivis de santé : garde-le sur un appareil, son contenu quittera alors le serveur.`;
@@ -305,7 +305,13 @@ function elsewhereHTML(id) {
   const mine = S().modules[id].config.holder === deviceId();
   return `<div data-mod="${esc(id)}" class="rlm"><h2>${esc(label(id))}</h2><section><p>${mine
     ? tr`Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi.`
-    : tr`Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là. Appareil perdu, ou Selene réinstallée ? Tu peux retirer ce nom dans les réglages.`}</p></section></div>`;
+    : `${tr`Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là.`}${holderText(S().modules[id].config)} ${tr`Si c'est celui-ci et que son stockage a été effacé (données du navigateur ou de l'app), une sauvegarde complète faite ici le restaure. Sinon (appareil perdu, Selene réinstallée), tu peux retirer ce nom dans les réglages.`}`}</p></section></div>`;
+}
+/* L'appareil détenteur, tel que son talon le décrit (state/local.js, describeDevice) : de quoi le reconnaître, y compris
+   quand c'est celui-ci, vidé, qui a reçu une nouvelle identité (RLM-029). Un talon d'avant n'en dit rien. */
+function holderText(c) {
+  if (!c.holderName) return "";
+  return ` ${c.holderSince ? tr`Il le garde sur : ${c.holderName}, depuis le ${fmt(c.holderSince, { day: "numeric", month: "long", year: "numeric" })}.` : tr`Il le garde sur : ${c.holderName}.`}`;
 }
 /* Un suivi encore synchronisé (avec ou sans accord) : l'invitation à le garder sur un appareil. Rien ne change tant que
    la personne n'a pas choisi lequel : Selene ne décide pas à sa place de l'appareil qui le gardera seul. */
@@ -321,6 +327,7 @@ function privacyHTML(id, inst) {
       <li><b>${tr`Ce qui reste visible.`}</b> ${tr`Le nom de cet espace et sa présence : navigation, accueil, Réglages, palette de commandes. Les détails (quantités, envies, notes, appuis) restent ici : ni recherche, ni motifs, ni dérive lexicale, ni test lunaire, ni bilan général, ni planche de lunaison, ni reprise sur l'accueil, ni liens, ni widget, ni notifications.`}</li>
       <li><b>${tr`L'assistant.`}</b> ${shared ? tr`Partagé : il reçoit ce résumé, et rien d'autre, à chaque question.` : tr`Non partagé : l'assistant ne reçoit rien de ce suivi. Si tu le partages, il recevra ce résumé, et rien d'autre :`}
         <blockquote class="note rlm-quote">${esc(TYPE.context(inst, label(id).toUpperCase()).trim())}</blockquote>
+        ${uiLang() === "fr" ? "" : `<p class="hint">${tr`Envoyé tel quel, en français : les consignes de l'assistant sont écrites en français.`}</p>`}
         ${tr`Arrêter le partage empêche les envois suivants ; cela ne retire pas ce qui a déjà été envoyé (efface la conversation dans l'Assistant si tu veux).`}${enabled("assistant") ? "" : ` ${tr`L'assistant est désactivé en ce moment.`}`}</li>
       <li><b>${tr`Export de ce suivi.`}</b> ${tr`Un fichier JSON lisible, non chiffré : nom, sujet, objectifs et leur historique, journal complet avec les notes, appuis et récompense. Pour le consulter ou le garder ; une restauration passe par la sauvegarde complète.`}</li>
       <li><b>${tr`Suppression.`}</b> ${tr`Supprimer ce suivi efface ses données de cet appareil puis, à la synchronisation suivante, de ton compte et de tes autres appareils. Les sauvegardes et exports déjà téléchargés restent là où tu les as rangés.`}</li>

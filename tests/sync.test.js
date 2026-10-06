@@ -74,6 +74,49 @@ test('a deleted module stays deleted on the other device', async () => {
   assert.equal(s.config.modules.some(m => m.id === 'phidippus'), false);
 });
 
+test('un espace supprimé sur un appareil reste supprimé, même modifié hors ligne sur un autre, qui le dit', async () => {
+  const { server, a, b } = await twoDevices();
+  const name = b.label('phidippus');
+  server.offline = true; // B modifie l'espace hors ligne…
+  b.site.data.modules.phidippus.label = 'Aragog modifié'; b.site.save(); clearTimeout(b.site.timer); b.site.timer = null;
+  assert.equal(await b.site.sync(), false);
+  server.offline = false; // … pendant que A le supprime, par les Réglages
+  a.CLICK['mod-del']({ dataset: { mod: 'phidippus' } });
+  assert.match(a.$('#form').innerHTML, /suppression définitive de ses données, sur tous tes appareils/, 'la confirmation dit la portée');
+  a.form({ confirm: name }); clearTimeout(a.site.timer); a.site.timer = null;
+  assert.equal(await a.site.sync(), true);
+  b.$('#toast').textContent = '';
+  assert.equal(await b.site.sync(), true); await a.site.sync();
+  for (const dev of [a, b]) {
+    assert.equal(dev.S().modules.phidippus, undefined, 'pas d’espace zombie');
+    assert.equal(dev.S().config.modules.some(m => m.id === 'phidippus'), false, 'ni dans la navigation');
+  }
+  assert.ok(!server.rows.get('u1').site.modules.phidippus);
+  assert.match(b.$('#toast').textContent, /« Aragog modifié » a été supprimé depuis un autre appareil ; tes modifications d'ici n'ont pas été gardées\./);
+  assert.doesNotMatch(JSON.stringify(server.rows.get('u1').site.config.deleted), /phidippus|aragog/i, 'la pierre tombale ne garde pas le nom');
+  // Un nouvel espace du même nom n'est pas enterré par l'ancienne pierre tombale.
+  a.installModule({ type: 'notes' }, 'Phidippus'); await a.site.sync(); await b.site.sync();
+  const fresh = a.S().config.modules[a.S().config.modules.length - 1].id;
+  assert.notEqual(fresh, 'phidippus', 'un autre identifiant');
+  assert.ok(a.S().modules[fresh] && b.S().modules[fresh], 'il vit sur les deux appareils');
+});
+
+test('les pierres tombales : sans compte, la confirmation ne parle pas d’autres appareils ; au-delà de 400 jours, elles s’effacent', () => {
+  const { buryDeleted, deleteModuleInstance, tombKey, TOMBSTONE_TTL } = require('../src/core/domain.js');
+  const doc = { modules: { a: { label: 'A' }, b: { label: 'B' } }, config: { modules: [{ id: 'a', on: true }, { id: 'b', on: true }], labels: { a: 'Mon A' }, groups: {}, assistant: { share: { a: true } }, deleted: {} } };
+  deleteModuleInstance(doc.modules, doc.config.modules, 'a', doc.config.deleted, 1000);
+  assert.deepEqual(Object.keys(doc.config.deleted), [tombKey('a')]); assert.match(tombKey('a'), /^t[0-9a-f]{16}$/);
+  doc.modules.a = { label: 'A revenu' }; doc.config.modules.push({ id: 'a', on: true }); // une fusion qui l'aurait gardé
+  same(buryDeleted(doc, 2000), [['a', 'Mon A']]);
+  assert.ok(!doc.modules.a && !doc.config.labels.a && !doc.config.assistant.share.a && doc.modules.b);
+  doc.modules.a = { label: 'A' };
+  same(buryDeleted(doc, 1000 + TOMBSTONE_TTL), [], 'expirée : un appareil absent plus d’un an peut le ramener');
+  same(doc.config.deleted, {});
+  const local = launchHosted({ session: null, storage: new Map([['selene-sans-compte', '1']]), fetch: async () => { throw new Error('hors ligne'); } });
+  local.CLICK['mod-del']({ dataset: { mod: 'phidippus' } });
+  assert.doesNotMatch(local.$('#form').innerHTML, /tous tes appareils/, 'sans compte, un seul appareil');
+});
+
 test('a write that races another device is refused, re-read and merged (compare-and-swap)', async () => {
   const { server, a, b } = await twoDevices();
   a.site.data.modules.chantier.entries.push(task('t1', 'Velux')); a.site.save(); clearTimeout(a.site.timer); a.site.timer = null;

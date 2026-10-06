@@ -39,7 +39,7 @@ Réglages → Espaces (le vocabulaire de la navigation : un espace est un module
   - *Budget* : des opérations (dépenses, revenus), des enveloppes à plafond mensuel et leurs jauges, mois par mois (ex. le Budget) ;
   - *Collection* : des éléments à statuts (titre, sous-titre, étiquette, date, texte : chaque champ se renomme ou se masque), affichés en colonnes ou en liste filtrable (ex. october.moth en colonnes, Musique en liste) ; en colonnes, sur téléphone une colonne à la fois par un sélecteur, sur ordinateur une carte se glisse d'une colonne à l'autre (ou `[` et `]` sur la carte qui a le focus).
 
-Un module se supprime définitivement (✕, puis retaper son nom) : ses données partent avec lui, sur tous les appareils. Ses réglages propres sont sous sa ligne, dans Réglages → Espaces (« régler »), ou depuis le module lui-même. Un nouveau module est partagé par défaut avec l'assistant, sauf « Reprendre la main » ; décocher dans Réglages → Assistant pour le garder privé.
+Un module se supprime définitivement (✕, puis retaper son nom) : ses données partent avec lui, sur tous les appareils. Son adresse, s'il est seulement désactivé, mène à l'accueil, qui le dit. Ses réglages propres sont sous sa ligne, dans Réglages → Espaces (« régler »), ou depuis le module lui-même. Un nouveau module est partagé par défaut avec l'assistant, sauf « Reprendre la main » ; décocher dans Réglages → Assistant pour le garder privé.
 
 Pour ajouter un *type* de module au code, voir [docs/architecture.md](docs/architecture.md#ajouter-un-type-de-module).
 
@@ -141,7 +141,7 @@ Une fois configuré, ouvrir `index.html` affiche un écran de connexion/inscript
 Comment la synchronisation se comporte :
 
 - Chaque modification part au bout d'une seconde ; les autres appareils la voient dans les 30 s (ou au retour sur l'onglet).
-- Deux appareils modifiés en même temps, ou l'un hors ligne : les modifications sont **fusionnées**, pas écrasées. Une entrée supprimée d'un côté mais modifiée de l'autre est conservée.
+- Deux appareils modifiés en même temps, ou l'un hors ligne : les modifications sont **fusionnées**, pas écrasées. Une entrée supprimée d'un côté mais modifiée de l'autre est conservée. Un **espace** supprimé, lui, reste supprimé, même si un autre appareil l'a modifié hors ligne entre-temps : celui-ci le dit (« … a été supprimé depuis un autre appareil ; tes modifications d'ici n'ont pas été gardées. »), ADR 34.
 - Hors ligne, l'app continue de fonctionner et affiche « Non synchronisé » ; tout part au retour du réseau. Une coupure ne déconnecte pas.
 - Importer une sauvegarde remplace l'état du compte (sur tous les appareils), sans fusion.
 - Se déconnecter envoie d'abord ce qui attend, puis efface de l'appareil les données et la conversation avec l'assistant (la clé API reste attachée au compte, chiffrée, jusqu'à « Oublier la clé »). Les données restent isolées par compte (RLS) ; l'artefact claude.ai (`selene.html`) n'est pas concerné et continue de fonctionner sans connexion (même code partagé, mais `auth.js` ne s'active que hors claude.ai).

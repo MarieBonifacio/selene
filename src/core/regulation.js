@@ -35,10 +35,13 @@ export const regulationDefaults = () => ({
   goals: [], entries: []
 });
 /* Le talon synchronisé d'un suivi gardé sur un appareil : son nom et sa présence, et où il vit. Rien de ce qu'il
-   contient : ni sujet, ni appuis, ni récompense, ni objectifs, ni journal, ni pont de reprise. */
-export function regulationStub(inst, holder) {
+   contient : ni sujet, ni appuis, ni récompense, ni objectifs, ni journal, ni pont de reprise. `about` : ce qui permet
+   de reconnaître l'appareil détenteur ailleurs, ou sur lui-même une fois son stockage effacé (RLM-029) : `name`, le
+   navigateur ou l'app et le système (« Chrome · Windows »), et `since`, la date où il a pris le suivi. */
+export function regulationStub(inst, holder, about = {}) {
   const d = regulationDefaults();
-  return { type: inst.type, label: inst.label, config: { ...d.config, storage: "device", holder }, goals: [], entries: [] };
+  const known = { ...(about.name ? { holderName: about.name } : {}), ...(about.since ? { holderSince: about.since } : {}) };
+  return { type: inst.type, label: inst.label, config: { ...d.config, storage: "device", holder, ...known }, goals: [], entries: [] };
 }
 export const regulationOnDevice = inst => !!inst && !!inst.config && inst.config.storage === "device";
 /* Les champs ajoutés depuis la création d'un suivi, complétés à l'entrée des données (store, import). */
@@ -90,6 +93,7 @@ export function validateRegulation(inst, v) {
   // Où vit le suivi (ADR 27) : « account » (synchronisé, avec l'accord daté `consent`) ou « device » (sur l'appareil
   // `holder` seulement ; le document synchronisé n'en garde qu'un talon). Absent : un suivi d'avant ce choix.
   if ((c.storage != null && !REGULATION_STORAGES.includes(c.storage)) || (c.holder != null && !identifier(c.holder)) ||
+      (c.holderName != null && !shortText(c.holderName, 80)) || (c.holderSince != null && !validDate(c.holderSince)) ||
       (c.consent != null && !(c.consent && typeof c.consent === "object" && finite(c.consent.at, 0, Infinity) && Number.isInteger(c.consent.version) && c.consent.version >= 1)))
     v.fail("stockage du suivi");
   const goals = v.list(inst.goals, "objectifs");
@@ -135,9 +139,10 @@ function goalLimit(subject, input) {
   if (input.limit === "" || input.limit == null) throw coreError("reg-limit", "Limite quotidienne à choisir");
   try { return regulationQuantity(subject, input.limit); } catch { throw coreError("reg-limit", "Limite quotidienne invalide"); }
 }
-/* Une date d'effet : passée, aujourd'hui, ou à venir dans l'année (« je commence lundi »). */
+/* Une date d'effet : passée, aujourd'hui, ou à venir dans l'année (« je commence lundi »). Son refus a son message
+   (RLM-014) : celui des événements parle de ce qui ne se déclare pas à l'avance. */
 function effectDate(date, today) {
-  if (!validDate(date) || !validDate(today) || date > addDays(today, 366)) throw coreError("reg-date", "Date invalide ou à venir");
+  if (!validDate(date) || !validDate(today) || date > addDays(today, 366)) throw coreError("reg-goal-date", "Date d'effet invalide ou à plus d'un an");
   return date;
 }
 /* Premier réglage : le sujet (donc l'unité) et la première version d'objectif, ensemble. Le sujet ne change plus

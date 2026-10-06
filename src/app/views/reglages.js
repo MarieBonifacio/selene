@@ -224,11 +224,13 @@ CLICK["tpl-add"] = el => { const found = MODULE_TEMPLATES.find(t => t.id === el.
 CLICK["mod-del"] = el => {
   const id = el.dataset.mod, name = label(id), ui = Object.hasOwn(S().modules, id) ? TYPE_UI[S().modules[id].type] : null;
   const note = ui && ui.deleteNote ? ui.deleteNote(id) : "";
-  openForm(tr`Supprimer « ${name} »`, [{ n: "confirm", l: tr`Retape « ${name} » pour confirmer la suppression définitive de ses données.`, req: true }], {}, v => {
+  // Synchronisé, la suppression vaut pour tous les appareils, y compris un qui l'aurait modifié hors ligne (SYN-006).
+  const ask = site.db ? tr`Retape « ${name} » pour confirmer la suppression définitive de ses données, sur tous tes appareils.` : tr`Retape « ${name} » pour confirmer la suppression définitive de ses données.`;
+  openForm(tr`Supprimer « ${name} »`, [{ n: "confirm", l: ask, req: true }], {}, v => {
     if (v.confirm !== name) return toast(tr`Nom incorrect, rien n'a été supprimé.`);
     const s = S();
     if (ui && ui.onDelete) ui.onDelete(id); // une copie gardée sur cet appareil (ADR 27) part avec le module
-    deleteModuleInstance(s.modules, s.config.modules, id);
+    deleteModuleInstance(s.modules, s.config.modules, id, s.config.deleted);
     delete s.config.labels[id]; delete s.config.groups[id]; delete s.config.assistant.share[id];
     site.save(); render(); toast(tr`« ${name} » supprimé.`);
   }, note);

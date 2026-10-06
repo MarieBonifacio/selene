@@ -1,7 +1,7 @@
 /* Les deux documents de la personne (site, board) et leur lecture : modules fixes, données de départ, normalisation à
    l'entrée, S(), label(), enabled(). */
-import { MODULE_TYPES, SCHEMA_VERSION, SECTION_TO_MODULE, inboxId, migrateModules } from "../../core/domain.js";
-import { setSaving } from "../lib/dom.js";
+import { MODULE_TYPES, SCHEMA_VERSION, SECTION_TO_MODULE, buryDeleted, inboxId, migrateModules } from "../../core/domain.js";
+import { setSaving, toast } from "../lib/dom.js";
 import { N_, tr } from "../i18n/index.js";
 import { render } from "../shell/render.js";
 import { absorbDeviceTrackers } from "./local.js";
@@ -22,7 +22,8 @@ export function siteSeed() {
     updatedAt: 0, schemaVersion: SCHEMA_VERSION, boardMerged: true,
     // lang : la langue de l'interface, suivie par le compte ; vide, celle de l'appareil (même valeur partout : le
     // départ reste vierge et identique d'un appareil à l'autre).
-    config: { name: "Selene", palette: "nigredo", mode: "auto", lang: "", labels: {}, groups: {}, welcome: true,
+    // deleted : les pierres tombales des espaces supprimés (core/domain.js, buryDeleted).
+    config: { name: "Selene", palette: "nigredo", mode: "auto", lang: "", labels: {}, groups: {}, deleted: {}, welcome: true,
       modules: [{ id: "inbox", on: true }, { id: "assistant", on: !OFF_BY_DEFAULT.includes("assistant") }],
       assistant: { model: "claude-sonnet-5", actions: true, share: { inbox: true } } },
     modules: { inbox: SECTION_TO_MODULE.inbox({ items: [] }) }
@@ -42,18 +43,31 @@ function normalizeSite(d) {
   for (const id of Object.keys(d.modules)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: true });
   for (const k of Object.keys(seed)) if (k !== "modules" && k !== "config" && typeof seed[k] === "object" && !Array.isArray(seed[k])) for (const f of Object.keys(seed[k])) if (d[k][f] == null) d[k][f] = seed[k][f];
   for (const inst of Object.values(d.modules)) if (Object.hasOwn(MODULE_TYPES, inst.type) && MODULE_TYPES[inst.type].normalize) MODULE_TYPES[inst.type].normalize(inst);
+  // Un espace supprimé ailleurs reste supprimé, même modifié ici entre-temps (SYN-006) : la fusion l'a gardé, la pierre
+  // tombale le retire, et l'appareil le dit (buriedNotice).
+  const gone = buryDeleted(d, Date.now(), id => Object.hasOwn(MODULE_DEFS, id));
   // Un suivi gardé sur cet appareil (ADR 27) : ses données renvoyées par un autre appareil reviennent ici ; un talon
-  // disparu revient (et retrouve sa place dans la navigation).
+  // disparu revient (et retrouve sa place dans la navigation), même supprimé ailleurs : son nom revient, comme annoncé.
   if (absorbDeviceTrackers(d)) for (const id of Object.keys(d.modules)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: true });
+  for (const [id, name] of gone) if (!Object.hasOwn(d.modules, id)) BURIED.push(name);
   const inbox = inboxId(d.modules); // une seule boîte de réception, même après une fusion entre appareils
   for (const [id, inst] of Object.entries(d.modules)) if (inst.type === "notes" && inst.config.inbox && id !== inbox) inst.config.inbox = false;
   return d;
+}
+/* Les espaces supprimés depuis un autre appareil alors que celui-ci les avait modifiés : dit une fois, au rendu qui suit
+   la synchronisation (SYN-006). */
+const BURIED = [];
+function buriedNotice() {
+  if (!BURIED.length) return;
+  const names = BURIED.splice(0);
+  toast(names.length === 1 ? tr`« ${names[0]} » a été supprimé depuis un autre appareil ; tes modifications d'ici n'ont pas été gardées.`
+    : tr`${names.map(n => `« ${n} »`).join(", ")} ont été supprimés depuis un autre appareil ; tes modifications d'ici n'ont pas été gardées.`);
 }
 // Ce que les deux documents disent à la page : redessiner après une synchronisation, l'état de l'enregistrement. Chacun
 // garde le sien et la page montre le premier qui a quelque chose à dire : le succès de l'un n'efface pas l'échec de l'autre.
 const saving = {};
 const storeHooks = name => ({ onRemoteChange: () => render(), onStatus: m => { saving[name] = m; setSaving(saving.site || saving.board || ""); } });
-export const site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite, { ...storeHooks("site"), onSave: () => { for (const f of SAVED) f(); } });
+export const site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite, { ...storeHooks("site"), onRemoteChange: () => { render(); buriedNotice(); }, onSave: () => { for (const f of SAVED) f(); } });
 /* L'ancien document « board » (tâches du Chantier jusqu'au format 5) n'est plus qu'un point d'entrée :
    ce qu'il contient est versé dans le module Chantier du site, puis il est vidé, et le vidage part au
    serveur à la synchro suivante (sinon chaque nouvel appareil ressusciterait les tâches supprimées).

@@ -450,13 +450,14 @@ Identifiants retirés : aucun.
 - **Données** : « Réduire… » `1` à partir de `J+10` ; date `J+400` ; `2` verres à `J-1` ; « Réduire… » `5` à partir de `J-1`.
 - **Automatisés associés** : `TU-REG-10`, `TU-REG-04`, `TU-I18N-18`
 - **Source** : [DOC] [regulation.md](../../regulation.md#règles) (objectifs versionnés) ; [TEST] `TU-REG-10` ; vérifié par
-  une sonde Chromium le 4 octobre 2026.
+  une sonde Chromium le 4 octobre 2026 ; [TEST] `TU-REG-04` (le message d'une date d'effet refusée, décision du
+  6 octobre 2026 : il ne parle plus de consommation).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Lire « Mes objectifs » ; déplier « Historique : 2 versions ». | « En ce moment : au plus 1,5 verre standard par jour. » ; « à partir du 20 septembre 2026 : au plus 1,5 verre standard par jour (choisi le 20 sept.) », « à partir du 1er septembre 2026 : au plus 2 verres standard par jour (choisi le 1er sept.) » ; « Début du suivi : 1er septembre 2026. » |
 | 2 | « Faire évoluer mon objectif » : « Réduire… », limite `1`, à partir de `J+10`. | « Objectif enregistré, à partir du <J+10 en lettres, avec l'année, par exemple 14 octobre 2026>. D'ici là, rien ne change. » (un seul point : anomalie A5, corrigée) ; en-tête inchangé « Alcool · au plus 1,5 verre standard par jour », suivi de « À partir du <J+10> : au plus 1 verre standard par jour. » ; « Historique : 3 versions », la plus récente en tête « (choisi le <J>) ». |
-| 3 | « Faire évoluer mon objectif » avec la date `J+400`. | Le formulaire se ferme ; « Choisis une date valide. Une consommation, une envie ou une action ne se déclarent pas à l'avance. » ; toujours 3 versions. [À ARBITRER] : ce message parle de consommation pour une date d'objectif trop lointaine. |
+| 3 | « Faire évoluer mon objectif » avec la date `J+400`. | Le formulaire se ferme ; « Choisis une date d'effet valide : passée, aujourd'hui, ou au plus tard dans un an. » ; toujours 3 versions. |
 | 4 | Noter `2` à `J-1`, confirmer `J-1`. | J-1 « complète : 2 verres standard · au-delà de l'objectif », « objectif du jour : au plus 1,5 verre standard par jour ». |
 | 5 | « Faire évoluer mon objectif » : « Réduire… » `5` à partir de `J-1`. | J-1 garde « au-delà de l'objectif » et « objectif du jour : au plus 1,5 verre standard par jour » ; l'en-tête devient « Alcool · au plus 5 verres standard par jour ». |
 | 6 | « modifier » la saisie de J-1 : `2.5` ; puis confirmer J-1. | Après la reconfirmation, J-1 « complète : 2,5 verres standard · au-delà de l'objectif », objectif du jour toujours 1,5 (gardé). |
@@ -685,13 +686,13 @@ Identifiants retirés : aucun.
 - **Préconditions** : chemin P sur l'appareil 1 (détenteur), avec le suivi de [RLM-003](#rlm-003) ; un appareil 2 (autre
   navigateur ou téléphone) connecté au compte P.
 - **Données** : `2` cigarettes, contexte `NOTE-RLM022`, notées sur l'appareil 1.
-- **Automatisés associés** : `TN-regulation-appareil`, `TU-REG-31`, `TU-REG-26`
+- **Automatisés associés** : `TN-regulation-appareil`, `TU-REG-31`, `TU-REG-26`, `TU-REG-39`
 - **Source** : [DOC] [regulation.md](../../regulation.md#confidentialité) (autres appareils) ; [TEST]
   `tests/browser/regulation-appareil.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Appareil 1 : noter les données. Appareil 2 : recharger, ouvrir « Carnet du soir ». | « Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là. Appareil perdu, ou Selene réinstallée ? Tu peux retirer ce nom dans les réglages. » ; ni `NOTE-RLM022`, ni quantité. |
+| 1 | Appareil 1 : noter les données. Appareil 2 : recharger, ouvrir « Carnet du soir ». | « Ce suivi est gardé sur un autre de tes appareils, et seulement là : son contenu ne passe pas par ton compte. Ouvre-le sur cet appareil-là. Il le garde sur : … » (le navigateur et le système de l'appareil 1, la date de sa configuration) « Si c'est celui-ci et que son stockage a été effacé (données du navigateur ou de l'app), une sauvegarde complète faite ici le restaure. Sinon (appareil perdu, Selene réinstallée), tu peux retirer ce nom dans les réglages. » ; ni `NOTE-RLM022`, ni quantité. |
 | 2 | Appareil 2 : accueil ; Réglages → Espaces. | Accueil : « Suivi privé : ouvrir pour consulter ». Réglages : « Ouvrir le suivi », mais pas « Appuis et récompenses ». |
 | 3 | Appareil 2 : Réglages → Espaces → « ✕ » sur « Carnet du soir ». | Formulaire « Supprimer « Carnet du soir » » avec « Ici, il n'y a que le nom de ce suivi : son contenu est gardé sur un autre appareil. Si cet appareil existe encore, le suivi y reste entier et son nom reviendra : supprime-le plutôt depuis celui-ci. S'il est perdu, ou si Selene y a été réinstallée, retirer ce nom est définitif. » |
 | 4 | Retaper `Carnet du soir`, « Enregistrer ». | « « Carnet du soir » supprimé. » ; il disparaît de la navigation de l'appareil 2. |
@@ -857,7 +858,9 @@ Identifiants retirés : aucun.
 - **Préconditions** : chemin S, `rlm-en-cours.json` importé.
 - **Données** : aucune.
 - **Automatisés associés** : `TN-regulation`
-- **Source** : [TEST] `tests/browser/regulation.js` (téléphone, ordinateur, clavier, anglais) ; [À ARBITRER] étape 5.
+- **Source** : [TEST] `tests/browser/regulation.js` (téléphone, ordinateur, clavier, anglais ; la phrase de l'étape 5
+  depuis le 6 octobre 2026, décision de la responsable : le résumé reste en français, puisque c'est le texte envoyé, et
+  l'interface le dit).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -865,7 +868,7 @@ Identifiants retirés : aucun.
 | 2 | Ordinateur (1 280 px) : même lecture. | Aucun défilement horizontal ; le tableau des sept jours est lisible. |
 | 3 | Clavier seul : Tab jusqu'à « J'ai une envie », Entrée ; parcourir les champs au Tab ; Échap. | Le formulaire s'ouvre avec le focus à l'intérieur ; chaque champ annonce son libellé (lecteur d'écran ou info-bulle d'accessibilité) ; Échap le ferme sans rien enregistrer. |
 | 4 | Réglages → Langue → English ; ouvrir l'espace. | « My last seven days », « I have a craving », « Privacy and data », « standard drink » ; ni « Mes sept derniers jours », ni « J'ai une envie », ni « Confidentialité et données ». |
-| 5 | Déplier « Privacy and data ». | Les textes sont en anglais, sauf le résumé destiné à l'assistant : « CARNET DU SOIR : suivi personnel autodéclaratif (alcool… » reste en français. [À ARBITRER] : la personne lit en anglais « this summary » puis un texte en français ; faut-il le traduire à l'affichage, ou le dire ? |
+| 5 | Déplier « Privacy and data ». | Les textes sont en anglais, sauf le résumé destiné à l'assistant : « CARNET DU SOIR : suivi personnel autodéclaratif (alcool… » reste en français, suivi de « Sent word for word, in French: the assistant's instructions are written in French. » |
 
 - **État final attendu** : interface en anglais.
 - **Nettoyage** : Réglages → Language → Français.
@@ -877,21 +880,23 @@ Identifiants retirés : aucun.
 
 - **Fonctionnalité et règle** : sur l'appareil détenteur dont le stockage a perdu le suivi (identité de l'appareil
   conservée), l'espace l'avoue et propose la restauration par une sauvegarde complète ou le retrait du nom ; si
-  l'identité de l'appareil a aussi disparu, l'appareil se croit un autre.
+  l'identité de l'appareil a aussi disparu, l'appareil se croit un autre, mais le talon décrit l'appareil détenteur
+  (navigateur ou app, système, date) et le message envisage que ce soit celui-ci, vidé (décision du 6 octobre 2026).
 - **Objectif, risque vérifié** : un espace vide sans explication ; un nom impossible à retirer.
 - **Priorité** : P2 · **Plateformes** : Web
 - **Préconditions** : chemin P, avec un suivi configuré et une saisie de contexte `NOTE-RLM029` ; une sauvegarde complète
   téléchargée juste avant (Réglages → Compte et données → Sauvegarde → Exporter).
 - **Données** : aucune autre.
-- **Automatisés associés** : `TN-regulation-perdu` (étapes 1 à 3)
-- **Source** : [CODE] `elsewhereHTML` ; [TEST] `tests/browser/regulation-perdu.js` (étapes 1 à 3, depuis le 5 octobre 2026) ; [À ARBITRER] étape 4.
+- **Automatisés associés** : `TN-regulation-perdu` (étapes 1 à 3), `TU-REG-39` (étape 4)
+- **Source** : [CODE] `elsewhereHTML`, `holderText` (`modules/regulation.js`), `describeDevice` (`state/local.js`) ; [TEST]
+  `tests/browser/regulation-perdu.js` (étapes 1 à 3, depuis le 5 octobre 2026), `TU-REG-39` (étape 4, depuis le 6).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Outils de développement → Application → IndexedDB → `selene` → `kv` : supprimer **seulement** `selene-local-v1` ; recharger ; ouvrir le suivi. | « Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi. » |
 | 2 | Importer la sauvegarde complète. | « Sauvegarde importée. » ; le suivi est entier (`NOTE-RLM029`). |
 | 3 | Refaire l'étape 1 ; Réglages → Espaces → « ✕ » ; retaper le nom. | Pas d'avertissement « il n'y a que le nom » ; « « … » supprimé. » |
-| 4 | Recréer et configurer un suivi ; puis outils de développement → Application → Storage → « Clear site data » ; se reconnecter au compte P ; ouvrir le suivi. | Comportement actuel : « Ce suivi est gardé sur un autre de tes appareils… » (l'identité de l'appareil est neuve). [À ARBITRER] : la personne ne peut pas savoir que c'est son propre appareil, vidé. |
+| 4 | Recréer et configurer un suivi ; puis outils de développement → Application → Storage → « Clear site data » ; se reconnecter au compte P ; ouvrir le suivi. | « Ce suivi est gardé sur un autre de tes appareils… », puis « Il le garde sur : Chrome · Windows, depuis le … » (le navigateur et le système de ce poste, la date du jour), puis « Si c'est celui-ci et que son stockage a été effacé (données du navigateur ou de l'app), une sauvegarde complète faite ici le restaure. Sinon (appareil perdu, Selene réinstallée), tu peux retirer ce nom dans les réglages. » |
 
 - **État final attendu** : un talon d'un suivi devenu illisible.
 - **Nettoyage** : retirer ce talon (« ✕ », retaper le nom) ; supprimer la sauvegarde téléchargée.
