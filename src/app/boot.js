@@ -12,7 +12,7 @@ import { connectHost } from "./services/host.js";
 import { focusEntry, liveRecents, openOn, routeOf } from "./shell/nav.js";
 import { render, renderedDay } from "./shell/render.js";
 import { local } from "./state/local.js";
-import { S, board, site } from "./state/site.js";
+import { S, board, site, siteNotice } from "./state/site.js";
 
 // Le journal des erreurs (services/journal.js) : une erreur de programmation qui échappe à l'app part, anonyme. Une
 // erreur de ressource (image) n'arrive pas ici : elle ne remonte pas jusqu'à la fenêtre.
@@ -33,6 +33,7 @@ try {
   }
 } catch {}
 render();
+siteNotice(); // un suivi passé sur l'appareil dès la lecture (A17), dit une fois
 { const e = routeOf().entry; if (e) focusEntry(e); } // un lien direct vers une entrée, ouvert tel quel
 // La Fenêtre : l'heure avance, le ciel aussi (toutes les cinq minutes, sur l'accueil, ou partout en mode « suivre le
 // soleil ») ; la météo se relit au plus toutes les demi-heures. Minuterie détachée : elle ne retient jamais Node en test.

@@ -7,7 +7,7 @@
    - se déconnecter avec un suivi gardé ici : la garde propose l'export ou l'effacement ; effacer vide l'appareil et retire
      aussi le talon du compte.
    Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, check, storeJSON } = require('./helpers');
+const { engine, BASE, launchOptions, check, storeJSON, ouvrir, entree } = require('./helpers');
 const rows = new Map();
 const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 async function supabase(route) {
@@ -30,7 +30,7 @@ async function device(browser, errs, personnel = true, id = 'u1') {
   await ctx.route('https://*.supabase.co/**', supabase);
   await ctx.addInitScript(([s, id]) => { if (!localStorage.getItem('selene-auth-session')) { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', id); } }, [sessionFor(personnel, id), id]);
   const page = await ctx.newPage(); page.on('pageerror', e => errs.push(e.message));
-  await page.goto(BASE + '/index.html'); await page.waitForTimeout(600);
+  await ouvrir(page, BASE + '/index.html', entree); // connecté : l'app, pas l'écran d'entrée (A16)
   return { ctx, page };
 }
 (async () => {
@@ -70,6 +70,7 @@ async function device(browser, errs, personnel = true, id = 'u1') {
     console.log('l’autre appareil : le nom seulement');
     const B = await device(browser, errs), q = B.page;
     await go('reprendre-la-main', q);
+    await q.waitForFunction(() => document.querySelector('#main').textContent.includes('gardé sur un autre de tes appareils'), null, { timeout: 10000 }).catch(() => {});
     const tb = await q.textContent('#main');
     check(tb.includes('gardé sur un autre de tes appareils') && !/NOTE_PRIVEE|verre/.test(tb), 'B voit le nom, pas le contenu');
     await go('reglages', q); await q.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));

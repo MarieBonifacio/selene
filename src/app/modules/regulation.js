@@ -294,9 +294,12 @@ function entryHTML(inst, e) {
   return `<li class="item" data-id="${esc(e.id)}"><span class="jdate">${fmt(e.date)}</span><div>${main}${e.note ? `<p class="note">${esc(e.note)}</p>` : ""}${e.editedAt ? `<div class="meta"><span>${tr`corrigé`}</span></div>` : ""}</div><div class="row">${acts}</div></li>`;
 }
 /* Où vit ce suivi, en une phrase : sur l'appareil (et rien que le nom sur le compte), encore synchronisé (avec un accord
-   daté, ou depuis sa création), ou, sans compte, sur l'appareil tout court. */
+   daté, ou depuis sa création), ou, sans compte, sur l'appareil tout court. Dans l'artefact claude.ai, toujours dans ce
+   navigateur (A17) ; relié à sa base, l'espace privé de la personne sur claude.ai en reçoit le talon, et le texte le dit. */
 function whereText(id) {
   const stub = S().modules[id], c = stub.config;
+  if (!hosted()) return site.db ? tr`Dans ce navigateur seulement. L'espace privé de ton compte claude.ai n'en garde que le nom, et de quoi reconnaître ce navigateur (navigateur, système, date), pour que tes autres navigateurs sachent qu'il existe et où : son contenu ne quitte pas celui-ci. Ce n'est pas un coffre chiffré : quiconque ouvre ce navigateur peut lire son stockage. Effacer les données du navigateur peut faire perdre le suivi : exporte-le de temps en temps.`
+    : tr`Dans ce navigateur seulement : rien de ce suivi n'est synchronisé, ni par Selene ni par claude.ai.`;
   if (!synced()) return tr`Sur cet appareil : sans compte, rien n'est envoyé au serveur de Selene.`;
   if (regulationOnDevice(stub)) return tr`Sur cet appareil seulement. Ton compte n'en garde que le nom, et de quoi reconnaître cet appareil (navigateur ou app, système, date), pour que tes autres appareils sachent qu'il existe et où : son contenu ne passe pas par le serveur. La sauvegarde de cet appareil (Google, iCloud…), si tu l'as activée, peut l'inclure : elle relève de ton compte Google ou Apple, pas de Selene. Ce n'est pas un coffre chiffré : quiconque ouvre cet appareil déverrouillé peut lire son stockage. Perdre l'appareil peut faire perdre le suivi : exporte-le de temps en temps.`;
   // Un suivi neuf n'a rien à synchroniser : le serveur n'en a que le nom, et la configuration le gardera sur l'appareil.

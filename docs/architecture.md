@@ -272,7 +272,12 @@ sans rien supprimer. L'import d'une sauvegarde remplace au lieu de fusionner (`r
 ### Session
 
 Seul un refus explicite du serveur (400 / 401 au rafraîchissement) met fin à la session ; réseau
-coupé ou 5xx laissent l'app travailler en local, avec « Non synchronisé » affiché. Le jeton est
+coupé ou 5xx laissent l'app travailler en local, avec « Non synchronisé » affiché. La session gardée sur
+l'appareil se lit avant le premier rendu, si les données de l'appareil sont celles de ce compte
+(`selene-auth-last-uid`) : la personne connectée retrouve aussitôt son Selene, et la synchronisation suit
+(A18 du cahier de recette ; avant le 6 octobre 2026, l'écran d'entrée restait affiché jusqu'aux premières
+réponses du serveur). Un seul branchement des documents à la fois, même demandé par le démarrage et par un
+retour au premier plan ensemble. Le jeton est
 rafraîchi s'il lui reste moins de 10 min (vérification toutes les 5 min), jamais deux fois en même
 temps (les refresh tokens sont à usage unique). La déconnexion pousse d'abord les modifications en
 attente (et demande confirmation si c'est impossible), puis efface de l'appareil les données, la base
@@ -431,7 +436,8 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   natives prévues tourneront dans WebKit (iOS, Tauri sous macOS et Linux), que la CI n'exécutait pas.
 - **Décision** : `build.py` calcule l'empreinte SHA-256 de chaque script et l'inscrit dans `script-src` ;
   un scénario vérifie qu'aucune vue ne viole la CSP et qu'un script injecté est bloqué. Les parcours de
-  navigateur tournent dans Chromium et WebKit (matrice de `check.yml`, `SELENE_BROWSER`).
+  navigateur tournent dans Chromium et WebKit (matrice de `check.yml`, `SELENE_BROWSER`), et dans Firefox depuis le
+  6 octobre 2026 ([BL-13](recette/backlog.md#bl-13) ; non bloquant jusqu'au 20 octobre).
 - **Écarté** : un fichier `.js` externe (casse l'artefact en un seul fichier) ; un nonce (exige un serveur
   qui en tire un à chaque requête, GitHub Pages sert des fichiers statiques) ; retirer `'unsafe-inline'` de
   `style-src` (l'interface pose plus de 150 attributs `style="…"`, qu'une empreinte ne couvre pas sans
@@ -1032,6 +1038,10 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   personne en lecture seule (Viewer, Commenter) ne peut pas écrire son sous-arbre : son Selene reste dans son
   navigateur. Vérifié par `tests/artifact.test.js` (faux claude.ai qui applique la règle du sous-arbre privé) ; reste
   à le constater dans claude.ai ([PLT-011](recette/manuels/plateformes.md#plt-011)).
+- **Complément du 6 octobre 2026 (A17)** : le sous-arbre privé reste une base hors de l'appareil. Un suivi « Reprendre
+  la main » encore marqué synchronisé (d'avant le 3 octobre, venu d'une sauvegarde) y partait entier ; il est désormais
+  ramené dans le navigateur à l'entrée des données (`normalizeSite`, avant toute écriture), comme le veut l'ADR 27, et
+  la base n'en reçoit que le talon.
 
 ### ADR 34 — Les pierres tombales : un espace supprimé ne revient pas
 

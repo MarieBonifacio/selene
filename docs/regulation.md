@@ -21,6 +21,12 @@ aucun suivi :
   doit revenir sur un appareil » : le garder sur cet appareil le ramène, et le serveur n'en a plus que le talon à la
   synchronisation suivante. Selene ne choisit pas l'appareil à la place de la personne : tant qu'elle n'a pas choisi,
   rien ne change.
+- **Jamais vers une base qui ne l'avait pas.** Là où aucun compte ne gardait ce suivi synchronisé, il reste sur
+  l'appareil, sans question, et l'appareil le dit (anomalie A17, corrigée le 6 octobre 2026) : un appareil sans compte
+  qui rejoint un compte n'y verse que son talon (`authConnectStores`) ; l'artefact claude.ai, qui n'a pas de compte
+  Selene, le garde dans le navigateur dès qu'il le lit, qu'il vienne d'une sauvegarde ou de sa base, et sa base n'en
+  reçoit que le talon (`keepTrackersHere`, `state/local.js`). « Confidentialité et données » y dit ce que garde
+  l'espace privé de claude.ai : le nom, et de quoi reconnaître le navigateur.
 
 Marquer son compte, une fois, dans l'éditeur SQL de Supabase (avec l'adresse du compte Selene) :
 
@@ -320,7 +326,7 @@ Trois questions distinctes, à ne pas confondre :
   pas de choix de stockage, talon seul, autre appareil, aucun chemin vers le compte, garde de déconnexion ; et l'espace
   non proposé à un compte sans la marque `selene_personnel`.
 - `tests/browser/regulation.js` : l'espace absent sans compte, puis le parcours complet du compte personnel sur
-  téléphone (Chromium et WebKit en CI), aucune saisie sur le serveur, dont la modification
+  téléphone (Chromium, WebKit et Firefox en CI), aucune saisie sur le serveur, dont la modification
   arrivée d'un autre onglet pendant la confirmation, la pause au rechargement, le partage depuis les Réglages ; puis
   ordinateur, clavier, libellés et anglais.
 - `npm run check`, puis `npm run test:browser -- regulation` (`SELENE_BROWSER=webkit` pour WebKit ;

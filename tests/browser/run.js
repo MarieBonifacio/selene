@@ -38,15 +38,25 @@ server.listen(0, '127.0.0.1', async () => {
     const timer = setTimeout(() => { out += '  ✗ délai dépassé (3 min)\n'; child.kill(); }, 180000);
     child.on('exit', c => { clearTimeout(timer); resolve({ f, code: c, out }); });
   });
+  const misses = {}; // les contrôles en échec de chaque scénario en échec, pour le résumé du job
   const worker = async () => {
     for (let f; (f = queue.shift());) {
       const r = await run(f);
       console.log(`\n— ${r.f}${r.code === 0 ? '' : '  (ÉCHEC)'}\n${r.out.replace(/\n$/, '')}`);
-      if (r.code !== 0) failed.push(r.f);
+      if (r.code !== 0) { failed.push(r.f); misses[r.f] = r.out.split('\n').filter(l => /^\s*(✗|…)/.test(l)).map(l => l.trim()); }
     }
   };
   await Promise.all(Array.from({ length: Math.min(jobs, scenarios.length) }, worker));
   server.close();
   console.log(failed.length ? `\n${failed.length}/${scenarios.length} scénario(s) en échec : ${failed.sort().join(', ')}` : `\n${scenarios.length} scénarios, tous verts.`);
+  /* En CI, le résumé du job dit quels scénarios et quels contrôles ont échoué, sans ouvrir le journal : pour Firefox, non
+     bloquant (BL-13), c'est le seul endroit où un échec se voit avec l'avertissement du workflow (BL-17). */
+  const summary = process.env.GITHUB_STEP_SUMMARY;
+  if (summary && failed.length) {
+    const engineName = (process.env.SELENE_BROWSER || 'chromium') + (Number(process.env.SELENE_LENT) ? `, démarrage lent (${process.env.SELENE_LENT} ms)` : '');
+    const md = [`### ${failed.length}/${scenarios.length} scénario(s) en échec sous ${engineName}`, ''];
+    for (const f of failed) { md.push(`- \`${f}\``); for (const l of misses[f]) md.push(`  - ${l.replace(/[<>]/g, c => (c === '<' ? '&lt;' : '&gt;'))}`); }
+    try { fs.appendFileSync(summary, md.join('\n') + '\n'); } catch {}
+  }
   process.exit(failed.length ? 1 : 0);
 });

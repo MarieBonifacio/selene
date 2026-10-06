@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Artist Watch dans Dehors (connexions externes, phase 2, vague 6c : docs/connexions.md).
    Version hébergée simulée (faux Supabase), MusicBrainz simulé ; pas besoin du passeur. Lancé par tests/browser/run.js. */
-const { storeSet, storeJSON, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeSet, storeJSON, until, ouvrir, entree, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const U = n => `0000000${n}-aaaa-bbbb-cccc-dddddddddddd`.slice(-36);
 const iso = d => new Date(d).toISOString().slice(0, 10);
 const demo = JSON.parse(fixture());
@@ -49,10 +49,10 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
 
   console.log('une fois par semaine');
   mb.length = 0;
-  await p.reload(); await p.waitForTimeout(2500);
+  await ouvrir(p, null, entree); await p.waitForTimeout(2500); // une absence ne s'attend pas : le délai court depuis le démarrage (A16)
   ok(!mb.length, 'rouvert dans la semaine : MusicBrainz n’est pas redemandé');
   { const c = await storeJSON(p, 'selene-dehors'); c.feeds['mb-artists'].at = await p.evaluate(() => Date.now()) - 8 * 86400000; await storeSet(p, 'selene-dehors', JSON.stringify(c)); }
-  await p.reload(); await p.waitForTimeout(4000);
+  await ouvrir(p, null, entree); await until(() => mb.length >= 2);
   ok(mb.length === 2, 'une semaine plus tard : revérifié');
   ok(!(await p.$('.dehors [data-item]')), 'déjà vu, déjà ajouté : rien ne revient');
 

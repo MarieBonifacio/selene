@@ -126,3 +126,46 @@ test('sans identité, en lecture seule, ou dans le navigateur d’un autre compt
   assert.match(notes(other), /NOTE_DE_A/, 'ni n’est effacé de ce navigateur');
   assert.match(other.el('#saving').textContent, /autre compte claude\.ai/);
 });
+
+/* A17 : un suivi « Reprendre la main » d'avant le 3 octobre 2026, encore marqué synchronisé (storage « account »), venu
+   d'une sauvegarde : l'artefact n'a pas de compte Selene pour le garder, et sa base est sur claude.ai. Il n'a qu'une
+   place : ce navigateur ; la base n'en reçoit que le talon. Jeu de données synthétique du cahier de recette. */
+const ancien = () => JSON.parse(fs.readFileSync('docs/recette/donnees/rlm-synchronise-ancien.json', 'utf8'));
+const RLM = 'carnet-du-soir';
+const where = app => app.TYPE_UI.regulation.view(RLM).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+
+test('A17 : un ancien suivi encore marqué synchronisé est ramené dans ce navigateur ; la base n’en reçoit que le talon, et l’écran le dit', async () => {
+  const store = fakeStore();
+  const app = await open(new Map([['selene-site-v1', JSON.stringify(ancien().site)]]), store.viewer({ uid: 'u-proprio', owner: true }));
+  await app.site.sync();
+  const remote = store.read('data/users/u-proprio/site');
+  const stub = remote.modules[RLM];
+  assert.deepEqual([stub.config.storage, stub.entries.length, stub.goals.length, stub.config.subject, stub.config.consent], ['device', 0, 0, null, undefined], 'le talon seul');
+  assert.doesNotMatch(JSON.stringify(remote), /Pause café|tabac/, 'ni la note, ni le sujet');
+  assert.equal(app.localCopy(RLM).entries[0].note, 'Pause café', 'rien de perdu : le contenu est dans ce navigateur');
+  assert.match(app.el('#toast').textContent, /« Carnet du soir » est désormais gardé dans ce navigateur seulement : Selene ne synchronise plus les suivis de santé, pas même par claude\.ai\./, 'dit une fois');
+  const w = where(app);
+  assert.match(w, /Dans ce navigateur seulement\. L'espace privé de ton compte claude\.ai n'en garde que le nom/, 'ce que voit claude.ai, dit tel quel');
+  assert.doesNotMatch(w, /rien n'est envoyé au serveur de Selene|Encore synchronisé|Ce suivi doit revenir sur un appareil/, 'plus de promesse fausse, plus de bandeau');
+});
+
+test('A17 : importé, déjà dans la base, ou sans base : un ancien suivi synchronisé ne quitte jamais ce navigateur', async () => {
+  // Importé dans un artefact relié à sa base, comme le fait l'import (shell/actions.js) : le local d'abord, puis le site.
+  const store = fakeStore(), d = ancien();
+  const app = await open(new Map(), store.viewer({ uid: 'u-a' }));
+  app.local.replaceAll(app.splitLocal(d.site)); app.site.replaceAll(d.site); app.board.replaceAll(d.board); await app.site.sync();
+  assert.doesNotMatch(JSON.stringify(store.read('data/users/u-a/site')), /Pause café/, 'importé : la base n’a que le talon');
+  assert.equal(app.localCopy(RLM).entries.length, 1);
+  // Déjà dans la base, écrit par une version d'avant ce correctif : relu dans un navigateur neuf, il y passe, et la base
+  // n'en garde plus que le talon.
+  const old = ancien().site; old.updatedAt = 5000;
+  const store2 = fakeStore(new Map([['data/users/u-b/site', JSON.stringify(old)]]));
+  const b = await open(new Map([['selene-artifact-uid', 'u-b']]), store2.viewer({ uid: 'u-b' }));
+  await b.site.sync();
+  assert.doesNotMatch(JSON.stringify(store2.read('data/users/u-b/site')), /Pause café/, 'la base est nettoyée');
+  assert.equal(b.localCopy(RLM).entries[0].note, 'Pause café', 'et rien n’est perdu');
+  // Publié sans base : dans ce navigateur, et l'écran ne promet rien d'autre.
+  const c = await open(new Map([['selene-site-v1', JSON.stringify(ancien().site)]]), { use: async () => null });
+  assert.equal(c.S().modules[RLM].config.storage, 'device');
+  assert.match(where(c), /Dans ce navigateur seulement : rien de ce suivi n'est synchronisé, ni par Selene ni par claude\.ai\./);
+});

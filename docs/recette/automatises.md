@@ -1,7 +1,7 @@
 # Inventaire des tests automatiques
 
 Ce que les tests de Selene vérifient réellement, lu dans le corps de chaque test et non dans son seul nom ; ce qu'ils
-simulent ; où et quand ils tournent ; ce qu'ils ne prouvent pas. État au commit `362f379` (5 octobre 2026 ; rédigé sur `768eb34`, complété des tests ajoutés ou modifiés depuis). Les
+simulent ; où et quand ils tournent ; ce qu'ils ne prouvent pas. État au commit `cab3ec8` (6 octobre 2026 ; rédigé sur `768eb34`, complété à chaque PR des tests ajoutés ou modifiés depuis). Les
 automatisations seulement proposées sont dans [backlog.md](backlog.md), jamais ici.
 
 Identifiants retirés : aucun.
@@ -10,8 +10,8 @@ Identifiants retirés : aucun.
 
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
-| Tests unitaires et d'intégration Node | `npm test` | 313 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
-| Scénarios de navigateur | `npm run test:browser` | 78 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026) | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
+| Tests unitaires et d'intégration Node | `npm test` | 318 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
+| Scénarios de navigateur | `npm run test:browser` | 78 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
 | Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
@@ -33,7 +33,13 @@ contient au moins une assertion (six tests de `sync.test.js` passent par l'assis
   comme un échec. `run.js` les lance six à la fois et sort en 1 si un seul a échoué. Points d'attention : un scénario
   sans aucun `check` passerait (vérifié : aucun) ; un `check` dans une boucle compte une fois par tour ; la vérification
   finale « aucune erreur JavaScript » de presque chaque scénario rattrape toute erreur de la page (`pageerror`), y compris
-  une requête interrompue, ce qui explique l'instabilité A1.
+  une requête interrompue, ce qui explique l'instabilité A1. En CI, `run.js` écrit aussi les scénarios en échec et leurs
+  contrôles dans le résumé du job.
+- **Attendre un état, jamais un délai** : un scénario ouvre ou recharge l'app par `ouvrir()` de `helpers.js`, qui attend
+  son premier rendu (`demarree`) ou, connecté, l'app elle-même (`entree`) : sur le web, elle ne démarre qu'une fois
+  IndexedDB ouverte, après l'événement `load` où `goto` rend la main (A16). `SELENE_LENT=<ms>` fait répondre la base de
+  l'app avec ce retard : un scénario qui compte sur un délai y échoue à coup sûr. La CI rejoue toute la suite ainsi, à
+  1 500 ms (*Check › browser (chromium, démarrage lent)*).
 - **`deno test`** : assertion levée ; **`deno check`** : erreur de typage.
 - **`cargo test`** : `assert!` ou `assert_eq!` en échec.
 - **`build.py --check`** : sort en erreur si un HTML généré ne correspond plus aux sources.
@@ -63,7 +69,7 @@ ou Windows. (Firefox l'est depuis le 6 octobre 2026, dans *Check › browser*.)
 
 | Workflow | Déclencheurs | Ce qu'il lance | Environnement |
 |---|---|---|---|
-| *Check* (`check.yml`) | toute PR ; à la demande ; appelé par *Pages* | job `build-and-test` : `npm ci`, `build:check`, `test`, `test:syntax`, `lint`, `i18n`, `bench` (seuil de 150 ms, `TS-BENCH`) (10 min) ; job `passeur` : `test:functions` (10 min) ; job `recette` : `npm run recette` (5 min ; sans `npm ci`, sur les PR seulement, jamais quand *Pages* appelle *Check*) ; job `browser` : `build:check` puis `test:browser`, matrice Chromium, WebKit et Firefox, aucun n'interrompant les autres ; Firefox non bloquant jusqu'au 20 octobre 2026 ([BL-13](backlog.md#bl-13)) (15 min) | Ubuntu, Node de `.nvmrc` (22), navigateurs Playwright en cache selon `package-lock.json` |
+| *Check* (`check.yml`) | toute PR ; à la demande ; appelé par *Pages* | job `build-and-test` : `npm ci`, `build:check`, `test`, `test:syntax`, `lint`, `i18n`, `bench` (seuil de 150 ms, `TS-BENCH`) (10 min) ; job `passeur` : `test:functions` (10 min) ; job `recette` : `npm run recette` (5 min ; sans `npm ci`, sur les PR seulement, jamais quand *Pages* appelle *Check*) ; job `browser` : `build:check` puis `test:browser`, matrice Chromium, WebKit, Firefox et Chromium au démarrage lent (`SELENE_LENT=1500` : la base de l'app répond avec 1,5 s de retard, contre les délais fixes après l'ouverture, A16), aucun n'interrompant les autres ; Firefox non bloquant jusqu'au 20 octobre 2026 ([BL-13](backlog.md#bl-13)), son échec signalé par un avertissement ([BL-17](backlog.md#bl-17)) ; les scénarios et contrôles en échec listés dans le résumé du job (15 min) | Ubuntu, Node de `.nvmrc` (22), navigateurs Playwright en cache selon `package-lock.json` |
 | *Pages* (`pages.yml`) | push sur `main` ; à la demande | *Check* entier, puis seulement s'il est vert : `build:dist` et déploiement de `dist/web` | Ubuntu |
 | *Android* (`android.yml`) | PR et push sur `main` touchant `src/`, `native/`, `capacitor.config.json`, `package*.json`, `build.py` | `build:dist`, `cap sync`, APK de débogage, puis version signée avec une clé jetable et `apksigner verify` | Ubuntu, Java 21 |
 | *Android sur émulateur* (`android-fumee.yml`) | PR touchant `src/native/`, `src/platform.js`, `native/android/`, `capacitor.config.json`, `package*.json`, `build.py`, `scripts/bundle.mjs` ou le script ; push sur `main` touchant `src/` ou les mêmes ; à la demande | deux APK de débogage (édition complète, édition des stores), un émulateur Android 15 hors ligne, `node scripts/android-fumee.mjs` (`TS-ANDROID-FUMEE`) ; captures et journal en artefact | Ubuntu, KVM, Java 21 |
@@ -71,6 +77,7 @@ ou Windows. (Firefox l'est depuis le 6 octobre 2026, dans *Check › browser*.)
 | *Desktop* (`desktop.yml`) | idem, chemins Tauri | `cargo test --locked`, puis installateur NSIS, puis la fumée de l'app installée (`TS-WIN-FUMEE`) ; captures en artefact | Windows |
 | *Assistant*, *Compte*, *Passeur* | push sur `main` touchant leur fonction ou `_shared` ; à la demande | `test:functions` puis déploiement ; sautés avec un avis si les secrets manquent | Ubuntu |
 | *Liens* (`liens.yml`) | le 3 de chaque mois à 6 h 17 UTC ; à la demande | `npm run liens` | Ubuntu |
+| *Sauvegarde* (`sauvegarde.yml`) | le lundi à 3 h 23 UTC ; à la demande | `scripts/sauvegarde.sh` : la base vidée en lecture seule et chiffrée pour la clé publique age (`TS-SAUVEGARDE`) ; seule l'archive chiffrée est publiée en artefact, 30 jours ; sautée avec un avis tant que ses réglages manquent (jamais lancée au 6 octobre 2026) | Ubuntu, CLI Supabase |
 | *Publication* (`release.yml`) | étiquette `v*` ; à la demande | APK et AAB signés, installateur Windows, archive iOS pour TestFlight ; chaque plateforme sautée sans ses secrets | Ubuntu, Windows, macOS |
 | *Captures* (`screenshots.yml`) | à la demande | captures des stores | Ubuntu |
 
@@ -150,6 +157,8 @@ sans navigateur.
 | <a id="tu-art-03"></a>`TU-ART-03` | quelqu’un à qui l’on a donné le lien : un Selene à soi, vide ; il ne lit ni ne garde le carnet de la propriétaire | Une autre personne, dont le navigateur avait synchronisé l'ancien document partagé, en oublie la copie ; ce qu'elle note va dans son propre sous-arbre, rien chez la propriétaire ; elle n'efface rien de partagé ; rouvert, son carnet reste. | [PLT-011](manuels/plateformes.md#plt-011) |
 | <a id="tu-art-04"></a>`TU-ART-04` | un usage seulement local, sans synchronisation passée : gardé, et rangé dans l’espace privé | Ce qui a été noté dans un artefact sans `db` est gardé et rejoint le sous-arbre de la personne. | [PLT-011](manuels/plateformes.md#plt-011) |
 | <a id="tu-art-05"></a>`TU-ART-05` | sans identité, en lecture seule, ou dans le navigateur d’un autre compte : rien ne part, rien ne se perd | Publié sans `user` : aucune écriture, nulle part, la note reste dans le navigateur et « Non synchronisé » s'affiche ; en lecture seule : aucune écriture ; un autre compte claude.ai dans le même navigateur : rien n'est envoyé, rien n'est effacé, et l'état le dit. | [PLT-011](manuels/plateformes.md#plt-011) |
+| <a id="tu-art-06"></a>`TU-ART-06` | A17 : un ancien suivi encore marqué synchronisé est ramené dans ce navigateur ; la base n’en reçoit que le talon, et l’écran le dit | Un suivi `storage: "account"` (`donnees/rlm-synchronise-ancien.json`) lu dans l'artefact relié : le document privé `data/users/<id>/site` n'en a que le talon (`device`, aucune saisie, aucun objectif, sujet effacé, plus d'accord), ni la note ni le sujet ; la saisie est dans le document local ; la bulle dit « … est désormais gardé dans ce navigateur seulement… » ; « Où vivent ces données » dit ce que garde l'espace privé de claude.ai, plus « rien n'est envoyé au serveur de Selene », plus de bandeau. | [PLT-011](manuels/plateformes.md#plt-011), [RLM-024](manuels/reprendre-la-main.md#rlm-024) |
+| <a id="tu-art-07"></a>`TU-ART-07` | A17 : importé, déjà dans la base, ou sans base : un ancien suivi synchronisé ne quitte jamais ce navigateur | Importé (le local, puis le site, comme `shell/actions.js`) dans un artefact relié : la base n'a que le talon. Déjà dans la base, écrit par une version d'avant : relu par un navigateur neuf, il y passe, la base n'en garde plus que le talon, la saisie reste. Publié sans base : gardé dans le navigateur, et l'écran dit « Dans ce navigateur seulement : rien de ce suivi n'est synchronisé, ni par Selene ni par claude.ai. ». | [PLT-011](manuels/plateformes.md#plt-011), [RLM-024](manuels/reprendre-la-main.md#rlm-024) |
 
 ### Session et rafraîchissement du jeton — `tests/auth.test.js`
 
@@ -165,6 +174,8 @@ sans navigateur.
 | <a id="tu-auth-04"></a>`TU-AUTH-04` | successful refresh connects both stores to Supabase | Un rafraîchissement réussi relie les deux stores au serveur, en un seul appel `/token`. | — |
 | <a id="tu-auth-05"></a>`TU-AUTH-05` | concurrent refreshes share one request (refresh tokens are single-use) | Trois rafraîchissements simultanés ne font qu'une requête (les jetons de rafraîchissement sont à usage unique). | — |
 | <a id="tu-auth-06"></a>`TU-AUTH-06` | offline boot recovers: sync resumes on the next keep-alive once the network is back | Démarrage hors ligne puis retour du réseau : au tour suivant du minuteur de 5 min, le jeton est rafraîchi, les stores reliés, l'indicateur se vide. | [CPT-012](manuels/entree-et-comptes.md#cpt-012) |
+| <a id="tu-auth-07"></a>`TU-AUTH-07` | A18 : a signed-in device opens on the app, not on the entry screen, even while the server is slow | Serveur retenu : dès le démarrage, l'app (pas `authForm`), avant toute réponse du serveur ; une fois le serveur relâché, les deux documents branchés, toujours l'app. Échoue sans la lecture de la session avant le premier rendu. | [CPT-012](manuels/entree-et-comptes.md#cpt-012) |
+| <a id="tu-auth-08"></a>`TU-AUTH-08` | A18 : data of another account on the device is never shown under this session: entry screen until the switch | Une session gardée pour u1, des données d'appareil de u0 (`selene-auth-last-uid`) : l'écran d'entrée tant que le serveur n'a pas répondu, pas les données de u0 ; après le changement de compte (`authConnectStores`), connecté et synchronisé. | [CPT-012](manuels/entree-et-comptes.md#cpt-012), [CPT-014](manuels/entree-et-comptes.md#cpt-014) |
 
 ### Sauvegardes : format et refus — `tests/backup.test.js`
 
@@ -567,6 +578,7 @@ sans navigateur.
 | <a id="tu-reg-23"></a>`TU-REG-23` | partage choisi : un résumé explicite seulement, confirmé sur son texte exact ; l’arrêt ne promet pas l’oubli | Cocher le partage ouvre le résumé exact ; annuler ne partage rien ; confirmer partage ; le résumé ne contient ni notes, ni déclencheurs, ni appuis, ni récompense. | [RLM-021](manuels/reprendre-la-main.md#rlm-021) |
 | <a id="tu-reg-24"></a>`TU-REG-24` | l’écran du module : textes échappés, quatre actions, alcool informé sans répétition, export et suppression présents | L'écran échappe les textes, montre les quatre actions, ne mentionne le delirium tremens qu'une fois (replié), propose export et suppression. | [RLM-004](manuels/reprendre-la-main.md#rlm-004), [RLM-025](manuels/reprendre-la-main.md#rlm-025) |
 | <a id="tu-reg-40"></a>`TU-REG-40` | mes sept derniers jours : rien de confirmé, une phrase au lieu du tableau ; sans semaine d’avant, pas sa colonne (U9) | Un suivi configuré aujourd'hui : « Mes sept derniers jours » ne montre pas de tableau mais « Rien à comparer pour l'instant… », la règle « ne vaut jamais zéro » et, dans la liste des jours, le bouton qui confirme aujourd'hui ; une journée confirmée : le tableau, une seule colonne de valeurs (six cellules), « Pas encore de semaine précédente » ; un suivi commencé il y a huit jours sans confirmation : toujours la phrase ; une journée confirmée dans la semaine d'avant : la colonne « Les 7 d'avant » (douze cellules). | [RLM-019](manuels/reprendre-la-main.md#rlm-019) |
+| <a id="tu-reg-41"></a>`TU-REG-41` | A17 : un appareil sans compte qui rejoint un compte : un ancien suivi synchronisé, venu d’une sauvegarde, reste sur l’appareil ; le compte n’en reçoit que le nom | Sans compte, après l'import de `donnees/rlm-synchronise-ancien.json` : rien ne part, et c'est dit. Au versement dans un compte (session lue au démarrage, `authConnectStores`) : le serveur n'a que le talon (`device`, aucune saisie, aucun objectif, sujet effacé), ni la note ; la saisie reste sur l'appareil ; la bulle dit « … reste sur cet appareil seulement… ». | [RLM-024](manuels/reprendre-la-main.md#rlm-024) |
 | <a id="tu-reg-25"></a>`TU-REG-25` | formulaire commun : un champ nombre garde ses bornes par défaut ; un champ date peut refuser l’avenir | Le formulaire commun : un champ nombre sans bornes garde `min="0" step="1"` ; un champ date peut refuser l'avenir (`max`). | [RLM-005](manuels/reprendre-la-main.md#rlm-005), [RLM-015](manuels/reprendre-la-main.md#rlm-015) |
 | <a id="tu-reg-26"></a>`TU-REG-26` | sur cet appareil seulement, sans question : le serveur ne reçoit que le talon, jamais le contenu | Sur l'appareil seulement, sans question : le serveur ne reçoit que le talon (nom, présence), jamais le contenu ; le résumé partagé se lit sur la copie locale. | [RLM-022](manuels/reprendre-la-main.md#rlm-022) |
 | <a id="tu-reg-27"></a>`TU-REG-27` | plus de synchronisation : ni choix du compte à la création, ni action pour y revenir | Plus de synchronisation : aucun choix « sur mon compte » à la création, stockage `device` posé sans question, aucune action ne synchronise. | [RLM-003](manuels/reprendre-la-main.md#rlm-003) |
@@ -1405,7 +1417,11 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
 ## États particuliers
 
 - **Stabilisés côté test, à surveiller** : `TN-activite` sous WebKit (A1 : deux échecs le 4 octobre, aucun depuis le
-  correctif en 32 exécutions WebKit de la CI) ; `TN-mot-de-passe` (A11 : trois échecs sur `main`, les 4 et 5 octobre) et
+  correctif en 32 exécutions WebKit de la CI) ; `TN-mot-de-passe` (A11 : trois échecs sur `main`, les 4 et 5 octobre ;
+  A16 : trois contrôles sous Firefox le 6 octobre, l'app pas encore démarrée, corrigé par la PR #120 avec
+  `TN-regulation-appareil`, `TN-regulation-perdu`, `TN-sources`, `TN-dehors-croise`, `TN-dehors`, `TN-artist-watch` et
+  `TN-agenda`, qui comptaient sur le même délai ; `TN-parcours-e2`, qui lisait le stockage avant l'écriture, trouvé par
+  le job « démarrage lent ») et
   `TN-dehors` (A10), qui attendent désormais l'état plutôt qu'un délai ; `TN-regulation` sous WebKit (A9, corrigé par la
   #100) ; `TN-identite` (deux échecs les 2 et 3 octobre, corrigé par `31122f6`). Relevé complet :
   [perimetre.md](perimetre.md#anomalies-et-observations).
@@ -1413,7 +1429,10 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
 - **Conditionnel** : une vérification de `TN-planche` (une page A4) ne tourne que dans Chromium ; les compilations natives
   ne tournent que si la PR touche leurs chemins ; les tests des fonctions ne se rejouent avant déploiement que si les secrets
   sont là.
-- **Hors CI** : `TS-ISOLATION`, `TS-BENCH`, `TS-CAPTURES` ; `TS-LIENS` seulement une fois par mois.
+- **Non bloquant** : *Check › browser (firefox)*, jusqu'au 20 octobre 2026 au moins ([BL-13](backlog.md#bl-13)) ; un échec y
+  laisse le job vert, avec un avertissement et la liste dans le résumé du job ([BL-17](backlog.md#bl-17)).
+- **Hors CI** : `TS-ISOLATION`, `TS-CAPTURES` ; `TS-LIENS` seulement une fois par mois ; `TS-SAUVEGARDE` chaque lundi, sauté tant
+  que ses réglages manquent. (`TS-BENCH` est en CI depuis le 6 octobre 2026.)
 - **Désactivé, ignoré, sans assertion** : aucun.
 - **Playwright** : 1.63.0 depuis la fusion de la PR #78 (`5197c5f`) ; les navigateurs de la CI sont les siens.
 

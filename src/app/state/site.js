@@ -1,10 +1,11 @@
 /* Les deux documents de la personne (site, board) et leur lecture : modules fixes, données de départ, normalisation à
    l'entrée, S(), label(), enabled(). */
 import { MODULE_TYPES, SCHEMA_VERSION, SECTION_TO_MODULE, buryDeleted, inboxId, migrateModules } from "../../core/domain.js";
+import { hosted } from "../../platform.js";
 import { setSaving, toast } from "../lib/dom.js";
 import { N_, tr } from "../i18n/index.js";
 import { render } from "../shell/render.js";
-import { absorbDeviceTrackers } from "./local.js";
+import { absorbDeviceTrackers, keepTrackersHere } from "./local.js";
 import { makeStore } from "./store.js";
 import { SAVED, TYPE_UI } from "../registry.js";
 
@@ -49,6 +50,10 @@ function normalizeSite(d) {
   // Un suivi gardé sur cet appareil (ADR 27) : ses données renvoyées par un autre appareil reviennent ici ; un talon
   // disparu revient (et retrouve sa place dans la navigation), même supprimé ailleurs : son nom revient, comme annoncé.
   if (absorbDeviceTrackers(d)) for (const id of Object.keys(d.modules)) if (!d.config.modules.find(m => m.id === id)) d.config.modules.push({ id, on: true });
+  // Dans l'artefact claude.ai, pas de compte Selene : un suivi encore marqué synchronisé partirait, contenu compris, dans
+  // la base de claude.ai (A17). Il passe sur l'appareil à l'entrée des données (lecture, import, synchronisation), donc
+  // avant toute écriture vers la base.
+  if (!hosted()) keepHere(d);
   for (const [id, name] of gone) if (!Object.hasOwn(d.modules, id)) BURIED.push(name);
   const inbox = inboxId(d.modules); // une seule boîte de réception, même après une fusion entre appareils
   for (const [id, inst] of Object.entries(d.modules)) if (inst.type === "notes" && inst.config.inbox && id !== inbox) inst.config.inbox = false;
@@ -57,17 +62,31 @@ function normalizeSite(d) {
 /* Les espaces supprimés depuis un autre appareil alors que celui-ci les avait modifiés : dit une fois, au rendu qui suit
    la synchronisation (SYN-006). */
 const BURIED = [];
-function buriedNotice() {
-  if (!BURIED.length) return;
+function buriedText() {
+  if (!BURIED.length) return "";
   const names = BURIED.splice(0);
-  toast(names.length === 1 ? tr`« ${names[0]} » a été supprimé depuis un autre appareil ; tes modifications d'ici n'ont pas été gardées.`
-    : tr`${names.map(n => `« ${n} »`).join(", ")} ont été supprimés depuis un autre appareil ; tes modifications d'ici n'ont pas été gardées.`);
+  return names.length === 1 ? tr`« ${names[0]} » a été supprimé depuis un autre appareil ; tes modifications d'ici n'ont pas été gardées.`
+    : tr`${names.map(n => `« ${n} »`).join(", ")} ont été supprimés depuis un autre appareil ; tes modifications d'ici n'ont pas été gardées.`;
 }
+/* Les suivis passés sur cet appareil faute d'un compte Selene pour les garder synchronisés (A17 : l'artefact, ou un
+   appareil sans compte qui rejoint un compte) : dit une fois, au démarrage, à l'import ou à la connexion. */
+const KEPT = [];
+export const keepHere = d => { KEPT.push(...keepTrackersHere(d)); };
+export function keptText() {
+  if (!KEPT.length) return "";
+  const names = [...new Set(KEPT.splice(0))].map(n => `« ${n} »`), list = names.join(", ");
+  if (hosted()) return names.length === 1 ? tr`${list} reste sur cet appareil seulement : Selene ne synchronise plus les suivis de santé, ton compte n'en garde que le nom.`
+    : tr`${list} restent sur cet appareil seulement : Selene ne synchronise plus les suivis de santé, ton compte n'en garde que le nom.`;
+  return names.length === 1 ? tr`${list} est désormais gardé dans ce navigateur seulement : Selene ne synchronise plus les suivis de santé, pas même par claude.ai.`
+    : tr`${list} sont désormais gardés dans ce navigateur seulement : Selene ne synchronise plus les suivis de santé, pas même par claude.ai.`;
+}
+// Ce que le site a à dire après une lecture ou une synchronisation, en une bulle.
+export function siteNotice() { const t = [buriedText(), keptText()].filter(Boolean).join(" "); if (t) toast(t); }
 // Ce que les deux documents disent à la page : redessiner après une synchronisation, l'état de l'enregistrement. Chacun
 // garde le sien et la page montre le premier qui a quelque chose à dire : le succès de l'un n'efface pas l'échec de l'autre.
 const saving = {};
 const storeHooks = name => ({ onRemoteChange: () => render(), onStatus: m => { saving[name] = m; setSaving(saving.site || saving.board || ""); } });
-export const site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite, { ...storeHooks("site"), onRemoteChange: () => { render(); buriedNotice(); }, onSave: () => { for (const f of SAVED) f(); } });
+export const site = makeStore("selene-site-v1", "site/state", siteSeed, normalizeSite, { ...storeHooks("site"), onRemoteChange: () => { render(); siteNotice(); }, onSave: () => { for (const f of SAVED) f(); } });
 /* L'ancien document « board » (tâches du Chantier jusqu'au format 5) n'est plus qu'un point d'entrée :
    ce qu'il contient est versé dans le module Chantier du site, puis il est vidé, et le vidage part au
    serveur à la synchro suivante (sinon chaque nouvel appareil ressusciterait les tâches supprimées).

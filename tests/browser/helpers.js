@@ -15,11 +15,29 @@ if (!['chromium', 'webkit', 'firefox'].includes(ENGINE)) throw new Error('SELENE
    la machine, sinon Selene, qui suit la langue de l'appareil, pourrait parler anglais sur un runner américain. Un
    scénario peut en demander une autre (option locale de newContext ou newPage). */
 const LOCALE = { locale: 'fr-FR' };
+/* SELENE_LENT=<ms> : un démarrage lent, à la demande, pour débusquer les scénarios qui attendent un délai au lieu d'un
+   état. Sur le web, l'app ne démarre qu'une fois IndexedDB ouverte (platform.ready), donc après l'événement load qui
+   rend la main à page.goto ; sous un Firefox chargé, cela prend parfois plus de 500 ms (A16 du cahier de recette).
+   Ici, la base de Selene répond avec ce retard ; un scénario robuste passe quand même. Jamais en CI par défaut. */
+const LENT = Math.max(0, Number(process.env.SELENE_LENT) || 0);
+function slowIdb(ms) {
+  const real = IDBFactory.prototype.open;
+  IDBFactory.prototype.open = function (...a) {
+    if (a[0] !== 'selene' || a[1] !== 1) return real.apply(this, a); // celle de l'app seulement, pas la lecture des scénarios
+    const r = real.apply(this, a), f = {};
+    for (const ev of ['upgradeneeded', 'error', 'blocked']) r['on' + ev] = e => f['on' + ev] && f['on' + ev](e);
+    r.onsuccess = e => setTimeout(() => f.onsuccess && f.onsuccess(e), ms);
+    Object.defineProperty(f, 'result', { get: () => r.result });
+    Object.defineProperty(f, 'error', { get: () => r.error });
+    return f;
+  };
+}
+const slow = async x => { if (LENT) await x.addInitScript(slowIdb, LENT); return x; }; // un contexte, ou une page
 const engine = {
   async launch(options) {
     const b = await playwright[ENGINE].launch(options), newContext = b.newContext.bind(b), newPage = b.newPage.bind(b);
-    b.newContext = (o = {}) => newContext({ ...LOCALE, ...o });
-    b.newPage = (o = {}) => newPage({ ...LOCALE, ...o });
+    b.newContext = async (o = {}) => slow(await newContext({ ...LOCALE, ...o }));
+    b.newPage = async (o = {}) => slow(await newPage({ ...LOCALE, ...o }));
     return b;
   }
 };
@@ -38,6 +56,21 @@ process.on('unhandledRejection', e => { console.log('  ✗ erreur :', (e && e.me
 // Attendre une condition côté test (appels réseau simulés, compteurs) plutôt qu'un délai fixe, trop court sous charge.
 async function until(cond, ms = 10000) {
   for (const end = Date.now() + ms; !cond() && Date.now() < end;) await new Promise(r => setTimeout(r, 50));
+}
+
+/* Ouvrir l'app (une adresse), ou la recharger (sans adresse), et attendre qu'elle ait démarré plutôt qu'un délai : sur
+   le web, elle ne démarre qu'une fois IndexedDB ouverte, après l'événement load où goto et reload rendent la main
+   (A16 du cahier de recette). `etat` dit ce qu'il faut voir : par défaut, un premier rendu (`demarree`) ; `entree` pour
+   un appareil connecté : l'app elle-même, pas l'écran d'entrée (que la session y passe aussitôt depuis A18, ou qu'elle
+   attende un changement de compte). */
+const demarree = () => !!document.querySelector('#main > *');
+const entree = () => !!document.querySelector('#nav > *') && !document.querySelector('#authForm');
+async function ouvrir(p, url, etat = demarree) {
+  if (url) await p.goto(url); else await p.reload();
+  await p.waitForFunction(etat, null, { timeout: 15000 });
+  // Les polices aussi (font-display: swap) : tant qu'elles arrivent, la mise en page bouge sous le pointeur.
+  await p.evaluate(() => document.fonts && document.fonts.ready.then(() => true)).catch(() => {});
+  return p;
 }
 
 /* Le stockage de Selene vu depuis la page : IndexedDB (base « selene », magasin « kv ») en version hébergée, localStorage
@@ -61,4 +94,4 @@ const storeGet = (p, k) => p.evaluate(inPage, { k, v: null, write: false });
 const storeSet = (p, k, v) => p.evaluate(inPage, { k, v, write: true });
 const storeJSON = async (p, k) => JSON.parse(await storeGet(p, k));
 
-module.exports = { storeGet, storeSet, storeJSON, until, engine, ENGINE, BASE, launchOptions, fixture, check };
+module.exports = { storeGet, storeSet, storeJSON, until, ouvrir, demarree, entree, engine, ENGINE, BASE, launchOptions, fixture, check };

@@ -37,8 +37,12 @@ const IDEES = ['Le phare comme horloge sociale', 'Les gardiens écrivaient pour 
     await p.click('#toast [data-act="undo"]'); await p.waitForSelector('#form [name=to]');
     const cible = await p.$$eval('#form [name=to] option', os => os.find(o => o.textContent.includes('relève')).value);
     await p.selectOption('#form [name=to]', cible); await p.click('#form button[value=save]');
-    const src = (await data()).modules.sources.entries[0];
-    check(src.links && src.links.some(l => l.type === 'documente' && l.to === cible), 'la source documente l’idée choisie');
+    // Le lien est écrit dans IndexedDB juste après le clic, en asynchrone : l'attendre, pas le lire aussitôt (échec du
+    // job « démarrage lent » de la PR #120, la lecture arrivée avant l'écriture).
+    const documente = x => !!(x && x.links && x.links.some(l => l.type === 'documente' && l.to === cible));
+    let src = null;
+    for (const end = Date.now() + 10000; Date.now() < end && !documente(src); await p.waitForTimeout(100)) src = (await data()).modules.sources.entries[0];
+    check(documente(src), 'la source documente l’idée choisie');
 
     console.log('5. retrouver une idée');
     await p.click('#bar a[href="#recherche"]'); await p.fill('#searchIn', 'relève'); await p.waitForTimeout(300);

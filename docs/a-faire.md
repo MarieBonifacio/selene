@@ -15,17 +15,30 @@ dont le dépôt ne peut pas savoir s'ils ont eu lieu.
   de la page. L'ouvrir dans un navigateur : si elle s'affiche, rien à faire ; sinon, remplacer l'adresse dans
   `docs/regulation.md`. Ce lien n'apparaît pas dans l'interface.
 
-- [ ] **L'artefact claude.ai, à publier avec `db` et `user`** (ADR 33 de [architecture.md](architecture.md)). Aucun
-  artefact Selene n'est publié sur le compte au 6 octobre 2026. Le jour où il l'est : dans une session Claude Code
+- [ ] **L'artefact claude.ai, à publier avec `db` et `user`** (ADR 33 de [architecture.md](architecture.md)), **pas
+  avant la fusion de la correction d'A17** (PR #121 : un ancien suivi « Reprendre la main » y partait dans la base de
+  claude.ai, [anomalie A17](recette/perimetre.md#anomalies-et-observations)). Aucun artefact Selene n'est publié sur le
+  compte au 6 octobre 2026. Le jour où il l'est : dans une session Claude Code
   ouverte sur ce dépôt, demander « Publie `selene.html` comme artefact avec les capacités `db` et `user` » (ou mettre
   à jour l'artefact existant par son lien, avec les mêmes capacités). Sans `user`, Selene y fonctionne mais ne
   synchronise rien entre navigateurs ; elle ne range jamais rien dans un document partagé. Puis jouer
   [PLT-011](recette/manuels/plateformes.md#plt-011) avec un compte claude.ai de recette.
 
 - [ ] **Le 20 octobre 2026 : Firefox devient bloquant** ([BL-13](recette/backlog.md#bl-13)). Lire les dernières courses
-  *Check › browser (firefox)* : si les scénarios y sont verts, retirer la ligne `continue-on-error` du job `browser` dans
-  `.github/workflows/check.yml` (une session Claude Code peut le faire : « Firefox devient bloquant ») ; sinon, chaque
-  échec propre à Firefox devient une anomalie du cahier, corrigée avant de retirer la ligne.
+  *Check › browser (firefox)* : le job reste vert même quand un scénario échoue ; un échec s'y voit à l'avertissement
+  « Scénarios en échec sous firefox (non bloquant) » sur la PR, et à la liste du résumé du job. Condition proposée :
+  vingt passages consécutifs sans cet avertissement depuis la correction d'A16 (PR #120, le 6 octobre). Si elle est remplie, retirer la ligne `continue-on-error` du job `browser`
+  dans `.github/workflows/check.yml` (une session Claude Code peut le faire : « Firefox devient bloquant ») ; sinon,
+  chaque échec propre à Firefox devient une anomalie du cahier, corrigée avant de retirer la ligne, quitte à décaler la
+  date.
+
+- [ ] **Protéger la branche `main`** (dix minutes, droits d'administration du dépôt) : `main` n'est pas protégée au
+  6 octobre 2026, alors que le contrôle du cahier a été décidé obligatoire. *Settings* → *Rules* → *Rulesets* → *New
+  branch ruleset*, cible : la branche par défaut ; cocher *Require a pull request before merging* (sans approbation
+  obligatoire), *Require status checks to pass* avec `recette` et `build-and-test`, et *Require branches to be up to
+  date before merging* ; ne jamais y mettre `apk`, `simulator` ni `windows`, qui ne tournent pas sur toutes les PR et
+  bloqueraient les autres pour toujours. Le détail et les raisons : [BL-12](recette/backlog.md#bl-12). Vérifier
+  ensuite que `main` apparaît comme protégée dans la liste des branches.
 
 - [ ] **Le compte de recette P**, pour jouer les cas « Reprendre la main » du chemin P : dans un projet Supabase de
   recette, jamais dans celui de l'app ni sur votre compte personnel. Cinq étapes, dix minutes :
@@ -33,8 +46,9 @@ dont le dépôt ne peut pas savoir s'ils ont eu lieu.
 
 ## Essayer sur de vrais appareils
 
-La CI compile les trois apps et joue tous les parcours dans Chromium et WebKit, mais aucun vrai appareil n'a encore
-lancé Selene. Avant chaque essai, recharger l'app une fois sur les appareils déjà connectés : une ancienne version ne
+La CI compile les trois apps, joue tous les parcours dans Chromium, WebKit et Firefox, lance l'app Android sur un
+émulateur et installe l'app Windows sur une machine Windows de GitHub ; mais aucun vrai appareil n'a encore lancé
+Selene. Avant chaque essai, recharger l'app une fois sur les appareils déjà connectés : une ancienne version ne
 connaît pas le format 8 et refuse d'écrire.
 
 - [ ] **« Reprendre la main » sur deux appareils du même compte** : le
@@ -62,6 +76,19 @@ connaît pas le format 8 et refuse d'écrire.
   titre de l'écran) ; « Supprimé… Annuler » annoncé, et ⌘Z / Ctrl+Z qui annule ; « Recherche… » puis « Trouvée : … »
   en ajoutant une source. Ce qui reste muet ou se répète : ouvrir un ticket, en nommant le lecteur et l'appareil.
 
+## Jouer la recette
+
+Aucun des 192 cas du [cahier de recette](recette/README.md) n'a encore été exécuté : la CI vérifie ce qui se simule,
+pas un usage réel. Ce qui reste à faire côté qualité, d'un coup d'œil (y compris ce qu'une session Claude Code peut
+faire) : [backlog de la recette](recette/backlog.md#reste-a-faire).
+
+- [ ] **La première smoke** (une heure environ, sur ordinateur et un téléphone) avant la prochaine mise en ligne qui
+  change un comportement : les seize cas de [campagnes.md](recette/campagnes.md#smoke), avec les comptes de recette A et B
+  ([README de la recette](recette/README.md#environnement-et-données-de-recette)) ; le compte rendu tiré du
+  [modèle](recette/comptes-rendus/modele.md), versé dans `docs/recette/comptes-rendus/` par une PR.
+- [ ] **La recette complète** avant l'ouverture de la bêta ou une version des stores, puis chaque trimestre
+  (quatre à cinq jours-personne, [campagnes.md](recette/campagnes.md#complete)).
+
 ## Régler le projet Supabase *(si ce n'est pas déjà fait)*
 
 - [ ] **Sauvegarder la base, avant tout le reste** (P1) : sur l'offre gratuite, Supabase n'en garde aucune. Le workflow
@@ -77,6 +104,13 @@ connaît pas le format 8 et refuse d'écrire.
 - [ ] **SMTP d'abord**, puis les adresses de retour (*URL Configuration*), puis la traduction des modèles d'e-mail :
   sans SMTP, les liens « mot de passe oublié » et les invitations n'atteignent que l'équipe du projet
   ([compte.md](compte.md#mot-de-passe-oublié-invitation)).
+- [ ] **L'assistant hébergé : décider** s'il est déployé pour la bêta. Proposition : non, et l'écrire ici (il n'est pas
+  prioritaire pour la bêta ; sans lui, pas de clés d'API à garder ni de traitement de plus au registre RGPD). Le jour
+  où c'est oui : la mise en place de [assistant.md](assistant.md#mettre-en-place-une-fois) (le secret
+  `ASSISTANT_KEY_SECRET`, la table des clés), puis [AST-001](recette/manuels/assistant.md#ast-001) à
+  [AST-007](recette/manuels/assistant.md#ast-007) avec une clé Anthropic de recette à la dépense plafonnée. Au
+  6 octobre 2026, ses quatre passages de CI ont sauté le déploiement, faute du secret : à moins d'un déploiement fait
+  à la main, l'app dit « Assistant non déployé ».
 - [ ] **La fonction `compte`** déployée (workflow *Compte*), puis un essai : créer un compte jetable, le supprimer
   depuis l'app, vérifier qu'il a disparu ([compte.md](compte.md#déployer)).
 - [ ] **Marquer le compte personnel**, une fois, dans l'éditeur SQL : sans cette marque, « Reprendre la main » n'est

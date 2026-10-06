@@ -57,6 +57,9 @@ la PR fait le reste. La liste de contrôle courte vit dans le modèle de PR (`.g
 
 ### Une nouvelle automatisation
 
+0. Un scénario de navigateur attend un état, jamais un délai : il ouvre l'app par `ouvrir()` de `tests/browser/helpers.js`,
+   attend ce qu'il va vérifier (`waitForFunction`, `until`), et ne garde une pause que pour vérifier une absence (aucune
+   requête ne part). Le lancer une fois avec `SELENE_LENT=1500` : c'est ce que fait la CI (*démarrage lent*).
 1. Lire les assertions du test, puis l'ajouter à [automatises.md](automatises.md) : identifiant (`TU-<CODE>-nn`, numéro
    libre suivant ; `TN-<fichier>` pour un scénario ; `TD-…`, `TR-…`, `TS-…`), chemin, nom exact, ce qu'il vérifie
    réellement, ce qui est simulé, s'il tourne en CI, ses limites, les cas manuels liés.

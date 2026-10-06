@@ -12,8 +12,8 @@ sur quoi et avec quel résultat.
 
 | | |
 |---|---|
-| Rédigé à partir de | `main`, commit `768eb34` (4 octobre 2026), puis relu contre les commits suivants jusqu'à `362f379` (5 octobre : export BibTeX et CSL-JSON, « Ma position » approximative, déclarations des stores, actions de CI épinglées, outils mis à jour, exports natifs par la feuille de partage, import Markdown, relecture de la semaine, suppression de compte sans l'app) ; format des données `SCHEMA_VERSION` 8 |
-| Outils de test à cette date | Node 22, Playwright 1.63.0 selon `package.json` (exécutions locales de la mise en place : 1.56.1 avec Chromium 141 ; WebKit en CI), Deno 2.9.6, Rust (cœur Tauri), Python 3 |
+| Rédigé à partir de | `main`, commit `768eb34` (4 octobre 2026), puis relu contre les commits suivants jusqu'à `362f379` (5 octobre : export BibTeX et CSL-JSON, « Ma position » approximative, déclarations des stores, actions de CI épinglées, outils mis à jour, exports natifs par la feuille de partage, import Markdown, relecture de la semaine, suppression de compte sans l'app), puis relu le 6 octobre 2026 contre `cab3ec8` (espaces supprimés qui ne reviennent pas, données de l'artefact dans l'espace privé de chacun, Firefox en CI, fumées des apps Android et Windows, axe-core et banc de réactivité en CI, sauvegarde chiffrée de la base) ; format des données `SCHEMA_VERSION` 8 |
+| Outils de test à cette date | Node 22, Playwright 1.63.0 selon `package.json` (exécutions locales de la mise en place : 1.56.1 avec Chromium 141 ; WebKit et Firefox en CI), axe-core 4.14.0, Deno 2.9.6, CLI Supabase 2.118.0 (sauvegarde), Rust (cœur Tauri), Python 3 |
 | Mise à jour | à chaque PR qui change un comportement, un test ou la CI ([maintenance.md](maintenance.md)) |
 
 Pour savoir quelles règles valaient lors d'une ancienne campagne : son compte rendu note le commit testé et celui du

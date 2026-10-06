@@ -1,5 +1,5 @@
 /* Scénario de navigateur : Sources (connexions externes, phase 1, vague 5a : docs/connexions.md). Lancé par tests/browser/run.js. */
-const { until, storeJSON, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { until, storeJSON, ouvrir, entree, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources',
   config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), display: 'liste', sources: true, statuses: ['À lire', 'Lue', 'Utilisée'], doneFrom: 1, addLabel: 'Ajouter à la main',
@@ -93,7 +93,7 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   await hctx.route('https://*.supabase.co/**', supabase);
   const r = await hctx.newPage(); r.on('pageerror', e => errs.push(e.message));
   const shared = '/index.html?url=' + encodeURIComponent('https://exemple.org/texte?utm_source=x') + '&title=' + encodeURIComponent('Un texte trouvé') + '#accueil';
-  await r.goto(BASE + shared); await r.waitForTimeout(500);
+  await ouvrir(r, BASE + shared); // le premier rendu : l'écran d'entrée, sans session (A16)
   ok(await r.isVisible('#authEmail') && (await r.evaluate(() => sessionStorage.getItem('selene-share'))).includes('exemple.org'), 'pas encore connectée : le lien attend, rien n’est déposé dans le vide');
   await r.evaluate(s => { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', 'u1'); }, session);
   await r.reload(); // un vrai rechargement : la session est lue au démarrage ; le lien est déposé une fois connectée
@@ -104,7 +104,7 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   ok((await r.evaluate(() => location.search)) === '' && !(await r.evaluate(() => sessionStorage.getItem('selene-share'))), 'l’adresse est nettoyée, la file vidée');
   // Le dépôt synchronisé avant de recharger : sinon sa dernière écriture (keepalive) part pendant le rechargement.
   await until(() => JSON.stringify(rows.get('u1') || {}).includes('Un texte trouvé'));
-  await r.reload(); await r.waitForTimeout(700);
+  await ouvrir(r, null, entree);
   const again = await storeJSON(r, 'selene-site-v1').then(d => Object.values(d.modules).filter(m => m.type === 'notes').flatMap(m => m.entries).length);
   ok(again === box.length, 'un rechargement ne le dépose pas deux fois');
 
