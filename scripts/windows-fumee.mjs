@@ -26,17 +26,36 @@ export function findInstalled(env = process.env) {
 }
 const processes = () => { try { return run("tasklist", ["/FI", `IMAGENAME eq ${EXE}`, "/FO", "CSV", "/NH"]).split("\n").filter(l => l.toLowerCase().includes(EXE)).length; } catch { return 0; } };
 const kill = () => { try { run("taskkill", ["/IM", EXE, "/F", "/T"]); } catch {} };
-/* Lancer l'app et s'attacher à sa page, sur un port de débogage neuf à chaque lancement. */
-async function launch(exe, port) {
-  const child = spawn(exe, [], { detached: true, stdio: "ignore", env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}` } });
-  child.unref();
+/* Démarrer l'app, sa sortie dans un fichier du dossier des captures (une panique du cœur Rust s'y lit), et savoir quand
+   elle s'arrête. Le débogage de WebView2 est demandé par la variable d'environnement, sur un port neuf à chaque fois. */
+function start(exe, port, shots) {
+  const log = path.join(shots, `selene-${port}.log`), fd = fs.openSync(log, "w");
+  const child = spawn(exe, [], { stdio: ["ignore", fd, fd], env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}` } });
+  const state = { child, log, exited: null };
+  child.on("exit", code => { state.exited = code ?? "signal"; });
+  child.on("error", e => { state.exited = e.message; });
+  return state;
+}
+// Ce qui aide à comprendre un échec : les processus de l'app et de WebView2 (avec leurs arguments), les ports en écoute.
+function diagnose(port) {
+  const ps = cmd => { try { return run("powershell", ["-NoProfile", "-Command", cmd]).trim(); } catch (e) { return `(${e.message.split("\n")[0]})`; } };
+  console.log(`    processus ${EXE} : ${processes()}`);
+  console.log("    WebView2 : " + (ps("Get-CimInstance Win32_Process -Filter \"Name='msedgewebview2.exe'\" | Select-Object -First 2 -ExpandProperty CommandLine") || "(aucun)").replace(/\s+/g, " ").slice(0, 900));
+  console.log(`    port ${port} : ` + (ps(`Get-NetTCPConnection -State Listen -LocalPort ${port} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess`) || "(personne n'écoute)"));
+}
+/* Lancer l'app et s'attacher à sa page. */
+async function launch(exe, port, shots) {
+  const app = start(exe, port, shots);
   for (const end = Date.now() + 60000; Date.now() < end; await sleep(500)) {
+    if (app.exited !== null) throw new Error(`l'app s'est arrêtée (${app.exited}) : ${fs.readFileSync(app.log, "utf8").trim().slice(-600) || "rien sur sa sortie"}`);
     let list = [];
     try { list = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json(); } catch { continue; }
     const target = list.find(t => t.type === "page" && /^https?:\/\/tauri\.localhost/.test(t.url));
     if (target) return cdp(target.webSocketDebuggerUrl || `ws://127.0.0.1:${port}/devtools/page/${target.id}`);
+    if (list.length) console.log(`    pages vues : ${list.map(t => `${t.type} ${t.url}`).join(" ; ")}`);
   }
-  throw new Error(`la WebView2 de l'app n'a pas ouvert son port de débogage (${port}) en 60 s`);
+  diagnose(port);
+  throw new Error(`la WebView2 de l'app n'a pas ouvert son port de débogage (${port}) en 60 s ; sortie de l'app : ${fs.readFileSync(app.log, "utf8").trim().slice(-400) || "rien"}`);
 }
 
 async function main([installer, shots]) {
@@ -53,7 +72,7 @@ async function main([installer, shots]) {
   for (let i = 0; i < 30 && !exe; i++) { exe = findInstalled(); if (!exe) await sleep(1000); }
   check(!!exe, `installée : ${exe || "introuvable sous %LOCALAPPDATA% et %ProgramFiles%"}`);
   if (!exe) throw new Error("rien à lancer");
-  let page = await launch(exe, 9333);
+  let page = await launch(exe, 9333, shots);
   await steps.entrance(page);
   check(true, "l'écran d'entrée s'affiche");
   const runtime = await page.evaluate("window.seleneNative && window.seleneNative.runtime");
@@ -68,7 +87,7 @@ async function main([installer, shots]) {
   console.log("tuée, puis relancée");
   kill(); await sleep(2000);
   check(processes() === 0, "plus aucune Selene après l'avoir tuée");
-  page = await launch(exe, 9334);
+  page = await launch(exe, 9334, shots);
   await steps.noteKept(page);
   check(true, "la note est là, sans repasser par l'écran d'entrée");
   const files = fs.existsSync(vault) ? fs.readdirSync(vault) : [];
@@ -77,8 +96,9 @@ async function main([installer, shots]) {
   await shot(page, "3-relance.png");
 
   console.log("une seconde Selene");
-  spawn(exe, [], { detached: true, stdio: "ignore", env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: "--remote-debugging-port=9335" } }).unref();
-  await sleep(6000);
+  const second = start(exe, 9335, shots);
+  for (let i = 0; i < 20 && second.exited === null; i++) await sleep(500);
+  check(second.exited !== null, `la seconde s'arrête d'elle-même${second.exited === null ? " (elle tourne encore)" : ""}`);
   check(processes() === 1, `une seule Selene tourne (${processes()})`);
   await waitFor(page, "document.readyState === 'complete'", "la première, toujours là");
   check(true, "la première répond encore");
