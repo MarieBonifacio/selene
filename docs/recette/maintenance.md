@@ -96,12 +96,21 @@ npm run recette              # vérifie ; code de sortie 1 et la liste des écar
 npm run recette -- jeux      # régénère docs/recette/donnees/*.json (déterministe : sans changement du noyau, git ne voit rien)
 npm run recette -- donnees   # écrit dist/recette/volume.json, le jeu de volume (non versionné)
 npm run recette -- page      # écrit dist/recette/cahier.html, le cahier en une page (non versionnée)
+npm run recette -- campagne  # écrit dist/recette/campagne.html, le cahier à cocher (non versionné)
 ```
 
 La page `dist/recette/cahier.html` se lit sans le dépôt : sommaire, « Aller à » un cas ou un test, liens internes,
 états de couverture. Elle est publiée en artefact (<https://claude.ai/artifact/KjK5krMMJve526HKuiUEgn>, privé à la
 responsable, qui choisit avec qui le partager) ; après une PR qui change le cahier, la régénérer et la republier à la
 même adresse. C'est une vue : le cahier fait foi ici, et la page dit de quel commit elle vient.
+
+La page `dist/recette/campagne.html` est le cahier à cocher : une case par étape de chaque cas, plus l'état final et le
+nettoyage ; un résultat par cas ; le tout rangé par campagne dans la base de l'artefact
+(<https://claude.ai/artifact/SxbYQSvENzVaMNp72dndbw>, privé à la responsable), donc retrouvé d'un appareil à l'autre
+([campagnes.md](campagnes.md#executer-une-campagne)). Après une PR qui change des cas, la régénérer et la republier à
+la même adresse : les coches restent, et celle d'une étape dont le texte a changé ressort « à revérifier » (chaque
+coche garde l'empreinte du texte qu'elle a vu). Le générateur s'arrête, sans rien écrire, s'il ne reconnaît plus le
+format d'un cas.
 
 Ce que `npm run recette` vérifie (`scripts/recette.mjs`, sans réseau ni navigateur, en quelques secondes) :
 

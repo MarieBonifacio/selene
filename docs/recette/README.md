@@ -32,7 +32,7 @@ cahier ; `git log -- docs/recette/` et `git show <commit>:docs/recette/…` rend
 | [backlog.md](backlog.md) | Les lacunes et les automatisations à prioriser. |
 | [maintenance.md](maintenance.md) | Les règles qui gardent ce cahier juste au fil des évolutions, et la vérification de cohérence. |
 | [donnees/](donnees/README.md) | Des jeux de données synthétiques à importer pour préparer un état initial reproductible, et le jeu de volume à générer. |
-| `scripts/recette.mjs`, `scripts/recette-jeux.mjs`, `scripts/recette-page.mjs` | La vérification de cohérence (`npm run recette`), la génération des jeux de données, du jeu de volume et de la page à publier en artefact ([maintenance.md](maintenance.md#la-vérification-de-cohérence)). |
+| `scripts/recette.mjs`, `scripts/recette-jeux.mjs`, `scripts/recette-page.mjs`, `scripts/recette-campagne.mjs` (et son script de page, `recette-campagne.client.js`), `scripts/recette-md.mjs` | La vérification de cohérence (`npm run recette`), la génération des jeux de données, du jeu de volume, de la page de lecture et du cahier à cocher, tous deux à publier en artefact ([maintenance.md](maintenance.md#la-vérification-de-cohérence)). |
 
 Les cas manuels, par domaine :
 
