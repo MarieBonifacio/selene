@@ -95,7 +95,13 @@ non-régression ciblée.
 npm run recette              # vérifie ; code de sortie 1 et la liste des écarts s'il y en a
 npm run recette -- jeux      # régénère docs/recette/donnees/*.json (déterministe : sans changement du noyau, git ne voit rien)
 npm run recette -- donnees   # écrit dist/recette/volume.json, le jeu de volume (non versionné)
+npm run recette -- page      # écrit dist/recette/cahier.html, le cahier en une page (non versionnée)
 ```
+
+La page `dist/recette/cahier.html` se lit sans le dépôt : sommaire, « Aller à » un cas ou un test, liens internes,
+états de couverture. Elle est publiée en artefact (<https://claude.ai/artifact/KjK5krMMJve526HKuiUEgn>, privé à la
+responsable, qui choisit avec qui le partager) ; après une PR qui change le cahier, la régénérer et la republier à la
+même adresse. C'est une vue : le cahier fait foi ici, et la page dit de quel commit elle vient.
 
 Ce que `npm run recette` vérifie (`scripts/recette.mjs`, sans réseau ni navigateur, en quelques secondes) :
 
