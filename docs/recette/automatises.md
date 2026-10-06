@@ -1,7 +1,7 @@
 # Inventaire des tests automatiques
 
 Ce que les tests de Selene vérifient réellement, lu dans le corps de chaque test et non dans son seul nom ; ce qu'ils
-simulent ; où et quand ils tournent ; ce qu'ils ne prouvent pas. État au commit `362f379` (5 octobre 2026 ; rédigé sur `768eb34`, complété des tests ajoutés ou modifiés depuis). Les
+simulent ; où et quand ils tournent ; ce qu'ils ne prouvent pas. État au commit `cab3ec8` (6 octobre 2026 ; rédigé sur `768eb34`, complété à chaque PR des tests ajoutés ou modifiés depuis). Les
 automatisations seulement proposées sont dans [backlog.md](backlog.md), jamais ici.
 
 Identifiants retirés : aucun.
@@ -71,6 +71,7 @@ ou Windows. (Firefox l'est depuis le 6 octobre 2026, dans *Check › browser*.)
 | *Desktop* (`desktop.yml`) | idem, chemins Tauri | `cargo test --locked`, puis installateur NSIS, puis la fumée de l'app installée (`TS-WIN-FUMEE`) ; captures en artefact | Windows |
 | *Assistant*, *Compte*, *Passeur* | push sur `main` touchant leur fonction ou `_shared` ; à la demande | `test:functions` puis déploiement ; sautés avec un avis si les secrets manquent | Ubuntu |
 | *Liens* (`liens.yml`) | le 3 de chaque mois à 6 h 17 UTC ; à la demande | `npm run liens` | Ubuntu |
+| *Sauvegarde* (`sauvegarde.yml`) | le lundi à 3 h 23 UTC ; à la demande | `scripts/sauvegarde.sh` : la base vidée en lecture seule et chiffrée pour la clé publique age (`TS-SAUVEGARDE`) ; seule l'archive chiffrée est publiée en artefact, 30 jours ; sautée avec un avis tant que ses réglages manquent (jamais lancée au 6 octobre 2026) | Ubuntu, CLI Supabase |
 | *Publication* (`release.yml`) | étiquette `v*` ; à la demande | APK et AAB signés, installateur Windows, archive iOS pour TestFlight ; chaque plateforme sautée sans ses secrets | Ubuntu, Windows, macOS |
 | *Captures* (`screenshots.yml`) | à la demande | captures des stores | Ubuntu |
 

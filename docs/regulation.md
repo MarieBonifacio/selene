@@ -320,7 +320,7 @@ Trois questions distinctes, à ne pas confondre :
   pas de choix de stockage, talon seul, autre appareil, aucun chemin vers le compte, garde de déconnexion ; et l'espace
   non proposé à un compte sans la marque `selene_personnel`.
 - `tests/browser/regulation.js` : l'espace absent sans compte, puis le parcours complet du compte personnel sur
-  téléphone (Chromium et WebKit en CI), aucune saisie sur le serveur, dont la modification
+  téléphone (Chromium, WebKit et Firefox en CI), aucune saisie sur le serveur, dont la modification
   arrivée d'un autre onglet pendant la confirmation, la pause au rechargement, le partage depuis les Réglages ; puis
   ordinateur, clavier, libellés et anglais.
 - `npm run check`, puis `npm run test:browser -- regulation` (`SELENE_BROWSER=webkit` pour WebKit ;

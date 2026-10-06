@@ -12,8 +12,9 @@ qui connaît l'app, pas des engagements.
 1. Le commit à tester est identifié (branche, empreinte) et déployé là où la campagne s'exécute : GitHub Pages pour le
    web, artefacts de l'onglet *Actions* (ou TestFlight) pour les apps, `selene.html` publié pour l'artefact.
 2. La CI de ce commit est verte : *Check › build-and-test* et *Check › browser* (Chromium **et** WebKit), plus les
-   workflows des plateformes visées (*Android*, *iOS*, *Desktop*). Un rouge connu et accepté est écrit en réserve dès
-   l'entrée.
+   workflows des plateformes visées (*Android*, *Android sur émulateur*, *iOS*, *Desktop*). Firefox aussi, lu dans le
+   journal du pas des scénarios tant qu'il n'est pas bloquant (jusqu'au 20 octobre 2026 au moins, [BL-13](backlog.md#bl-13)) :
+   son job reste vert même quand un scénario échoue. Un rouge connu et accepté est écrit en réserve dès l'entrée.
 3. `npm run recette` passe sur le commit du cahier utilisé : le cahier est cohérent avec les tests qu'il cite (la CI le vérifie
    sur chaque PR, job *Check › recette*).
 4. Les comptes de recette (A, B ; P pour « Reprendre la main » ; une clé Anthropic de recette pour l'assistant) et les

@@ -124,24 +124,35 @@ Identifiants retirés : aucun.
 <a id="syn-005"></a>
 ### SYN-005 — Saisie juste avant de fermer l'onglet
 
-- **Fonctionnalité et règle** : à la fermeture, une écriture `keepalive` part sans relecture (document de moins de 60 000
-  octets) ; sinon, ou si elle échoue, la donnée reste sur l'appareil et part au lancement suivant.
+- **Fonctionnalité et règle** : une saisie part au serveur 0,9 s après la dernière frappe. Si l'onglet se ferme avant,
+  une écriture `keepalive` part sans relecture, à condition que le document pèse moins de 60 000 octets
+  (`KEEPALIVE_MAX`) ; plus lourd, rien ne part à la fermeture : la saisie reste sur l'appareil et part au lancement
+  suivant.
 - **Objectif, risque vérifié** : la dernière saisie perdue parce qu'on ferme aussitôt.
 - **Priorité** : P1 · **Plateformes** : Web, Mob
-- **Préconditions** : A1 et A2 connectés ; A1 avec un petit espace (compte neuf, moins de 60 Ko) pour l'étape 1, le jeu
-  d'essai pour l'étape 3.
-- **Données** : capture `dernière seconde SYN-005`.
+- **Préconditions** : A1 et A2 connectés au compte A, A2 laissé visible sur la boîte. Étapes 1 à 3 : un espace léger
+  (compte neuf, ou le jeu d'essai, qui pèse une douzaine de Ko). Étapes 4 à 6 : le jeu de volume importé sur A1 et arrivé sur
+  A2.
+- **Données** : captures `dernière seconde SYN-005` puis `dernière seconde lourde SYN-005` ; le jeu de volume
+  (`npm run recette -- donnees`, `dist/recette/volume.json`, 3,5 Mo environ).
 - **Automatisés associés** : `TN-sync-deux-appareils`, `TU-SYN-12`
-- **Source** : [DOC] [architecture.md](../../architecture.md#lire-fusionner-écrire-sous-condition) ; [TEST] `TU-SYN-12`, `tests/browser/sync-deux-appareils.js`.
+- **Source** : [DOC] [architecture.md](../../architecture.md#lire-fusionner-écrire-sous-condition) ; [CODE] `s.flush`
+  et `KEEPALIVE_MAX` (`src/app/state/store.js`) ; [TEST] `TU-SYN-12`, `tests/browser/sync-deux-appareils.js`. Réécrit le
+  6 octobre 2026 : l'ancienne version acceptait « arrivée, ou au plus tard à la réouverture » et ne pouvait pas
+  échouer, et son étape « document plus gros » utilisait le jeu d'essai, trop léger pour sortir du chemin `keepalive`
+  ([BL-20](../backlog.md#bl-20)).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | A1 : capturer le texte des données et fermer l'onglet dans la seconde. | — |
-| 2 | A2 : attendre 30 s. | La capture est arrivée (envoi à la fermeture), ou au plus tard dès que A1 rouvrira. |
-| 3 | A1, avec un document plus gros : refaire l'étape 1, puis rouvrir Selene. | Si la capture n'était pas arrivée sur A2, elle part à la réouverture et y arrive. |
+| 1 | A1 : Réglages → Compte et données → Sauvegarde : lire la taille de l'espace. | « Ton espace pèse N Ko ; le serveur en garde 5,0 Mo au plus. », avec N de 55 au plus (le seuil est de 60 000 octets ; la marge couvre l'arrondi). Plus lourd : cas *bloqué*, préparer un espace léger. |
+| 2 | A1 : sur l'accueil, capturer `dernière seconde SYN-005`, valider par Entrée, puis fermer l'onglet aussitôt au clavier (Ctrl+W, ⌘W sur Mac), en moins d'une seconde. Ne pas rouvrir A1. | L'onglet se ferme sans demander de confirmation. |
+| 3 | A2 : attendre 30 s sans toucher A1. | La capture `dernière seconde SYN-005` est dans la boîte d'A2, alors qu'A1 est resté fermé (envoi à la fermeture). |
+| 4 | A1 : rouvrir Selene, importer le jeu de volume, attendre qu'A2 l'affiche ; puis lire la taille comme à l'étape 1. | « Ton espace pèse 3,5 Mo environ… » (plus de 60 Ko) ; l'avertissement « Il approche de la limite… » est attendu à cette taille. |
+| 5 | A1 : capturer `dernière seconde lourde SYN-005`, valider par Entrée et fermer aussitôt comme à l'étape 2 ; A2 : attendre 30 s. | La capture n'est **pas** sur A2 : rien ne part à la fermeture d'un document de cette taille. Présente sur A2 : refaire en fermant plus vite ; présente deux fois de suite après une fermeture immédiate, c'est un écart (le seuil n'est pas appliqué). |
+| 6 | A1 : rouvrir Selene ; A2 : attendre 30 s. | Sur A1, la capture est dans la boîte (elle était restée sur l'appareil) ; sur A2, elle arrive dans les 30 s. |
 
-- **État final attendu** : la capture sur les deux appareils.
-- **Nettoyage** : la supprimer.
+- **État final attendu** : les deux captures sur les deux appareils.
+- **Nettoyage** : réimporter le jeu d'essai sur A1 (le jeu de volume ralentit les autres cas).
 
 ---
 
