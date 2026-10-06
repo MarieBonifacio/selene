@@ -242,8 +242,9 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
   celui de Selene. Firefox sur téléphone n'est pas visé.
 - **État** : en place le 6 octobre 2026 : `SELENE_BROWSER=firefox`, matrice *Check › browser* à trois moteurs ; non
   bloquant jusqu'au 20 octobre (`continue-on-error` sur le pas des scénarios, pour Firefox seulement), puis bloquant :
-  retirer la ligne dans `check.yml` (voir [a-faire.md](../a-faire.md#à-tenir-dans-la-durée)). README : « Navigateurs pris
-  en charge ».
+  retirer la ligne dans `check.yml` (voir [a-faire.md](../a-faire.md#tout-de-suite-une-minute)). README : « Navigateurs pris
+  en charge ». Premier passage (PR #111) : 74 scénarios sur 78 ; les quatre échecs ont chacun leur cause, corrigée
+  (anomalie A14 de [perimetre.md](perimetre.md#anomalies-et-observations)).
 
 ---
 

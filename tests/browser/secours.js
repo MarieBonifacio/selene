@@ -26,9 +26,11 @@ async function supabase(route) {
 }
 const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'u1', email: 'a@b.c' } });
 const inbox = () => ((rows.get('u1') || {}).site?.modules?.inbox?.entries || []).map(i => i.text);
-// Une page du même site qui ne lance pas Selene (une adresse absente) : pour lire IndexedDB et localStorage tels quels.
+/* Une page du même site qui ne lance pas Selene (la politique de confidentialité, sans script) : pour lire IndexedDB et
+   localStorage tels quels. Pas une adresse absente : le serveur des scénarios y répond 404 sans contenu, que Firefox ne
+   finit jamais de charger et que Chromium refuse. */
 const peek = async ctx => {
-  const p = await ctx.newPage(); await p.goto(BASE + '/rien-ici');
+  const p = await ctx.newPage(); await p.goto(BASE + '/confidentialite.html');
   const site = await storeGet(p, 'selene-site-v1');
   const journals = await p.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('selene-secours:')).map(k => localStorage.getItem(k)));
   await p.close();

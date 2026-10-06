@@ -45,7 +45,7 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
   /* Attendre un état de la page plutôt qu'un délai (A11 du cahier de recette : sous charge, 300 à 500 ms ne suffisaient
      pas toujours). Rien n'est affaibli : si l'état ne vient pas en 10 s, la vérification qui suit échoue comme avant. Les
      délais qui restent servent à vérifier qu'aucune requête ne part : une absence ne s'attend pas. */
-  const attendre = (p, etat) => p.waitForFunction(etat, null, { timeout: 10000 }).catch(() => {});
+  const attendre = (p, etat, arg = null) => p.waitForFunction(etat, arg, { timeout: 10000 }).catch(() => {});
   const entree = () => !document.querySelector('#authForm'); // l'écran de connexion a cédé la place à l'app
 
   console.log('les messages de l’écran de connexion');
@@ -63,12 +63,19 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
   ok((await note(p)).includes('Si un compte existe à cette adresse'), 'la réponse ne dit pas si l’adresse a un compte');
   await p.click('[data-act="auth-back"]'); await p.waitForTimeout(200);
   ok(await p.isVisible('#authPw') && await p.isVisible('[data-act="auth-forgot"]'), 'revenir à la connexion');
-  const t = await open('', { trop: true });
-  await t.click('[data-act="auth-forgot"]'); await t.fill('#authEmail', 'iris@exemple.org'); await submit(t);
-  ok((await note(t)).includes('Trop de demandes'), 'trop de demandes (429) : dit, en clair');
-  const na = await open('', { nonAutorise: true });
-  await na.click('[data-act="auth-forgot"]'); await na.fill('#authEmail', 'iris@exemple.org'); await submit(na);
-  ok((await note(na)).includes('ne sait pas encore envoyer') && !(await note(na)).includes('not authorized'), 'envoi non configuré (SMTP intégré de Supabase) : dit, en français');
+  // Le formulaire « mot de passe oublié » d'abord (plus de champ de mot de passe), puis le message ; ce qui s'affiche
+  // est recopié si la vérification échoue (premier passage sous Firefox, le 6 octobre 2026).
+  const oublie = async (pg, attendu) => {
+    await pg.click('[data-act="auth-forgot"]'); await attendre(pg, () => !document.querySelector('#authPw'));
+    await pg.fill('#authEmail', 'iris@exemple.org'); await submit(pg);
+    await attendre(pg, a => document.querySelector('#authErr').textContent.includes(a), attendu);
+    return note(pg);
+  };
+  const vu = (msg, attendu) => msg.includes(attendu) ? '' : ` (affiché : « ${msg.trim()} »)`;
+  const trop = await oublie(await open('', { trop: true }), 'Trop de demandes');
+  ok(trop.includes('Trop de demandes'), 'trop de demandes (429) : dit, en clair' + vu(trop, 'Trop de demandes'));
+  const smtp = await oublie(await open('', { nonAutorise: true }), 'ne sait pas encore envoyer');
+  ok(smtp.includes('ne sait pas encore envoyer') && !smtp.includes('not authorized'), 'envoi non configuré (SMTP intégré de Supabase) : dit, en français' + vu(smtp, 'ne sait pas encore envoyer'));
 
   console.log('inscriptions fermées');
   ok(p.calls.filter(c => c.path === '/auth/v1/settings').length === 1, 'les inscriptions sont demandées une fois au serveur');

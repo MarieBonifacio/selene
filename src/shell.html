@@ -558,8 +558,10 @@ button.room{cursor:pointer}button.room:hover{background:var(--surface)}
 .card[draggable]{cursor:grab}.card.dragging{opacity:.45}
 .col.drop{background:var(--surface);box-shadow:inset 0 0 0 1px var(--tint,var(--accent))}
 @media (max-width:640px){
-  .seg{display:flex;gap:2px;overflow-x:auto;margin:0 0 12px;border-bottom:1px solid var(--rule);scrollbar-width:none}
-  .seg button{flex:none;min-height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;color:var(--muted);font-size:.9rem}
+  /* Le filet est une ombre intérieure, pas une bordure : les onglets restent entiers dans le conteneur qui défile (une
+     marge négative les faisait passer sous la bordure, où Firefox rogne leur dernier pixel : 43 px au doigt). */
+  .seg{display:flex;gap:2px;overflow-x:auto;margin:0 0 12px;box-shadow:inset 0 -1px var(--rule);scrollbar-width:none}
+  .seg button{flex:none;min-height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);font-size:.9rem}
   .seg button.on{color:var(--ink);border-bottom-color:var(--tint,var(--accent))}
   .seg button span{font-variant-numeric:tabular-nums;color:var(--muted);margin-left:2px}
   .board:has(.col[data-ci]){display:block}
@@ -682,7 +684,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
   .sec-head{margin-bottom:9px}.plate{margin-bottom:16px} /* un titre et ses boutons, au-dessus d'autres boutons */
   .row{row-gap:10px}
   .more>summary{padding-block:11px} /* un bouton passé à la ligne sous un champ : sa zone (9 px au-dessus) ne mord plus sur le champ */
-  .src-link{position:relative}.src-link::after{content:"";position:absolute;inset:-14px -3px -7px} /* « ouvrir ↗ » : le texte au-dessus ne se touche pas, le menu au-dessous si */
+  .src-link{position:relative}.src-link::after{content:"";position:absolute;inset:-14px -3px -8px} /* « ouvrir ↗ » : le texte au-dessus ne se touche pas, le menu au-dessous si ; 44 px même là où la ligne est plus basse (Firefox) */
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.flash{box-shadow:inset 2px 0 0 var(--accent)}}
 </style>
