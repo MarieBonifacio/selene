@@ -68,8 +68,13 @@ const NEUF = '5a5a5a5a-1111-2222-3333-444455556666', ANCIEN = '6b6b6b6b-1111-222
     check(await p.isVisible('#timerBtn') && (await p.textContent('#nav')).includes('Capture'), 'navigation et minuteur');
     await p.click('[data-act="welcome-path"][data-path="ecrire"]'); await settle();
     await capturer('Une hypothèse sur le chapitre 3'); await settle();
+    check(await p.waitForFunction(() => (document.querySelector('#toast') || {}).textContent?.includes("Gardé. Tu peux oublier, c'est écrit."), null, { timeout: 5000 }).then(() => true, () => false),
+      'la capture : « Gardé. Tu peux oublier, c’est écrit. »');
     await p.reload(); await p.waitForSelector('#capIn');
     check((await p.textContent('#nav')).includes('Écriture'), 'au rechargement : toujours sans compte, rien de perdu');
+    await p.evaluate(() => { location.hash = 'inbox'; }); await p.waitForFunction(() => location.hash === '#inbox'); await settle();
+    check((await main()).includes('Une hypothèse sur le chapitre 3'), 'et la capture est dans la boîte');
+    await p.evaluate(() => { location.hash = 'accueil'; }); await p.waitForSelector('#capIn');
     check(!p.appels.some(a => a.includes('/rest/v1/app_state')), 'rien de ce qui est écrit ne part au serveur');
 
     check(await storeGet(p, 'selene-sans-compte') === '1', 'le choix « sans compte » est gardé sur l’appareil');

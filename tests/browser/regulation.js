@@ -75,7 +75,10 @@ const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_
     check((await main()).includes('Rien à comparer pour l\'instant') && !(await p.$('.rlm-cmp')), 'sept derniers jours, le premier jour : une phrase, pas de tableau vide');
 
     console.log('saisies, total quotidien, confirmation, réouverture');
-    await p.click('[data-act="rlm-use"]'); await fill({ value: '1.5', note: 'CONFIDENTIEL_BROWSER' }); await submit();
+    await p.click('[data-act="rlm-use"]'); await p.waitForFunction(() => document.querySelector('#dlg').open);
+    const conso = (await p.textContent('#form')).replace(/\s+/g, ' ');
+    check(conso.includes('verre standard') && !/CSAPA|sevrage|0 980 980 930/i.test(conso), 'le formulaire de consommation explique le verre standard, sans répéter l’avertissement du sevrage (RLM-004)');
+    await fill({ value: '1.5', note: 'CONFIDENTIEL_BROWSER' }); await submit();
     check((await inst()).entries.find(e => e.kind === 'use').value === 1.5, 'décimale gardée dans l’unité du suivi');
     check((await main()).includes('pas encore confirmée'), 'une consommation ne ferme pas la journée');
     await p.click('[data-act="rlm-day"]');

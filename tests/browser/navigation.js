@@ -58,6 +58,9 @@ demo.modules.ecriture.scraps = Array.from({ length: 150 }, (_, i) => ({ id: 'f' 
   const m = await ctxM.newPage(); m.on('pageerror', e => errs.push(e.message));
   await m.goto(BASE + '/index.html'); await m.waitForTimeout(400);
   ok(await m.isVisible('#bar') && !(await m.isVisible('#nav')), 'téléphone : barre basse, pas de barre latérale');
+  const barre = await m.$$eval('#bar > a, #bar > button', xs => xs.map(x => x.querySelector('span').textContent.trim()));
+  ok(barre.join(' | ') === "Aujourd'hui | Espaces | Capturer | Chercher | Bilan", `cinq entrées, dans l’ordre (${barre.join(' | ')})`);
+  ok(await m.$eval('#bar a[href="#accueil"]', el => el.classList.contains('on') && el.getAttribute('aria-current') === 'page'), '« Aujourd’hui » marqué actif sur l’accueil');
   await m.tap('[data-act="sheet-espaces"]'); await m.waitForTimeout(300);
   ok(await m.isVisible('#sheet .srow[href="#budget"]'), 'Espaces ouvre une feuille avec les espaces');
   await m.tap('#sheet .srow[href="#budget"]'); await m.waitForTimeout(300);
@@ -68,6 +71,7 @@ demo.modules.ecriture.scraps = Array.from({ length: 150 }, (_, i) => ({ id: 'f' 
   await m.fill('#capSheetIn', 'une idée au vol'); await m.press('#capSheetIn', 'Enter'); await m.waitForTimeout(300);
   const after = await m.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.inbox.entries.length);
   ok(after === before + 1 && !(await m.isVisible('#sheet')), 'Capturer : gardé dans la boîte, la feuille se ferme');
+  ok((await m.textContent('#toast')).includes("Gardé. Tu peux oublier, c'est écrit."), 'et c’est dit : « Gardé. Tu peux oublier, c’est écrit. »');
   await m.tap('[data-act="sheet-capture"]'); await m.waitForTimeout(300);
   await m.fill('#capSheetIn', 'à moitié'); await m.mouse.click(195, 60); await m.waitForTimeout(200);
   ok(!(await m.isVisible('#sheet')), 'toucher le voile ferme la feuille');

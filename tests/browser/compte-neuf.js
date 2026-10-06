@@ -13,6 +13,9 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   ok(!t.includes('Ulver') && !(await nav()).includes('Phidippus') && !(await nav()).includes('Kundalini'), 'aucun contenu personnel');
   // U3 : trois réponses visibles, la liste entière repliée (elle n'ajoute pas treize décisions au premier écran).
   ok(await p.locator('[data-act="welcome-path"]').count() === 3, 'trois réponses proposées');
+  const reponses = await p.$$eval('[data-act="welcome-path"]', bs => bs.map(x => `${x.querySelector('b').textContent} : ${x.querySelector('small').textContent}`));
+  ok(reponses.join(' | ') === "Un long texte : Écriture · Sources · Tâches | Mes journées : Tâches · Carnet · Soins | Ce que je lis, écoute, regarde : À découvrir · Musique · Carnet",
+    `chacune dit les trois espaces qu’elle installe (${reponses.join(' | ')})`);
   ok(!await p.locator('[data-act="tpl-add"][data-tpl="tableau"]').isVisible(), 'les treize modèles, repliés derrière « Choisir moi-même »');
   await p.click('.welcome-all > summary');
   ok(await p.locator('[data-act="tpl-add"][data-tpl="tableau"]').isVisible(), '« Choisir moi-même » les montre tous');

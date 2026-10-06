@@ -53,6 +53,13 @@ demo.modules.moth.entries = [{ id: 'p1', title: 'Le lichen', subtitle: '', tag: 
   const e = (await data()).modules.ecriture.entries.map(x => x.value);
   ok(e.join() === '1200,650', `total 1 200 puis 1 850 → +1 200 puis +650 (${e.join(', ')})`);
   ok((await main()).includes('objectif atteint vers le'), 'projection affichée');
+  // MOD-009 : chaque saisie dit ce qu'elle a compté ; un total plus bas est une coupe, le même n'ajoute rien.
+  ok((await p.textContent('#toast')).includes('+650 mots. Ça avance, que tu y croies ou non.'), 'un total plus haut : « +650 mots. Ça avance… »');
+  await p.fill('#cumIn', '1650'); await p.click('[data-act="entry-add"]'); await p.waitForTimeout(150);
+  ok((await p.textContent('#toast')).includes("-200 mots. Couper, c'est aussi écrire.") && (await data()).modules.ecriture.entries.at(-1).value === -200, 'un total plus bas : une coupe, « -200 mots. Couper, c’est aussi écrire. »');
+  const n = (await data()).modules.ecriture.entries.length;
+  await p.fill('#cumIn', '1650'); await p.click('[data-act="entry-add"]'); await p.waitForTimeout(150);
+  ok((await p.textContent('#toast')).includes("Même total qu'avant. Rien de neuf, ou alors en silence.") && (await data()).modules.ecriture.entries.length === n, 'le même total : rien d’ajouté, et c’est dit');
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();
