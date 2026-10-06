@@ -230,7 +230,8 @@ Trois fonctionnalités s'appuient directement sur ce qui précède, sans rien y 
   invalidation à gérer.
 
 `node tests/bench.js` mesure les vues sur un historique réaliste de plusieurs années (~2 millions de
-caractères) : à relancer après tout changement qui touche à ce qui parcourt l'historique.
+caractères), et échoue au-delà de 150 ms par vue (médiane de cinq passages ; décision du 6 octobre 2026, BL-09) : il
+tourne en CI (*Check › build-and-test*), une régression de complexité ne passe plus.
 Routes fixes réservées : `accueil`, `reglages`, `recherche`, `bilan`. Les tests vérifient qu'ils ont les mêmes clés et font passer chaque type de bout
 en bout (création, entrée, vue, réglages, résumé, contexte, export puis import validé).
 
@@ -312,7 +313,7 @@ installe par `npm ci`, et les scripts npm sont les seules commandes, en local co
 | Script | Ce qu'il fait |
 |---|---|
 | `npm run build` | `python3 build.py` : assemble la plateforme et l'application (esbuild), génère `selene.html` et `index.html` |
-| `npm run build:dist` | les trois sorties dans `dist/` : web (Pages), artefact (claude.ai), natif (Capacitor, Tauri) ; ADR 14 |
+| `npm run build:dist` | les trois sorties dans `dist/` : web (Pages), artefact (claude.ai), natif (Capacitor, Tauri) ; ADR 14. `SELENE_EDITION=stores` : l'édition des stores (ADR 32) ; `SELENE_SUPABASE_URL` et `SELENE_SUPABASE_KEY` : un projet Supabase de recette (préproduction), jamais écrit hors de `dist/` ([le compte de recette P](recette/README.md#le-compte-de-recette-p)) |
 | `npm run build:check` | refuse des HTML générés qui ne correspondent pas aux sources |
 | `npm test` | tests unitaires Node (`tests/*.test.js`) |
 | `npm run test:syntax` | `node --check` sur chaque source (`src/`, `src/app/`, `src/core/`, `src/native/`, `scripts/`), arrêt au premier fichier invalide |

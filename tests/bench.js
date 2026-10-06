@@ -1,7 +1,11 @@
-/* Banc de mesure (lancé à la main, pas en CI) : un historique réaliste de plusieurs années — 5 500 textes,
-   ~2 millions de caractères, 60 motifs clairsemés —, puis le temps de rendu des vues qui parcourent tout
+/* Banc de mesure, et seuil de la CI (BL-09 du cahier de recette, TRV-007) : un historique réaliste de plusieurs années —
+   5 500 textes, ~2 millions de caractères, 60 motifs clairsemés —, puis le temps de rendu des vues qui parcourent tout
    (accueil, motifs, bilan) et d'une recherche. Usage : python3 build.py && node tests/bench.js
-   Repère (ordinateur portable, 2026) : quelques dizaines de ms ; compter 3 à 5 fois plus sur téléphone. */
+   Chaque mesure est la médiane de cinq passages (après un passage de chauffe) : un passage dérangé par la machine ne
+   fait pas échouer. Au-delà de LIMIT (150 ms, SELENE_BENCH_LIMIT pour essayer autre chose), le banc échoue : décision
+   du 6 octobre 2026, qui laisse une marge d'environ ×2,7 sur la plus lente (56 ms) et attrape une régression de
+   complexité (une boucle quadratique sur 5 500 textes). La VM n'a ni mise en page ni peinture : le seuil est relatif,
+   pas une promesse sur téléphone (compter 3 à 5 fois plus ; la cible sur un vrai téléphone est dans TRV-007). */
 const fs = require('node:fs'), vm = require('node:vm'), path = require('node:path');
 process.chdir(path.join(__dirname, '..'));
 const html = fs.readFileSync('selene.html', 'utf8'), script = html.match(/<script>\s*([\s\S]*?)<\/script>/)[1];
@@ -31,7 +35,14 @@ console.log('corpus', (chars / 1e6).toFixed(2), 'M caractères,', d.modules.ecri
 // Repère : localStorage plafonne vers 5 Mo par origine ; au-delà de la moitié, passer à IndexedDB ou SQLite (phase 13).
 const doc = JSON.stringify(d);
 console.log('document site'.padEnd(28), (Buffer.byteLength(doc) / 1e6).toFixed(2), 'Mo en UTF-8,', (doc.length * 2 / 1e6).toFixed(2), 'Mo en UTF-16');
-const time = (name, fn, n = 3) => { fn(); const s = process.hrtime.bigint(); for (let i = 0; i < n; i++) fn(); console.log(name.padEnd(28), (Number(process.hrtime.bigint() - s) / 1e6 / n).toFixed(1), 'ms'); };
+const LIMIT = Number(process.env.SELENE_BENCH_LIMIT || 150), results = [];
+const time = (name, fn, n = 5) => {
+  fn(); // chauffe
+  const runs = Array.from({ length: n }, () => { const s = process.hrtime.bigint(); fn(); return Number(process.hrtime.bigint() - s) / 1e6; }).sort((a, b) => a - b);
+  const ms = runs[Math.floor(n / 2)];
+  results.push({ name, ms });
+  console.log(name.padEnd(28), ms.toFixed(1).padStart(6), 'ms', ms > LIMIT ? `  ✗ au-delà de ${LIMIT} ms` : '');
+};
 time('accueil (render)', () => { context.location.hash = '#accueil'; t.render(); });
 time('motifs (render)', () => { context.location.hash = '#motifs'; t.render(); });
 time('arc (render)', () => { context.location.hash = '#arc'; t.render(); });
@@ -43,3 +54,6 @@ time('recherche « lune porte »', () => t.searchAll('lune porte'));
 
 time('accueil, avec sortes (render)', () => { context.location.hash = '#accueil'; t.render(); });
 time('sortesDraw() un tirage', () => t.sortesDraw());
+const slow = results.filter(r => r.ms > LIMIT);
+if (slow.length) { console.log(`\n✗ ${slow.length} mesure(s) au-delà de ${LIMIT} ms (médiane de cinq) : ${slow.map(r => r.name).join(', ')}`); process.exitCode = 1; }
+else console.log(`\nToutes les mesures sous ${LIMIT} ms (médiane de cinq passages ; la plus lente : ${Math.max(...results.map(r => r.ms)).toFixed(1)} ms).`);

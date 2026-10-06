@@ -31,6 +31,10 @@ parts = json.loads(bundled.stdout)
 # les fichiers versionnés (selene.html, index.html), que le web et build.py --check lisent, restent l'édition complète.
 if parts["edition"] != "complete" and sys.argv[1:2] != ["--dist"]:
     sys.exit(f"Édition « {parts['edition']} » : seulement avec --dist (les fichiers versionnés sont l'édition complète)")
+# De même pour un autre projet Supabase (SELENE_SUPABASE_URL, la préproduction de la recette) : jamais dans les fichiers
+# versionnés, que le web publie.
+if parts["project"] != "app" and sys.argv[1:2] != ["--dist"]:
+    sys.exit(f"Projet Supabase « {parts['supabase']['url']} » : seulement avec --dist (les fichiers versionnés parlent au projet de l'app)")
 js = parts["platform"] + "__platform.platform.ready(() => {\n" + parts["app"] + "});\n"
 # Le script est posé tel quel dans une balise <script> : « </script » dans une chaîne le fermerait avant sa fin.
 assert "</script" not in js.lower(), "« </script » dans le JavaScript : l'écrire en deux morceaux"
@@ -86,9 +90,8 @@ native = own.replace("<title>", native_head + "<title>", 1).replace("<!-- SELENE
 # La page publique de test (E3 de l'audit, docs/essai.md) : statique, à côté de l'app, sans son script. Le sien (src/essai.js)
 # et ses deux feuilles de style sont autorisés par leur empreinte ; elle ne parle qu'au projet Supabase, dont l'adresse et
 # la clé publique sont lues dans auth.js (une seule source). Ni cookie, ni stockage : voir src/essai.js.
-auth_js = (SOURCE / "app" / "services" / "auth.js").read_text(encoding="utf-8")
-supa_url = re.search(r'export const SUPABASE_URL = "(https://[a-z0-9]+\.supabase\.co)"', auth_js).group(1)
-supa_key = re.search(r'export const SUPABASE_ANON_KEY = "(sb_publishable_[A-Za-z0-9_-]+)"', auth_js).group(1)
+supa_url, supa_key = parts["supabase"]["url"], parts["supabase"]["key"]  # lus dans auth.js par scripts/bundle.mjs
+assert re.fullmatch(r"https://[a-z0-9]+\.supabase\.co", supa_url) and re.fullmatch(r"sb_publishable_[A-Za-z0-9_-]+", supa_key)
 essai_js = "\n" + (SOURCE / "essai.js").read_text(encoding="utf-8").replace("__SUPABASE_URL__", supa_url).replace("__SUPABASE_KEY__", supa_key)
 assert "</script" not in essai_js.lower() and "__SUPABASE" not in essai_js
 essai_page = (SOURCE / "essai.html").read_text(encoding="utf-8")
@@ -117,7 +120,8 @@ if sys.argv[1:2] == ["--dist"]:
         shutil.copytree(ROOT / "essai", dist / "web" / "essai", dirs_exist_ok=True)
     for out in ["web", "native"]:  # les polices, avec leurs licences
         shutil.copytree(ROOT / "fonts", dist / out / "fonts", dirs_exist_ok=True)
-    print(f"{dist.relative_to(ROOT) if dist.is_relative_to(ROOT) else dist}: web, artifact, native built ({parts['edition']} edition)")
+    project = "" if parts["project"] == "app" else f", Supabase project {parts['supabase']['url']}"
+    print(f"{dist.relative_to(ROOT) if dist.is_relative_to(ROOT) else dist}: web, artifact, native built ({parts['edition']} edition{project})")
 elif sys.argv[1:] == ["--check"]:
     stale = [name for name, content in outputs.items() if not (ROOT / name).exists() or (ROOT / name).read_text(encoding="utf-8") != content]
     if stale:

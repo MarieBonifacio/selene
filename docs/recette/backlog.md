@@ -18,11 +18,11 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 | [BL-06](#bl-06) | ~~Assistant : dire « non déployé » ou « injoignable », et le tester~~ (fait) | correctif puis automatisation | P2 | AST-007 |
 | [BL-07](#bl-07) | Fumée de l'app Android sur émulateur, en CI | automatisation | P2 | PLT-003, PLT-004 |
 | [BL-08](#bl-08) | Fumée de l'app Windows installée, en CI | automatisation | P3 | PLT-009, PLT-010 |
-| [BL-09](#bl-09) | Seuils de performance sur le jeu de volume | décision puis automatisation | P2 | TRV-007 |
+| [BL-09](#bl-09) | ~~Seuils de performance sur le jeu de volume~~ (fait) | décision puis automatisation | P2 | TRV-007 |
 | [BL-10](#bl-10) | ~~Minuit, app ouverte : horloge simulée~~ (fait) | décision puis automatisation | P3 | TRV-004 |
 | [BL-11](#bl-11) | claude.ai : ce qui ne s'automatise pas | lacune assumée | P2 | AST-009, PLT-011 |
 | [BL-12](#bl-12) | ~~`npm run recette` dans la CI~~ (fait, voir ci-dessous) | outillage | P2 | tous |
-| [BL-13](#bl-13) | Firefox : cible ou non ? | décision | P3 | — |
+| [BL-13](#bl-13) | ~~Firefox : cible ou non ?~~ (décidé, en place) | décision | P3 | — |
 
 ---
 
@@ -167,6 +167,9 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 - **Niveau** : VM Node (faux DOM : ni mise en page ni peinture, donc des seuils relatifs, pas une promesse sur téléphone).
 - **Dépendances** : la décision des seuils (question posée dans TRV-007) ; une marge contre la variabilité des runners.
 - **Bénéfice attendu** : les régressions de complexité (une boucle quadratique sur 5 500 textes) arrêtées par la CI.
+- **État** : **fait** le 6 octobre 2026. Seuils décidés par la responsable : 150 ms par vue dans la VM du banc (médiane
+  de cinq passages, bloquant en CI : *Check › build-and-test*) ; sur un téléphone d'entrée de gamme, 200 ms visés et
+  500 ms au plus ([TRV-007](manuels/transverse.md#trv-007), à la main).
 
 <a id="bl-10"></a>
 ### BL-10 — Minuit, app ouverte : horloge simulée
@@ -234,6 +237,13 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 
 - **Question** : aucun document ne dit si Firefox est pris en charge ; aucun test ne le lance. Si oui, ajouter le moteur
   à la matrice de *Check › browser* et les plateformes du cahier ; si non, le dire dans le README.
+- **Décision** (responsable, 6 octobre 2026) : oui sur ordinateur. Firefox est le troisième navigateur d'ordinateur en
+  France, 12,25 % en juillet 2026 selon StatCounter, à égalité avec Edge, et son public, soucieux de vie privée, est
+  celui de Selene. Firefox sur téléphone n'est pas visé.
+- **État** : en place le 6 octobre 2026 : `SELENE_BROWSER=firefox`, matrice *Check › browser* à trois moteurs ; non
+  bloquant jusqu'au 20 octobre (`continue-on-error` sur le pas des scénarios, pour Firefox seulement), puis bloquant :
+  retirer la ligne dans `check.yml` (voir [a-faire.md](../a-faire.md#à-tenir-dans-la-durée)). README : « Navigateurs pris
+  en charge ».
 
 ---
 
@@ -276,13 +286,13 @@ Les questions marquées [À ARBITRER] dans les cas, et ce qu'elles bloquent :
 | ~~Quel message pour une date d'objectif à plus d'un an ?~~ : « Choisis une date d'effet valide : passée, aujourd'hui, ou au plus tard dans un an. », le 6 octobre 2026 | [RLM-014](manuels/reprendre-la-main.md#rlm-014) | — |
 | ~~Comment l'app doit-elle dire qu'un appareil vidé est le détenteur ?~~ : le talon décrit l'appareil détenteur (navigateur ou app, système, date) et le message envisage que ce soit celui-ci, le 6 octobre 2026 | [RLM-029](manuels/reprendre-la-main.md#rlm-029) | — |
 | ~~Quelles vues suivent la date d'elles-mêmes à minuit ?~~ : toutes, une minute après au plus, jamais sous un formulaire ouvert ni pendant une saisie, le 6 octobre 2026 | [TRV-004](manuels/transverse.md#trv-004) | — |
-| Quels seuils de réactivité ? | [TRV-007](manuels/transverse.md#trv-007) | [BL-09](#bl-09) |
+| ~~Quels seuils de réactivité ?~~ : 150 ms par vue dans le banc (CI) ; sur téléphone, 200 ms visés, 500 ms au plus, le 6 octobre 2026 | [TRV-007](manuels/transverse.md#trv-007) | — |
 | ~~Que doit dire l'assistant quand sa fonction est injoignable ou non déployée ? (A4)~~ : « non déployé », « non configuré » ou « injoignable », corrigé le 5 octobre 2026 (PR #98) | [AST-007](manuels/assistant.md#ast-007) | — |
 | ~~Que fait claude.ai de l'espace `db` d'un artefact ?~~ : ses documents sont partagés avec tous ceux qui ont le lien ; Selene range désormais les siens dans le sous-arbre privé de chacun (A12, ADR 33), le 6 octobre 2026 | [PLT-011](manuels/plateformes.md#plt-011) | — |
-| Marquer `selene_personnel` un compte de recette (P) ? | `RLM-*` (chemin P) | les cas d'offre et de stockage |
+| ~~Marquer `selene_personnel` un compte de recette (P) ?~~ : oui, dans un projet de recette, jamais dans celui de l'app (`SELENE_SUPABASE_URL`), le 6 octobre 2026 | `RLM-*` (chemin P) | — |
 | ~~Une dépendance de développement pour l'accessibilité ?~~ : oui, `axe-core` en version exacte, le 6 octobre 2026 | — | — |
 | ~~`npm run recette` en CI ?~~ : oui, fait, et obligatoire pour fusionner (réglage du dépôt à appliquer) | — | [BL-12](#bl-12) |
-| Firefox ? | — | [BL-13](#bl-13) |
+| ~~Firefox ?~~ : oui sur ordinateur, non bloquant jusqu'au 20 octobre 2026, le 6 octobre | — | [BL-13](#bl-13) |
 
 Les questions ouvertes d'avant ce cahier sont tranchées depuis le 6 octobre 2026 : l'adresse d'un espace désactivé
 mène à l'accueil et le dit ([ESP-006](manuels/espaces.md#esp-006)) ; un espace supprimé reste supprimé, même modifié

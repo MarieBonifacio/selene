@@ -22,6 +22,15 @@ dont le dépôt ne peut pas savoir s'ils ont eu lieu.
   synchronise rien entre navigateurs ; elle ne range jamais rien dans un document partagé. Puis jouer
   [PLT-011](recette/manuels/plateformes.md#plt-011) avec un compte claude.ai de recette.
 
+- [ ] **Le 20 octobre 2026 : Firefox devient bloquant** ([BL-13](recette/backlog.md#bl-13)). Lire les dernières courses
+  *Check › browser (firefox)* : si les scénarios y sont verts, retirer la ligne `continue-on-error` du job `browser` dans
+  `.github/workflows/check.yml` (une session Claude Code peut le faire : « Firefox devient bloquant ») ; sinon, chaque
+  échec propre à Firefox devient une anomalie du cahier, corrigée avant de retirer la ligne.
+
+- [ ] **Le compte de recette P**, pour jouer les cas « Reprendre la main » du chemin P : dans un projet Supabase de
+  recette, jamais dans celui de l'app ni sur votre compte personnel. Cinq étapes, dix minutes :
+  [README de la recette, « Le compte de recette P »](recette/README.md#le-compte-de-recette-p).
+
 ## Essayer sur de vrais appareils
 
 La CI compile les trois apps et joue tous les parcours dans Chromium et WebKit, mais aucun vrai appareil n'a encore

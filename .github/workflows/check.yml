@@ -28,6 +28,9 @@ jobs:
         run: npm run lint
       - name: Traductions (textes marqués, dictionnaires)
         run: npm run i18n
+      # Le banc (tests/bench.js, BL-09) : chaque vue sous 150 ms dans la VM, sur un historique de plusieurs années.
+      - name: Banc de mesure (150 ms par vue au plus)
+        run: npm run bench
   recette:
     # Le cahier de recette (docs/recette) dit-il encore vrai ? `npm run recette` confronte ses cas, son inventaire et sa
     # matrice aux tests, aux liens et aux jeux de données du dépôt : quelques secondes, sans réseau, sans navigateur et
@@ -60,13 +63,13 @@ jobs:
   browser:
     # Parcours dans un vrai navigateur (tests/browser) : ce que le faux DOM des tests unitaires ne voit pas.
     # WebKit : le moteur de Safari, des WebView iOS et de Tauri sous macOS et Linux ; Chromium : celui de Chrome,
-    # d'Android et de Tauri sous Windows (WebView2).
+    # d'Android et de Tauri sous Windows (WebView2) ; Firefox (Gecko), sur ordinateur (BL-13).
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
-      fail-fast: false # un moteur en échec n'interrompt pas l'autre : on veut les deux verdicts
+      fail-fast: false # un moteur en échec n'interrompt pas les autres : on veut chaque verdict
       matrix:
-        browser: [chromium, webkit]
+        browser: [chromium, webkit, firefox]
     name: browser (${{ matrix.browser }})
     env:
       SELENE_BROWSER: ${{ matrix.browser }}
@@ -90,4 +93,7 @@ jobs:
       - name: Bibliothèques système du navigateur
         if: steps.browser.outputs.cache-hit == 'true'
         run: npx playwright install-deps ${{ matrix.browser }}
+      # Firefox, ajouté le 6 octobre 2026 : non bloquant jusqu'au 20 octobre, le temps de repérer ce qui échoue pour une
+      # raison propre au moteur ; ses échecs restent dans le journal et en avertissement. Ensuite, retirer cette ligne.
       - run: npm run test:browser
+        continue-on-error: ${{ matrix.browser == 'firefox' }}

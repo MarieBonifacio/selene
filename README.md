@@ -17,6 +17,13 @@ Recette : le cahier de recette (cas manuels, inventaire des tests automatiques, 
 3. Le site est servi à `https://<utilisateur>.github.io/<dépôt>/`.
 4. Après une mise à jour, recharger l'app sur chaque appareil : une ancienne version restée ouverte ne connaît pas les règles de synchronisation récentes.
 
+## Navigateurs pris en charge
+
+Sur ordinateur : Chrome et Edge (Chromium), Safari (WebKit), Firefox. Sur téléphone : Safari sous iOS, Chrome sous
+Android, ou les apps. Chaque PR rejoue les parcours dans Chromium, WebKit et Firefox ; Firefox est non bloquant jusqu'au
+20 octobre 2026, le temps de repérer ce qui lui est propre. Firefox sur téléphone n'est pas visé (sa part est faible, et
+les apps n'utilisent pas son moteur) : Selene devrait y fonctionner, sans garantie.
+
 ## Installer sur iPhone
 
 1. Ouvrir l'adresse GitHub Pages dans **Safari** (pas un autre navigateur).

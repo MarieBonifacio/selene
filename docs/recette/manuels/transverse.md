@@ -210,15 +210,16 @@ Identifiants retirés : aucun.
   gamme pour les étapes 4 et 5.
 - **Données** : recherche `lune porte`.
 - **Automatisés associés** : `TS-BENCH`
-- **Source** : [TEST] `npm run bench` (mesure seulement, dans une VM sans mise en page : 30 à 60 ms par vue le
-  4 octobre 2026) ; [À ARBITRER] aucun seuil d'acceptation n'existe : à fixer par la responsable du produit.
+- **Source** : [TEST] `npm run bench` (`TS-BENCH`, en CI : 150 ms par vue au plus dans une VM sans mise en page, 30 à
+  60 ms mesurées) ; [DOC] seuils sur téléphone fixés par la responsable le 6 octobre 2026 : 200 ms par vue visés, au-delà
+  de 500 ms une anomalie (les seuils « bon » et « mauvais » de l'INP, la mesure de réactivité de Google).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Ordinateur : outils de développement → Performance → enregistrer ; ouvrir successivement Accueil, Motifs (créer l'espace depuis le modèle s'il manque), Écriture, Bilan, la planche, puis chercher les données. | Chaque vue s'affiche entière ; aucun avertissement « la page ne répond pas ». Noter dans le compte rendu la durée de la plus longue tâche de chaque vue. |
 | 2 | Écriture : faire défiler jusqu'aux fragments les plus anciens. | La liste se pagine ; le plus ancien fragment (« aulne-NAV006… ») est atteignable. |
 | 3 | Réglages → Compte et données → Sauvegarde. | La ligne de taille est en alerte (voir [DON-009](donnees-sauvegardes.md#don-009)). |
-| 4 | Téléphone (PWA ou app) : importer le même fichier ; refaire l'étape 1 en chronométrant. | Les vues s'affichent ; noter les durées. Repère du dépôt : compter 3 à 5 fois plus que sur ordinateur. |
+| 4 | Téléphone (PWA ou app) : importer le même fichier ; refaire l'étape 1 en chronométrant. | Chaque vue s'affiche en 200 ms au plus (cible) ; entre 200 et 500 ms, noter la vue dans le compte rendu ; au-delà de 500 ms, ouvrir une anomalie. Repère du dépôt : compter 3 à 5 fois plus que sur ordinateur. |
 | 5 | Téléphone : taper une capture de 200 caractères dans l'accueil. | Les caractères s'affichent sans retard perceptible pendant la frappe. |
 
 - **État final attendu** : jeu de volume importé.
