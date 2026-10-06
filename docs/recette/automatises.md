@@ -1093,7 +1093,7 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Fichier** : [`tests/browser/hors-ligne.js`](../../tests/browser/hors-ligne.js) · **mode** H · **écran** O
 - **Conditions** : L'app, puis la politique et la page de présentation ouvertes.
 - **Vérifie** : le service worker tient la page ; le cache garde l'app, pas la dernière page visitée.
-- **Limites** : La coupure réseau simulée par Playwright n'atteint pas le service worker : le cache est lu, la page n'est pas rouverte hors ligne.
+- **Limites** : La coupure réseau simulée par Playwright n'atteint pas le service worker : le cache est lu, la page n'est pas rouverte hors ligne. Sous WebKit, la page de test, tenue par le service worker, échappe aux routes : sa mesure d'audience partait vers le vrai projet jusqu'à BL-21 (A20) ; le réseau fermé l'arrête, et le journal le dit.
 - **Cas manuels** : [SYN-010](manuels/synchronisation.md#syn-010), [PLT-001](manuels/plateformes.md#plt-001), [TRV-012](manuels/transverse.md#trv-012)
 
 <a id="tn-reseau-ferme"></a>
@@ -1223,7 +1223,7 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-cites` — Ce que tes sources ont en commun
 
 - **Fichier** : [`tests/browser/cites.js`](../../tests/browser/cites.js) · **mode** H · **écran** O
-- **Conditions** : OpenAlex simulé.
+- **Conditions** : OpenAlex simulé ; chaque contrôle attend les requêtes ou l'écriture qu'il lit (A21).
 - **Vérifie** : rien avant le clic ; deux appels ; OpenAlex ne reçoit que des DOI ; références communes (tes sources exclues), couplage, auteurs qui reviennent ; titres piégés inertes ; résultat sur l'appareil seulement ; garder une référence ; suivre un auteur dans la veille ; cache ; une seule source à DOI : pas de bouton.
 - **Cas manuels** : [EXT-018](manuels/connexions.md#ext-018)
 
@@ -1451,7 +1451,7 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
   `TN-regulation-appareil`, `TN-regulation-perdu`, `TN-sources`, `TN-dehors-croise`, `TN-dehors`, `TN-artist-watch` et
   `TN-agenda`, qui comptaient sur le même délai ; `TN-parcours-e2`, qui lisait le stockage avant l'écriture, trouvé par
   le job « démarrage lent ») ; `TN-agenda` sous WebKit (A19, un rechargement coupait une requête, corrigé par la PR #123
-  comme A1) et
+  comme A1) ; `TN-cites` sous Firefox (A21, une attente fixe, corrigé par la PR #124) et
   `TN-dehors` (A10), qui attendent désormais l'état plutôt qu'un délai ; `TN-regulation` sous WebKit (A9, corrigé par la
   #100) ; `TN-identite` (deux échecs les 2 et 3 octobre, corrigé par `31122f6`). Relevé complet :
   [perimetre.md](perimetre.md#anomalies-et-observations).

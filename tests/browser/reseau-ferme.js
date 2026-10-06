@@ -10,6 +10,16 @@ const { engine, BASE, launchOptions, check, ouvrir } = require('./helpers');
 const DEHORS = 'https://api.open-meteo.com/v1/forecast?latitude=0&longitude=0&current=temperature_2m';
 const ROUTEE = 'https://api.open-meteo.com/v1/sonde-bl21';
 const essai = (p, u) => p.evaluate(async u => { try { return 'servie ' + (await fetch(u)).status; } catch (e) { return 'échoue : ' + e.message; } }, u);
+/* L'échec voulu peut s'écrire à la console, que WebKit compte comme une erreur de la page : « … due to access control
+   checks. », qui nomme la cible, ou, la requête passée par le service worker, « TypeError: Load failed », qui ne la nomme
+   pas (CI de la PR #124). Seuls ces messages-là, nés pendant l'essai, sont écartés ; toute autre erreur compte. */
+const echecVoulu = m => m.includes('api.open-meteo.com/v1/forecast') || /^(TypeError: )?(Load failed|Failed to fetch|NetworkError when attempting to fetch resource\.)$/.test(m);
+async function essaiDehors(p, errs) {
+  const avant = errs.length, r = await essai(p, DEHORS);
+  await p.waitForTimeout(300); // le message de la console arrive après la promesse
+  errs.splice(avant, errs.length - avant, ...errs.slice(avant).filter(m => !echecVoulu(m)));
+  return r;
+}
 const supabase = r => r.fulfill({ contentType: 'application/json', body: r.request().method() === 'GET' ? '{"disable_signup":false}' : '{}' });
 (async () => {
   const b = await engine.launch(launchOptions), errs = [];
@@ -20,7 +30,7 @@ const supabase = r => r.fulfill({ contentType: 'application/json', body: r.reque
     await sans.route(ROUTEE, r => r.fulfill({ contentType: 'application/json', body: '{"routee":true}' }));
     const p = await sans.newPage(); p.on('pageerror', e => errs.push(e.message));
     await ouvrir(p, BASE + '/index.html#sans-compte');
-    const dehors = await essai(p, DEHORS);
+    const dehors = await essaiDehors(p, errs);
     check(dehors.startsWith('échoue'), `une requête que rien ne sert n'atteint aucun serveur (${dehors})`);
     const routee = await essai(p, ROUTEE);
     check(routee === 'servie 200', `une requête routée est servie, le serveur des scénarios aussi (${routee})`);
@@ -35,13 +45,10 @@ const supabase = r => r.fulfill({ contentType: 'application/json', body: r.reque
     else {
       await ouvrir(q, null); // rechargée : la page est désormais tenue par le service worker
       check(await q.evaluate(() => !!navigator.serviceWorker.controller), 'le service worker tient la page');
-      const tenue = await essai(q, DEHORS);
+      const tenue = await essaiDehors(q, errs);
       check(tenue.startsWith('échoue'), `tenue par le service worker, non plus (${tenue})`);
     }
   } catch (e) { check(false, e.message.split('\n')[0]); }
-  // L'échec voulu peut s'écrire à la console (WebKit : « … due to access control checks. », compté comme une erreur de
-  // la page) : seuls les messages qui nomment la cible sont écartés, toute autre erreur compte.
-  const autres = errs.filter(m => !m.includes('api.open-meteo.com/v1/forecast'));
-  check(!autres.length, 'aucune erreur JavaScript' + (autres.length ? ' : ' + autres.join(' | ') : ''));
+  check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

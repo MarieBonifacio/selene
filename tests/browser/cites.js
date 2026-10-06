@@ -1,6 +1,6 @@
 /* Scénario de navigateur : « cité par tes sources » (phase 3, vague 7b : docs/connexions.md).
    Version hébergée simulée (faux Supabase), OpenAlex simulé. Lancé par tests/browser/run.js. */
-const { storeGet, storeJSON, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeGet, storeJSON, until, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 const src = (id, title, doi) => ({ id, title, subtitle: '', tag: 'article', due: '', text: '', status: 'À lire', kept: '2026-09-01', src: doi ? { url: `https://doi.org/${doi}`, doi } : { url: 'https://blog.example/billet' } });
 demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, sources: true, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1,
@@ -41,9 +41,13 @@ const TITLES = {
   const text = async sel => (await p.textContent(sel)).replace(/\s+/g, ' ');
 
   await p.waitForSelector('[data-act="cite-run"]', { timeout: 10000 }).catch(() => {});
+  // Chaque contrôle attend ce qu'il lit (les requêtes, l'écriture) plutôt qu'un délai : sous Firefox, OpenAlex simulé
+  // répondait après les 500 ms d'attente, et asked[0] n'existait pas encore (CI de la PR #124, 6 octobre 2026).
+  const relu = async ok => { let d = null; for (const end = Date.now() + 10000; Date.now() < end; await p.waitForTimeout(100)) { d = await data(); if (ok(d)) break; } return d; };
+  try {
   console.log('à la demande');
   ok(await p.isVisible('[data-act="cite-run"]') && !asked.length, 'un bouton ; rien n’est demandé à OpenAlex avant le clic');
-  await p.click('[data-act="cite-run"]'); await p.waitForTimeout(500);
+  await p.click('[data-act="cite-run"]'); await until(() => asked.length >= 2); await p.waitForSelector('.cite-list b', { timeout: 10000 }).catch(() => {});
   const first = asked[0].searchParams.get('filter');
   ok(asked.length === 2 && first === 'doi:10.1000/a|10.1000/b|10.1000/c' && asked[1].searchParams.get('filter') === 'openalex:W100|W101',
     `deux appels : les bibliographies des trois sources à DOI, puis les titres des références communes (${asked.map(u => u.searchParams.get('filter')).join(' ; ')})`);
@@ -61,18 +65,21 @@ const TITLES = {
   ok(!(await storeGet(p, 'selene-site-v1')).includes('W100') && (await storeGet(p, 'selene-cites')).includes('W100'), 'le résultat reste sur l’appareil, hors des données synchronisées');
 
   console.log('garder, suivre');
-  await p.click('.cite-list [data-w="W100"] [data-act="cite-keep"]'); await p.waitForTimeout(250);
-  const kept = (await data()).modules.sources.entries.find(e => e.src && e.src.doi === '10.1000/w100');
+  await p.click('.cite-list [data-w="W100"] [data-act="cite-keep"]');
+  const kept = (await relu(d => d.modules.sources.entries.some(e => e.src && e.src.doi === '10.1000/w100'))).modules.sources.entries.find(e => e.src && e.src.doi === '10.1000/w100');
   ok(kept && kept.title.startsWith('The phenomenal self') && kept.subtitle === 'Thomas Metzinger' && kept.src.site === 'Mind' && kept.origin.from === 'Cité par tes sources', 'gardée comme Source, avec sa provenance');
   ok((await text('.cite-list [data-w="W100"]')).includes('déjà gardée'), 'et se dit déjà gardée');
-  await p.click('.cite-authors [data-a="A5023888391"] [data-act="cite-follow"]'); await p.waitForTimeout(400);
-  const r = ((await data()).config.dehors || {}).research || [];
+  await p.click('.cite-authors [data-a="A5023888391"] [data-act="cite-follow"]');
+  await until(() => asked.some(u => (u.searchParams.get('filter') || '').startsWith('author.id:A5023888391')));
+  await p.waitForFunction(() => (document.querySelector('.cite-authors [data-a="A5023888391"]') || {}).textContent?.includes('en veille'), null, { timeout: 10000 }).catch(() => {});
+  const r = ((await relu(d => ((d.config.dehors || {}).research || []).length)).config.dehors || {}).research || [];
   ok(r.length === 1 && r[0].kind === 'author' && r[0].q === 'A5023888391' && r[0].name === 'Anna Ciaunica', 'un auteur qui revient se suit dans la veille, sous son nom');
   ok(asked.some(u => (u.searchParams.get('filter') || '').startsWith('author.id:A5023888391')) && (await text('.cite-authors [data-a="A5023888391"]')).includes('en veille'), 'première lecture de la veille ; le bouton dit « en veille »');
 
   console.log('relancé');
   const before = asked.length;
-  await p.click('[data-act="cite-run"]'); await p.waitForTimeout(500);
+  await p.click('[data-act="cite-run"]'); await until(() => asked.length > before);
+  await p.waitForTimeout(500); // une absence ne s'attend pas : le temps qu'une requête de trop parte, s'il devait en partir
   const again = asked.slice(before).map(u => u.searchParams.get('filter'));
   ok(again.length === 1 && again[0] === 'doi:10.1000/w100', `seule la nouvelle source est demandée ; le reste vient du cache (${again.join(' ; ')})`);
   ok(!(await p.$('.cite-list [data-w="W100"]')) && !!(await p.$('.cite-list [data-w="W101"]')), 'gardée, elle devient l’une de tes sources : plus une suggestion');
@@ -83,6 +90,7 @@ const TITLES = {
   await ctx2.addInitScript(d => { window.claude = { use: async () => null }; localStorage.setItem('selene-site-v1', d); }, JSON.stringify(one));
   await a.goto(BASE + '/index.html#sources'); await a.waitForTimeout(400);
   ok(!(await a.$('[data-act="cite-run"]')), 'une seule source à DOI : rien à croiser, pas de bouton');
+  } catch (e) { check(false, e.message.split('\n')[0]); }
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

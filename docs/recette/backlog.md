@@ -499,7 +499,10 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   vers un autre hôte passe par le service worker, que les routes n'atteignent pas (le scénario sépare donc les deux
   temps) ; et `csp.js` lisait, à chaque CI et dans les trois moteurs, les réglages d'inscription du vrai projet
   (`GET /auth/v1/settings`, sans écriture), faute de faux Supabase : il en a un. Le journal de chaque scénario nomme
-  désormais toute requête arrêtée par le mandataire ; sous Chromium, plus aucune hors de `reseau-ferme.js`.
+  désormais toute requête arrêtée par le mandataire ; sous Chromium, plus aucune hors de `reseau-ferme.js`. Sous WebKit,
+  le premier passage fermé en a nommé une autre, la plus grave : `hors-ligne.js` ouvre la page de test tenue par le
+  service worker, et sa mesure d'audience (`POST /rest/v1/audience`, une écriture anonyme) partait vers le vrai projet
+  depuis le 3 octobre au soir ; vérification et nettoyage dans [a-faire.md](../a-faire.md) (A20).
   `hors-ligne-reel.js` reste non joué sous WebKit : ses requêtes y échoueraient désormais au lieu de partir, sans
   atteindre le faux serveur.
 
