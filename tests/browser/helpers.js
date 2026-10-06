@@ -1,5 +1,5 @@
 /* Outils communs aux scénarios de navigateur (tests/browser/*.js), lancés par run.js.
-   Chaque scénario pilote un vrai navigateur (Chromium, ou WebKit) via Playwright et affiche ✓ / ✗ ; un seul ✗, ou une erreur
+   Chaque scénario pilote un vrai navigateur (Chromium, WebKit ou Firefox) via Playwright et affiche ✓ / ✗ ; un seul ✗, ou une erreur
    non rattrapée, fait échouer le scénario (code de sortie 1), donc la CI. */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -7,9 +7,10 @@ const path = require('node:path');
 // Playwright : celui de package.json (npm ci), sinon celui de la machine (installation globale).
 let playwright;
 try { playwright = require('playwright'); } catch { playwright = require(path.join(process.execPath, '..', '..', 'lib', 'node_modules', 'playwright')); }
-// Moteur : Chromium par défaut, SELENE_BROWSER=webkit pour celui de Safari, des WebView iOS et de Tauri (macOS, Linux).
+// Moteur : Chromium par défaut, SELENE_BROWSER=webkit pour celui de Safari, des WebView iOS et de Tauri (macOS, Linux),
+// SELENE_BROWSER=firefox pour Gecko (Firefox sur ordinateur, BL-13).
 const ENGINE = process.env.SELENE_BROWSER || 'chromium';
-if (!['chromium', 'webkit'].includes(ENGINE)) throw new Error('SELENE_BROWSER : chromium ou webkit, pas « ' + ENGINE + ' »');
+if (!['chromium', 'webkit', 'firefox'].includes(ENGINE)) throw new Error('SELENE_BROWSER : chromium, webkit ou firefox, pas « ' + ENGINE + ' »');
 /* Les scénarios lisent l'interface en français : la langue du navigateur est fixée (fr-FR), quelle que soit celle de
    la machine, sinon Selene, qui suit la langue de l'appareil, pourrait parler anglais sur un runner américain. Un
    scénario peut en demander une autre (option locale de newContext ou newPage). */

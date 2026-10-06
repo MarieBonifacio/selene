@@ -132,3 +132,25 @@ test('natif : l’amorçage puis le même script, sans service worker ni manifes
   assert.deepEqual(allowed(w), scripts(w).map(hash), 'et celle du web, ses deux scripts');
   assert.ok(!/script-src[^;]*unsafe-inline/.test(n), 'pas de script inline autorisé en bloc');
 });
+
+test('un projet Supabase de préproduction (la recette) : seulement dans dist/, avec une clé publique, et rien du projet de l’app', () => {
+  const { spawnSync } = require('node:child_process');
+  const PRE = { SELENE_SUPABASE_URL: 'https://preprodrecette.supabase.co', SELENE_SUPABASE_KEY: 'sb_publishable_RecetteFausseCle000' };
+  const own = fs.readFileSync('src/app/services/auth.js', 'utf8').match(/export const SUPABASE_URL = "https:\/\/([a-z0-9]+)\.supabase\.co"/)[1];
+  const run = (env, args) => spawnSync('python3', ['build.py', ...args], { env: { ...process.env, ...env }, encoding: 'utf8' });
+  const versioned = run(PRE, ['--check']);
+  assert.equal(versioned.status, 1); assert.match(versioned.stderr, /seulement avec --dist/, 'jamais dans les fichiers versionnés');
+  for (const bad of [{ ...PRE, SELENE_SUPABASE_KEY: 'sb_secret_xyz' }, { SELENE_SUPABASE_URL: PRE.SELENE_SUPABASE_URL }, { ...PRE, SELENE_SUPABASE_URL: 'https://exemple.fr' }]) {
+    const r = run(bad, ['--dist', fs.mkdtempSync(path.join(os.tmpdir(), 'selene-pre-'))]);
+    assert.notEqual(r.status, 0, JSON.stringify(bad)); assert.match(r.stderr, /les deux, ou aucune/);
+  }
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'selene-pre-'));
+  const ok = run(PRE, ['--dist', out]);
+  assert.equal(ok.status, 0, ok.stderr); assert.match(ok.stdout, /preprodrecette\.supabase\.co/, 'la sortie dit quel projet');
+  for (const rel of ['web/index.html', 'web/essai.html', 'native/index.html']) {
+    const html = fs.readFileSync(path.join(out, rel), 'utf8');
+    assert.ok(html.includes('preprodrecette.supabase.co') && html.includes(PRE.SELENE_SUPABASE_KEY), `${rel} : le projet de préproduction`);
+    assert.ok(!html.includes(own), `${rel} : rien du projet de l’app`);
+  }
+  fs.rmSync(out, { recursive: true, force: true });
+});

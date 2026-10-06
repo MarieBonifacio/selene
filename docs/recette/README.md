@@ -86,15 +86,16 @@ Les cas manuels, par domaine :
 
 | Code | Plateforme |
 |---|---|
-| `Web` | Navigateur d'ordinateur, version hébergée (GitHub Pages) : Chrome ou Edge (Chromium), Safari (WebKit) |
+| `Web` | Navigateur d'ordinateur, version hébergée (GitHub Pages) : Chrome ou Edge (Chromium), Safari (WebKit), Firefox (Gecko) |
 | `Mob` | Navigateur ou PWA installée sur téléphone : Safari sous iOS, Chrome sous Android |
 | `AND` | App Android (Capacitor) : l'APK de la Release GitHub (édition complète) ou l'AAB de Google Play (édition des stores, sans « Reprendre la main ») |
 | `IOS` | App iOS (Capacitor, TestFlight) : édition des stores, sans « Reprendre la main » |
 | `WIN` | App Windows (Tauri) |
 | `ART` | Artefact claude.ai (`selene.html`) |
 
-« Hébergées » désigne `Web`, `Mob`, `AND`, `IOS` et `WIN` : tout ce qui n'est pas l'artefact. Firefox n'est ni cité ni
-testé par le dépôt : sa prise en charge est à clarifier ([perimetre.md](perimetre.md#points-à-arbitrer)).
+« Hébergées » désigne `Web`, `Mob`, `AND`, `IOS` et `WIN` : tout ce qui n'est pas l'artefact. Firefox sur ordinateur
+est pris en charge depuis le 6 octobre 2026 ([BL-13](backlog.md#bl-13)) : les scénarios de navigateur le rejouent à
+chaque PR (non bloquant jusqu'au 20 octobre) ; Firefox sur téléphone n'est pas visé.
 
 ### Source du comportement attendu
 
@@ -117,12 +118,12 @@ cas dont la seule source est [CODE] décrit le comportement actuel, qui peut êt
 Ne jamais exécuter un cas sur un compte ou un appareil qui porte de vraies données : beaucoup de cas importent une
 sauvegarde (ce qui remplace tout l'état du compte, sur tous ses appareils), suppriment un espace ou un compte.
 
-- **Comptes** : deux comptes dédiés à la recette (A et B), créés par invitation dans le projet Supabase, aux adresses qui
-  ne servent qu'à ça, mots de passe de 10 caractères au moins. Les cas de « Reprendre la main » qui testent l'offre de
-  l'espace, le stockage sur l'appareil et la déconnexion demandent un troisième compte, **P**, marqué `selene_personnel`
-  par la personne qui administre le projet ([regulation.md](../regulation.md#hors-de-loffre-publique)) : marquer un compte
-  de recette plutôt que le compte personnel est à décider par la responsable ([perimetre.md](perimetre.md#points-à-arbitrer)).
-  Les cas de l'assistant demandent une clé Anthropic de recette, à la dépense plafonnée, fournie hors du dépôt.
+- **Comptes** : deux comptes dédiés à la recette (A et B), aux adresses qui ne servent qu'à ça, mots de passe de
+  10 caractères au moins, de préférence dans le projet de recette ci-dessous. Les cas de « Reprendre la main » qui
+  testent l'offre de l'espace, le stockage sur l'appareil et la déconnexion demandent un troisième compte, **P**, marqué
+  `selene_personnel` : **dans le projet de recette, jamais sur le compte personnel de la responsable ni dans le projet
+  de l'app** (décision du 6 octobre 2026 ; voir [Le compte de recette P](#le-compte-de-recette-p)). Les cas de
+  l'assistant demandent une clé Anthropic de recette, à la dépense plafonnée, fournie hors du dépôt.
 - **Mesures à ne pas polluer** : sur chaque appareil de recette connecté, couper « Compter mes jours d'usage, pour la bêta »
   (Réglages → Compte et données) avant tout essai, et exclure les comptes de recette des requêtes de la bêta
   ([compte.md](../compte.md#mesure-dusage-bêta)). Sur la page publique de test, toujours ajouter `?src=recette` à
@@ -135,3 +136,33 @@ sauvegarde (ce qui remplace tout l'état du compte, sur tous ses appareils), sup
 - **Date** : beaucoup d'écrans dépendent du jour (accueil, bilan, sept derniers jours). Les jeux de données n'utilisent
   que des dates passées choisies pour que leur effet ne dépende pas du jour d'exécution (un rappel ou une décision
   « en retard » le restent) ; un cas qui exige une date précise le dit.
+
+### Le compte de recette P
+
+Un projet Supabase de recette (préproduction), séparé de celui de l'app : un compte de test, une marque, des écritures
+de recette n'ont rien à faire dans les données de quelqu'un. La version de Selene qui lui parle se construit à part,
+dans `dist/` seulement (`build.py` refuse de l'écrire ailleurs : le web publié parle toujours au projet de l'app).
+
+1. **Le projet** : celui du test d'isolation s'il existe ([compte.md](../compte.md#vérifier-lisolation-entre-comptes),
+   étape 1 : *New project*, puis `supabase/schema.sql` dans *SQL Editor*) ; sinon, le créer ainsi.
+2. **Le compte P** : *Authentication → Users → Add user → Create new user*, une adresse qui ne sert qu'à ça, un mot de
+   passe de 10 caractères au moins, *Auto confirm user?* coché (aucun e-mail n'est envoyé). A et B de même, si besoin.
+3. **La marque** : dans *SQL Editor* **du projet de recette** (vérifier son nom en haut de la page avant d'exécuter) :
+
+   ```sql
+   update auth.users set raw_app_meta_data = raw_app_meta_data || '{"selene_personnel": true}'::jsonb
+   where email = 'adresse-du-compte-p@exemple.fr';
+   ```
+
+4. **La version de recette** : relever l'adresse (`https://<ref>.supabase.co`) et la clé publique (*Project Settings →
+   API Keys → Publishable key*, `sb_publishable_…` ; jamais la clé secrète, que le build refuse), puis :
+
+   ```sh
+   SELENE_SUPABASE_URL=https://<ref>.supabase.co SELENE_SUPABASE_KEY=sb_publishable_… npm run build:dist
+   python3 -m http.server 8080 -d dist/web
+   ```
+
+   et ouvrir `http://localhost:8080` dans le profil de recette. La ligne du build finit par « Supabase project
+   https://<ref>.supabase.co » : c'est la bonne. Les cas qui demandent une fonction (assistant, compte, passeur)
+   demandent qu'elle soit déployée sur ce projet ; sans elle, ils le disent (« non déployé »).
+5. **Après la recette** : `npm run build:dist` sans les deux variables, avant de construire quoi que ce soit d'autre.

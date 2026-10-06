@@ -15,8 +15,9 @@ Deux chemins, que chaque cas désigne explicitement :
   par le cas → « Confirmer » à « Remplacer tout l'état actuel par celui du fichier ? ». Un suivi importé s'ouvre même
   si l'espace n'est plus proposé à la création (« rien ne disparaît »).
 - **Chemin P (compte personnel)** — pour l'offre, le stockage sur l'appareil, les autres appareils et la déconnexion.
-  Version hébergée, connectée au **compte de recette P**, distinct de A et B, marqué `selene_personnel` dans le projet
-  Supabase par la personne qui l'administre ([README de la recette](../README.md#environnement-et-données-de-recette),
+  Version de recette (construite pour le projet Supabase de recette), connectée au **compte de recette P**, distinct de
+  A et B, marqué `selene_personnel` dans ce projet, jamais dans celui de l'app
+  ([README de la recette, « Le compte de recette P »](../README.md#le-compte-de-recette-p),
   [regulation.md](../../regulation.md#hors-de-loffre-publique)) ; « Compter mes jours d'usage, pour la bêta » coupé. Ne
   jamais se déconnecter pour hâter l'arrivée de la marque (la déconnexion vide l'appareil). Importer une sauvegarde
   sur P remplace l'état du compte sur tous ses appareils.

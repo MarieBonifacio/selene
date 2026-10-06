@@ -7,8 +7,12 @@
      sont servis par `__platform` (une seule façade, un seul état). Les noms en sont lus, pas tenus à la main.
    Chemins relatifs à la racine du dépôt, où qu'on lance le script : la sortie est identique d'une machine à l'autre.
    L'édition (SELENE_EDITION) : complète par défaut ; « stores » pour Google Play et l'App Store, où le type « Reprendre
-   la main » n'entre pas : src/app/modules/regulation.js y est remplacé par regulation.stores.js (docs/regulation.md). */
+   la main » n'entre pas : src/app/modules/regulation.js y est remplacé par regulation.stores.js (docs/regulation.md).
+   Le projet Supabase (SELENE_SUPABASE_URL et SELENE_SUPABASE_KEY, ensemble) : celui de l'app par défaut ; un autre,
+   de préproduction, pour la recette avec le compte P (docs/recette/README.md, « Le compte de recette P ») : jamais de
+   compte de test ni d'écriture de recette sur le projet de l'app. Une adresse de projet et une clé publique seulement. */
 import { build } from "esbuild";
+import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -45,6 +49,26 @@ const storesEdition = {
     });
   }
 };
-const plugins = EDITION === "stores" ? [sharedPlatform, storesEdition] : [sharedPlatform];
+const AUTH = path.join(root, "src", "app", "services", "auth.js");
+const authSource = await readFile(AUTH, "utf8");
+const own = { url: authSource.match(/export const SUPABASE_URL = "([^"]*)"/)[1], key: authSource.match(/export const SUPABASE_ANON_KEY = "([^"]*)"/)[1] };
+const asked = { url: process.env.SELENE_SUPABASE_URL || "", key: process.env.SELENE_SUPABASE_KEY || "" };
+if ((asked.url || asked.key) && !(/^https:\/\/[a-z0-9]+\.supabase\.co$/.test(asked.url) && /^sb_publishable_[\w-]+$/.test(asked.key))) {
+  process.stderr.write("SELENE_SUPABASE_URL (https://<ref>.supabase.co) et SELENE_SUPABASE_KEY (sb_publishable_…, jamais la clé secrète) : les deux, ou aucune\n");
+  process.exit(1);
+}
+const supabase = asked.url ? asked : own;
+const otherProject = {
+  name: "autre-projet",
+  setup(b) {
+    b.onLoad({ filter: /auth\.js$/ }, args => {
+      if (path.resolve(args.path) !== AUTH) return undefined;
+      const contents = authSource.replace(/export const SUPABASE_URL = "[^"]*"/, `export const SUPABASE_URL = ${JSON.stringify(supabase.url)}`)
+        .replace(/export const SUPABASE_ANON_KEY = "[^"]*"/, `export const SUPABASE_ANON_KEY = ${JSON.stringify(supabase.key)}`);
+      return { contents, loader: "js" };
+    });
+  }
+};
+const plugins = [sharedPlatform, ...(EDITION === "stores" ? [storesEdition] : []), ...(asked.url && asked.url !== own.url ? [otherProject] : [])];
 const app = await build({ ...common, entryPoints: ["src/app/index.js"], format: "iife", globalName: "__selene", plugins });
-process.stdout.write(JSON.stringify({ edition: EDITION, platform: platformIife.outputFiles[0].text, app: app.outputFiles[0].text }));
+process.stdout.write(JSON.stringify({ edition: EDITION, project: supabase.url === own.url ? "app" : "autre", supabase, platform: platformIife.outputFiles[0].text, app: app.outputFiles[0].text }));
