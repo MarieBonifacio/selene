@@ -130,3 +130,19 @@ test('A24 : a reconnect that fails right after « online » is retried within se
   assert.equal(app.nodes.get('#saving').textContent, '');
   app.site.disconnect(); app.board.disconnect();
 });
+
+/* Le retour de la connexion ne s'annonce pas toujours : navigator.onLine reste vrai derrière un portail captif, sur un
+   réseau sans Internet, ou quand seul le serveur est injoignable, et « online » ne vient jamais (CI du processeur
+   ralenti : la page rechargée hors ligne se croyait en ligne). Un branchement raté est retenté de lui-même. */
+test('A24 : with no « online » event at all, a failed boot connect is retried on its own within seconds', async () => {
+  const server = fakeSupabase();
+  const downUntil = Date.now() + 1000;
+  const fetch = (url, opts) => Date.now() < downUntil ? Promise.reject(new TypeError('Failed to fetch')) : server.fetch(url, opts);
+  const app = launchHosted({ fetch });
+  await settle();
+  assert.equal(app.site.db, null, 'offline at boot: not connected');
+  await settle(2600);
+  assert.ok(app.site.db && app.board.db, 'retried on its own: connected, without any « online » event');
+  assert.equal(app.nodes.get('#saving').textContent, '');
+  app.site.disconnect(); app.board.disconnect();
+});

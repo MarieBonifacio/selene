@@ -250,7 +250,7 @@ function authConnectStores() {
   authConnecting = (async () => {
     try {
       do { authConnectAgain = false; await authConnectStoresNow(); } while (authConnectAgain && authSession && (!board.db || !site.db));
-    } finally { authConnecting = null; }
+    } finally { authConnecting = null; authRetryAfter(); }
   })();
   return authConnecting;
 }
@@ -278,24 +278,27 @@ async function authKeepAlive() {
   if (!authSession) return;
   const s = await authRefreshIfNeeded();
   if (!s) { clearInterval(authRefreshTimer); board.disconnect(); site.disconnect(); render(); return; }
-  if (!board.db || !site.db) { await authConnectStores(); render(); }
+  // Un branchement raté ne change rien à l'écran (l'indicateur s'écrit à part) : ne redessiner qu'une fois branché, sinon
+  // chaque reprise redessinerait la page pour rien.
+  if (!board.db || !site.db) { await authConnectStores(); if (board.db && site.db) render(); }
 }
 function authScheduleRefresh() {
   clearInterval(authRefreshTimer);
   authRefreshTimer = setInterval(authKeepAlive, 5 * 60 * 1000);
 }
-/* Le réseau revenu ne l'est pas toujours tout à fait (réseau qui s'établit, nom pas encore résolu, portail captif) :
-   un branchement qui échoue juste après « online » est retenté peu après, quelques fois, plutôt qu'au minuteur de
-   5 min (A24). */
-const AUTH_RETRY_MS = [2000, 5000, 15000, 30000];
-let authRetryTimer = null;
-async function authReconnectSoon(i = 0) {
+/* Un branchement raté est retenté de lui-même, à 2, 5, 15, 30 et 60 s, puis le minuteur de 5 min prend le relais
+   (A24). Sans attendre « online » : navigator.onLine reste vrai derrière un portail captif, sur un réseau sans
+   Internet ou quand seul le serveur est injoignable, et le retour de la connexion ne s'annonce alors pas ; un réseau
+   tout juste revenu, lui, n'est pas toujours utilisable aussitôt. « online », quand il vient, relance la série. */
+const AUTH_RETRY_MS = [2000, 5000, 15000, 30000, 60000];
+let authRetryTimer = null, authRetryN = 0;
+function authRetryAfter() {
   clearTimeout(authRetryTimer); authRetryTimer = null;
-  await authKeepAlive();
-  if (authSession && (!board.db || !site.db) && i < AUTH_RETRY_MS.length) authRetryTimer = setTimeout(() => authReconnectSoon(i + 1), AUTH_RETRY_MS[i]);
+  if (!authSession || (board.db && site.db)) { authRetryN = 0; return; }
+  if (authRetryN < AUTH_RETRY_MS.length) authRetryTimer = setTimeout(authKeepAlive, AUTH_RETRY_MS[authRetryN++]);
 }
 // Les minuteurs sont gelés quand un téléphone met l'onglet en veille : on rattrape au retour.
-window.addEventListener("online", () => { if (authReady()) authReconnectSoon(); });
+window.addEventListener("online", () => { if (authReady()) { authRetryN = 0; authKeepAlive(); } });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && authReady()) authKeepAlive(); });
 export async function authBoot() {
   if (!authReady()) return null;

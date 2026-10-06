@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-/YUwYl1+bIn2luy+jl060dNDy8Ra/5yZsXopXVu00CA=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qYaUUe1rDkfFFJI6wr9WzdYwixtvFHajIgZj9T//MAE=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -752,7 +752,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "83ee0aaad6";
+const SELENE_BUILD = "dd71f68e13";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -6810,6 +6810,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
         } while (authConnectAgain && authSession && (!board.db || !site.db));
       } finally {
         authConnecting = null;
+        authRetryAfter();
       }
     })();
     return authConnecting;
@@ -6846,23 +6847,30 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     }
     if (!board.db || !site.db) {
       await authConnectStores();
-      render();
+      if (board.db && site.db) render();
     }
   }
   function authScheduleRefresh() {
     clearInterval(authRefreshTimer);
     authRefreshTimer = setInterval(authKeepAlive, 5 * 60 * 1e3);
   }
-  var AUTH_RETRY_MS = [2e3, 5e3, 15e3, 3e4];
+  var AUTH_RETRY_MS = [2e3, 5e3, 15e3, 3e4, 6e4];
   var authRetryTimer = null;
-  async function authReconnectSoon(i = 0) {
+  var authRetryN = 0;
+  function authRetryAfter() {
     clearTimeout(authRetryTimer);
     authRetryTimer = null;
-    await authKeepAlive();
-    if (authSession && (!board.db || !site.db) && i < AUTH_RETRY_MS.length) authRetryTimer = setTimeout(() => authReconnectSoon(i + 1), AUTH_RETRY_MS[i]);
+    if (!authSession || board.db && site.db) {
+      authRetryN = 0;
+      return;
+    }
+    if (authRetryN < AUTH_RETRY_MS.length) authRetryTimer = setTimeout(authKeepAlive, AUTH_RETRY_MS[authRetryN++]);
   }
   window.addEventListener("online", () => {
-    if (authReady()) authReconnectSoon();
+    if (authReady()) {
+      authRetryN = 0;
+      authKeepAlive();
+    }
   });
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden && authReady()) authKeepAlive();

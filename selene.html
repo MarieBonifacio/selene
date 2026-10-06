@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "83ee0aaad6";
+const SELENE_BUILD = "dd71f68e13";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -6777,6 +6777,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
         } while (authConnectAgain && authSession && (!board.db || !site.db));
       } finally {
         authConnecting = null;
+        authRetryAfter();
       }
     })();
     return authConnecting;
@@ -6813,23 +6814,30 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     }
     if (!board.db || !site.db) {
       await authConnectStores();
-      render();
+      if (board.db && site.db) render();
     }
   }
   function authScheduleRefresh() {
     clearInterval(authRefreshTimer);
     authRefreshTimer = setInterval(authKeepAlive, 5 * 60 * 1e3);
   }
-  var AUTH_RETRY_MS = [2e3, 5e3, 15e3, 3e4];
+  var AUTH_RETRY_MS = [2e3, 5e3, 15e3, 3e4, 6e4];
   var authRetryTimer = null;
-  async function authReconnectSoon(i = 0) {
+  var authRetryN = 0;
+  function authRetryAfter() {
     clearTimeout(authRetryTimer);
     authRetryTimer = null;
-    await authKeepAlive();
-    if (authSession && (!board.db || !site.db) && i < AUTH_RETRY_MS.length) authRetryTimer = setTimeout(() => authReconnectSoon(i + 1), AUTH_RETRY_MS[i]);
+    if (!authSession || board.db && site.db) {
+      authRetryN = 0;
+      return;
+    }
+    if (authRetryN < AUTH_RETRY_MS.length) authRetryTimer = setTimeout(authKeepAlive, AUTH_RETRY_MS[authRetryN++]);
   }
   window.addEventListener("online", () => {
-    if (authReady()) authReconnectSoon();
+    if (authReady()) {
+      authRetryN = 0;
+      authKeepAlive();
+    }
   });
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden && authReady()) authKeepAlive();
