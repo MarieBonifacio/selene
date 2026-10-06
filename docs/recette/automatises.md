@@ -11,7 +11,7 @@ Identifiants retirés : aucun.
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
 | Tests unitaires et d'intégration Node | `npm test` | 313 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
-| Scénarios de navigateur | `npm run test:browser` | 78 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026) | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
+| Scénarios de navigateur | `npm run test:browser` | 78 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
 | Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
@@ -33,7 +33,13 @@ contient au moins une assertion (six tests de `sync.test.js` passent par l'assis
   comme un échec. `run.js` les lance six à la fois et sort en 1 si un seul a échoué. Points d'attention : un scénario
   sans aucun `check` passerait (vérifié : aucun) ; un `check` dans une boucle compte une fois par tour ; la vérification
   finale « aucune erreur JavaScript » de presque chaque scénario rattrape toute erreur de la page (`pageerror`), y compris
-  une requête interrompue, ce qui explique l'instabilité A1.
+  une requête interrompue, ce qui explique l'instabilité A1. En CI, `run.js` écrit aussi les scénarios en échec et leurs
+  contrôles dans le résumé du job.
+- **Attendre un état, jamais un délai** : un scénario ouvre ou recharge l'app par `ouvrir()` de `helpers.js`, qui attend
+  son premier rendu (`demarree`) ou, connecté, l'app elle-même (`entree`) : sur le web, elle ne démarre qu'une fois
+  IndexedDB ouverte, après l'événement `load` où `goto` rend la main (A16). `SELENE_LENT=<ms>` fait répondre la base de
+  l'app avec ce retard : un scénario qui compte sur un délai y échoue à coup sûr. La CI rejoue toute la suite ainsi, à
+  1 500 ms (*Check › browser (chromium, démarrage lent)*).
 - **`deno test`** : assertion levée ; **`deno check`** : erreur de typage.
 - **`cargo test`** : `assert!` ou `assert_eq!` en échec.
 - **`build.py --check`** : sort en erreur si un HTML généré ne correspond plus aux sources.
@@ -63,7 +69,7 @@ ou Windows. (Firefox l'est depuis le 6 octobre 2026, dans *Check › browser*.)
 
 | Workflow | Déclencheurs | Ce qu'il lance | Environnement |
 |---|---|---|---|
-| *Check* (`check.yml`) | toute PR ; à la demande ; appelé par *Pages* | job `build-and-test` : `npm ci`, `build:check`, `test`, `test:syntax`, `lint`, `i18n`, `bench` (seuil de 150 ms, `TS-BENCH`) (10 min) ; job `passeur` : `test:functions` (10 min) ; job `recette` : `npm run recette` (5 min ; sans `npm ci`, sur les PR seulement, jamais quand *Pages* appelle *Check*) ; job `browser` : `build:check` puis `test:browser`, matrice Chromium, WebKit et Firefox, aucun n'interrompant les autres ; Firefox non bloquant jusqu'au 20 octobre 2026 ([BL-13](backlog.md#bl-13)) (15 min) | Ubuntu, Node de `.nvmrc` (22), navigateurs Playwright en cache selon `package-lock.json` |
+| *Check* (`check.yml`) | toute PR ; à la demande ; appelé par *Pages* | job `build-and-test` : `npm ci`, `build:check`, `test`, `test:syntax`, `lint`, `i18n`, `bench` (seuil de 150 ms, `TS-BENCH`) (10 min) ; job `passeur` : `test:functions` (10 min) ; job `recette` : `npm run recette` (5 min ; sans `npm ci`, sur les PR seulement, jamais quand *Pages* appelle *Check*) ; job `browser` : `build:check` puis `test:browser`, matrice Chromium, WebKit, Firefox et Chromium au démarrage lent (`SELENE_LENT=1500` : la base de l'app répond avec 1,5 s de retard, contre les délais fixes après l'ouverture, A16), aucun n'interrompant les autres ; Firefox non bloquant jusqu'au 20 octobre 2026 ([BL-13](backlog.md#bl-13)), son échec signalé par un avertissement ([BL-17](backlog.md#bl-17)) ; les scénarios et contrôles en échec listés dans le résumé du job (15 min) | Ubuntu, Node de `.nvmrc` (22), navigateurs Playwright en cache selon `package-lock.json` |
 | *Pages* (`pages.yml`) | push sur `main` ; à la demande | *Check* entier, puis seulement s'il est vert : `build:dist` et déploiement de `dist/web` | Ubuntu |
 | *Android* (`android.yml`) | PR et push sur `main` touchant `src/`, `native/`, `capacitor.config.json`, `package*.json`, `build.py` | `build:dist`, `cap sync`, APK de débogage, puis version signée avec une clé jetable et `apksigner verify` | Ubuntu, Java 21 |
 | *Android sur émulateur* (`android-fumee.yml`) | PR touchant `src/native/`, `src/platform.js`, `native/android/`, `capacitor.config.json`, `package*.json`, `build.py`, `scripts/bundle.mjs` ou le script ; push sur `main` touchant `src/` ou les mêmes ; à la demande | deux APK de débogage (édition complète, édition des stores), un émulateur Android 15 hors ligne, `node scripts/android-fumee.mjs` (`TS-ANDROID-FUMEE`) ; captures et journal en artefact | Ubuntu, KVM, Java 21 |
@@ -1406,7 +1412,10 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
 ## États particuliers
 
 - **Stabilisés côté test, à surveiller** : `TN-activite` sous WebKit (A1 : deux échecs le 4 octobre, aucun depuis le
-  correctif en 32 exécutions WebKit de la CI) ; `TN-mot-de-passe` (A11 : trois échecs sur `main`, les 4 et 5 octobre) et
+  correctif en 32 exécutions WebKit de la CI) ; `TN-mot-de-passe` (A11 : trois échecs sur `main`, les 4 et 5 octobre ;
+  A16 : trois contrôles sous Firefox le 6 octobre, l'app pas encore démarrée, corrigé par la PR #120 avec
+  `TN-regulation-appareil`, `TN-regulation-perdu`, `TN-sources`, `TN-dehors-croise`, `TN-dehors`, `TN-artist-watch` et
+  `TN-agenda`, qui comptaient sur le même délai) et
   `TN-dehors` (A10), qui attendent désormais l'état plutôt qu'un délai ; `TN-regulation` sous WebKit (A9, corrigé par la
   #100) ; `TN-identite` (deux échecs les 2 et 3 octobre, corrigé par `31122f6`). Relevé complet :
   [perimetre.md](perimetre.md#anomalies-et-observations).
@@ -1414,7 +1423,10 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
 - **Conditionnel** : une vérification de `TN-planche` (une page A4) ne tourne que dans Chromium ; les compilations natives
   ne tournent que si la PR touche leurs chemins ; les tests des fonctions ne se rejouent avant déploiement que si les secrets
   sont là.
-- **Hors CI** : `TS-ISOLATION`, `TS-BENCH`, `TS-CAPTURES` ; `TS-LIENS` seulement une fois par mois.
+- **Non bloquant** : *Check › browser (firefox)*, jusqu'au 20 octobre 2026 au moins ([BL-13](backlog.md#bl-13)) ; un échec y
+  laisse le job vert, avec un avertissement et la liste dans le résumé du job ([BL-17](backlog.md#bl-17)).
+- **Hors CI** : `TS-ISOLATION`, `TS-CAPTURES` ; `TS-LIENS` seulement une fois par mois ; `TS-SAUVEGARDE` chaque lundi, sauté tant
+  que ses réglages manquent. (`TS-BENCH` est en CI depuis le 6 octobre 2026.)
 - **Désactivé, ignoré, sans assertion** : aucun.
 - **Playwright** : 1.63.0 depuis la fusion de la PR #78 (`5197c5f`) ; les navigateurs de la CI sont les siens.
 

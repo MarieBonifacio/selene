@@ -25,9 +25,9 @@ dont le dépôt ne peut pas savoir s'ils ont eu lieu.
   [PLT-011](recette/manuels/plateformes.md#plt-011) avec un compte claude.ai de recette.
 
 - [ ] **Le 20 octobre 2026 : Firefox devient bloquant** ([BL-13](recette/backlog.md#bl-13)). Lire les dernières courses
-  *Check › browser (firefox)* : le job reste vert même quand un scénario échoue, il faut donc lire la fin du journal du
-  pas « test:browser » (« 0/78 scénario(s) en échec »), pas la pastille. Condition proposée : l'anomalie A16 corrigée,
-  puis vingt passages consécutifs sans échec. Si elle est remplie, retirer la ligne `continue-on-error` du job `browser`
+  *Check › browser (firefox)* : le job reste vert même quand un scénario échoue ; un échec s'y voit à l'avertissement
+  « Scénarios en échec sous firefox (non bloquant) » sur la PR, et à la liste du résumé du job. Condition proposée :
+  vingt passages consécutifs sans cet avertissement depuis la correction d'A16 (PR #120, le 6 octobre). Si elle est remplie, retirer la ligne `continue-on-error` du job `browser`
   dans `.github/workflows/check.yml` (une session Claude Code peut le faire : « Firefox devient bloquant ») ; sinon,
   chaque échec propre à Firefox devient une anomalie du cahier, corrigée avant de retirer la ligne, quitte à décaler la
   date.

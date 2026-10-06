@@ -22,8 +22,9 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
 | A17 : dans l'artefact claude.ai relié à sa base, un suivi « Reprendre la main » d'avant le 3 octobre part en entier dans la base de claude.ai, sous un texte qui dit que rien n'est envoyé | une session (comportement décidé le 6 octobre : ramené sur l'appareil, avec un avis) | P1 | avant toute publication de l'artefact | [A17](perimetre.md#anomalies-et-observations), [décision](#decisions) |
-| A16 : `tests/browser/mot-de-passe.js` instable sous Firefox | une session | P2 | avant que Firefox devienne bloquant | [A16](perimetre.md#anomalies-et-observations) |
-| BL-17 : un échec sous Firefox ne se voit pas (le job reste vert) | une session | P2 | avec A16 | [BL-17](#bl-17) |
+| A18 : au lancement d'un appareil connecté, l'écran d'entrée s'affiche jusqu'aux premières réponses du serveur | une session | P2 | — | [A18](perimetre.md#anomalies-et-observations) |
+| ~~A16 : `tests/browser/mot-de-passe.js` instable sous Firefox~~ (fait le 6 octobre 2026, PR #120) | une session | P2 | — | [A16](perimetre.md#anomalies-et-observations) |
+| ~~BL-17 : un échec sous Firefox ne se voit pas (le job reste vert)~~ (fait le 6 octobre 2026, PR #120) | une session | P2 | — | [BL-17](#bl-17) |
 
 ### À automatiser
 
@@ -60,7 +61,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Question | Proposition | Échéance | Détail |
 |---|---|---|---|
-| À quelle condition Firefox devient-il bloquant ? | A16 corrigé, puis vingt passages Firefox consécutifs sans échec, lus dans le journal du pas (pas seulement « job vert ») ; sinon, décaler la date plutôt que bloquer sur un scénario instable | 20 octobre 2026 | [BL-13](#bl-13), [BL-17](#bl-17) |
+| À quelle condition Firefox devient-il bloquant ? | Vingt passages Firefox consécutifs sans échec depuis la correction d'A16 (PR #120) : sans l'avertissement « Scénarios en échec sous firefox (non bloquant) » ; sinon, décaler la date plutôt que bloquer sur un scénario instable | 20 octobre 2026 | [BL-13](#bl-13), [BL-17](#bl-17) |
 | L'assistant hébergé : le déployer pour la bêta ? | Non, et l'écrire : il n'est pas prioritaire pour la bêta, et sans lui la gestion des clés et le registre RGPD restent plus simples | avant d'inviter les bêta-testeurs | [a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait), [assistant.md](../assistant.md) |
 | La PR #118 (le cahier à cocher) : la fusionner ? | Oui : outillage seul, CI verte, et c'est le support qui manque pour exécuter une campagne ; puis [BL-18](#bl-18) | avant la première smoke | PR #118 |
 | L'offre Pro de Supabase avant la bêta ? | Oui (une sauvegarde par jour, pas de mise en pause) ; décision de budget | avant d'inviter les bêta-testeurs | [a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait) |
@@ -100,7 +101,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 | [BL-14](#bl-14) | La sauvegarde complète dans un vrai navigateur, sur deux appareils | automatisation | P1 | DON-002, DON-003, DON-004, DON-005, DON-006 |
 | [BL-15](#bl-15) | Le hors-ligne réel : réseau coupé, page rechargée, retour du réseau | automatisation | P1 | SYN-004, PLT-001, SYN-010 |
 | [BL-16](#bl-16) | Fumée de l'app iOS sur simulateur, en CI | automatisation | P3 | PLT-008 |
-| [BL-17](#bl-17) | Un échec sous Firefox doit se voir tant qu'il n'est pas bloquant | fiabilité de la CI | P2 | tous |
+| [BL-17](#bl-17) | ~~Un échec sous Firefox doit se voir tant qu'il n'est pas bloquant~~ (fait) | fiabilité de la CI | P2 | tous |
 | [BL-18](#bl-18) | La page du cahier à cocher sous contrôle de la CI (si la PR #118 est fusionnée) | outillage | P3 | tous |
 | [BL-19](#bl-19) | Matrice : nommer les étapes que les tests ne couvrent pas | traçabilité | P3 | les 73 cas P1 d'abord |
 | [BL-20](#bl-20) | Un résultat observable à chaque étape, contrôlé par `npm run recette` | outillage | P3 | onze étapes, voir ci-dessous |
@@ -340,8 +341,8 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   montraient pas (A15, corrigé par la PR #116). Le job « vert » ne le disait pas : avant de le rendre bloquant, lire son
   journal reste le seul moyen de savoir.
 - **Condition proposée pour le 20 octobre** (à confirmer par la responsable) : A16 corrigé, puis vingt passages Firefox
-  consécutifs sans échec, lus dans le journal du pas (« 0/78 scénario(s) en échec », ou l'avertissement de
-  [BL-17](#bl-17) absent) ; sinon, décaler la date plutôt que rendre bloquant un scénario instable, qui apprendrait à
+  consécutifs sans échec : l'avertissement de [BL-17](#bl-17) absent, ou « 78 scénarios, tous verts. » à la fin du
+  journal du pas ; sinon, décaler la date plutôt que rendre bloquant un scénario instable, qui apprendrait à
   relancer la CI sans la lire.
 
 <a id="bl-14"></a>
@@ -407,6 +408,10 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 - **Niveau** : CI.
 - **Bénéfice attendu** : chaque échec Firefox vu le jour même ; le compte des vingt passages de la [condition
   proposée](#bl-13) se fait à l'œil.
+- **État** : **fait** le 6 octobre 2026 (PR #120). Le pas des scénarios a l'identifiant `scenarios` ; quand il échoue sans
+  bloquer, le pas « Signaler l'échec non bloquant » écrit l'avertissement « Scénarios en échec sous firefox (non
+  bloquant) », visible sur la PR. Pour tous les moteurs, `tests/browser/run.js` écrit dans le résumé du job les scénarios
+  en échec et leurs contrôles (`GITHUB_STEP_SUMMARY`).
 
 <a id="bl-18"></a>
 ### BL-18 — La page du cahier à cocher sous contrôle de la CI (si la PR #118 est fusionnée)
@@ -462,10 +467,11 @@ concerné est mis à jour en conséquence ([maintenance.md](maintenance.md)).
 
 Puis, le 6 octobre 2026 : A12 (artefact : le carnet dans des documents partagés de claude.ai : **corrigée**, ADR 33), A13
 (espace supprimé qui revenait : **corrigée**, ADR 34), A14 (premier passage sous Firefox, quatre causes : **corrigée**),
-A15 (saisie de l'écran de connexion effacée par un rendu : **corrigée**, PR #116), **A16** (`mot-de-passe.js` instable
-sous Firefox : ouverte, P2, [à corriger](#reste-a-faire) avant que Firefox devienne bloquant) et **A17** (artefact : un
-suivi « Reprendre la main » d'avant le 3 octobre part dans la base de claude.ai : ouverte, P1, comportement décidé,
-[plus bas](#decisions)).
+A15 (saisie de l'écran de connexion effacée par un rendu : **corrigée**, PR #116), A16 (`mot-de-passe.js` instable
+sous Firefox : **corrigée** côté test, PR #120, avec sept scénarios du même genre et un job « démarrage lent »), **A17**
+(artefact : un suivi « Reprendre la main » d'avant le 3 octobre part dans la base de claude.ai : ouverte, P1,
+comportement décidé, [plus bas](#decisions)) et **A18** (au lancement d'un appareil connecté, l'écran d'entrée
+s'affiche jusqu'aux premières réponses du serveur : ouverte, P2).
 
 <a id="documentation"></a>
 ## Documentation à corriger
@@ -503,7 +509,7 @@ Les questions marquées [À ARBITRER] dans les cas, et ce qu'elles bloquent :
 | ~~`npm run recette` en CI ?~~ : oui, fait, et obligatoire pour fusionner (réglage du dépôt à appliquer) | — | [BL-12](#bl-12) |
 | ~~Firefox ?~~ : oui sur ordinateur, non bloquant jusqu'au 20 octobre 2026, le 6 octobre | — | [BL-13](#bl-13) |
 | ~~Dans l'artefact, que devient un suivi « Reprendre la main » d'avant le 3 octobre, encore marqué synchronisé ? (A17)~~ : il est ramené sur l'appareil au chargement, avec un avis, et l'écran dit vrai sur ce que voit claude.ai ; jamais dans la base de l'artefact. Décidé le 6 octobre 2026 (la recommandation retenue par la responsable) ; correctif à venir | [PLT-011](manuels/plateformes.md#plt-011), [RLM-024](manuels/reprendre-la-main.md#rlm-024) | la publication de l'artefact |
-| À quelle condition Firefox devient-il bloquant ? Proposition : A16 corrigé, puis vingt passages consécutifs sans échec, lus dans le journal ; sinon décaler la date | — | [BL-13](#bl-13) |
+| À quelle condition Firefox devient-il bloquant ? Proposition : vingt passages consécutifs sans échec depuis la correction d'A16 (PR #120), sans l'avertissement de [BL-17](#bl-17) ; sinon décaler la date | — | [BL-13](#bl-13) |
 | L'assistant hébergé : le déployer pour la bêta ? Proposition : non, et l'écrire | [AST-001](manuels/assistant.md#ast-001) à [AST-007](manuels/assistant.md#ast-007) | la recette de l'assistant hébergé |
 | La PR #118 (le cahier à cocher) : la fusionner ? Proposition : oui, puis [BL-18](#bl-18) | — | l'exécution des campagnes sur la page |
 

@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Dehors (connexions externes, phase 2, vague 6b : docs/connexions.md).
    Version hébergée simulée : faux Supabase, faux passeur qui sert des flux. Lancé par tests/browser/run.js. */
-const { storeSet, storeJSON, until, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeSet, storeJSON, until, ouvrir, entree, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 const col = (label, extra) => ({ type: 'collection', label, config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1, addLabel: 'Ajouter',
   fields: { title: 'Titre', subtitle: 'Variantes', tag: '', due: '', text: 'Notes' }, ...extra }, entries: [] });
@@ -120,10 +120,10 @@ const PAGES = {
   await p.goto(BASE + '/index.html'); await p.waitForTimeout(400);
   ok(!(await p.$('.dehors-go')), 'plus rien de neuf : l’accueil se tait');
   calls.length = 0;
-  await p.reload(); await p.waitForTimeout(2200);
+  await ouvrir(p, null, entree); await p.waitForTimeout(2200); // une absence ne s'attend pas : le délai court depuis le démarrage (A16)
   ok(calls.length === 0, 'rouvert dans les trois heures : aucune relecture');
   { const c = await storeJSON(p, 'selene-dehors'); c.at = 0; await storeSet(p, 'selene-dehors', JSON.stringify(c)); }
-  await p.reload(); await p.waitForTimeout(2500);
+  await ouvrir(p, null, entree); await until(() => calls.length >= 3);
   ok(calls.length === 3, 'rouvert plus tard : les flux sont relus, un par un');
 
   console.log('passeur fermé à ce compte');
