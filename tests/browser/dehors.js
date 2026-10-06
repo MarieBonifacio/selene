@@ -119,13 +119,23 @@ const PAGES = {
   ok(!(await p.$('[data-item="a1"]')) && (await p.textContent('[data-item="a2"]')).includes('phalène'), 'seulement ce qui touche mes motifs : le motif est nommé');
 
   console.log('vu jusqu’à, relecture conditionnelle');
-  await p.click('[data-act="dehors-seen"]'); await p.waitForTimeout(250);
-  ok((await p.textContent('#main')).includes('Rien de neuf') && (await data()).config.dehors.feeds.every(f => f.seen > Date.now() - 60000), 'tout marqué comme vu, et c’est synchronisé');
+  /* Des états, pas des délais (A25 : sous WebKit, 250 ms après le clic, le stockage n'avait pas encore les dates « vu »).
+     Une lecture des flux en cours (« Lecture des flux… ») refait le rendu à sa fin, et prend la place de « Rien de
+     neuf » : la laisser finir avant le clic. L'écriture part dans IndexedDB sans être attendue : l'attendre. */
+  const lit = () => p.evaluate(() => ((document.querySelector('#main') || {}).textContent || '').includes('Lecture des flux'));
+  const vus = async () => ((await data()).config.dehors || { feeds: [] }).feeds.every(f => f.seen > Date.now() - 60000);
+  const jusqua = async (cond, ms = 10000) => { for (const end = Date.now() + ms; !(await cond()) && Date.now() < end;) await p.waitForTimeout(100); return cond(); };
+  await jusqua(async () => !(await lit()));
+  await p.click('[data-act="dehors-seen"]');
+  const rien = await jusqua(async () => (await p.textContent('#main')).includes('Rien de neuf')), stocke = await jusqua(vus);
+  ok(rien && stocke, 'tout marqué comme vu, et c’est synchronisé' + (rien && stocke ? '' : ` (« Rien de neuf » : ${rien} ; dates « vu » enregistrées : ${stocke})`));
   calls.length = 0;
-  await p.click('[data-act="dehors-refresh"]'); await p.waitForTimeout(700);
+  await p.click('[data-act="dehors-refresh"]');
+  await jusqua(async () => calls.length >= 3 && !(await lit()));
   ok(calls.length === 3 && calls.find(c => c.url.endsWith('feed.xml')).etag === '"r-v1"', 'relire : un appel par flux, l’ETag renvoyé (le site répond 304)');
-  await p.goto(BASE + '/index.html'); await p.waitForTimeout(400);
-  ok(!(await p.$('.dehors-go')), 'plus rien de neuf : l’accueil se tait');
+  await ouvrir(p, BASE + '/index.html', entree);
+  const go = await p.$('.dehors-go');
+  ok(!go, 'plus rien de neuf : l’accueil se tait' + (go ? ` (« ${(await go.textContent()).trim()} »)` : ''));
   calls.length = 0;
   await ouvrir(p, null, entree); await p.waitForTimeout(2200); // une absence ne s'attend pas : le délai court depuis le démarrage (A16)
   ok(calls.length === 0, 'rouvert dans les trois heures : aucune relecture');
