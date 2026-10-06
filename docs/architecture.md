@@ -1033,6 +1033,10 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   personne en lecture seule (Viewer, Commenter) ne peut pas écrire son sous-arbre : son Selene reste dans son
   navigateur. Vérifié par `tests/artifact.test.js` (faux claude.ai qui applique la règle du sous-arbre privé) ; reste
   à le constater dans claude.ai ([PLT-011](recette/manuels/plateformes.md#plt-011)).
+- **Complément du 6 octobre 2026 (A17)** : le sous-arbre privé reste une base hors de l'appareil. Un suivi « Reprendre
+  la main » encore marqué synchronisé (d'avant le 3 octobre, venu d'une sauvegarde) y partait entier ; il est désormais
+  ramené dans le navigateur à l'entrée des données (`normalizeSite`, avant toute écriture), comme le veut l'ADR 27, et
+  la base n'en reçoit que le talon.
 
 ### ADR 34 — Les pierres tombales : un espace supprimé ne revient pas
 

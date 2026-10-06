@@ -12,7 +12,7 @@ import { render } from "../shell/render.js";
 import { deviceSignOutGuard } from "./device-guard.js";
 import { DRAFT_PREFIX } from "../state/drafts.js";
 import { localErase, localSwitch } from "../state/local.js";
-import { board, site, siteSeed } from "../state/site.js";
+import { board, keepHere, site, siteNotice, siteSeed } from "../state/site.js";
 import { ask } from "../ui/dialogs.js";
 
 export const SUPABASE_URL = "https://pxnrzrmzritezftefdlj.supabase.co";
@@ -234,13 +234,16 @@ async function authConnectStores() {
   if (last !== uid) localSwitch(uid); // les suivis gardés sur cet appareil suivent leur compte (ADR 27)
   // Sans compte, ce qui a été noté appartient à qui se connecte maintenant (la déconnexion d'avant a vidé l'appareil) :
   // rien n'est effacé, tout rejoint le compte, dont les réglages l'emportent. Sinon, un autre compte : on repart de zéro.
-  if (localOnly()) { site.yieldToRemote(); board.yieldToRemote(); platform.storage.remove(LOCAL_KEY); authAsked = false; }
+  // Sauf un suivi encore marqué synchronisé, venu d'une sauvegarde : il reste sur l'appareil, le compte n'en reçoit que
+  // le nom (A17).
+  if (localOnly()) { keepHere(site.data); site.yieldToRemote(); board.yieldToRemote(); platform.storage.remove(LOCAL_KEY); authAsked = false; }
   else if (last && last !== uid) authResetLocal(false);
   platform.storage.set(LAST_UID_KEY, uid);
   // Ne (re)connecte que les stores déconnectés : un store déjà branché a son propre poller, pas de doublon.
   // L'un après l'autre, le site d'abord : le board verse ses tâches dans un site déjà synchronisé (voir absorbBoard).
   for (const st of [site, board]) if (!st.db) await st.connect(supabaseDb);
   if (board.db && site.db) setSaving("");
+  siteNotice();
 }
 
 /* Rafraîchit le jeton et, si la synchro était tombée (démarrage hors ligne), la rétablit. */

@@ -748,14 +748,15 @@ Identifiants retirés : aucun.
 - **Fonctionnalité et règle** : un suivi encore synchronisé (accord daté d'avant le 3 octobre 2026, ou d'avant la
   question) affiche un bandeau ; « Le garder sur cet appareil seulement… » le ramène, et le serveur n'en a plus que le
   talon ; Selene ne choisit pas l'appareil à la place de la personne ; aucun chemin ne fait l'inverse ; sans compte, pas
-  de question.
+  de question. Là où aucun compte ne le gardait synchronisé, il reste sur l'appareil sans question, et l'appareil le dit
+  (A17) : au versement d'un appareil sans compte dans un compte, et dans l'artefact claude.ai ([PLT-011](plateformes.md#plt-011)).
 - **Objectif, risque vérifié** : un suivi de santé qui reste sur le serveur sans que la personne le sache ; un choix
   fait à sa place.
 - **Priorité** : P1 · **Plateformes** : Web, Mob
 - **Préconditions** : chemin P sur l'appareil 1 ; un appareil 2 connecté au compte P ; Network filtré sur `app_state`.
 - **Données** : `rlm-synchronise-ancien.json`.
-- **Automatisés associés** : `TU-REG-28`, `TU-REG-29`
-- **Source** : [DOC] [regulation.md](../../regulation.md#hors-de-loffre-publique) ; [TEST] `TU-REG-28`, `TU-REG-29`.
+- **Automatisés associés** : `TU-REG-28`, `TU-REG-29`, `TU-REG-41`, `TU-ART-06`, `TU-ART-07`
+- **Source** : [DOC] [regulation.md](../../regulation.md#hors-de-loffre-publique) ; [TEST] `TU-REG-28`, `TU-REG-29`, `TU-REG-41` ; anomalie A17 : avant le 6 octobre 2026, le versement envoyait le suivi entier au compte.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -766,9 +767,10 @@ Identifiants retirés : aucun.
 | 5 | Network : la `PATCH` suivante vers `app_state`. | L'espace n'y a plus que `"storage":"device"`, `holder`, `"subject":null`, `"entries":[]` ; pas de « Pause café ». |
 | 6 | Appareil 2 : recharger. | « Ce suivi est gardé sur un autre de tes appareils… » |
 | 7 | Chemin S (sans compte) : importer le même jeu ; ouvrir l'espace. | Aucun bandeau ; « Sur cet appareil : sans compte, rien n'est envoyé au serveur de Selene. » |
+| 8 | Chemin S, toujours : « J'ai déjà un compte », se connecter au compte B, qui n'a aucun suivi (le versement : ce qui est sur l'appareil rejoint le compte) ; Network filtré sur `app_state`. | « « Carnet du soir » reste sur cet appareil seulement : Selene ne synchronise plus les suivis de santé, ton compte n'en garde que le nom. » ; la `PATCH` vers `app_state` n'a que le talon de l'espace (`"storage":"device"`, `"entries":[]`), pas de « Pause café » ; « Sur cet appareil seulement… » dans « Confidentialité et données ». |
 
-- **État final attendu** : le suivi gardé sur l'appareil 1, un talon sur le compte.
-- **Nettoyage** : supprimer le suivi depuis l'appareil 1 ([RLM-026](#rlm-026)) si la campagne n'en a plus besoin.
+- **État final attendu** : le suivi gardé sur l'appareil 1, un talon sur le compte P ; un autre sur l'appareil du chemin S, un talon sur le compte B.
+- **Nettoyage** : supprimer le suivi depuis l'appareil 1 ([RLM-026](#rlm-026)) si la campagne n'en a plus besoin ; sur l'appareil du chemin S, connecté au compte B, supprimer « Carnet du soir » de même, puis se déconnecter.
 
 ---
 

@@ -313,15 +313,18 @@ Identifiants retirés : aucun.
 - **Fonctionnalité et règle** : `selene.html` publié comme artefact (capacités `db` et `user`) démarre sans compte
   Selene ni écran d'entrée ; ses données vivent dans le stockage de l'artefact et dans le sous-arbre privé de la
   personne qui l'ouvre (`data/users/<id>/site`, `…/board` ; ADR 33), jamais dans un document partagé : partager le
-  lien partage l'outil, pas le carnet ; ce qui demande la version hébergée (compte, connexions, passeur) le dit.
+  lien partage l'outil, pas le carnet ; ce qui demande la version hébergée (compte, connexions, passeur) le dit. Un
+  suivi « Reprendre la main » arrivé encore marqué synchronisé (d'avant le 3 octobre 2026, par une sauvegarde) est
+  ramené dans ce navigateur : la base n'en reçoit que le talon, et l'écran dit ce que garde l'espace privé (A17).
 - **Objectif, risque vérifié** : un artefact qui démarre vide à chaque ouverture ; une fonction hébergée qui échoue sans
-  explication ; le carnet lu par toute personne à qui l'on donne le lien (A12).
+  explication ; le carnet lu par toute personne à qui l'on donne le lien (A12) ; un suivi de santé rangé, contenu
+  compris, dans la base de claude.ai sous un texte qui dit que rien n'est envoyé (A17).
 - **Priorité** : P1 · **Plateformes** : ART
 - **Préconditions** : deux comptes claude.ai de recette, R1 et R2 ; `selene.html` construit au commit en recette
   (`python3 build.py`), publié par R1 comme artefact avec les capacités `db` et `user` ; un second navigateur connecté
   à R1 ; un troisième, connecté à R2.
-- **Données** : captures `Artefact PLT-011` (R1) et `Artefact PLT-011 R2` (R2).
-- **Automatisés associés** : `TU-APP-01`, `TU-PLT-05`, `TU-ART-01`, `TU-ART-02`, `TU-ART-03`, `TU-ART-04`, `TU-ART-05`
+- **Données** : captures `Artefact PLT-011` (R1) et `Artefact PLT-011 R2` (R2) ; `donnees/rlm-synchronise-ancien.json`.
+- **Automatisés associés** : `TU-APP-01`, `TU-PLT-05`, `TU-ART-01`, `TU-ART-02`, `TU-ART-03`, `TU-ART-04`, `TU-ART-05`, `TU-ART-06`, `TU-ART-07`
 - **Source** : [CODE] `src/app/services/artifact-db.js`, `src/app/boot.js`, `src/platform.js` (runtime « artifact ») ;
   [DOC] ADR 33 de `docs/architecture.md`, contrat `db` de claude.ai (documents partagés par défaut, sous-arbre
   `data/users/<id>/` privé) ; [TEST] `tests/artifact.test.js` (faux claude.ai).
@@ -334,9 +337,11 @@ Identifiants retirés : aucun.
 | 4 | Ouvrir le même artefact dans le second navigateur, connecté à R1. | La note `Artefact PLT-011` y est. |
 | 5 | R1 partage l'artefact avec R2 (menu de partage, niveau Contributeur) ; R2 l'ouvre dans le troisième navigateur. | Un Selene vide : ni la note `Artefact PLT-011`, ni le nom ou les espaces de R1. |
 | 6 | R2 garde la capture `Artefact PLT-011 R2` ; R1 recharge l'artefact. | Chez R1, la note de R2 n'apparaît pas ; chez R2, rechargé, elle est là. |
+| 7 | R1, premier navigateur : Réglages → Sauvegarde → Importer `rlm-synchronise-ancien.json`, confirmer ; ouvrir « Carnet du soir », déplier « Confidentialité et données ». | « Sauvegarde importée. « Carnet du soir » est désormais gardé dans ce navigateur seulement : Selene ne synchronise plus les suivis de santé, pas même par claude.ai. » ; la saisie « Pause café » est là ; « Où vivent ces données. Dans ce navigateur seulement. L'espace privé de ton compte claude.ai n'en garde que le nom… » ; aucun bandeau « Ce suivi doit revenir sur un appareil ». |
+| 8 | R1, second navigateur : recharger, ouvrir « Carnet du soir ». | « Ce suivi est gardé sur un autre de tes appareils, et seulement là… » : le nom seul, ni « Pause café » ni le sujet. |
 
-- **État final attendu** : une note de plus dans le Selene de R1, une dans celui de R2 ; aucun document partagé dans
-  l'espace `db` de l'artefact.
+- **État final attendu** : chez R1, l'état du jeu importé, son suivi dans le premier navigateur seulement ; une note
+  dans le Selene de R2 ; aucun document partagé dans l'espace `db` de l'artefact.
 - **Nettoyage** : supprimer l'artefact (cela efface son espace `db`).
 
 ---
