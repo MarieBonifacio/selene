@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "4d628c7470";
+const SELENE_BUILD = "60eb5a32a2";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1154,6 +1154,7 @@ var __selene = (() => {
     authDeleteAccount: () => authDeleteAccount,
     authGate: () => authGate,
     authMode: () => authMode,
+    authPaint: () => authPaint,
     authReady: () => authReady,
     authRefreshIfNeeded: () => authRefreshIfNeeded,
     authRefreshTimer: () => authRefreshTimer,
@@ -6907,7 +6908,23 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       authSay(e.code === "signup_disabled" ? tr`Les inscriptions sont fermées : Selene n'ouvre de compte que sur invitation.` : e.message || tr`Connexion impossible.`);
     }
     authBusy = false;
+    authSent = true;
     render();
+  }
+  var authSent = false;
+  function authPaint(main) {
+    const ae = document.activeElement, kept = authSent || !main.querySelectorAll ? [] : [...main.querySelectorAll("#authForm input[id]")].filter((el) => el.value).map((el) => [el.id, el.value]);
+    const focus = !authSent && ae && ae.id && main.contains && main.contains(ae) ? ae.id : null;
+    authSent = false;
+    main.innerHTML = authView();
+    for (const [id, value] of kept) {
+      const el = document.getElementById(id);
+      if (el) el.value = value;
+    }
+    if (focus) {
+      const el = document.getElementById(focus);
+      if (el) el.focus();
+    }
   }
   function authView() {
     if (authBooted && !authSignupAsked) authAskSignup();
@@ -13322,7 +13339,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     if (gate) {
       $("#nav").innerHTML = "";
       $("#bar").innerHTML = "";
-      $("#main").innerHTML = authView();
+      authPaint($("#main"));
       return;
     }
     let view = routeOf().view;

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-kMvzNjcBEKnuj5/u524mdumQ06XowL5yTgOGXr1PJP8=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-a89rktXYdKS6JGizXVWQ5a2CnNgZzC8jIm5nE+0YtqU=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -752,7 +752,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "4d628c7470";
+const SELENE_BUILD = "60eb5a32a2";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1187,6 +1187,7 @@ var __selene = (() => {
     authDeleteAccount: () => authDeleteAccount,
     authGate: () => authGate,
     authMode: () => authMode,
+    authPaint: () => authPaint,
     authReady: () => authReady,
     authRefreshIfNeeded: () => authRefreshIfNeeded,
     authRefreshTimer: () => authRefreshTimer,
@@ -6940,7 +6941,23 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       authSay(e.code === "signup_disabled" ? tr`Les inscriptions sont fermées : Selene n'ouvre de compte que sur invitation.` : e.message || tr`Connexion impossible.`);
     }
     authBusy = false;
+    authSent = true;
     render();
+  }
+  var authSent = false;
+  function authPaint(main) {
+    const ae = document.activeElement, kept = authSent || !main.querySelectorAll ? [] : [...main.querySelectorAll("#authForm input[id]")].filter((el) => el.value).map((el) => [el.id, el.value]);
+    const focus = !authSent && ae && ae.id && main.contains && main.contains(ae) ? ae.id : null;
+    authSent = false;
+    main.innerHTML = authView();
+    for (const [id, value] of kept) {
+      const el = document.getElementById(id);
+      if (el) el.value = value;
+    }
+    if (focus) {
+      const el = document.getElementById(focus);
+      if (el) el.focus();
+    }
   }
   function authView() {
     if (authBooted && !authSignupAsked) authAskSignup();
@@ -13355,7 +13372,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     if (gate) {
       $("#nav").innerHTML = "";
       $("#bar").innerHTML = "";
-      $("#main").innerHTML = authView();
+      authPaint($("#main"));
       return;
     }
     let view = routeOf().view;

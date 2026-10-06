@@ -14,7 +14,7 @@ import { timerLabel } from "../features/timer.js";
 import { setOpenId } from "../modules/taches.js";
 import { moon, moonSVG } from "../scene/moon.js";
 import { skyConf, skyWatch } from "../scene/sky.js";
-import { authGate, authView } from "../services/auth.js";
+import { authGate, authPaint } from "../services/auth.js";
 import { backTo, barHTML, focusEntry, navHTML, noteVisit, routeOf, trackBack } from "./nav.js";
 import { closeOverlays, sheetArg, sheetKind } from "./sheets.js";
 import { plateHTML, tintOf } from "./sigils.js";
@@ -76,7 +76,7 @@ function renderNow() {
   // L'écran de connexion : la lune du jour, mais ni navigation, ni minuteur (rien à minuter avant d'être entrée).
   const gate = authGate();
   if (gate) document.documentElement.dataset.auth = ""; else delete document.documentElement.dataset.auth;
-  if (gate) { $("#nav").innerHTML = ""; $("#bar").innerHTML = ""; $("#main").innerHTML = authView(); return; }
+  if (gate) { $("#nav").innerHTML = ""; $("#bar").innerHTML = ""; authPaint($("#main")); return; }
   let view = routeOf().view;
   // Les vues fixes priment toujours ; hasOwn évite qu'un « #constructor » trouve Object.prototype.
   const fixed = v => v === "accueil" || v === "reglages" || v === "recherche" || v === "bilan" || (v === "dehors" && dehorsOn());

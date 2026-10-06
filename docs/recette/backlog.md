@@ -252,6 +252,9 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
   retirer la ligne dans `check.yml` (voir [a-faire.md](../a-faire.md#tout-de-suite-une-minute)). README : « Navigateurs pris
   en charge ». Premier passage (PR #111) : 74 scénarios sur 78 ; les quatre échecs ont chacun leur cause, corrigée
   (anomalie A14 de [perimetre.md](perimetre.md#anomalies-et-observations)). Après correction (PR #112) : 78 sur 78.
+  Le 6 octobre encore, sur la PR #115 : 77 sur 78, et l'échec était un vrai défaut de l'app, que Chromium et WebKit ne
+  montraient pas (A15, corrigé par la PR #116). Le job « vert » ne le disait pas : avant de le rendre bloquant, lire son
+  journal reste le seul moyen de savoir.
 
 ---
 
