@@ -147,8 +147,10 @@ const client = read(path.join(ROOT, "scripts/recette-campagne.client.js"));
 const html = `<title>Cahier à cocher Selene</title>
 ${FONTS}
 <style>
-/* Pensée pour la recette en main : un téléphone à côté de l'appareil testé, ou l'inverse. Une colonne, des cibles de
-   44 px, la barre de campagne collée en haut ; sur ordinateur, les étapes en deux colonnes (action, attendu). */
+/* Pensée pour la recette en main : un téléphone à côté de l'appareil testé, ou l'inverse. Au téléphone (600 px et
+   moins) : une seule bande d'avancement collée en haut, les étapes sur toute la largeur de la carte, l'attendu dans un
+   encadré sous l'action, des champs à 16 px (Safari iOS zoome en dessous), des cibles de 44 px. Sur ordinateur : la
+   barre de campagne collée en haut, les étapes en deux colonnes (action, attendu). */
 ${TOKENS}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -163,16 +165,23 @@ button,input,select,textarea{font:inherit;font-family:var(--f-ui);color:var(--in
 .eyebrow{font-family:var(--f-label);text-transform:lowercase;letter-spacing:.08em;color:var(--muted);margin:0 0 4px;font-size:.95rem}
 h1{font-family:var(--f-display);font-weight:600;font-size:clamp(2rem,6vw,3rem);line-height:1;margin:0 0 10px;text-wrap:balance}
 .meta{font-family:var(--f-ui);font-size:.86rem;color:var(--ink-2);margin:0 0 8px;font-variant-numeric:tabular-nums}
-.note{font-size:.94rem;color:var(--ink-2);max-width:72ch;margin:0}
+.note{font-size:.94rem;color:var(--ink-2);max-width:72ch;margin:6px 0 0}
+.how{padding-left:1.3em}
+.about>summary{font-family:var(--f-ui);font-size:.88rem;color:var(--ink-2);cursor:pointer;min-height:36px;display:flex;align-items:center;gap:6px;list-style:none}
+.about>summary::-webkit-details-marker{display:none}
+.about>summary::before{content:"▸";color:var(--muted)}
+.about[open]>summary::before{content:"▾"}
 .banner{font-family:var(--f-ui);font-size:.88rem;border:1px solid var(--rule-strong);border-left:3px solid var(--warn);background:var(--surface-2);padding:9px 12px;border-radius:3px;margin:12px 0 0}
 .banner[hidden]{display:none}
 /* Barre de campagne */
 .bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--rule-strong);padding:10px 0;margin:0 0 6px}
+.srow{display:flex;gap:4px 10px;align-items:baseline}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .row>label{font-family:var(--f-ui);font-size:.84rem;color:var(--ink-2)}
 select,input[type=text],input[type=search],textarea{border:1px solid var(--rule-strong);border-radius:3px;background:var(--surface-2);padding:8px 9px;font-size:.9rem;min-height:40px}
 select{max-width:100%}
 textarea{width:100%;min-height:64px;resize:vertical;line-height:1.4}
+@media (max-width:600px),(pointer:coarse){select,input[type=text],input[type=search],textarea{font-size:16px}}
 .btn{border:1px solid var(--rule-strong);border-radius:3px;background:var(--surface);padding:8px 12px;font-size:.88rem;min-height:40px;cursor:pointer}
 .btn:hover{background:var(--surface-2)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--bg)}
@@ -182,9 +191,19 @@ textarea{width:100%;min-height:64px;resize:vertical;line-height:1.4}
 .progress{height:6px;background:var(--rule);border-radius:3px;overflow:hidden;margin:9px 0 6px;display:flex}
 .progress span{display:block;height:100%}
 .p-reussi{background:var(--ok)} .p-echoue{background:var(--alarm)} .p-bloque{background:var(--warn)} .p-na{background:var(--muted)}
-.counts{display:flex;flex-wrap:wrap;gap:4px 14px;font-family:var(--f-ui);font-size:.82rem;color:var(--ink-2);font-variant-numeric:tabular-nums}
-.save{font-family:var(--f-ui);font-size:.8rem;color:var(--muted);margin-left:auto}
-.save.err{color:var(--alarm)}
+.counts{flex:1;min-width:0;font-family:var(--f-ui);font-size:.82rem;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.save{font-family:var(--f-ui);font-size:.8rem;color:var(--muted);margin-left:auto;white-space:nowrap}
+.save.err{color:var(--alarm);white-space:normal}
+/* Au téléphone, l'enveloppe s'efface (display: contents) : les commandes défilent avec la page, seule la bande
+   d'avancement reste collée, et elle colle par rapport à la page entière. */
+@media (max-width:600px){
+  .bar{display:contents}
+  .controls{padding:4px 0 8px}
+  .status{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--rule-strong);padding:7px 0;margin:0 0 4px}
+  .status .progress{margin:0 0 5px}
+  .counts{font-size:.8rem;line-height:1.35}
+  .save{font-size:.75rem}
+}
 /* Panneaux : nouvelle campagne, campagne, compte rendu */
 .panel{border:1px solid var(--rule-strong);border-radius:3px;background:var(--surface);padding:14px;margin:10px 0}
 .panel[hidden]{display:none}
@@ -204,7 +223,18 @@ table.syn th,table.syn td{border-bottom:1px solid var(--rule);padding:5px 8px;te
 table.syn th:first-child,table.syn td:first-child{text-align:left}
 /* Filtres */
 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 6px}
+.frow,.fmore{display:contents}
+.fbtn{display:none}
 .filters select,.filters input{flex:1 1 150px;min-width:0}
+@media (max-width:600px){
+  .filters{display:block}
+  .frow{display:flex;gap:8px}
+  .frow input{flex:1}
+  .fbtn{display:block}
+  .fmore{display:none}
+  .filters.open .fmore{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  .fmore select{min-width:0;width:100%}
+}
 /* Domaines et cas */
 .dom{margin:26px 0 0}
 .dom>h2{font-family:var(--f-display);font-weight:600;font-size:1.6rem;line-height:1.1;margin:0 0 4px;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}
@@ -216,15 +246,24 @@ table.syn th:first-child,table.syn td:first-child{text-align:left}
 .intro[open]>summary::before,.ctx[open]>summary::before{content:"▾"}
 .intro p,.intro li{max-width:76ch}
 .intro h4{font-family:var(--f-label);text-transform:lowercase;letter-spacing:.05em;font-weight:500;margin:10px 0 4px}
-details.case{border:1px solid var(--rule);border-radius:3px;background:var(--surface-2);margin:8px 0;scroll-margin-top:120px}
-@media (max-width:520px){details.case{scroll-margin-top:180px}}
+details.case{border:1px solid var(--rule);border-radius:3px;background:var(--surface-2);margin:8px 0;scroll-margin-top:130px}
+@media (max-width:600px){details.case{scroll-margin-top:72px}}
 details.case[open]{border-color:var(--rule-strong)}
 details.case:target,details.case.flash{box-shadow:0 0 0 3px var(--hl)}
-details.case>summary{list-style:none;cursor:pointer;padding:10px 12px;display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:start;min-height:44px}
+details.case>summary{list-style:none;cursor:pointer;padding:10px 12px;display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"id ct sp" "id cm cm";gap:4px 10px;align-items:start;min-height:44px}
+.cid{grid-area:id} .ct{grid-area:ct} .sp{grid-area:sp} .cm{grid-area:cm}
+@media (max-width:600px){
+  details.case>summary{grid-template-areas:"id cm sp" "ct ct ct";padding:10px;gap:6px 8px;align-items:center}
+  .cm .pl,.cm .cov{display:none}
+  .ct{font-size:1.04rem}
+  .dom>h2{font-size:1.4rem}
+  .mast{padding:14px 0 6px}
+  h1{font-size:1.9rem}
+}
 details.case>summary::-webkit-details-marker{display:none}
 .cid{font-family:var(--f-mono);font-size:.8rem;font-weight:500;color:var(--accent);background:var(--surface);border:1px solid var(--rule);border-radius:3px;padding:1px 6px;white-space:nowrap;margin-top:2px}
 .ct{font-family:var(--f-text);font-size:1rem;line-height:1.35}
-.cm{grid-column:2/4;display:flex;flex-wrap:wrap;gap:4px 10px;font-family:var(--f-ui);font-size:.78rem;color:var(--muted);align-items:center}
+.cm{display:flex;flex-wrap:wrap;gap:4px 10px;font-family:var(--f-ui);font-size:.78rem;color:var(--muted);align-items:center}
 .sp{font-family:var(--f-ui);font-size:.8rem;font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap;margin-top:3px}
 .prio{font-family:var(--f-mono);font-size:.75rem;font-weight:500;padding:0 5px;border-radius:3px;border:1px solid currentColor}
 .prio-1{color:var(--alarm)} .prio-2{color:var(--warn)} .prio-3{color:var(--muted)}
@@ -233,6 +272,9 @@ details.case>summary::-webkit-details-marker{display:none}
 .out>summary{opacity:.6}
 .body{padding:2px 12px 14px;border-top:1px solid var(--rule)}
 .body p{margin:8px 0;max-width:76ch}
+.kv .lbl{display:block;line-height:1.25}
+.facts{display:none;font-family:var(--f-ui);font-size:.8rem;color:var(--muted)}
+@media (max-width:600px){.body{padding:2px 10px 12px}.facts{display:block}}
 .lbl{font-family:var(--f-label);text-transform:lowercase;letter-spacing:.05em;color:var(--muted);font-size:.9rem}
 .ctx{margin:6px 0;font-size:.9rem;color:var(--ink-2)}
 code{font-family:var(--f-mono);font-size:.84em;background:var(--surface);border:1px solid var(--rule);border-radius:3px;padding:0 4px;overflow-wrap:anywhere}
@@ -250,10 +292,18 @@ code{font-family:var(--f-mono);font-size:.84em;background:var(--surface);border:
 @media (min-width:760px){.step .ck{grid-row:1}}
 .ck input{width:22px;height:22px;margin:0;accent-color:var(--accent);cursor:pointer}
 .ck .num{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);padding-top:2px}
-.step .a,.step .r{font-size:.94rem;overflow-wrap:anywhere}
+.step .a,.step .r{font-size:.94rem;overflow-wrap:anywhere;min-width:0}
 .step .r{color:var(--ink-2)}
-.step .r::before{content:"Attendu : ";font-family:var(--f-label);text-transform:lowercase;letter-spacing:.04em;color:var(--muted);font-size:.86rem}
-@media (min-width:760px){.step .r::before{content:none}}
+@media (max-width:759px){
+  .steps{border:0;border-radius:0;background:none;margin:8px -12px 4px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+  .step{grid-template-columns:40px 1fr;padding:10px 12px 10px 0}
+  .step .a,.step .r{font-size:1rem}
+  .step .r{margin-top:6px;padding:5px 9px 6px;background:var(--surface);border-left:2px solid var(--ok);border-radius:0 3px 3px 0}
+  .step .r::before{content:"attendu";display:block;font-family:var(--f-label);letter-spacing:.05em;color:var(--muted);font-size:.84rem;line-height:1.3}
+  .step .r code{background:var(--bg)}
+  .step.done .r{border-left-color:var(--rule-strong)}
+}
+@media (max-width:600px){.steps{margin-left:-10px;margin-right:-10px}.step{padding-right:10px}}
 .step.done .a,.step.done .r{color:var(--muted)}
 .step.stale{background:color-mix(in srgb,var(--warn) 10%,transparent)}
 .stale-msg{grid-column:2/-1;font-family:var(--f-ui);font-size:.78rem;color:var(--warn)}
@@ -265,6 +315,20 @@ code{font-family:var(--f-mono);font-size:.84em;background:var(--surface);border:
 .seg input{accent-color:var(--accent);margin:0}
 .seg label:has(input:checked){border-color:currentColor;font-weight:600}
 .res .fields{margin-top:10px}
+.obs{display:flex;flex-direction:column;gap:4px;font-family:var(--f-ui);font-size:.82rem;color:var(--ink-2);margin-top:10px}
+.more{margin-top:8px}
+.more>summary{font-family:var(--f-ui);font-size:.85rem;color:var(--ink-2);cursor:pointer;min-height:40px;display:flex;align-items:center;gap:6px;list-style:none}
+.more>summary::-webkit-details-marker{display:none}
+.more>summary::before{content:"▸";color:var(--muted)}
+.more[open]>summary::before{content:"▾"}
+.more .fields{margin-top:4px}
+.cnav{display:flex;gap:8px;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px dashed var(--rule)}
+@media (max-width:600px){
+  .seg{display:grid;grid-template-columns:1fr 1fr}
+  .seg label{justify-content:flex-start;border-radius:3px}
+  .seg label.r-todo{grid-column:1/-1}
+  .cnav .btn{flex:1}
+}
 .warn{font-family:var(--f-ui);font-size:.82rem;color:var(--warn);margin:6px 0 0}
 .warn:empty{display:none}
 .who{font-family:var(--f-ui);font-size:.78rem;color:var(--muted);margin:8px 0 0}
@@ -284,19 +348,24 @@ fieldset:disabled .ck,fieldset:disabled .seg label{cursor:default}
     <p class="eyebrow">selene · recette manuelle</p>
     <h1>Le cahier à cocher</h1>
     <p class="meta">Cahier au commit <code>${esc(commit)}</code>, généré le ${esc(date)} · ${cas.length} cas · ${nEtapes} étapes</p>
+    <details class="about" id="about"><summary>Mode d'emploi</summary>
     <p class="note">Une case par étape : coche quand le résultat attendu est observé, pas avant. Le résultat du cas reste ta décision. Les cas font foi dans <a href="${REPO}/tree/main/docs/recette/manuels" rel="noopener">docs/recette/manuels</a> ; le cahier entier se lit dans <a href="${LECTURE}" rel="noopener">la page de lecture</a>.</p>
+    <ol class="note how"><li>« Nouvelle campagne » : smoke, ciblée ou complète.</li><li>Ouvre un cas, fais chaque étape, coche quand l'attendu est observé.</li><li>Choisis le résultat du cas ; s'il n'est pas « réussi », écris ce que tu as observé.</li><li>« Compte rendu » : le Markdown à compléter et à verser par une PR.</li></ol>
+    </details>
     <p class="banner" id="banner" hidden></p>
   </header>
 
   <div class="bar" id="bar">
-    <div class="row">
+    <div class="row controls">
       <select id="campSel" class="grow" aria-label="Campagne"><option value="">Aucune campagne : lecture seule</option></select>
       <button class="btn" id="newBtn" type="button">Nouvelle<span class="wide"> campagne</span></button>
       <button class="btn" id="infoBtn" type="button" disabled>Campagne</button>
       <button class="btn" id="crBtn" type="button" disabled>Compte rendu</button>
     </div>
-    <div class="progress" id="prog" aria-hidden="true"></div>
-    <div class="row"><div class="counts" id="counts">Choisis ou crée une campagne : les coches s'y rangent.</div><span class="save" id="save" aria-live="polite"></span></div>
+    <div class="status" id="status">
+      <div class="progress" id="prog" aria-hidden="true"></div>
+      <div class="srow"><div class="counts" id="counts">Choisis ou crée une campagne : les coches s'y rangent.</div><span class="save" id="save" aria-live="polite"></span></div>
+    </div>
   </div>
 
   <section class="panel" id="newPanel" hidden aria-labelledby="newT">
@@ -342,8 +411,9 @@ fieldset:disabled .ck,fieldset:disabled .seg label{cursor:default}
     <div class="row" style="margin-top:8px"><button class="btn primary" id="copyBtn" type="button">Copier</button><span class="save" id="copyMsg" aria-live="polite"></span></div>
   </section>
 
-  <div class="filters" role="search">
-    <input type="search" id="q" placeholder="Chercher : RLM-023, sauvegarde…" aria-label="Chercher un cas" autocomplete="off">
+  <div class="filters" id="filters" role="search">
+    <div class="frow"><input type="search" id="q" placeholder="Chercher : RLM-023, sauvegarde…" aria-label="Chercher un cas" autocomplete="off"><button class="btn fbtn" id="fBtn" type="button" aria-expanded="false" aria-controls="fmore">Filtres</button></div>
+    <div class="fmore" id="fmore">
     <select id="fDom" aria-label="Domaine"><option value="">Tous les domaines</option></select>
     <select id="fPrio" aria-label="Priorité"><option value="">Toutes priorités</option><option>P1</option><option>P2</option><option>P3</option></select>
     <select id="fRes" aria-label="Résultat">
@@ -352,6 +422,7 @@ fieldset:disabled .ck,fieldset:disabled .seg label{cursor:default}
     </select>
     <select id="fScope" aria-label="Portée"><option value="camp">Cas de la campagne</option><option value="all">Tout le cahier</option></select>
     <button class="btn" id="openAll" type="button">Tout déplier</button>
+    </div>
   </div>
 
   <main id="list"></main>

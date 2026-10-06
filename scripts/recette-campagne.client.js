@@ -143,7 +143,7 @@
         const det = el("details", "case"); det.id = c.id.toLowerCase(); det.dataset.id = c.id;
         const cov = escH(c.cov.join(" · "));
         det.innerHTML = `<summary><span class="cid">${c.id}</span><span class="ct">${c.t}</span><span class="sp" data-sp></span>`
-          + `<span class="cm"><span class="prio prio-${c.pr[1]}">${c.pr}</span><span>${escH(c.pl.join(", "))}</span><span class="pill r-todo" data-res>non exécuté</span>${cov ? `<span>${cov}</span>` : ""}<span data-out></span></span></summary>`;
+          + `<span class="cm"><span class="prio prio-${c.pr[1]}">${c.pr}</span><span class="pl">${escH(c.pl.join(", "))}</span><span class="pill r-todo" data-res>non exécuté</span>${cov ? `<span class="cov">${cov}</span>` : ""}<span data-out></span></span></summary>`;
         sec.appendChild(det);
       }
       frag.appendChild(sec);
@@ -159,19 +159,23 @@
       .concat(step("final", "✓", `<span class="lbl">État final attendu</span> ${c.fin.html}`, null, "État final constaté", "fin"))
       .concat(c.net ? [step("nettoyage", "✓", `<span class="lbl">Nettoyage</span> ${c.net.html}`, null, "Nettoyage fait", "fin")] : []);
     const radios = RES_ORDER.map(r => `<label class="r-${r}"><input type="radio" name="res-${c.id}" value="${r}"> ${RES[r]}</label>`).join("");
+    const kv = (l, v) => `<p class="kv"><span class="lbl">${escH(l)}</span>${v}</p>`;
     return `<div class="body">`
-      + (c.obj ? `<p><span class="lbl">Risque vérifié</span> — ${c.obj}</p>` : "")
-      + `<p><span class="lbl">Préconditions</span> — ${c.pre}</p><p><span class="lbl">Données</span> — ${c.don}</p>`
-      + (c.ctx.length ? `<details class="ctx"><summary>Règle, tests associés, source</summary>${c.ctx.map(([l, v]) => `<p><span class="lbl">${l}</span> — ${v}</p>`).join("")}</details>` : "")
+      + `<p class="facts">${c.pr} · ${escH(c.pl.join(", "))}${c.cov.length ? ` · ${escH(c.cov.join(" · "))}` : ""}</p>`
+      + (c.obj ? kv("Risque vérifié", c.obj) : "")
+      + kv("Préconditions", c.pre) + kv("Données", c.don)
+      + (c.ctx.length ? `<details class="ctx"><summary>Règle, tests associés, source</summary>${c.ctx.map(([l, v]) => kv(l, v)).join("")}</details>` : "")
       + `<p class="out-note" data-add hidden><button class="btn" type="button" data-act="add">Ajouter ce cas à la campagne</button></p>`
       + `<fieldset data-fs><div class="steps" role="group" aria-label="Étapes de ${c.id}"><div class="sh"><span></span><span>Action précise</span><span>Résultat attendu observable</span></div>${steps.join("")}</div>`
-      + c.x.map(([l, v]) => `<p><span class="lbl">${escH(l)}</span> — ${v}</p>`).join("")
+      + c.x.map(([l, v]) => kv(l, v)).join("")
       + `<div class="res"><div class="seg" role="radiogroup" aria-label="Résultat de ${c.id}">${radios}</div><p class="warn" data-warn></p>`
-      + `<div class="fields"><label>Résultat observé (obligatoire s'il n'est pas « réussi »)<textarea data-f="observe" rows="2"></textarea></label>`
+      + `<label class="obs">Résultat observé<textarea data-f="observe" rows="2" placeholder="Ce qui s'est réellement passé ; obligatoire s'il n'est pas « réussi »"></textarea></label>`
+      + `<details class="more" data-more><summary>Plateforme, preuve, ticket d'anomalie</summary><div class="fields">`
       + `<label>Plateforme (navigateur, appareil, version)<input type="text" data-f="plateforme" autocomplete="off"></label>`
       + `<label>Preuve (capture, vidéo, extrait, ou une phrase précise)<input type="text" data-f="preuve" autocomplete="off"></label>`
-      + `<label>Anomalie (ticket)<input type="text" data-f="anomalie" autocomplete="off"></label></div>`
-      + `<p class="who" data-who></p></div></fieldset></div>`;
+      + `<label>Ticket d'anomalie<input type="text" data-f="anomalie" autocomplete="off"></label></div></details>`
+      + `<p class="who" data-who></p></div></fieldset>`
+      + `<div class="cnav"><button class="btn" type="button" data-act="close">Replier</button><button class="btn" type="button" data-act="next">Cas suivant</button></div></div>`;
   }
   const card = id => document.getElementById(id.toLowerCase());
   function ensureBody(id) {
@@ -198,7 +202,10 @@
     const t = tally(c, v), warns = [];
     if (res !== "reussi" && res !== "todo" && !(v.observe || "").trim()) warns.push("Le résultat observé est obligatoire pour tout résultat autre que « réussi ».");
     if (res === "reussi" && t.done < t.total) warns.push(`« Réussi », alors que ${t.total - t.done} case${t.total - t.done > 1 ? "s ne sont pas cochées" : " n'est pas cochée"}.`);
-    if (res === "echoue" && !(v.anomalie || "").trim()) warns.push("Un échec appelle un ticket : note-le dans « Anomalie ».");
+    if (res === "echoue" && !(v.anomalie || "").trim()) warns.push("Un échec appelle un ticket : note-le dans « Ticket d'anomalie ».");
+    // Les détails s'ouvrent d'eux-mêmes quand ils comptent ; seule la personne les referme.
+    const more = det.querySelector("[data-more]");
+    if (!more.open && (res === "echoue" || res === "bloque" || v.plateforme || v.preuve || v.anomalie)) more.open = true;
     if (res === "na" && !(v.observe || "").trim()) warns.push("« Non applicable » se justifie : écris pourquoi.");
     det.querySelector("[data-warn]").textContent = warns.join(" ");
     det.querySelector("[data-who]").textContent = v.maj ? `Dernière modification le ${fmt(v.maj)}${v.par ? (v.par === me ? ", par toi" : ", par une autre personne") : ""}.` : "";
@@ -472,6 +479,17 @@
     else if (t.matches("[data-f]")) { const val = t.value.trim(); if (val !== (view(id)[t.dataset.f] || "")) change(id, { [t.dataset.f]: val }); }
   });
   list.addEventListener("click", async e => {
+    const nav = e.target.closest('[data-act="close"], [data-act="next"]');
+    if (nav) {
+      const det = nav.closest("details.case");
+      det.open = false;
+      if (nav.dataset.act === "close") { det.scrollIntoView({ block: "start" }); return; }
+      const vis = [...list.querySelectorAll("details.case")].filter(d => !d.hidden);
+      const next = vis[vis.indexOf(det) + 1];
+      if (!next) { det.scrollIntoView({ block: "start" }); saved("C'était le dernier cas affiché."); return; }
+      ensureBody(next.dataset.id); next.open = true; next.scrollIntoView({ block: "start" });
+      return;
+    }
     const b = e.target.closest('[data-act="add"]');
     if (!b) return;
     const id = b.closest("details.case").dataset.id, c = camp();
@@ -481,8 +499,13 @@
     refreshAll();
     b.disabled = false;
   });
+  function filterLabel() {
+    const n = ["dom", "prio", "res"].filter(k => F[k].value).length + (cid && F.scope.value === "all" ? 1 : 0);
+    $("fBtn").textContent = n ? `Filtres · ${n}` : "Filtres";
+  }
+  $("fBtn").addEventListener("click", () => { const f = $("filters"), open = !f.classList.contains("open"); f.classList.toggle("open", open); $("fBtn").setAttribute("aria-expanded", String(open)); });
   for (const k of ["q", "dom", "prio", "res", "scope"]) F[k].addEventListener(k === "q" ? "input" : "change", () => {
-    applyFilters(false);
+    applyFilters(false); filterLabel();
     store.set({ q: F.q.value, dom: F.dom.value, prio: F.prio.value, res: F.res.value, scope: F.scope.value });
   });
   $("campSel").addEventListener("change", e => select(e.target.value));
@@ -518,7 +541,9 @@
   const st = store.get();
   if (st.q) F.q.value = st.q;
   for (const k of ["dom", "prio", "res", "scope"]) if (st[k] && [...F[k].options].some(o => o.value === st[k])) F[k].value = st[k];
-  refreshAll();
+  refreshAll(); filterLabel();
+  // Le mode d'emploi est ouvert sur un grand écran, replié au téléphone.
+  try { if (window.matchMedia("(min-width:601px)").matches) $("about").open = true; } catch (e) { /* replié */ }
   $("newBtn").disabled = true;
   saved("Connexion à la base…");
   if (location.hash) goTo(location.hash);
