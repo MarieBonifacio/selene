@@ -57,7 +57,14 @@ const PAGES = {
   const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + '/index.html#dehors'); await p.waitForTimeout(600);
   const data = () => storeJSON(p, 'selene-site-v1');
-  const follow = async (url, mod = '') => { await p.fill('#dehorsIn', url); await p.selectOption('#dehorsMod', mod); await p.click('[data-act="dehors-add"]'); await p.waitForTimeout(400); };
+  // Suivre se termine toujours par une bulle (« Suivi : … » ou le refus) : l'attendre, pas 400 ms (A23 : sous charge, le flux
+  // Atom n'était pas encore lu).
+  const follow = async (url, mod = '') => {
+    await p.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+    await p.fill('#dehorsIn', url); await p.selectOption('#dehorsMod', mod); await p.click('[data-act="dehors-add"]');
+    await p.waitForFunction(() => ((document.querySelector('#toast') || {}).textContent || '').trim(), null, { timeout: 10000 }).catch(() => {});
+    await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+  };
   const titles = () => p.$$eval('.dehors .item', ls => ls.map(l => (l.querySelector('.t-title, b') || {}).textContent.replace(' ↗', '')));
 
   console.log('suivre, découvrir');
