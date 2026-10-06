@@ -461,9 +461,9 @@ Identifiants retirés : aucun.
   deux comptes de test ; le fichier `.env.isolation` (jamais versionné, jamais une clé secrète), selon
   [compte.md](../../compte.md#vérifier-lisolation-entre-comptes) ; Node 22.
 - **Données** : aucune.
-- **Automatisés associés** : `TU-ISO-01`, `TS-ISOLATION`
+- **Automatisés associés** : `TU-ISO-01`, `TU-ISO-10`, `TS-ISOLATION`
 - **Source** : [DOC] [compte.md](../../compte.md#vérifier-lisolation-entre-comptes) ; [TEST] `TU-ISO-01` (le script, contre
-  une base simulée).
+  une base simulée), `TU-ISO-10` (le workflow *Isolation*, qui le rejoue chaque lundi une fois ses secrets posés).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|

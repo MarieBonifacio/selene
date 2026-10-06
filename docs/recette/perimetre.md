@@ -135,7 +135,8 @@ tester : toute série d'abstinence ([regulation.md](../regulation.md#marques-et-
 
 La page publique de test (`essai.html` : audience, liste d'attente) est **disponible** et entre dans la recette
 ([transverse.md](manuels/transverse.md)). Le test d'isolation entre comptes (`npm run isolation`) est un outil à lancer
-contre un projet de préproduction ; il n'est pas une fonctionnalité de l'app. Le workflow *Sauvegarde* (la copie chiffrée
+contre un projet de préproduction, et que le workflow *Isolation* rejoue chaque lundi une fois ses secrets posés ; il
+n'est pas une fonctionnalité de l'app. Le workflow *Sauvegarde* (la copie chiffrée
 de la base, chaque lundi) non plus : c'est un outil d'exploitation, vérifié par [TRV-017](manuels/transverse.md#trv-017),
 qui n'a encore jamais tourné faute de ses réglages ([a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait)).
 Les pages du cahier publiées en artefact (`npm run recette -- page`) sont des vues du cahier, pas de l'app.

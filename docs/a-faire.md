@@ -119,7 +119,10 @@ faire) : [backlog de la recette](recette/backlog.md#reste-a-faire).
 - [ ] **Ramener sur un appareil un suivi encore synchronisé**, s'il en existe un : son bandeau « Ce suivi doit revenir
   sur un appareil » le propose. Selene ne synchronise plus les suivis de santé depuis le 3 octobre 2026.
 - [ ] **Le test d'isolation entre comptes**, sur un projet de préproduction, puis la comparaison de ses règles avec
-  celles de la production ([compte.md](compte.md#vérifier-lisolation-entre-comptes)).
+  celles de la production ([compte.md](compte.md#vérifier-lisolation-entre-comptes)). Ensuite, les six valeurs de
+  `.env.isolation` en secrets du dépôt (`ISOLATION_*`, dix minutes) : le workflow *Isolation* le rejoue alors chaque
+  lundi et à chaque changement des règles, et écrit par e-mail s'il échoue
+  ([compte.md](compte.md#vérifier-lisolation-entre-comptes), « Chaque semaine, sans y penser »).
 - [ ] **La table du journal des erreurs** : coller la partie « Le journal des erreurs » de `supabase/schema.sql` dans
   l'éditeur SQL. D'ici là, l'app reçoit un refus et n'envoie rien, sans gêne pour personne
   ([compte.md](compte.md#journal-des-erreurs)).

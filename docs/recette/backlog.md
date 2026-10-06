@@ -33,7 +33,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 |---|---|---|---|---|
 | ~~BL-14 : la sauvegarde complète dans un vrai navigateur, sur deux appareils~~ (fait le 6 octobre 2026, PR #123) | une session | P1 | — | [BL-14](#bl-14) |
 | ~~BL-15 : le hors-ligne réel (réseau coupé, page rechargée)~~ (fait le 6 octobre 2026, PR #123) | une session | P1 | — | [BL-15](#bl-15) |
-| BL-03 : l'isolation entre comptes rejouée chaque semaine | une session, une fois la préproduction et ses six secrets en place | P1 | après un premier `npm run isolation` réussi à la main (TRV-016) | [BL-03](#bl-03) |
+| ~~BL-03 : l'isolation entre comptes rejouée chaque semaine~~ (fait le 6 octobre 2026, PR #124 : le workflow attend ses six secrets, plus bas) | une session | P1 | — | [BL-03](#bl-03) |
 | BL-20 : un résultat observable à chaque étape, contrôlé par `npm run recette` | une session | P3 | — | [BL-20](#bl-20) |
 | BL-19 : nommer, dans la matrice, les étapes que les tests ne couvrent pas | une session | P3 | les 73 cas P1 d'abord | [BL-19](#bl-19) |
 | BL-18 : la page du cahier à cocher sous contrôle de la CI | une session | P3 | si la PR #118 est fusionnée | [BL-18](#bl-18) |
@@ -54,6 +54,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| Les six secrets `ISOLATION_*` du workflow *Isolation* (les valeurs de `.env.isolation`) | la personne qui administre Supabase | P1 | après le premier `npm run isolation` réussi à la main (TRV-016) | [compte.md](../compte.md#vérifier-lisolation-entre-comptes), [BL-03](#bl-03) |
 | Protéger `main` : PR obligatoire, contrôles `recette` et `build-and-test` requis | la personne qui administre le dépôt | P2 | dès que possible : `main` n'est pas protégée au 6 octobre 2026 | [BL-12](#bl-12), [a-faire.md](../a-faire.md#tout-de-suite-une-minute) |
 | Firefox bloquant : retirer `continue-on-error` de `check.yml` | une session, à la demande | P2 | le 20 octobre 2026, si la condition proposée plus bas est remplie | [BL-13](#bl-13) |
 | Les réglages du projet Supabase (SMTP, fonction `compte`, tables, compte personnel marqué, Postgres, offre Pro) | la personne qui administre Supabase | P1 et P2 | voir chaque ligne | [a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait) |
@@ -89,7 +90,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 |---|---|---|---|---|
 | [BL-01](#bl-01) | ~~Scénario « l'appareil détenteur a perdu son stockage »~~ (fait) | automatisation | P1 | RLM-029 |
 | [BL-02](#bl-02) | ~~Figer le sort du talon après « L'effacer définitivement »~~ (fait, voir ci-dessous) | décision puis automatisation | P1 | RLM-023 |
-| [BL-03](#bl-03) | Rejouer l'isolation entre comptes chaque semaine en CI | automatisation | P1 | TRV-016 |
+| [BL-03](#bl-03) | ~~Rejouer l'isolation entre comptes chaque semaine en CI~~ (fait, en attente de ses secrets) | automatisation | P1 | TRV-016 |
 | [BL-04](#bl-04) | ~~Balayage d'accessibilité rejoué à chaque PR~~ (fait) | automatisation | P2 | TRV-001, TRV-002, TRV-003, TRV-006, TRV-014 |
 | [BL-05](#bl-05) | ~~Stabiliser `tests/browser/activite.js` sous WebKit~~ (fait, voir ci-dessous) | fiabilité de la CI | P2 | TRV-011 |
 | [BL-06](#bl-06) | ~~Assistant : dire « non déployé » ou « injoignable », et le tester~~ (fait) | correctif puis automatisation | P2 | AST-007 |
@@ -158,6 +159,11 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 - **Dépendances** : le projet de préproduction (docs/compte.md) ; six secrets GitHub (`ISOLATION_*`), jamais une clé
   secrète ; la comparaison des règles avec la production reste manuelle.
 - **Bénéfice attendu** : une régression des règles RLS vue dans la semaine, pas au premier incident.
+- **État** : **fait** le 6 octobre 2026 (PR #124) : le workflow *Isolation* (`.github/workflows/isolation.yml`), chaque
+  lundi à 4 h 41 UTC, à chaque changement de `supabase/schema.sql`, du script ou du workflow poussé sur `main`, et à la
+  demande ; lecture seule, actions épinglées, sauté avec un avis tant que ses six secrets manquent, en échec s'il est lancé
+  à la main sans eux (`TU-ISO-10`, qui joue ce premier pas dans bash). Un échec envoie l'e-mail de GitHub. Reste à faire,
+  hors du dépôt : poser les six secrets ([compte.md](../compte.md#vérifier-lisolation-entre-comptes)).
 
 <a id="bl-04"></a>
 ### BL-04 — Balayage d'accessibilité rejoué à chaque PR

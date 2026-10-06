@@ -1,0 +1,57 @@
+name: Isolation
+# L'isolation entre comptes rejouée sans y penser (BL-03 du cahier de recette ; docs/compte.md, « Vérifier l'isolation
+# entre comptes ») : chaque lundi, à chaque changement des règles poussé sur main, et à la demande, npm run isolation
+# contre le projet de PRÉPRODUCTION. Le script refuse le projet de l'app et une clé secrète, et n'affiche aucun secret :
+# ni mot de passe, ni jeton, ni adresse. Il n'a besoin que de Node (aucune dépendance). Un échec (code 1 : une fuite ;
+# code 2 : impossible de conclure) rend le run rouge, et GitHub l'écrit par e-mail à qui a posé la planification. Sans
+# réglages, la planification et l'envoi sur main sont sautés avec un avis ; un lancement à la main échoue en le disant.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '41 4 * * 1' # le lundi à 4 h 41 UTC, après la sauvegarde ; pas à l'heure ronde, où GitHub s'engorge
+  push:
+    branches: [main]
+    paths: [supabase/schema.sql, scripts/isolation.mjs, .github/workflows/isolation.yml]
+concurrency: isolation
+permissions:
+  contents: read
+jobs:
+  isolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      ISOLATION_URL: ${{ secrets.ISOLATION_URL }}
+      ISOLATION_CLE: ${{ secrets.ISOLATION_CLE }}
+      ISOLATION_A_EMAIL: ${{ secrets.ISOLATION_A_EMAIL }}
+      ISOLATION_A_MOT_DE_PASSE: ${{ secrets.ISOLATION_A_MOT_DE_PASSE }}
+      ISOLATION_B_EMAIL: ${{ secrets.ISOLATION_B_EMAIL }}
+      ISOLATION_B_MOT_DE_PASSE: ${{ secrets.ISOLATION_B_MOT_DE_PASSE }}
+    steps:
+      - name: Réglages présents ?
+        id: cfg
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          missing=""
+          for v in ISOLATION_URL ISOLATION_CLE ISOLATION_A_EMAIL ISOLATION_A_MOT_DE_PASSE ISOLATION_B_EMAIL ISOLATION_B_MOT_DE_PASSE; do
+            [ -n "${!v}" ] || missing="${missing:+$missing, }$v"
+          done
+          if [ -n "$missing" ]; then
+            if [ "$EVENT" != "workflow_dispatch" ]; then
+              echo "::notice::Pas de test d'isolation : il manque les secrets $missing (docs/compte.md, « Vérifier l'isolation entre comptes »)."
+              echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0
+            fi
+            echo "::error::Il manque les secrets $missing (Settings → Secrets and variables → Actions ; docs/compte.md, « Vérifier l'isolation entre comptes »)."; exit 1
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.cfg.outputs.ok == 'true'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.cfg.outputs.ok == 'true'
+        with:
+          node-version-file: .nvmrc
+      - name: Douze requêtes qui doivent être refusées
+        if: steps.cfg.outputs.ok == 'true'
+        run: npm run isolation

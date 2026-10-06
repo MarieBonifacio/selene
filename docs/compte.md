@@ -257,6 +257,16 @@ Ce que dit le code de sortie :
 - **2** : impossible de conclure. Le montage a échoué (connexion, table absente, droits cassés), ou une réponse est
   *douteuse* (marquée `?`). Par exemple, un `409` montre qu'une contrainte a arrêté l'écriture, pas la règle RLS.
 
+**Chaque semaine, sans y penser.** Le workflow *Isolation* (`.github/workflows/isolation.yml`) rejoue le même test
+chaque lundi, à chaque changement de `supabase/schema.sql` poussé sur `main`, et à la demande (*Actions → Isolation →
+Run workflow*). Il lui faut les six valeurs de `.env.isolation`, en **secrets** du dépôt : *Settings → Secrets and
+variables → Actions → New repository secret*, une fois par nom (`ISOLATION_URL`, `ISOLATION_CLE`, `ISOLATION_A_EMAIL`,
+`ISOLATION_A_MOT_DE_PASSE`, `ISOLATION_B_EMAIL`, `ISOLATION_B_MOT_DE_PASSE`). Tant qu'ils manquent, la planification est
+sautée avec un avis ; un lancement à la main échoue en le disant. Un run rouge (code 1 ou 2) est écrit par e-mail à la
+personne qui a posé la planification ; ouvrir son journal : chaque requête acceptée y est marquée `✗`, chaque réponse
+douteuse `?`. Les comptes de test et leurs mots de passe ne servent qu'à la préproduction : un secret qui fuirait
+n'ouvrirait aucune donnée réelle.
+
 **Le projet de l'app a-t-il les mêmes règles ?** Le test prouve l'étanchéité de la préproduction, et la production
 n'est couverte que si ses règles sont identiques. Pour le vérifier, lancer cette lecture (elle ne modifie rien) dans
 le *SQL Editor* des deux projets et comparer les deux résultats ligne à ligne :
