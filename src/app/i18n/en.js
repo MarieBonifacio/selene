@@ -1576,6 +1576,7 @@ export default {
   // state/store.js
   "Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser": "Selene was updated on another device: reload the page to sync",
   "Non synchronisé — enregistré sur cet appareil seulement": "Not synced — saved on this device only",
+  "Non synchronisé : ce navigateur garde le Selene d'un autre compte claude.ai": "Not synced: this browser holds another claude.ai account's Selene",
   "Trop volumineux pour le serveur : enregistré sur cet appareil seulement (Réglages, Sauvegarde)": "Too large for the server: saved on this device only (Settings, Backup)",
   "Enregistrement…": "Saving…",
 

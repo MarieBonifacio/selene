@@ -19,7 +19,7 @@ Le build demande donc Python, Node et `npm ci` (esbuild). Pourquoi ce découpage
 
 | Sortie | Pour | Particularités |
 |---|---|---|
-| `selene.html` | artefact claude.ai | synchro par `window.claude.use("db")`, assistant sans clé |
+| `selene.html` | artefact claude.ai | synchro par `window.claude.use("db")`, dans l'espace privé de la personne qui l'ouvre (ADR 33), assistant sans clé |
 | `index.html` | PWA sur GitHub Pages | CSP, manifeste, service worker, comptes Supabase |
 
 `hosted()` (= `platform.runtime() !== "artifact"`, voir `platform.js`) distingue les deux au démarrage. Ne jamais modifier les HTML générés :
@@ -239,7 +239,8 @@ en bout (création, entrée, vue, réglages, résumé, contexte, export puis imp
 
 `db.doc(path)` fournit `get()` → `{ exists, data() }`, `onSnapshot(cb, err)` → désabonnement, et soit
 `replace(value, attendu, { keepalive })` → booléen (écriture conditionnelle), soit `set(value)`.
-Deux implémentations : `window.claude.use("db")` (claude.ai, `set` seulement) et `supabaseDb` (REST).
+Deux implémentations : `window.claude.use("db")` (claude.ai, `set` seulement), dont `services/artifact-db.js` range les
+chemins dans le sous-arbre privé `data/users/<id>/` de la personne qui ouvre l'artefact (ADR 33), et `supabaseDb` (REST).
 
 ### Lire, fusionner, écrire sous condition
 
@@ -1003,3 +1004,29 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   réservée pourrait suivre le même chemin. Vérifié par `tests/edition.test.js` (construction, contenu, un compte à deux
   appareils entre les deux éditions, suppression, déconnexion) ; reste à le constater sur un téléphone au premier
   envoi ([RLM-030](recette/manuels/reprendre-la-main.md#rlm-030)).
+
+### ADR 33 — L'artefact claude.ai : les données dans l'espace privé de chacun
+
+- **Contexte** : l'artefact rangeait le site et le board dans `site/state` et `board/state` de son espace `db`. Or les
+  documents d'un artefact publié sont partagés : toute personne connectée à qui l'on en donne le lien les lit, et, sur
+  un abonnement d'équipe, les membres qui peuvent l'ouvrir les réécrivent. Partager l'artefact pour montrer l'outil
+  revenait à montrer son carnet (constaté le 6 octobre 2026 en lisant le contrat de `db`, cas
+  [PLT-011](recette/manuels/plateformes.md#plt-011)). Seul le sous-arbre `data/users/<id>/` est privé, caché à tous
+  les autres, propriétaire de l'artefact comprise ; `<id>` est l'identité que donne la capacité `user`.
+- **Décision** : `services/artifact-db.js` enveloppe l'espace `db` : `site/state` devient `data/users/<id>/site`,
+  `board/state` devient `data/users/<id>/board`. La publication déclare `db` et `user`. Sans identité (`user` non
+  déclaré, personne non connectée), rien n'est synchronisé : tout reste dans le navigateur, jamais sur un chemin
+  partagé, et l'état de l'enregistrement le dit. À l'ouverture par la propriétaire, les anciens documents partagés
+  sont versés dans les siens (`store.absorb`, fusion sans base : rien de ce qui a été noté n'est perdu), puis effacés
+  une fois ses deux documents privés synchronisés. Chez quelqu'un d'autre, un navigateur qui avait synchronisé
+  l'ancien document partagé en oublie la copie : c'était le carnet de la propriétaire, qui le garde. L'identité à qui
+  appartiennent les données du navigateur est notée (`selene-artifact-uid`) : un autre compte claude.ai ouvert dans
+  le même navigateur ne synchronise rien, et ne reçoit pas le carnet du premier.
+- **Écarté** : des règles d'accès qui réservent les documents partagés à la propriétaire (`read: "owner"`) : un seul
+  carnet pour tous, les autres n'ont rien à eux, et une règle oubliée à la republication rouvre tout ; garder le
+  partage en prévenant (on ne prévient pas assez fort d'une fuite) ; chiffrer le document (une clé à garder quelque
+  part, pour un problème que la plateforme résout déjà).
+- **Conséquences** : partager le lien de l'artefact partage l'outil, pas les données : chacun y a son Selene. Une
+  personne en lecture seule (Viewer, Commenter) ne peut pas écrire son sous-arbre : son Selene reste dans son
+  navigateur. Vérifié par `tests/artifact.test.js` (faux claude.ai qui applique la règle du sous-arbre privé) ; reste
+  à le constater dans claude.ai ([PLT-011](recette/manuels/plateformes.md#plt-011)).

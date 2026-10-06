@@ -10,7 +10,7 @@ Identifiants retirés : aucun.
 
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
-| Tests unitaires et d'intégration Node | `npm test` | 297 tests, 30 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
+| Tests unitaires et d'intégration Node | `npm test` | 302 tests, 31 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
 | Scénarios de navigateur | `npm run test:browser` | 76 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium **et** WebKit | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
@@ -136,6 +136,20 @@ sans navigateur.
 | <a id="tu-arch-01"></a>`TU-ARCH-01` | les couches : le noyau est pur, l’application ne passe que par la plateforme | Le noyau `src/core` n'importe que lui-même ; `src/app` ne passe que par `src/platform.js` ; la plateforme et les registres ne dépendent de rien. | — |
 | <a id="tu-arch-02"></a>`TU-ARCH-02` | rien ne s’exécute au chargement qui dépende d’un module en cycle avec soi ; aucune écriture dans un import | Aucun code exécuté au chargement ne dépend d'un module en cycle ; aucun module n'écrit dans un import. | — |
 | <a id="tu-arch-03"></a>`TU-ARCH-03` | aucun module n’est chargé sans servir : chaque fichier de src/app et src/core est atteint | Chaque fichier de `src/app` et `src/core` est atteint depuis le point d'entrée. | — |
+
+### L'artefact claude.ai et son espace `db` — `tests/artifact.test.js`
+
+- **Niveau** : Intégration simulée (I-A). **Sujet** : `selene.html` dans un artefact : où vont ses données (ADR 33).
+- **Simulé** : Script de `selene.html` dans une VM Node, faux DOM, stockage en mémoire ; un faux claude.ai (`db` et `user`) qui applique la règle de la plateforme : un document sous `data/users/<id>/` n'existe que pour `<id>`, propriétaire comprise.
+- **Limites** : Le vrai claude.ai n'est pas joint : ses règles d'accès sont celles de son contrat écrit, pas observées ([PLT-011](manuels/plateformes.md#plt-011), [BL-11](backlog.md#bl-11)).
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-art-01"></a>`TU-ART-01` | la propriétaire : son carnet passe dans son espace privé, l’ancien document partagé est effacé | Les anciens `site/state` et `board/state` partagés sont versés dans `data/users/<id>/site` et `…/board` de la propriétaire, sans perte, puis effacés ; ses écritures suivantes ne vont que dans son sous-arbre. | [PLT-011](manuels/plateformes.md#plt-011) |
+| <a id="tu-art-02"></a>`TU-ART-02` | la propriétaire dans un autre navigateur, vierge : elle retrouve son carnet, déjà rapatrié | Un second navigateur de la même personne lit son carnet dans son sous-arbre privé. | [PLT-011](manuels/plateformes.md#plt-011) |
+| <a id="tu-art-03"></a>`TU-ART-03` | quelqu’un à qui l’on a donné le lien : un Selene à soi, vide ; il ne lit ni ne garde le carnet de la propriétaire | Une autre personne, dont le navigateur avait synchronisé l'ancien document partagé, en oublie la copie ; ce qu'elle note va dans son propre sous-arbre, rien chez la propriétaire ; elle n'efface rien de partagé ; rouvert, son carnet reste. | [PLT-011](manuels/plateformes.md#plt-011) |
+| <a id="tu-art-04"></a>`TU-ART-04` | un usage seulement local, sans synchronisation passée : gardé, et rangé dans l’espace privé | Ce qui a été noté dans un artefact sans `db` est gardé et rejoint le sous-arbre de la personne. | [PLT-011](manuels/plateformes.md#plt-011) |
+| <a id="tu-art-05"></a>`TU-ART-05` | sans identité, en lecture seule, ou dans le navigateur d’un autre compte : rien ne part, rien ne se perd | Publié sans `user` : aucune écriture, nulle part, la note reste dans le navigateur et « Non synchronisé » s'affiche ; en lecture seule : aucune écriture ; un autre compte claude.ai dans le même navigateur : rien n'est envoyé, rien n'est effacé, et l'état le dit. | [PLT-011](manuels/plateformes.md#plt-011) |
 
 ### Session et rafraîchissement du jeton — `tests/auth.test.js`
 

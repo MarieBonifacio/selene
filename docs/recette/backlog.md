@@ -270,8 +270,8 @@ Les questions marquées [À ARBITRER] dans les cas, et ce qu'elles bloquent :
 | Comment l'app doit-elle dire qu'un appareil vidé est le détenteur ? | [RLM-029](manuels/reprendre-la-main.md#rlm-029) | [BL-01](#bl-01) |
 | Quelles vues suivent la date d'elles-mêmes à minuit ? | [TRV-004](manuels/transverse.md#trv-004) | [BL-10](#bl-10) |
 | Quels seuils de réactivité ? | [TRV-007](manuels/transverse.md#trv-007) | [BL-09](#bl-09) |
-| Que doit dire l'assistant quand sa fonction est injoignable ou non déployée ? (A4) | [AST-007](manuels/assistant.md#ast-007) | [BL-06](#bl-06) |
-| Que fait claude.ai de l'espace `db` d'un artefact ? | [PLT-011](manuels/plateformes.md#plt-011) | l'étape 4 |
+| ~~Que doit dire l'assistant quand sa fonction est injoignable ou non déployée ? (A4)~~ : « non déployé », « non configuré » ou « injoignable », corrigé le 5 octobre 2026 (PR #98) | [AST-007](manuels/assistant.md#ast-007) | — |
+| ~~Que fait claude.ai de l'espace `db` d'un artefact ?~~ : ses documents sont partagés avec tous ceux qui ont le lien ; Selene range désormais les siens dans le sous-arbre privé de chacun (A12, ADR 33), le 6 octobre 2026 | [PLT-011](manuels/plateformes.md#plt-011) | — |
 | Marquer `selene_personnel` un compte de recette (P) ? | `RLM-*` (chemin P) | les cas d'offre et de stockage |
 | Une dépendance de développement pour l'accessibilité ? | — | [BL-04](#bl-04) |
 | ~~`npm run recette` en CI ?~~ : oui, fait, et obligatoire pour fusionner (réglage du dépôt à appliquer) | — | [BL-12](#bl-12) |

@@ -118,7 +118,7 @@ Le module Assistant est désactivé par défaut (Réglages → Espaces).
 
 ## Données
 
-Sur claude.ai, les données sont synchronisées entre appareils par la base de l'artifact, propre à ton compte claude.ai.
+Sur claude.ai, les données sont synchronisées entre appareils par l'espace `db` de l'artefact, dans le sous-arbre privé de ton compte claude.ai : partager le lien de l'artefact partage l'outil, pas tes données. L'artefact se publie avec les capacités `db` et `user` ; sans `user`, rien ne se synchronise et tout reste dans le navigateur (ADR 33 de [docs/architecture.md](docs/architecture.md)).
 
 Hors de claude.ai (GitHub Pages), tant qu'aucun compte n'est configuré (voir ci-dessous), tout est gardé dans le `localStorage` du navigateur : propre à chaque appareil, effacé si l'on vide les données du site.
 

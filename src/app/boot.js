@@ -3,6 +3,7 @@ import { platform } from "../platform.js";
 import { agendaRefresh } from "./features/agenda.js";
 import { dehorsRefresh } from "./features/dehors.js";
 import { refreshWeather } from "./scene/sky.js";
+import { connectArtifact } from "./services/artifact-db.js";
 import { authBoot, authReady } from "./services/auth.js";
 import { reportError } from "./services/journal.js";
 import { connectHost } from "./services/host.js";
@@ -46,8 +47,7 @@ setTimeout(() => { agendaRefresh(); dehorsRefresh(); }, 1500); // les flux de De
       if (authReady()) { await authBoot(); render(); }
       return;
     }
-    const db = await platform.claude.use("db");
-    if (db) { await site.connect(db); await board.connect(db); } // le site d'abord (voir absorbBoard)
+    await connectArtifact(); // l'espace privé de la personne qui ouvre l'artefact (services/artifact-db.js)
   } catch {}
   try { if (await connectHost()) render(); } catch {}
 })();
