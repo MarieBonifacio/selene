@@ -27,6 +27,7 @@ const fail = (where, what, how = "") => problems.push({ where, what, how });
 
 if (process.argv[2] === "donnees") { volume(); process.exit(0); }
 if (process.argv[2] === "jeux") { await import("./recette-jeux.mjs"); process.exit(0); }
+if (process.argv[2] === "page") { await import("./recette-page.mjs"); process.exit(0); }
 
 /* ---------- cas manuels ---------- */
 // Les fichiers et leurs préfixes : la table du point d'entrée fait foi (docs/recette/README.md).
