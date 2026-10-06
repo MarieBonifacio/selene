@@ -277,8 +277,9 @@ l'appareil se lit avant le premier rendu, si les données de l'appareil sont cel
 (`selene-auth-last-uid`) : la personne connectée retrouve aussitôt son Selene, et la synchronisation suit
 (A18 du cahier de recette ; avant le 6 octobre 2026, l'écran d'entrée restait affiché jusqu'aux premières
 réponses du serveur). Un seul branchement des documents à la fois, même demandé par le démarrage et par un
-retour au premier plan ensemble ; une demande arrivée pendant un branchement qui échoue en relance un (A24 : sans
-cela, le réseau revenu pendant un branchement parti hors ligne attendait le minuteur de 5 min). Le jeton est
+retour au premier plan ensemble ; une demande arrivée pendant un branchement qui échoue en relance un, et un branchement qui
+échoue juste après le retour du réseau est retenté à 2, 5, 15 et 30 s (A24 : sans cela, il attendait le minuteur de
+5 min). Le jeton est
 rafraîchi s'il lui reste moins de 10 min (vérification toutes les 5 min), jamais deux fois en même
 temps (les refresh tokens sont à usage unique). La déconnexion pousse d'abord les modifications en
 attente (et demande confirmation si c'est impossible), puis efface de l'appareil les données, la base

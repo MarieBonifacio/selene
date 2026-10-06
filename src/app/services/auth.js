@@ -284,8 +284,18 @@ function authScheduleRefresh() {
   clearInterval(authRefreshTimer);
   authRefreshTimer = setInterval(authKeepAlive, 5 * 60 * 1000);
 }
+/* Le réseau revenu ne l'est pas toujours tout à fait (réseau qui s'établit, nom pas encore résolu, portail captif) :
+   un branchement qui échoue juste après « online » est retenté peu après, quelques fois, plutôt qu'au minuteur de
+   5 min (A24). */
+const AUTH_RETRY_MS = [2000, 5000, 15000, 30000];
+let authRetryTimer = null;
+async function authReconnectSoon(i = 0) {
+  clearTimeout(authRetryTimer); authRetryTimer = null;
+  await authKeepAlive();
+  if (authSession && (!board.db || !site.db) && i < AUTH_RETRY_MS.length) authRetryTimer = setTimeout(() => authReconnectSoon(i + 1), AUTH_RETRY_MS[i]);
+}
 // Les minuteurs sont gelés quand un téléphone met l'onglet en veille : on rattrape au retour.
-window.addEventListener("online", () => { if (authReady()) authKeepAlive(); });
+window.addEventListener("online", () => { if (authReady()) authReconnectSoon(); });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && authReady()) authKeepAlive(); });
 export async function authBoot() {
   if (!authReady()) return null;

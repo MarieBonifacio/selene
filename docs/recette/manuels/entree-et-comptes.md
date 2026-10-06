@@ -311,11 +311,11 @@ Identifiants retirés : aucun.
 - **Préconditions** : connecté au compte A ; la session doit être expirée au moment du test : laisser l'app fermée plus d'une
   heure (durée des jetons du projet), sans se déconnecter.
 - **Données** : capture `Recette CPT-012 hors ligne`.
-- **Automatisés associés** : `TU-AUTH-01`, `TU-AUTH-02`, `TU-AUTH-03`, `TU-AUTH-06`, `TU-AUTH-07`, `TU-AUTH-08`, `TU-AUTH-09`
-- **Source** : [DOC] [architecture.md](../../architecture.md#session) ; [TEST] `TU-AUTH-01` à `TU-AUTH-09` ; anomalie A18 : avant le
+- **Automatisés associés** : `TU-AUTH-01`, `TU-AUTH-02`, `TU-AUTH-03`, `TU-AUTH-06`, `TU-AUTH-07`, `TU-AUTH-08`, `TU-AUTH-09`, `TU-AUTH-10`
+- **Source** : [DOC] [architecture.md](../../architecture.md#session) ; [TEST] `TU-AUTH-01` à `TU-AUTH-10` ; anomalie A18 : avant le
   6 octobre 2026, l'écran d'entrée restait affiché jusqu'aux premières réponses du serveur ; anomalie A24 : le 6 octobre
   2026, entre les PR #122 et #127, le réseau revenu pendant le branchement du démarrage n'était repris qu'au minuteur ;
-  la fenêtre (quelques dizaines de millisecondes) échappe à la main, seul `TU-AUTH-09` la prouve.
+  la fenêtre (quelques dizaines de millisecondes) échappe à la main, seuls `TU-AUTH-09` et `TU-AUTH-10` la prouvent.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|

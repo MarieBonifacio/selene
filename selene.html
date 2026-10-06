@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "e89dd80a46";
+const SELENE_BUILD = "83ee0aaad6";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -6820,8 +6820,16 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     clearInterval(authRefreshTimer);
     authRefreshTimer = setInterval(authKeepAlive, 5 * 60 * 1e3);
   }
+  var AUTH_RETRY_MS = [2e3, 5e3, 15e3, 3e4];
+  var authRetryTimer = null;
+  async function authReconnectSoon(i = 0) {
+    clearTimeout(authRetryTimer);
+    authRetryTimer = null;
+    await authKeepAlive();
+    if (authSession && (!board.db || !site.db) && i < AUTH_RETRY_MS.length) authRetryTimer = setTimeout(() => authReconnectSoon(i + 1), AUTH_RETRY_MS[i]);
+  }
   window.addEventListener("online", () => {
-    if (authReady()) authKeepAlive();
+    if (authReady()) authReconnectSoon();
   });
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden && authReady()) authKeepAlive();

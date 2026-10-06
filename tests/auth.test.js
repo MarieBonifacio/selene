@@ -113,3 +113,20 @@ test('A24 : the network back during a failing connect: the sync resumes at once,
   assert.equal(app.nodes.get('#saving').textContent, '');
   app.site.disconnect(); app.board.disconnect();
 });
+
+/* Le réseau revenu ne l'est pas toujours tout à fait : « online » arrive, mais la première tentative échoue encore
+   (réseau qui s'établit, nom pas encore résolu). Elle est retentée dans les secondes qui suivent, pas au minuteur. */
+test('A24 : a reconnect that fails right after « online » is retried within seconds, not at the 5-minute timer', async () => {
+  const server = fakeSupabase();
+  let downUntil = Infinity;
+  const fetch = (url, opts) => Date.now() < downUntil ? Promise.reject(new TypeError('Failed to fetch')) : server.fetch(url, opts);
+  const app = launchHosted({ fetch });
+  await settle();
+  assert.equal(app.site.db, null, 'offline at boot: not connected');
+  downUntil = Date.now() + 1000; app.fire('online'); await settle();
+  assert.equal(app.site.db, null, 'the first attempt after « online » failed');
+  await settle(2600);
+  assert.ok(app.site.db && app.board.db, 'retried within seconds: connected');
+  assert.equal(app.nodes.get('#saving').textContent, '');
+  app.site.disconnect(); app.board.disconnect();
+});
