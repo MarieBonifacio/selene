@@ -34,7 +34,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob, AND, IOS, WIN, ART
 - **Préconditions** : jeu d'essai importé ; puis, pour l'étape 4, [`donnees/rlm-en-cours.json`](../donnees/rlm-en-cours.json) importé.
 - **Données** : aucune.
-- **Automatisés associés** : `TU-MOD-04`, `TU-REG-34`, `TU-BAK-01`
+- **Automatisés associés** : `TU-MOD-04`, `TU-REG-34`, `TU-BAK-01`, `TN-regulation-perdu`
 - **Source** : [DOC] README, « Données » ; [DOC] [regulation.md](../../regulation.md#confidentialité) ; [TEST] `TU-REG-34`.
 
 | Étape | Action précise | Résultat attendu observable |

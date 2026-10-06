@@ -35,7 +35,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | ~~BL-15 : le hors-ligne réel (réseau coupé, page rechargée)~~ (fait le 6 octobre 2026, PR #123) | une session | P1 | — | [BL-15](#bl-15) |
 | ~~BL-03 : l'isolation entre comptes rejouée chaque semaine~~ (fait le 6 octobre 2026, PR #124 : le workflow attend ses six secrets, plus bas) | une session | P1 | — | [BL-03](#bl-03) |
 | ~~BL-20 : un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait le 6 octobre 2026, PR #124) | une session | P3 | — | [BL-20](#bl-20) |
-| BL-19 : nommer, dans la matrice, les étapes que les tests ne couvrent pas | une session | P3 | les 73 cas P1 d'abord | [BL-19](#bl-19) |
+| BL-19 : nommer, dans la matrice, les étapes que les tests ne couvrent pas (les 73 cas P1 : fait le 6 octobre 2026, PR #125) | une session | P3 | restent 53 lignes P2 et 35 P3 | [BL-19](#bl-19) |
 | BL-18 : la page du cahier à cocher sous contrôle de la CI | une session | P3 | si la PR #118 est fusionnée | [BL-18](#bl-18) |
 | BL-16 : la fumée de l'app iOS sur simulateur | une session | P3 | avant la première version iOS | [BL-16](#bl-16) |
 
@@ -106,7 +106,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 | [BL-16](#bl-16) | Fumée de l'app iOS sur simulateur, en CI | automatisation | P3 | PLT-008 |
 | [BL-17](#bl-17) | ~~Un échec sous Firefox doit se voir tant qu'il n'est pas bloquant~~ (fait) | fiabilité de la CI | P2 | tous |
 | [BL-18](#bl-18) | La page du cahier à cocher sous contrôle de la CI (si la PR #118 est fusionnée) | outillage | P3 | tous |
-| [BL-19](#bl-19) | Matrice : nommer les étapes que les tests ne couvrent pas | traçabilité | P3 | les 73 cas P1 d'abord |
+| [BL-19](#bl-19) | Matrice : nommer les étapes que les tests ne couvrent pas (P1 fait) | traçabilité | P3 | les 73 cas P1 faits ; 88 lignes P2 et P3 |
 | [BL-20](#bl-20) | ~~Un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait) | outillage | P3 | onze étapes, voir ci-dessous |
 | [BL-21](#bl-21) | ~~Fermer le réseau aux scénarios de navigateur~~ (fait) | hygiène des essais | P2 | tous les scénarios ; A20 |
 
@@ -455,6 +455,14 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   aucun suivi) : ne pas le relier.
 - **Niveau** : documentation du cahier.
 - **Bénéfice attendu** : une non-régression ciblée qui sait ce qu'elle peut sauter.
+- **État** : **les 73 cas P1, faits** le 6 octobre 2026 (PR #125). Chaque ligne P1 dit, étape par étape, quel test
+  vérifie quoi et ce qui reste, lu dans le corps des tests : 33 lignes réécrites (les 40 autres l'étaient déjà).
+  MOD-022 passe « couvert automatiquement » (`TN-annuler` et `TN-quotidien` en vérifient chaque étape). En chemin :
+  `TN-regulation-perdu` vérifie vraiment l'étape 4 de DON-001 (la sauvegarde contient le suivi gardé sur
+  l'appareil) : relié ; il n'importe qu'un suivi, pas « tout remplacer » : non relié à DON-002. `TN-sauvegarde-complete`
+  et `TN-instagram` vérifient les étapes 4 et 5 de TRV-008 : reliés. `TS-ANDROID-FUMEE` reste hors de RLM-030. Ce
+  qu'on y lit vaut plan d'automatisation : la plupart des « restent » sont un message exact à relire, ou un geste que
+  le scénario fait sans en vérifier l'effet. **Restent** 53 lignes P2 et 35 P3, avec la lacune générique.
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`
