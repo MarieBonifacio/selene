@@ -1109,7 +1109,7 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Fichier** : [`tests/browser/hors-ligne-reel.js`](../../tests/browser/hors-ligne-reel.js) · **mode** H · **écran** O
 - **Conditions** : Un compte connecté sur un faux Supabase, le service worker permis ; une première visite, puis le réseau coupé (`setOffline`) et le serveur de fichiers rendu injoignable par une route, que Chromium applique au service worker.
 - **Vérifie** : en ligne, une capture part au serveur ; le service worker tient la page ; sous Chromium, hors ligne et rechargée, l'app s'ouvre depuis le cache, pas l'écran d'entrée, avec ses données ; une capture hors ligne affiche « Non synchronisé — enregistré sur cet appareil seulement » et rien ne part ; au retour du réseau, elle arrive au serveur sans rien perdre et l'indicateur s'efface. Cache vidé avant le rechargement, le scénario échoue (vérifié).
-- **Limites** : Sous WebKit et Firefox, le service worker échappe à la coupure simulée : le rechargement hors ligne n'y est pas éprouvé (le scénario le dit), le reste l'est. Ni mode Avion, ni PWA installée, ni appareil réel.
+- **Limites** : Sous Firefox, le service worker échappe à la coupure simulée : le rechargement hors ligne n'y est pas éprouvé (le scénario le dit), le reste l'est. Sous WebKit, le scénario n'est pas joué, et le dit : une page tenue par le service worker y échappe aux routes de Playwright, et ses requêtes partaient vers le vrai serveur (A20 du [périmètre](perimetre.md#anomalies-et-observations)). Ni mode Avion, ni PWA installée, ni appareil réel.
 - **Cas manuels** : [SYN-004](manuels/synchronisation.md#syn-004), [SYN-010](manuels/synchronisation.md#syn-010)
 
 <a id="tn-injection"></a>
@@ -1220,7 +1220,7 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-agenda` — Calendrier dédié
 
 - **Fichier** : [`tests/browser/agenda.js`](../../tests/browser/agenda.js) · **mode** H · **écran** O
-- **Conditions** : Faux passeur qui sert un `.ics` ; horloge fixée.
+- **Conditions** : Faux passeur qui sert un `.ics` ; horloge fixée. Avant chaque rechargement, plus aucune requête en vol depuis 1,2 s (`calme()` de `helpers.js`, A19).
 - **Vérifie** : rien sans adresse ; `webcal://` devient `https://` ; adresse gardée dans ce navigateur, hors synchronisation, jamais réaffichée ; le plombier sous Chantier ; récurrence ; le passé écarté ; journée entière demain ; titre piégé inerte ; cache d'une heure ; « oublier » retire adresse et cache.
 - **Cas manuels** : [CPT-013](manuels/entree-et-comptes.md#cpt-013), [EXT-015](manuels/connexions.md#ext-015)
 
@@ -1439,7 +1439,8 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
   A16 : trois contrôles sous Firefox le 6 octobre, l'app pas encore démarrée, corrigé par la PR #120 avec
   `TN-regulation-appareil`, `TN-regulation-perdu`, `TN-sources`, `TN-dehors-croise`, `TN-dehors`, `TN-artist-watch` et
   `TN-agenda`, qui comptaient sur le même délai ; `TN-parcours-e2`, qui lisait le stockage avant l'écriture, trouvé par
-  le job « démarrage lent ») et
+  le job « démarrage lent ») ; `TN-agenda` sous WebKit (A19, un rechargement coupait une requête, corrigé par la PR #123
+  comme A1) et
   `TN-dehors` (A10), qui attendent désormais l'état plutôt qu'un délai ; `TN-regulation` sous WebKit (A9, corrigé par la
   #100) ; `TN-identite` (deux échecs les 2 et 3 octobre, corrigé par `31122f6`). Relevé complet :
   [perimetre.md](perimetre.md#anomalies-et-observations).

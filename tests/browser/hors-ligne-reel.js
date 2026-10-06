@@ -3,8 +3,9 @@
    rechargée. L'app doit s'ouvrir depuis le cache, avec ses données ; une capture faite hors ligne reste sur l'appareil,
    dite « Non synchronisé », et part au serveur au retour du réseau. La coupure de Playwright (setOffline) n'atteint pas
    les requêtes du service worker : le serveur de fichiers est aussi rendu injoignable par une route, que Chromium
-   applique au service worker ; ailleurs, le rechargement hors ligne n'est pas éprouvé, et le scénario le dit.
-   Lancé par tests/browser/run.js. */
+   applique au service worker ; sous Firefox, le rechargement hors ligne n'est pas éprouvé, et le scénario le dit.
+   Sous WebKit, rien n'est joué : une page tenue par le service worker y échappe aux routes de Playwright, ses requêtes
+   partiraient vers le vrai serveur (CI du 6 octobre 2026). Lancé par tests/browser/run.js. */
 const { engine, ENGINE, BASE, launchOptions, check, until, ouvrir, entree } = require('./helpers');
 const rows = new Map();
 const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
@@ -31,6 +32,7 @@ const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_
 const serveur = () => ((rows.get('u1') || {}).site?.modules?.inbox?.entries || []).map(i => i.text);
 const capture = async (p, text) => { await p.fill('#capIn', text); await p.click('[data-act="cap-add"]'); };
 (async () => {
+  if (ENGINE === 'webkit') { console.log('  – webkit : une page tenue par le service worker échappe aux routes de Playwright, ses requêtes iraient au vrai serveur : scénario non joué (Chromium, Firefox)'); return; }
   const b = await engine.launch(launchOptions), errs = [];
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } }); // service worker permis
   await ctx.route('https://*.supabase.co/**', supabase);

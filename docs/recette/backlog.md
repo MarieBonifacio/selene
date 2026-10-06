@@ -25,6 +25,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | ~~A18 : au lancement d'un appareil connecté, l'écran d'entrée s'affiche jusqu'aux premières réponses du serveur~~ (fait le 6 octobre 2026, PR #122) | une session | P2 | — | [A18](perimetre.md#anomalies-et-observations) |
 | ~~A16 : `tests/browser/mot-de-passe.js` instable sous Firefox~~ (fait le 6 octobre 2026, PR #120) | une session | P2 | — | [A16](perimetre.md#anomalies-et-observations) |
 | ~~BL-17 : un échec sous Firefox ne se voit pas (le job reste vert)~~ (fait le 6 octobre 2026, PR #120) | une session | P2 | — | [BL-17](#bl-17) |
+| BL-21 : fermer le réseau aux scénarios de navigateur (sous WebKit, une page tenue par le service worker échappe aux routes, et ses requêtes vont au vrai serveur) | une session | P2 | — | [BL-21](#bl-21), [A20](perimetre.md#anomalies-et-observations) |
 
 ### À automatiser
 
@@ -106,6 +107,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 | [BL-18](#bl-18) | La page du cahier à cocher sous contrôle de la CI (si la PR #118 est fusionnée) | outillage | P3 | tous |
 | [BL-19](#bl-19) | Matrice : nommer les étapes que les tests ne couvrent pas | traçabilité | P3 | les 73 cas P1 d'abord |
 | [BL-20](#bl-20) | Un résultat observable à chaque étape, contrôlé par `npm run recette` | outillage | P3 | onze étapes, voir ci-dessous |
+| [BL-21](#bl-21) | Fermer le réseau aux scénarios de navigateur | hygiène des essais | P2 | tous les scénarios ; A20 |
 
 ---
 
@@ -386,8 +388,10 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 - **Bénéfice attendu** : le hors-ligne vérifié à chaque PR ; reste manuel : la PWA installée sur iPhone, le mode Avion.
 - **État** : **fait** le 6 octobre 2026 (PR #123, `TN-hors-ligne-reel`). La coupure de Playwright n'atteint pas le
   service worker : le serveur de fichiers est aussi rendu injoignable par une route, que Chromium applique au service
-  worker ; le rechargement hors ligne n'est donc éprouvé que sous Chromium, le reste dans les trois moteurs. Cache vidé
-  avant le rechargement, le scénario échoue : il prouve bien que l'app vient du cache.
+  worker ; le rechargement hors ligne n'est donc éprouvé que sous Chromium, le reste sous Firefox aussi. Sous WebKit, le
+  scénario n'est pas joué, et le dit : une page tenue par le service worker y échappe aux routes de Playwright, ses
+  requêtes partaient vers le vrai serveur (A20, la variante constatée que prévoyait le niveau ; [BL-21](#bl-21) ferme ce
+  chemin). Cache vidé avant le rechargement, le scénario échoue : il prouve bien que l'app vient du cache.
 
 <a id="bl-16"></a>
 ### BL-16 — Fumée de l'app iOS sur simulateur, en CI
@@ -458,6 +462,27 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   `scripts/recette.mjs` une étape sans attendu. Une étape de pure préparation dit ce qu'on doit voir avant de continuer.
 - **Niveau** : documentation et outillage du cahier.
 - **Bénéfice attendu** : chaque étape peut échouer, donc chaque *réussi* veut dire quelque chose.
+
+<a id="bl-21"></a>
+### BL-21 — Fermer le réseau aux scénarios de navigateur
+
+- **Risque couvert** : un scénario qui atteint un vrai serveur. Les scénarios simulent Supabase par des routes de
+  Playwright (`ctx.route('https://*.supabase.co/**')`) ; une requête que la route ne voit pas part vers l'adresse
+  compilée dans l'app, celle du vrai projet. C'est arrivé le 6 octobre 2026 sous WebKit
+  ([A20](perimetre.md#anomalies-et-observations)) : une page tenue par le service worker y échappe aux routes. Avec une
+  session factice, le serveur refuse ; mais le journal anonyme des erreurs (`erreurs`) accepte une ligne sans session, et
+  une vingtaine de scénarios permettent le service worker. La règle « aucune écriture sur les données de production »
+  ne doit pas tenir à la chance.
+- **Proposition** : dans `launchOptions` de `tests/browser/helpers.js`, un mandataire (`proxy`) qui envoie tout ce qui
+  n'est pas `127.0.0.1` vers un port fermé : une requête que ni les routes ni le serveur de fichiers ne servent échoue,
+  dans les trois moteurs, service worker compris. Le vérifier d'abord dans les trois moteurs de la CI (le mandataire
+  ne doit gêner ni les routes ni le serveur de fichiers), puis une sonde : une requête non routée vers
+  `https://exemple.supabase.co` doit échouer. Ensuite, et seulement ensuite, rejouer `hors-ligne-reel.js` sous WebKit :
+  ses requêtes échoueront au lieu de partir, ce qui ne le rendra pas vert, mais sûr.
+- **Niveau** : outillage des scénarios.
+- **Dépendances** : aucune.
+- **Bénéfice attendu** : aucune requête de test ne peut sortir de la CI, quel que soit le moteur ; un scénario qui
+  oublie une route échoue au lieu de parler au vrai serveur.
 
 ---
 

@@ -73,6 +73,25 @@ async function ouvrir(p, url, etat = demarree) {
   return p;
 }
 
+/* Les requêtes vers le faux Supabase encore en vol. Sous WebKit, un rechargement qui en coupe une écrit à la console
+   « Fetch API cannot load … due to access control checks. », que Playwright compte comme une erreur de la page, alors que
+   l'app rattrape l'échec (A1 pour activite.js, le 4 octobre 2026 ; agenda.js le 6). `suivre(p)` dès la page ouverte, puis
+   `calme(p)` avant un rechargement : 1,2 s sans aucune requête, plus que les 900 ms après lesquelles un enregistrement
+   part au serveur (10 s au plus). waitForLoadState('networkidle') n'y suffit pas : une page chargée l'a déjà atteint. */
+const enVol = new WeakMap();
+function suivre(p) {
+  const n = { v: 0 }, api = r => /\.supabase\.co\//.test(r.url());
+  p.on('request', r => { if (api(r)) n.v++; });
+  for (const ev of ['requestfinished', 'requestfailed']) p.on(ev, r => { if (api(r)) n.v = Math.max(0, n.v - 1); });
+  enVol.set(p, n);
+  return p;
+}
+async function calme(p, ms = 10000) {
+  const n = enVol.get(p);
+  if (!n) throw new Error('calme() sans suivre() : les requêtes de cette page ne sont pas comptées');
+  for (let quiet = 0, end = Date.now() + ms; quiet < 24 && Date.now() < end; await new Promise(r => setTimeout(r, 50))) quiet = n.v ? 0 : quiet + 1;
+}
+
 /* Le stockage de Selene vu depuis la page : IndexedDB (base « selene », magasin « kv ») en version hébergée, localStorage
    sinon (artefact, secrets). Lire n'ouvre jamais la base si elle n'existe pas encore (sinon elle naîtrait vide, sans
    magasin). Écrire prévient Selene comme le ferait un autre onglet (BroadcastChannel « selene-storage »). */
@@ -94,4 +113,4 @@ const storeGet = (p, k) => p.evaluate(inPage, { k, v: null, write: false });
 const storeSet = (p, k, v) => p.evaluate(inPage, { k, v, write: true });
 const storeJSON = async (p, k) => JSON.parse(await storeGet(p, k));
 
-module.exports = { storeGet, storeSet, storeJSON, until, ouvrir, demarree, entree, engine, ENGINE, BASE, launchOptions, fixture, check };
+module.exports = { storeGet, storeSet, storeJSON, until, ouvrir, demarree, entree, suivre, calme, engine, ENGINE, BASE, launchOptions, fixture, check };
