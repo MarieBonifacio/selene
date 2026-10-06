@@ -11,7 +11,7 @@ Identifiants retirés : aucun.
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
 | Tests unitaires et d'intégration Node | `npm test` | 318 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
-| Scénarios de navigateur | `npm run test:browser` | 78 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
+| Scénarios de navigateur | `npm run test:browser` | 80 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
 | Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
@@ -1094,6 +1094,24 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Limites** : La coupure réseau simulée par Playwright n'atteint pas le service worker : le cache est lu, la page n'est pas rouverte hors ligne.
 - **Cas manuels** : [SYN-010](manuels/synchronisation.md#syn-010), [PLT-001](manuels/plateformes.md#plt-001), [TRV-012](manuels/transverse.md#trv-012)
 
+<a id="tn-sauvegarde-complete"></a>
+#### `TN-sauvegarde-complete` — La sauvegarde complète, geste entier, sur deux appareils
+
+- **Fichier** : [`tests/browser/sauvegarde-complete.js`](../../tests/browser/sauvegarde-complete.js) · **mode** H · **écran** O
+- **Conditions** : Deux appareils du même compte sur un faux Supabase partagé, puis un appareil sans compte ; les jeux du cahier (`jeu-essai.json`, `ancien-format-1.json`, `refus-version-future.json`, `refus-hostile.json`), choisis par le champ « Importer ».
+- **Vérifie** : importer demande « Remplacer tout l'état actuel par celui du fichier ? », puis « Sauvegarde importée. » ; l'appareil 1 a les treize espaces du jeu, la capture d'avant disparue ; le compte aussi ; l'appareil 2, à la relève, le même état, sans doublon (une seule boîte). Renoncer : aucun « Sauvegarde importée. », rien ne change, rien ne part. Un fichier plus récent, puis un fichier piégé : refusés avec leur message exact, sans confirmation, rien ne part, aucune boîte d'alerte. Sans compte, le format 1 migré au format courant, la tâche, le livre, le fragment, la note et le nom « Aragne » gardés. Mutation vérifiée : un import qui ignore « Annuler » fait échouer trois contrôles.
+- **Limites** : Faux serveur ; ni feuille de partage des apps, ni choix du fichier sur téléphone, ni artefact ; l'affichage de chaque espace migré n'est pas parcouru.
+- **Cas manuels** : [DON-002](manuels/donnees-sauvegardes.md#don-002), [DON-003](manuels/donnees-sauvegardes.md#don-003), [DON-004](manuels/donnees-sauvegardes.md#don-004), [DON-005](manuels/donnees-sauvegardes.md#don-005), [DON-006](manuels/donnees-sauvegardes.md#don-006)
+
+<a id="tn-hors-ligne-reel"></a>
+#### `TN-hors-ligne-reel` — Hors ligne pour de vrai : rechargée sans réseau, puis le retour du réseau
+
+- **Fichier** : [`tests/browser/hors-ligne-reel.js`](../../tests/browser/hors-ligne-reel.js) · **mode** H · **écran** O
+- **Conditions** : Un compte connecté sur un faux Supabase, le service worker permis ; une première visite, puis le réseau coupé (`setOffline`) et le serveur de fichiers rendu injoignable par une route, que Chromium applique au service worker.
+- **Vérifie** : en ligne, une capture part au serveur ; le service worker tient la page ; sous Chromium, hors ligne et rechargée, l'app s'ouvre depuis le cache, pas l'écran d'entrée, avec ses données ; une capture hors ligne affiche « Non synchronisé — enregistré sur cet appareil seulement » et rien ne part ; au retour du réseau, elle arrive au serveur sans rien perdre et l'indicateur s'efface. Cache vidé avant le rechargement, le scénario échoue (vérifié).
+- **Limites** : Sous Firefox, le service worker échappe à la coupure simulée : le rechargement hors ligne n'y est pas éprouvé (le scénario le dit), le reste l'est. Sous WebKit, le scénario n'est pas joué, et le dit : une page tenue par le service worker y échappe aux routes de Playwright, et ses requêtes partaient vers le vrai serveur (A20 du [périmètre](perimetre.md#anomalies-et-observations)). Ni mode Avion, ni PWA installée, ni appareil réel.
+- **Cas manuels** : [SYN-004](manuels/synchronisation.md#syn-004), [SYN-010](manuels/synchronisation.md#syn-010)
+
 <a id="tn-injection"></a>
 #### `TN-injection` — Identifiants et nombres piégés
 
@@ -1202,7 +1220,7 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-agenda` — Calendrier dédié
 
 - **Fichier** : [`tests/browser/agenda.js`](../../tests/browser/agenda.js) · **mode** H · **écran** O
-- **Conditions** : Faux passeur qui sert un `.ics` ; horloge fixée.
+- **Conditions** : Faux passeur qui sert un `.ics` ; horloge fixée. Avant chaque rechargement, plus aucune requête en vol depuis 1,2 s (`calme()` de `helpers.js`, A19).
 - **Vérifie** : rien sans adresse ; `webcal://` devient `https://` ; adresse gardée dans ce navigateur, hors synchronisation, jamais réaffichée ; le plombier sous Chantier ; récurrence ; le passé écarté ; journée entière demain ; titre piégé inerte ; cache d'une heure ; « oublier » retire adresse et cache.
 - **Cas manuels** : [CPT-013](manuels/entree-et-comptes.md#cpt-013), [EXT-015](manuels/connexions.md#ext-015)
 
@@ -1421,7 +1439,8 @@ la zone de notification et le Gestionnaire d'identification ne sont pas testés.
   A16 : trois contrôles sous Firefox le 6 octobre, l'app pas encore démarrée, corrigé par la PR #120 avec
   `TN-regulation-appareil`, `TN-regulation-perdu`, `TN-sources`, `TN-dehors-croise`, `TN-dehors`, `TN-artist-watch` et
   `TN-agenda`, qui comptaient sur le même délai ; `TN-parcours-e2`, qui lisait le stockage avant l'écriture, trouvé par
-  le job « démarrage lent ») et
+  le job « démarrage lent ») ; `TN-agenda` sous WebKit (A19, un rechargement coupait une requête, corrigé par la PR #123
+  comme A1) et
   `TN-dehors` (A10), qui attendent désormais l'état plutôt qu'un délai ; `TN-regulation` sous WebKit (A9, corrigé par la
   #100) ; `TN-identite` (deux échecs les 2 et 3 octobre, corrigé par `31122f6`). Relevé complet :
   [perimetre.md](perimetre.md#anomalies-et-observations).

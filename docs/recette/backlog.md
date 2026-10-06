@@ -25,13 +25,14 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | ~~A18 : au lancement d'un appareil connecté, l'écran d'entrée s'affiche jusqu'aux premières réponses du serveur~~ (fait le 6 octobre 2026, PR #122) | une session | P2 | — | [A18](perimetre.md#anomalies-et-observations) |
 | ~~A16 : `tests/browser/mot-de-passe.js` instable sous Firefox~~ (fait le 6 octobre 2026, PR #120) | une session | P2 | — | [A16](perimetre.md#anomalies-et-observations) |
 | ~~BL-17 : un échec sous Firefox ne se voit pas (le job reste vert)~~ (fait le 6 octobre 2026, PR #120) | une session | P2 | — | [BL-17](#bl-17) |
+| BL-21 : fermer le réseau aux scénarios de navigateur (sous WebKit, une page tenue par le service worker échappe aux routes, et ses requêtes vont au vrai serveur) | une session | P2 | — | [BL-21](#bl-21), [A20](perimetre.md#anomalies-et-observations) |
 
 ### À automatiser
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
-| BL-14 : la sauvegarde complète dans un vrai navigateur, sur deux appareils | une session | P1 | — | [BL-14](#bl-14) |
-| BL-15 : le hors-ligne réel (réseau coupé, page rechargée) | une session | P1 | — | [BL-15](#bl-15) |
+| ~~BL-14 : la sauvegarde complète dans un vrai navigateur, sur deux appareils~~ (fait le 6 octobre 2026, PR #123) | une session | P1 | — | [BL-14](#bl-14) |
+| ~~BL-15 : le hors-ligne réel (réseau coupé, page rechargée)~~ (fait le 6 octobre 2026, PR #123) | une session | P1 | — | [BL-15](#bl-15) |
 | BL-03 : l'isolation entre comptes rejouée chaque semaine | une session, une fois la préproduction et ses six secrets en place | P1 | après un premier `npm run isolation` réussi à la main (TRV-016) | [BL-03](#bl-03) |
 | BL-20 : un résultat observable à chaque étape, contrôlé par `npm run recette` | une session | P3 | — | [BL-20](#bl-20) |
 | BL-19 : nommer, dans la matrice, les étapes que les tests ne couvrent pas | une session | P3 | les 73 cas P1 d'abord | [BL-19](#bl-19) |
@@ -99,13 +100,14 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 | [BL-11](#bl-11) | claude.ai : ce qui ne s'automatise pas | lacune assumée | P2 | AST-009, PLT-011 |
 | [BL-12](#bl-12) | ~~`npm run recette` dans la CI~~ (fait, voir ci-dessous) | outillage | P2 | tous |
 | [BL-13](#bl-13) | ~~Firefox : cible ou non ?~~ (décidé, en place) | décision | P3 | — |
-| [BL-14](#bl-14) | La sauvegarde complète dans un vrai navigateur, sur deux appareils | automatisation | P1 | DON-002, DON-003, DON-004, DON-005, DON-006 |
-| [BL-15](#bl-15) | Le hors-ligne réel : réseau coupé, page rechargée, retour du réseau | automatisation | P1 | SYN-004, PLT-001, SYN-010 |
+| [BL-14](#bl-14) | ~~La sauvegarde complète dans un vrai navigateur, sur deux appareils~~ (fait) | automatisation | P1 | DON-002, DON-003, DON-004, DON-005, DON-006 |
+| [BL-15](#bl-15) | ~~Le hors-ligne réel : réseau coupé, page rechargée, retour du réseau~~ (fait) | automatisation | P1 | SYN-004, PLT-001, SYN-010 |
 | [BL-16](#bl-16) | Fumée de l'app iOS sur simulateur, en CI | automatisation | P3 | PLT-008 |
 | [BL-17](#bl-17) | ~~Un échec sous Firefox doit se voir tant qu'il n'est pas bloquant~~ (fait) | fiabilité de la CI | P2 | tous |
 | [BL-18](#bl-18) | La page du cahier à cocher sous contrôle de la CI (si la PR #118 est fusionnée) | outillage | P3 | tous |
 | [BL-19](#bl-19) | Matrice : nommer les étapes que les tests ne couvrent pas | traçabilité | P3 | les 73 cas P1 d'abord |
 | [BL-20](#bl-20) | Un résultat observable à chaque étape, contrôlé par `npm run recette` | outillage | P3 | onze étapes, voir ci-dessous |
+| [BL-21](#bl-21) | Fermer le réseau aux scénarios de navigateur | hygiène des essais | P2 | tous les scénarios ; A20 |
 
 ---
 
@@ -342,7 +344,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   montraient pas (A15, corrigé par la PR #116). Le job « vert » ne le disait pas : avant de le rendre bloquant, lire son
   journal reste le seul moyen de savoir.
 - **Condition proposée pour le 20 octobre** (à confirmer par la responsable) : A16 corrigé, puis vingt passages Firefox
-  consécutifs sans échec : l'avertissement de [BL-17](#bl-17) absent, ou « 78 scénarios, tous verts. » à la fin du
+  consécutifs sans échec : l'avertissement de [BL-17](#bl-17) absent, ou « 80 scénarios, tous verts. » à la fin du
   journal du pas ; sinon, décaler la date plutôt que rendre bloquant un scénario instable, qui apprendrait à
   relancer la CI sans la lire.
 
@@ -366,6 +368,8 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 - **Dépendances** : aucune (`setInputFiles` de Playwright, jeux de données existants).
 - **Bénéfice attendu** : cinq cas P1 passent d'une couverture en Node à un geste vérifié dans un vrai navigateur ; reste
   manuel : la feuille de partage des apps et le choix du fichier sur téléphone.
+- **État** : **fait** le 6 octobre 2026 (PR #123, `TN-sauvegarde-complete`), dans les trois moteurs. L'app écrit dans
+  IndexedDB juste après la bulle : le scénario relit le stockage jusqu'à l'état attendu, au lieu de le lire aussitôt.
 
 <a id="bl-15"></a>
 ### BL-15 — Le hors-ligne réel : réseau coupé, page rechargée, retour du réseau
@@ -382,6 +386,12 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   variante : la constater, ne pas désactiver le scénario.
 - **Dépendances** : aucune.
 - **Bénéfice attendu** : le hors-ligne vérifié à chaque PR ; reste manuel : la PWA installée sur iPhone, le mode Avion.
+- **État** : **fait** le 6 octobre 2026 (PR #123, `TN-hors-ligne-reel`). La coupure de Playwright n'atteint pas le
+  service worker : le serveur de fichiers est aussi rendu injoignable par une route, que Chromium applique au service
+  worker ; le rechargement hors ligne n'est donc éprouvé que sous Chromium, le reste sous Firefox aussi. Sous WebKit, le
+  scénario n'est pas joué, et le dit : une page tenue par le service worker y échappe aux routes de Playwright, ses
+  requêtes partaient vers le vrai serveur (A20, la variante constatée que prévoyait le niveau ; [BL-21](#bl-21) ferme ce
+  chemin). Cache vidé avant le rechargement, le scénario échoue : il prouve bien que l'app vient du cache.
 
 <a id="bl-16"></a>
 ### BL-16 — Fumée de l'app iOS sur simulateur, en CI
@@ -452,6 +462,27 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   `scripts/recette.mjs` une étape sans attendu. Une étape de pure préparation dit ce qu'on doit voir avant de continuer.
 - **Niveau** : documentation et outillage du cahier.
 - **Bénéfice attendu** : chaque étape peut échouer, donc chaque *réussi* veut dire quelque chose.
+
+<a id="bl-21"></a>
+### BL-21 — Fermer le réseau aux scénarios de navigateur
+
+- **Risque couvert** : un scénario qui atteint un vrai serveur. Les scénarios simulent Supabase par des routes de
+  Playwright (`ctx.route('https://*.supabase.co/**')`) ; une requête que la route ne voit pas part vers l'adresse
+  compilée dans l'app, celle du vrai projet. C'est arrivé le 6 octobre 2026 sous WebKit
+  ([A20](perimetre.md#anomalies-et-observations)) : une page tenue par le service worker y échappe aux routes. Avec une
+  session factice, le serveur refuse ; mais le journal anonyme des erreurs (`erreurs`) accepte une ligne sans session, et
+  une vingtaine de scénarios permettent le service worker. La règle « aucune écriture sur les données de production »
+  ne doit pas tenir à la chance.
+- **Proposition** : dans `launchOptions` de `tests/browser/helpers.js`, un mandataire (`proxy`) qui envoie tout ce qui
+  n'est pas `127.0.0.1` vers un port fermé : une requête que ni les routes ni le serveur de fichiers ne servent échoue,
+  dans les trois moteurs, service worker compris. Le vérifier d'abord dans les trois moteurs de la CI (le mandataire
+  ne doit gêner ni les routes ni le serveur de fichiers), puis une sonde : une requête non routée vers
+  `https://exemple.supabase.co` doit échouer. Ensuite, et seulement ensuite, rejouer `hors-ligne-reel.js` sous WebKit :
+  ses requêtes échoueront au lieu de partir, ce qui ne le rendra pas vert, mais sûr.
+- **Niveau** : outillage des scénarios.
+- **Dépendances** : aucune.
+- **Bénéfice attendu** : aucune requête de test ne peut sortir de la CI, quel que soit le moteur ; un scénario qui
+  oublie une route échoue au lieu de parler au vrai serveur.
 
 ---
 

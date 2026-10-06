@@ -1,6 +1,6 @@
 /* Scénario de navigateur : le calendrier dédié (connexions externes, phase 2, vague 6e : docs/connexions.md).
    Version hébergée simulée (faux Supabase, faux passeur qui sert un .ics), horloge fixée. Lancé par tests/browser/run.js. */
-const { storeJSON, storeSet, storeGet, until, ouvrir, entree, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeJSON, storeSet, storeGet, until, ouvrir, entree, suivre, calme, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const UID = '0b8f0c2e-1111-2222-3333-444455556666';
 const ICS = ['BEGIN:VCALENDAR', 'VERSION:2.0',
   'BEGIN:VEVENT', 'UID:a', 'SUMMARY:Chantier : plombier', 'LOCATION:Salle de bain', 'DTSTART;TZID=Europe/Paris:20260929T140000', 'DTEND;TZID=Europe/Paris:20260929T150000', 'END:VEVENT',
@@ -20,7 +20,7 @@ const SECRET = 'https://calendar.example/ical/secret-abc/basic.ics';
   });
   const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.parse('2026-09-29T07:00:00Z') / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
   await ctx.addInitScript(([d, s, uid]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); } }, [fixture(), session, UID]);
-  const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
+  const p = suivre(await ctx.newPage()); p.on('pageerror', e => errs.push(e.message));
   await p.clock.setFixedTime(new Date('2026-09-29T09:00:00+02:00'));
   await p.goto(BASE + '/index.html#reglages'); await p.waitForTimeout(600);
 
@@ -43,12 +43,12 @@ const SECRET = 'https://calendar.example/ical/secret-abc/basic.ics';
 
   console.log('au plus une fois par heure, oublier');
   calls.length = 0;
-  await ouvrir(p, null, entree); await p.waitForTimeout(2200); // une absence ne s'attend pas : le délai court depuis le démarrage (A16)
+  await calme(p); await ouvrir(p, null, entree); await p.waitForTimeout(2200); // une absence ne s'attend pas : le délai court depuis le démarrage (A16)
   ok(!calls.length && (await p.$('.agenda-day')), 'rouvert dans l’heure : servi par le cache, sans appel');
   { const c = await storeJSON(p, 'selene-ics'); c.at = await p.evaluate(() => Date.now()) - 2 * 3600000; /* l'heure de la page (horloge simulée) */ await storeSet(p, 'selene-ics', JSON.stringify(c)); }
-  await ouvrir(p, null, entree); await until(() => calls.length >= 1);
+  await calme(p); await ouvrir(p, null, entree); await until(() => calls.length >= 1);
   ok(calls.length === 1, 'plus tard : relu');
-  await p.goto(BASE + '/index.html#reglages'); await p.waitForTimeout(300);
+  await calme(p); await p.goto(BASE + '/index.html#reglages'); await p.waitForTimeout(300);
   await p.click('[data-act="ics-forget"]'); await p.waitForTimeout(200);
   await p.evaluate(() => location.hash = ''); await p.waitForTimeout(300);
   ok(!(await p.$('.agenda-day')) && !((await storeGet(p, 'selene-ics-url')) || (await storeGet(p, 'selene-ics'))), 'oublié : adresse et cache retirés, l’accueil se tait');

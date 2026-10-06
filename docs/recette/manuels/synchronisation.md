@@ -106,8 +106,8 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob, AND, IOS, WIN
 - **Préconditions** : A1 et A2 connectés.
 - **Données** : sur A1 hors ligne : une capture, un fragment, une dépense de 9 €.
-- **Automatisés associés** : `TU-SYN-07`, `TU-SYN-10`, `TU-AUTH-01`
-- **Source** : [DOC] README, « Comptes et synchronisation » ; [TEST] `TU-SYN-07`, `TU-SYN-10`.
+- **Automatisés associés** : `TU-SYN-07`, `TU-SYN-10`, `TU-AUTH-01`, `TN-hors-ligne-reel`
+- **Source** : [DOC] README, « Comptes et synchronisation » ; [TEST] `TU-SYN-07`, `TU-SYN-10`, `tests/browser/hors-ligne-reel.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -264,8 +264,8 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : site hébergé ; une première visite de l'app en ligne ; la PWA installée de préférence (PLT-001).
 - **Données** : aucune.
-- **Automatisés associés** : `TN-hors-ligne`
-- **Source** : [CODE] `sw.js` ; [TEST] `tests/browser/hors-ligne.js` (qui lit le cache, sans rouvrir hors ligne).
+- **Automatisés associés** : `TN-hors-ligne`, `TN-hors-ligne-reel`
+- **Source** : [CODE] `sw.js` ; [TEST] `tests/browser/hors-ligne.js` (qui lit le cache) et `tests/browser/hors-ligne-reel.js` (qui rouvre l'app hors ligne, sous Chromium).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
