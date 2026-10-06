@@ -92,6 +92,19 @@ function authPersist(s) {
   try { if (s) platform.secrets.set(AUTH_KEY, JSON.stringify(s)); else platform.secrets.remove(AUTH_KEY); } catch {}
 }
 const LAST_UID_KEY = "selene-auth-last-uid";
+/* Une session gardée sur cet appareil se lit avant le premier rendu (A18 du cahier de recette) : la personne connectée
+   retrouve aussitôt son Selene, tel que l'appareil le garde, et la synchronisation suit (authBoot). Avant, l'écran
+   d'entrée restait affiché jusqu'aux premières réponses du serveur, à chaque lancement. Seulement si les données de
+   l'appareil sont celles de ce compte : sinon, elles attendent le changement de compte (authConnectStores), et un lien
+   d'e-mail passe d'abord (authBoot). */
+function restoreSession() {
+  if (authLink) return;
+  const s = authLoad();
+  let last = null;
+  try { last = platform.storage.get(LAST_UID_KEY); } catch {}
+  if (s && s.user && s.user.id && s.user.id === last) authSession = s;
+}
+if (authReady()) restoreSession();
 /* Déconnexion ou changement de compte : rien de la personne précédente ne doit rester sur l'appareil —
    ni ses données, ni sa conversation avec l'assistant, ni sa clé API (facturée à elle). */
 const PERSONAL_KEYS = ["selene-chat", "selene-recent", "selene-dehors", "selene-mb-seen", "selene-radar", "selene-ics", "selene-zotero", "selene-cites", "selene-passeur-acces"]; // selene-recent : les derniers espaces ouverts ; puis ce que le dehors a apporté
@@ -227,7 +240,14 @@ const supabaseDb = {
     };
   }
 };
-async function authConnectStores() {
+/* Un seul branchement à la fois : le démarrage (authBoot), un retour au premier plan ou du réseau (authKeepAlive)
+   peuvent le demander ensemble, maintenant que la session est là dès le premier rendu (A18). */
+let authConnecting = null;
+function authConnectStores() {
+  if (!authConnecting) authConnecting = authConnectStoresNow().finally(() => { authConnecting = null; });
+  return authConnecting;
+}
+async function authConnectStoresNow() {
   const uid = authSession.user.id;
   let last = null;
   try { last = platform.storage.get(LAST_UID_KEY); } catch {}

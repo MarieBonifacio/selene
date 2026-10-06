@@ -304,14 +304,16 @@ Identifiants retirés : aucun.
 ### CPT-012 — Réseau coupé au démarrage, session expirée : l'app s'ouvre sans déconnecter et reprend au retour du réseau
 
 - **Fonctionnalité et règle** : seul un refus explicite du serveur (400 ou 401 au rafraîchissement) ferme la session ;
-  réseau coupé ou 5xx laissent travailler en local, avec « Non synchronisé ».
+  réseau coupé ou 5xx laissent travailler en local, avec « Non synchronisé ». Un appareil connecté s'ouvre sur l'app et
+  ce qu'il garde, avant toute réponse du serveur, jamais sur l'écran d'entrée (A18).
 - **Objectif, risque vérifié** : une coupure réseau déconnecte, donc vide l'appareil et perd ce qui n'était pas envoyé.
 - **Priorité** : P1 · **Plateformes** : Web, Mob, AND, IOS
 - **Préconditions** : connecté au compte A ; la session doit être expirée au moment du test : laisser l'app fermée plus d'une
   heure (durée des jetons du projet), sans se déconnecter.
 - **Données** : capture `Recette CPT-012 hors ligne`.
-- **Automatisés associés** : `TU-AUTH-01`, `TU-AUTH-02`, `TU-AUTH-03`, `TU-AUTH-06`
-- **Source** : [DOC] [architecture.md](../../architecture.md#session) ; [TEST] `TU-AUTH-01` à `TU-AUTH-06`.
+- **Automatisés associés** : `TU-AUTH-01`, `TU-AUTH-02`, `TU-AUTH-03`, `TU-AUTH-06`, `TU-AUTH-07`, `TU-AUTH-08`
+- **Source** : [DOC] [architecture.md](../../architecture.md#session) ; [TEST] `TU-AUTH-01` à `TU-AUTH-08` ; anomalie A18 : avant le
+  6 octobre 2026, l'écran d'entrée restait affiché jusqu'aux premières réponses du serveur.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -319,6 +321,7 @@ Identifiants retirés : aucun.
 | 2 | Capturer le texte des données. | La capture apparaît dans la boîte. |
 | 3 | Rétablir le réseau ; attendre jusqu'à cinq minutes (ou revenir sur l'onglet). | L'indicateur s'efface ; aucune demande de connexion. |
 | 4 | Sur un second appareil connecté au compte A, ouvrir la boîte. | La capture y est. |
+| 5 | Premier appareil, réseau rétabli mais ralenti (outils de développement → Network → « Slow 3G », ou un téléphone en 3G) : recharger Selene. | L'app s'affiche d'emblée, avec la capture : à aucun moment l'écran d'entrée (« Commencer sans compte », « J'ai déjà un compte ») ; l'indicateur d'enregistrement s'efface une fois le serveur joint. |
 
 - **État final attendu** : session renouvelée, capture synchronisée.
 - **Nettoyage** : supprimer la capture.
@@ -361,7 +364,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, AND, WIN
 - **Préconditions** : comptes A et B ; A a une capture `Secret de A CPT-014`.
 - **Données** : aucune de plus.
-- **Automatisés associés** : `TU-SYN-13`, `TU-REG-33`
+- **Automatisés associés** : `TU-SYN-13`, `TU-REG-33`, `TU-AUTH-08`
 - **Source** : [DOC] [regulation.md](../../regulation.md#confidentialité) (changement de compte) ; [TEST] `TU-REG-33`.
 
 | Étape | Action précise | Résultat attendu observable |

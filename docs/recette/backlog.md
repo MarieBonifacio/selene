@@ -22,7 +22,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
 | ~~A17 : dans l'artefact claude.ai relié à sa base, un suivi « Reprendre la main » d'avant le 3 octobre part en entier dans la base de claude.ai, sous un texte qui dit que rien n'est envoyé~~ (fait le 6 octobre 2026, PR #121, avec la même fuite au versement d'un appareil sans compte) | une session | P1 | — | [A17](perimetre.md#anomalies-et-observations), [décision](#decisions) |
-| A18 : au lancement d'un appareil connecté, l'écran d'entrée s'affiche jusqu'aux premières réponses du serveur | une session | P2 | — | [A18](perimetre.md#anomalies-et-observations) |
+| ~~A18 : au lancement d'un appareil connecté, l'écran d'entrée s'affiche jusqu'aux premières réponses du serveur~~ (fait le 6 octobre 2026, PR #122) | une session | P2 | — | [A18](perimetre.md#anomalies-et-observations) |
 | ~~A16 : `tests/browser/mot-de-passe.js` instable sous Firefox~~ (fait le 6 octobre 2026, PR #120) | une session | P2 | — | [A16](perimetre.md#anomalies-et-observations) |
 | ~~BL-17 : un échec sous Firefox ne se voit pas (le job reste vert)~~ (fait le 6 octobre 2026, PR #120) | une session | P2 | — | [BL-17](#bl-17) |
 
@@ -472,8 +472,8 @@ A15 (saisie de l'écran de connexion effacée par un rendu : **corrigée**, PR #
 sous Firefox : **corrigée** côté test, PR #120, avec sept scénarios du même genre et un job « démarrage lent »), **A17**
 (artefact : un suivi « Reprendre la main » d'avant le 3 octobre partait dans la base de claude.ai : P1, comportement
 décidé, **corrigée** par la PR #121, avec la même fuite au versement d'un appareil sans compte dans un compte) et
-**A18** (au lancement d'un appareil connecté, l'écran d'entrée
-s'affiche jusqu'aux premières réponses du serveur : ouverte, P2).
+A18 (au lancement d'un appareil connecté, l'écran d'entrée
+s'affichait jusqu'aux premières réponses du serveur : P2, **corrigée** par la PR #122).
 
 <a id="documentation"></a>
 ## Documentation à corriger
