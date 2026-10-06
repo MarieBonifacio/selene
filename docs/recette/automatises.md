@@ -1112,7 +1112,7 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Conditions** : Deux appareils du même compte sur un faux Supabase partagé, puis un appareil sans compte ; les jeux du cahier (`jeu-essai.json`, `ancien-format-1.json`, `refus-version-future.json`, `refus-hostile.json`), choisis par le champ « Importer ».
 - **Vérifie** : importer demande « Remplacer tout l'état actuel par celui du fichier ? », puis « Sauvegarde importée. » ; l'appareil 1 a les treize espaces du jeu, la capture d'avant disparue ; le compte aussi ; l'appareil 2, à la relève, le même état, sans doublon (une seule boîte). Renoncer : aucun « Sauvegarde importée. », rien ne change, rien ne part. Un fichier plus récent, puis un fichier piégé : refusés avec leur message exact, sans confirmation, rien ne part, aucune boîte d'alerte. Sans compte, le format 1 migré au format courant, la tâche, le livre, le fragment, la note et le nom « Aragne » gardés. Mutation vérifiée : un import qui ignore « Annuler » fait échouer trois contrôles.
 - **Limites** : Faux serveur ; ni feuille de partage des apps, ni choix du fichier sur téléphone, ni artefact ; l'affichage de chaque espace migré n'est pas parcouru.
-- **Cas manuels** : [DON-002](manuels/donnees-sauvegardes.md#don-002), [DON-003](manuels/donnees-sauvegardes.md#don-003), [DON-004](manuels/donnees-sauvegardes.md#don-004), [DON-005](manuels/donnees-sauvegardes.md#don-005), [DON-006](manuels/donnees-sauvegardes.md#don-006)
+- **Cas manuels** : [DON-002](manuels/donnees-sauvegardes.md#don-002), [DON-003](manuels/donnees-sauvegardes.md#don-003), [DON-004](manuels/donnees-sauvegardes.md#don-004), [DON-005](manuels/donnees-sauvegardes.md#don-005), [DON-006](manuels/donnees-sauvegardes.md#don-006), [TRV-008](manuels/transverse.md#trv-008)
 
 <a id="tn-hors-ligne-reel"></a>
 #### `TN-hors-ligne-reel` — Hors ligne pour de vrai : rechargée sans réseau, puis le retour du réseau
@@ -1265,7 +1265,7 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Fichier** : [`tests/browser/instagram.js`](../../tests/browser/instagram.js) · **mode** A · **écran** O
 - **Conditions** : Exports synthétiques (`posts_1.json`, `reels.json`).
 - **Vérifie** : import dans les réglages d'une collection ; confirmation (combien, dates, où) ; annuler ne verse rien ; publications au dernier statut, encodage réparé, titre et date ; reel sans légende ; réimport sans doublon ; fichier illisible ou mauvais fichier dit ; légende piégée inerte ; pas de rappel dans « Aujourd'hui ».
-- **Cas manuels** : [EXT-011](manuels/connexions.md#ext-011)
+- **Cas manuels** : [EXT-011](manuels/connexions.md#ext-011), [TRV-008](manuels/transverse.md#trv-008)
 
 <a id="tn-ciel-chantier"></a>
 #### `TN-ciel-chantier` — Ciel et chantier
@@ -1346,7 +1346,7 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Fichier** : [`tests/browser/regulation-perdu.js`](../../tests/browser/regulation-perdu.js) · **mode** H · **écran** O
 - **Conditions** : Compte personnel, faux Supabase lu directement ; seul `selene-local-v1` est effacé du stockage (l'identité de l'appareil reste).
 - **Vérifie** : la sauvegarde complète contient le suivi gardé ici ; après l'effacement et un rechargement, l'espace avoue la perte et propose la restauration, sans contenu ni l'explication d'un autre appareil ; l'identité de l'appareil est restée ; la sauvegarde réimportée (après confirmation) rend le suivi entier, de nouveau gardé ici, sans rien envoyer au compte ; perdu encore, le retrait par les Réglages ne prévient pas comme un autre appareil, le dit, et le nom quitte le compte ; aucune erreur JavaScript.
-- **Cas manuels** : [RLM-029](manuels/reprendre-la-main.md#rlm-029)
+- **Cas manuels** : [RLM-029](manuels/reprendre-la-main.md#rlm-029), [DON-001](manuels/donnees-sauvegardes.md#don-001)
 
 <a id="tn-natif"></a>
 #### `TN-natif` — Coquille native simulée
