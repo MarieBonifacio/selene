@@ -160,7 +160,9 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
   variante de l'app, construite après le dépôt de l'installateur publié et jamais déposée, ouvre le protocole de débogage
   de Chrome (`additionalBrowserArgs` ; la variable `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` est ignorée quand wry fixe ses
   propres arguments, constaté au deuxième essai), et le script reprend les étapes de la fumée Android. Le projet Supabase de l'app est rendu injoignable sur le runner (fichier `hosts`)
-  avant l'essai.
+  avant l'essai. Premier passage vert le 6 octobre 2026, au troisième essai (PR #113, quatorze secondes de fumée) :
+  installée sous `%LOCALAPPDATA%\Selene`, la note retrouvée après l'app tuée puis relancée, le coffre sans temporaire,
+  une seule Selene après le second lancement, aucune exception JavaScript.
 
 <a id="bl-09"></a>
 ### BL-09 — Seuils de performance sur le jeu de volume

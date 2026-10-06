@@ -591,22 +591,25 @@ Identifiants retirés : aucun.
 
 - **Fonctionnalité et règle** : les sept derniers jours en face des sept précédents ; moyenne sur les seules journées
   complètes ; les moyennes ne sont dites comparables que si chaque période compte au moins quatre journées complètes et
-  si leurs couvertures diffèrent de deux journées au plus.
-- **Objectif, risque vérifié** : une comparaison trompeuse (une semaine bien remplie contre une semaine presque vide).
+  si leurs couvertures diffèrent de deux journées au plus. Sans aucune journée confirmée sur les deux semaines, une phrase
+  remplace le tableau ; sans semaine précédente, le tableau n'a pas de colonne pour elle.
+- **Objectif, risque vérifié** : une comparaison trompeuse (une semaine bien remplie contre une semaine presque vide) ; un
+  tableau de tirets et de zéros, le premier jour, lu comme un échec.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : chemin S, `rlm-a-configurer.json` importé ; configurer « Alcool », « Observer, sans cible », à
   partir de `J-13`.
 - **Données** : confirmations à zéro de `J-13`, `J-12`, `J-11`, `J-10` ; `2` verres à J ; confirmations de `J-3` à J.
-- **Automatisés associés** : `TU-REG-11`, `TU-REG-12`
-- **Source** : [DOC] [regulation.md](../../regulation.md#bilan-sur-sept-jours) ; [TEST] `TU-REG-12` ; vérifié par une
-  sonde Chromium le 4 octobre 2026.
+- **Automatisés associés** : `TU-REG-11`, `TU-REG-12`, `TU-REG-40`, `TN-regulation`
+- **Source** : [DOC] [regulation.md](../../regulation.md#bilan-sur-sept-jours) ; [TEST] `TU-REG-12`, `TU-REG-40` ; vérifié
+  par une sonde Chromium le 4 octobre 2026 ; l'état sans journée confirmée, le 6 octobre 2026 (U9 de l'audit).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | « Confirmer une autre journée… » pour J-13, J-12, J-11, J-10 (chaque fois « Confirmer »). Noter `2` à J ; confirmer J-3, J-2, J-1 et J. | Chaque confirmation : « Journée du … confirmée. » |
-| 2 | Lire le tableau. | « Ces 7 jours » / « Les 7 d'avant » : Journées suivies 7 / 7 ; Complètes 4 / 4 ; Inconnues 3 / 3 ; Quantités déclarées 2 verres standard / 0 verre standard ; Moyenne 0,5 verre standard / 0 verre standard ; Objectif atteint — / — ; « Les deux périodes sont renseignées de façon voisine : leurs moyennes peuvent se comparer. » |
-| 3 | Confirmer aussi J-6, J-5, J-4. | Complètes 7 / 4 ; Moyenne 0,29 verre standard / 0 ; « Les deux périodes ne sont pas renseignées de la même façon (7 et 4 journées complètes) : leurs moyennes ne se comparent pas telles quelles. » |
-| 4 | « laisser inconnue » sur les confirmations de J, J-1, J-2 et J-3. | Complètes 3 / 4 ; « Moins de 4 journées complètes dans l'une des périodes : leurs moyennes ne se comparent pas, l'écart dirait surtout ce qui manque. » |
+| 1 | Avant toute confirmation, lire « Mes sept derniers jours ». | Pas de tableau : « Rien à comparer pour l'instant : ce tableau ne compte que les journées confirmées, et aucune ne l'est encore. « Faire mon point du jour », le soir venu, confirme la première. » ; la règle « Une journée inconnue ne vaut jamais zéro, ni un échec » reste au-dessus, la liste des jours et leurs boutons « confirmer » en dessous. |
+| 2 | « Confirmer une autre journée… » pour J-13, J-12, J-11, J-10 (chaque fois « Confirmer »). Noter `2` à J ; confirmer J-3, J-2, J-1 et J. | Chaque confirmation : « Journée du … confirmée. » |
+| 3 | Lire le tableau. | « Ces 7 jours » / « Les 7 d'avant » : Journées suivies 7 / 7 ; Complètes 4 / 4 ; Inconnues 3 / 3 ; Quantités déclarées 2 verres standard / 0 verre standard ; Moyenne 0,5 verre standard / 0 verre standard ; Objectif atteint — / — ; « Les deux périodes sont renseignées de façon voisine : leurs moyennes peuvent se comparer. » |
+| 4 | Confirmer aussi J-6, J-5, J-4. | Complètes 7 / 4 ; Moyenne 0,29 verre standard / 0 ; « Les deux périodes ne sont pas renseignées de la même façon (7 et 4 journées complètes) : leurs moyennes ne se comparent pas telles quelles. » |
+| 5 | « laisser inconnue » sur les confirmations de J, J-1, J-2 et J-3. | Complètes 3 / 4 ; « Moins de 4 journées complètes dans l'une des périodes : leurs moyennes ne se comparent pas, l'écart dirait surtout ce qui manque. » |
 
 - **État final attendu** : trois journées complètes cette semaine, quatre la précédente.
 - **Nettoyage** : aucun.

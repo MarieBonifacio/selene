@@ -151,6 +151,11 @@ entrées en vigueur pendant ces deux semaines, et la liste des jours avec l'obje
 présentées comme comparables que si chaque période compte au moins quatre journées complètes et si leurs couvertures
 diffèrent de deux journées au plus ; sinon l'écran dit pourquoi elles ne se comparent pas.
 
+Tant qu'aucune journée n'est confirmée sur les deux semaines (le premier jour, typiquement), le tableau n'est pas montré :
+il ne serait que tirets et zéros, lu comme un échec là où rien n'a commencé. Une phrase dit ce qui le remplira (« Faire
+mon point du jour », le soir venu) ; la liste des jours et leurs boutons « confirmer » restent dessous. Sans semaine
+précédente (un suivi de sept jours au plus, aujourd'hui compris), le tableau n'a pas de colonne « Les 7 d'avant ».
+
 Les retours sur les appuis (trente derniers jours : choisi lors d'une envie, réalisé, utile / sans changement /
 difficile) restent descriptifs : aucune cause, aucune efficacité n'en est tirée.
 
