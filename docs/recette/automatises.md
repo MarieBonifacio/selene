@@ -1080,7 +1080,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/indexeddb.js`](../../tests/browser/indexeddb.js) · **mode** H · **écran** O
 - **Conditions** : Document dans localStorage au départ.
-- **Vérifie** : migration vers IndexedDB (secrets laissés) ; capture écrite et relue après relance ; un autre onglet se met à jour ; un document de plus de 5 millions de caractères est enregistré ; synchronisé pour de vrai (BL-23).
+- **Vérifie** : migration vers IndexedDB (secrets laissés) ; capture écrite et relue après relance ; un autre onglet se met à jour ; un document de plus de 5 millions de caractères est enregistré ; synchronisé pour de vrai (BL-23). DON-008 : deux onglets, les mêmes espaces, sans écran d'entrée ; IndexedDB tient `selene-site-v1` et `selene-site-v1-base` ; puis le navigateur vraiment quitté et relancé sur un profil gardé sur le disque (`launchPersistentContext`), le faux serveur neuf : la capture relue sur l'appareil (mutation vérifiée : le stockage oublié à la première lecture de chaque session du navigateur ; seul ce contrôle le distingue d'un rechargement).
 - **Cas manuels** : [DON-008](manuels/donnees-sauvegardes.md#don-008)
 
 <a id="tn-secours"></a>

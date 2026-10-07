@@ -59,7 +59,9 @@ const engine = {
     b.newContext = async (o = {}) => cpu(temoin(await slow(await newContext({ ...LOCALE, ...o }))));
     b.newPage = async (o = {}) => { const pg = temoin(await slow(await newPage({ ...LOCALE, ...o }))); if (CPU > 1) await brake(pg); return pg; };
     return b;
-  }
+  },
+  // Un profil gardé sur le disque (DON-008 : le navigateur quitté, puis relancé) : les réglages de launch et de newContext.
+  async launchPersistentContext(dir, options = {}) { return cpu(temoin(await slow(await playwright[ENGINE].launchPersistentContext(dir, { proxy: FERME, ...LOCALE, ...options })))); }
 };
 
 const BASE = process.env.SELENE_BASE || 'http://localhost:8765';
