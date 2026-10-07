@@ -809,7 +809,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/reglages.js`](../../tests/browser/reglages.js) · **mode** A · **écran** O, T (390 et 320 px)
 - **Conditions** : Jeu d'essai.
-- **Vérifie** : six chapitres et un sommaire ; chaque espace une fois ; bloc déplié qui le reste ; l'objectif d'Écriture changé, gardé à l'écran et dans le stockage (NAV-007) ; infobulles au clic, entières dans l'écran, fermées par Échap ou un clic ailleurs ; le sommaire mène au chapitre, le focus suit, le chapitre lu est marqué ; premier accueil repliable et rouvrable ; rien ne déborde, même à 320 px ; « + Créer un espace » : les modèles décrits avec « Créer », « Sur mesure » et ses deux champs ; « Tableau de production » créé, dit, en colonnes ; une collection vide nommée, en liste, ses trois statuts (ESP-003) ; un type vide sans nom : « Donne un nom au module. », rien de créé ; supprimer un espace fait retaper son nom : une autre casse est refusée (« Nom incorrect, rien n'a été supprimé. »), le nom exact le supprime de la navigation et des Réglages, et il ne revient pas au rechargement (ESP-003, ESP-007).
+- **Vérifie** : six chapitres et un sommaire ; chaque espace une fois ; bloc déplié qui le reste ; l'objectif d'Écriture changé, gardé à l'écran et dans le stockage (NAV-007) ; infobulles au clic, jamais au seul survol, entières dans l'écran, fermées par Échap ou un clic ailleurs, et sur téléphone celle du « ? » le plus près du bord droit (NAV-008) ; le sommaire mène au chapitre, le focus suit, le chapitre lu est marqué ; premier accueil repliable et rouvrable ; rien ne déborde, même à 320 px ; « + Créer un espace » : les modèles décrits avec « Créer », « Sur mesure » et ses deux champs ; « Tableau de production » créé, dit, en colonnes ; une collection vide nommée, en liste, ses trois statuts (ESP-003) ; un type vide sans nom : « Donne un nom au module. », rien de créé ; supprimer un espace fait retaper son nom : une autre casse est refusée (« Nom incorrect, rien n'a été supprimé. »), le nom exact le supprime de la navigation et des Réglages, et il ne revient pas au rechargement (ESP-003, ESP-007). Mutation vérifiée (NAV-008) : une bulle ouverte au survol, une bulle qui n'est plus retenue au bord droit, et ces contrôles échouent.
 - **Cas manuels** : [NAV-007](manuels/navigation-reglages.md#nav-007), [NAV-008](manuels/navigation-reglages.md#nav-008), [EXT-019](manuels/connexions.md#ext-019), [TRV-014](manuels/transverse.md#trv-014), [ESP-003](manuels/espaces.md#esp-003), [ESP-007](manuels/espaces.md#esp-007)
 
 <a id="tn-langue"></a>
@@ -824,8 +824,8 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-saisie` — Une saisie de réglage survit à un rendu
 
 - **Fichier** : [`tests/browser/saisie.js`](../../tests/browser/saisie.js) · **mode** A · **écran** —
-- **Conditions** : Rendu forcé pendant la frappe.
-- **Vérifie** : la saisie survit au rendu ; elle est enregistrée en quittant le champ.
+- **Conditions** : Rendu forcé pendant la frappe ; puis un rendu forcé sur un champ dont tout le texte est sélectionné (A53).
+- **Vérifie** : la saisie survit au rendu ; elle est enregistrée en quittant le champ ; tout le texte sélectionné, un rendu de fond : la sélection reste entière, et la frappe la remplace (A53). Mutation vérifiée : la sélection repliée sur son début, comme avant le correctif, et ce contrôle échoue (« nouveauancien texte »).
 - **Cas manuels** : [ESP-011](manuels/espaces.md#esp-011)
 
 <a id="tn-ecran-lu"></a>
@@ -857,8 +857,8 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-identite` — Identité des espaces
 
 - **Fichier** : [`tests/browser/identite.js`](../../tests/browser/identite.js) · **mode** A · **écran** O et T
-- **Conditions** : Domaines réglés.
-- **Vérifie** : sigil par espace, teinte par domaine, planche en chiffres romains ; « régler » ouvre un tiroir ; sigil choisi gardé, et le même dessin dans la navigation et en tête de l'espace ; réglage appliqué aussitôt ; Chantier renommé `Appartement` dans les Réglages : la navigation, l'accueil et l'en-tête le disent ; Musique montée de deux crans : devant ceux qu'elle a doublés dans son domaine, son numéro de planche change ; le nom vidé, l'ancien gardé (ESP-005). Mutation vérifiée : le renommage ignoré, le nom vide accepté, la planche figée, le sigil d'un autre espace en tête, et ces contrôles échouent ; trois polices ; le kanban défile dans son cadre ; formulaire plein largeur sur téléphone.
+- **Conditions** : Domaines réglés ; pour ESP-008, sur téléphone, le jeu d'essai du cahier.
+- **Vérifie** : sigil par espace, teinte par domaine, planche en chiffres romains ; « régler » ouvre un tiroir ; sigil choisi gardé, et le même dessin dans la navigation et en tête de l'espace ; réglage appliqué aussitôt ; Chantier renommé `Appartement` dans les Réglages : la navigation, l'accueil et l'en-tête le disent ; Musique montée de deux crans : devant ceux qu'elle a doublés dans son domaine, son numéro de planche change ; le nom vidé, l'ancien gardé (ESP-005). Mutation vérifiée : le renommage ignoré, le nom vide accepté, la planche figée, le sigil d'un autre espace en tête, et ces contrôles échouent ; trois polices ; le kanban défile dans son cadre ; formulaire plein largeur sur téléphone. Puis, sur téléphone et le jeu d'essai (ESP-008) : « régler » en tête de Tableau, un tiroir du bas, pleine largeur, l'espace dessous ; « Sous-titre » nommé `Lieu`, et le formulaire d'ajout qui le propose ; le tiroir fermé par son voile, toujours dans Tableau. Mutation vérifiée : « régler » qui mène aux Réglages sur un écran étroit, le tiroir latéral de l'ordinateur sur téléphone, le sous-titre jamais proposé, et ces contrôles échouent.
 - **Cas manuels** : [ESP-005](manuels/espaces.md#esp-005), [ESP-008](manuels/espaces.md#esp-008), [TRV-014](manuels/transverse.md#trv-014)
 
 <a id="tn-taches"></a>
@@ -922,8 +922,8 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-quotidien` — Le quotidien sur téléphone
 
 - **Fichier** : [`tests/browser/quotidien.js`](../../tests/browser/quotidien.js) · **mode** A · **écran** T et O
-- **Conditions** : Programme commencé, élément en retard ; puis, sur ordinateur, le jeu d'essai du cahier (`jeu-essai.json`), le protocole de Yoga commencé trois semaines plus tôt pour que son calendrier couvre hier ; pour MOD-013, le jeu d'essai, l'horloge figée au 7, puis au 8 octobre 2026.
-- **Vérifie** : séance en un geste, élément en retard, « fait » sur un rappel, dernière durée ; paysage réduit à la deuxième ouverture du jour ; brouillon restauré puis effacé ; suppression avec « Annuler » ; écriture en total : +1 200 puis +650 ; projection ; en mode total, une coupe et un même total, avec leurs messages (MOD-009) ; sur le jeu d'essai : « 5 300 mots sur 50 000 », « Je saisis » sur « Le total atteint (l'app calcule la différence) », puis `6000`, `5800`, `5800` avec leurs trois messages et leurs totaux (MOD-009) ; « Noter 25 min » pour Yoga, « Séance de yoga faite. », une séance de 30 min hier au calendrier et au journal, les deux relues au rechargement (MOD-007) ; dans les réglages de Yoga, 600 semaines deviennent 520, −4 devient 1, 9 séances deviennent 7, et la sauvegarde exportée se réimporte (DON-010) ; le jeu tel quel, sans saisie d'Écriture depuis trente jours : « Pas assez d'élan ces 30 derniers jours pour prédire une fin. La prophétie attendra. » ; 8 300 saisis (3 000 de plus) : « Au rythme des 30 derniers jours (100 mots par jour), objectif atteint vers le … », la date calculée par le moteur (MOD-010). Puis les rappels de Plantes (MOD-013) : la ligne de l'accueil et son « fait », « Arrosage : aujourd'hui, tous les 3 j », l'observation datée, la fréquence mise à 1 et le rappel revenu le lendemain, rien pour Rempotage à fréquence 0. Mutation vérifiée : un « fait » qui ne lève pas le rappel, une fréquence 0 comptée comme 30 jours, la fréquence non enregistrée, et ces contrôles échouent.
+- **Conditions** : Programme commencé, élément en retard ; puis, sur ordinateur, le jeu d'essai du cahier (`jeu-essai.json`), le protocole de Yoga commencé trois semaines plus tôt pour que son calendrier couvre hier ; pour MOD-013, le jeu d'essai, l'horloge figée au 7, puis au 8 octobre 2026 ; pour MOD-023, le jeu d'essai, sur ordinateur, des onglets successifs du même navigateur.
+- **Vérifie** : séance en un geste, élément en retard, « fait » sur un rappel, dernière durée ; paysage réduit à la deuxième ouverture du jour ; brouillon restauré puis effacé ; suppression avec « Annuler » ; écriture en total : +1 200 puis +650 ; projection ; en mode total, une coupe et un même total, avec leurs messages (MOD-009) ; sur le jeu d'essai : « 5 300 mots sur 50 000 », « Je saisis » sur « Le total atteint (l'app calcule la différence) », puis `6000`, `5800`, `5800` avec leurs trois messages et leurs totaux (MOD-009) ; « Noter 25 min » pour Yoga, « Séance de yoga faite. », une séance de 30 min hier au calendrier et au journal, les deux relues au rechargement (MOD-007) ; dans les réglages de Yoga, 600 semaines deviennent 520, −4 devient 1, 9 séances deviennent 7, et la sauvegarde exportée se réimporte (DON-010) ; le jeu tel quel, sans saisie d'Écriture depuis trente jours : « Pas assez d'élan ces 30 derniers jours pour prédire une fin. La prophétie attendra. » ; 8 300 saisis (3 000 de plus) : « Au rythme des 30 derniers jours (100 mots par jour), objectif atteint vers le … », la date calculée par le moteur (MOD-010). Puis les rappels de Plantes (MOD-013) : la ligne de l'accueil et son « fait », « Arrosage : aujourd'hui, tous les 3 j », l'observation datée, la fréquence mise à 1 et le rappel revenu le lendemain, rien pour Rempotage à fréquence 0. Mutation vérifiée : un « fait » qui ne lève pas le rappel, une fréquence 0 comptée comme 30 jours, la fréquence non enregistrée, et ces contrôles échouent. Puis, sur le jeu d'essai, sur ordinateur (MOD-023) : un brouillon de fragment, l'onglet vraiment fermé ; un onglet neuf : l'accueil propose de le reprendre, le champ le rend ; « Garder » : le fragment ajouté, le champ vide, l'accueil n'en parle plus ; un onglet neuf encore : le champ vide. Mutation vérifiée : le brouillon gardé pour l'onglet seulement (`sessionStorage`), le brouillon laissé après l'envoi, et ces contrôles échouent.
 - **Cas manuels** : [MOD-007](manuels/types-de-module.md#mod-007), [MOD-009](manuels/types-de-module.md#mod-009), [MOD-010](manuels/types-de-module.md#mod-010), [MOD-013](manuels/types-de-module.md#mod-013), [MOD-022](manuels/types-de-module.md#mod-022), [MOD-023](manuels/types-de-module.md#mod-023), [DON-010](manuels/donnees-sauvegardes.md#don-010)
 
 <a id="tn-paliers"></a>
@@ -962,8 +962,8 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-en-tete` — En-tête et minuteur
 
 - **Fichier** : [`tests/browser/en-tete.js`](../../tests/browser/en-tete.js) · **mode** A · **écran** T et O
-- **Conditions** : —
-- **Vérifie** : téléphone : en-tête sur une ligne (10 % de l'écran au plus), minuteur absent au repos, lancé depuis Capturer, pause, reprise, remise à zéro ; ordinateur : minuteur dans la barre latérale.
+- **Conditions** : — ; pour MOD-024, le jeu d'essai du cahier, sur téléphone, l'horloge simulée de Playwright (`clock.install`, puis `runFor`).
+- **Vérifie** : téléphone : en-tête sur une ligne (10 % de l'écran au plus), minuteur absent au repos, lancé depuis Capturer, pause, reprise, remise à zéro ; ordinateur : minuteur dans la barre latérale. Puis, sur téléphone et le jeu d'essai, l'horloge simulée (MOD-024) : le temps arrêté en pause, reparti à la reprise, à la seconde ; la fin dans Yoga : l'anneau refermé, « Noter 15 min », le champ du prochain geste ouvert ; la séance de 15 min notée. Mutation vérifiée : une pause qui laisse filer le temps, la fin sans pont de reprise, et ces contrôles échouent.
 - **Cas manuels** : [MOD-024](manuels/types-de-module.md#mod-024), [TRV-014](manuels/transverse.md#trv-014)
 
 <a id="tn-recherche-minuteur"></a>
@@ -1018,8 +1018,8 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-bilan` — Bilan
 
 - **Fichier** : [`tests/browser/bilan.js`](../../tests/browser/bilan.js) · **mode** A · **écran** O (900 px)
-- **Conditions** : Horloge figée au milieu d'un mois.
-- **Vérifie** : cycle en cours : séances, mots ; mode mois et période d'avant ; remonter puis revenir ; mode retenu sur l'appareil.
+- **Conditions** : Horloge figée au milieu d'un mois ; pour PEN-010, le jeu d'essai du cahier, un navigateur neuf, l'horloge figée au 7 octobre 2026 à Paris.
+- **Vérifie** : cycle en cours : séances, mots ; mode mois et période d'avant ; remonter puis revenir ; mode retenu sur l'appareil. Puis, sur le jeu d'essai (PEN-010) : le cycle lunaire par défaut, ses bornes (29 ou 30 jours, aujourd'hui dedans) ; septembre 2026, ses lignes (Yoga, Budget, Plantes) et chacune son « avant : … » ; août 2026 ; le mois retenu au rechargement ; ni pourcentage, ni trophée, ni note. Mutation vérifiée : le mois par défaut, la période d'avant décalée d'un cran, le mode gardé en mémoire seulement, et ces contrôles échouent.
 - **Cas manuels** : [PEN-010](manuels/penser-avec.md#pen-010)
 
 <a id="tn-lune"></a>
@@ -1306,8 +1306,8 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-fenetre` — La Fenêtre
 
 - **Fichier** : [`tests/browser/fenetre.js`](../../tests/browser/fenetre.js) · **mode** A · **écran** O
-- **Conditions** : Horloge de Paris simulée ; Open-Meteo simulé.
-- **Vérifie** : midi sans étoiles, minuit étoilé ; sans lieu, ni heure ni météo ; recherche de lieux ; lieu arrondi au dixième ; météo demandée une fois ; pluie dessinée ; lune placée et texte opposé ; météo de plus de trois heures ignorée ; « Suivre le soleil » clair l'après-midi, sombre le soir.
+- **Conditions** : Horloge de Paris simulée ; Open-Meteo simulé ; pour NAV-010, le jeu d'essai du cahier, un appareil réglé en clair.
+- **Vérifie** : midi sans étoiles, minuit étoilé ; sans lieu, ni heure ni météo ; recherche de lieux ; lieu arrondi au dixième ; météo demandée une fois ; pluie dessinée ; lune placée et texte opposé ; météo de plus de trois heures ignorée ; « Suivre le soleil » clair l'après-midi, sombre le soir. Puis, sur le jeu d'essai (NAV-010) : « Rubedo, amanite » change l'accent dans la navigation et le contenu, sans recharger ; « Toujours clair » puis « Toujours sombre » : le fond bascule, titre et aide à 4,5:1 au moins, l'amanite éclaircie ; `Herbier` dans l'en-tête et l'onglet (« Réglages — Herbier »). Mutation vérifiée : la palette sans nouveau rendu, « Toujours sombre » laissé à l'appareil, l'onglet qui garde « Selene », et ces contrôles échouent.
 - **Cas manuels** : [NAV-010](manuels/navigation-reglages.md#nav-010), [EXT-007](manuels/connexions.md#ext-007)
 
 <a id="tn-saisons"></a>

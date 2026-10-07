@@ -187,6 +187,36 @@ demo.modules.moth.entries = [{ id: 'p1', title: 'Le lichen', subtitle: '', tag: 
   check(!rempotage.every && !lendemain.includes('Rempotage') && !(await pl.evaluate(() => [...document.querySelectorAll('#main li.item.alert')].some(l => l.textContent.includes('Rempotage')))),
     'Rempotage, fréquence 0, fait il y a 54 jours : aucun rappel sur l’accueil (MOD-013, étape 5)');
 
+  // MOD-023 sur le jeu d'essai, sur ordinateur : l'onglet vraiment fermé, puis un onglet neuf du même navigateur.
+  console.log('le jeu d’essai : un brouillon, l’onglet fermé (MOD-023)');
+  const cb = await b.newContext({ viewport: { width: 1280, height: 900 } });
+  const essaiB = donnee('jeu-essai.json');
+  await cb.addInitScript(([st, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', st); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essaiB.site), JSON.stringify(essaiB.board)]);
+  const onglet = async h => { const o = await cb.newPage(); o.on('pageerror', e => errs.push(e.message)); await ouvrir(o, BASE + '/index.html' + h, () => !!document.querySelector('#main h2, #main .resume-box')); return o; };
+  const fragments = o => o.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.ecriture.scraps.length);
+  const BROUILLON = 'brouillon MOD-023 à moitié écrit';
+  let o1 = await onglet('#ecriture'); await o1.waitForSelector('#scrapIn');
+  const n0 = await fragments(o1);
+  await o1.fill('#scrapIn', BROUILLON); await o1.waitForTimeout(300);
+  const avantFermer = [await o1.inputValue('#scrapIn'), await fragments(o1)];
+  check(avantFermer[0] === BROUILLON && avantFermer[1] === n0, `avant de fermer : le brouillon dans le champ, toujours ${n0} fragments (étape 1)`);
+  await o1.close();
+  const o2 = await onglet('');
+  await o2.waitForSelector('.resume-box', { timeout: 5000 }).catch(() => {});
+  const reprise = ((await o2.textContent('.resume-box').catch(() => '')) || '').replace(/\s+/g, ' ');
+  await o2.evaluate(() => { location.hash = 'ecriture'; }); await o2.waitForSelector('#scrapIn');
+  const rendu = await o2.inputValue('#scrapIn');
+  check(/Écriture.*un fragment en cours/.test(reprise) && rendu === BROUILLON, `l’onglet fermé puis un autre ouvert : l’accueil propose « ${reprise.slice(reprise.indexOf('Écriture'), reprise.indexOf('en cours') + 8)} », le champ rend le brouillon (étape 2)`);
+  await o2.click('[data-act="scrap-add"]');
+  await o2.waitForFunction(n => JSON.parse(localStorage.getItem('selene-site-v1')).modules.ecriture.scraps.length === n + 1, n0, { timeout: 5000 }).catch(() => {});
+  const garde = [await fragments(o2), await o2.inputValue('#scrapIn'), await o2.evaluate(t => JSON.parse(localStorage.getItem('selene-site-v1')).modules.ecriture.scraps.some(s => s.text === t), BROUILLON)];
+  await o2.evaluate(() => { location.hash = 'accueil'; }); await o2.waitForSelector('#main .hero, #main .resume-box', { state: 'attached' });
+  const accueil = (await o2.textContent('#main')).replace(/\s+/g, ' ');
+  check(garde[0] === n0 + 1 && garde[2] && garde[1] === '' && !accueil.includes('en cours'), `« Garder » : ${garde[0]} fragments, le sien compris ; le champ vide ; l’accueil ne parle plus de brouillon (étape 3)`);
+  await o2.close();
+  const o3 = await onglet('#ecriture'); await o3.waitForSelector('#scrapIn');
+  check((await o3.inputValue('#scrapIn')) === '', 'rouvert dans un onglet neuf : le champ est vide (étape 4)');
+
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

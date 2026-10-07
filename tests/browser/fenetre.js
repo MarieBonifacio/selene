@@ -1,6 +1,6 @@
 /* Scénario de navigateur : la Fenêtre (évolution de l'interface, vague 3b : docs/evolution-ui.md). Lancé par tests/browser/run.js.
    Horloge simulée (heure de Paris) et Open-Meteo simulé : le test ne dépend ni de l'heure réelle ni du réseau. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, donnee, check } = require('./helpers');
 const demo = fixture();
 (async () => {
   const b = await engine.launch(launchOptions);
@@ -57,6 +57,42 @@ const demo = fixture();
   await p.close();
   p = await pageAt('2026-09-28T22:00:00+02:00');
   ok(await p.evaluate(() => document.documentElement.dataset.mode) === 'dark', 'et sombre le soir');
+
+  // NAV-010, étapes 1, 2 et 4, sur le jeu d'essai du cahier, un appareil réglé en clair : la palette, les deux modes
+  // fixes et le nom affiché. L'accent se lit dans deux régions (navigation, contenu) par une sonde qui prend sa couleur.
+  console.log('apparence : palette, modes, nom affiché (NAV-010)');
+  const essai = donnee('jeu-essai.json');
+  const cx = await b.newContext({ viewport: { width: 1280, height: 800 }, colorScheme: 'light' });
+  await cx.addInitScript(([st, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', st); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essai.site), JSON.stringify(essai.board)]);
+  const a = await cx.newPage(); a.on('pageerror', e => errs.push(e.message));
+  await a.goto(BASE + '/index.html#reglages'); await a.waitForSelector('[data-act="pal"][data-p="rubedo"]');
+  const teintes = () => a.evaluate(() => ['#nav', '#main'].map(s => { const i = document.createElement('i'); i.style.color = 'var(--accent)'; document.querySelector(s).append(i); const c = getComputedStyle(i).color; i.remove(); return c; }));
+  // Le rapport de contraste comme WCAG le définit (luminance relative) : le texte courant et une aide, sur le fond.
+  const lisible = () => a.evaluate(() => {
+    const rgb = s => (s.match(/[\d.]+/g) || []).map(Number);
+    const lum = ([r, g, bl]) => { const c = [r, g, bl].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+    const fond = el => { for (let e = el; e; e = e.parentElement) { const c = rgb(getComputedStyle(e).backgroundColor); if (c.length >= 3 && (c.length < 4 || c[3] > 0)) return c; } return [255, 255, 255]; };
+    const ratio = el => { const [l1, l2] = [lum(rgb(getComputedStyle(el).color)), lum(fond(el))].sort((x, y) => y - x); return Math.round(((l1 + 0.05) / (l2 + 0.05)) * 100) / 100; };
+    return { mode: document.documentElement.dataset.mode, fond: getComputedStyle(document.body).backgroundColor, texte: ratio(document.querySelector('#main h2')), aide: ratio(document.querySelector('#main .hint')) };
+  });
+  const avant = await teintes();
+  await a.click('[data-act="pal"][data-p="rubedo"]');
+  await a.waitForFunction(() => document.documentElement.dataset.palette === 'rubedo', null, { timeout: 5000 }).catch(() => {});
+  const rouge = await teintes();
+  ok(rouge.every(c => c === 'rgb(151, 58, 48)') && avant.every(c => c !== rouge[0]) && await a.$eval('[data-act="pal"][data-p="rubedo"]', el => el.classList.contains('on')),
+    `« Rubedo, amanite » : l’accent passe au rouge amanite dans la navigation et le contenu, sans recharger (${avant[0]} → ${rouge.join(', ')}) (étape 1)`);
+  await a.selectOption('[data-set="config.mode"]', 'light');
+  await a.waitForFunction(() => document.documentElement.dataset.mode === 'light', null, { timeout: 5000 }).catch(() => {});
+  const clair = await lisible();
+  await a.selectOption('[data-set="config.mode"]', 'dark');
+  await a.waitForFunction(() => document.documentElement.dataset.mode === 'dark', null, { timeout: 5000 }).catch(() => {});
+  const sombre = await lisible(), rougeSombre = await teintes();
+  ok(clair.mode === 'light' && sombre.mode === 'dark' && clair.fond !== sombre.fond && [clair.texte, clair.aide, sombre.texte, sombre.aide].every(r => r >= 4.5) && rougeSombre.every(c => c === 'rgb(213, 100, 85)'),
+    `« Toujours clair » puis « Toujours sombre » : le fond bascule (${clair.fond} → ${sombre.fond}), titre et aide lisibles (clair ${clair.texte}:1 et ${clair.aide}:1, sombre ${sombre.texte}:1 et ${sombre.aide}:1), l’amanite éclaircie (étape 2)`);
+  await a.fill('[data-set="config.name"]', 'Herbier'); await a.press('[data-set="config.name"]', 'Tab');
+  await a.waitForFunction(() => document.querySelector('#brandName').textContent === 'Herbier', null, { timeout: 5000 }).catch(() => {});
+  const nom = await a.evaluate(() => [document.querySelector('#brandName').textContent, document.title, JSON.parse(localStorage.getItem('selene-site-v1')).config.name]);
+  ok(nom[0] === 'Herbier' && / — Herbier$/.test(nom[1]) && nom[2] === 'Herbier', `« Herbier », le champ quitté : l’en-tête et l’onglet le disent (« ${nom[1]} ») (étape 4)`);
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

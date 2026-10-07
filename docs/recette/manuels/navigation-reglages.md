@@ -272,7 +272,7 @@ Identifiants retirés : aucun.
 | 1 | Réglages → Apparence et rythme → Palette « Rubedo, amanite ». | L'accent passe au rouge amanite partout, aussitôt. |
 | 2 | Mode « Toujours clair », puis « Toujours sombre ». | Fond et texte basculent ; le texte reste lisible dans les deux. |
 | 3 | Mode « Suivre le soleil », de jour puis après le coucher du soleil du lieu réglé. | Clair de jour, sombre après le crépuscule. |
-| 4 | « Nom affiché » : `Herbier`, quitter le champ. | L'en-tête et l'onglet du navigateur disent « Herbier ». |
+| 4 | « Nom affiché » : `Herbier`, quitter le champ. | L'en-tête dit « Herbier » ; l'onglet du navigateur, « Réglages — Herbier » (l'écran, puis le nom). |
 
 - **État final attendu** : palette, mode et nom modifiés.
 - **Nettoyage** : remettre Nigredo, « Suivre l'appareil », « Selene ».

@@ -13,6 +13,15 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   check((await f.inputValue()).endsWith('— brouillon'), 'la saisie survit à un rendu');
   await f.press('Tab'); await p.waitForTimeout(150);
   check((await p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.ecriture.config.title)).endsWith('— brouillon'), 'enregistrée en quittant le champ');
+  // A53 : tout le texte d'un champ sélectionné pour être remplacé, un rendu de fond, puis la frappe. La sélection se
+  // repliait au début : la frappe s'insérait devant l'ancien texte (dehors.js, le 7 octobre : deux adresses collées).
+  await p.evaluate(() => { location.hash = 'ecriture'; }); await p.waitForSelector('#scrapIn');
+  await p.fill('#scrapIn', 'ancien texte');
+  await p.evaluate(() => { const i = document.querySelector('#scrapIn'); i.focus(); i.select(); window.dispatchEvent(new HashChangeEvent('hashchange')); });
+  const sel = await p.evaluate(() => { const i = document.querySelector('#scrapIn'); return [i.selectionStart, i.selectionEnd]; });
+  await p.keyboard.insertText('nouveau');
+  const remplace = await p.inputValue('#scrapIn');
+  check(remplace === 'nouveau' && sel.join('–') === '0–12', `tout sélectionné, un rendu de fond : la sélection reste (${sel.join('–')}), la frappe la remplace (« ${remplace} ») (A53)`);
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();
