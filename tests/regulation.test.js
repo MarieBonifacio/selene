@@ -805,6 +805,10 @@ test('un autre appareil du compte : le nom seulement ; les données renvoyées r
   await remove();
   await a.site.sync(); await a.site.sync();
   assert.ok(serverSite(server).modules[id], 'le détenteur recrée le talon'); assert.equal(a.localCopy(id).entries.length, 2, 'sans rien perdre');
+  // Sa case de « Ce que Claude peut lire » revient avec lui, non cochée : retirée avec le nom, elle ne repart jamais
+  // partagée sans accord (A59). Sans elle, le suivi manquait à cette liste sur tous les appareils.
+  assert.equal(a.S().config.assistant.share[id], false, 'la case revient chez le détenteur, non cochée');
+  await b.site.sync(); assert.equal(b.S().config.assistant.share[id], false, 'et sur l’autre appareil');
   // Le détenteur a perdu ses données (stockage effacé) : le retrait est alors définitif.
   a.localErase(); await remove();
   await a.site.sync(); await a.site.sync();

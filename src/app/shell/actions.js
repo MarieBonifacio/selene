@@ -128,7 +128,7 @@ document.addEventListener("keydown", e => {
   if (e.key === "Enter" && e.target.id === "zotIn") { e.preventDefault(); CLICK["zot-search"](e.target); }
 });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "capIn") capture(); if (e.key === "Enter" && e.target.id === "capSheetIn") capture(e.target); if (e.key === "Enter" && e.target.id === "noteIn") CLICK["note-add"](e.target); if (e.key === "Enter" && e.target.id === "bridgeIn") bridgeSave(e.target.dataset.mod); if (e.key === "Enter" && !e.shiftKey && e.target.id === "chatIn") { e.preventDefault(); sendChat(e.target.value); } });
-document.addEventListener("change", e => {
+function onChange(e) {
   const el = e.target, act = el.dataset.act;
   if (act && Object.hasOwn(CHANGE, act)) runAction(CHANGE, act, el);
   else if (act && act.startsWith("grp-") && act !== "grp-filter") {
@@ -213,4 +213,14 @@ document.addEventListener("change", e => {
     let v = el.value; if (el.type === "number") v = Math.max(1, +v || 1); if (el.type === "date") v = v || null;
     s[k][f] = v; site.save(); el.blur(); render();
   }
-});
+}
+document.addEventListener("change", onChange);
+/* Un champ de fichier redessiné pendant que son sélecteur est ouvert (une synchro, une relecture, un retour sur la vue) :
+   le fichier choisi arrive sur l'ancien champ, détaché de la page, et le « change » délégué ne le voit plus. L'import ne
+   faisait rien, sans un mot (A61). Armé au clic, une fois, le champ le transmet lui-même s'il est alors détaché. */
+const armed = new WeakSet();
+document.addEventListener("click", e => {
+  const el = e.target;
+  if (!el || el.tagName !== "INPUT" || el.type !== "file" || armed.has(el)) return;
+  armed.add(el); el.addEventListener("change", ev => { if (!el.isConnected) onChange(ev); });
+}, true);

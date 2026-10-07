@@ -326,7 +326,7 @@ Identifiants retirés : aucun.
 - **Données** : capture `Mesure TRV-011` ; puis `Seconde TRV-011`.
 - **Automatisés associés** : `TN-activite`, `TU-ACT-01`, `TU-ACT-02`, `TU-ACT-03`
 - **Source** : [DOC] [compte.md](../../compte.md#mesure-dusage-bêta) ; [TEST] `tests/browser/activite.js` (instable sous
-  WebKit, anomalie [A1](../perimetre.md#anomalies-et-observations)).
+  WebKit jusqu'au 4 octobre 2026, anomalie [A1](../perimetre.md#anomalies-et-observations), stabilisé depuis).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|

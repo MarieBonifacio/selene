@@ -40,14 +40,46 @@ const session = JSON.stringify({ access_token: 'jeton-a', refresh_token: 'r', ex
   try {
     await p.goto(BASE + '/index.html'); await p.waitForSelector('#capIn'); await until(() => !!lignes.get('u1')?.site?.config); await p.waitForTimeout(500);
     check(!recus.length, 'ouvrir Selene ne compte pas');
+    // TRV-011, étape 1 : rechargée, la palette changée, un espace vide créé depuis un type. Des gestes, et des
+    // enregistrements, mais aucun contenu : rien ne part.
+    await auCalme(); await p.reload(); await p.waitForSelector('#capIn');
+    await p.evaluate(() => { location.hash = 'reglages'; }); await p.waitForSelector('[data-act="pal"][data-p="rubedo"]');
+    await p.click('[data-act="pal"][data-p="rubedo"]'); await auCalme();
+    const palette = await p.$eval('[data-act="pal"][data-p="rubedo"]', el => el.classList.contains('on'));
+    await p.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
+    await p.selectOption('#newModType', 'notes'); await p.fill('#newModName', 'Vide TRV-011'); await p.click('[data-act="mod-add"]');
+    await p.waitForFunction(() => [...document.querySelectorAll('#nav a')].some(a => a.textContent.includes('Vide TRV-011')), null, { timeout: 5000 }).catch(() => {});
+    const vide = await p.evaluate(() => [...document.querySelectorAll('#nav a')].some(a => a.textContent.includes('Vide TRV-011'))); await auCalme();
+    check(palette && vide && !recus.length, 'rechargée, la palette changée, un espace vide créé : aucune requête vers activite (TRV-011, étape 1)');
+    await p.evaluate(() => { location.hash = 'accueil'; }); await p.waitForSelector('#capIn');
     await p.fill('#capIn', 'CONFIDENTIEL_JOUR'); await p.click('[data-act="cap-add"]');
     await until(() => recus.length > 0, 5000);
     check(recus.length === 1 && Object.keys(recus[0].corps).join() === 'jour' && /^\d{4}-\d{2}-\d{2}$/.test(recus[0].corps.jour), 'une capture : un jour, rien d’autre');
     check(recus[0] && recus[0].auth === 'Bearer jeton-a' && !JSON.stringify(recus).includes('CONFIDENTIEL'), 'avec la session, sans ce qui est écrit');
     await p.fill('#capIn', 'une autre'); await p.click('[data-act="cap-add"]'); await p.waitForTimeout(600);
     check(recus.length === 1, 'le même jour : une fois');
-    const traces = await p.evaluate(() => Object.keys(localStorage).filter(k => /activ/i.test(k)));
-    check(!traces.length, 'rien sur l’appareil pour la mesure' + (traces.length ? ' : ' + traces.join(', ') : ''));
+    // Étape 4 : localStorage, sessionStorage et chaque magasin de chaque base IndexedDB (le stockage de la version
+    // hébergée). Ni une clé qui nomme la mesure, ni une valeur qui ne serait que le jour compté. Seule exception, et
+    // nommée : « selene-hero-day », le jour où l'accueil a montré son grand en-tête, écrit à chaque chargement, mesure
+    // ou non (views/accueil.js).
+    const traces = await p.evaluate(async jour => {
+      const out = [], vu = (ou, k, v) => { if (k === 'selene-hero-day') return; if (/activ|usage|mesure/i.test(String(k)) || String(k).includes(jour) || v === jour || v === JSON.stringify({ jour })) out.push(ou + ' ' + k); };
+      for (const [nom, st] of [['localStorage', localStorage], ['sessionStorage', sessionStorage]]) for (let i = 0; i < st.length; i++) vu(nom, st.key(i), st.getItem(st.key(i)));
+      const bases = indexedDB.databases ? await indexedDB.databases() : [{ name: 'selene' }];
+      for (const { name } of bases) await new Promise(res => {
+        const r = indexedDB.open(name); r.onupgradeneeded = () => r.transaction.abort(); r.onerror = () => res();
+        r.onsuccess = () => {
+          const db = r.result, magasins = [...db.objectStoreNames]; if (!magasins.length) { db.close(); return res(); }
+          const t = db.transaction(magasins, 'readonly');
+          for (const m of magasins) { const c = t.objectStore(m).openCursor(); c.onsuccess = () => { const k = c.result; if (k) { vu(name + '/' + m, k.key, k.value); k.continue(); } }; }
+          t.oncomplete = () => { db.close(); res(); }; t.onerror = () => { db.close(); res(); };
+        };
+      });
+      out.push('bases : ' + bases.length);
+      return out;
+    }, recus[0].corps.jour);
+    const bases = traces.pop();
+    check(!traces.length && bases !== 'bases : 0', 'rien sur l’appareil pour la mesure, IndexedDB compris (' + bases + ')' + (traces.length ? ' : ' + traces.join(', ') : ''));
 
     console.log('coupée depuis les Réglages');
     await p.evaluate(() => { location.hash = 'reglages'; }); await p.waitForSelector('[data-act="activity"]');
@@ -57,6 +89,8 @@ const session = JSON.stringify({ access_token: 'jeton-a', refresh_token: 'r', ex
     await p.reload(); await p.waitForSelector('#capIn'); await p.waitForTimeout(300);
     await p.fill('#capIn', 'coupée'); await p.click('[data-act="cap-add"]'); await p.waitForTimeout(800);
     check(recus.length === 1, 'coupée : plus rien, même après un rechargement');
+    await p.evaluate(() => { location.hash = 'reglages'; }); await p.waitForSelector('[data-act="activity"]');
+    check(!(await p.isChecked('[data-act="activity"]')), 'rechargée, la case reste décochée (TRV-011, étape 5)');
   } catch (e) { check(false, e.message.split('\n')[0]); }
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

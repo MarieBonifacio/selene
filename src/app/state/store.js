@@ -49,7 +49,11 @@ export function makeStore(key, path, seed, normalize = d => d, { onRemoteChange 
   async function syncOnce(db, prefetched) {
     const doc = db.doc(path);
     for (let attempt = 0; attempt < 3; attempt++) {
-      const snap = prefetched || await doc.get();
+      let snap = prefetched || await doc.get();
+      // Une relève partie pendant une synchronisation peut rendre, après elle, la version d'avant son écriture : plus
+      // ancienne que la base, elle effacerait ici ce que le serveur vient de recevoir, sans écriture pour s'en apercevoir
+      // (A60). Le serveur ne recule jamais sa date : on relit.
+      if (prefetched && s.base && snap.exists && (snap.data().updatedAt || 0) < (s.base.updatedAt || 0)) snap = await doc.get();
       prefetched = null;
       if (s.db !== db) return; // déconnecté pendant l'attente (déconnexion, changement de compte)
       const remote = snap.exists ? snap.data() : null, local = clone(s.data), force = s.force;

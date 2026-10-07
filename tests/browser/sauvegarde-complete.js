@@ -75,8 +75,14 @@ async function relu(p, ok) {
     console.log('renoncer au dernier moment (DON-003)');
     const n = ecritures, avant = JSON.stringify((await storeJSON(A, 'selene-site-v1')).modules);
     await A.evaluate(() => { document.querySelector('#toast').textContent = ''; }); // la bulle garde son dernier texte, même cachée
-    await A.setInputFiles('input[data-act="imp"]', jeu('ancien-format-1.json'));
-    check(await confirmation(A), 'la confirmation s’affiche');
+    // « Importer » comme le fait une personne : le sélecteur ouvert, la vue redessinée pendant le choix (une relève, un
+    // retour sur la vue) ; le fichier choisi arrivait sur l'ancien champ, détaché, et l'import ne faisait rien (A61).
+    const [choix] = await Promise.all([A.waitForEvent('filechooser'), A.click('label:has(input[data-act="imp"])')]);
+    await A.evaluate(() => { location.hash = 'accueil'; }); await A.waitForSelector('#capIn');
+    await A.evaluate(() => { location.hash = 'reglages'; }); await A.waitForSelector('input[data-act="imp"]', { state: 'attached' });
+    const detache = await choix.element().evaluate(x => !x.isConnected);
+    await choix.setFiles(jeu('ancien-format-1.json'));
+    check(detache && await confirmation(A), 'la confirmation s’affiche, même la vue redessinée pendant le choix du fichier (A61)');
     await A.click('#cdlg button[value="cancel"]');
     await A.waitForTimeout(1500); // une absence ne s'attend pas : le temps qu'un enregistrement parte, s'il devait partir
     check(!(await A.textContent('#toast')).includes('Sauvegarde importée.'), 'aucun « Sauvegarde importée. »');

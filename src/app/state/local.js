@@ -98,6 +98,9 @@ export function absorbDeviceTrackers(siteDoc) {
   for (const id of localIds()) if (!Object.hasOwn(siteDoc.modules, id)) {
     siteDoc.modules[id] = stubOf(localCopy(id), me); changed = true;
     if (siteDoc.config && siteDoc.config.deleted) delete siteDoc.config.deleted[tombKey(id)]; // son nom revient partout
+    // Et sa case de « Ce que Claude peut lire », retirée avec le nom : non cochée, jamais partagée sans accord (A59).
+    const share = siteDoc.config && siteDoc.config.assistant && siteDoc.config.assistant.share;
+    if (share && !Object.hasOwn(share, id)) share[id] = false;
   }
   if (localChanged) local.save();
   return changed;

@@ -181,6 +181,20 @@ test('A57 : back to the foreground, a poll runs at once (dates first), without w
   assert.ok(server.selects.length > 0 && server.selects.every(s => /->>updatedAt$/.test(s)), `nothing new: dates only (${server.selects.join(', ')})`);
 });
 
+/* A60 du cahier de recette : une relève partie pendant une synchronisation peut rendre, après elle, la version d'avant
+   son écriture. Fusionnée telle quelle, elle effaçait ici ce que le serveur venait de recevoir (plus rien à envoyer, donc
+   aucune écriture conditionnelle pour s'en apercevoir), jusqu'à la relève suivante. */
+test('A60 : a poll answer older than the last sync is read again, not merged : what was just sent stays', async () => {
+  const { server, a } = await twoDevices();
+  const r0 = clone(server.rows.get('u1').site), avant = { exists: true, data: () => clone(r0) }; // la relève, partie avant l'écriture
+  await edit(a, 'site', d => d.modules.chantier.entries.push(task('t1', 'Velux')));
+  assert.ok(JSON.stringify(server.rows.get('u1').site).includes('Velux'), 'sent');
+  assert.equal(await a.site.sync(avant), true); // sa réponse arrive après
+  same(titles(a), ['Velux'], 'still on the device');
+  assert.equal(a.site.unsynced(), false, 'and its base is the server’s, not the older answer');
+  assert.ok(JSON.stringify(server.rows.get('u1').site).includes('Velux'), 'the server keeps it');
+});
+
 test('a poll still pushes edits that could not be sent, even when the server has nothing new', async () => {
   const { server, a } = await twoDevices();
   server.offline = true;

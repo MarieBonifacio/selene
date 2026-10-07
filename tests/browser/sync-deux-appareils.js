@@ -4,8 +4,9 @@
    l'autre appareil à la relève, une suppression vue dès le retour sur l'onglet (A57), la frappe que la relève
    n'efface pas (SYN-001, A33), ni un réglage en cours de frappe (ESP-011) ; la langue de l'appareil, puis celle du
    compte, sur deux appareils en anglais (NAV-009). Puis, sur un second compte rempli du jeu
-   d'essai, deux appareils coupés du réseau qui divergent et se réconcilient (SYN-003, SYN-008), et un appareil qui
-   trouve sur le serveur un format plus récent que le sien (SYN-007). Lancé par tests/browser/run.js. */
+   d'essai, deux appareils coupés du réseau qui divergent et se réconcilient (SYN-003, SYN-008), des ajouts simultanés
+   dont l'un hors ligne, fusionnés sans doublon (SYN-002), et un appareil qui trouve sur le serveur un format plus récent
+   que le sien (SYN-007). Lancé par tests/browser/run.js. */
 const fs = require('node:fs');
 const path = require('node:path');
 const { engine, BASE, launchOptions, check, until, donnee, ouvrir, entree, storeJSON, synchro } = require('./helpers');
@@ -241,6 +242,60 @@ const capture = async (p, text) => { await p.fill('#capIn', text); await p.click
   const recue = await jusqua(async () => (((await site(Q)).modules[b2Q[0]] || {}).entries || []).some(e => e.text === 'capture SYN-008'));
   check(b2P.length === 1 && b2P.join() === b2Q.join() && recue, `une seule boîte, la même sur les deux (« ${b2P} » / « ${b2Q} ») ; la capture rapide y va (SYN-008, étape 2)`);
   await P.ctx.close(); await Q.ctx.close();
+
+  console.log('ajouts simultanés sur deux appareils, l’un hors ligne (SYN-002)');
+  // Un troisième compte : G1 (« A1 » du cahier) y pose le jeu d'essai, G2 (« A2 ») s'y branche, puis perd le réseau.
+  // Chacun ajoute une tâche au Chantier et un lien « fait écho à » depuis le même fragment, f2 (« Le brouillard efface
+  // la route… »), vers une entrée différente : f5 pour G2, f1 pour G1.
+  const serveur6 = () => (rows.get('u6') || {}).site || {};
+  const G1 = await device(browser, errs, 'G1', { uid: 'u6', essai, horloge: true });
+  await until(() => !!serveur6().modules?.chantier);
+  const G2 = await device(browser, errs, 'G2', { uid: 'u6', horloge: true });
+  await vers(G2, 'chantier', 'li.item[data-task="t3"]');
+  const T1 = 'Tâche de A1 SYN-002', T2 = 'Tâche de A2 SYN-002';
+  const tache = async (x, titre) => {
+    await vers(x, 'chantier', '[data-act="task-new"]'); await x.page.click('[data-act="task-new"]'); await x.page.waitForFunction(() => document.querySelector('#dlg').open);
+    await x.page.fill('#form [name="title"]', titre); await x.page.click('#form button[value="save"]'); await x.page.waitForFunction(() => !document.querySelector('#dlg').open);
+  };
+  const lier = async (x, cible) => {
+    await vers(x, 'ecriture', 'li[data-id="f2"] [data-act="link-form"]'); await x.page.click('li[data-id="f2"] [data-act="link-form"]'); await x.page.waitForFunction(() => document.querySelector('#dlg').open);
+    await x.page.selectOption('#form [name="type"]', 'echo'); await x.page.selectOption('#form [name="to"]', cible); await x.page.click('#form button[value="save"]');
+    await x.page.waitForFunction(() => !document.querySelector('#dlg').open);
+  };
+  // Ce qu'un appareil a : chaque titre de tâche (doublons compris), les tâches dont l'identifiant revient deux fois, et
+  // les cibles des liens « fait écho à » de f2.
+  const etat2 = async x => { const s = await site(x), ts = s.modules.chantier.entries || []; return { doublons: ts.length - new Set(ts.map(e => e.id)).size, taches: ts.map(e => e.title), echos: ((s.modules.ecriture.scraps || []).find(f => f.id === 'f2')?.links || []).filter(l => l.type === 'echo').map(l => l.to).sort() }; };
+  const fini2 = e => !e.doublons && e.taches.filter(t => t === T1).length === 1 && e.taches.filter(t => t === T2).length === 1 && e.echos.join() === 'ecriture/f1,ecriture/f5';
+  // Ce que l'écran montre : les tâches du Chantier, nommées, et ce que dit f2 de ses liens.
+  const vu2 = async x => {
+    await vers(x, 'chantier', 'li.item[data-task="t1"]');
+    const liste = await x.page.$$eval('#main li.item', ls => ls.map(l => l.textContent));
+    await vers(x, 'ecriture', 'li[data-id="f2"]');
+    const f2 = await x.page.textContent('li[data-id="f2"]');
+    return { t1: liste.filter(t => t.includes(T1)).length, t2: liste.filter(t => t.includes(T2)).length, f5: f2.includes('fait écho à « Les sapins gardent la nuit'), f1: f2.includes('fait écho à « La lisière n\'est pas une frontière') };
+  };
+  await G2.couper(true); await releve(G2);
+  await tache(G2, T2); await lier(G2, 'ecriture/f5');
+  const hors2 = await nonSynchro(G2), dit2 = await synchro(G2.page), g1 = await etat2(G2);
+  check(hors2 && dit2 === 'Non synchronisé — enregistré sur cet appareil seulement' && g1.taches.includes(T2) && g1.echos.join() === 'ecriture/f5',
+    `A2 hors ligne : sa tâche et son lien ajoutés, « ${dit2} » (SYN-002, étape 1)`);
+  await tache(G1, T1); await lier(G1, 'ecriture/f1');
+  const parti = () => (serveur6().modules?.chantier?.entries || []).some(e => e.title === T1) && ((serveur6().modules?.ecriture?.scraps || []).find(f => f.id === 'f2')?.links || []).some(l => l.to === 'ecriture/f1');
+  await until(parti);
+  await G1.page.waitForFunction(() => !document.querySelector('#saving').textContent.trim(), null, { timeout: 10000 }).catch(() => {});
+  check(parti() && !(await synchro(G1.page)), 'A1 en ligne : sa tâche et son lien partis au serveur, l’indicateur effacé (étape 2)');
+  await G2.couper(false); await releve(G2);
+  await jusqua(async () => fini2(await etat2(G2)));
+  const [g3, w3] = [await etat2(G2), await vu2(G2)];
+  check(fini2(g3) && w3.t1 === 1 && w3.t2 === 1 && w3.f1 && w3.f5,
+    `A2, le réseau rendu, relevé : les deux tâches (${w3.t1} et ${w3.t2} à l’écran) et les deux liens de f2 (${g3.echos.join(', ')}) (étape 3)`);
+  await releve(G1);
+  await jusqua(async () => fini2(await etat2(G1)));
+  const [g4, w4] = [await etat2(G1), await vu2(G1)];
+  const serveurFini = (serveur6().modules.chantier.entries || []).filter(e => e.title === T1 || e.title === T2).length === 2;
+  check(fini2(g4) && w4.t1 === 1 && w4.t2 === 1 && w4.f1 && w4.f5 && serveurFini,
+    `A1, relevé : les deux tâches et les deux liens aussi, aucune tâche en double, ni ici ni sur le serveur (${g4.taches.length} tâches) (étape 4)`);
+  await G1.ctx.close(); await G2.ctx.close();
 
   console.log('un format plus récent sur le serveur (SYN-007)');
   // Une version plus récente a déjà écrit sur ce compte : son document porte un format que celle-ci ne connaît pas.

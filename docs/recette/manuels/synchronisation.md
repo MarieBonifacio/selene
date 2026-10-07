@@ -59,7 +59,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : A1 et A2 sur Chantier ; A2 hors ligne.
 - **Données** : A1 : tâche `Tâche de A1 SYN-002` ; A2 : tâche `Tâche de A2 SYN-002` ; A1 et A2 : un lien chacun depuis le même
   fragment « Le brouillard efface la route… » (« fait écho à » une entrée différente).
-- **Automatisés associés** : `TU-SYN-02`, `TU-MOD-51`, `TN-sync-deux-appareils`
+- **Automatisés associés** : `TU-SYN-02`, `TU-MOD-51`, `TN-sync-deux-appareils`, `TU-SYN-25`
 - **Source** : [DOC] ADR 3 ; [TEST] `TU-SYN-02`, `TU-MOD-51`.
 
 | Étape | Action précise | Résultat attendu observable |

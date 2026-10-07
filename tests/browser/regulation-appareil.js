@@ -5,18 +5,28 @@
    - l'autre appareil voit le nom, pas le contenu ; le supprimer de là prévient qu'il ne retire que le nom ;
    - aucun bouton ne synchronise le suivi (un suivi encore synchronisé : tests/regulation.test.js) ;
    - se déconnecter avec un suivi gardé ici : la garde propose l'export ou l'effacement ; effacer vide l'appareil et retire
-     aussi le talon du compte.
+     aussi le talon du compte ;
+   - le nom retiré depuis l'autre appareil revient, le détenteur n'a rien perdu (RLM-022, A59) ; le résumé partagé avec
+     l'assistant après lecture, ce qui part à la fonction, puis le partage arrêté (RLM-021).
    Lancé par tests/browser/run.js. */
 const fs = require('node:fs');
 const path = require('node:path');
 const { engine, BASE, launchOptions, check, storeJSON, ouvrir, entree } = require('./helpers');
 const rows = new Map();
+// La fausse fonction « assistant » : la clé confiée (une seule pour tous les comptes : seul RLM-021, en dernier, en confie
+// une) et chaque requête reçue, pour lire ce qui part au modèle.
+const fonction = { cle: null, requetes: [] };
 const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 async function supabase(route) {
   const req = route.request(), u = new URL(req.url()), m = req.method();
   if (u.pathname.startsWith('/auth/')) return json(route, 200, {});
   if (u.pathname === '/rest/v1/activite') return route.fulfill({ status: 201, body: '' }); // la mesure d'usage (services/activite.js)
-  if (u.pathname === '/functions/v1/assistant') return json(route, 200, { cle: false }); // l'état de la clé, demandé dès que l'assistant est allumé
+  if (u.pathname === '/functions/v1/assistant') { // l'état de la clé, demandé dès que l'assistant est allumé ; pour RLM-021, une clé et les questions
+    const q = (() => { try { return req.postDataJSON() || {}; } catch { return {}; } })();
+    if (q.action === 'cle') { fonction.cle = q.cle; return json(route, 200, { cle: true, indice: '…' + q.cle.slice(-4) }); }
+    if (q.action === 'message') { fonction.requetes.push(q.requete); return json(route, 200, { id: 'm', type: 'message', role: 'assistant', content: [{ type: 'text', text: 'Bonsoir, lucidement.' }], stop_reason: 'end_turn' }); }
+    return json(route, 200, fonction.cle ? { cle: true, indice: '…' + fonction.cle.slice(-4) } : { cle: false });
+  }
   const uid = (u.searchParams.get('user_id') || '').replace('eq.', ''), row = rows.get(uid);
   if (m === 'GET') return json(route, 200, row ? [{ [u.searchParams.get('select')]: row[u.searchParams.get('select')] }] : []);
   if (m === 'POST') { for (const r of req.postDataJSON()) if (!rows.has(r.user_id)) rows.set(r.user_id, { board: {}, site: {}, ...r }); return route.fulfill({ status: 201, body: '' }); }
@@ -291,6 +301,39 @@ async function device(browser, errs, personnel = true, id = 'u1') {
     await ap2.waitForFunction(() => document.querySelector('#main').textContent.includes('gardé sur un autre de tes appareils'), null, { timeout: 10000 }).catch(() => {});
     const local26 = async () => ((await storeJSON(ap1, 'selene-local-v1').catch(() => null)) || { modules: {} }).modules['reprendre-la-main'];
     check(!!(await local26()) && (await ap2.textContent('#main')).includes('gardé sur un autre de tes appareils'), 'préalable : l’appareil 1 garde le suivi, l’appareil 2 n’en a que le nom');
+    // RLM-022, sur ces deux appareils : l'appareil 2 n'a que le nom ; l'y supprimer ne retire que le nom, que l'appareil 1,
+    // détenteur, recrée à sa synchronisation suivante sans rien perdre. Sa saisie NOTE-RLM026 sert de témoin.
+    await go('accueil', ap2); await ap2.waitForSelector('#main .card, #main a', { state: 'attached' });
+    const accueil22 = (await ap2.textContent('#main')).replace(/\s+/g, ' ');
+    await go('reglages', ap2); await ap2.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
+    const reglage22 = (await ap2.textContent('#mreg-reprendre-la-main')).replace(/\s+/g, ' ');
+    check(accueil22.includes('Suivi privé : ouvrir pour consulter') && !accueil22.includes('NOTE-RLM026') && reglage22.includes('Ouvrir le suivi') && !reglage22.includes('Appuis et récompenses'),
+      'appareil 2 : l’accueil dit « Suivi privé : ouvrir pour consulter » ; Réglages → Espaces, « Ouvrir le suivi », sans « Appuis et récompenses » (RLM-022, étape 2)');
+    const bulle22 = t => ap2.waitForFunction(x => ((document.querySelector('#toast') || {}).textContent || '').includes(x), t, { timeout: 5000 }).then(() => true, () => false);
+    await ap2.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+    await ap2.locator('.set.mod:has(input[data-act="mod-label"][value="Carnet du soir"]) [data-act="mod-del"]').click(); await ap2.waitForFunction(() => document.querySelector('#dlg').open);
+    const form22 = (await ap2.textContent('#form')).replace(/\s+/g, ' ');
+    check(form22.includes('Ici, il n\'y a que le nom de ce suivi : son contenu est gardé sur un autre appareil. Si cet appareil existe encore, le suivi y reste entier et son nom reviendra : supprime-le plutôt depuis celui-ci. S\'il est perdu, ou si Selene y a été réinstallée, retirer ce nom est définitif.'),
+      'appareil 2, « ✕ » : « Ici, il n’y a que le nom de ce suivi… retirer ce nom est définitif. » (étape 3)');
+    await ap2.fill('#form [name="confirm"]', 'Carnet du soir'); await ap2.click('#form button[value="save"]'); await ap2.waitForFunction(() => !document.querySelector('#dlg').open);
+    await bulle22('supprimé');
+    const dit22 = (await ap2.textContent('#toast')).replace(/\s+/g, ' ').trim();
+    await ap2.waitForFunction(() => !document.querySelector('#nav').textContent.includes('Carnet du soir'), null, { timeout: 5000 }).catch(() => {});
+    check(dit22.startsWith('« Carnet du soir » supprimé.') && !(await ap2.textContent('#nav')).includes('Carnet du soir'), `« Carnet du soir » retapé : « ${dit22} » ; il quitte la navigation de l’appareil 2 (étape 4)`);
+    for (let i = 0; i < 60 && serveur3().includes('Carnet du soir'); i++) await ap2.waitForTimeout(100);
+    const parti22 = !serveur3().includes('Carnet du soir');
+    await ouvrir(ap1, BASE + '/index.html', entree);
+    for (let i = 0; i < 100 && !serveur3().includes('Carnet du soir'); i++) await ap1.waitForTimeout(100);
+    await go('reprendre-la-main', ap1); await ap1.waitForSelector('[data-act="rlm-use"]', { timeout: 5000 }).catch(() => {});
+    const entier22 = await local26();
+    const vu22 = (await ap1.textContent('#main')).includes('NOTE-RLM026') || (await ap1.textContent('#main')).includes('1 verre standard');
+    await ouvrir(ap2, BASE + '/index.html', entree); await go('reprendre-la-main', ap2);
+    await ap2.waitForFunction(() => document.querySelector('#main').textContent.includes('gardé sur un autre de tes appareils'), null, { timeout: 10000 }).catch(() => {});
+    const talon22 = (await ap2.textContent('#main')).replace(/\s+/g, ' ');
+    check(parti22 && !!entier22 && entier22.entries.some(e => e.note === 'NOTE-RLM026') && vu22 && serveur3().includes('Carnet du soir') && !serveur3().includes('NOTE-RLM026')
+      && (await ap2.textContent('#nav')).includes('Carnet du soir') && talon22.includes('gardé sur un autre de tes appareils') && !talon22.includes('NOTE-RLM026'),
+      'le nom retiré du compte, l’appareil 1 rechargé : le suivi entier, sa saisie là, le nom recréé sur le compte ; l’appareil 2 rechargé : le nom revenu, toujours en talon (étape 5)');
+    await go('reglages', ap1); await ap1.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
     const bulle26 = t => ap1.waitForFunction(x => ((document.querySelector('#toast') || {}).textContent || '').includes(x), t, { timeout: 5000 }).then(() => true, () => false);
     const supprimer = async nom => {
       await go('reprendre-la-main', ap1); await ap1.evaluate(() => { document.querySelector('.rlm-privacy').open = true; document.querySelector('#toast').textContent = ''; });
@@ -319,6 +362,68 @@ async function device(browser, errs, personnel = true, id = 'u1') {
     await ap2.waitForFunction(() => !document.querySelector('#nav').textContent.includes('Carnet du soir'), null, { timeout: 10000 }).catch(() => {});
     const nav2 = await ap2.textContent('#nav');
     check(!serveur3().includes('Carnet du soir') && !nav2.includes('Carnet du soir'), 'appareil 2 rechargé : « Carnet du soir » a disparu, du compte aussi (étape 4)');
+
+    console.log('chemin P : partager le résumé avec l’assistant, puis arrêter (RLM-021)');
+    // Un troisième compte personnel : rlm-en-cours.json importé (cet appareil en devient le détenteur), l'assistant allumé,
+    // une clé de recette confiée à la fausse fonction, qui garde chaque requête reçue.
+    const R = await device(browser, errs, true, 'u4'), r = R.page;
+    const versR = async (h, sel) => { await r.evaluate(x => { location.hash = x; }, h); await r.waitForSelector(sel, { state: 'attached' }); };
+    const bulleR = t => r.waitForFunction(x => ((document.querySelector('#toast') || {}).textContent || '').includes(x), t, { timeout: 5000 }).then(() => true, () => false);
+    const viderR = () => r.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+    // « Importer » par le sélecteur de fichier, comme une personne : le premier branchement du compte neuf peut redessiner
+    // les Réglages pendant le choix (vu sous un démarrage lent ; A61). Puis des états, pas des délais : la boîte
+    // « Remplacer tout l'état… », puis le nom du suivi dans la navigation.
+    await versR('reglages', 'input[data-act="imp"]');
+    const [choix21] = await Promise.all([r.waitForEvent('filechooser'), r.click('label:has(input[data-act="imp"])')]); await choix21.setFiles(jeuRlm);
+    await r.waitForSelector('#cdlg[open]', { timeout: 10000 }).catch(() => {}); if (await r.$('#cdlg[open]')) await r.click('#cdlg button[value="ok"]');
+    await bulleR('Sauvegarde importée.');
+    await r.waitForFunction(() => document.querySelector('#nav').textContent.includes('Carnet du soir'), null, { timeout: 10000 }).catch(() => {});
+    const rid = await r.evaluate(() => { const a = [...document.querySelectorAll('#nav a')].find(x => x.textContent.includes('Carnet du soir')); return a ? a.getAttribute('href').slice(1) : ''; });
+    check(!!rid, 'rlm-en-cours.json importé sur le compte personnel : « Carnet du soir » dans la navigation (RLM-021, préalable)');
+    await versR('reglages', '.set.mod:has(input[data-act="mod-label"][value="Assistant"]) [data-act="mod-on"]'); await r.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
+    const allume = r.locator('.set.mod:has(input[data-act="mod-label"][value="Assistant"]) [data-act="mod-on"]'); if (!(await allume.isChecked())) await allume.check();
+    await r.waitForSelector('[data-act="as-key"]'); await r.fill('[data-act="as-key"]', 'sk-ant-api03-' + 'r'.repeat(40) + 'R021'); await r.press('[data-act="as-key"]', 'Tab');
+    await r.waitForFunction(() => (document.querySelector('#assistant-cfg') || {}).textContent?.includes('…R021'), null, { timeout: 5000 }).catch(() => {});
+    const INTIME = /Repas de famille|Après le travail|Marcher quelques minutes/;
+    const prive = async () => { await versR(rid, `#rlmPriv-${rid}`); await r.evaluate(x => { document.querySelector(`#rlmPriv-${x}`).open = true; }, rid);
+      return r.evaluate(x => { const d = document.querySelector(`#rlmPriv-${x}`), li = [...d.querySelectorAll('li')].find(l => l.textContent.includes('L\'assistant.'));
+        return { li: li.textContent.replace(/\s+/g, ' ').trim(), resume: d.querySelector('.rlm-quote').textContent.trim(), tout: d.textContent, bouton: d.querySelector('[data-act="rlm-share"]').textContent.trim() }; }, rid); };
+    const v1 = await prive(), RESUME = v1.resume;
+    check((v1.li.startsWith('L\'assistant. Non partagé : l\'assistant ne reçoit rien de ce suivi. Si tu le partages, il recevra ce résumé, et rien d\'autre : CARNET DU SOIR'))
+      && RESUME.startsWith('CARNET DU SOIR : suivi personnel autodéclaratif (alcool, en verres standard (10 g d\'alcool pur)). Objectif choisi : au plus 1,5 verre standard par jour. Sept derniers jours : 7 jours suivis, 0 journée complète, 7 inconnues ou à reconfirmer (une journée inconnue ne vaut pas zéro) ; déclaré en tout : 0 verre standard ; moyenne par journée complète : sans objet ; objectif atteint 0 fois sur 0 journée évaluable.')
+      && !INTIME.test(v1.tout) && v1.bouton === 'Partager ce résumé avec l\'assistant…',
+      `« Confidentialité et données » : « Non partagé… », puis le résumé exact (« ${RESUME.slice(0, 70)}… ») ; ni « Repas de famille », ni « Après le travail », ni « Marcher » (RLM-021, étape 1)`);
+    await r.click(`#rlmPriv-${rid} [data-act="rlm-share"]`); await r.waitForSelector('#cdlg[open]');
+    const demande = (await r.textContent('#cmsg')).trim(); await r.click('#cdlg button[value="cancel"]'); await r.waitForFunction(() => !document.querySelector('#cdlg').open);
+    const v2 = await prive();
+    check(demande === `Partager avec l'assistant ce résumé de « Carnet du soir » ? Il partira tel quel à chaque question :\n\n${RESUME}\n\nNotes, envies, déclencheurs et appuis restent ici. Arrêter le partage plus tard n'efface pas ce qui aura déjà été envoyé.`
+      && v2.li.includes('Non partagé'), `« Partager ce résumé… » : la question, le même résumé, « Notes, envies, déclencheurs et appuis restent ici… » ; « Annuler » : toujours « Non partagé » (étape 2)`);
+    await versR('reglages', `input[data-act="as-share"][data-k="${rid}"]`);
+    const caseR = r.locator(`input[data-act="as-share"][data-k="${rid}"]`);
+    // La case se décoche aussitôt, la boîte décide ; un clic tombé pendant un rendu se perd (PR #100) : trois fois au plus.
+    for (let i = 0; i < 3 && !(await r.$('#cdlg[open]')); i++) { await caseR.check({ force: true }).catch(() => {}); await r.waitForSelector('#cdlg[open]', { timeout: 5000 }).catch(() => {}); }
+    const boite3 = !!(await r.$('#cdlg[open]')), decochee = !(await caseR.isChecked()), demande3 = boite3 ? (await r.textContent('#cmsg')).trim() : '';
+    await viderR(); if (boite3) { await r.click('#cdlg button[value="ok"]'); await bulleR('Résumé partagé'); }
+    const dit3 = (await r.textContent('#toast')).trim();
+    check(boite3 && decochee && demande3 === demande && dit3 === 'Résumé partagé avec l\'assistant.' && await caseR.isChecked(),
+      `Réglages → Assistant, « Carnet du soir » coché : la case se décoche, la même boîte ; « Confirmer » : « ${dit3} », la case cochée (étape 3)`);
+    const demander = async () => {
+      const n = fonction.requetes.length; await versR('assistant', '#chatIn'); await r.fill('#chatIn', 'Bonjour ?'); await r.click('[data-act="chat-send"]');
+      for (let i = 0; i < 100 && fonction.requetes.length === n; i++) await r.waitForTimeout(50);
+      await r.waitForFunction(k => (document.querySelector('.chat').textContent.match(/Bonsoir, lucidement\./g) || []).length >= k, n + 1, { timeout: 5000 }).catch(() => {});
+      return fonction.requetes[n] || { system: '', messages: [] };
+    };
+    const q4 = await demander();
+    check(q4.system.includes('CARNET DU SOIR : suivi personnel autodéclaratif (alcool') && q4.system.includes(RESUME) && !INTIME.test(JSON.stringify(q4)),
+      'Assistant, « Bonjour ? » : requete.system contient le résumé de « Carnet du soir », ni « Repas de famille », ni « Après le travail », ni « Marcher quelques minutes » (étape 4)');
+    await prive(); await viderR(); await r.click(`#rlmPriv-${rid} [data-act="rlm-share"]`); await bulleR('Partage arrêté');
+    const dit5 = (await r.textContent('#toast')).trim(), v5 = await prive();
+    check(dit5 === 'Partage arrêté. Ce qui a déjà été envoyé dans une conversation n\'en est pas retiré.' && v5.li.includes('Non partagé') && v5.bouton === 'Partager ce résumé avec l\'assistant…',
+      `« Ne plus partager avec l’assistant » : « ${dit5} » ; « Non partagé » (étape 5)`);
+    const q6 = await demander(), chat6 = (await r.textContent('.chat')).replace(/\s+/g, ' ');
+    check(!q6.system.includes('CARNET DU SOIR') && !INTIME.test(JSON.stringify(q6)) && q6.messages.length === 3 && q6.messages[0].content === 'Bonjour ?' && (chat6.match(/Bonsoir, lucidement\./g) || []).length === 2,
+      `de nouveau « Bonjour ? » : requete.system sans « CARNET DU SOIR » ; l’échange précédent reste dans la conversation (${q6.messages.length} messages envoyés) (étape 6)`);
+
     // Les deux appareils restent ouverts jusqu'à la fin : fermés avec une requête en vol, WebKit lève une erreur que le
     // contrôle final prendrait pour celle de l'app (A50).
     check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
