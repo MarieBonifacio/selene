@@ -121,6 +121,10 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   let box = [];
   for (const end = Date.now() + 10000; Date.now() < end && !(box = await inbox()).some(x => x.includes('exemple.org'));) await r.waitForTimeout(100);
   ok(box.includes('Un texte trouvé — https://exemple.org/texte?utm_source=x'), 'connectée : le lien partagé devient une note de la boîte');
+  // EXT-017, étape 1 : le message du dépôt, avec le nom de la boîte et ce que « Garder comme source » fera.
+  const nomBoite = await storeJSON(r, 'selene-site-v1').then(d => { const k = Object.keys(d.modules).find(x => d.modules[x].type === 'notes' && d.modules[x].config.inbox); return d.modules[k].label; });
+  const recu = (await r.textContent('#toast')).replace(/\s+/g, ' ').trim();
+  ok(recu === `Reçu dans ${nomBoite} : « Garder comme source » le complétera.`, `le dépôt dit « ${recu} » (EXT-017, étape 1)`);
   ok((await r.evaluate(() => location.search)) === '' && !(await r.evaluate(() => sessionStorage.getItem('selene-share'))), 'l’adresse est nettoyée, la file vidée');
   // Le dépôt synchronisé avant de recharger : sinon sa dernière écriture (keepalive) part pendant le rechargement.
   await until(() => JSON.stringify(rows.get('u1') || {}).includes('Un texte trouvé'));

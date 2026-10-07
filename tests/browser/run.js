@@ -25,6 +25,10 @@ server.listen(0, '127.0.0.1', async () => {
   const scenarios = fs.readdirSync(__dirname).filter(f => f.endsWith('.js') && !['helpers.js', 'run.js'].includes(f))
     .filter(f => !only.length || only.some(o => f.includes(o))).sort();
   const jobs = Math.max(1, Number(process.env.SELENE_JOBS) || 6);
+  // Le délai d'un scénario, garde-fou contre un scénario bloqué : 3 minutes à vitesse normale. Sous un processeur ralenti
+  // (SELENE_CPU), tout dure plus longtemps par construction ; le délai suit, à moitié (×4 : 6 minutes). Sinon il tue un
+  // scénario seulement lent (A51, A55) ; à moitié, un vrai blocage tient encore dans les 15 minutes du job.
+  const delai = Math.round(3 * Math.max(1, (Number(process.env.SELENE_CPU) || 1) / 2));
   const failed = [];
   // Les plus lents d'abord : sinon l'un d'eux, lancé en dernier, prolongerait seul la fin de la suite.
   const size = f => { try { return fs.statSync(path.join(__dirname, f)).size; } catch { return 0; } };
@@ -35,7 +39,7 @@ server.listen(0, '127.0.0.1', async () => {
     const child = spawn(process.execPath, [path.join(__dirname, f)], { env: { ...process.env, SELENE_BASE: base } });
     child.stdout.on('data', d => { out += d; });
     child.stderr.on('data', d => { out += d; });
-    const timer = setTimeout(() => { out += '  ✗ délai dépassé (3 min)\n'; child.kill(); }, 180000);
+    const timer = setTimeout(() => { out += `  ✗ délai dépassé (${delai} min)\n`; child.kill(); }, delai * 60000);
     child.on('exit', c => { clearTimeout(timer); resolve({ f, code: c, out }); });
   });
   const misses = {}; // les contrôles en échec de chaque scénario en échec, pour le résumé du job

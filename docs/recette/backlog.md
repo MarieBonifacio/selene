@@ -551,7 +551,8 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   102 et 90 ; C24. Huit mutants, huit contrôles qui tombent. A53, un défaut de l'app trouvé par `dehors.js` en CI. Puis
   PEN-010, MOD-023 et MOD-024 : 105 et 87 ; C25. Sept mutants, sept contrôles qui tombent. Puis DON-005, CPT-007 et
   ESP-002 : 108 et 84 ; MOD-025 avance (étapes 1 et 2), son temps sur téléphone reste à la main ; C26, A54. Sept mutants,
-  sept contrôles qui tombent.
+  sept contrôles qui tombent. Puis EXT-008, EXT-017, EXT-009 et RLM-005 : 112 et 80 ; A55 (le délai de `run.js` suit le
+  processeur ralenti).
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`
