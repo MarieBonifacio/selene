@@ -18,6 +18,16 @@ demo.modules.ecriture.scraps = Array.from({ length: 150 }, (_, i) => ({ id: 'f' 
   await go(d, 'reglages');
   await d.fill('.set.mod:has([value="Chantier"]) [data-act="mod-group"]', 'Maison'); await d.press('.set.mod:has([value="Chantier"]) [data-act="mod-group"]', 'Tab'); await d.waitForTimeout(200);
   ok((await d.textContent('#nav')).includes('Maison'), 'un domaine réglé devient un titre de la navigation');
+  { // NAV-002, étapes 1 et 3 : les lentilles en tête, les domaines en petites capitales (Spectral SC, en minuscules), un seul lien marqué.
+    await go(d, 'ecriture');
+    const nav = await d.evaluate(() => {
+      const t = [...document.querySelectorAll('#nav a')].map(a => a.textContent.replace(/\s+/g, ' ').trim()), g = document.querySelector('#nav .grp'), cs = g && getComputedStyle(g);
+      return { t, police: cs && cs.fontFamily, casse: cs && cs.textTransform, chargee: document.fonts.check('1em "Spectral SC"'), marques: [...document.querySelectorAll('#nav [aria-current]')].map(a => a.getAttribute('href') + '=' + a.getAttribute('aria-current')) };
+    });
+    ok(nav.t[0] === "Aujourd'hui" && nav.t.slice(0, 3).includes('Chercher') && nav.t.slice(0, 3).includes('Bilan') && /^"?Spectral SC/.test(nav.police) && nav.casse === 'lowercase' && nav.chargee,
+      `la barre latérale : « Aujourd’hui », « Bilan », « Chercher » en tête ; les domaines en petites capitales (${nav.police.split(',')[0]}, ${nav.casse}) (NAV-002, étape 1)`);
+    ok(nav.marques.join() === '#ecriture=page', `seul le lien de l’espace ouvert porte aria-current (${nav.marques.join(', ')}) (NAV-002, étape 3)`);
+  }
   await go(d, 'accueil'); ok((await d.textContent('#main')).includes('Maison'), 'et regroupe le sommaire de l’accueil');
 
   console.log('palette');
@@ -61,10 +71,14 @@ demo.modules.ecriture.scraps = Array.from({ length: 150 }, (_, i) => ({ id: 'f' 
 
   console.log('liens directs et retour');
   await go(d, 'recherche'); await d.fill('#searchIn', 'aulnes'); await d.waitForTimeout(200);
+  const resultats = () => d.$$eval('#main .search-grp + ul li.item', ls => ls.map(l => l.querySelector('a[href^="#"]')?.getAttribute('href')).join());
+  ok((await d.textContent('#main .row .hint')).trim().startsWith('1 résultat') && (await resultats()) === '#ecriture/f0', 'le mot unique : un résultat, et un seul (NAV-006, étape 1)');
   await d.click('#main a[href="#ecriture/f0"]'); await d.waitForTimeout(300);
   ok((await d.textContent('.back')).includes('Recherche « aulnes »'), 'une puce ramène à la recherche');
+  await d.waitForFunction(() => !!document.querySelector('#main [data-id="f0"].flash'), null, { timeout: 5000 }).catch(() => {});
+  ok(await d.$eval('[data-id="f0"]', el => el.classList.contains('flash') && el.getBoundingClientRect().top >= 0 && el.getBoundingClientRect().bottom <= innerHeight), 'ouverte depuis la recherche, l’entrée lointaine est dépliée, à l’écran, surlignée (NAV-006, étape 2)');
   await d.click('.back'); await d.waitForTimeout(250);
-  ok(await hash(d) === '#recherche' && (await d.inputValue('#searchIn')) === 'aulnes', 'le retour rend la recherche telle qu’elle était');
+  ok(await hash(d) === '#recherche' && (await d.inputValue('#searchIn')) === 'aulnes' && (await resultats()) === '#ecriture/f0', 'le retour rend la recherche telle qu’elle était, le même résultat (NAV-006, étape 3)');
 
   console.log('reprise');
   await go(d, 'ecriture'); await d.fill('#scrapIn', 'une phrase à finir'); await d.waitForTimeout(100);

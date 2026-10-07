@@ -28,9 +28,39 @@ demo.config.modules.find(m => m.id === 'ecriture').group = 'Création';
   await d.click('#sheet [data-act="sigil-set"][data-s="croissant"]'); await d.waitForTimeout(200);
   ok((await d.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).config.modules.find(m => m.id === 'moth').sigil)) === 'croissant', 'un sigil choisi est gardé');
   ok(await d.$eval('#sheet [data-s="croissant"]', el => el.getAttribute('aria-checked')) === 'true', 'le tiroir se redessine (sigil coché)');
+  { // ESP-005, étape 4 : le sigil choisi, dans la navigation et en tête de l'espace (le même dessin).
+    const [nav, tete] = await d.evaluate(() => [document.querySelector('#nav a[href="#moth"] svg.sig').innerHTML, document.querySelector('#main .plate svg.sig').innerHTML]);
+    const croissant = await d.$eval('#sheet [data-act="sigil-set"][data-s="croissant"] svg', s => s.innerHTML).catch(() => '');
+    ok(nav === tete && (!croissant || nav === croissant), 'le sigil changé dans la navigation et en tête de l’espace (ESP-005, étape 4)');
+  }
   await d.fill('#sheet [data-set-mod="moth.addLabel"]', 'Nouveau post'); await d.press('#sheet [data-set-mod="moth.addLabel"]', 'Tab'); await d.waitForTimeout(200);
   ok((await d.textContent('#main')).includes('Nouveau post'), 'un réglage changé dans le tiroir s’applique aussitôt à la vue');
   await d.keyboard.press('Escape'); await d.waitForTimeout(150);
+
+  console.log('renommer, ordonner (ESP-005)');
+  await go(d, 'reglages'); await d.waitForSelector('[data-act="mod-label"]');
+  const ligne = nom => `#main .set.mod:has(input[data-act="mod-label"][value="${nom}"])`;
+  await d.fill(`${ligne('Chantier')} [data-act="mod-label"]`, 'Appartement'); await d.press(`${ligne('Chantier')} [data-act="mod-label"]`, 'Tab');
+  await d.waitForFunction(() => document.querySelector('#nav a[href="#chantier"]')?.textContent.includes('Appartement'), null, { timeout: 5000 }).catch(() => {});
+  const navT = (await d.textContent('#nav a[href="#chantier"]')).trim();
+  await go(d, ''); const accueilT = (await d.textContent('#main')).includes('Appartement');
+  await go(d, 'chantier'); const titreT = (await d.textContent('#main h2')).trim();
+  ok(navT.includes('Appartement') && accueilT && titreT === 'Appartement', `renommé : la navigation, l’accueil et l’en-tête disent « Appartement » (${titreT}) (étape 1)`);
+  // La navigation range les espaces par domaine : Musique y passe devant ceux qu'elle a doublés dans son propre domaine.
+  const ordre = () => d.$$eval('#nav a[href^="#"]', as => as.map(a => a.getAttribute('href').slice(1)));
+  const config = () => d.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).config.modules.map(m => [m.id, m.group || '']));
+  const cfg0 = await config(); await go(d, 'musique'); const plAvant = (await d.textContent('#main .plate .pl')).trim();
+  await go(d, 'reglages'); await d.waitForSelector(`${ligne('Musique')} [data-act="mod-up"]`);
+  for (let k = 0; k < 2; k++) { await d.click(`${ligne('Musique')} [data-act="mod-up"]`); await d.waitForFunction(n => JSON.parse(localStorage.getItem('selene-site-v1')).config.modules.findIndex(m => m.id === 'musique') === n, cfg0.findIndex(([id]) => id === 'musique') - k - 1, { timeout: 5000 }).catch(() => {}); }
+  const cfg1 = await config(), j0 = cfg0.findIndex(([id]) => id === 'musique'), j1 = cfg1.findIndex(([id]) => id === 'musique');
+  const groupe = cfg0[j0][1], doubles = cfg0.slice(j1, j0).filter(([, g]) => g === groupe).map(([id]) => id), nav = await ordre();
+  await go(d, 'musique'); const plApres = (await d.textContent('#main .plate .pl')).trim();
+  ok(j1 === j0 - 2 && doubles.every(id => nav.indexOf('musique') < nav.indexOf(id)) && plApres !== plAvant,
+    `Musique monte de deux crans : dans la navigation, devant ${doubles.join(', ') || '(aucun du même domaine)'} ; son numéro de planche change (${plAvant} → ${plApres}) (étape 3)`);
+  await go(d, 'reglages'); await d.waitForSelector(`${ligne('Appartement')} [data-act="mod-label"]`);
+  await d.fill(`${ligne('Appartement')} [data-act="mod-label"]`, ''); await d.press(`${ligne('Appartement')} [data-act="mod-label"]`, 'Tab'); await d.waitForTimeout(200);
+  const garde = await d.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.chantier.label);
+  ok(garde === 'Appartement' && (await d.textContent('#nav a[href="#chantier"]')).includes('Appartement') && !!(await d.$(ligne('Appartement'))), 'le nom vidé, le champ quitté : l’ancien nom est gardé (étape 5)');
 
   console.log('typographie');
   const fonts = await d.evaluate(() => [getComputedStyle(document.querySelector('#main h2')).fontFamily, getComputedStyle(document.querySelector('#main .btn')).fontFamily, getComputedStyle(document.body).fontFamily]);

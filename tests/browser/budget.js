@@ -66,6 +66,32 @@ const v4 = { updatedAt: 10, schemaVersion: 4,
   const jauges = await q.$$eval('#main .room', rs => rs.map(r => r.textContent.replace(/\s+/g, ' ').trim()).join(' | '));
   ok((await mois()) === 'septembre 2026' && stats === '2 000,00 € | 165,00 € | 1 835,00 €', `septembre 2026 : revenus, dépenses et solde du jeu (${stats})`);
   ok(jauges === 'Courses40 %120,00 € sur 300,00 € | Travaux9 %45,00 € sur 500,00 €', `les jauges : Courses à 40 % (120 sur 300), Travaux à 9 % (45 sur 500) (${jauges})`);
+  console.log('le jeu d’essai : renommer, puis supprimer une enveloppe (MOD-006)');
+  const reglerBudget = async () => { await q.evaluate(() => { location.hash = 'reglages'; }); await q.waitForSelector('#mreg-budget', { state: 'attached' }); await q.evaluate(() => { document.querySelector('#mreg-budget').open = true; }); };
+  const auBudget = async () => { await q.evaluate(() => { location.hash = 'budget'; }); await q.waitForSelector('[data-act="bud-month"][data-d="-1"]'); };
+  const operations = () => q.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.budget.entries.map(e => `${e.id}:${e.cat}`).join());
+  await reglerBudget(); await q.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+  const nom = '#mreg-budget [data-vi="0"] [data-act="env-name"]';
+  await q.fill(nom, 'Marché'); await q.press(nom, 'Tab');
+  await q.waitForFunction(() => (document.querySelector('#toast').textContent || '').includes('désormais'), null, { timeout: 5000 }).catch(() => {});
+  ok((await q.textContent('#toast')).trim() === "« Courses » s'appelle désormais « Marché ».", `renommée dans les Réglages : « ${(await q.textContent('#toast')).trim()} » (étape 1, A41)`);
+  await auBudget();
+  const apres = await q.$$eval('#main .room', rs => rs.map(r => r.textContent.replace(/\s+/g, ' ').trim()).join(' | '));
+  const marche = await q.$$eval('#main li.item', ls => ls.filter(l => l.textContent.includes('Marché')).map(l => l.querySelector('.tag')?.textContent).join());
+  ok((await mois()) === 'septembre 2026' && apres.startsWith('Marché40 %120,00 € sur 300,00 €') && marche.includes('Marché') && (await operations()) === 'b1:,b2:Marché,b3:Travaux,b4:Marché',
+    `septembre 2026 : la jauge s'appelle Marché, 120 sur 300 ; les opérations de septembre et d'août portent « Marché » (${apres}) (étape 2)`);
+  await reglerBudget();
+  await q.click('#mreg-budget [data-vi="0"] [data-act="env-del"]'); await q.waitForSelector('#cdlg[open]');
+  const demande = (await q.textContent('#cmsg')).trim();
+  // La suppression suit l'événement « close » de la confirmation, qui part après la fermeture : attendre l'état, pas la fermeture.
+  await q.click('#cdlg button[value="ok"]');
+  await q.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.budget.config.envelopes.length === 1, null, { timeout: 5000 }).catch(() => {});
+  await auBudget();
+  const reste = await q.$$eval('#main .room', rs => rs.map(r => r.textContent.replace(/\s+/g, ' ').trim()).join(' | '));
+  const stats2 = await q.$$eval('#main .stats b', bs => bs.map(x => x.textContent.replace(/\s+/g, ' ').trim()).join(' | '));
+  ok(demande === "Supprimer l'enveloppe « Marché » ? Les opérations restent." && !/Marché\d+ %/.test(reste) && stats2 === '2 000,00 € | 165,00 € | 1 835,00 €' && (await operations()) === 'b1:,b2:Marché,b3:Travaux,b4:Marché',
+    `« Supprimer l'enveloppe « Marché » ? Les opérations restent. » : la jauge disparaît, les opérations restent, comptées dans les dépenses (${reste} ; ${stats2}) (étape 3)`);
+
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();
