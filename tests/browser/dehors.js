@@ -90,12 +90,17 @@ const PAGES = {
 
   console.log('garder, noter, écarter');
   await follow('https://blog.example/atom.xml');
-  ok((await p.$$eval('#main h3', hs => hs.map(h => h.textContent))).includes('Sans projet') && (await p.getAttribute('[data-item="a1"] a', 'href')) === 'https://blog.example/un', 'Atom : sans projet ; lien relatif résolu');
+  /* L'élément lui-même, pas la seule bulle ; s'il manque, ce que l'écran disait (A39 : sous Firefox, le 7 octobre 2026, run
+     37567485400, il n'était pas venu, et rien ne disait pourquoi). */
+  const atom = await p.waitForSelector('[data-item="a1"] a', { timeout: 10000 }).then(() => true, () => false);
+  const projets = await p.$$eval('#main h3', hs => hs.map(h => h.textContent));
+  ok(atom && projets.includes('Sans projet') && (await p.getAttribute('[data-item="a1"] a', 'href')) === 'https://blog.example/un', 'Atom : sans projet ; lien relatif résolu'
+    + (atom ? '' : ` (bulle : « ${(await p.textContent('#toast')).trim()} » ; projets : ${projets.join(', ')} ; éléments : ${(await titles()).join(' | ')} ; appels au passeur : ${calls.map(c => c.url).join(', ')})`));
   await p.click('[data-item="r1"] [data-act="dehors-keep"]'); await p.waitForTimeout(250);
   const s = (await data()).modules.sources.entries[0];
   ok(s && s.title.startsWith('Les phalènes') && s.src.url === 'https://revue.example/phalenes' && s.src.site === 'Revue des lisières' && s.origin.from === 'Dehors', 'garder : une source, avec son site et sa provenance');
   ok(!(await p.$('[data-item="r1"]')), 'et elle quitte Dehors');
-  await p.click('[data-item="a1"] [data-act="dehors-note"]'); await p.waitForTimeout(250);
+  if (atom) { await p.click('[data-item="a1"] [data-act="dehors-note"]'); await p.waitForTimeout(250); }
   ok((await data()).modules.inbox.entries.some(e => e.text === 'Atom un — https://blog.example/un'), 'vers une note : dans la boîte');
   await p.click('[data-item="r2"] [data-act="dehors-hide"]'); await p.waitForTimeout(200);
   ok(!(await p.$('[data-item="r2"]')), '« vu » écarte un élément');
