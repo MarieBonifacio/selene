@@ -757,8 +757,8 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-compte` — Supprimer son compte
 
 - **Fichier** : [`tests/browser/compte.js`](../../tests/browser/compte.js) · **mode** H · **écran** O
-- **Conditions** : Faux Supabase, fausse fonction `compte`.
-- **Vérifie** : Réglages → Compte propose la suppression et lie la politique de confidentialité ; sans « supprimer » tapé, ou annulé à la confirmation : rien ne part ; la demande part avec la session ; un échec est dit et rien n'est effacé ; une réussite efface la session et les données de l'appareil.
+- **Conditions** : Faux Supabase, fausse fonction `compte` ; le site publié (`mariebonifacio.github.io/selene/*.html`) servi depuis les fichiers du dépôt, le réseau des scénarios étant fermé.
+- **Vérifie** : Réglages → Compte propose la suppression et lie la politique de confidentialité ; le lien suivi dans un nouvel onglet (TRV-012) : en français, `confidentialite.html`, sa date de mise à jour, les sauvegardes « 30 jours au plus », le journal des erreurs 30 jours, la mesure d'usage 90 jours, aucun script demandé ; l'interface en anglais, `privacy.html`, la même date, autant de sections ; puis le français rétabli (mutation vérifiée : le lien toujours en français, la date anglaise décalée d'un jour, la durée des sauvegardes changée, un script ajouté à la politique, et ces contrôles échouent) ; sans « supprimer » tapé, ou annulé à la confirmation : rien ne part ; la demande part avec la session ; un échec est dit et rien n'est effacé ; une réussite efface la session et les données de l'appareil.
 - **Limites** : La fonction serveur réelle est testée à part (`TD-CPT-*`) ; jamais les deux ensemble.
 - **Cas manuels** : [CPT-015](manuels/entree-et-comptes.md#cpt-015), [TRV-012](manuels/transverse.md#trv-012)
 
