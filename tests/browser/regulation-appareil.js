@@ -7,7 +7,9 @@
    - se déconnecter avec un suivi gardé ici : la garde propose l'export ou l'effacement ; effacer vide l'appareil et retire
      aussi le talon du compte ;
    - le nom retiré depuis l'autre appareil revient, le détenteur n'a rien perdu (RLM-022, A59) ; le résumé partagé avec
-     l'assistant après lecture, ce qui part à la fonction, puis le partage arrêté (RLM-021).
+     l'assistant après lecture, ce qui part à la fonction, puis le partage arrêté (RLM-021) ;
+   - la dernière écriture ne porte que le talon (RLM-003) ; se déconnecter en exportant, revenir, restaurer le fichier, puis
+     se déconnecter en effaçant : plus aucune trace (RLM-023).
    Lancé par tests/browser/run.js. */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -16,6 +18,8 @@ const rows = new Map();
 // La fausse fonction « assistant » : la clé confiée (une seule pour tous les comptes : seul RLM-021, en dernier, en confie
 // une) et chaque requête reçue, pour lire ce qui part au modèle.
 const fonction = { cle: null, requetes: [] };
+// Chaque écriture reçue, telle quelle (RLM-003 et RLM-023 : la dernière requête PATCH, comme l'onglet Network la montre).
+const patches = [];
 const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 async function supabase(route) {
   const req = route.request(), u = new URL(req.url()), m = req.method();
@@ -31,6 +35,7 @@ async function supabase(route) {
   if (m === 'GET') return json(route, 200, row ? [{ [u.searchParams.get('select')]: row[u.searchParams.get('select')] }] : []);
   if (m === 'POST') { for (const r of req.postDataJSON()) if (!rows.has(r.user_id)) rows.set(r.user_id, { board: {}, site: {}, ...r }); return route.fulfill({ status: 201, body: '' }); }
   if (m === 'PATCH') {
+    patches.push({ uid, body: req.postData() || '' });
     if (!row) return json(route, 200, []);
     for (const [k, g] of u.searchParams) if (k.includes('->>')) { const [c, f] = k.split('->>'), cur = row[c] && row[c][f]; if (!(g === 'is.null' ? cur == null : cur != null && String(cur) === g.slice(3))) return json(route, 200, []); }
     Object.assign(row, req.postDataJSON()); return json(route, 200, [{ user_id: uid }]);
@@ -449,6 +454,65 @@ async function device(browser, errs, personnel = true, id = 'u1') {
     const q6 = await demander(), chat6 = (await r.textContent('.chat')).replace(/\s+/g, ' ');
     check(!q6.system.includes('CARNET DU SOIR') && !INTIME.test(JSON.stringify(q6)) && q6.messages.length === 3 && q6.messages[0].content === 'Bonjour ?' && (chat6.match(/Bonsoir, lucidement\./g) || []).length === 2,
       `de nouveau « Bonjour ? » : requete.system sans « CARNET DU SOIR » ; l’échange précédent reste dans la conversation (${q6.messages.length} messages envoyés) (étape 6)`);
+
+    console.log('chemin P : la charge utile du suivi, puis se déconnecter en exportant, restaurer, effacer (RLM-003, RLM-023)');
+    // Un autre compte personnel (u5 : u4 sert à RLM-021), un seul appareil : « Carnet du soir », sujet Tabac, observer ; une saisie de 3.
+    const serveur4 = () => JSON.stringify((rows.get('u5') || {}).site || {});
+    const dernier4 = () => { const x = patches.filter(y => y.uid === 'u5').at(-1); return x ? x.body : ''; };
+    const D4 = await device(browser, errs, true, 'u5'), d4 = D4.page;
+    await d4.waitForSelector('#welcome-all', { state: 'attached' }); await d4.evaluate(() => { document.getElementById('welcome-all').open = true; });
+    await d4.click('[data-tpl="regulation"]'); await go('reprendre-la-main', d4); await d4.click('[data-act="rlm-setup"]');
+    await d4.fill('#form [name="name"]', 'Carnet du soir'); await d4.selectOption('#form [name="subject"]', 'tabac'); await d4.click('#form button[value="save"]');
+    await d4.waitForFunction(() => document.querySelector('#form h2').textContent === 'Mon intention');
+    await d4.selectOption('#form [name="mode"]', 'observer'); await d4.click('#form button[value="save"]'); await d4.waitForFunction(() => !document.querySelector('#dlg').open);
+    await d4.click('[data-act="rlm-use"]'); await d4.fill('#form [name="value"]', '3'); await d4.fill('#form [name="note"]', 'NOTE-RLM003'); await d4.click('#form button[value="save"]');
+    await d4.waitForFunction(() => !document.querySelector('#dlg').open);
+    for (let i = 0; i < 60 && !serveur4().includes('Carnet du soir'); i++) await d4.waitForTimeout(100);
+    await d4.waitForTimeout(1500); // une absence ne s'attend pas : le temps qu'un enregistrement parte, s'il devait partir
+    // RLM-003, étape 6 : la dernière écriture vers app_state ne porte que le talon.
+    const p6 = dernier4(), talon6 = (((JSON.parse(p6 || '{}').site || {}).modules) || {})['reprendre-la-main'] || { config: {} };
+    check(talon6.label === 'Carnet du soir' && talon6.config.storage === 'device' && !!talon6.config.holder && talon6.config.subject === null
+      && JSON.stringify(talon6.goals) === '[]' && JSON.stringify(talon6.entries) === '[]' && !p6.includes('NOTE-RLM003') && !p6.includes('"tabac"'),
+      `la dernière requête PATCH : « Carnet du soir », "storage":"device", un holder, "subject":null, "goals":[], "entries":[] ; ni NOTE-RLM003 ni "tabac" (RLM-003, étape 6)`);
+    // RLM-023, étape 4 : se déconnecter en exportant, le choix proposé d'abord.
+    const sortir = async () => { await go('reglages', d4); await d4.click('[data-act="auth-out"]'); await d4.waitForFunction(() => document.querySelector('#dlg').open && document.querySelector('#form h2').textContent === 'Avant de te déconnecter'); };
+    await sortir();
+    const choix4 = await d4.$eval('#form [name="what"]', x => x.value);
+    const [dl4] = await Promise.all([d4.waitForEvent('download'), d4.click('#form button[value="save"]')]);
+    await d4.waitForSelector('#authForm');
+    const fichier4 = await dl4.path(), texte4 = fs.readFileSync(fichier4, 'utf8');
+    check(choix4 === 'export' && /^selene-\d{4}-\d{2}-\d{2}\.json$/.test(dl4.suggestedFilename()) && texte4.includes('NOTE-RLM003') && texte4.includes('"tabac"') && serveur4().includes('Carnet du soir'),
+      `« Télécharger une sauvegarde complète, puis l’effacer d’ici », choisi d’avance : « ${dl4.suggestedFilename()} » téléchargé, avec NOTE-RLM003 et "tabac" ; l’écran d’entrée ; le nom reste au compte (RLM-023, étape 4)`);
+    // Étape 5 : de retour sur le même appareil (la session reposée au chargement), le suivi dit que ses données n'y sont plus.
+    await ouvrir(d4, null, entree); await go('reprendre-la-main', d4); // rechargée : un changement d'ancre seul ne rechargerait pas
+    await d4.waitForFunction(() => document.querySelector('#main').textContent.includes("n'y sont plus"), null, { timeout: 10000 }).catch(() => {});
+    const perdu5 = (await d4.textContent('#main')).replace(/\s+/g, ' ');
+    check(perdu5.includes("Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi.") && !perdu5.includes('NOTE-RLM003'),
+      'reconnectée sur le même appareil : « Ce suivi devait être gardé sur cet appareil, mais ses données n’y sont plus… » (étape 5)');
+    // Étape 6 : le fichier de l'étape 4 importé, confirmé : le suivi revient entier, sur cet appareil seulement, et rien n'en part.
+    await go('reglages', d4); await d4.waitForSelector('input[data-act="imp"]', { state: 'attached' });
+    await d4.setInputFiles('input[data-act="imp"]', fichier4); await d4.waitForSelector('#cdlg[open]'); await d4.click('#cdlg button[value="ok"]');
+    await d4.waitForFunction(() => (document.querySelector('#toast') || {}).textContent?.includes('Sauvegarde importée.'), null, { timeout: 10000 }).catch(() => {});
+    const dit6 = (await d4.textContent('#toast')).trim();
+    await go('reprendre-la-main', d4); await d4.waitForSelector('#rlmPriv-reprendre-la-main', { state: 'attached' });
+    await d4.evaluate(() => { document.querySelector('#rlmPriv-reprendre-la-main').open = true; });
+    const entier6 = (await d4.textContent('#main')).replace(/\s+/g, ' ');
+    await d4.waitForTimeout(1500); // le temps qu'une synchronisation parte, si elle devait emporter le contenu
+    check(dit6.includes('Sauvegarde importée.') && entier6.includes('NOTE-RLM003') && entier6.includes('Sur cet appareil seulement.') && !entier6.includes("n'y sont plus") && !serveur4().includes('NOTE-RLM003') && !dernier4().includes('NOTE-RLM003'),
+      `le fichier importé : « ${dit6} » ; le suivi entier, NOTE-RLM003 au journal, « Sur cet appareil seulement. » ; rien n’en part au serveur (étape 6)`);
+    // Étapes 7 et 8 : se déconnecter en effaçant, confirmé ; la dernière écriture ne nomme plus le suivi.
+    await sortir(); await d4.selectOption('#form [name="what"]', 'erase'); await d4.click('#form button[value="save"]');
+    const efface7 = await ask(true, d4); await d4.waitForSelector('#authForm');
+    const p8 = dernier4(), site8 = JSON.parse(p8 || '{}').site || { modules: {}, config: { modules: [] } };
+    check(efface7.includes('Effacer définitivement « Carnet du soir » ? Il n\'en existe aucune autre copie.') && !Object.hasOwn(site8.modules, 'reprendre-la-main') && !site8.config.modules.some(x => x.id === 'reprendre-la-main')
+      && !p8.includes('Carnet du soir') && !p8.includes('NOTE-RLM003'),
+      'effacer, confirmé : l’écran d’entrée ; la dernière requête PATCH : ni l’espace dans site.modules ni dans site.config.modules, ni « Carnet du soir » ni NOTE-RLM003 (étapes 7 et 8)');
+    // Étape 9 : reconnectée, plus aucune trace, et rien ne se présente comme un accident.
+    await ouvrir(d4, null, entree);
+    const nav9 = await d4.textContent('#nav'); await go('reglages', d4); const reglages9 = await d4.textContent('#main');
+    await d4.evaluate(() => { location.hash = 'reprendre-la-main'; }); await d4.waitForTimeout(500); const ailleurs9 = await d4.textContent('#main');
+    check(!nav9.includes('Carnet du soir') && !reglages9.includes('Carnet du soir') && !ailleurs9.includes("n'y sont plus") && !serveur4().includes('Carnet du soir'),
+      'reconnectée : aucun « Carnet du soir » dans la navigation ni dans les Réglages ; l’écran « ses données n’y sont plus » nulle part (étape 9)');
 
     // Les deux appareils restent ouverts jusqu'à la fin : fermés avec une requête en vol, WebKit lève une erreur que le
     // contrôle final prendrait pour celle de l'app (A50).

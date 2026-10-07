@@ -1,5 +1,5 @@
 /* Scénario de navigateur : navigation (évolution de l'interface, vague 2 : docs/evolution-ui.md). Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, donnee, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 // 150 fragments : le plus ancien est au-delà de la première page de cent.
 demo.modules.ecriture.scraps = Array.from({ length: 150 }, (_, i) => ({ id: 'f' + i, text: i === 0 ? 'La lisière des aulnes' : 'Fragment ordinaire ' + i, date: '2026-0' + (1 + (i % 8)) + '-1' + (i % 9) }));
@@ -132,6 +132,36 @@ demo.modules.ecriture.scraps = Array.from({ length: 150 }, (_, i) => ({ id: 'f' 
   ok(!(await m.isVisible('#sheet')), 'toucher le voile ferme la feuille');
   await m.tap('[data-act="sheet-capture"]'); await m.waitForTimeout(300);
   ok((await m.inputValue('#capSheetIn')) === 'à moitié', 'le brouillon d’une capture survit à la fermeture');
+
+  // NAV-001, étapes 2 et 3, sur le jeu d'essai du cas : ses domaines « Maison » et « Création » dans la feuille.
+  console.log('iPhone, le jeu d’essai : la feuille des espaces (NAV-001)');
+  const essai = donnee('jeu-essai.json');
+  const ctxE = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
+  await ctxE.addInitScript(([st, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', st); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essai.site), JSON.stringify(essai.board)]);
+  const e = await ctxE.newPage(); e.on('pageerror', x => errs.push(x.message));
+  await e.goto(BASE + '/index.html#budget'); await e.waitForSelector('#bAmt');
+  await e.evaluate(() => { location.hash = 'accueil'; }); await e.waitForSelector('#capIn', { state: 'attached' }); // caché sur téléphone : ⊕ capture
+  await e.tap('[data-act="sheet-espaces"]'); await e.waitForSelector('#sheet .srow[href="#reglages"]');
+  // La feuille, dans l'ordre : chaque intitulé et ce qu'il contient (les espaces, ou les boutons des récents).
+  const feuille = await e.evaluate(() => {
+    const out = []; let cur = null;
+    for (const x of document.querySelectorAll('#sheet .grp, #sheet .srow, #sheet .recents a')) {
+      if (x.classList.contains('grp')) out.push(cur = { titre: x.textContent.trim(), lignes: [] });
+      else if (cur) cur.lignes.push((x.querySelector('b') || x).textContent.trim());
+    }
+    return out;
+  });
+  const groupe = t => (feuille.find(g => g.titre === t) || { lignes: [] }).lignes.join(', '), titres = feuille.map(g => g.titre);
+  // La barre dit où l'on est : depuis l'accueil, la feuille ouverte, « Aujourd'hui » reste marqué (C28).
+  const actif2 = await e.evaluate(() => document.querySelector('#bar a[href="#accueil"]').classList.contains('on') && !document.querySelector('#bar [data-act="sheet-espaces"]').classList.contains('on'));
+  ok(titres[0] === 'Récents' && groupe('Récents').includes('Budget') && groupe('Maison') === 'Chantier, Budget, Plantes, Décisions' && groupe('Création') === 'Écriture, Sources, Motifs, Tableau, Arc'
+    && titres.at(-1) === 'Système' && feuille.at(-1).lignes.at(-1) === 'Réglages' && actif2,
+    `la feuille : ${titres.join(' · ')} ; Maison : ${groupe('Maison')} ; Création : ${groupe('Création')} ; Réglages en pied ; « Aujourd’hui » toujours marqué (NAV-001, étape 2, C28)`);
+  await e.tap('#sheet .srow[href="#ecriture"]'); await e.waitForFunction(() => location.hash === '#ecriture');
+  await e.waitForTimeout(300);
+  const actif3 = await e.evaluate(() => document.querySelector('#bar [data-act="sheet-espaces"]').classList.contains('on') && !document.querySelector('#bar a[href="#accueil"]').classList.contains('on'));
+  ok(!(await e.isVisible('#sheet')) && (await e.textContent('#main')).includes('Écriture') && actif3, '« Écriture » touchée dans la feuille : l’espace s’affiche, la feuille est fermée, « Espaces » marqué actif (étape 3)');
+  await ctxE.close();
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

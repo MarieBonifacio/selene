@@ -733,7 +733,7 @@ Identifiants retirés : aucun.
 | 5 | Se reconnecter au compte P sur le même appareil ; ouvrir « Carnet du soir ». | Le nom est resté sur le compte (le contenu a été exporté, pas effacé) : « Ce suivi devait être gardé sur cet appareil, mais ses données n'y sont plus (stockage du navigateur ou de l'app effacé ?). Une sauvegarde complète faite ici peut les restaurer ; sinon, tu peux retirer ce suivi. » |
 | 6 | Réglages → Compte et données → Sauvegarde → Importer le fichier de l'étape 4 → « Confirmer ». | « Sauvegarde importée. » ; le suivi est entier (la saisie `NOTE-RLM003` est là), « Sur cet appareil seulement. » |
 | 7 | « Se déconnecter » → « L'effacer définitivement » → « Enregistrer » → « Confirmer » dans la boîte « Effacer définitivement… ». | L'écran d'entrée s'affiche. |
-| 8 | Avant de vous reconnecter, Network : ouvrir la dernière requête `PATCH` vers `app_state` envoyée à l'étape 7, onglet *Payload*. | `site.modules` ne contient plus `carnet-du-soir` ; `site.config.modules` non plus ; aucune occurrence de `Carnet du soir` ni de `NOTE-RLM003` dans la charge utile. |
+| 8 | Avant de vous reconnecter, Network : ouvrir la dernière requête `PATCH` vers `app_state` envoyée à l'étape 7, onglet *Payload*. | `site.modules` ne contient plus `reprendre-la-main` (l'identifiant que le modèle a donné à l'espace, inchangé quand on l'a nommé « Carnet du soir ») ; `site.config.modules` non plus ; aucune occurrence de `Carnet du soir` ni de `NOTE-RLM003` dans la charge utile. |
 | 9 | Se reconnecter au compte P sur le même appareil. | Aucun « Carnet du soir » dans la navigation, ni dans Réglages → Espaces ; l'écran « ses données n'y sont plus » n'apparaît nulle part : l'effacement voulu n'est pas présenté comme un accident. |
 
 - **État final attendu** : connectée au compte P, **sans** le suivi (effacé, nom compris) ; le fichier de l'étape 4 reste la seule
@@ -819,7 +819,7 @@ Identifiants retirés : aucun.
 |---|---|---|
 | 1 | Appareil 1 : « Confidentialité et données » → « Supprimer ce suivi… ». | Formulaire « Supprimer « Carnet du soir » », « Retape « Carnet du soir » pour confirmer la suppression définitive de ses données, sur tous tes appareils. » ; pas d'avertissement « il n'y a que le nom ». |
 | 2 | Taper `carnet`, « Enregistrer ». | « Nom incorrect, rien n'a été supprimé. » ; le suivi est intact. |
-| 3 | Recommencer avec `Carnet du soir`. | « « Carnet du soir » supprimé. » ; il quitte la navigation et Réglages → Assistant. Outils de développement → IndexedDB → `selene` → `kv` → `selene-local-v1` : plus d'entrée `carnet-du-soir`. |
+| 3 | Recommencer avec `Carnet du soir`. | « « Carnet du soir » supprimé. » ; il quitte la navigation et Réglages → Assistant. Outils de développement → IndexedDB → `selene` → `kv` → `selene-local-v1` : plus d'entrée `reprendre-la-main` (l'identifiant de l'espace créé depuis le modèle). |
 | 4 | Appareil 2 : recharger. | « Carnet du soir » a disparu. |
 
 - **État final attendu** : plus aucun suivi « Carnet du soir » sur le compte P.

@@ -276,9 +276,14 @@ const capture = async (p, text) => { await p.fill('#capIn', text); await p.click
   };
   await G2.couper(true); await releve(G2);
   await tache(G2, T2); await lier(G2, 'ecriture/f5');
-  const hors2 = await nonSynchro(G2), dit2 = await synchro(G2.page), g1 = await etat2(G2);
+  const hors2 = await nonSynchro(G2), dit2 = await synchro(G2.page);
+  // IndexedDB reçoit chaque écriture sans que l'app l'attende (platform.js) : sous charge, une lecture aussitôt après la
+  // saisie voyait l'état d'avant (CI du 7 octobre 2026, processeur ralenti). Lu jusqu'à ce qu'elle y soit, comme aux
+  // étapes 3 et 4 ; une saisie perdue échoue toujours.
+  let g1 = await etat2(G2);
+  await jusqua(async () => { g1 = await etat2(G2); return g1.taches.includes(T2) && g1.echos.join() === 'ecriture/f5'; });
   check(hors2 && dit2 === 'Non synchronisé — enregistré sur cet appareil seulement' && g1.taches.includes(T2) && g1.echos.join() === 'ecriture/f5',
-    `A2 hors ligne : sa tâche et son lien ajoutés, « ${dit2} » (SYN-002, étape 1)`);
+    `A2 hors ligne : sa tâche et son lien ajoutés, « ${dit2} » (SYN-002, étape 1)` + (hors2 && g1.taches.includes(T2) && g1.echos.join() === 'ecriture/f5' ? '' : ` [attente : ${hors2} ; tâche : ${g1.taches.includes(T2)} ; liens : « ${g1.echos.join()} »]`));
   await tache(G1, T1); await lier(G1, 'ecriture/f1');
   const parti = () => (serveur6().modules?.chantier?.entries || []).some(e => e.title === T1) && ((serveur6().modules?.ecriture?.scraps || []).find(f => f.id === 'f2')?.links || []).some(l => l.to === 'ecriture/f1');
   await until(parti);
