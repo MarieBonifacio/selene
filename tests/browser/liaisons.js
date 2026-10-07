@@ -108,12 +108,14 @@ demo.modules.ecriture.scraps = [
   await modifier('Les sapins gardent la nuit ; les hêtres la rendent.'); await q.waitForFunction(() => !document.querySelector('#dlg').open, null, { timeout: 5000 }).catch(() => {}); await q.waitForTimeout(600);
   let v5 = (await scraps()).find(x => x.id === 'f5');
   check((v5.versions || []).length === 1 && (await q.textContent('li[data-id="f5"]')).includes('1 version antérieure'), 'enregistré sans rien changer : toujours une seule version antérieure (étape 3)');
+  // Étape 4 : le texte vidé. Le champ est requis : le formulaire refuse l'envoi (chaque moteur le dit à sa façon : sous
+  // Firefox, une bulle qui peut avaler le clic suivant). Le dialogue fermé ensuite par Échap, jusqu'à ce qu'il le soit.
   await modifier('');
-  const ouvert = await q.evaluate(() => document.querySelector('#dlg').open);
-  if (ouvert) await q.click('#form button[value="cancel"]');
+  const refuse = await q.evaluate(() => !document.querySelector('#form').checkValidity() && document.querySelector('#form [name="text"]').validity.valueMissing);
+  for (let k = 0; k < 4 && await q.evaluate(() => document.querySelector('#dlg').open); k++) { await q.keyboard.press('Escape'); await q.waitForTimeout(150); }
   await q.waitForTimeout(600); // une absence, de même
   v5 = (await scraps()).find(x => x.id === 'f5');
-  check(v5.text === 'Les sapins gardent la nuit ; les hêtres la rendent.' && (v5.versions || []).length === 1, `le texte vidé : refusé${ouvert ? ' par le formulaire' : ''}, le texte reste (étape 4)`);
+  check(refuse && !(await q.evaluate(() => document.querySelector('#dlg').open)) && v5.text === 'Les sapins gardent la nuit ; les hêtres la rendent.' && (v5.versions || []).length === 1, 'le texte vidé : refusé par le formulaire, le texte reste (étape 4)');
 
   console.log('le jeu d’essai : un lien qui suit la note rangée, puis sa cible supprimée (PEN-005)');
   await q.evaluate(() => { location.hash = 'inbox'; }); await q.waitForSelector('li[data-id="n5"] [data-act="link-form"]');
