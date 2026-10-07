@@ -537,7 +537,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : chemin S, `rlm-a-configurer.json` importé ; configurer « Tabac », « Observer, sans cible », à
   partir de J.
 - **Données** : envie avec appui « Marcher quelques minutes ».
-- **Automatisés associés** : `TU-REG-16`, `TN-regulation`
+- **Automatisés associés** : `TU-REG-16`, `TN-regulation`, `TN-regulation-perdu`
 - **Source** : [DOC] [regulation.md](../../regulation.md#pause-de-cinq-minutes) ; [TEST] `TU-REG-16`.
 
 | Étape | Action précise | Résultat attendu observable |
