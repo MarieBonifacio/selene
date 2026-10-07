@@ -66,6 +66,8 @@ const BASE = process.env.SELENE_BASE || 'http://localhost:8765';
 const launchOptions = ENGINE === 'chromium' && process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {};
 // Jeu d'essai riche (les modules d'origine), le même que pour les tests unitaires.
 const fixture = () => fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'site-demo.json'), 'utf8');
+// Un jeu de données du cahier de recette (docs/recette/donnees/), synthétique : celui que les cas manuels nomment.
+const donnee = nom => JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'docs', 'recette', 'donnees', nom), 'utf8'));
 
 function check(cond, msg) {
   console.log(cond ? '  ✓' : '  ✗', msg);
@@ -169,4 +171,4 @@ async function fauxSupabase(ctx, autre = () => undefined) {
 /* Ce que dit l'indicateur d'enregistrement : vide quand tout est synchronisé. */
 const synchro = p => p.evaluate(() => ((document.querySelector('#saving') || {}).textContent || '').trim());
 
-module.exports = { storeGet, storeSet, storeJSON, until, ouvrir, demarree, entree, suivre, calme, fauxSupabase, synchro, engine, ENGINE, BASE, launchOptions, fixture, check };
+module.exports = { storeGet, storeSet, storeJSON, until, ouvrir, demarree, entree, suivre, calme, fauxSupabase, synchro, engine, ENGINE, BASE, launchOptions, fixture, donnee, check };

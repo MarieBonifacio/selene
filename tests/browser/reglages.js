@@ -36,6 +36,11 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   await p.click('#mreg-chantier > summary'); await p.waitForTimeout(100);
   await p.click('#mreg-chantier [data-act="grp-on"]'); await p.waitForTimeout(200);
   ok(await p.$eval('#mreg-chantier', d => d.open), 'après un changement, les réglages de l’espace restent ouverts');
+  // NAV-007, étape 4 : l'objectif d'Écriture changé, puis le champ quitté.
+  await p.click('#mreg-ecriture > summary'); await p.fill('#mreg-ecriture [data-set-mod="ecriture.goal"]', '60000'); await p.press('#mreg-ecriture [data-set-mod="ecriture.goal"]', 'Tab');
+  await p.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.ecriture.config.goal === 60000, null, { timeout: 5000 }).catch(() => {});
+  ok((await p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.ecriture.config.goal)) === 60000 && (await p.inputValue('#mreg-ecriture [data-set-mod="ecriture.goal"]')) === '60000'
+    && await p.$eval('#mreg-ecriture', d => d.open), 'l’objectif d’Écriture passé à 60 000 : gardé, et le bloc reste déplié');
 
   console.log('sommaire');
   await p.click('[data-to="reg-compte"]'); await p.waitForTimeout(250);

@@ -21,6 +21,8 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| ~~A37 : un rendu de fond faisait perdre le focus clavier hors des champs (synchro, autre onglet, fin d'un envoi)~~ (fait le 7 octobre 2026, PR #133) | une session | P2 | — | [A37](perimetre.md#anomalies-et-observations) |
+| A36 : `tests/browser/veille.js` instable sous Firefox (« une veille en double : dit »), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A36](perimetre.md#anomalies-et-observations) |
 | ~~A35 : `tests/browser/dehors-croise.js` instable sous WebKit (un rechargement pendant une reprise du branchement)~~ (fait le 7 octobre 2026, PR #132) | une session | P3 | — | [A35](perimetre.md#anomalies-et-observations) |
 | ~~A34 : `tests/browser/navigation.js` instable sous le processeur ralenti (la palette lue 150 ms après la frappe)~~ (fait le 7 octobre 2026, PR #132) | une session | P3 | — | [A34](perimetre.md#anomalies-et-observations) |
 | ~~A33 : une synchro pendant une frappe effaçait la saisie d'un champ sans identifiant, hors des Réglages (la clé OpenAlex de Dehors)~~ (fait le 7 octobre 2026, PR #132) | une session | P2 | — | [A33](perimetre.md#anomalies-et-observations) |
@@ -494,7 +496,10 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   En chemin, A30 (l'étoile d'une tâche du jour, muette pour un lecteur d'écran) et C11 (MOD-003 demandait de
   « décocher » une tâche faite, qui n'a plus de case). Enfin trois (NAV-003, ESP-009, CPT-003) : 36 automatiques et
   156 partiels ; C12 (NAV-003 attendait un message que la palette n'affiche jamais). Puis quatre (TRV-015, EXT-002, EXT-003,
-  MOD-001) : 40 et 152 ; C13 (EXT-002 attendait une adresse que l'aperçu n'affiche pas).
+  MOD-001) : 40 et 152 ; C13 (EXT-002 attendait une adresse que l'aperçu n'affiche pas). Puis neuf dont il ne restait
+  qu'une étape, souvent la dernière (NAV-007, CPT-002, MOD-005, EXT-006, MOD-009, MOD-007, TRV-006, DON-003, MOD-002) :
+  49 et 143. Trois se vérifient désormais sur le jeu d'essai du cahier lui-même (`donnee()` dans `helpers.js`) ; chaque
+  contrôle ajouté échoue sous un mutant de l'app ; C14 (MOD-007 attendait « Yoga » là où l'app écrit « yoga »).
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`

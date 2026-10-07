@@ -59,6 +59,10 @@ const board = { updatedAt: 9, tasks: [T('t1', 'Poser le velux', { due: today, co
   ok((await p.textContent('#toast')) === "Aujourd'hui est plein. Le hasard respecte les plafonds." && (await data()).modules.chantier.entries.filter(x => x.today).length === 3, 'tirer au sort, la journée pleine : « Aujourd’hui est plein. Le hasard respecte les plafonds. »');
   await p.click('li[data-task="t2"] [data-act="task-done"] >> nth=0'); await p.waitForTimeout(150);
   ok((await main()).includes('Fait récemment') && (await data()).modules.chantier.entries.find(x => x.id === 't2').done, 'tâche terminée');
+  await go('accueil'); await p.waitForSelector('#main .two > section:first-child li[data-task]'); // MOD-002, étape 4 : la place libérée se lit sur l'accueil
+  const duJour = await p.$$eval('#main .two > section:first-child li[data-task]', lis => lis.map(li => li.dataset.task).sort().join());
+  ok(duJour === 't1,t3', `faite, elle quitte « Aujourd’hui » : l’accueil n’en montre plus que deux (${duJour})`);
+  await go('chantier'); await p.waitForSelector('[data-act="f-room"]');
   await p.selectOption('[data-act="f-room"]', 'Cuisine'); await p.waitForTimeout(150);
   const ech = (await p.textContent('section:has(> .row h3:text("Échéances"))')).replace(/\s+/g, ' ');
   ok(ech.includes('Changer le robinet') && !ech.includes('Joints'), 'filtre par pièce (section Échéances)');
@@ -76,7 +80,8 @@ const board = { updatedAt: 9, tasks: [T('t1', 'Poser le velux', { due: today, co
   ok((await data()).modules.jardin.entries[0].today === true, 'troisième tâche du jour, prise dans l’autre module : acceptée');
   await go('chantier'); await p.selectOption('[data-act="f-room"]', ''); await p.waitForTimeout(100);
   await p.click('li:has-text("Peindre") [data-act="task-today"] >> nth=0'); await p.waitForTimeout(150);
-  ok((await p.textContent('#toast')).includes('plafond'), 'quatrième, dans le Chantier : refusée (plafond commun)');
+  ok((await p.textContent('#toast')) === "Trois, c'est le plafond. Termine ou retire-en une." && (await p.getAttribute('li:has-text("Peindre") [data-act="task-today"] >> nth=0', 'aria-pressed')) === 'false'
+    && !(await data()).modules.chantier.entries.find(x => x.title === 'Peindre').today, 'quatrième, dans le Chantier : refusée (plafond commun), « Trois, c’est le plafond. Termine ou retire-en une. », l’étoile éteinte');
   await go('accueil'); const home = await main();
   ok(['Joints', 'Poser le velux', 'Tailler la haie'].every(x => home.includes(x)), 'l’accueil réunit les tâches du jour des deux modules');
 

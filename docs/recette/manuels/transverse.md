@@ -86,6 +86,7 @@ Identifiants retirés : aucun.
 | 4 | Ouvrir la fiche d'un fragment d'Écriture, puis sa carte du voisinage ; parcourir les étoiles au clavier. | Chaque étoile se suit au clavier ; la table des liaisons est atteignable. |
 | 5 | Ouvrir un formulaire (par exemple « + » d'une tâche), Échap. | Le formulaire se ferme sans rien enregistrer ; le focus revient sur le bouton qui l'a ouvert. |
 | 6 | Si un suivi « Reprendre la main » est présent ([RLM-028](reprendre-la-main.md#rlm-028)) : « J'ai une envie » au clavier. | Le formulaire s'ouvre avec le focus dedans. Sinon : non applicable. |
+| 7 | Selene ouverte dans un second onglet : dans le premier, Tab jusqu'à « Nouvelle tâche » de Chantier, sans l'activer ; Ctrl+Tab vers le second, y garder une capture ; Ctrl+Tab retour, Entrée. | Le formulaire de tâche s'ouvre : l'enregistrement venu de l'autre onglet a redessiné l'écran sans déplacer le focus (A37). |
 
 - **État final attendu** : une tâche de plus.
 - **Nettoyage** : la supprimer.

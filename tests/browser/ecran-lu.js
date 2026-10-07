@@ -10,6 +10,8 @@ demo.modules.sources = { type: 'collection', label: 'Sources',
   config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), display: 'liste', sources: true, statuses: ['À lire', 'Lue'], doneFrom: 1, addLabel: 'Ajouter',
     fields: { title: 'Titre', subtitle: 'Auteurs', tag: 'Type', due: '', text: 'Notes' } }, entries: [] };
 demo.config.modules.push({ id: 'sources', on: true });
+const tache = (id, title) => ({ id, title, room: 'Cuisine', cat: 'Bricolage', due: null, effort: 1, cost: null, note: '', today: false, done: false, doneAt: null, created: '2026-09-01', steps: [] });
+demo.modules.chantier.entries = [tache('t1', 'Poser le velux'), tache('t2', 'Changer le robinet'), tache('t3', 'Joints de la douche')];
 (async () => {
   const b = await engine.launch(launchOptions), errs = [];
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
@@ -52,6 +54,32 @@ demo.config.modules.push({ id: 'sources', on: true });
   await p.waitForFunction(() => document.querySelector('#sr-say').textContent.includes('Trouvée'), null, { timeout: 5000 }).catch(() => {});
   check(await say() === 'Trouvée : « La lisière des bois ».', `l'aperçu arrivé, une phrase courte et non toute la fiche : « ${await say()} »`);
   check(await p.evaluate(() => { const r = document.querySelector('#sr-say'); const b = r.getBoundingClientRect(); return r.getAttribute('role') === 'status' && b.width <= 1 && b.height <= 1; }), 'la région est permanente, annoncée poliment, hors de l’écran');
+
+  console.log('un rendu de fond garde le focus clavier (A37)');
+  // Un autre onglet du même site (sans l'app) enregistre : Selene relit et redessine l'écran, sous le focus.
+  const onglet = await ctx.newPage(); await onglet.goto(BASE + '/package.json');
+  const ailleurs = q => onglet.evaluate(q => {
+    const d = JSON.parse(localStorage.getItem('selene-site-v1')), t = d.modules.chantier.entries;
+    if (q.fait) t.find(x => x.id === q.fait).done = true;
+    if (q.retire) d.modules.chantier.entries = t.filter(x => x.id !== q.retire);
+    d.updatedAt = (d.updatedAt || 0) + 1; localStorage.setItem('selene-site-v1', JSON.stringify(d));
+  }, q);
+  const redessine = async () => { const n = await p.evaluate(() => document.querySelector('#main').innerHTML.length); return p.waitForFunction(m => document.querySelector('#main').innerHTML.length !== m, n, { timeout: 5000 }).then(() => true, () => false); };
+  const surQuoi = () => p.evaluate(() => { const a = document.activeElement; return a === document.body ? 'body' : `${a.dataset.act || a.tagName}${a.closest('[data-task]') ? '@' + a.closest('[data-task]').dataset.task : ''}`; });
+  await p.evaluate(() => { location.hash = 'chantier'; }); await p.waitForSelector('[data-act="task-new"]');
+  await p.focus('[data-act="task-new"]');
+  { const r = redessine(); await ailleurs({ fait: 't3' }); await r; }
+  check(await surQuoi() === 'task-new', `un bouton : l’écran redessiné par une synchro, le focus y reste (${await surQuoi()})`);
+  await p.keyboard.press('Enter'); await p.waitForFunction(() => document.querySelector('#dlg').open, null, { timeout: 5000 }).catch(() => {});
+  check(await p.evaluate(() => document.querySelector('#dlg').open), 'et Entrée ouvre le formulaire, comme sans la synchro');
+  if (await p.evaluate(() => document.querySelector('#dlg').open)) { await p.click('#form button[value=cancel]'); await p.waitForFunction(() => !document.querySelector('#dlg').open); }
+  await p.focus('li[data-task="t2"] [data-act="task-done"]');
+  { const r = redessine(); await ailleurs({ retire: 't1' }); await r; }
+  check(await surQuoi() === 'task-done@t2', `une case : la tâche d’avant a disparu, le focus reste sur la case de la même tâche (${await surQuoi()})`);
+  await p.focus('li[data-task="t2"] [data-act="task-done"]');
+  { const r = redessine(); await ailleurs({ retire: 't2' }); await r; }
+  check(!/^task-done/.test(await surQuoi()), `la tâche elle-même disparue : le focus ne passe pas à la case d’une autre (${await surQuoi()})`);
+  await onglet.close();
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

@@ -86,6 +86,11 @@ faire) : [backlog de la recette](recette/backlog.md#reste-a-faire).
   change un comportement : les seize cas de [campagnes.md](recette/campagnes.md#smoke), avec les comptes de recette A et B
   ([README de la recette](recette/README.md#environnement-et-données-de-recette)) ; le compte rendu tiré du
   [modèle](recette/comptes-rendus/modele.md), versé dans `docs/recette/comptes-rendus/` par une PR.
+  Le cas 11, [SYN-001](recette/manuels/synchronisation.md#syn-001), a gagné une étape 4 le 7 octobre (A33, PR #132) :
+  sur le second appareil, taper la clé OpenAlex de Dehors sans quitter le champ pendant que le premier capture ; la clé
+  doit rester, le curseur dans le champ. Aucune CI ne remplace ce geste sur deux vrais appareils.
+  À la recette complète, [TRV-002](recette/manuels/transverse.md#trv-002) a gagné une étape 7 (A37, PR #133) : au
+  clavier seul, le focus reste sur un bouton quand un second onglet enregistre ; c'est à entendre aussi au lecteur d'écran.
 - [ ] **La recette complète** avant l'ouverture de la bêta ou une version des stores, puis chaque trimestre
   (quatre à cinq jours-personne, [campagnes.md](recette/campagnes.md#complete)).
 

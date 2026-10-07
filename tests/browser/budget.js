@@ -1,5 +1,6 @@
 /* Scénario de navigateur : budget. Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, donnee, check } = require('./helpers');
+const essai = donnee('jeu-essai.json'); // ses opérations de septembre 2026
 const now = new Date(); const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 const v4 = { updatedAt: 10, schemaVersion: 4,
   config: { name: 'Selene', palette: 'nigredo', mode: 'auto', labels: {}, groups: { budget: { on: true, by: 'cat', sort: 'name', hideDone: false, title: '' } },
@@ -49,6 +50,22 @@ const v4 = { updatedAt: 10, schemaVersion: 4,
   await p.waitForFunction(n => JSON.parse(localStorage.getItem('selene-site-v1')).modules.budget.entries.length > n, n0, { timeout: 5000 }).catch(() => {});
   const last = (await data()).modules.budget.entries.at(-1);
   ok((await ops()) === n0 + 1 && last.amount === 5 && last.type === 'dépense', 'un montant négatif : compté en valeur absolue, le sens vient du type choisi (dépense)');
+
+  console.log('le jeu d’essai, en septembre 2026 (MOD-005, étape 1)');
+  const q = await b.newPage(); q.on('pageerror', e => errs.push(e.message));
+  await q.addInitScript(([s, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', s); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essai.site), JSON.stringify(essai.board)]);
+  await q.goto(BASE + '/index.html#budget'); await q.waitForSelector('[data-act="bud-month"][data-d="-1"]');
+  const mois = () => q.$eval('[data-act="bud-month"][data-d="-1"] + b', x => x.textContent.trim().toLowerCase());
+  // Autant de mois en arrière (ou en avant) qu'il en sépare aujourd'hui de septembre 2026.
+  const ecart = (now.getFullYear() - 2026) * 12 + now.getMonth() - 8;
+  for (let i = 0; i < Math.abs(ecart); i++) {
+    const avant = await mois(); await q.click(`[data-act="bud-month"][data-d="${ecart > 0 ? -1 : 1}"]`);
+    await q.waitForFunction(x => document.querySelector('[data-act="bud-month"][data-d="-1"] + b').textContent.trim().toLowerCase() !== x, avant, { timeout: 5000 }).catch(() => {});
+  }
+  const stats = await q.$$eval('#main .stats b', bs => bs.map(x => x.textContent.replace(/\s+/g, ' ').trim()).join(' | '));
+  const jauges = await q.$$eval('#main .room', rs => rs.map(r => r.textContent.replace(/\s+/g, ' ').trim()).join(' | '));
+  ok((await mois()) === 'septembre 2026' && stats === '2 000,00 € | 165,00 € | 1 835,00 €', `septembre 2026 : revenus, dépenses et solde du jeu (${stats})`);
+  ok(jauges === 'Courses40 %120,00 € sur 300,00 € | Travaux9 %45,00 € sur 500,00 €', `les jauges : Courses à 40 % (120 sur 300), Travaux à 9 % (45 sur 500) (${jauges})`);
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

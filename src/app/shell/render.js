@@ -57,6 +57,32 @@ let redirectedFrom = null; // l'espace fermé dont l'adresse vient d'être déto
 let renderDay = null;
 // Le jour du dernier rendu : boot.js redessine quand il change (minuit, TRV-004).
 export const renderedDay = () => renderDay;
+/* Le focus clavier sur un bouton, un lien ou une case survit à un rendu (A37). Une synchro, un autre onglet ou la fin d'un
+   envoi redessinent la page ; le focus retombait alors au début du document, et Entrée ne faisait plus rien (WCAG 2.4.3).
+   L'élément se retrouve par ce qui le désigne (balise, href, aria-label, data-*), l'entrée qui le porte (sa tâche, son
+   fragment…) et son rang parmi ses pareils : jamais la case d'une autre tâche. Une entrée disparue ne rend le focus à
+   rien, comme avant. Les champs à identifiant ont leur propre restauration, valeur et curseur compris (ci-dessous). */
+const FOCUSABLE = "button, a[href], input, select, textarea, summary, [tabindex]";
+const KEYED = "[data-id], [data-task], [data-item], [data-oa], [data-i], [data-rg], [data-vi], [data-ci]";
+const dataSig = el => Object.keys(el.dataset).sort().map(k => `${k}=${el.dataset[k]}`).join(",");
+const focusSig = el => { const o = el.parentElement && el.parentElement.closest(KEYED); return [el.tagName, el.getAttribute("href") || "", el.getAttribute("aria-label") || "", dataSig(el), o ? dataSig(o) : ""].join("|"); };
+const alike = (zone, el, sig) => [...zone.querySelectorAll(FOCUSABLE)].filter(x => x.tagName === el.tagName && x.dataset.act === el.dataset.act && focusSig(x) === sig);
+/* Un rendu né d'un geste (clic, touche, saisie) laisse le focus à ce que le geste en fait : le rendre ici réactiverait un
+   bouton sous la même touche Entrée (la feuille « Capturer », fermée par Entrée, se rouvrait par son bouton). Seuls les
+   rendus de fond, hors de tout geste en cours (synchro, autre onglet, fin d'un envoi, minuterie), le rendent. */
+const inGesture = () => { const e = window.event; return !!e && /^(key|mouse|pointer|touch|click|dblclick|auxclick|contextmenu|input|change|submit|reset|focus|blur|select)/.test(e.type); };
+function focusMark() {
+  if (inGesture()) return null;
+  const el = document.activeElement, zone = el && el !== document.body && el.closest ? el.closest("#main, #nav, #bar") : null;
+  if (!zone || el.id) return null;
+  const sig = focusSig(el);
+  return { zone: zone.id, tag: el.tagName, act: el.dataset.act, sig, n: alike(zone, el, sig).indexOf(el) };
+}
+function focusBack(m) {
+  if (!m || m.n < 0 || (document.activeElement && document.activeElement !== document.body)) return;
+  const zone = document.getElementById(m.zone), el = zone && alike(zone, { tagName: m.tag, dataset: { act: m.act } }, m.sig)[m.n];
+  if (el) try { el.focus({ preventScroll: true }); } catch {}
+}
 export function render() {
   renderMemo = new Map(); renderDay = todayISO();
   try { renderNow(); } finally { renderMemo = null; }
@@ -88,6 +114,7 @@ function renderNow() {
     if (redirectedFrom !== asked) { redirectedFrom = asked; toast(absentModule(asked) ? tr`Cet espace ne s'ouvre pas dans cette version de Selene.` : tr`« ${label(asked)} » est désactivé : Réglages → Espaces pour le rouvrir.`); }
   } else redirectedFrom = null;
   const inst = !fixed(view) && Object.hasOwn(s.modules, view) ? s.modules[view] : null;
+  const mark = view === lastView ? focusMark() : null; // avant que la navigation ne soit redessinée
   $("#nav").innerHTML = navHTML(view);
   $("#bar").innerHTML = barHTML(view);
   if (inst && view !== lastView) noteVisit(view);
@@ -120,6 +147,7 @@ function renderNow() {
   for (const id of opened) { const el = document.getElementById(id); if (el && el.tagName === "DETAILS") el.open = true; }
   if (view !== lastView) $("#main").querySelectorAll("[data-draft]").forEach(el => { const v = loadDraft(view, el); if (v) el.value = v; });
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
+  else focusBack(mark);
   if (view !== lastView) revealed = null;
   if (revealed) $("#main").querySelectorAll(".item[data-id], .card[data-id]").forEach(el => { if (el.dataset.id === revealed) el.classList.add("reveal"); });
   lastView = view;

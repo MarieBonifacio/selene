@@ -22,6 +22,8 @@ const WORK = (n, extra = {}) => ({ id: `https://openalex.org/W${n}`, doi: `https
   });
   const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
   await ctx.addInitScript(([d, s, uid]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); } }, [JSON.stringify(demo), session, UID]);
+  // Le journal des bulles : chaque texte que #toast affiche, dans l'ordre (un message remplacé trop tôt se lit ici).
+  await ctx.addInitScript(() => { window.__bulles = []; addEventListener('DOMContentLoaded', () => { const t = document.querySelector('#toast'); if (t) new MutationObserver(() => { const x = (t.textContent || '').trim(); if (x && x !== window.__bulles.at(-1)) window.__bulles.push(x); }).observe(t, { childList: true, characterData: true, subtree: true }); }); });
   const p = suivre(await ctx.newPage()); p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + '/index.html#dehors'); await p.waitForTimeout(800);
   const data = () => storeJSON(p, 'selene-site-v1');
@@ -69,8 +71,14 @@ const WORK = (n, extra = {}) => ({ id: `https://openalex.org/W${n}`, doi: `https
     + (a ? (filtre.startsWith('author.orcid') ? (a.searchParams.get('api_key') ? '' : ' (requête sans clé)') : ` (filtre : ${filtre})`) : ` (aucune requête partie ; message : « ${dit} »)`));
   const veilles = (await data()).config.dehors.research.length;
   ok(!JSON.stringify(await data()).includes('ma-cle-secrete') && veilles === 2, 'la clé n’est pas dans les données synchronisées ; les veilles, si' + (veilles === 2 ? '' : ` (${veilles} veille(s))`));
-  await watch('Depersonalization');
-  ok((await p.textContent('#toast')).includes('Déjà en veille'), 'une veille en double : dit');
+  // Le doublon se dit à l'instant du clic : attendre ce message-là, puis dire ce qui s'est affiché s'il manque (A36, Firefox).
+  const vu = await p.evaluate(() => window.__bulles.length);
+  await p.fill('#oaIn', 'Depersonalization'); await p.selectOption('#oaMod', ''); await p.click('[data-act="oa-add"]');
+  const dit2 = await p.waitForFunction(() => (document.querySelector('#toast').textContent || '').includes('Déjà en veille'), null, { timeout: 5000 }).then(() => true, () => false);
+  await p.waitForTimeout(700); // une absence : qu'aucun autre message ne vienne le remplacer aussitôt, ni une veille s'ajouter
+  const bulles = (await p.evaluate(n => window.__bulles.slice(n), vu)), apres = (await data()).config.dehors.research.length;
+  ok(dit2 && apres === 2 && bulles.length === 1, 'une veille en double : « Déjà en veille. », et rien d’ajouté'
+    + (dit2 && apres === 2 && bulles.length === 1 ? '' : ` (bulles depuis le clic : ${bulles.map(x => `« ${x} »`).join(', ') || 'aucune'} ; ${apres} veille(s) ; champ : « ${await p.inputValue('#oaIn')} »)`));
 
   console.log('une fois par semaine, quota');
   const n = oa.length;
