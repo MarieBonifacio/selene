@@ -66,7 +66,10 @@ const attendre = async (cond, ms = 15000) => { for (const fin = Date.now() + ms;
     // manifeste, que Firefox télécharge au lieu de l'afficher, ne convient pas).
     const journal = async () => {
       const r = await A1.ctx.newPage(); await r.goto(BASE + '/confidentialite.html');
-      const j = await r.evaluate(() => { const v = localStorage.getItem('fermeture-journal'); localStorage.removeItem('fermeture-journal'); return JSON.parse(v || '[]'); });
+      // Avec, la copie de secours que platform.flush() dépose à la fermeture (son poids, ou rien).
+      const j = await r.evaluate(() => { const v = localStorage.getItem('fermeture-journal'); localStorage.removeItem('fermeture-journal');
+        const secours = Object.keys(localStorage).filter(k => k.startsWith('selene-secours:')).map(k => ({ quoi: 'secours', cle: k.slice(15), poids: localStorage.getItem(k).length }));
+        return [...JSON.parse(v || '[]'), ...secours]; });
       await r.close(); return j;
     };
     // A2 laissé visible sur sa boîte ; sa relève (toutes les 30 s), avancée à la main.
@@ -85,7 +88,8 @@ const attendre = async (cond, ms = 15000) => { for (const fin = Date.now() + ms;
       return journal();
     };
     const rouvrir = async () => { await a1.clock.resume(); await ouvrir(a1, BASE + '/index.html', entree); };
-    const dire = j => j.filter(x => x.quoi !== 'pagehide').map(x => `${x.quoi} de ${x.poids} octets${x.saisie ? `, « ${x.saisie} » dedans` : ''}`).join(' ; ') || 'rien';
+    const secours = j => j.filter(x => x.quoi === 'secours').map(x => `${x.cle} (${x.poids} caractères)`).join(', ') || 'aucune';
+    const dire = j => j.filter(x => x.quoi !== 'pagehide' && x.quoi !== 'secours').map(x => `${x.quoi} de ${x.poids} octets${x.saisie ? `, « ${x.saisie} » dedans` : ''}`).join(' ; ') || 'rien';
 
     console.log('un espace léger : une écriture confiée au navigateur à la fermeture (SYN-005)');
     const t1 = await taille(), ko = +((t1.match(/pèse (\d+) Ko/) || [])[1] || 1e9);
@@ -110,10 +114,10 @@ const attendre = async (cond, ms = 15000) => { for (const fin = Date.now() + ms;
       `le jeu de volume importé sur A1, affiché par A2 ; A1 : « ${t4.slice(0, 110)}… » (étape 4)`);
     const LOURDE = 'dernière seconde lourde SYN-005', j5 = await fermer(LOURDE);
     check(j5.some(x => x.quoi === 'pagehide') && !j5.some(x => x.quoi === 'PATCH') && !auServeur().includes(LOURDE) && await releve(LOURDE, false),
-      `capturée, Selene quittée aussitôt : un espace de ${mo.toLocaleString('fr-FR')} Mo, la page ne confie ${dire(j5)} au navigateur, et A2 ne voit pas la capture à sa relève (étape 5)`);
+      `capturée, Selene quittée aussitôt : un espace de ${mo.toLocaleString('fr-FR')} Mo, la page ne confie ${dire(j5)} au navigateur, et A2 ne voit pas la capture à sa relève ; copie de secours : ${secours(j5)} (étape 5)`);
     await rouvrir(); await vers(a1, 'inbox', '#main');
-    const ici6 = (await a1.textContent('#main')).includes(LOURDE), serveur6 = await attendre(() => auServeur().includes(LOURDE));
-    check(ici6 && serveur6 && await releve(LOURDE, true), 'A1 rouvert : la capture est dans sa boîte, part au serveur, et A2 la reçoit à sa relève (étape 6)');
+    const ici6 = (await a1.textContent('#main')).includes(LOURDE), serveur6 = await attendre(() => auServeur().includes(LOURDE)), vu6 = await releve(LOURDE, true);
+    check(ici6 && serveur6 && vu6, `A1 rouvert : la capture est dans sa boîte, part au serveur, et A2 la reçoit à sa relève (étape 6)` + (ici6 && serveur6 && vu6 ? '' : ` [boîte d'A1 : ${ici6} ; serveur : ${serveur6} ; A2 : ${vu6}]`));
     check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   } catch (e) { check(false, e.message.split('\n')[0]); }
   await browser.close();
