@@ -25,6 +25,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | ~~A18 : au lancement d'un appareil connecté, l'écran d'entrée s'affiche jusqu'aux premières réponses du serveur~~ (fait le 6 octobre 2026, PR #122) | une session | P2 | — | [A18](perimetre.md#anomalies-et-observations) |
 | ~~A16 : `tests/browser/mot-de-passe.js` instable sous Firefox~~ (fait le 6 octobre 2026, PR #120) | une session | P2 | — | [A16](perimetre.md#anomalies-et-observations) |
 | ~~BL-17 : un échec sous Firefox ne se voit pas (le job reste vert)~~ (fait le 6 octobre 2026, PR #120) | une session | P2 | — | [BL-17](#bl-17) |
+| ~~BL-22 : les délais fixes qui suivent un geste ne se voient qu'au hasard de la charge de la CI~~ (fait le 6 octobre 2026, PR #127) | une session | P2 | — | [BL-22](#bl-22) |
 | ~~BL-21 : fermer le réseau aux scénarios de navigateur (sous WebKit, une page tenue par le service worker échappe aux routes, et ses requêtes vont au vrai serveur)~~ (fait le 6 octobre 2026, PR #124) | une session | P2 | — | [BL-21](#bl-21), [A20](perimetre.md#anomalies-et-observations) |
 
 ### À automatiser
@@ -110,6 +111,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 | [BL-19](#bl-19) | Matrice : nommer les étapes que les tests ne couvrent pas (P1 fait) | traçabilité | P3 | les 73 cas P1 faits ; 88 lignes P2 et P3 |
 | [BL-20](#bl-20) | ~~Un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait) | outillage | P3 | onze étapes, voir ci-dessous |
 | [BL-21](#bl-21) | ~~Fermer le réseau aux scénarios de navigateur~~ (fait) | hygiène des essais | P2 | tous les scénarios ; A20 |
+| [BL-22](#bl-22) | ~~Débusquer les délais fixes après un geste : un job au processeur ralenti~~ (fait) | fiabilité de la CI | P2 | tous les scénarios ; A10, A11, A16, A21 à A23 |
 
 ---
 
@@ -514,6 +516,27 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   depuis le 3 octobre au soir ; vérification et nettoyage dans [a-faire.md](../a-faire.md) (A20).
   `hors-ligne-reel.js` reste non joué sous WebKit : ses requêtes y échoueraient désormais au lieu de partir, sans
   atteindre le faux serveur.
+
+
+<a id="bl-22"></a>
+### BL-22 — Débusquer les délais fixes après un geste : un job au processeur ralenti
+
+- **Risque couvert** : six instabilités de la même famille en trois jours (A10, A11, A16, A21, A22, A23) : un scénario
+  qui attend un délai fixe là où il faudrait attendre un état, et qui casse quand la machine de la CI est chargée. Le job
+  « démarrage lent » (A16) débusque ceux qui suivent l'ouverture de l'app ; ceux qui suivent un geste (un clic, puis une
+  lecture du stockage ou d'une bulle) lui échappaient : A21, A22, A23 ont été trouvés un par un, par des PR qui ne les
+  touchaient pas. Le 6 octobre 2026, 563 `waitForTimeout` dans 73 scénarios ; certains vérifient une absence, à bon droit.
+- **Proposition** : `SELENE_CPU=<facteur>` dans `helpers.js` ralentit le processeur de Chromium (protocole DevTools,
+  `Emulation.setCPUThrottlingRate`), pour chaque page ; un job *Check › browser (chromium, processeur ralenti)* rejoue la
+  suite à ×4, quatre scénarios à la fois (la lenteur doit venir du ralentissement, pas de leur concurrence).
+- **Niveau** : outillage des scénarios et CI.
+- **Bénéfice attendu** : un délai fixe après un geste échoue à chaque PR, au lieu d'un jour sur dix.
+- **État** : **fait** le 6 octobre 2026 (PR #127). En local, à ×4, deux scénarios sont tombés : `regulation.js` (la bulle
+  lue avant qu'elle annonce la suppression) et `zotero.js` (la recherche vérifiée 500 ms après le clic) ; à ×6,
+  `radar.js` (le passeur, 500 ms après le clic) et `mot-de-passe.js`, qui dépasse alors seulement les 3 minutes du
+  lanceur, sans erreur. Les trois premiers attendent désormais l'état ; ×4 garde de la marge (`mot-de-passe.js` : 33 s
+  seul). Son premier passage en CI a trouvé mieux qu'un délai fixe : une régression de l'app, A24 (le retour du réseau
+  perdu pendant un branchement en cours), corrigée dans la même PR.
 
 ---
 

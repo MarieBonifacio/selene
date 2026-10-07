@@ -10,7 +10,13 @@ const { engine, ENGINE, BASE, launchOptions, check, until, ouvrir, entree } = re
 const rows = new Map();
 const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 let coupe = false, appels = 0;
+/* Le journal du retour du réseau, écrit en cas d'échec seulement : chaque requête vue par le faux serveur et ce qu'il
+   en a fait, celles qui ont échoué, et ce que la page a vu du réseau (A24 : un échec de la CI, au processeur ralenti,
+   que la machine locale ne reproduisait pas). */
+const T0 = Date.now(), journal = [], note = m => journal.push(`[${((Date.now() - T0) / 1000).toFixed(2)} s] ${m}`);
 async function supabase(route) {
+  const q = route.request(), qu = new URL(q.url());
+  note(`${coupe ? 'coupée' : 'servie'} : ${q.method()} ${qu.pathname} ${qu.searchParams.get('select') || ''}`);
   if (coupe) return route.abort('internetdisconnected'); // la coupure vaut aussi pour le faux serveur
   appels++;
   const req = route.request(), u = new URL(req.url()), m = req.method();
@@ -36,9 +42,15 @@ const capture = async (p, text) => { await p.fill('#capIn', text); await p.click
   const b = await engine.launch(launchOptions), errs = [];
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } }); // service worker permis
   await ctx.route('https://*.supabase.co/**', supabase);
+  await ctx.addInitScript(() => {
+    console.log('§ page chargée, navigator.onLine : ' + navigator.onLine);
+    for (const ev of ['online', 'offline']) addEventListener(ev, () => console.log('§ ' + ev));
+  });
   await ctx.addInitScript(s => { if (!localStorage.getItem('selene-auth-session')) { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', 'u1'); } }, session);
   const p = await ctx.newPage();
   p.on('pageerror', e => errs.push(e.message));
+  p.on('console', m => { if (m.text().startsWith('§ ')) note(m.text().slice(2)); });
+  p.on('requestfailed', r => { if (/\.supabase\.co\//.test(r.url())) note(`échec : ${r.method()} ${new URL(r.url()).pathname} (${(r.failure() || {}).errorText})`); });
   try {
     console.log('première visite : le service worker s’installe');
     await ouvrir(p, BASE + '/index.html', entree);
@@ -50,7 +62,7 @@ const capture = async (p, text) => { await p.fill('#capIn', text); await p.click
     check(await p.evaluate(() => !!navigator.serviceWorker.controller), 'le service worker tient la page');
 
     console.log('réseau coupé, page rechargée');
-    coupe = true; await ctx.setOffline(true);
+    coupe = true; await ctx.setOffline(true); note('réseau coupé');
     // Le serveur de fichiers aussi : Chromium applique la route aux requêtes du service worker, qui doit alors servir
     // l'app depuis son cache. Ailleurs, le service worker atteint encore le serveur : on ne prétend rien éprouver.
     const fichiers = r => r.abort('internetdisconnected');
@@ -71,13 +83,15 @@ const capture = async (p, text) => { await p.fill('#capIn', text); await p.click
 
     console.log('retour du réseau');
     await ctx.unrouteAll({ behavior: 'ignoreErrors' }); await ctx.route('https://*.supabase.co/**', supabase); // la route des fichiers levée
-    coupe = false; await ctx.setOffline(false);
+    coupe = false; await ctx.setOffline(false); note('réseau rendu');
     // Rechargée hors ligne (Chromium), l'app se rebranche au retour du réseau (« online ») ; restée ouverte, ce qui attend
     // part à la relève suivante du serveur, toutes les 30 s.
     await until(() => serveur().includes('hors ligne BL-15'), 40000);
     check(serveur().includes('hors ligne BL-15') && serveur().includes('en ligne BL-15'), `la capture faite hors ligne arrive au serveur, sans rien perdre (${serveur().join(', ')})`);
     await p.waitForFunction(() => !/Non synchronisé/.test((document.querySelector('#saving') || {}).textContent || ''), null, { timeout: 10000 }).catch(() => {});
-    check(!/Non synchronisé/.test(await p.textContent('#saving')), 'l’indicateur s’efface');
+    const reste = await p.textContent('#saving');
+    check(!/Non synchronisé/.test(reste), 'l’indicateur s’efface' + (reste ? ` (« ${reste} »)` : ''));
+    if (process.exitCode) console.log('  journal du réseau :\n' + journal.map(l => '    ' + l).join('\n'));
   } catch (e) { check(false, e.message.split('\n')[0]); }
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

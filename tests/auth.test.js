@@ -94,3 +94,55 @@ test('A18 : data of another account on the device is never shown under this sess
   assert.doesNotMatch(app.nodes.get('#main').innerHTML, /authForm/);
   app.site.disconnect(); app.board.disconnect();
 });
+
+/* A24 du cahier de recette : le réseau revient (online) pendant le branchement du démarrage, parti hors ligne. Le
+   branchement en cours échoue ; celui que demandait le retour du réseau ne doit pas se perdre avec lui (jusqu'à
+   5 min d'attente, le minuteur). Chaque requête garde l'état du réseau à son départ : celles d'avant le retour
+   échouent même relâchées après. */
+test('A24 : the network back during a failing connect: the sync resumes at once, not at the 5-minute timer', async () => {
+  const server = fakeSupabase();
+  let failing = true, release;
+  const gate = new Promise(r => { release = r; });
+  const fetch = (url, opts) => { const doomed = failing; return gate.then(() => { if (doomed) throw new TypeError('Failed to fetch'); return server.fetch(url, opts); }); };
+  const app = launchHosted({ fetch });
+  await settle();
+  assert.equal(server.calls.length, 0, 'the boot connect is still in flight');
+  failing = false; app.fire('online'); await settle();
+  release(); await settle(100);
+  assert.ok(app.site.db && app.board.db, 'synced, without waiting for the timer');
+  assert.equal(app.nodes.get('#saving').textContent, '');
+  app.site.disconnect(); app.board.disconnect();
+});
+
+/* Le réseau revenu ne l'est pas toujours tout à fait : « online » arrive, mais la première tentative échoue encore
+   (réseau qui s'établit, nom pas encore résolu). Elle est retentée dans les secondes qui suivent, pas au minuteur. */
+test('A24 : a reconnect that fails right after « online » is retried within seconds, not at the 5-minute timer', async () => {
+  const server = fakeSupabase();
+  let downUntil = Infinity;
+  const fetch = (url, opts) => Date.now() < downUntil ? Promise.reject(new TypeError('Failed to fetch')) : server.fetch(url, opts);
+  const app = launchHosted({ fetch });
+  await settle();
+  assert.equal(app.site.db, null, 'offline at boot: not connected');
+  downUntil = Date.now() + 1000; app.fire('online'); await settle();
+  assert.equal(app.site.db, null, 'the first attempt after « online » failed');
+  await settle(2600);
+  assert.ok(app.site.db && app.board.db, 'retried within seconds: connected');
+  assert.equal(app.nodes.get('#saving').textContent, '');
+  app.site.disconnect(); app.board.disconnect();
+});
+
+/* Le retour de la connexion ne s'annonce pas toujours : navigator.onLine reste vrai derrière un portail captif, sur un
+   réseau sans Internet, ou quand seul le serveur est injoignable, et « online » ne vient jamais (CI du processeur
+   ralenti : la page rechargée hors ligne se croyait en ligne). Un branchement raté est retenté de lui-même. */
+test('A24 : with no « online » event at all, a failed boot connect is retried on its own within seconds', async () => {
+  const server = fakeSupabase();
+  const downUntil = Date.now() + 1000;
+  const fetch = (url, opts) => Date.now() < downUntil ? Promise.reject(new TypeError('Failed to fetch')) : server.fetch(url, opts);
+  const app = launchHosted({ fetch });
+  await settle();
+  assert.equal(app.site.db, null, 'offline at boot: not connected');
+  await settle(2600);
+  assert.ok(app.site.db && app.board.db, 'retried on its own: connected, without any « online » event');
+  assert.equal(app.nodes.get('#saving').textContent, '');
+  app.site.disconnect(); app.board.disconnect();
+});

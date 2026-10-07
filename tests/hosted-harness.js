@@ -91,14 +91,17 @@ function launchHosted({ storage = new Map(), fetch, session = 'valid', bare = fa
   // pour pouvoir déclencher un tour de polling à la main et vérifier qu'ils sont bien arrêtés.
   const setTimeoutU = (fn, ms) => { const t = setTimeout(fn, ms); t.unref(); return t; };
   const intervals = new Map(); let n = 0;
-  const context = { document, window: { addEventListener() {}, claude: null }, localStorage, location: { hash: '' },
+  // Les écouteurs de window (online…) aussi, pour qu'un test puisse jouer l'événement (`fire`).
+  const listeners = new Map(), on = (type, fn) => listeners.set(type, [...(listeners.get(type) || []), fn]);
+  const context = { document, window: { addEventListener: on, claude: null }, localStorage, location: { hash: '' },
     navigator, console, Date, Math, setTimeout: setTimeoutU, clearTimeout, AbortController, fetch,
     setInterval: fn => { intervals.set(++n, fn); return n; }, clearInterval: id => intervals.delete(id) };
   const instrumented = (html ? html.match(/<script>\s*([\s\S]*?)<\/script>/)[1] : script).replace(/\}\);\s*\}\)\(\);\s*$/, // dans platform.ready
     'globalThis.__test = { ...__selene, session: () => __selene.authSession, form: v => __selene.formCb(v), formOpen: () => !!__selene.formCb };\n});\n})();'); // form : le formulaire ouvert à cet instant (formCb change)
   vm.runInNewContext(instrumented, context);
   const poll = () => Promise.all([...intervals.values()].map(fn => fn()));
-  return { ...context.__test, nodes, storage, intervals, poll, location: context.location };
+  const fire = type => (listeners.get(type) || []).forEach(fn => fn({ type }));
+  return { ...context.__test, nodes, storage, intervals, poll, fire, location: context.location };
 }
 
 module.exports = { fakeSupabase, launchHosted, reply, settle, clone };

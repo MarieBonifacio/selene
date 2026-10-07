@@ -22,7 +22,14 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const open = async (mbDown = false) => {
-    const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
+    const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } });
+    // L'écart se mesure à l'envoi, dans la page, comme l'app le règle : à l'arrivée dans la route, la latence d'envoi s'y
+    // ajoute ou s'en retranche (A26 : sous le processeur ralenti, 1 100 ms d'écart arrivaient à moins de 1 000).
+    await ctx.addInitScript(() => {
+      const envoyer = window.fetch; window.__mbEnvois = [];
+      window.fetch = function (u, ...r) { if (String((u && u.url) || u).includes('musicbrainz.org')) window.__mbEnvois.push(Date.now()); return envoyer.call(this, u, ...r); };
+    });
+    const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
     p.mb = [];
     await ctx.route('https://musicbrainz.org/**', r => {
       const u = new URL(r.request().url()); p.mb.push({ at: Date.now(), path: u.pathname });
@@ -50,8 +57,8 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   await p.click(`#sheet [data-rg="${U(3)}"] [data-act="mb-add"]`); await p.waitForTimeout(300);
   ok((await data(p)).some(x => x.title === 'Ulver' && x.mb && x.mb.rg === U(3)), 'un autre album ajouté d’un geste');
   ok(!(await p.$(`#sheet [data-rg="${U(3)}"] [data-act="mb-add"]`)), 'et ne se propose plus');
-  const gaps = p.mb.slice(1).map((x, i) => x.at - p.mb[i].at);
-  ok(gaps.every(g => g >= 1000), `une requête par seconde au plus (écarts : ${gaps.join(', ')} ms)`);
+  const envois = await p.evaluate(() => window.__mbEnvois), gaps = envois.slice(1).map((t, i) => t - envois[i]);
+  ok(gaps.every(g => g >= 1000), `une requête par seconde au plus (écarts à l’envoi : ${gaps.join(', ')} ms)`);
   await p.keyboard.press('Escape'); await p.waitForTimeout(300);
   const cover = await p.$eval('[data-id="e1"] img.cover', i => ({ src: i.getAttribute('src'), ok: i.complete && i.naturalWidth > 0, hidden: i.classList.contains('none') }));
   ok(cover.src.includes(`release-group/${U(2)}/front-250`) && cover.ok && !cover.hidden && (await p.textContent('[data-id="e1"]')).includes('(1995)'), 'la pochette et l’année dans la liste');

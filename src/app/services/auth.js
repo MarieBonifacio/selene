@@ -241,10 +241,17 @@ const supabaseDb = {
   }
 };
 /* Un seul branchement à la fois : le démarrage (authBoot), un retour au premier plan ou du réseau (authKeepAlive)
-   peuvent le demander ensemble, maintenant que la session est là dès le premier rendu (A18). */
-let authConnecting = null;
+   peuvent le demander ensemble, maintenant que la session est là dès le premier rendu (A18). Une demande arrivée
+   pendant un branchement en cours en vaut une nouvelle, si celui-ci échoue : le réseau revenu pendant un branchement
+   parti hors ligne ne doit pas attendre le minuteur de 5 min (A24). */
+let authConnecting = null, authConnectAgain = false;
 function authConnectStores() {
-  if (!authConnecting) authConnecting = authConnectStoresNow().finally(() => { authConnecting = null; });
+  if (authConnecting) { authConnectAgain = true; return authConnecting; }
+  authConnecting = (async () => {
+    try {
+      do { authConnectAgain = false; await authConnectStoresNow(); } while (authConnectAgain && authSession && (!board.db || !site.db));
+    } finally { authConnecting = null; authRetryAfter(); }
+  })();
   return authConnecting;
 }
 async function authConnectStoresNow() {
@@ -271,14 +278,27 @@ async function authKeepAlive() {
   if (!authSession) return;
   const s = await authRefreshIfNeeded();
   if (!s) { clearInterval(authRefreshTimer); board.disconnect(); site.disconnect(); render(); return; }
-  if (!board.db || !site.db) { await authConnectStores(); render(); }
+  // Un branchement raté ne change rien à l'écran (l'indicateur s'écrit à part) : ne redessiner qu'une fois branché, sinon
+  // chaque reprise redessinerait la page pour rien.
+  if (!board.db || !site.db) { await authConnectStores(); if (board.db && site.db) render(); }
 }
 function authScheduleRefresh() {
   clearInterval(authRefreshTimer);
   authRefreshTimer = setInterval(authKeepAlive, 5 * 60 * 1000);
 }
+/* Un branchement raté est retenté de lui-même, à 2, 5, 15, 30 et 60 s, puis le minuteur de 5 min prend le relais
+   (A24). Sans attendre « online » : navigator.onLine reste vrai derrière un portail captif, sur un réseau sans
+   Internet ou quand seul le serveur est injoignable, et le retour de la connexion ne s'annonce alors pas ; un réseau
+   tout juste revenu, lui, n'est pas toujours utilisable aussitôt. « online », quand il vient, relance la série. */
+const AUTH_RETRY_MS = [2000, 5000, 15000, 30000, 60000];
+let authRetryTimer = null, authRetryN = 0;
+function authRetryAfter() {
+  clearTimeout(authRetryTimer); authRetryTimer = null;
+  if (!authSession || (board.db && site.db)) { authRetryN = 0; return; }
+  if (authRetryN < AUTH_RETRY_MS.length) authRetryTimer = setTimeout(authKeepAlive, AUTH_RETRY_MS[authRetryN++]);
+}
 // Les minuteurs sont gelés quand un téléphone met l'onglet en veille : on rattrape au retour.
-window.addEventListener("online", () => { if (authReady()) authKeepAlive(); });
+window.addEventListener("online", () => { if (authReady()) { authRetryN = 0; authKeepAlive(); } });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && authReady()) authKeepAlive(); });
 export async function authBoot() {
   if (!authReady()) return null;

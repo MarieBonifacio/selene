@@ -78,10 +78,18 @@ jobs:
           # un runner chargé. Chromium seul suffit : c'est le scénario qu'il éprouve, pas le moteur.
           - browser: chromium
             lent: 1500
-    name: browser (${{ matrix.browser }}${{ matrix.lent && ', démarrage lent' || '' }})
+          # Le processeur ralenti (BL-22) : quatre fois plus lent, par le protocole DevTools. Même but, pour les délais
+          # fixes qui suivent un geste plutôt que le démarrage (A21 à A23 avaient échappé au démarrage lent). Quatre
+          # scénarios à la fois au lieu de six : la lenteur doit venir du ralentissement, pas de leur concurrence.
+          - browser: chromium
+            cpu: 4
+            jobs: 4
+    name: browser (${{ matrix.browser }}${{ matrix.lent && ', démarrage lent' || '' }}${{ matrix.cpu && ', processeur ralenti' || '' }})
     env:
       SELENE_BROWSER: ${{ matrix.browser }}
       SELENE_LENT: ${{ matrix.lent || 0 }}
+      SELENE_CPU: ${{ matrix.cpu || 0 }}
+      SELENE_JOBS: ${{ matrix.jobs || 6 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0

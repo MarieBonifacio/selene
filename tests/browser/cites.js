@@ -1,6 +1,6 @@
 /* Scénario de navigateur : « cité par tes sources » (phase 3, vague 7b : docs/connexions.md).
    Version hébergée simulée (faux Supabase), OpenAlex simulé. Lancé par tests/browser/run.js. */
-const { storeGet, storeJSON, until, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeGet, storeJSON, until, suivre, calme, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 const src = (id, title, doi) => ({ id, title, subtitle: '', tag: 'article', due: '', text: '', status: 'À lire', kept: '2026-09-01', src: doi ? { url: `https://doi.org/${doi}`, doi } : { url: 'https://blog.example/billet' } });
 demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, sources: true, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1,
@@ -24,7 +24,7 @@ const TITLES = {
 (async () => {
   const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
-  const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
+  const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' }); const p = suivre(await ctx.newPage()); p.on('pageerror', e => errs.push(e.message));
   const asked = [];
   await ctx.route('https://api.openalex.org/**', r => {
     const u = new URL(r.request().url()), f = u.searchParams.get('filter') || ''; asked.push(u);
@@ -41,6 +41,9 @@ const TITLES = {
   const text = async sel => (await p.textContent(sel)).replace(/\s+/g, ' ');
 
   await p.waitForSelector('[data-act="cite-run"]', { timeout: 10000 }).catch(() => {});
+  // Le branchement du démarrage se termine par un rendu de la page : un clic fait pendant qu'il court peut tomber sur un
+  // bouton remplacé entre l'appui et le relâchement, et rien ne part (A27, sous Firefox). Le laisser finir d'abord.
+  await calme(p);
   // Chaque contrôle attend ce qu'il lit (les requêtes, l'écriture) plutôt qu'un délai : sous Firefox, OpenAlex simulé
   // répondait après les 500 ms d'attente, et asked[0] n'existait pas encore (CI de la PR #124, 6 octobre 2026).
   const relu = async ok => { let d = null; for (const end = Date.now() + 10000; Date.now() < end; await p.waitForTimeout(100)) { d = await data(); if (ok(d)) break; } return d; };
@@ -48,6 +51,7 @@ const TITLES = {
   console.log('à la demande');
   ok(await p.isVisible('[data-act="cite-run"]') && !asked.length, 'un bouton ; rien n’est demandé à OpenAlex avant le clic');
   await p.click('[data-act="cite-run"]'); await until(() => asked.length >= 2); await p.waitForSelector('.cite-list b', { timeout: 10000 }).catch(() => {});
+  if (!asked.length) throw new Error('le clic sur « Ce que tes sources ont en commun » n’a rien envoyé à OpenAlex en 10 s');
   const first = asked[0].searchParams.get('filter');
   ok(asked.length === 2 && first === 'doi:10.1000/a|10.1000/b|10.1000/c' && asked[1].searchParams.get('filter') === 'openalex:W100|W101',
     `deux appels : les bibliographies des trois sources à DOI, puis les titres des références communes (${asked.map(u => u.searchParams.get('filter')).join(' ; ')})`);

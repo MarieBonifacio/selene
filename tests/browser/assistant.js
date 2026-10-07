@@ -21,7 +21,7 @@ demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').conc
       const q = req.postDataJSON(); p.fn.push(q);
       const json = (o, status = 200) => r.fulfill({ status, contentType: 'application/json', body: JSON.stringify(o) });
       if (q.action === 'etat') return json(p.serveur.cle ? { cle: true, indice: '…' + p.serveur.cle.slice(-4) } : { cle: false });
-      if (q.action === 'cle') { if (!/^sk-ant-/.test(q.cle)) return json({ erreur: "ce n'est pas une clé d'API Anthropic (sk-ant-…)" }, 400); p.serveur.cle = q.cle; return json({ cle: true, indice: '…' + q.cle.slice(-4) }); }
+      if (q.action === 'cle') { if (!/^sk-ant-/.test(q.cle)) return json({ erreur: "ce n'est pas une clé d'API Anthropic (sk-ant-…)" }, 400); if (q.cle.includes('RECETTE-fausse')) return json({ erreur: 'Anthropic refuse cette clé' }, 400); p.serveur.cle = q.cle; return json({ cle: true, indice: '…' + q.cle.slice(-4) }); }
       if (q.action === 'oublier') { p.serveur.cle = null; return json({ cle: false }); }
       if (q.action === 'message') return json({ id: 'm', type: 'message', role: 'assistant', content: [{ type: 'text', text: 'Bonsoir, lucidement.' }], stop_reason: 'end_turn' });
       return json({ erreur: 'action inconnue' }, 400);
@@ -39,11 +39,25 @@ demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').conc
   console.log('la clé, confiée au serveur');
   const p = await open();
   ok(p.fn.some(q => q.action === 'etat'), 'l’état de la clé est demandé au serveur');
-  await p.fill('[data-act="as-key"]', CLE); await p.press('[data-act="as-key"]', 'Tab'); await p.waitForTimeout(400);
-  const envoi = p.fn.find(q => q.action === 'cle');
+  // AST-001, étapes 1 à 3 : ce que devient la clé, le champ, et deux clés refusées (le refus du serveur, dit tel quel).
+  const cfg = async () => (await p.textContent('#assistant-cfg')).replace(/\s+/g, ' '), cle = '[data-act="as-key"]';
+  ok((await cfg()).includes('Dans la version hébergée, il faut ta propre clé API') && (await cfg()).includes('ne revient jamais dans la page')
+    && (await p.getAttribute(cle, 'type')) === 'password' && (await p.inputValue(cle)) === '' && (await p.getAttribute(cle, 'placeholder')) === 'sk-ant-…' && !(await p.$('[data-act="as-forget"]')),
+    'avant toute clé : ce qu’elle devient, un champ masqué et vide, pas de bouton « Oublier »');
+  const bulle = t => p.waitForFunction(x => ((document.querySelector('#toast') || {}).textContent || '').includes(x), t, { timeout: 5000 }).then(() => true, () => false);
+  for (const [v, attendu, quoi] of [['pas-une-cle', "Clé non enregistrée : ce n'est pas une clé d'API Anthropic (sk-ant-…)", 'pas une clé'], ['sk-ant-api03-RECETTE-fausse-cle-0000000000', 'Clé non enregistrée : Anthropic refuse cette clé', 'une clé qu’Anthropic refuse']]) {
+    await p.fill(cle, v); await p.press(cle, 'Tab');
+    ok(await bulle(attendu) && (await p.inputValue(cle)) === '' && p.serveur.cle === null, `${quoi} : le champ se vide, « ${attendu} »`);
+  }
+  await p.fill(cle, CLE); await p.press(cle, 'Tab'); await p.waitForTimeout(400);
+  const envoi = p.fn.find(q => q.action === 'cle' && q.cle === CLE);
   ok(envoi && envoi.cle === CLE, 'la clé part une fois vers la fonction');
   ok((await p.inputValue('[data-act="as-key"]')) === '' && (await p.textContent('#assistant-cfg')).includes('…wxyz'), 'la page n’en garde que l’indice');
+  ok(await bulle('Clé vérifiée et enregistrée.') && (await cfg()).includes('Clé API Anthropic (enregistrée : …wxyz)') && (await p.getAttribute(cle, 'placeholder')) === 'Coller une autre clé pour la remplacer' && !!(await p.$('[data-act="as-forget"]')),
+    '« Clé vérifiée et enregistrée. », le libellé dit l’indice, le champ propose de la remplacer, « Oublier » apparaît');
   ok(await p.evaluate(k => !Object.values(localStorage).some(v => v.includes(k)), CLE), 'rien dans localStorage');
+  const dansIdb = await p.evaluate(k => new Promise(res => { const r = indexedDB.open('selene'); r.onerror = () => res('illisible'); r.onsuccess = () => { const db = r.result; if (!db.objectStoreNames.contains('kv')) { db.close(); return res('vide'); } const q = db.transaction('kv').objectStore('kv').getAll(); q.onsuccess = () => { db.close(); res(q.result.some(v => String(v).includes(k)) ? 'trouvée' : 'absente'); }; }; }), CLE);
+  ok(dansIdb === 'absente' || dansIdb === 'vide', `ni dans IndexedDB (${dansIdb})`);
 
   console.log('un échange');
   await p.evaluate(() => location.hash = 'assistant'); await p.waitForTimeout(300);
