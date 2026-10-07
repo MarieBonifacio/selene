@@ -280,7 +280,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web
 - **Préconditions** : connecté au compte A sur deux navigateurs.
 - **Données** : nom affiché `Atelier ESP-011`.
-- **Automatisés associés** : `TN-saisie`, `TU-MOD-11`
+- **Automatisés associés** : `TN-saisie`, `TU-MOD-11`, `TN-sync-deux-appareils`
 - **Source** : [TEST] `tests/browser/saisie.js`, `TU-MOD-11`.
 
 | Étape | Action précise | Résultat attendu observable |

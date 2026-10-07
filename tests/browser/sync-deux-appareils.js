@@ -2,7 +2,7 @@
    Vérifie la fusion (B n'a jamais vu ce qu'a écrit A) et qu'une saisie faite juste avant de fermer l'onglet
    n'est pas perdue : restée sur l'appareil, elle part à la réouverture. Puis, sur un compte neuf, une saisie vue sur
    l'autre appareil à la relève, une suppression vue dès le retour sur l'onglet (A57), la frappe que la relève
-   n'efface pas (SYN-001, A33). Puis, sur un second compte rempli du jeu
+   n'efface pas (SYN-001, A33), ni un réglage en cours de frappe (ESP-011). Puis, sur un second compte rempli du jeu
    d'essai, deux appareils coupés du réseau qui divergent et se réconcilient (SYN-003, SYN-008), et un appareil qui
    trouve sur le serveur un format plus récent que le sien (SYN-007). Lancé par tests/browser/run.js. */
 const fs = require('node:fs');
@@ -120,6 +120,25 @@ const capture = async (p, text) => { await p.fill('#capIn', text); await p.click
   await versD(D2, 'inbox', '#main');
   check(await arrivee() && frappe.valeur === 'cle-de-recette' && frappe.focus && frappe.ouvert && await dansD2('pendant la frappe'),
     `A2 tape la clé quand la capture de A1 arrive : la clé reste (« ${frappe.valeur} »), le curseur dans le champ, le bloc ouvert ; le champ quitté, la capture est dans sa boîte (étape 4, A33)`);
+
+  console.log('un réglage en cours de frappe pendant une synchronisation (ESP-011)');
+  // Les mêmes deux appareils : D2 (le « navigateur 1 » du cahier) tape le nom affiché, D1 capture, la relève arrive.
+  const nom = '[data-set="config.name"]';
+  await versD(D2, 'reglages', nom); await D2.page.click(nom); await D2.page.fill(nom, 'Atelier');
+  const e1 = await D2.page.evaluate(s => { const i = document.querySelector(s); return { valeur: i.value, curseur: [i.selectionStart, i.selectionEnd], focus: document.activeElement === i, entete: document.querySelector('#brandName').textContent }; }, nom);
+  check(e1.valeur === 'Atelier' && e1.curseur[0] === 7 && e1.curseur[1] === 7 && e1.focus && e1.entete === 'Selene',
+    `navigateur 1 : « ${e1.valeur} », le curseur au bout ; l’en-tête garde « ${e1.entete} » tant que le champ n’est pas quitté (ESP-011, étape 1)`);
+  await versD(D1, 'accueil', '#capIn'); await capture(D1.page, 'note ESP-011'); await until(() => inbox4().includes('note ESP-011'));
+  await D1.page.waitForFunction(() => !document.querySelector('#saving').textContent.trim(), null, { timeout: 10000 }).catch(() => {});
+  check(inbox4().includes('note ESP-011') && !(await synchro(D1.page)), 'navigateur 2 : la note capturée part au serveur, l’indicateur s’efface (étape 2)');
+  await D2.page.clock.fastForward(40000);
+  const recue11 = async () => JSON.stringify(await storeJSON(D2.page, 'selene-site-v1')).includes('note ESP-011');
+  for (let i = 0; i < 50 && !(await recue11()); i++) await D2.page.waitForTimeout(100);
+  await D2.page.keyboard.type(' ESP-011'); await D2.page.locator(nom).blur();
+  await D2.page.waitForFunction(() => document.querySelector('#brandName').textContent === 'Atelier ESP-011', null, { timeout: 5000 }).catch(() => {});
+  const e3 = await D2.page.evaluate(s => ({ valeur: document.querySelector(s).value, entete: document.querySelector('#brandName').textContent }), nom);
+  check(await recue11() && e3.valeur === 'Atelier ESP-011' && e3.entete === 'Atelier ESP-011',
+    `la relève passée pendant la frappe, puis « ESP-011 » tapé et le champ quitté : « ${e3.valeur} », rien d’effacé ; l’en-tête « ${e3.entete} » (étape 3)`);
   await D1.ctx.close(); await D2.ctx.close();
 
   console.log('deux appareils hors ligne, puis réconciliés (SYN-003, SYN-008)');
