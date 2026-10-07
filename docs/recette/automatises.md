@@ -1158,7 +1158,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/csp.js`](../../tests/browser/csp.js) · **mode** A puis H · **écran** —
 - **Conditions** : Un faux Supabase pour la page hébergée (avant BL-21, elle lisait les réglages d'inscription du vrai projet).
-- **Vérifie** : deux empreintes, pas de `'unsafe-inline'` ; le script principal et celui du service worker s'exécutent ; polices du site ; 12 vues sans violation ; un `onerror=` ou un `<script>` injecté ne s'exécute pas et le navigateur le signale.
+- **Vérifie** : deux empreintes, pas de `'unsafe-inline'` ; le script principal et celui du service worker s'exécutent ; polices du site ; 17 vues du jeu d'essai sans violation ; un `onerror=` ou un `<script>` injecté ne s'exécute pas et le navigateur le signale. TRV-009 : `connect-src` exactement la liste annoncée ; les 13 espaces du jeu d'essai, la planche, l'Assistant, puis un DOI (Crossref) et un album précisé (MusicBrainz) par le réseau simulé, sans violation ; les domaines joints, triés, tous déclarés, aucun chez Google (mutation vérifiée : un hôte ajouté à `connect-src`, Crossref retiré, un tiers contacté pendant la recherche d'un DOI, et ces contrôles échouent).
 - **Cas manuels** : [CPT-001](manuels/entree-et-comptes.md#cpt-001), [TRV-008](manuels/transverse.md#trv-008), [TRV-009](manuels/transverse.md#trv-009)
 
 <a id="tn-accessibilite"></a>
