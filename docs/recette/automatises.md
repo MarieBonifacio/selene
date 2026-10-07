@@ -1166,7 +1166,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/accessibilite.js`](../../tests/browser/accessibilite.js) · **mode** A · **écran** O
 - **Conditions** : axe-core 4.14.0 (dépendance de développement figée, MPL-2.0, jamais embarquée), règles WCAG 2.0, 2.1 et 2.2 A et AA ; en clair puis en sombre (`colorScheme`) ; `bypassCSP` pour injecter axe.
-- **Vérifie** : aucune violation « serious » ni « critical » sur l'accueil, la Boîte, chaque type d'espace du jeu d'essai (Chantier, Écriture, Kundalini, Phidippus, Moth, Musique, Budget), la recherche, le bilan, les Réglages, et le formulaire d'une tâche ouvert ; les exceptions, aucune à ce jour, sont listées dans le test avec leur raison ; aucune erreur JavaScript.
+- **Vérifie** : aucune violation « serious » ni « critical » sur l'accueil, la Boîte, chaque type d'espace du jeu d'essai (Chantier, Écriture, Kundalini, Phidippus, Moth, Musique, Budget), la recherche, le bilan, les Réglages, et le formulaire d'une tâche ouvert ; les exceptions, aucune à ce jour, sont listées dans le test avec leur raison ; aucune erreur JavaScript. Puis rien ne déborde (TRV-014) : à 320 px et à 1 280 px, chaque vue, la planche et les Réglages tout dépliés sans défilement en largeur ; sur ordinateur, la barre latérale à gauche du contenu ; à 320 px, le formulaire d'une tâche pleine largeur, sans champ coupé (mutation vérifiée : une capture plus large que l'écran, et ce contrôle échoue).
 - **Cas manuels** : [TRV-001](manuels/transverse.md#trv-001), [TRV-002](manuels/transverse.md#trv-002), [TRV-003](manuels/transverse.md#trv-003), [TRV-006](manuels/transverse.md#trv-006), [TRV-014](manuels/transverse.md#trv-014)
 
 <a id="tn-contraste"></a>
