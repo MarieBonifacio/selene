@@ -223,19 +223,22 @@ const supabaseDb = {
         const rows = await res.json();
         return rows[0] && rows[0].u != null ? String(rows[0].u) : null;
       },
-      /* Toutes les 30 s, page visible. `known()` : la date de la dernière version commune avec le serveur, si l'appareil
-         n'a rien à envoyer. Le serveur a la même : rien n'a bougé, le document n'est pas relu. Sinon, ou sans date
-         connue, on relit tout et le store fusionne (et renvoie ce qui attendait). */
+      /* Toutes les 30 s, page visible, et aussitôt revenue au premier plan (ADR 4 ; A57 : seul le minuteur relevait, et
+         l'onglet retrouvé attendait jusqu'à 30 s). `known()` : la date de la dernière version commune avec le serveur,
+         si l'appareil n'a rien à envoyer. Le serveur a la même : rien n'a bougé, le document n'est pas relu. Sinon, ou
+         sans date connue, on relit tout et le store fusionne (et renvoie ce qui attendait). */
       onSnapshot(cb, errCb, known = () => null) {
-        const timer = setInterval(async () => {
+        const tick = async () => {
           if (document.visibilityState !== "visible" || !authSession) return;
           try {
             const k = known();
             if (k != null && await this.stamp() === String(k)) return;
             cb(await this.get());
           } catch (e) { errCb && errCb(e); }
-        }, 30000);
-        return () => clearInterval(timer);
+        };
+        const timer = setInterval(tick, 30000);
+        document.addEventListener("visibilitychange", tick);
+        return () => { clearInterval(timer); document.removeEventListener("visibilitychange", tick); };
       }
     };
   }

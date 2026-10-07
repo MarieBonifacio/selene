@@ -76,9 +76,13 @@ function launchHosted({ storage = new Map(), fetch, session = 'valid', bare = fa
     });
     return nodes.get(id);
   };
+  // Les écouteurs de window (online…) et de document (visibilitychange…) aussi, pour qu'un test puisse jouer l'événement
+  // (`fire('online')`, `fire('document:visibilitychange')`, `document` rendu pour changer `hidden` et `visibilityState`).
+  const listeners = new Map(), on = (type, fn) => listeners.set(type, [...(listeners.get(type) || []), fn]);
   const document = {
     title: '', activeElement: null, documentElement: { dataset: {} }, hidden: false, visibilityState: 'visible',
-    querySelector: element, getElementById: element, addEventListener() {}
+    querySelector: element, getElementById: element, addEventListener: (type, fn) => on('document:' + type, fn),
+    removeEventListener: (type, fn) => listeners.set('document:' + type, (listeners.get('document:' + type) || []).filter(f => f !== fn))
   };
   const localStorage = {
     getItem(key) { return storage.get(key) ?? null; },
@@ -91,8 +95,6 @@ function launchHosted({ storage = new Map(), fetch, session = 'valid', bare = fa
   // pour pouvoir déclencher un tour de polling à la main et vérifier qu'ils sont bien arrêtés.
   const setTimeoutU = (fn, ms) => { const t = setTimeout(fn, ms); t.unref(); return t; };
   const intervals = new Map(); let n = 0;
-  // Les écouteurs de window (online…) aussi, pour qu'un test puisse jouer l'événement (`fire`).
-  const listeners = new Map(), on = (type, fn) => listeners.set(type, [...(listeners.get(type) || []), fn]);
   const context = { document, window: { addEventListener: on, claude: null }, localStorage, location: { hash: '' },
     navigator, console, Date, Math, setTimeout: setTimeoutU, clearTimeout, AbortController, fetch,
     setInterval: fn => { intervals.set(++n, fn); return n; }, clearInterval: id => intervals.delete(id) };
@@ -101,7 +103,7 @@ function launchHosted({ storage = new Map(), fetch, session = 'valid', bare = fa
   vm.runInNewContext(instrumented, context);
   const poll = () => Promise.all([...intervals.values()].map(fn => fn()));
   const fire = type => (listeners.get(type) || []).forEach(fn => fn({ type }));
-  return { ...context.__test, nodes, storage, intervals, poll, fire, location: context.location };
+  return { ...context.__test, nodes, storage, intervals, poll, fire, document, location: context.location };
 }
 
 module.exports = { fakeSupabase, launchHosted, reply, settle, clone };
