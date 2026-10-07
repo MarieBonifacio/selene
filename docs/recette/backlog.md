@@ -21,7 +21,8 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
-| ~~A28 : une source se nommait par son résumé (« Gardée : « Nous montrons que… » »), dans les messages, les liens et la carte~~ (fait le 7 octobre 2026) | une session | P3 | — | [A28](perimetre.md#anomalies-et-observations) |
+| ~~A29 : `tests/browser/indexeddb.js` instable sous WebKit (un rechargement coupait une écriture en vol)~~ (fait le 7 octobre 2026, PR #129) | une session | P3 | — | [A29](perimetre.md#anomalies-et-observations) |
+| ~~A28 : une source se nommait par son résumé (« Gardée : « Nous montrons que… » »), dans les messages, les liens et la carte~~ (fait le 7 octobre 2026, PR #129) | une session | P3 | — | [A28](perimetre.md#anomalies-et-observations) |
 | ~~A24 : le réseau revenu pendant un branchement parti hors ligne ne rebranchait plus la synchronisation avant le minuteur de 5 min (régression de la PR #122)~~ (fait le 6 octobre 2026, PR #127) | une session | P2 | — | [A24](perimetre.md#anomalies-et-observations) |
 | ~~A25 : `tests/browser/dehors.js` instable sous WebKit~~ (fait le 6 octobre 2026, PR #127) | une session | P3 | — | [A25](perimetre.md#anomalies-et-observations) |
 | ~~A26 : `tests/browser/artist-watch.js` instable sous le processeur ralenti~~ (fait le 6 octobre 2026, PR #127) | une session | P3 | — | [A26](perimetre.md#anomalies-et-observations) |
