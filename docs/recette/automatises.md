@@ -824,8 +824,8 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-saisie` — Une saisie de réglage survit à un rendu
 
 - **Fichier** : [`tests/browser/saisie.js`](../../tests/browser/saisie.js) · **mode** A · **écran** —
-- **Conditions** : Rendu forcé pendant la frappe.
-- **Vérifie** : la saisie survit au rendu ; elle est enregistrée en quittant le champ.
+- **Conditions** : Rendu forcé pendant la frappe ; puis un rendu forcé sur un champ dont tout le texte est sélectionné (A53).
+- **Vérifie** : la saisie survit au rendu ; elle est enregistrée en quittant le champ ; tout le texte sélectionné, un rendu de fond : la sélection reste entière, et la frappe la remplace (A53). Mutation vérifiée : la sélection repliée sur son début, comme avant le correctif, et ce contrôle échoue (« nouveauancien texte »).
 - **Cas manuels** : [ESP-011](manuels/espaces.md#esp-011)
 
 <a id="tn-ecran-lu"></a>

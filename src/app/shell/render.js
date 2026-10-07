@@ -144,7 +144,9 @@ function renderNow() {
   if (view === lastView) $("#main").querySelectorAll("input[id],textarea[id],select[id]").forEach(el => { if (el.type !== "file" && el.type !== "checkbox") keep[el.id] = el.value; });
   // Un bloc déplié (details à identifiant : les réglages d'un espace) le reste après un changement fait dedans.
   const opened = view === lastView ? [...$("#main").querySelectorAll("details[id][open]")].map(d => d.id) : [];
-  if (document.activeElement && document.activeElement.id && keep[document.activeElement.id] != null) { focusId = document.activeElement.id; try { caret = document.activeElement.selectionStart; } catch {} }
+  // Toute la sélection, pas le seul curseur : un texte sélectionné pour être remplacé le reste après un rendu de fond, au
+  // lieu de se replier au début, où la frappe s'insérait devant l'ancien texte (A53).
+  if (document.activeElement && document.activeElement.id && keep[document.activeElement.id] != null) { const a = document.activeElement; focusId = a.id; try { caret = a.selectionStart == null ? null : [a.selectionStart, a.selectionEnd, a.selectionDirection]; } catch {} }
   const back = backTo && backTo.to === view ? `<a class="back" href="#${esc(backTo.from)}">‹ ${esc(backTo.label)}</a>` : "";
   // Un espace : sa planche (sigil, numéro, « Je m'arrête ici… » tant qu'aucun pont n'est posé, « régler »), son pont, sa vue ;
   // le tout dans la teinte de son domaine.
@@ -161,7 +163,7 @@ function renderNow() {
   for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && v !== "" && el.value !== v) el.value = v; }
   for (const id of opened) { const el = document.getElementById(id); if (el && el.tagName === "DETAILS") el.open = true; }
   if (view !== lastView) $("#main").querySelectorAll("[data-draft]").forEach(el => { const v = loadDraft(view, el); if (v) el.value = v; });
-  if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} } }
+  if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret) el.setSelectionRange(caret[0], caret[1], caret[2] || "none"); } catch {} } }
   else focusBack(mark);
   if (view !== lastView) revealed = null;
   if (revealed) $("#main").querySelectorAll(".item[data-id], .card[data-id]").forEach(el => { if (el.dataset.id === revealed) el.classList.add("reveal"); });

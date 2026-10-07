@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "1b99d60e24";
+const SELENE_BUILD = "db4ee52023";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -13522,9 +13522,10 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     });
     const opened = view === lastView ? [...$("#main").querySelectorAll("details[id][open]")].map((d) => d.id) : [];
     if (document.activeElement && document.activeElement.id && keep[document.activeElement.id] != null) {
-      focusId = document.activeElement.id;
+      const a = document.activeElement;
+      focusId = a.id;
       try {
-        caret = document.activeElement.selectionStart;
+        caret = a.selectionStart == null ? null : [a.selectionStart, a.selectionEnd, a.selectionDirection];
       } catch {
       }
     }
@@ -13552,7 +13553,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       if (el) {
         el.focus();
         try {
-          if (caret != null) el.setSelectionRange(caret, caret);
+          if (caret) el.setSelectionRange(caret[0], caret[1], caret[2] || "none");
         } catch {
         }
       }
