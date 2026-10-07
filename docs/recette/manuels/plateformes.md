@@ -76,7 +76,7 @@ Identifiants retirés : aucun.
 | 1 | Chrome → l'adresse de Selene → menu ⋮ → « Installer l'application » (ou « Ajouter à l'écran d'accueil »). | Une icône « Selene » ; l'app s'ouvre en plein écran. |
 | 2 | Se connecter au compte A dans la PWA. | Les espaces du jeu d'essai. |
 | 3 | Chrome → la page des données → Partager. | « Selene » figure dans la feuille de partage. |
-| 4 | Choisir « Selene ». | La PWA s'ouvre ; « Reçu dans Boîte… » ; une note avec le titre de la page et l'adresse sans `utm_source`. |
+| 4 | Choisir « Selene ». | La PWA s'ouvre ; « Reçu dans Boîte… » ; une note avec le titre de la page et son adresse telle que reçue (« Garder comme source » la nettoiera, C9). |
 | 5 | Fermer et rouvrir la PWA. | La note n'est pas déposée une seconde fois. |
 
 - **État final attendu** : une note de plus.

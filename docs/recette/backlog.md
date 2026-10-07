@@ -11,7 +11,7 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 <a id="reste-a-faire"></a>
 ## Reste à faire, d'un coup d'œil
 
-Tout ce qui reste ouvert, du plus urgent au moins urgent dans chaque groupe, tenu à jour le 6 octobre 2026. Une ligne
+Tout ce qui reste ouvert, du plus urgent au moins urgent dans chaque groupe, tenu à jour le 7 octobre 2026. Une ligne
 renvoie à son détail, qui fait foi ; une chose faite est barrée et datée ici comme dans son détail, jamais retirée. Les
 démarches à la main qui ne touchent pas la qualité (stores, RGPD, validation du marché) restent dans
 [a-faire.md](../a-faire.md) seulement. « Une session » : une session Claude Code ouverte sur ce dépôt, qui fait le
@@ -21,6 +21,10 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| ~~A24 : le réseau revenu pendant un branchement parti hors ligne ne rebranchait plus la synchronisation avant le minuteur de 5 min (régression de la PR #122)~~ (fait le 6 octobre 2026, PR #127) | une session | P2 | — | [A24](perimetre.md#anomalies-et-observations) |
+| ~~A25 : `tests/browser/dehors.js` instable sous WebKit~~ (fait le 6 octobre 2026, PR #127) | une session | P3 | — | [A25](perimetre.md#anomalies-et-observations) |
+| ~~A26 : `tests/browser/artist-watch.js` instable sous le processeur ralenti~~ (fait le 6 octobre 2026, PR #127) | une session | P3 | — | [A26](perimetre.md#anomalies-et-observations) |
+| ~~A27 : `tests/browser/cites.js` instable sous Firefox (un clic fait pendant le branchement du démarrage)~~ (fait le 7 octobre 2026, PR #127) | une session | P3 | — | [A27](perimetre.md#anomalies-et-observations) |
 | ~~A17 : dans l'artefact claude.ai relié à sa base, un suivi « Reprendre la main » d'avant le 3 octobre part en entier dans la base de claude.ai, sous un texte qui dit que rien n'est envoyé~~ (fait le 6 octobre 2026, PR #121, avec la même fuite au versement d'un appareil sans compte) | une session | P1 | — | [A17](perimetre.md#anomalies-et-observations), [décision](#decisions) |
 | ~~A18 : au lancement d'un appareil connecté, l'écran d'entrée s'affiche jusqu'aux premières réponses du serveur~~ (fait le 6 octobre 2026, PR #122) | une session | P2 | — | [A18](perimetre.md#anomalies-et-observations) |
 | ~~A16 : `tests/browser/mot-de-passe.js` instable sous Firefox~~ (fait le 6 octobre 2026, PR #120) | une session | P2 | — | [A16](perimetre.md#anomalies-et-observations) |
@@ -36,7 +40,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | ~~BL-15 : le hors-ligne réel (réseau coupé, page rechargée)~~ (fait le 6 octobre 2026, PR #123) | une session | P1 | — | [BL-15](#bl-15) |
 | ~~BL-03 : l'isolation entre comptes rejouée chaque semaine~~ (fait le 6 octobre 2026, PR #124 : le workflow attend ses six secrets, plus bas) | une session | P1 | — | [BL-03](#bl-03) |
 | ~~BL-20 : un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait le 6 octobre 2026, PR #124) | une session | P3 | — | [BL-20](#bl-20) |
-| BL-19 : nommer, dans la matrice, les étapes que les tests ne couvrent pas (les 73 cas P1 : fait le 6 octobre 2026, PR #125) | une session | P3 | restent 53 lignes P2 et 35 P3 | [BL-19](#bl-19) |
+| ~~BL-19 : nommer, dans la matrice, les étapes que les tests ne couvrent pas~~ (les 73 cas P1 : fait le 6 octobre 2026, PR #125 ; les 88 cas P2 et P3 : fait le 7 octobre 2026) | une session | P3 | — | [BL-19](#bl-19) |
 | BL-18 : la page du cahier à cocher sous contrôle de la CI | une session | P3 | si la PR #118 est fusionnée | [BL-18](#bl-18) |
 | BL-16 : la fumée de l'app iOS sur simulateur | une session | P3 | avant la première version iOS | [BL-16](#bl-16) |
 
@@ -108,7 +112,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 | [BL-16](#bl-16) | Fumée de l'app iOS sur simulateur, en CI | automatisation | P3 | PLT-008 |
 | [BL-17](#bl-17) | ~~Un échec sous Firefox doit se voir tant qu'il n'est pas bloquant~~ (fait) | fiabilité de la CI | P2 | tous |
 | [BL-18](#bl-18) | La page du cahier à cocher sous contrôle de la CI (si la PR #118 est fusionnée) | outillage | P3 | tous |
-| [BL-19](#bl-19) | Matrice : nommer les étapes que les tests ne couvrent pas (P1 fait) | traçabilité | P3 | les 73 cas P1 faits ; 88 lignes P2 et P3 |
+| [BL-19](#bl-19) | ~~Matrice : nommer les étapes que les tests ne couvrent pas~~ (fait) | traçabilité | P3 | les 161 cas, étape par étape |
 | [BL-20](#bl-20) | ~~Un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait) | outillage | P3 | onze étapes, voir ci-dessous |
 | [BL-21](#bl-21) | ~~Fermer le réseau aux scénarios de navigateur~~ (fait) | hygiène des essais | P2 | tous les scénarios ; A20 |
 | [BL-22](#bl-22) | ~~Débusquer les délais fixes après un geste : un job au processeur ralenti~~ (fait) | fiabilité de la CI | P2 | tous les scénarios ; A10, A11, A16, A21 à A23 |
@@ -465,7 +469,13 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   l'appareil) : relié ; il n'importe qu'un suivi, pas « tout remplacer » : non relié à DON-002. `TN-sauvegarde-complete`
   et `TN-instagram` vérifient les étapes 4 et 5 de TRV-008 : reliés. `TS-ANDROID-FUMEE` reste hors de RLM-030. Ce
   qu'on y lit vaut plan d'automatisation : la plupart des « restent » sont un message exact à relire, ou un geste que
-  le scénario fait sans en vérifier l'effet. **Restent** 53 lignes P2 et 35 P3, avec la lacune générique.
+  le scénario fait sans en vérifier l'effet. **Les 88 cas P2 et P3, faits** le 7 octobre 2026 : chaque ligne dit, étape
+  par étape, quel test vérifie quoi et ce qui reste, lu dans le corps des tests ; plus aucune ne porte la lacune
+  générique. Onze cas passent « couvert automatiquement » (NAV-012 ; CPT-016, CPT-017, NAV-013, PEN-009, PEN-011,
+  PEN-014, PEN-015, EXT-010, EXT-011, EXT-018) : le décompte devient 21 automatiques et 171 partiels. En chemin :
+  `TN-sources-oubliees` vérifie l'étape 2 de PEN-008 (les références du dossier) et `TN-compte-neuf` et
+  `TN-recherche-minuteur` deux états vides de TRV-015 : reliés ; deux attendus faux, C9 et C10, corrigés dans le cahier.
+  Ce qui reste est, le plus souvent, un message exact à relire, une seconde plateforme ou un vrai appareil.
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`

@@ -242,7 +242,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P3 · **Plateformes** : Web, Mob
 - **Préconditions** : EXT-007 étape 2 ; jeu d'essai (« Repeindre la rambarde du balcon », « Nettoyer les gouttières du
   jardin », « Poser une étagère » au Salon).
-- **Données** : pour les étoiles filantes, régler la date de l'appareil au 12 décembre (veille des Géminides).
+- **Données** : pour les étoiles filantes, régler la date de l'appareil au 13 décembre (veille du maximum des Géminides, le 14).
 - **Automatisés associés** : `TN-ciel-chantier`, `TU-SKY-13`, `TU-SKY-14`, `TU-SKY-15`
 - **Source** : [DOC] README, « Ciel et chantier » ; [DOC] [connexions.md](../../connexions.md), 5c ; [TEST] `tests/browser/ciel-chantier.js`.
 
@@ -250,7 +250,7 @@ Identifiants retirés : aucun.
 |---|---|---|
 | 1 | Ouvrir Chantier. | Sous « Repeindre la rambarde du balcon » et « Nettoyer les gouttières du jardin » : « pluie prévue … » ou « sec jusqu'à … » ; rien sous « Poser une étagère » ; une seule requête Open-Meteo pour le ciel et ces prévisions. |
 | 2 | « régler » Chantier : la ligne « Tâches à ciel ouvert (mots…) » propose des mots par défaut ; y ajouter `salon`. | « Poser une étagère » montre aussi la prévision. |
-| 3 | Date de l'appareil au 12 décembre, accueil. | Une ligne sur les Géminides (taux théorique et réserve sur la lune et la ville). |
+| 3 | Date de l'appareil au 13 décembre, accueil (C10). | Une ligne sur les Géminides (taux théorique et réserve sur la lune et la ville). |
 | 4 | Lieu réglé à `Marseille`, date de l'appareil sept jours avant une éclipse de la table (par exemple le 5 août 2026). | Aucune ligne d'éclipse depuis Marseille (la table ne vaut que pour Lille et ses environs). |
 
 - **État final attendu** : mots « à ciel ouvert » modifiés.
@@ -460,7 +460,7 @@ Identifiants retirés : aucun.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Ouvrir l'adresse des données. | « Reçu dans Boîte : « Garder comme source » le complétera. » ; une note avec le titre et l'adresse nettoyée ; l'adresse de la page ne contient plus `?url=`. |
+| 1 | Ouvrir l'adresse des données. | « Reçu dans Boîte : « Garder comme source » le complétera. » ; une note « Lisière — https://exemple.org/lisiere?utm_source=x » : l'adresse telle que reçue, que « Garder comme source » nettoiera (C9) ; l'adresse de la page ne contient plus `?url=`. |
 | 2 | Recharger. | Le lien n'est pas déposé une seconde fois. |
 | 3 | Réglages → Connexions : cliquer le bouton « Envoyer à Selene » dans Selene. | Une explication (« Glisse ce bouton dans la barre de favoris… ») au lieu d'une action. |
 | 4 | Déconnectée (écran d'entrée), ouvrir l'adresse des données ; puis se connecter. | Rien n'est déposé avant la connexion ; après, la note arrive dans la boîte. |
