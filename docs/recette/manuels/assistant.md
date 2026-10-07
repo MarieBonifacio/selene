@@ -104,7 +104,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, ART
 - **Préconditions** : [AST-001](#ast-001) mené jusqu'à l'étape 4 (Web) ou [AST-009](#ast-009) étape 1 (ART).
 - **Données** : la question `Où en est mon budget ce mois-ci ?`.
-- **Automatisés associés** : `TU-MOD-09`, `TU-APP-02`
+- **Automatisés associés** : `TU-MOD-09`, `TU-APP-02`, `TN-assistant`
 - **Source** : [DOC] [assistant.md](../../assistant.md) ; [CODE] `src/app/features/assistant.js` (`contextText`) ;
   [TEST] `TU-MOD-09`.
 
@@ -163,7 +163,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, ART
 - **Préconditions** : [AST-001](#ast-001) mené jusqu'à l'étape 4 (Web) ou [AST-009](#ast-009) étape 1 (ART).
 - **Données** : `Ajoute au Chantier la tâche « Fixer la tringle ».` ; `Enregistre une dépense de 9 € en Courses.`
-- **Automatisés associés** : `TU-APP-02`
+- **Automatisés associés** : `TU-APP-02`, `TN-assistant`
 - **Source** : [CODE] `availableTools`, `executeTool` ; [TEST] `TU-APP-02`.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -244,7 +244,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P3 · **Plateformes** : Web, ART
 - **Préconditions** : une conversation d'au moins deux messages ([AST-002](#ast-002)).
 - **Données** : aucune.
-- **Automatisés associés** : `TU-SYN-17`
+- **Automatisés associés** : `TU-SYN-17`, `TN-assistant`
 - **Source** : [CODE] `CLICK["chat-clear"]`, `chatLog` ; [TEST] `TU-SYN-17` (déconnexion) ; [DOC] Réglages → Compte
   (« Se déconnecter efface de cet appareil tes données et la conversation avec l'assistant »).
 

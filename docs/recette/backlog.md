@@ -524,6 +524,10 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   deux navigateurs sans compte ; TRV-005, par les fuseaux du navigateur (Paris, Los Angeles, Auckland) et le changement
   d'heure du 25 octobre ; ESP-010, lu dans ce qui part vers la fausse fonction de l'assistant, le mot-témoin vu partir
   d'abord, pour que son absence prouve quelque chose. Sept mutants, sept contrôles qui tombent.
+  Puis trois de l'assistant, aussi sans écran (AST-003, AST-005, AST-008) : 80 et 112, sur le jeu d'essai. Le faux modèle
+  tente d'écrire même quand aucun outil ne lui est offert : l'app doit refuser à l'exécution, et une fenêtre d'accord
+  ouverte se relèverait. Huit mutants : sept tombent ; le huitième est équivalent (l'outil d'un espace éteint n'a déjà
+  pas de module, `firstOfType` ne retenant que les espaces affichés : la garde est double).
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`
