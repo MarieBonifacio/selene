@@ -431,7 +431,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P3 · **Plateformes** : Web, Mob
 - **Préconditions** : chemin « sans compte » dans un profil neuf, sans import.
 - **Données** : aucune.
-- **Automatisés associés** : `TN-budget`, `TN-notes`
+- **Automatisés associés** : `TN-budget`, `TN-notes`, `TN-compte-neuf`, `TN-recherche-minuteur`
 - **Source** : [CODE] les messages `class="empty"` des modules ; [TEST] `tests/browser/budget.js`, `tests/browser/notes.js`.
 
 | Étape | Action précise | Résultat attendu observable |

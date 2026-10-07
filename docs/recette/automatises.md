@@ -829,7 +829,7 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Fichier** : [`tests/browser/compte-neuf.js`](../../tests/browser/compte-neuf.js) · **mode** A · **écran** —
 - **Conditions** : Données de départ vierges.
 - **Vérifie** : une question, pas de tâche fictive, rien de personnel, trois réponses ; les treize modèles derrière « Choisir moi-même » ; trois modules ajoutés visibles ; tirage au sort avec un module de tâches ; le programme porte la pratique choisie, sans budget ni soin imposé ; « C'est bon » referme, et le bloc ne revient pas ; « Un long texte » installe Écriture, Sources et Tâches et le dit ; chaque réponse dit les trois espaces qu'elle installe (ESP-001).
-- **Cas manuels** : [ESP-001](manuels/espaces.md#esp-001), [ESP-002](manuels/espaces.md#esp-002), [ESP-003](manuels/espaces.md#esp-003), [ESP-004](manuels/espaces.md#esp-004), [MOD-004](manuels/types-de-module.md#mod-004)
+- **Cas manuels** : [ESP-001](manuels/espaces.md#esp-001), [ESP-002](manuels/espaces.md#esp-002), [ESP-003](manuels/espaces.md#esp-003), [ESP-004](manuels/espaces.md#esp-004), [MOD-004](manuels/types-de-module.md#mod-004), [TRV-015](manuels/transverse.md#trv-015)
 
 <a id="tn-types"></a>
 #### `TN-types` — Chaque type par le registre
@@ -958,7 +958,7 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Fichier** : [`tests/browser/recherche-minuteur.js`](../../tests/browser/recherche-minuteur.js) · **mode** A · **écran** —
 - **Conditions** : Horloge simulée pour quinze minutes.
 - **Vérifie** : « / » ouvre la recherche ; sans accents, tous les mots, surlignage ; frappe continue ; fin des 15 min sur un protocole : « Noter 15 min » ; sur l'Écriture : curseur dans le compteur ; tâche finie : coût proposé au budget, dépense ajoutée ; l'onglet dit « Chercher — … » ; un mot qu'aucun texte ne contient : « Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire. » (NAV-004).
-- **Cas manuels** : [NAV-004](manuels/navigation-reglages.md#nav-004), [MOD-003](manuels/types-de-module.md#mod-003), [MOD-024](manuels/types-de-module.md#mod-024)
+- **Cas manuels** : [NAV-004](manuels/navigation-reglages.md#nav-004), [MOD-003](manuels/types-de-module.md#mod-003), [MOD-024](manuels/types-de-module.md#mod-024), [TRV-015](manuels/transverse.md#trv-015)
 
 <a id="tn-signatures"></a>
 #### `TN-signatures` — Fiche, minuteur et tri
@@ -1056,7 +1056,7 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Fichier** : [`tests/browser/sources-oubliees.js`](../../tests/browser/sources-oubliees.js) · **mode** A · **écran** O
 - **Conditions** : Sources gardées il y a longtemps.
 - **Vérifie** : les sortes annoncent une source oubliée (titre, revue, depuis quand) ; « documente… » vers une note ou un fragment ; la carte s'efface ; le fragment dit qui le documente, la source ce qu'elle documente ; dossier avec DOI.
-- **Cas manuels** : [PEN-009](manuels/penser-avec.md#pen-009), [EXT-004](manuels/connexions.md#ext-004)
+- **Cas manuels** : [PEN-009](manuels/penser-avec.md#pen-009), [EXT-004](manuels/connexions.md#ext-004), [PEN-008](manuels/penser-avec.md#pen-008)
 
 <a id="tn-indexeddb"></a>
 #### `TN-indexeddb` — Stockage IndexedDB

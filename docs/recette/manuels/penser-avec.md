@@ -215,7 +215,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : recherche `lisière`.
-- **Automatisés associés** : `TU-MOD-52`, `TU-MOD-53`, `TN-liaisons`, `TN-parcours-e2`
+- **Automatisés associés** : `TU-MOD-52`, `TU-MOD-53`, `TN-liaisons`, `TN-parcours-e2`, `TN-sources-oubliees`
 - **Source** : [DOC] README, « Dossier de passation » ; [TEST] `TU-MOD-52`, `TU-MOD-53`.
 
 | Étape | Action précise | Résultat attendu observable |
