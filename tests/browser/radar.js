@@ -1,5 +1,5 @@
 /* Scénario de navigateur : Radar culturel (connexions externes, phase 1, vague 5d : docs/connexions.md). Lancé par tests/browser/run.js. */
-const { storeSet, storeJSON, until, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeSet, storeJSON, until, fauxSupabase, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const LILLE = { name: 'Lille, Hauts-de-France, France', lat: 50.6, lon: 3.1, weather: false, realMoon: true };
 const site = (sky, words) => { const d = JSON.parse(fixture()); d.config.sky = sky; if (words) d.config.radar = { words }; return JSON.stringify(d); };
 const rec = (uid, title, from, to, extra = {}) => ({ uid, title_fr: title, firstdate_begin: from + 'T18:00:00+00:00', lastdate_end: (to || from) + 'T22:00:00+00:00',
@@ -24,10 +24,9 @@ const RESULTS = [
       if (mode === 'renamed' && u.searchParams.get('select')) return r.fulfill({ status: 400, contentType: 'application/json', body: '{"error_code":"ODSQLError"}' });
       r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(RESULTS) }); // l’export : une liste
     });
-    await ctx.route('https://*.supabase.co/**', r => {
+    await fauxSupabase(ctx, r => {
       const req = r.request();
       if (new URL(req.url()).pathname === '/functions/v1/passeur') { const q = req.postDataJSON(); p.passeur.push(q); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ status: 200, url: q.url, type: 'application/json; charset=utf-8', texte: JSON.stringify(RESULTS) }) }); }
-      r.fulfill({ contentType: 'application/json', body: req.method() === 'GET' ? '[]' : '{}' });
     });
     const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.parse('2026-09-28T08:00:00Z') / 1000) + 3600, user: { id: '0b8f0c2e-1111-2222-3333-444455556666', email: 'a@b.c' } });
     await ctx.addInitScript(([d, h, s]) => { if (!h) window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); if (h) { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', '0b8f0c2e-1111-2222-3333-444455556666'); } } }, [site(sky, words), hosted, session]);

@@ -1,7 +1,7 @@
 /* Scénario de navigateur : supprimer son compte depuis l'app (ADR 20, docs/compte.md). Faux Supabase, fausse fonction
    « compte » : rien ne part sans la confirmation tapée puis acceptée ; une panne laisse tout en place ; une réussite
    vide l'appareil (données, session) et ramène à l'écran de connexion. Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check, until, storeGet } = require('./helpers');
+const { fauxSupabase, engine, BASE, launchOptions, fixture, check, until, storeGet } = require('./helpers');
 const UID = '0b8f0c2e-1111-2222-3333-444455556666';
 (async () => {
   const b = await engine.launch(launchOptions);
@@ -9,9 +9,9 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
   let panne = true;
   const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
-  await ctx.route('https://*.supabase.co/**', r => {
+  await fauxSupabase(ctx, r => {
     const req = r.request(), u = new URL(req.url());
-    if (u.pathname !== '/functions/v1/compte') return r.fulfill({ contentType: 'application/json', body: req.method() === 'GET' ? '[]' : '{}' });
+    if (u.pathname !== '/functions/v1/compte') return;
     appels.push({ corps: req.postDataJSON(), auth: req.headers().authorization });
     if (panne) return r.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ erreur: 'données non effacées ; réessaie' }) });
     return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ supprime: true }) });

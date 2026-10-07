@@ -91,11 +91,12 @@ function renderNow() {
   $("#nav").innerHTML = navHTML(view);
   $("#bar").innerHTML = barHTML(view);
   if (inst && view !== lastView) noteVisit(view);
-  // Les champs des Réglages n'ont pas d'id (donc pas de restauration ci-dessous) : tant que l'un d'eux
-  // a le focus, ne pas redessiner, sinon une synchro arrivant pendant la frappe effacerait la saisie.
+  // Un champ sans id n'est pas restauré (ci-dessous) : tant qu'il a le focus, ne pas redessiner la vue, sinon une synchro
+  // arrivant pendant la frappe effacerait la saisie. Pire : le champ retiré perd le focus, son « change » part pendant le
+  // rendu et en relance un autre, imbriqué (A33 : la clé OpenAlex de Dehors). Les Réglages, sans id, en entier.
   const ae = document.activeElement, typing = ae && ae.closest && ae.closest("#main") &&
     (ae.tagName === "TEXTAREA" || (ae.tagName === "INPUT" && !["checkbox", "radio", "file", "button"].includes(ae.type)));
-  if (typing && view === "reglages" && lastView === "reglages") return;
+  if (typing && view === lastView && (view === "reglages" || !ae.id)) return;
   const keep = {}; let focusId = null, caret = null;
   $("#main").querySelectorAll("[data-draft]").forEach(el => saveDraft(lastView, el)); // un champ vidé par l'envoi efface son brouillon
   if (view === lastView) $("#main").querySelectorAll("input[id],textarea[id],select[id]").forEach(el => { if (el.type !== "file" && el.type !== "checkbox") keep[el.id] = el.value; });

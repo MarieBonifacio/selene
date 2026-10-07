@@ -1,7 +1,7 @@
 /* Scénario de navigateur : motifs croisés dans Dehors (phase 3, vague 7c : docs/connexions.md).
    Version hébergée simulée : faux Supabase, faux passeur qui sert deux flux, OpenAlex simulé pour une veille.
    Lancé par tests/browser/run.js. */
-const { storeJSON, storeSet, storeGet, ouvrir, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeJSON, storeSet, storeGet, ouvrir, suivre, calme, fauxSupabase, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 const col = (label, extra) => ({ type: 'collection', label, config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1, addLabel: 'Ajouter',
   fields: { title: 'Titre', subtitle: 'Auteurs', tag: '', due: '', text: 'Notes' }, ...extra }, entries: [] });
@@ -31,17 +31,14 @@ const WORK = { id: 'https://openalex.org/W50', doi: 'https://doi.org/10.1000/z',
   const ok = check, errs = [];
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
   const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
-  await ctx.route('https://*.supabase.co/**', route => {
-    const req = route.request(), u = new URL(req.url());
+  await fauxSupabase(ctx, (route, req, u) => {
     if (u.pathname === '/functions/v1/passeur') { const q = req.postDataJSON(), t = FEEDS[q.url]; return json(route, 200, t ? { status: 200, url: q.url, type: 'application/rss+xml', texte: t } : { status: 404, url: q.url, erreur: 'le site répond 404' }); }
-    if (req.method() === 'GET') return json(route, 200, u.pathname.startsWith('/auth/') ? {} : []);
-    return route.fulfill({ status: 201, body: '' });
   });
   await ctx.route('https://api.openalex.org/**', r => r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ results: [WORK] }) }));
   const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
   const cites = JSON.stringify({ works: { '10.1000/a': { id: 'W1', refs: [], authors: [], at: Date.now() } }, titles: {} });
   await ctx.addInitScript(([d, s, uid, c]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); localStorage.setItem('selene-cites', c); } }, [JSON.stringify(demo), session, UID, cites]);
-  const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
+  const p = suivre(await ctx.newPage()); p.on('pageerror', e => errs.push(e.message));
   // La relecture part 1,5 s après l'ouverture, une fois l'app démarrée et connectée : attendre ses six éléments, veille
   // comprise, plutôt qu'un délai (A16 du cahier de recette).
   const relu = () => document.querySelectorAll('.dehors .item').length >= 6 && document.querySelector('.dehors').textContent.includes('The bodily self revisited');
@@ -63,8 +60,10 @@ const WORK = { id: 'https://openalex.org/W50', doi: 'https://doi.org/10.1000/z',
   ok(!r.some(x => x.t.startsWith('Le même article')), '« vu » sur un lien paru dans deux flux : il ne revient pas par l’autre');
 
   console.log('un auteur suivi n’est pas une raison de plus');
-  { const d = await storeJSON(p, 'selene-site-v1'); d.config.dehors.research[0].kind = 'author'; d.config.dehors.research[0].q = 'A5023888391'; await storeSet(p, 'selene-site-v1', JSON.stringify(d)); }
-  await ouvrir(p, null, relu).catch(() => {});
+  // L'app au repos d'abord, puis un document plus récent : synchronisée (BL-23), elle l'adopte au lieu de l'écraser.
+  await calme(p);
+  { const d = await storeJSON(p, 'selene-site-v1'); d.config.dehors.research[0].kind = 'author'; d.config.dehors.research[0].q = 'A5023888391'; d.updatedAt = (d.updatedAt || 0) + 1; await storeSet(p, 'selene-site-v1', JSON.stringify(d)); }
+  await calme(p); await ouvrir(p, null, relu).catch(() => {});
   r = await rows();
   ok(r[0].t === 'The bodily self revisited' && r[0].why === 'parce que : cite « Depersonalization and the self », de tes sources', `la veille d'un auteur : son nom ne compte pas comme raison (${r[0].why})`);
 

@@ -1,6 +1,6 @@
 /* Scénario de navigateur : le calendrier dédié (connexions externes, phase 2, vague 6e : docs/connexions.md).
    Version hébergée simulée (faux Supabase, faux passeur qui sert un .ics), horloge fixée. Lancé par tests/browser/run.js. */
-const { storeJSON, storeSet, storeGet, until, ouvrir, entree, suivre, calme, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeJSON, storeSet, storeGet, until, ouvrir, entree, suivre, calme, fauxSupabase, synchro, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const UID = '0b8f0c2e-1111-2222-3333-444455556666';
 const ICS = ['BEGIN:VCALENDAR', 'VERSION:2.0',
   'BEGIN:VEVENT', 'UID:a', 'SUMMARY:Chantier : plombier', 'LOCATION:Salle de bain', 'DTSTART;TZID=Europe/Paris:20260929T140000', 'DTEND;TZID=Europe/Paris:20260929T150000', 'END:VEVENT',
@@ -14,10 +14,10 @@ const bulle = (p, t) => p.waitForFunction(x => ((document.querySelector('#toast'
   const b = await engine.launch(launchOptions);
   const ok = check, errs = [], calls = [];
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block', timezoneId: 'Europe/Paris' });
-  await ctx.route('https://*.supabase.co/**', r => {
-    const req = r.request(), u = new URL(req.url());
-    if (u.pathname === '/functions/v1/passeur') { const q = req.postDataJSON(); calls.push(q); return r.fulfill({ contentType: 'application/json', body: JSON.stringify(q.url === SECRET ? { status: 200, url: q.url, type: 'text/calendar', texte: ICS } : { status: 404, url: q.url, erreur: 'le site répond 404' }) }); }
-    r.fulfill({ contentType: 'application/json', body: req.method() === 'GET' ? '[]' : '{}' });
+  const lignes = await fauxSupabase(ctx, (r, req, u) => {
+    if (u.pathname !== '/functions/v1/passeur') return;
+    const q = req.postDataJSON(); calls.push(q);
+    return r.fulfill({ contentType: 'application/json', body: JSON.stringify(q.url === SECRET ? { status: 200, url: q.url, type: 'text/calendar', texte: ICS } : { status: 404, url: q.url, erreur: 'le site répond 404' }) });
   });
   const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.parse('2026-09-29T07:00:00Z') / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
   await ctx.addInitScript(([d, s, uid]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); } }, [fixture(), session, UID]);
@@ -31,6 +31,8 @@ const bulle = (p, t) => p.waitForFunction(x => ((document.querySelector('#toast'
   await p.fill('[data-act="ics-url"]', 'webcal://calendar.example/ical/secret-abc/basic.ics'); await p.press('[data-act="ics-url"]', 'Tab'); await p.waitForTimeout(600);
   ok(calls.length === 1 && calls[0].genre === 'ics' && calls[0].url === SECRET, 'webcal:// devient https:// ; lu par le passeur, genre ics');
   ok((await storeGet(p, 'selene-ics-url')) === SECRET && !(await storeGet(p, 'selene-site-v1')).includes('secret-abc'), 'l’adresse reste dans ce navigateur, hors des données synchronisées');
+  await until(() => lignes.has(UID));
+  ok(!(await synchro(p)) && lignes.has(UID) && !JSON.stringify([...lignes.values()]).includes('secret-abc'), 'synchronisé pour de vrai (BL-23), et l’adresse n’est pas partie au serveur');
   ok((await p.textContent('#agenda')).includes('Lu ') && (await p.inputValue('[data-act="ics-url"]')).startsWith('•'), 'l’état est dit ; l’adresse n’est pas réaffichée');
 
   console.log('aujourd’hui et demain');

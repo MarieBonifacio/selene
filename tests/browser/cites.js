@@ -1,6 +1,6 @@
 /* Scénario de navigateur : « cité par tes sources » (phase 3, vague 7b : docs/connexions.md).
    Version hébergée simulée (faux Supabase), OpenAlex simulé. Lancé par tests/browser/run.js. */
-const { storeGet, storeJSON, until, suivre, calme, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeGet, storeJSON, until, suivre, calme, fauxSupabase, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 const src = (id, title, doi) => ({ id, title, subtitle: '', tag: 'article', due: '', text: '', status: 'À lire', kept: '2026-09-01', src: doi ? { url: `https://doi.org/${doi}`, doi } : { url: 'https://blog.example/billet' } });
 demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, sources: true, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1,
@@ -33,7 +33,7 @@ const TITLES = {
       : field === 'openalex' ? vals.map(v => TITLES[v]).filter(Boolean) : [];
     r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ results }) });
   });
-  await ctx.route('https://*.supabase.co/**', r => r.fulfill({ contentType: 'application/json', body: r.request().method() === 'GET' ? '[]' : '{}' }));
+  await fauxSupabase(ctx);
   const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
   await ctx.addInitScript(([d, s, uid]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); } }, [JSON.stringify(demo), session, UID]);
   await p.goto(BASE + '/index.html#sources'); await p.waitForTimeout(600);

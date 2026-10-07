@@ -1,6 +1,6 @@
 /* Scénario de navigateur : le passeur côté Selene (connexions externes, phase 2, vague 6a : docs/connexions.md).
    Version hébergée simulée : un faux Supabase (compte, table) et un faux passeur. Lancé par tests/browser/run.js. */
-const { storeJSON, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeJSON, fauxSupabase, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources',
   config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, display: 'liste', sources: true, statuses: ['À lire', 'Lue', 'Utilisée'], doneFrom: 1, addLabel: 'Ajouter à la main',
@@ -24,9 +24,7 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
     p.passeur = []; p.microlink = 0; p.crossref = 0;
     const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
-    await ctx.route('https://*.supabase.co/**', route => {
-      const req = route.request(), u = new URL(req.url());
-      if (u.pathname.startsWith('/auth/')) return json(route, 200, {});
+    await fauxSupabase(ctx, (route, req, u) => {
       if (u.pathname === '/functions/v1/passeur') {
         const q = req.postDataJSON(), h = req.headers(); p.passeur.push({ ...q, auth: h.authorization, apikey: h.apikey });
         if (mode === 'absent') return route.fulfill({ status: 404, body: 'Function not found' });
@@ -35,8 +33,6 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
         const texte = q.url.includes('article') ? ARTICLE : q.url.includes('lisieres') ? BLOG : '<html><head><title>Selene</title></head></html>';
         return json(route, 200, { status: 200, url: q.url.replace('?utm_source=x', ''), type: 'text/html; charset=utf-8', etag: null, modifie: null, texte });
       }
-      if (req.method() === 'GET') return json(route, 200, []);
-      return route.fulfill({ status: 201, body: '' });
     });
     await ctx.route('https://api.microlink.io/**', r => { p.microlink++; json(r, 200, { status: 'success', data: { title: 'Par Microlink', url: 'https://www.lisieres.fr/phalenes' } }); });
     await ctx.route('https://api.crossref.org/**', r => { p.crossref++; json(r, 200, CROSSREF); });

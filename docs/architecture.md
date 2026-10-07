@@ -266,6 +266,10 @@ rien à envoyer, le document n'est pas relu. Sinon, relecture complète et fusio
 `keepalive` sans relecture, pour un document de moins de 60 000 octets (les navigateurs refusent au-delà de 64 Kio) ;
 sinon, ou si elle échoue, les données restent locales (copie de secours, ADR 13) et partent au lancement suivant.
 
+Ce qu'une synchro apporte se dessine, sauf sous une frappe : un champ à identifiant garde sa valeur et son curseur au
+rendu ; tant qu'un champ sans identifiant a le focus, la vue n'est pas redessinée (`render.js`), dans les Réglages comme
+ailleurs. Sinon, la saisie disparaîtrait, et le champ retiré lancerait son « change » au milieu du rendu (A33).
+
 Sans base (premier contact d'un appareil) : un appareil vierge adopte le serveur, sinon on fusionne
 sans rien supprimer. L'import d'une sauvegarde remplace au lieu de fusionner (`replaceAll`).
 

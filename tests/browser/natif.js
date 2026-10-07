@@ -2,7 +2,7 @@
    `window.seleneNative` : deux coffres asynchrones dont les données vivent côté Node (comme derrière le pont de
    Capacitor ou de Tauri). Rien ne doit passer par localStorage ; tout doit survivre à un rechargement.
    Faux Supabase (compte connecté, serveur vide). Lancé par tests/browser/run.js. */
-const { suivre, calme, engine, BASE, launchOptions, fixture, check, until } = require('./helpers');
+const { suivre, calme, fauxSupabase, engine, BASE, launchOptions, fixture, check, until } = require('./helpers');
 const UID = '0b8f0c2e-1111-2222-3333-444455556666';
 (async () => {
   const b = await engine.launch(launchOptions);
@@ -12,7 +12,7 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
   const notified = []; let shareMode = 'ok'; // la feuille de partage : choisie, refermée, ou l'écriture refusée
   const vaults = { storage: new Map([['selene-site-v1', fixture()], ['selene-auth-last-uid', UID]]), secrets: new Map([['selene-auth-session', session]]) };
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
-  await ctx.route('https://*.supabase.co/**', r => r.fulfill({ contentType: 'application/json', body: r.request().method() === 'GET' ? '[]' : '{}' }));
+  await fauxSupabase(ctx);
   // Le pont : asynchrone, comme un vrai (chaque appel traverse le processus).
   await ctx.exposeBinding('nativeCall', (_, name, op, k, v) => {
     const m = vaults[name];

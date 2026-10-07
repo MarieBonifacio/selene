@@ -10,7 +10,7 @@ Identifiants retirés : aucun.
 
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
-| Tests unitaires et d'intégration Node | `npm test` | 323 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
+| Tests unitaires et d'intégration Node | `npm test` | 324 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
 | Scénarios de navigateur | `npm run test:browser` | 81 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent et au processeur ralenti | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
@@ -42,6 +42,13 @@ contient au moins une assertion (six tests de `sync.test.js` passent par l'assis
   1 500 ms (*Check › browser (chromium, démarrage lent)*). `SELENE_CPU=<facteur>` ralentit le processeur de Chromium
   (protocole DevTools), contre les délais fixes qui suivent un geste ; la CI la rejoue à ×4, quatre scénarios à la fois
   (*Check › browser (chromium, processeur ralenti)*, [BL-22](backlog.md#bl-22)).
+- **Un faux Supabase fidèle** : `fauxSupabase(ctx, autre)` de `helpers.js` répond comme PostgREST pour `app_state` (une
+  ligne par compte, lecture filtrée, création, écriture conditionnelle), sur le modèle de `fakeSupabase` des tests Node ;
+  `autre` sert ce qui est propre au scénario (le passeur, une fonction). Un scénario « connecté » l'est donc vraiment :
+  son branchement réussit, l'app ne le retente pas en fond (A31), et `synchro(p)` (l'indicateur `#saving`) est vide.
+  Dix-huit scénarios s'en servent ([BL-23](backlog.md#bl-23)) ; les autres tiennent leur propre table de lignes, aussi
+  fidèle (`sync-deux-appareils.js`, `hors-ligne-reel.js`, `regulation*.js`, `secours.js`, `sauvegarde-complete.js`,
+  `sans-compte.js`, `sources.js`), ou ne se connectent pas.
 - **`deno test`** : assertion levée ; **`deno check`** : erreur de typage.
 - **`cargo test`** : `assert!` ou `assert_eq!` en échec.
 - **`build.py --check`** : sort en erreur si un HTML généré ne correspond plus aux sources.
@@ -465,6 +472,7 @@ sans navigateur.
 | <a id="tu-mod-63"></a>`TU-MOD-63` | l’adresse d’un espace désactivé mène à l’accueil, et le dit une fois par visite ; une adresse inconnue, sans un mot | Ouvert, l'espace s'affiche ; désactivé, son adresse mène à l'accueil et « « Chantier » est désactivé : Réglages → Espaces pour le rouvrir. » s'affiche une fois (un autre rendu ne le répète pas, revenir à l'adresse le redit) ; une adresse qui ne désigne aucun espace mène à l'accueil sans message. | [ESP-006](manuels/espaces.md#esp-006) |
 | <a id="tu-mod-64"></a>`TU-MOD-64` | minuit : chaque vue suit la date d’elle-même, une minute après au plus ; jamais sous un formulaire ouvert ni pendant une saisie | Horloge simulée : sur le Chantier, rien avant minuit ; passé minuit, pas de rendu tant qu'un formulaire est ouvert (son contenu reste) ou qu'un champ est en cours de saisie ; la minute suivante, l'en-tête dit « mercredi 7 octobre » ; ensuite, plus de rendu à chaque minute. | [TRV-004](manuels/transverse.md#trv-004) |
 | <a id="tu-mod-65"></a>`TU-MOD-65` | une entrée se nomme par son titre, sinon par son texte : une source, pas par son résumé (A28) | Une source gardée avec un résumé se nomme par son titre, dans `excerpt` comme dans un lien (`refHTML`) ; une note, qui n'a pas de titre, par son texte, espaces resserrés ; une entrée au titre vide, par son texte. Échoue sans le correctif d'A28. | [EXT-001](manuels/connexions.md#ext-001), [EXT-016](manuels/connexions.md#ext-016) |
+| <a id="tu-mod-66"></a>`TU-MOD-66` | une synchro pendant une frappe dans un champ sans identifiant ne redessine pas la vue, dans toutes les vues (A33) | Une vue ouverte (le Chantier, les Réglages), le focus dans un champ sans identifiant : un rendu (synchro, autre onglet) laisse la vue telle quelle ; un champ à identifiant, lui, est restauré et la vue se redessine (hors Réglages). Échoue sans le correctif d'A33. | [SYN-001](manuels/synchronisation.md#syn-001), [EXT-014](manuels/connexions.md#ext-014) |
 
 ### Notes Markdown (Obsidian, Zettlr) — `tests/markdown.test.js`
 
@@ -1064,7 +1072,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/indexeddb.js`](../../tests/browser/indexeddb.js) · **mode** H · **écran** O
 - **Conditions** : Document dans localStorage au départ.
-- **Vérifie** : migration vers IndexedDB (secrets laissés) ; capture écrite et relue après relance ; un autre onglet se met à jour ; un document de plus de 5 millions de caractères est enregistré.
+- **Vérifie** : migration vers IndexedDB (secrets laissés) ; capture écrite et relue après relance ; un autre onglet se met à jour ; un document de plus de 5 millions de caractères est enregistré ; synchronisé pour de vrai (BL-23).
 - **Cas manuels** : [DON-008](manuels/donnees-sauvegardes.md#don-008)
 
 <a id="tn-secours"></a>
@@ -1198,7 +1206,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/dehors.js`](../../tests/browser/dehors.js) · **mode** H puis A · **écran** O
 - **Conditions** : Faux passeur qui sert des flux.
-- **Vérifie** : une porte dans la navigation ; sonde du passeur ; le champ « L'adresse d'un site ou d'un flux… » ; suivre un site par son flux annoncé, « Suivi : … » ; la semaine écoulée, rangée par projet ; titre piégé inerte ; lien `javascript:` neutralisé ; page sans flux ou flux déjà suivi : dit ; garder (source avec provenance), vers une note, vu ; douze au plus ; ligne d'accueil sans pastille ; seulement mes motifs ; tout marquer comme vu (synchronisé), « Tout est vu. Dehors se tait jusqu'à la prochaine parution. » ; ETag et 304 ; pas de relecture avant trois heures ; retirer un flux ; artefact : pas de Dehors.
+- **Vérifie** : une porte dans la navigation ; sonde du passeur ; le champ « L'adresse d'un site ou d'un flux… » ; suivre un site par son flux annoncé, « Suivi : … » ; la semaine écoulée, rangée par projet ; titre piégé inerte ; lien `javascript:` neutralisé ; page sans flux ou flux déjà suivi : dit ; garder (source avec provenance), vers une note, vu ; douze au plus ; ligne d'accueil sans pastille ; seulement mes motifs ; tout marquer comme vu (synchronisé), « Tout est vu. Dehors se tait jusqu'à la prochaine parution. » ; ETag et 304 ; pas de relecture avant trois heures ; retirer un flux ; artefact : pas de Dehors ; synchronisé pour de vrai (BL-23).
 - **Cas manuels** : [EXT-013](manuels/connexions.md#ext-013), [EXT-019](manuels/connexions.md#ext-019)
 
 <a id="tn-dehors-croise"></a>
@@ -1222,8 +1230,8 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/veille.js`](../../tests/browser/veille.js) · **mode** H · **écran** O
 - **Conditions** : OpenAlex simulé.
-- **Vérifie** : rien avant la première veille ; « En veille : … Première lecture… » ; une requête depuis un mois, sans clé ; articles avec revue, autrice, résumé ; garder : source avec DOI et provenance « Veille » ; ORCID et clé : « Clé OpenAlex gardée dans ce navigateur. », clé hors des données synchronisées ; veille en double dite ; pas de nouvelle demande dans la semaine ; quota épuisé dit ; se déconnecter efface la clé et ce que le dehors a apporté.
-- **Cas manuels** : [CPT-013](manuels/entree-et-comptes.md#cpt-013), [EXT-014](manuels/connexions.md#ext-014)
+- **Vérifie** : rien avant la première veille ; « En veille : … Première lecture… » ; une requête depuis un mois, sans clé ; articles avec revue, autrice, résumé ; garder : source avec DOI et provenance « Veille » ; ORCID et clé : « Clé OpenAlex gardée dans ce navigateur. », clé hors des données synchronisées ; veille en double dite ; pas de nouvelle demande dans la semaine ; quota épuisé dit ; se déconnecter efface la clé et ce que le dehors a apporté ; synchronisé pour de vrai (BL-23) ; une synchro pendant la frappe de la clé ne l'efface pas (A33).
+- **Cas manuels** : [CPT-013](manuels/entree-et-comptes.md#cpt-013), [EXT-014](manuels/connexions.md#ext-014), [SYN-001](manuels/synchronisation.md#syn-001)
 
 <a id="tn-cites"></a>
 #### `TN-cites` — Ce que tes sources ont en commun
@@ -1238,7 +1246,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/agenda.js`](../../tests/browser/agenda.js) · **mode** H · **écran** O
 - **Conditions** : Faux passeur qui sert un `.ics` ; horloge fixée. Avant chaque rechargement, plus aucune requête en vol depuis 2,5 s (`calme()` de `helpers.js`, A19, A31).
-- **Vérifie** : rien sans adresse ; `webcal://` devient `https://` ; adresse gardée dans ce navigateur, hors synchronisation, jamais réaffichée ; le plombier sous Chantier ; récurrence ; le passé écarté ; journée entière demain ; titre piégé inerte ; cache d'une heure ; « oublier » retire adresse et cache, et le dit : « Calendrier oublié sur cet appareil. » (EXT-015).
+- **Vérifie** : rien sans adresse ; `webcal://` devient `https://` ; adresse gardée dans ce navigateur, hors synchronisation, jamais réaffichée ; le plombier sous Chantier ; récurrence ; le passé écarté ; journée entière demain ; titre piégé inerte ; cache d'une heure ; « oublier » retire adresse et cache, et le dit : « Calendrier oublié sur cet appareil. » (EXT-015) ; synchronisé pour de vrai, et l'adresse secrète absente des données du serveur (BL-23).
 - **Cas manuels** : [CPT-013](manuels/entree-et-comptes.md#cpt-013), [EXT-015](manuels/connexions.md#ext-015)
 
 <a id="tn-zotero"></a>

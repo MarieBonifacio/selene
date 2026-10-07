@@ -1,6 +1,6 @@
 /* Scénario de navigateur : mot de passe oublié, lien de récupération, invitation, et les messages de l'écran de
    connexion. Version hébergée simulée : un faux Supabase Auth. Lancé par tests/browser/run.js. */
-const { storeGet, storeSet, until, ouvrir, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeGet, storeSet, until, ouvrir, fauxSupabase, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const UID = '0b8f0c2e-1111-2222-3333-444455556666', AUTRE = '9d1e5b7a-aaaa-bbbb-cccc-ddddeeeeffff';
 const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=${Math.floor(Date.now() / 1000) + 3600}&expires_in=3600&refresh_token=rafraichi&token_type=bearer&type=${type}`;
 (async () => {
@@ -10,8 +10,7 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
     p.calls = [];
     const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
-    await ctx.route('https://*.supabase.co/**', route => {
-      const req = route.request(), u = new URL(req.url());
+    await fauxSupabase(ctx, (route, req, u) => {
       p.calls.push({ method: req.method(), path: u.pathname, search: u.search, body: req.postData(), auth: req.headers().authorization });
       if (u.pathname === '/auth/v1/settings') return json(route, 200, { disable_signup: fermees, external: { email: true } });
       if (u.pathname === '/auth/v1/signup') return json(route, 422, { code: 422, error_code: 'signup_disabled', msg: 'Signups not allowed for this instance' });
@@ -32,8 +31,6 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
         return json(route, 400, { code: 400, error_code: 'invalid_credentials', msg: 'Invalid login credentials' });
       }
       if (u.pathname.startsWith('/functions/')) return route.fulfill({ status: 404, body: '' });
-      if (req.method() === 'GET') return json(route, 200, []);
-      return route.fulfill({ status: 201, body: '' });
     });
     if (session) await ctx.addInitScript(([s, uid]) => { if (!localStorage.getItem('selene-auth-session')) { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); } },
       [JSON.stringify({ access_token: 'jeton-garde', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: session, email: 'autre@exemple.org' } }), session]);
@@ -127,6 +124,8 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
   const put = r.calls.filter(c => c.path === '/auth/v1/user').pop();
   ok(put && put.method === 'PUT' && put.auth === 'Bearer jeton-lien' && JSON.parse(put.body).password === 'nouveau-mdp', 'le mot de passe part, avec le jeton du lien');
   const s = JSON.parse(await storeGet(r, 'selene-auth-session') || '{}');
+  // La bulle vient une fois le branchement fini : un branchement qui réussit (BL-23) fait plus d'allers-retours.
+  await attendre(r, t => ((document.querySelector('#toast') || {}).textContent || '').includes(t), 'Mot de passe enregistré');
   ok(!(await r.$('#authForm')) && (await r.textContent('#toast')).includes('Mot de passe enregistré') && s.access_token === 'jeton-lien' && s.refresh_token === 'rafraichi' && s.user.id === UID, 'enregistré : connectée, la session est celle du lien');
 
   console.log('liens expirés ou fabriqués');
@@ -168,6 +167,7 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
   console.log('changer de mot de passe');
   const w = await open();
   await w.fill('#authEmail', 'iris@exemple.org'); await w.fill('#authPw', 'court1'); await submit(w); await attendre(w, entree);
+  await attendre(w, t => ((document.querySelector('#toast') || {}).textContent || '').includes(t), 'plus court que ce que le serveur demande');
   ok(!(await w.$('#authForm')) && (await w.textContent('#toast')).includes('plus court que ce que le serveur demande'), 'connexion avec un mot de passe devenu trop court : on entre, et Selene le dit');
   await w.evaluate(() => { location.hash = 'reglages'; }); await attendre(w, () => !!document.querySelector('#auth-pw #authPwForm'));
   await w.evaluate(() => document.querySelectorAll('details').forEach(d => { if (d.id !== 'auth-delete') d.open = true; }));

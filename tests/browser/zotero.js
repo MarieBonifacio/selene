@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Zotero en lecture seule (connexions externes, phase 2, vague 6f : docs/connexions.md).
    Version hébergée simulée (faux Supabase, faux passeur), API Zotero simulée. Lancé par tests/browser/run.js. */
-const { storeGet, storeJSON, until, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeGet, storeJSON, until, fauxSupabase, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, sources: true, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1,
   fields: { title: 'Titre', subtitle: 'Auteurs', tag: 'Type', due: '', text: 'Résumé' } }, entries: [] };
@@ -30,19 +30,22 @@ const ITEMS = [
       if (mode === 'cors') return r.abort('failed'); // ce que voit le navigateur quand CORS est refusé
       const x = reply(u, h['zotero-api-key']); r.fulfill({ status: x.status, contentType: 'application/json', body: x.body });
     });
-    await ctx.route('https://*.supabase.co/**', r => {
+    await fauxSupabase(ctx, r => {
       const req = r.request(), u = new URL(req.url());
       if (u.pathname === '/functions/v1/passeur') {
         const q = req.postDataJSON(); p.passeur.push(q); const zu = new URL(q.url), x = reply(zu, zu.searchParams.get('key'));
         return r.fulfill({ contentType: 'application/json', body: JSON.stringify(x.status === 200 ? { status: 200, url: q.url, type: 'application/json', texte: x.body } : { status: x.status, url: q.url, erreur: `le site répond ${x.status}` }) });
       }
-      r.fulfill({ contentType: 'application/json', body: req.method() === 'GET' ? '[]' : '{}' });
     });
     const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
     await ctx.addInitScript(([d, s, uid]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); } }, [JSON.stringify(demo), session, UID]);
     await p.goto(BASE + path); await p.waitForTimeout(600); return p;
   };
-  const setKey = async (p, k = KEY) => { await p.fill('[data-act="zot-key"]', k); await p.press('[data-act="zot-key"]', 'Tab'); await p.waitForTimeout(500); };
+  // La vérification de la clé finie, acceptée (« Bibliothèque de … ») ou refusée (« … refuse cette clé ») : un état, pas 500 ms.
+  const setKey = async (p, k = KEY) => {
+    await p.fill('[data-act="zot-key"]', k); await p.press('[data-act="zot-key"]', 'Tab');
+    await p.waitForFunction(() => /Bibliothèque de|refuse cette clé/.test(((document.querySelector('#zotero') || {}).textContent || '') + ((document.querySelector('#toast') || {}).textContent || '')), null, { timeout: 10000 }).catch(() => {});
+  };
   const data = p => storeJSON(p, 'selene-site-v1');
 
   console.log('la clé, en lecture seule');
@@ -75,7 +78,11 @@ const ITEMS = [
   console.log('CORS refusé : le passeur prend le relais');
   const c = await open('cors');
   await setKey(c);
-  ok(c.passeur.length === 1 && c.passeur[0].genre === 'json' && c.passeur[0].url.includes(`/keys/${KEY}`) && (await c.textContent('#zotero')).includes('Bibliothèque de marie'), 'la vérification passe par le passeur (genre json)');
+  // L'état, pas 500 ms : l'appel direct échoue d'abord (CORS), puis le passeur répond (sous WebKit, plus de 500 ms).
+  await until(() => c.passeur.length >= 1);
+  await c.waitForFunction(() => ((document.querySelector('#zotero') || {}).textContent || '').includes('Bibliothèque de marie'), null, { timeout: 10000 }).catch(() => {});
+  const zt = (await c.textContent('#zotero')).replace(/\s+/g, ' '), relais = c.passeur.length === 1 && c.passeur[0].genre === 'json' && c.passeur[0].url.includes(`/keys/${KEY}`);
+  ok(relais && zt.includes('Bibliothèque de marie'), 'la vérification passe par le passeur (genre json)' + (relais && zt.includes('Bibliothèque de marie') ? '' : ` (${c.passeur.length} appel(s) au passeur ; la section : « ${zt.slice(0, 140)} »)`));
   await c.evaluate(() => location.hash = 'sources'); await c.waitForTimeout(300);
   await c.click('[data-act="zot-recent"]'); await until(() => c.passeur.length >= 2); // la réponse, pas un délai (BL-22)
   await c.waitForFunction(() => document.querySelectorAll('.zot-list b').length === 2, null, { timeout: 10000 }).catch(() => {});

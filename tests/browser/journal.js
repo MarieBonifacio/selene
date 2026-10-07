@@ -2,16 +2,16 @@
    faux Supabase : une exception non rattrapée et une promesse rejetée partent vers /rest/v1/erreurs, sans leur
    message, sans jeton, une fois chacune ; une erreur réseau ne part pas ; couper l'envoi dans Réglages → Compte arrête
    tout. Lancé par tests/browser/run.js. */
-const { suivre, calme, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { suivre, calme, fauxSupabase, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 (async () => {
   const b = await engine.launch(launchOptions);
   const recus = [];
   const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'u1', email: 'a@b.c' } });
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
-  await ctx.route('https://*.supabase.co/**', r => {
+  await fauxSupabase(ctx, r => {
     const req = r.request(), u = new URL(req.url());
     if (u.pathname === '/rest/v1/erreurs') { recus.push({ corps: req.postDataJSON(), auth: req.headers().authorization, apikey: req.headers().apikey }); return r.fulfill({ status: 201, body: '' }); }
-    return r.fulfill({ contentType: 'application/json', body: req.method() === 'GET' ? '[]' : '{}' });
+    return;
   });
   await ctx.addInitScript(([d, s]) => {
     if (sessionStorage.getItem('init')) return; sessionStorage.setItem('init', '1');

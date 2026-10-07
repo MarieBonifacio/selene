@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "e479bb1694";
+const SELENE_BUILD = "a15bfcacef";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -13441,7 +13441,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     $("#bar").innerHTML = barHTML(view);
     if (inst && view !== lastView) noteVisit(view);
     const ae = document.activeElement, typing = ae && ae.closest && ae.closest("#main") && (ae.tagName === "TEXTAREA" || ae.tagName === "INPUT" && !["checkbox", "radio", "file", "button"].includes(ae.type));
-    if (typing && view === "reglages" && lastView === "reglages") return;
+    if (typing && view === lastView && (view === "reglages" || !ae.id)) return;
     const keep = {};
     let focusId = null, caret = null;
     $("#main").querySelectorAll("[data-draft]").forEach((el) => saveDraft(lastView, el));
