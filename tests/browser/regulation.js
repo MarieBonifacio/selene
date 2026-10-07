@@ -222,7 +222,17 @@ const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_
     const cibles = () => p.$$eval('#main .rlm-acts .btn', bs => bs.map(x => Math.round(x.getBoundingClientRect().height * 100) / 100));
     await p.waitForFunction(() => { const bs = [...document.querySelectorAll('#main .rlm-acts .btn')]; return bs.length === 4 && bs.every(x => x.getBoundingClientRect().height >= 44); }, null, { timeout: 5000 }).catch(() => {});
     const hauteurs = await cibles();
-    check(hauteurs.length === 4 && hauteurs.every(x => x >= 44), `téléphone : les quatre actions ont une cible de 44 px au moins (${hauteurs.join(', ')} px)`);
+    // A43, revenu le 7 octobre sous Firefox avec 0 px pour les quatre : rien n'était posé. Ce qui les cache, s'il revient :
+    // l'adresse, la visibilité de la page, #main, les boîtes ouvertes, et chaque ancêtre caché du premier bouton.
+    const pourquoi = await p.evaluate(() => {
+      const b = document.querySelector('#main .rlm-acts .btn'), m = document.querySelector('#main').getBoundingClientRect(), caches = [];
+      for (let e = b; e && e !== document.documentElement; e = e.parentElement) {
+        const s = getComputedStyle(e), cv = s.contentVisibility || 'visible';
+        if (s.display === 'none' || s.display === 'contents' || s.visibility !== 'visible' || cv !== 'visible') caches.push(`${e.tagName.toLowerCase()}${e.id ? '#' + e.id : ''}${e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\s+/).join('.') : ''} (display ${s.display}, visibility ${s.visibility}, content-visibility ${cv})`);
+      }
+      return `adresse ${location.hash}, page ${document.visibilityState}, #main ${Math.round(m.width)}×${Math.round(m.height)}, boîtes ouvertes [${[...document.querySelectorAll('dialog[open]')].map(d => d.id || d.className).join(', ')}], ${b ? (b.isConnected ? 'bouton dans la page' : 'bouton détaché') + ', ' + b.getClientRects().length + ' boîte(s)' : 'aucun bouton'}, ancêtres cachés [${caches.join(' ; ')}]`;
+    });
+    check(hauteurs.length === 4 && hauteurs.every(x => x >= 44), `téléphone : les quatre actions ont une cible de 44 px au moins (${hauteurs.join(', ')} px)` + (hauteurs.length === 4 && hauteurs.every(x => x >= 44) ? '' : ` ; ${pourquoi}`));
     if (process.env.SHOTS) await p.screenshot({ path: `${process.env.SHOTS}/regulation-phone.png`, fullPage: true });
 
     console.log('ordinateur, clavier, anglais');
