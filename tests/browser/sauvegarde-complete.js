@@ -117,6 +117,45 @@ async function relu(p, ok) {
     check(vieux.schemaVersion >= 8 && t.includes('Poser le velux') && t.includes('Mon livre') && t.includes('Une phrase qui passe') && t.includes('acheter des clous'),
       `migré au format ${vieux.schemaVersion} : la tâche, le livre, le fragment, la note sont là`);
     check(Object.values(vieux.modules).some(m => m.label === 'Aragne') || JSON.stringify(vieux.config.labels || {}).includes('Aragne'), 'un nom d’espace personnalisé gardé (« Aragne »)');
+    // DON-006, étapes 2 à 8 : ce que montre chaque espace migré, puis l'assistant, puis l'aller-retour.
+    const ecran = async (h, sel = '#main h2') => { await S.evaluate(x => { location.hash = x; }, h); await S.waitForSelector(sel, { state: 'attached' }); return (await S.textContent('#main')).replace(/\s+/g, ' '); };
+    const velux = (vieux.modules.chantier.entries || []).find(e => e.title === 'Poser le velux') || {};
+    const c2 = await ecran('chantier', '#main li.item');
+    check(['Poser le velux', 'Chambre', '250 €', '1/1 étapes', 'Devis'].every(x => c2.includes(x)) && (velux.steps || []).some(st => st.t === 'Devis' && st.d),
+      'Chantier : « Poser le velux », Chambre, 250 €, l’étape « Devis » cochée (1/1 étapes) (DON-006, étape 2)');
+    const k3 = await ecran('kundalini'), e3 = await ecran('ecriture');
+    check(vieux.modules.kundalini.config.start === '2025-01-06' && ['6 janv.', '20 min', 'Premier jour'].every(x => k3.includes(x))
+      && ['Mon livre', '500 mots sur 40 000', 'Prologue', 'Une phrase qui passe'].every(x => e3.includes(x)),
+      'Kundalini : commencé le 6 janvier 2025, une séance de 20 min « Premier jour » ; Écriture : « Mon livre », 500 mots sur 40 000, « Prologue », « Une phrase qui passe » (étape 3)');
+    const a4 = await ecran('phidippus'), repas = (vieux.modules.phidippus.entries || []).find(e => (e.note || e.text || '').includes('Un grillon')) || {};
+    check(a4.includes('Aragne') && a4.includes('Un grillon') && a4.includes('6 janv.') && repas.date === '2025-01-06', `les rappels s’appellent « Aragne » ; « Un grillon », un repas du 6 janvier 2025 (étape 4)`);
+    const m5 = await ecran('moth'), u5 = await ecran('musique');
+    const statut6 = t => ((vieux.modules.moth.entries || []).find(e => e.title === t) || {}).status;
+    check(/Idée 1\s*Ancien statut/.test(m5) && /Prêt 1\s*Le lichen/.test(m5) && statut6('Ancien statut') === 'Idée' && statut6('Le lichen') === 'Prêt'
+      && vieux.modules.musique.config.display === 'liste' && u5.includes('Dead Can Dance') && u5.includes('Aion') && ((vieux.modules.musique.entries || [])[0] || {}).status === 'Retenu',
+      'october.moth en colonnes : « Le lichen » en « Prêt », « Ancien statut » en « Idée » ; Musique en liste : « Dead Can Dance », « Aion », « Retenu » (étape 5)');
+    const i6 = await ecran('inbox');
+    await ecran('budget', '[data-act="bud-month"][data-d="-1"]');
+    for (let i = 0; i < 40 && !(await S.textContent('#main')).includes('janvier 2025'); i++) await S.click('[data-act="bud-month"][data-d="-1"]');
+    const b6 = (await S.textContent('#main')).replace(/\s+/g, ' ');
+    check(i6.includes('acheter des clous') && b6.includes('janvier 2025') && b6.includes('42,50 €') && /Courses.*300,00 €/.test(b6),
+      'la Capture : « acheter des clous » ; le Budget de janvier 2025 : une dépense de 42,50 € dans Courses (300 €) (étape 6)');
+    await reglages(S); await S.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
+    const allumer = S.locator('.set.mod:has(input[data-act="mod-label"][value="Assistant"]) [data-act="mod-on"]'); if (!(await allumer.isChecked())) await allumer.check();
+    await S.waitForSelector('input[data-act="as-share"]', { state: 'attached' });
+    const cases = await S.$$eval('input[data-act="as-share"]', xs => Object.fromEntries(xs.map(x => [x.dataset.k, x.checked])));
+    check(cases.budget === false && ['chantier', 'kundalini', 'ecriture', 'phidippus', 'moth', 'musique', 'inbox'].every(k => cases[k] === true),
+      `Réglages → Assistant → « Ce que Claude peut lire » : Budget décoché, les sept autres cochés (étape 7)`);
+    const avant8 = await storeJSON(S, 'selene-site-v1');
+    const [dl8] = await Promise.all([S.waitForEvent('download'), (async () => { await reglages(S); await S.click('[data-act="exp"]'); })()]);
+    const f8 = await dl8.path();
+    await S.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+    await reglages(S); await S.setInputFiles('input[data-act="imp"]', f8);
+    if (await confirmation(S)) await S.click('#cdlg button[value="ok"]');
+    const acceptee = await bulle(S, 'Sauvegarde importée.');
+    const apres8 = await relu(S, d => (d.updatedAt || 0) !== (avant8.updatedAt || 0));
+    const forme8 = d => JSON.stringify({ modules: d.modules, labels: d.config.labels, share: d.config.assistant.share, on: d.config.modules });
+    check(acceptee && forme8(apres8) === forme8(avant8), 'exporté puis réimporté : « Sauvegarde importée. », et rien ne change, espace par espace (étape 8)');
 
     console.log('aller-retour vers un autre navigateur (DON-007)');
     // Deux navigateurs sans compte, sans rien en commun que le fichier. Le premier : le jeu d'essai, modifié à la main.
