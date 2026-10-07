@@ -2,7 +2,7 @@
 
 De chaque fonctionnalité ou règle, le risque, les cas manuels qui la vérifient, les tests automatiques qui la couvrent,
 la couverture réelle et ce qu'il reste à faire. Une ligne par cas manuel (le titre du cas énonce la règle), puis les
-règles que seuls les tests automatiques vérifient. État au commit `e67c61c` (7 octobre 2026), chaque ligne de cas précisée étape par étape, les P1 le 6 octobre, les P2 et P3 le 7 ([BL-19](backlog.md#bl-19)), puis quinze cas de plus couverts automatiquement le même jour (leurs messages vérifiés) ; les cas sont dans [manuels/](manuels/),
+règles que seuls les tests automatiques vérifient. État au commit `931d93c` (7 octobre 2026), chaque ligne de cas précisée étape par étape, les P1 le 6 octobre, les P2 et P3 le 7 ([BL-19](backlog.md#bl-19)), puis quinze cas de plus couverts automatiquement le même jour (leurs messages vérifiés) ; les cas sont dans [manuels/](manuels/),
 les tests dans [automatises.md](automatises.md), les actions numérotées dans [backlog.md](backlog.md).
 
 ## États de couverture

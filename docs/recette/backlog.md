@@ -488,7 +488,8 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   `zotero.js`, A28 : une source se nommait par son résumé, corrigée (`TU-MOD-65`). Puis cinq de plus (EXT-014, EXT-004, MOD-018,
   MOD-004, MOD-003) : 33 automatiques et 159 partiels ; PEN-003, PEN-004 et PEN-012 ne gardent qu'un reste chacun.
   En chemin, A30 (l'étoile d'une tâche du jour, muette pour un lecteur d'écran) et C11 (MOD-003 demandait de
-  « décocher » une tâche faite, qui n'a plus de case).
+  « décocher » une tâche faite, qui n'a plus de case). Enfin trois (NAV-003, ESP-009, CPT-003) : 36 automatiques et
+  156 partiels ; C12 (NAV-003 attendait un message que la palette n'affiche jamais).
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`
