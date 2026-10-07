@@ -528,6 +528,8 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   tente d'écrire même quand aucun outil ne lui est offert : l'app doit refuser à l'exécution, et une fenêtre d'accord
   ouverte se relèverait. Huit mutants : sept tombent ; le huitième est équivalent (l'outil d'un espace éteint n'a déjà
   pas de module, `firstOfType` ne retenant que les espaces affichés : la garde est double).
+  Puis deux de « Reprendre la main », sur le chemin S (sans compte, `rlm-en-cours.json` importé : RLM-006, RLM-013) :
+  82 et 110. Six mutants, six contrôles qui tombent.
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`
