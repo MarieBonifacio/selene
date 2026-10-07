@@ -18,8 +18,9 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
         : nonAutorise ? json(route, 400, { code: 400, error_code: 'email_address_not_authorized', msg: 'Email address "iris@exemple.org" cannot be used as it is not authorized' }) : json(route, 200, {});
       if (u.pathname === '/auth/v1/user' && req.method() === 'PUT') {
         if (!['Bearer jeton-lien', 'Bearer jeton-frais'].includes(req.headers().authorization)) return json(route, 403, { code: 403, error_code: 'bad_jwt', msg: 'invalid JWT: token is expired' });
-        const pw = JSON.parse(req.postData()).password;
-        if (pw === 'ancien-mdp') return json(route, 422, { code: 422, error_code: 'same_password', msg: 'New password should be different from the old password.' });
+        const corps = JSON.parse(req.postData()), pw = corps.password;
+        // Comme le vrai serveur : le même mot de passe que l'actuel est refusé (CPT-011, étape 3), l'ancien du lien aussi.
+        if (pw === 'ancien-mdp' || (corps.current_password && pw === corps.current_password)) return json(route, 422, { code: 422, error_code: 'same_password', msg: 'New password should be different from the old password.' });
         if (pw === 'mot-de-passe-fuite') return json(route, 422, { code: 422, error_code: 'weak_password', msg: 'Password is known to be weak and easy to guess, please choose a different one.', weak_password: { reasons: ['pwned'] } });
         return json(route, 200, { id: UID, email: 'iris@exemple.org' });
       }
@@ -198,6 +199,10 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
   };
   await change('mauvais-mot-de-passe', 'une-phrase-de-saison', "actuel n'est pas le bon");
   ok((await w.textContent('#toast')).includes("actuel n'est pas le bon") && !w.calls.some(x => x.path === '/auth/v1/user'), 'mot de passe actuel faux : rien ne change');
+  await w.evaluate(() => document.querySelectorAll('details').forEach(d => { if (d.id !== 'auth-delete') d.open = true; }));
+  // CPT-011, étape 3 : l'actuel juste, le nouveau identique à l'actuel ; refusé par le serveur, dit en français.
+  await change('mot-de-passe-actuel', 'mot-de-passe-actuel', 'déjà ton mot de passe');
+  ok((await w.textContent('#toast')).trim() === 'C\'est déjà ton mot de passe : choisis-en un autre.' && !(await w.$('#authForm')), '« C’est déjà ton mot de passe : choisis-en un autre. » ; toujours connectée (CPT-011, étape 3)');
   await w.evaluate(() => document.querySelectorAll('details').forEach(d => { if (d.id !== 'auth-delete') d.open = true; }));
   await change('mot-de-passe-actuel', 'une-phrase-de-saison', 'Mot de passe changé');
   const sent = w.calls.filter(x => x.path === '/auth/v1/user' && x.method === 'PUT').pop();

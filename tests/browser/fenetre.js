@@ -34,6 +34,9 @@ const demo = fixture();
   await p.fill('#skyCity', 'Paris'); await p.click('[data-act="sky-search"]'); await p.waitForTimeout(300);
   ok((await p.textContent('#ciel')).includes('Paris, Île-de-France, France'), 'la recherche propose des lieux');
   await p.click('[data-act="sky-pick"][data-i="0"]'); await p.waitForTimeout(400);
+  const garde = { bulle: (await p.textContent('#toast')).trim(), ciel: (await p.textContent('#ciel')).replace(/\s+/g, ' ') };
+  ok(garde.bulle === 'Lieu gardé. Le ciel de l\'accueil est désormais celui d\'ici.' && garde.ciel.includes('arrondis à une dizaine de kilomètres'),
+    `« ${garde.bulle} » ; les coordonnées « arrondis à une dizaine de kilomètres » (EXT-007, étape 2)`);
   const sky = await p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).config.sky);
   ok(sky.lat === 48.9 && sky.lon === 2.3, `lieu gardé, arrondi au dixième de degré (${sky.lat} ; ${sky.lon})`);
   ok(weatherCalls === 1, 'la météo est demandée une fois, pour ce lieu');
@@ -57,6 +60,17 @@ const demo = fixture();
   await p.close();
   p = await pageAt('2026-09-28T22:00:00+02:00');
   ok(await p.evaluate(() => document.documentElement.dataset.mode) === 'dark', 'et sombre le soir');
+  // EXT-007, étapes 4 et 5 : « Utiliser ma position », l'autorisation refusée (la réponse du navigateur, simulée à
+  // l'identique sur chaque moteur), puis le lieu retiré.
+  await p.evaluate(() => location.hash = 'reglages'); await p.waitForSelector('[data-act="sky-locate"]');
+  await p.evaluate(() => { navigator.geolocation.getCurrentPosition = (ok, ko) => setTimeout(() => ko({ code: 1, message: 'User denied Geolocation' }), 10); });
+  const bulle = t => p.waitForFunction(x => (document.querySelector('#toast').textContent || '').includes(x), t, { timeout: 5000 }).catch(() => {});
+  await p.click('[data-act="sky-locate"]'); await bulle('Position refusée');
+  const refus = (await p.textContent('#toast')).trim(), toujours = await p.evaluate(() => !!JSON.parse(localStorage.getItem('selene-site-v1')).config.sky);
+  ok(refus === 'Position refusée ou indisponible. Une ville fera l\'affaire.' && toujours, `« Utiliser ma position », refusée : « ${refus} » ; le lieu d’avant reste (étape 4)`);
+  await p.click('[data-act="sky-clear"]'); await bulle('Lieu retiré');
+  const retire = (await p.textContent('#toast')).trim(), plus = await p.evaluate(() => !JSON.parse(localStorage.getItem('selene-site-v1')).config.sky);
+  ok(retire === 'Lieu retiré : l\'heure redevient estimée, sans météo.' && plus, `« retirer » : « ${retire} » ; plus de lieu gardé (étape 5)`);
 
   // NAV-010, étapes 1, 2 et 4, sur le jeu d'essai du cahier, un appareil réglé en clair : la palette, les deux modes
   // fixes et le nom affiché. L'accent se lit dans deux régions (navigation, contenu) par une sonde qui prend sa couleur.

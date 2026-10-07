@@ -83,6 +83,14 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   const verifie = (x, mot) => x.waitForFunction(m => ((document.querySelector('#toast') || {}).textContent || '').includes(m), mot, { timeout: 5000 }).catch(() => {});
   await r.click('[data-act="passeur-check"]'); await verifie(r, 'il répond');
   ok(r.passeur.length === 1 && r.passeur[0].url.endsWith('/index.html') && (await r.textContent('#passeur')).includes('Déployé'), 'Vérifier : le passeur lit la page de Selene elle-même, et répond');
+  // EXT-012, étape 1 : « copier » l'identifiant. Le presse-papiers est relevé dans la page : chaque moteur règle à sa façon
+  // le droit d'y écrire. Puis le refus du presse-papiers, dit lui aussi.
+  const presse = refus => r.evaluate(no => { window.__copie = null; if (!navigator.clipboard) Object.defineProperty(navigator, 'clipboard', { value: {}, configurable: true });
+    navigator.clipboard.writeText = async t => { if (no) throw new Error('refusé'); window.__copie = t; }; }, refus);
+  await presse(false); await r.click('[data-act="passeur-copy"]'); await verifie(r, 'Identifiant copié');
+  ok(await r.evaluate(() => window.__copie) === UID && (await r.textContent('#toast')).trim() === 'Identifiant copié.', '« copier » : l’identifiant du compte au presse-papiers, « Identifiant copié. » (EXT-012, étape 1)');
+  await presse(true); await r.click('[data-act="passeur-copy"]'); await verifie(r, 'Copie impossible');
+  ok((await r.textContent('#toast')).trim() === 'Copie impossible ici : sélectionne-le à la main.', 'le presse-papiers refusé : « Copie impossible ici : sélectionne-le à la main. »');
   const f = await open('refus', '/index.html#reglages');
   await f.click('[data-act="passeur-check"]'); await verifie(f, "n'est pas autorisé");
   ok((await f.textContent('#passeur')).includes("n'est pas autorisé") && (await f.textContent('#toast')).includes("n'est pas autorisé"), 'compte non listé : dit pourquoi');
