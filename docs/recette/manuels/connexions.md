@@ -376,7 +376,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P3 · **Plateformes** : Web
 - **Préconditions** : connectée ; un artiste relié (EXT-005).
 - **Données** : recherche `forest edge ecology`.
-- **Automatisés associés** : `TN-veille`, `TN-artist-watch`, `TU-VEI-01`, `TU-VEI-02`, `TU-VEI-03`
+- **Automatisés associés** : `TN-veille`, `TN-artist-watch`, `TU-VEI-01`, `TU-VEI-02`, `TU-VEI-03`, `TU-MOD-66`
 - **Source** : [DOC] README, « Dehors » ; [DOC] [connexions.md](../../connexions.md), 6c et 6d ; [TEST] `tests/browser/veille.js`, `tests/browser/artist-watch.js`.
 
 | Étape | Action précise | Résultat attendu observable |

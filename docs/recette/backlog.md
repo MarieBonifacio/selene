@@ -21,6 +21,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| ~~A33 : une synchro pendant une frappe effaçait la saisie d'un champ sans identifiant, hors des Réglages (la clé OpenAlex de Dehors)~~ (fait le 7 octobre 2026, PR #132) | une session | P2 | — | [A33](perimetre.md#anomalies-et-observations) |
 | ~~A32 : `tests/browser/zotero.js` instable sous WebKit (la clé lue 500 ms après sa saisie)~~ (fait le 7 octobre 2026, PR #132) | une session | P3 | — | [A32](perimetre.md#anomalies-et-observations) |
 | ~~A31 : les reprises d'A24 rendaient plus fréquentes les requêtes coupées par un rechargement, sous WebKit~~ (fait le 7 octobre 2026, PR #129) | une session | P3 | — | [A31](perimetre.md#anomalies-et-observations) |
 | ~~A30 : l'étoile « Faire aujourd'hui » ne disait pas son état au lecteur d'écran~~ (fait le 7 octobre 2026, PR #130) | une session | P2 | — | [A30](perimetre.md#anomalies-et-observations) |
@@ -588,7 +589,9 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
     dix secondes) ; il les compte une fois l'app au repos, et une boucle le ferait toujours échouer.
   - `mot-de-passe.js` lisait la bulle d'entrée aussitôt entré ; elle vient une fois le branchement fini, plus long quand
     il réussit, et à ×4 elle n'était pas encore là. Il l'attend.
-  La CI a trouvé un quatrième cas sous WebKit, A32 (`zotero.js`, la clé lue 500 ms après sa saisie), corrigé de même.
+  La CI a trouvé un quatrième cas sous WebKit, A32 (`zotero.js`, la clé lue 500 ms après sa saisie), corrigé de même ; et,
+  sous Firefox, un vrai défaut de l'app que l'ancien faux cachait, A33 : une synchro pendant une frappe effaçait la saisie
+  d'un champ sans identifiant, hors des Réglages. Corrigé, prouvé par `TU-MOD-66` et `TN-veille`.
   Le calme de 2,5 s avant chaque rechargement (A31) reste : il protège aussi des écritures parties juste avant.
 
 ---

@@ -34,14 +34,15 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob, AND, IOS, WIN
 - **Préconditions** : A1 et A2 ouverts sur l'accueil.
 - **Données** : capture `de A1 SYN-001`.
-- **Automatisés associés** : `TN-sync-deux-appareils`, `TU-SYN-08`, `TU-SYN-09`
-- **Source** : [DOC] README, « Comptes et synchronisation » ; [DOC] [architecture.md](../../architecture.md#synchronisation) ; [TEST] `tests/browser/sync-deux-appareils.js`.
+- **Automatisés associés** : `TN-sync-deux-appareils`, `TU-SYN-08`, `TU-SYN-09`, `TU-MOD-66`, `TN-veille`
+- **Source** : [DOC] README, « Comptes et synchronisation » ; [DOC] [architecture.md](../../architecture.md#synchronisation) ; [TEST] `tests/browser/sync-deux-appareils.js` ; [ANOMALIE] A33.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | A1 : capturer le texte des données. | L'indicateur d'enregistrement dit « Enregistrement… » puis s'efface. |
 | 2 | A2 : laisser l'onglet visible et attendre jusqu'à 30 s. | La capture apparaît dans la boîte de A2 sans recharger. |
 | 3 | A2 : passer sur un autre onglet ; A1 : supprimer la capture (laisser passer « Annuler ») ; A2 : revenir sur l'onglet. | La capture disparaît de A2 dès le retour. |
+| 4 | A2 : Nouveautés · Dehors → déplier « Clé OpenAlex (facultative) », y taper `cle-de-recette` sans quitter le champ ; A1 : capturer `pendant la frappe` ; A2 : attendre 30 s, champ toujours actif. | Sur A2, la clé tapée reste, le curseur dans le champ, le bloc ouvert (A33). Le champ quitté, la capture apparaît dans la boîte de A2. Effacer ensuite la clé (vider le champ). |
 
 - **État final attendu** : identique sur les deux appareils.
 - **Nettoyage** : aucun.

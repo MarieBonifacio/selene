@@ -10,7 +10,7 @@ Identifiants retirés : aucun.
 
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
-| Tests unitaires et d'intégration Node | `npm test` | 323 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
+| Tests unitaires et d'intégration Node | `npm test` | 324 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
 | Scénarios de navigateur | `npm run test:browser` | 81 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent et au processeur ralenti | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
@@ -472,6 +472,7 @@ sans navigateur.
 | <a id="tu-mod-63"></a>`TU-MOD-63` | l’adresse d’un espace désactivé mène à l’accueil, et le dit une fois par visite ; une adresse inconnue, sans un mot | Ouvert, l'espace s'affiche ; désactivé, son adresse mène à l'accueil et « « Chantier » est désactivé : Réglages → Espaces pour le rouvrir. » s'affiche une fois (un autre rendu ne le répète pas, revenir à l'adresse le redit) ; une adresse qui ne désigne aucun espace mène à l'accueil sans message. | [ESP-006](manuels/espaces.md#esp-006) |
 | <a id="tu-mod-64"></a>`TU-MOD-64` | minuit : chaque vue suit la date d’elle-même, une minute après au plus ; jamais sous un formulaire ouvert ni pendant une saisie | Horloge simulée : sur le Chantier, rien avant minuit ; passé minuit, pas de rendu tant qu'un formulaire est ouvert (son contenu reste) ou qu'un champ est en cours de saisie ; la minute suivante, l'en-tête dit « mercredi 7 octobre » ; ensuite, plus de rendu à chaque minute. | [TRV-004](manuels/transverse.md#trv-004) |
 | <a id="tu-mod-65"></a>`TU-MOD-65` | une entrée se nomme par son titre, sinon par son texte : une source, pas par son résumé (A28) | Une source gardée avec un résumé se nomme par son titre, dans `excerpt` comme dans un lien (`refHTML`) ; une note, qui n'a pas de titre, par son texte, espaces resserrés ; une entrée au titre vide, par son texte. Échoue sans le correctif d'A28. | [EXT-001](manuels/connexions.md#ext-001), [EXT-016](manuels/connexions.md#ext-016) |
+| <a id="tu-mod-66"></a>`TU-MOD-66` | une synchro pendant une frappe dans un champ sans identifiant ne redessine pas la vue, dans toutes les vues (A33) | Une vue ouverte (le Chantier, les Réglages), le focus dans un champ sans identifiant : un rendu (synchro, autre onglet) laisse la vue telle quelle ; un champ à identifiant, lui, est restauré et la vue se redessine (hors Réglages). Échoue sans le correctif d'A33. | [SYN-001](manuels/synchronisation.md#syn-001), [EXT-014](manuels/connexions.md#ext-014) |
 
 ### Notes Markdown (Obsidian, Zettlr) — `tests/markdown.test.js`
 
@@ -1229,8 +1230,8 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/veille.js`](../../tests/browser/veille.js) · **mode** H · **écran** O
 - **Conditions** : OpenAlex simulé.
-- **Vérifie** : rien avant la première veille ; « En veille : … Première lecture… » ; une requête depuis un mois, sans clé ; articles avec revue, autrice, résumé ; garder : source avec DOI et provenance « Veille » ; ORCID et clé : « Clé OpenAlex gardée dans ce navigateur. », clé hors des données synchronisées ; veille en double dite ; pas de nouvelle demande dans la semaine ; quota épuisé dit ; se déconnecter efface la clé et ce que le dehors a apporté ; synchronisé pour de vrai (BL-23).
-- **Cas manuels** : [CPT-013](manuels/entree-et-comptes.md#cpt-013), [EXT-014](manuels/connexions.md#ext-014)
+- **Vérifie** : rien avant la première veille ; « En veille : … Première lecture… » ; une requête depuis un mois, sans clé ; articles avec revue, autrice, résumé ; garder : source avec DOI et provenance « Veille » ; ORCID et clé : « Clé OpenAlex gardée dans ce navigateur. », clé hors des données synchronisées ; veille en double dite ; pas de nouvelle demande dans la semaine ; quota épuisé dit ; se déconnecter efface la clé et ce que le dehors a apporté ; synchronisé pour de vrai (BL-23) ; une synchro pendant la frappe de la clé ne l'efface pas (A33).
+- **Cas manuels** : [CPT-013](manuels/entree-et-comptes.md#cpt-013), [EXT-014](manuels/connexions.md#ext-014), [SYN-001](manuels/synchronisation.md#syn-001)
 
 <a id="tn-cites"></a>
 #### `TN-cites` — Ce que tes sources ont en commun

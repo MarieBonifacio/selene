@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Research Watch dans Dehors (connexions externes, phase 2, vague 6d : docs/connexions.md).
    Version hébergée simulée (faux Supabase), OpenAlex simulé ; pas besoin du passeur. Lancé par tests/browser/run.js. */
-const { storeGet, storeJSON, suivre, calme, fauxSupabase, synchro, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeGet, storeSet, storeJSON, suivre, calme, fauxSupabase, synchro, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, sources: true, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1,
   fields: { title: 'Titre', subtitle: 'Auteurs', tag: 'Type', due: '', text: 'Résumé' } }, entries: [] };
@@ -50,7 +50,13 @@ const WORK = (n, extra = {}) => ({ id: `https://openalex.org/W${n}`, doi: `https
   ok((await p.getAttribute('[data-item="W2"] a', 'href')) === 'https://openalex.org/W2', 'sans DOI : la notice OpenAlex');
 
   console.log('un auteur, avec une clé');
-  await p.click('text=Clé OpenAlex (facultative)'); await p.fill('[data-act="oa-key"]', 'ma-cle-secrete'); await p.press('[data-act="oa-key"]', 'Tab');
+  await p.click('text=Clé OpenAlex (facultative)'); await p.fill('[data-act="oa-key"]', 'ma-cle-secrete');
+  // Pendant la frappe, un autre onglet enregistre (ou une synchro arrive) : la page ne se redessine pas sous le champ (A33).
+  { const d = await storeJSON(p, 'selene-site-v1'); d.updatedAt = (d.updatedAt || 0) + 1; await storeSet(p, 'selene-site-v1', JSON.stringify(d)); }
+  await p.waitForTimeout(400); // une absence : aucun rendu ne doit venir effacer le champ
+  ok((await p.inputValue('[data-act="oa-key"]')) === 'ma-cle-secrete' && await p.evaluate(() => document.activeElement && document.activeElement.dataset.act === 'oa-key' && !!document.activeElement.closest('details[open]')),
+    'un rendu pendant la frappe n’efface pas la clé, ni le focus, ni le bloc ouvert (A33)');
+  await p.press('[data-act="oa-key"]', 'Tab');
   /* La clé est gardée quand on quitte le champ (change). Sous Firefox piloté par Playwright, Tab peut ne pas le quitter :
      l'enregistrement, qui redessine la page, arrivait alors au champ suivant et effaçait ce qu'on venait d'y taper. */
   const gardee = () => p.waitForFunction(() => (document.querySelector('#toast') || {}).textContent?.includes('Clé OpenAlex gardée'), null, { timeout: 5000 }).then(() => true, () => false);

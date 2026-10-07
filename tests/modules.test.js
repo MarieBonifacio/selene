@@ -1367,3 +1367,18 @@ test('une entrée se nomme par son titre, sinon par son texte : une source, pas 
   assert.equal(app.excerpt({ id: 'n', text: 'Une note,  sans titre' }), 'Une note, sans titre', 'une note : son texte');
   assert.equal(app.excerpt({ id: 'x', title: '', text: 'Faute de titre, le texte' }), 'Faute de titre, le texte');
 });
+
+test('une synchro pendant une frappe dans un champ sans identifiant ne redessine pas la vue, dans toutes les vues (A33)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const main = app.nodes.get('#main');
+  const champ = id => ({ tagName: 'INPUT', type: 'password', id, closest: sel => (sel === '#main' ? main : null) });
+  for (const vue of ['#chantier', '#reglages']) {
+    app.location.hash = vue; app.render(); // la vue ouverte
+    main.innerHTML = 'SAISIE_EN_COURS'; app.document.activeElement = champ('');
+    app.render(); // ce que ferait une synchro, ou un autre onglet
+    assert.equal(main.innerHTML, 'SAISIE_EN_COURS', `${vue} : pendant la frappe dans un champ sans identifiant, la vue reste`);
+    app.document.activeElement = champ('capIn'); app.render(); // les Réglages, eux, ne se redessinent sous aucune frappe
+    if (vue !== '#reglages') assert.notEqual(main.innerHTML, 'SAISIE_EN_COURS', `${vue} : un champ à identifiant est restauré, la vue se redessine`);
+    app.document.activeElement = null;
+  }
+});
