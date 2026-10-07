@@ -628,7 +628,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : chemin S, `rlm-en-cours.json` importé ; créer un espace depuis le modèle « Motifs » ; dans la Boîte,
   garder la note `famille recomposée`.
 - **Données** : recherches `Repas de famille`, `Après le travail`, `Marcher` ; motif `famille`.
-- **Automatisés associés** : `TU-REG-22`, `TN-regulation`
+- **Automatisés associés** : `TU-REG-22`, `TN-regulation`, `TN-regulation-perdu`
 - **Source** : [DOC] [regulation.md](../../regulation.md#confidentialité) (affichage) ; [TEST] `TU-REG-22`,
   `tests/browser/regulation.js`.
 

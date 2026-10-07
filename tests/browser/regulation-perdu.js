@@ -9,7 +9,8 @@
    montrés, retrouvés à son retour, même après la déconnexion de l'autre (A48).
    Enfin le journal d'un suivi sans compte, l'horloge figée : corriger une saisie (RLM-011), observer, réduire, viser
    l'arrêt (RLM-007), deux semaines en regard (RLM-019) ; venu de regulation-appareil.js, trop long sous un processeur
-   ralenti (A51). Puis une journée sans saisie, inconnue jusqu'à sa confirmation, jamais zéro (RLM-008).
+   ralenti (A51). Puis une journée sans saisie, inconnue jusqu'à sa confirmation, jamais zéro (RLM-008) ; et aucun
+   détail hors de l'espace : recherche, palette, motifs, rangement d'une note (RLM-020).
    Lancé par tests/browser/run.js. */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -334,6 +335,59 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
       && ligne8(s5, 'Journées suivies') === '3' && ligne8(s5, 'Inconnues') === '2' && ligne8(s5, 'Quantités déclarées') === '1 verre standard' && ligne8(s5, 'Objectif atteint') === '1 sur 1 journée évaluable',
       `« Confirmer » : « ${dit8} » ; J-2 « ${avant8} » ; le tableau : ${(s5.lignes || []).map(x => x.slice(0, 2).join(' = ')).join(' ; ')} (étape 5)`);
     await u.c.close();
+
+    console.log('chemin S : aucun détail hors de l’espace (RLM-020)');
+    // rlm-en-cours.json importé : « Carnet du soir », ses notes « Repas de famille », « Après le travail », son appui
+    // « Marcher quelques minutes » ; puis un espace Motifs et la note « famille recomposée » dans la Boîte.
+    const cv = await browser.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block', timezoneId: 'Europe/Paris' });
+    const v = await cv.newPage(); v.on('pageerror', e => errs.push(e.message)); await v.clock.setFixedTime(INSTANT);
+    await ouvrir(v, BASE + '/index.html#sans-compte', entree);
+    const versV = async (h, sel) => { await v.evaluate(x => { location.hash = x; }, h); await v.waitForSelector(sel, { state: 'attached' }); };
+    const bulleV = t => v.waitForFunction(x => ((document.querySelector('#toast') || {}).textContent || '').includes(x), t, { timeout: 5000 }).then(() => true, () => false);
+    await versV('reglages', 'input[data-act="imp"]');
+    await v.setInputFiles('input[data-act="imp"]', path.join(__dirname, '..', '..', 'docs', 'recette', 'donnees', 'rlm-en-cours.json'));
+    await v.waitForSelector('#cdlg[open]', { timeout: 5000 }).catch(() => {}); if (await v.$('#cdlg[open]')) await v.click('#cdlg button[value="ok"]');
+    await bulleV('Sauvegarde importée.');
+    await versV('reglages', '[data-act="tpl-add"][data-tpl="motifs"]'); await v.$eval('[data-act="tpl-add"][data-tpl="motifs"]', x => x.click());
+    await v.waitForFunction(() => [...document.querySelectorAll('#nav a')].some(a => a.textContent.trim().endsWith('Motifs')));
+    const motifs = await v.evaluate(() => [...document.querySelectorAll('#nav a')].find(a => a.textContent.trim().endsWith('Motifs')).getAttribute('href').slice(1));
+    const capturerV = async t => {
+      await versV('accueil', '#capIn'); await v.evaluate(() => { document.querySelector('#toast').textContent = ''; }); await v.fill('#capIn', t); await v.click('[data-act="cap-add"]');
+      await v.waitForFunction(() => !!document.querySelector('#toast').textContent.trim(), null, { timeout: 5000 }).catch(() => {});
+      return v.evaluate(() => { const x = document.querySelector('#toast'); return { texte: x.textContent.replace(/\s+/g, ' ').trim(), action: !!x.querySelector('[data-act="undo"]') }; });
+    };
+    await capturerV('famille recomposée');
+    // La recherche se refait à chaque frappe : la ligne qui compte les résultats dit qu'elle a répondu à cette requête.
+    const chercher = async q => {
+      await versV('recherche', '#searchIn'); await v.fill('#searchIn', q);
+      await v.waitForFunction(x => document.querySelector('#searchIn').value === x && !!document.querySelector('#main .row .hint'), q);
+      return v.evaluate(() => ({ groupes: [...document.querySelectorAll('#main .search-grp')].map(g => g.textContent.replace(/\s+/g, ' ').trim()), texte: document.querySelector('#main').textContent.replace(/\s+/g, ' ') }));
+    };
+    const r20 = { famille: await chercher('famille'), repas: await chercher('Repas de famille'), apres: await chercher('Après le travail'), marcher: await chercher('Marcher') };
+    check(r20.famille.groupes.length === 1 && r20.famille.groupes[0].startsWith('Boîte') && !r20.famille.texte.includes('Repas de famille')
+      && [r20.repas, r20.apres, r20.marcher].every(r => !r.texte.includes('Carnet du soir') && !r.texte.includes('Repas de famille') && !r.texte.includes('Après le travail') && !r.texte.includes('Marcher quelques minutes')),
+      `la recherche : « famille » ne trouve que la Boîte (${r20.famille.groupes.join(', ')}) ; « Repas de famille », « Après le travail », « Marcher » : rien du suivi (${[r20.repas, r20.apres, r20.marcher].map(r => r.groupes.join('+') || 'aucun groupe').join(' / ')}) (étape 2)`);
+    const palette = async q => {
+      await versV('accueil', '#capIn'); await v.keyboard.press('Control+k'); await v.waitForSelector('#palIn'); await v.keyboard.type(q);
+      await v.waitForFunction(x => document.querySelector('#palIn').value === x && document.querySelectorAll('#palList li').length > 0, q, { timeout: 5000 }).catch(() => {});
+      const items = await v.$$eval('#palList li', ls => ls.map(l => [...l.children].map(c => c.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ')));
+      await v.keyboard.press('Escape'); await v.waitForFunction(() => !document.querySelector('#palette').open, null, { timeout: 5000 }).catch(() => {}); return items;
+    };
+    const [pCarnet, pFamille] = [await palette('Carnet'), await palette('famille')];
+    check(pCarnet.some(x => x.startsWith('Espace Carnet du soir')) && pFamille.length >= 1 && pFamille.every(x => !x.includes('Repas de famille') && !x.includes('Carnet du soir')) && pFamille.some(x => x.includes('famille recomposée')),
+      `la palette : « Carnet » propose « ${pCarnet.find(x => x.includes('Carnet du soir')) || '—'} » ; « famille » : ${pFamille.join(' | ')} (étape 3)`);
+    await versV(motifs, '[data-act="col-new"]'); await v.click('[data-act="col-new"]'); await v.waitForFunction(() => document.querySelector('#dlg').open);
+    await v.fill('#form [name="title"]', 'famille'); await v.click('#form button[value="save"]'); await v.waitForFunction(() => !document.querySelector('#dlg').open);
+    await v.waitForSelector('#main li.item.motif'); const motif = (await v.textContent('#main li.item.motif .meta')).replace(/\s+/g, ' ').trim();
+    check(/^1 occurrence · dernière .*\(Boîte\)$/.test(motif), `le motif « famille » : « ${motif} », rien de « Carnet du soir » (étape 4)`);
+    const c6 = await capturerV('Carnet du soir : deux verres hier');
+    await versV('inbox', '#main li.item');
+    const sous6 = await v.evaluate(() => { const li = [...document.querySelectorAll('#main li.item')].find(l => (l.querySelector('.ntext') || {}).textContent === 'Carnet du soir : deux verres hier');
+      return li ? { ranger: [...li.querySelectorAll('[data-act="note-file"]')].map(x => x.textContent.trim()), vers: [...li.querySelectorAll('[data-act="note-to"]')].map(x => x.textContent.trim()) } : null; });
+    const vers6 = await v.evaluate(() => [...document.querySelectorAll('#main [data-act="note-to"]')].map(x => x.textContent.trim()));
+    check(!c6.action && c6.texte.startsWith('Gardé') && !c6.texte.includes('Ranger') && !!sous6 && !sous6.ranger.length && !sous6.vers.some(x => x.includes('Carnet du soir')) && !vers6.some(x => x.includes('Carnet du soir')),
+      `« Carnet du soir : deux verres hier » gardé : « ${c6.texte} », sans « Ranger » ; sous les notes de la Boîte : ${vers6.join(', ') || 'aucun bouton « → … »'}, aucun « → Carnet du soir » (étape 6)`);
+    await cv.close();
     check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   } catch (e) { console.log('  ✗', e.stack.split('\n').slice(0, 3).join(' ')); process.exitCode = 1; } finally { await browser.close(); }
 })();
