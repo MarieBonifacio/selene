@@ -34,6 +34,27 @@ const { engine, BASE, launchOptions, fixture, check, storeJSON } = require('./he
     await p.fill('#capIn', 'Note de minuit passé'); await p.click('[data-act="cap-add"]');
     const note = (await storeJSON(p, 'selene-site-v1')).modules.inbox.entries.find(e => /Note de minuit passé/.test(JSON.stringify(e)));
     check(!!note && JSON.stringify(note).includes('2026-10-07') && !JSON.stringify(note).includes('2026-10-06'), 'elle porte la nouvelle date');
+
+    console.log('le même instant, d’autres fuseaux (TRV-005, étapes 1 à 3)');
+    // « Fuseau TRV-005 » gardée à Paris, le 7 octobre peu après minuit ; puis la même mémoire relue au même instant à
+    // Los Angeles, où l'on est encore le 6 dans l'après-midi, et à Auckland, où il est déjà midi le 7.
+    await p.fill('#capIn', 'Fuseau TRV-005'); await p.click('[data-act="cap-add"]');
+    const fuseau = async q => (await storeJSON(q, 'selene-site-v1')).modules.inbox.entries.find(e => e.text === 'Fuseau TRV-005');
+    for (let i = 0; i < 50 && !(await fuseau(p)); i++) await p.waitForTimeout(50);
+    const jour = async q => { await q.evaluate(() => { location.hash = 'inbox'; }); const sel = 'li.item:has-text("Fuseau TRV-005") .jdate'; await q.waitForSelector(sel); return [(await fuseau(q) || {}).date, (await q.textContent(sel)).trim()]; };
+    let [stocke, affiche] = await jour(p);
+    check(stocke === '2026-10-07' && affiche === '7 oct.', `à Paris : la note datée du 7 octobre (${stocke}, « ${affiche} ») (étape 1)`);
+    const memoire = await ctx.storageState(), instant = await p.evaluate(() => Date.now());
+    for (const [tz, ville, etape, ici] of [['America/Los_Angeles', 'Los Angeles', 2, '6 octobre'], ['Pacific/Auckland', 'Auckland', 3, '7 octobre']]) {
+      const c = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block', timezoneId: tz, storageState: memoire });
+      await c.addInitScript(() => { window.claude = { use: async () => null }; });
+      const q = await c.newPage(); q.on('pageerror', e => errs.push(e.message));
+      await q.clock.install({ time: instant }); await q.goto(BASE + '/index.html#inbox');
+      [stocke, affiche] = await jour(q);
+      const entete = await q.textContent('#dateline');
+      check(stocke === '2026-10-07' && affiche === '7 oct.' && entete.includes(ici), `rechargée à ${ville}, où l’on est le ${ici} : la note reste du 7 octobre (« ${affiche} ») (étape ${etape})`);
+      await c.close();
+    }
     check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   } catch (e) { console.log('  ✗', e.stack.split('\n').slice(0, 3).join(' ')); process.exitCode = 1; } finally { await b.close(); }
 })();

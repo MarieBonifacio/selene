@@ -520,6 +520,10 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   en chemin, A42 (« plus de 1 jours », dans Motifs), corrigé, et C18 : l'attendu « phalène, épuisé, n'y est jamais » ne
   pouvait pas échouer, « phalène » n'apparaissant dans aucun texte du jeu ; le jeu en gagne une occurrence ancienne. Huit
   mutants, huit contrôles qui tombent.
+  Puis trois dont seule la règle était prouvée, sans aucun écran (DON-007, TRV-005, ESP-010) : 77 et 115. DON-007, entre
+  deux navigateurs sans compte ; TRV-005, par les fuseaux du navigateur (Paris, Los Angeles, Auckland) et le changement
+  d'heure du 25 octobre ; ESP-010, lu dans ce qui part vers la fausse fonction de l'assistant, le mot-témoin vu partir
+  d'abord, pour que son absence prouve quelque chose. Sept mutants, sept contrôles qui tombent.
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`

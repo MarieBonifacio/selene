@@ -179,7 +179,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : navigateur 1 avec le jeu d'essai modifié : un fragment de plus avec un statut, un lien, un palier coché ;
   navigateur 2 (ou l'artefact claude.ai) aux données effacées, mode sans compte.
 - **Données** : aucune de plus.
-- **Automatisés associés** : `TU-BAK-01`, `TU-MOD-04`, `TU-MOD-09`
+- **Automatisés associés** : `TU-BAK-01`, `TU-MOD-04`, `TU-MOD-09`, `TN-sauvegarde-complete`
 - **Source** : [DOC] README, « Données » ; [TEST] `TU-BAK-01`, `TU-MOD-09`.
 
 | Étape | Action précise | Résultat attendu observable |
