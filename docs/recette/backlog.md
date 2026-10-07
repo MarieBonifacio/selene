@@ -23,7 +23,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 |---|---|---|---|---|
 | A45 : `tests/browser/regulation-appareil.js` instable sous WebKit (RLM-015, le bouton d'objectif introuvable après les refus), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A45](perimetre.md#anomalies-et-observations) |
 | ~~A44 : suivre un flux pendant une relecture de Dehors effaçait ses éléments~~ (fait le 7 octobre 2026, PR #141) | une session | P2 | — | [A44](perimetre.md#anomalies-et-observations) |
-| A43 : `tests/browser/regulation.js` instable sous Firefox (« les quatre actions ont une cible de 44 px au moins »), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A43](perimetre.md#anomalies-et-observations) |
+| A43 : `tests/browser/regulation.js` instable sous Firefox (« les quatre actions ont une cible de 44 px au moins »), revenu le 7 octobre avec 0 px (la vue n'était pas affichée), outillé davantage ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A43](perimetre.md#anomalies-et-observations) |
 | ~~A42 : « En jachère » disait « plus de 1 jours »~~ (fait le 7 octobre 2026, PR #137) | une session | P3 | — | [A42](perimetre.md#anomalies-et-observations) |
 | ~~A41 : renommer une enveloppe dans les Réglages renommait ses opérations sans le dire~~ (fait le 7 octobre 2026, PR #136) | une session | P3 | — | [A41](perimetre.md#anomalies-et-observations) |
 | ~~A40 : un rendu de fond tombé pendant un appui faisait perdre le clic (la boîte de confirmation jamais ouverte)~~ (fait le 7 octobre 2026, PR #135) | une session | P2 | — | [A40](perimetre.md#anomalies-et-observations) |
@@ -544,7 +544,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   reste partiel (l'écriture de la version plus récente n'est qu'un document posé sur le faux serveur) ; C21 (couper le
   réseau ne fait rien dire à l'indicateur). Quatre mutants, quatre contrôles qui tombent. Puis RLM-027 : 91 et 101 ; en
   chemin, A48, un défaut de l'app (le suivi mis de côté ne revenait pas si l'autre compte s'était déconnecté), corrigé
-  et prouvé par `TU-REG-42`.
+  et prouvé par `TU-REG-42`. Puis MOD-019, PEN-001 et PEN-002, sur le jeu d'essai et l'horloge figée : 94 et 98.
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`
