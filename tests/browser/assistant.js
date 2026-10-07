@@ -16,6 +16,9 @@ demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').conc
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
     const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
     p.fn = []; p.anthropic = 0; p.serveur = { cle };
+    // AST-001, étape 5, l'onglet Réseau : chaque requête terminée, ce qu'elle a envoyé et ce qu'elle a reçu.
+    p.reseau = [];
+    p.on('requestfinished', rq => { p.reseau.push((async () => { let recu = ''; try { const rs = await rq.response(); recu = rs ? (await rs.body()).toString('utf8') : ''; } catch {} return { url: rq.url(), envoi: rq.postData() || '', recu }; })()); });
     await ctx.route('https://api.anthropic.com/**', r => { p.anthropic++; r.abort(); });
     await fauxSupabase(ctx, r => {
       const req = r.request(), u = new URL(req.url());
@@ -71,9 +74,14 @@ demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').conc
   ok((await p.inputValue('[data-act="as-key"]')) === '' && (await p.textContent('#assistant-cfg')).includes('…wxyz'), 'la page n’en garde que l’indice');
   ok(await bulle('Clé vérifiée et enregistrée.') && (await cfg()).includes('Clé API Anthropic (enregistrée : …wxyz)') && (await p.getAttribute(cle, 'placeholder')) === 'Coller une autre clé pour la remplacer' && !!(await p.$('[data-act="as-forget"]')),
     '« Clé vérifiée et enregistrée. », le libellé dit l’indice, le champ propose de la remplacer, « Oublier » apparaît');
-  ok(await p.evaluate(k => !Object.values(localStorage).some(v => v.includes(k)), CLE), 'rien dans localStorage');
-  const dansIdb = await p.evaluate(k => new Promise(res => { const r = indexedDB.open('selene'); r.onerror = () => res('illisible'); r.onsuccess = () => { const db = r.result; if (!db.objectStoreNames.contains('kv')) { db.close(); return res('vide'); } const q = db.transaction('kv').objectStore('kv').getAll(); q.onsuccess = () => { db.close(); res(q.result.some(v => String(v).includes(k)) ? 'trouvée' : 'absente'); }; }; }), CLE);
+  // Ce que l'étape 5 cherche : les dix premiers caractères de la clé après « sk-ant- ».
+  const bout = CLE.slice(7, 17);
+  ok(await p.evaluate(k => !Object.values(localStorage).some(v => v.includes(k)), bout), 'rien dans localStorage');
+  const dansIdb = await p.evaluate(k => new Promise(res => { const r = indexedDB.open('selene'); r.onerror = () => res('illisible'); r.onsuccess = () => { const db = r.result; if (!db.objectStoreNames.contains('kv')) { db.close(); return res('vide'); } const q = db.transaction('kv').objectStore('kv').getAll(); q.onsuccess = () => { db.close(); res(q.result.some(v => String(v).includes(k)) ? 'trouvée' : 'absente'); }; }; }), bout);
   ok(dansIdb === 'absente' || dansIdb === 'vide', `ni dans IndexedDB (${dansIdb})`);
+  const vus = await Promise.all(p.reseau), portent = vus.filter(v => v.envoi.includes(bout) || v.url.includes(bout)), recus = vus.filter(v => v.recu.includes(bout));
+  ok(portent.length === 1 && new URL(portent[0].url).pathname === '/functions/v1/assistant' && JSON.parse(portent[0].envoi).action === 'cle' && !recus.length && p.anthropic === 0,
+    `Réseau : « ${bout} » dans la seule requête "action":"cle" (${portent.length} sur ${vus.length}), dans aucune réponse (${recus.length}) (AST-001, étape 5)`);
 
   console.log('un échange');
   // AST-002, étape 1 : le modèle choisi dans les Réglages, puis l'en-tête de l'Assistant et ses suggestions.
