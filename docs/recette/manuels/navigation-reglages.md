@@ -238,7 +238,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : connecté au compte A (pour vérifier le suivi par le compte) ; jeu d'essai importé ; navigateur réglé en
   anglais (Chrome : Paramètres → Langues, anglais en premier).
 - **Données** : aucune.
-- **Automatisés associés** : `TN-langue`, `TU-I18N-05`, `TU-I18N-15`, `TU-I18N-18`
+- **Automatisés associés** : `TN-langue`, `TU-I18N-05`, `TU-I18N-15`, `TU-I18N-18`, `TN-sync-deux-appareils`
 - **Source** : [DOC] [i18n.md](../../i18n.md) ; [TEST] `tests/browser/langue.js`.
 
 | Étape | Action précise | Résultat attendu observable |

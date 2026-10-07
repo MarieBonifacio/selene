@@ -2,7 +2,8 @@
    Vérifie la fusion (B n'a jamais vu ce qu'a écrit A) et qu'une saisie faite juste avant de fermer l'onglet
    n'est pas perdue : restée sur l'appareil, elle part à la réouverture. Puis, sur un compte neuf, une saisie vue sur
    l'autre appareil à la relève, une suppression vue dès le retour sur l'onglet (A57), la frappe que la relève
-   n'efface pas (SYN-001, A33), ni un réglage en cours de frappe (ESP-011). Puis, sur un second compte rempli du jeu
+   n'efface pas (SYN-001, A33), ni un réglage en cours de frappe (ESP-011) ; la langue de l'appareil, puis celle du
+   compte, sur deux appareils en anglais (NAV-009). Puis, sur un second compte rempli du jeu
    d'essai, deux appareils coupés du réseau qui divergent et se réconcilient (SYN-003, SYN-008), et un appareil qui
    trouve sur le serveur un format plus récent que le sien (SYN-007). Lancé par tests/browser/run.js. */
 const fs = require('node:fs');
@@ -34,8 +35,8 @@ const log = [];
 const inbox = () => ((rows.get('u1') || {}).site?.modules?.inbox?.entries || []).map(i => i.text);
 /* `uid` : le compte ; `essai` : un jeu (site, board) posé sur l'appareil avant le premier chargement ; `horloge` : l'horloge
    de la page installée, pour avancer jusqu'à la relève de 30 s au lieu de l'attendre. */
-async function device(browser, errs, tag, { uid = 'u1', essai = null, horloge = false } = {}) {
-  const ctx = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 1280, height: 900 } });
+async function device(browser, errs, tag, { uid = 'u1', essai = null, horloge = false, locale = undefined } = {}) {
+  const ctx = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 1280, height: 900 }, ...(locale ? { locale } : {}) });
   await ctx.route('https://*.supabase.co/**', r => { const u = new URL(r.request().url()); if (coupes.has(tag)) return r.abort('internetdisconnected'); if (!u.pathname.startsWith('/auth/')) log.push(`${tag} ${r.request().method()} ${(u.searchParams.get('select') || '').slice(0, 20)}`); return supabase(r); });
   await ctx.addInitScript(([s, id]) => { if (!localStorage.getItem('selene-auth-session')) { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', id); } }, [sessionFor(uid), uid]);
   if (essai) await ctx.addInitScript(([si, bd]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', si); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essai.site), JSON.stringify(essai.board)]);
@@ -140,6 +141,37 @@ const capture = async (p, text) => { await p.fill('#capIn', text); await p.click
   check(await recue11() && e3.valeur === 'Atelier ESP-011' && e3.entete === 'Atelier ESP-011',
     `la relève passée pendant la frappe, puis « ESP-011 » tapé et le champ quitté : « ${e3.valeur} », rien d’effacé ; l’en-tête « ${e3.entete} » (étape 3)`);
   await D1.ctx.close(); await D2.ctx.close();
+
+  console.log('la langue : celle de l’appareil, puis celle du compte (NAV-009)');
+  // Deux appareils réglés en anglais, un compte neuf rempli du jeu d'essai ; N2, l'horloge installée, relève à la main.
+  const lang5 = () => ((rows.get('u5') || {}).site || {}).config?.lang;
+  const N1 = await device(browser, errs, 'N1', { uid: 'u5', essai: donnee('jeu-essai.json'), locale: 'en-US' });
+  await until(() => !!rows.get('u5')?.site?.modules?.chantier);
+  const langue = x => x.page.evaluate(() => ({ lang: document.documentElement.lang, accueil: (document.querySelector('#nav a[href="#accueil"]') || {}).textContent?.trim(), nav: document.querySelector('#nav').textContent.replace(/\s+/g, ' '), date: document.querySelector('#dateline').textContent.trim() }));
+  const l1 = await langue(N1);
+  await versD(N1, 'ecriture', '#scrapIn'); const frag = (await N1.page.textContent('#main')).includes('La lisière n\'est pas une frontière');
+  await versD(N1, 'budget', '#main'); const somme = ((await N1.page.textContent('#main')).match(/€\d{1,3}(,\d{3})*\.\d\d/) || [''])[0], euros = !!somme;
+  check(l1.lang === 'en' && /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/.test(l1.date) && l1.nav.includes('Chantier') && l1.nav.includes('Écriture') && frag && euros,
+    `appareil en anglais : <html lang="${l1.lang}">, « ${l1.date} » ; les noms d’espaces (« Chantier », « Écriture ») et les fragments restent tels quels ; le Budget au format anglais (« ${somme} ») (NAV-009, étape 1)`);
+  await versD(N1, 'reglages', 'select[data-set="config.lang"]'); await N1.page.selectOption('select[data-set="config.lang"]', 'fr');
+  await N1.page.waitForFunction(() => document.documentElement.lang === 'fr', null, { timeout: 5000 }).catch(() => {});
+  const l2 = await langue(N1);
+  check(l2.lang === 'fr' && /^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche) /.test(l2.date), `« Français » choisi : l’interface en français aussitôt, sans recharger (« ${l2.date} ») (étape 2)`);
+  await until(() => lang5() === 'fr');
+  const N2 = await device(browser, errs, 'N2', { uid: 'u5', locale: 'en-US', horloge: true });
+  await N2.page.waitForFunction(() => document.documentElement.lang === 'fr', null, { timeout: 10000 }).catch(() => {});
+  const l3 = await langue(N2), nav2 = await N2.page.evaluate(() => navigator.language);
+  check(lang5() === 'fr' && nav2 === 'en-US' && l3.lang === 'fr' && /^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche) /.test(l3.date),
+    `un second appareil en anglais (${nav2}) se connecte au compte : l’interface en français, le choix du compte prime (étape 3)`);
+  await N1.page.selectOption('select[data-set="config.lang"]', '');
+  await N1.page.waitForFunction(() => document.documentElement.lang === 'en', null, { timeout: 5000 }).catch(() => {});
+  await until(() => !lang5());
+  await N2.page.clock.fastForward(31000);
+  await N2.page.waitForFunction(() => document.documentElement.lang === 'en', null, { timeout: 10000 }).catch(() => {});
+  const [l4a, l4b] = [await langue(N1), await langue(N2)];
+  check(!lang5() && l4a.lang === 'en' && l4b.lang === 'en' && /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/.test(l4b.date),
+    `« Langue de l’appareil » remise : les deux appareils repassent à l’anglais de leur système (« ${l4a.date} » ; « ${l4b.date} », après sa relève) (étape 4)`);
+  await N1.ctx.close(); await N2.ctx.close();
 
   console.log('deux appareils hors ligne, puis réconciliés (SYN-003, SYN-008)');
   // Un second compte : P pose le jeu d'essai sur le serveur, Q s'y branche ensuite et le reçoit.
