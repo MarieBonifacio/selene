@@ -21,6 +21,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| A45 : `tests/browser/regulation-appareil.js` instable sous WebKit (RLM-015, le bouton d'objectif introuvable après les refus), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A45](perimetre.md#anomalies-et-observations) |
 | ~~A44 : suivre un flux pendant une relecture de Dehors effaçait ses éléments~~ (fait le 7 octobre 2026, PR #141) | une session | P2 | — | [A44](perimetre.md#anomalies-et-observations) |
 | A43 : `tests/browser/regulation.js` instable sous Firefox (« les quatre actions ont une cible de 44 px au moins »), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A43](perimetre.md#anomalies-et-observations) |
 | ~~A42 : « En jachère » disait « plus de 1 jours »~~ (fait le 7 octobre 2026, PR #137) | une session | P3 | — | [A42](perimetre.md#anomalies-et-observations) |

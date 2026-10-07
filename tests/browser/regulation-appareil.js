@@ -218,7 +218,12 @@ async function device(browser, errs, personnel = true, id = 'u1') {
     await Z.selectOption('#form [name="mode"]', 'observer'); await Z.fill('#form [name="date"]', Jm1); await Z.click('#form button[value="save"]');
     await Z.waitForFunction(() => !document.querySelector('#dlg').open); await Z.waitForSelector('[data-act="rlm-use"]');
     // Fermer un formulaire refusé : sous Firefox, la bulle de validation avale le premier geste (Échap, plusieurs fois).
-    const fermer = async () => { for (let i = 0; i < 4 && await Z.evaluate(() => document.querySelector('#dlg').open); i++) { await Z.keyboard.press('Escape'); await Z.waitForTimeout(150); } };
+    // Chaque Échap attend la fermeture avant le suivant : sous WebKit, la boîte paraît ouverte un instant de plus.
+    const fermer = async () => {
+      for (let i = 0; i < 4 && await Z.evaluate(() => document.querySelector('#dlg').open); i++) {
+        await Z.keyboard.press('Escape'); await Z.waitForFunction(() => !document.querySelector('#dlg').open, null, { timeout: 1000 }).catch(() => {});
+      }
+    };
     const refuses = [];
     for (const act of ['rlm-use', 'rlm-urge', 'rlm-action', 'rlm-day-other']) {
       const n0 = (await local(Z)).entries.length;
@@ -230,6 +235,12 @@ async function device(browser, errs, personnel = true, id = 'u1') {
       refuses.push(`${act}:${ouvert && max === J && (await local(Z)).entries.length === n0}`);
     }
     check(refuses.every(x => x.endsWith(':true')), `J+1 dans « Noter », « J'ai une envie », « J'ai réalisé une action », « Confirmer une autre journée… » : refusé, rien d’enregistré (${refuses.join(', ')}) (étape 1)`);
+    // Revenir à l'espace, toute boîte fermée, et dire où l'on était : sous WebKit, le bouton « Faire évoluer mon objectif »
+    // n'était plus là après ces refus (run 37587724950), sans que rien ne dise pourquoi.
+    if (await Z.$('#cdlg[open]')) await Z.click('#cdlg button[value="cancel"]');
+    await fermer();
+    const ou = await Z.evaluate(() => `${location.hash} ; boîte ${document.querySelector('#dlg').open ? 'ouverte' : 'fermée'} ; confirmation ${document.querySelector('#cdlg').open ? 'ouverte' : 'fermée'} ; bouton ${document.querySelector('[data-act="rlm-goal"]') ? 'présent' : 'absent'}`);
+    await versZ(zid, '[data-act="rlm-goal"]');
     const longue = d => Z.evaluate(x => new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(new Date(x + 'T12:00')).map(p => p.type === 'day' && p.value === '1' ? '1er' : p.value).join(''), d);
     await Z.click('[data-act="rlm-goal"]'); await Z.waitForFunction(() => document.querySelector('#dlg').open);
     // La configuration a déjà dit « Objectif enregistré. … » : vider la bulle, sans quoi l'attente pourrait relire l'ancienne.
@@ -237,7 +248,7 @@ async function device(browser, errs, personnel = true, id = 'u1') {
     await Z.evaluate(() => { document.querySelector('#toast').textContent = ''; }); await Z.click('#form button[value="save"]');
     await bulleZ('Objectif enregistré');
     const ditObjectif = (await Z.textContent('#toast')).replace(/\s+/g, ' ').trim();
-    check(ditObjectif === `Objectif enregistré, à partir du ${await longue(J1)}. D'ici là, rien ne change.`, `un objectif « Viser l'arrêt » à partir de J+1 : « ${ditObjectif} » (étape 2)`);
+    check(ditObjectif === `Objectif enregistré, à partir du ${await longue(J1)}. D'ici là, rien ne change.`, `un objectif « Viser l'arrêt » à partir de J+1 : « ${ditObjectif} » (étape 2 ; après les refus : ${ou})`);
     await Z.click('[data-act="rlm-use"]'); await Z.waitForFunction(() => document.querySelector('#dlg').open);
     await Z.fill('#form [name="value"]', '1'); await Z.click('#form button[value="save"]'); await Z.waitForFunction(() => !document.querySelector('#dlg').open);
     let note = null; // l'écriture vers IndexedDB suit la fermeture du formulaire : l'attendre
