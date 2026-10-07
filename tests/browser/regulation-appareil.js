@@ -38,6 +38,15 @@ async function supabase(route) {
 }
 const sessionFor = (personnel, id) => JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id, email: 'a@b.c', ...(personnel ? { personnel: true } : {}) } });
 const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
+/* RLM-002 : ce que proposent les Réglages → Espaces → « + Créer un espace » : la grille des modèles (leurs noms, dans
+   l'ordre) et les deux groupes de « Modèle ou type » (chaque option : sa valeur et son texte). */
+const proposes = async q => {
+  await q.evaluate(() => { location.hash = 'reglages'; }); await q.waitForSelector('.tpl-grid [data-act="tpl-add"]', { state: 'attached' });
+  return q.evaluate(() => ({ modeles: [...document.querySelectorAll('.tpl-grid .tpl b')].map(b => b.textContent.trim()),
+    groupes: [...document.querySelectorAll('#newModType optgroup')].map(g => [...g.querySelectorAll('option')].map(o => o.value + ' ' + o.textContent.trim())) }));
+};
+const sansSuivi = v => v.modeles.length === 13 && v.modeles[12] === 'Carnet' && !v.modeles.includes('Reprendre la main') && v.groupes.length === 2
+  && v.groupes.every(g => g.length && g.every(o => !/regulation|Reprendre la main/.test(o)));
 async function device(browser, errs, personnel = true, id = 'u1') {
   const ctx = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 1280, height: 900 } });
   await ctx.route('https://*.supabase.co/**', supabase);
@@ -61,6 +70,8 @@ async function device(browser, errs, personnel = true, id = 'u1') {
     check(!(await O.page.$('[data-tpl="regulation"]')), 'un compte ordinaire : l’espace n’est pas proposé à l’accueil');
     await go('reglages', O.page);
     check(!(await O.page.$('[data-tpl="regulation"]')) && !(await O.page.$('#newModType option[value="regulation"], #newModType option[value="tpl:regulation"]')), 'ni dans les Réglages');
+    const o1 = await proposes(O.page);
+    check(sansSuivi(o1), `compte ordinaire, « + Créer un espace » : ${o1.modeles.length} modèles, le dernier « ${o1.modeles.at(-1)} » ; « Reprendre la main » absent de la grille et des ${o1.groupes.length} groupes de « Modèle ou type » (RLM-002, étape 1)`);
     await O.ctx.close();
 
     console.log('configuration : sur cet appareil, sans question');
@@ -130,12 +141,21 @@ async function device(browser, errs, personnel = true, id = 'u1') {
     const S = await cs.newPage(); S.on('pageerror', e => errs.push(e.message));
     await ouvrir(S, BASE + '/index.html#sans-compte', entree);
     const vers = async (h, sel) => { await S.evaluate(x => { location.hash = x; }, h); await S.waitForSelector(sel, { state: 'attached' }); };
+    // RLM-002, étape 2 : avant tout import, ni les Réglages ni l'accueil d'un état neuf (« Choisir moi-même ») ne le proposent.
+    const s2 = await proposes(S);
+    await vers('accueil', '#welcome-all'); await S.evaluate(() => { document.getElementById('welcome-all').open = true; }); await S.waitForSelector('[data-tpl="carnet"]');
+    const accueil2 = await S.$$eval('[data-tpl]', xs => xs.map(x => x.dataset.tpl));
+    check(sansSuivi(s2) && accueil2.includes('carnet') && !accueil2.includes('regulation'), `chemin S, avant tout import : ni les Réglages (${s2.modeles.length} modèles), ni « Choisir moi-même » sur l’accueil (${accueil2.length} modèles) (RLM-002, étape 2)`);
     const bulleS = t => S.waitForFunction(x => ((document.querySelector('#toast') || {}).textContent || '').includes(x), t, { timeout: 5000 }).then(() => true, () => false);
     await vers('reglages', 'input[data-act="imp"]');
     await S.setInputFiles('input[data-act="imp"]', path.join(__dirname, '..', '..', 'docs', 'recette', 'donnees', 'rlm-en-cours.json'));
     await S.waitForSelector('#cdlg[open]', { timeout: 5000 }).catch(() => {}); if (await S.$('#cdlg[open]')) await S.click('#cdlg button[value="ok"]');
     await bulleS('Sauvegarde importée.');
     const cid = await S.evaluate(() => { const a = [...document.querySelectorAll('#nav a')].find(x => x.textContent.includes('Carnet du soir')); return a ? a.getAttribute('href').slice(1) : ''; });
+    await vers(cid, '[data-act="rlm-goal"]');
+    // RLM-002, étape 4 : le suivi importé s'ouvre entier ; « + Créer un espace » ne propose toujours pas l'espace.
+    const ouvert4 = (await S.textContent('#main')).replace(/\s+/g, ' '), journal4 = await S.$$eval('#main li.item[data-id]', ls => ls.length), s4 = await proposes(S);
+    check(ouvert4.includes('Alcool · au plus 1,5 verre standard par jour') && journal4 >= 7 && sansSuivi(s4), `chemin S, rlm-en-cours.json importé : « Carnet du soir » s’ouvre entier (« Alcool · au plus 1,5 verre standard par jour », ${journal4} lignes au journal) ; « + Créer un espace » ne le propose toujours pas (RLM-002, étape 4)`);
     await vers(cid, '[data-act="rlm-goal"]');
     check(!(await S.$('[data-act="rlm-setup"]')) && !(await S.textContent('#main')).includes('Commencer : choisir ce que je veux suivre'), 'le suivi commencé n’offre plus « Commencer : choisir ce que je veux suivre » (RLM-006, étape 3)');
     await S.click('[data-act="rlm-goal"]'); await S.waitForFunction(() => document.querySelector('#dlg').open);
