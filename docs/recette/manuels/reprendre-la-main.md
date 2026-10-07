@@ -261,7 +261,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : chemin S, `rlm-a-configurer.json` importé ; configurer « Alcool », « Réduire… », limite `2`, à
   partir de `J-3`.
 - **Données** : les quantités et dates des étapes.
-- **Automatisés associés** : `TU-REG-02`, `TU-REG-04`
+- **Automatisés associés** : `TU-REG-02`, `TU-REG-04`, `TN-regulation-appareil`
 - **Source** : [DOC] [regulation.md](../../regulation.md#règles) ; [CODE] `regulationDay`, `dayStatus` ; vérifié par une
   sonde Chromium le 4 octobre 2026.
 
@@ -271,7 +271,7 @@ Identifiants retirés : aucun.
 | 2 | « Faire évoluer mon objectif » : « Observer, sans cible », à partir de `J-1`. Noter `2` à `J-1`, confirmer `J-1`. | Message « Objectif enregistré. Les journées déjà confirmées gardent le leur. » |
 | 3 | « Faire évoluer mon objectif » : « Viser l'arrêt », à partir de J. « Faire mon point du jour » → « Confirmer ». | La boîte dit « … : 0 verre standard au total. Aucune consommation notée ce jour-là : confirmer en fait une journée à zéro. » ; en-tête « Alcool · viser l'arrêt ». |
 | 4 | Lire la liste de « Mes sept derniers jours ». | J : « complète : 0 verre standard · objectif atteint », « objectif du jour : viser l'arrêt » ; J-1 : « complète : 2 verres standard · observée », sans ligne d'objectif ; J-2 : « complète : 3 verres standard · au-delà de l'objectif », « objectif du jour : au plus 2 verres standard par jour » ; J-3 : « complète : 1 verre standard · objectif atteint », même objectif. Aucun jour avant J-3. |
-| 5 | Lire le tableau. | « Ces 7 jours » : Journées suivies 4, Complètes 4, Inconnues ou à reconfirmer 0, Quantités déclarées 6 verres standard, Moyenne 1,5 verre standard, Objectif atteint « 2 sur 3 journées évaluables » ; « Les 7 d'avant » : « — » partout ; « Pas encore de semaine précédente à mettre en regard. » ; « Objectif changé pendant ces deux semaines : à partir du <J-1>, observer, sans cible ; à partir du <J>, viser l'arrêt. » |
+| 5 | Lire le tableau. | « Ces 7 jours » : Journées suivies 4, Complètes (confirmées) 4, Inconnues ou à reconfirmer 0, Quantités déclarées, toutes journées 6 verres standard, Moyenne par journée complète 1,5 verre standard, Objectif atteint « 2 sur 3 journées évaluables » ; pas de colonne « Les 7 d'avant » : le suivi n'a pas encore de semaine précédente, et l'app ne montre pas une colonne de tirets ([C19](../perimetre.md#contradictions-entre-documentation-code-et-tests)) ; « Pas encore de semaine précédente à mettre en regard. » ; « Objectif changé pendant ces deux semaines : à partir du <J-1>, observer, sans cible ; à partir du <J>, viser l'arrêt. » |
 | 6 | « Faire évoluer mon objectif » : « Réduire… », limite `0`, à partir de J. | Le formulaire se ferme ; « Pour réduire, indique une limite quotidienne positive dans l'unité du suivi. Pour zéro, choisis plutôt de viser l'arrêt. » ; l'en-tête reste « Alcool · viser l'arrêt ». |
 
 - **État final attendu** : quatre journées complètes, trois versions d'objectif.
@@ -373,7 +373,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : chemin S, `rlm-a-configurer.json` importé ; configurer « Alcool », « Observer, sans cible », à
   partir de `J-2` ; noter `1` à `J-2` et `1` à `J-1` ; confirmer `J-2` et `J-1`.
 - **Données** : nouvelles valeurs `0.5`, puis date `J-2`.
-- **Automatisés associés** : `TU-REG-07`, `TU-REG-17`
+- **Automatisés associés** : `TU-REG-07`, `TU-REG-17`, `TN-regulation-appareil`
 - **Source** : [TEST] `TU-REG-07`, `TU-REG-17` ; [CODE] `useForm`.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -381,7 +381,7 @@ Identifiants retirés : aucun.
 | 1 | « modifier » sur la saisie de J-1. | Formulaire « Corriger une saisie » : Date, Quantité, Contexte ; pas de choix « Je note ». |
 | 2 | Quantité `0.5` ; « Enregistrer ». | « Noté. La journée du <J-1> était confirmée : elle est à reconfirmer. » ; la ligne montre « 0,5 verre standard » et « corrigé » ; toujours une seule ligne pour J-1. |
 | 3 | « modifier » sur cette saisie ; date `J-2`. | J-1 et J-2 sont toutes deux « à reconfirmer » dans la liste (J-1 : 0 verre standard, J-2 : 1,5 verre standard). |
-| 4 | Confirmer J-2 puis J-1. | J-2 « complète : 1,5 verre standard » ; J-1 « complète : 0 verre standard ». |
+| 4 | Confirmer J-2 puis J-1. | J-2 « complète : 1,5 verre standard · observée » ; J-1 « complète : 0 verre standard · observée ». |
 
 - **État final attendu** : deux journées complètes, totaux corrigés.
 - **Nettoyage** : aucun.
