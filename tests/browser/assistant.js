@@ -2,7 +2,7 @@
    « assistant » : la clé part une fois au serveur et ne revient jamais ; un échange passe par la fonction, jamais par
    api.anthropic.com ; une clé laissée dans l'appareil par une ancienne version est confiée au serveur puis effacée.
    Lancé par tests/browser/run.js. */
-const { fauxSupabase, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { fauxSupabase, storeJSON, donnee, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const UID = '0b8f0c2e-1111-2222-3333-444455556666', CLE = 'sk-ant-api03-' + 'a'.repeat(40) + 'wxyz';
 const demo = JSON.parse(fixture());
 demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').concat({ id: 'assistant', on: true });
@@ -10,10 +10,11 @@ demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').conc
   const b = await engine.launch(launchOptions);
   const ok = check, errs = [];
   const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
-  const open = async (ancienne = '') => {
+  // `donnees`, `plateau` : un autre jeu que la démo (le jeu d'essai du cahier) ; `cle` : une clé déjà confiée au serveur.
+  const open = async (ancienne = '', donnees = demo, plateau = null, cle = null) => {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
     const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
-    p.fn = []; p.anthropic = 0; p.serveur = { cle: null };
+    p.fn = []; p.anthropic = 0; p.serveur = { cle };
     await ctx.route('https://api.anthropic.com/**', r => { p.anthropic++; r.abort(); });
     await fauxSupabase(ctx, r => {
       const req = r.request(), u = new URL(req.url());
@@ -23,14 +24,25 @@ demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').conc
       if (q.action === 'etat') return json(p.serveur.cle ? { cle: true, indice: '…' + p.serveur.cle.slice(-4) } : { cle: false });
       if (q.action === 'cle') { if (!/^sk-ant-/.test(q.cle)) return json({ erreur: "ce n'est pas une clé d'API Anthropic (sk-ant-…)" }, 400); if (q.cle.includes('RECETTE-fausse')) return json({ erreur: 'Anthropic refuse cette clé' }, 400); p.serveur.cle = q.cle; return json({ cle: true, indice: '…' + q.cle.slice(-4) }); }
       if (q.action === 'oublier') { p.serveur.cle = null; return json({ cle: false }); }
-      if (q.action === 'message') return json({ id: 'm', type: 'message', role: 'assistant', content: [{ type: 'text', text: 'Bonsoir, lucidement.' }], stop_reason: 'end_turn' });
+      if (q.action === 'message') {
+        // Un modèle qui tente d'écrire même quand on ne lui offre aucun outil : l'app doit refuser à l'exécution (AST-005).
+        const der = q.requete.messages.at(-1), dit = (b, stop = 'end_turn') => json({ id: 'm', type: 'message', role: 'assistant', content: b, stop_reason: stop });
+        if (Array.isArray(der.content)) return dit([{ type: 'text', text: 'Résultat : ' + der.content.map(c => c.content).join(' | ') }]);
+        if (/Fixer la tringle/.test(der.content)) return dit([{ type: 'tool_use', id: 'tu1', name: 'ajouter_tache', input: { titre: 'Fixer la tringle' } }], 'tool_use');
+        if (/dépense de 9 €/.test(der.content)) return dit([{ type: 'tool_use', id: 'tu2', name: 'ajouter_operation', input: { montant: 9, type: 'dépense', enveloppe: 'Courses' } }], 'tool_use');
+        return dit([{ type: 'text', text: 'Bonsoir, lucidement.' }]);
+      }
       return json({ erreur: 'action inconnue' }, 400);
     });
-    await ctx.addInitScript(([d, s, uid, k]) => {
+    await ctx.addInitScript(([d, bd, s, uid, k]) => {
+      // Chaque fenêtre modale ouverte (une demande d'accord, une confirmation) est relevée.
+      const montrer = HTMLDialogElement.prototype.showModal; window.__modales = [];
+      HTMLDialogElement.prototype.showModal = function () { window.__modales.push(this.id + ':' + ((this.querySelector('#cmsg') || {}).textContent || '')); return montrer.call(this); };
       if (localStorage.getItem('selene-site-v1')) return;
-      localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid);
+      localStorage.setItem('selene-site-v1', d); if (bd) localStorage.setItem('selene-board-v1', bd);
+      localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid);
       if (k) localStorage.setItem('selene-api-key', k);
-    }, [JSON.stringify(demo), session, UID, ancienne]);
+    }, [JSON.stringify(donnees), plateau ? JSON.stringify(plateau) : '', session, UID, ancienne]);
     await p.goto(BASE + '/index.html#reglages'); await p.waitForSelector('#assistant-cfg', { timeout: 10000 }).catch(() => {});
     await p.waitForTimeout(300);
     return p;
@@ -105,6 +117,82 @@ demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').conc
   const q = await open(CLE); await q.waitForTimeout(300);
   ok(q.fn.some(x => x.action === 'cle' && x.cle === CLE) && !q.fn.some(x => x.action === 'etat'), 'confiée au serveur au lancement');
   ok(await q.evaluate(() => localStorage.getItem('selene-api-key') === null), 'puis effacée de l’appareil');
+
+  console.log('le jeu d’essai : ce que Claude peut lire (AST-003)');
+  const essai = donnee('jeu-essai.json');
+  essai.site.config.modules.find(m => m.id === 'assistant').on = true; // le jeu l'a éteint ; AST-001 l'allume
+  const e = await open('', essai.site, essai.board, CLE);
+  const aller = async (h, sel) => { await e.evaluate(x => { location.hash = x; }, h); await e.waitForSelector(sel, { state: 'attached' }); };
+  // Une question envoyée, et ce qui est parti vers la fonction : toutes les requêtes « message » de l'échange.
+  const demande = async texte => {
+    const n = e.fn.length; await aller('assistant', '#chatIn');
+    await e.fill('#chatIn', texte); await e.click('[data-act="chat-send"]');
+    await e.waitForFunction(() => !document.querySelector('#pending'), null, { timeout: 10000 }).catch(() => {});
+    return e.fn.slice(n).filter(x => x.action === 'message');
+  };
+  // Les montants s'écrivent avec une espace fine insécable avant « € » : la ramener à une espace, sans quoi « 300,00 € » ne se trouverait jamais.
+  const plat = x => String(x).replace(/[\u00a0\u202f]/g, ' ');
+  const enTete = async () => { await aller('assistant', '#main .status'); return (await e.textContent('#main .status')).replace(/\s+/g, ' ').trim(); };
+  // Lu d'un seul tenant dans la page : entre une poignée et sa lecture, un rendu peut remplacer la case.
+  const lisible = async k => { await aller('reglages', '[data-act="as-actions"]'); return e.evaluate(x => { const c = document.querySelector(`[data-act="as-share"][data-k="${x}"]`); return c ? c.checked : null; }, k); };
+  const allumer = async (nom, on) => { await aller('reglages', '[data-act="mod-on"]'); const c = `#main .set.mod:has(input[data-act="mod-label"][value="${nom}"]) [data-act="mod-on"]`; if (on) await e.check(c); else await e.uncheck(c); await e.waitForTimeout(200); };
+  let r = await demande('Où en est mon budget ce mois-ci ?'), sys = r.length ? plat(r[0].requete.system) : '';
+  check(sys.includes('DONNÉES DU TABLEAU DE BORD') && /Date : .*\. Lune : /.test(sys) && /BUDGET \(\d{4}-\d{2}\) : dépenses/.test(sys) && /Enveloppes : Courses .*sur 300,00 € ; Travaux .*sur 500,00 €/.test(sys)
+    && sys.includes('CHANTIER : 4 tâches ouvertes sur 5.') && sys.includes('[t1]'), `la question part avec les données : la date et la lune, BUDGET et ses enveloppes, CHANTIER et ses tâches à identifiant (étape 1)${sys ? '' : ' (aucune requête)'}`);
+  await lisible('budget'); await e.uncheck('[data-act="as-share"][data-k="budget"]'); await e.waitForTimeout(200);
+  let t = await enTete();
+  check(t.includes('Données partagées :') && !/Données partagées :[^.]*Budget/.test(t), `« Budget » décoché : l’en-tête n’en parle plus (${t.slice(t.indexOf('Données'), t.indexOf('Données') + 120)}) (étape 2)`);
+  r = await demande('Où en est mon budget ce mois-ci ?'); sys = r.length ? plat(r[0].requete.system) : 'rien';
+  check(r.length && sys.includes('DONNÉES DU TABLEAU DE BORD') && !sys.includes('BUDGET') && !sys.includes('Enveloppes') && !sys.includes('300,00 €') && !sys.includes('500,00 €'), 'la même question : les données partent, sans BUDGET, ni ses enveloppes, ni leurs montants (étape 3)');
+  await allumer('Plantes', false);
+  const plantesListe = await lisible('plantes'); t = await enTete(); r = await demande('Et les plantes ?'); sys = r.length ? plat(r[0].requete.system) : 'rien';
+  check(plantesListe === null && !/Données partagées :[^.]*Plantes/.test(t) && sys.includes('CHANTIER') && !sys.includes('PLANTES'), 'Plantes éteinte : absente de « Ce que Claude peut lire », de l’en-tête et de la requête (étape 4)');
+  await allumer('Plantes', true); t = await enTete();
+  check((await lisible('plantes')) === true && /Données partagées :[^.]*Plantes/.test(t), 'rallumée : Plantes revient, cochée (son choix gardé), l’en-tête la cite (étape 5)');
+
+  console.log('le jeu d’essai : ce que Claude peut faire (AST-005)');
+  const modales = () => e.evaluate(() => window.__modales.length);
+  const operations = async () => (await storeJSON(e, 'selene-site-v1')).modules.budget.entries.length;
+  const ops0 = await operations();
+  await allumer('Budget', false); let m0 = await modales();
+  // Une fenêtre d'accord ouverte à tort est relevée, puis refusée : le scénario continue, et rien ne s'écrit.
+  const refermer = async () => { const n = (await modales()) - m0; if (await e.$('#cdlg[open]')) { await e.click('#cdlg button[value="cancel"]'); await e.waitForTimeout(300); } return n; };
+  r = await demande('Enregistre une dépense de 9 € en Courses.');
+  const accords1 = await refermer();
+  const outils = r.length && r[0].requete.tools ? r[0].requete.tools.map(x => x.name).join() : '';
+  const refus = r.length > 1 ? JSON.stringify(r[1].requete.messages.at(-1).content) : '';
+  await allumer('Budget', true);
+  check(outils === 'ajouter_tache,terminer_tache,capturer' && !accords1 && refus.includes('Action non autorisée ou module désactivé') && (await operations()) === ops0,
+    `Budget éteint : les outils offerts (${outils}), sans ajouter_operation ; le modèle qui l’appelle quand même est refusé, sans fenêtre d’accord, et aucune dépense de 9 € (étape 1)`);
+  await aller('reglages', '[data-act="as-actions"]'); await e.uncheck('[data-act="as-actions"]'); await e.waitForTimeout(200);
+  t = await enTete();
+  check(t.endsWith('Lecture seule.'), `« Autoriser Claude à modifier… » décoché : l’en-tête finit par « Lecture seule. » (étape 2)`);
+  m0 = await modales(); r = await demande('Ajoute au Chantier la tâche « Fixer la tringle ».');
+  const accords3 = await refermer();
+  const taches = JSON.stringify((await storeJSON(e, 'selene-site-v1')).modules.chantier.entries);
+  check(r.length && !('tools' in r[0].requete) && r[0].requete.system.includes('Tu ne peux rien modifier : conseille seulement.') && !accords3 && !taches.includes('Fixer la tringle'),
+    'lecture seule : la requête n’offre aucun outil et dit « Tu ne peux rien modifier : conseille seulement. » ; la tâche demandée n’est pas ajoutée, sans fenêtre d’accord (étape 3)');
+
+  console.log('le jeu d’essai : effacer la conversation (AST-008)');
+  await aller('assistant', '[data-act="chat-clear"]');
+  const bulles = () => e.$$eval('.chat .msg', ms => ms.length), n0 = await bulles();
+  await e.click('[data-act="chat-clear"]'); await e.waitForSelector('#cdlg[open]');
+  const question = (await e.textContent('#cmsg')).trim();
+  await e.click('#cdlg button[value="cancel"]'); await e.waitForTimeout(600); // une absence : le temps que le refus passe
+  check(question === 'Effacer la conversation ?' && (await bulles()) === n0 && n0 >= 2, `« Effacer la conversation ? », puis « Annuler » : la conversation est intacte (${n0} messages) (étapes 1 et 2)`);
+  await e.click('[data-act="chat-clear"]'); await e.waitForSelector('#cdlg[open]'); await e.click('#cdlg button[value="ok"]');
+  await e.waitForFunction(() => !document.querySelector('.chat .msg'), null, { timeout: 5000 }).catch(() => {});
+  check(!(await bulles()) && !(await e.$('[data-act="chat-clear"]')) && (await e.$$('[data-act="chat-chip"]')).length >= 2, 'confirmé : la conversation est vide, le bouton disparaît, les suggestions reviennent (étape 3)');
+  await demande('Bonsoir ?');
+  const avantDeco = await storeJSON(e, 'selene-chat');
+  await aller('reglages', '[data-act="auth-out"]'); await e.click('[data-act="auth-out"]');
+  await e.waitForSelector('#authForm', { timeout: 10000 }).catch(() => {});
+  const apresDeco = await storeJSON(e, 'selene-chat');
+  // Se reconnecter : le compte A revient (la session reposée par le script d'initialisation, comme un retour de connexion).
+  await e.reload(); await e.waitForSelector('#nav a', { timeout: 10000 }).catch(() => {});
+  await aller('assistant', '#chatIn');
+  check(Array.isArray(avantDeco) && avantDeco.length >= 2 && (apresDeco === null || (Array.isArray(apresDeco) && !apresDeco.length)) && !(await bulles()),
+    `déconnectée puis reconnectée : la conversation est vide, et « selene-chat » absent du stockage (avant : ${(avantDeco || []).length} messages) (étape 4)`);
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
