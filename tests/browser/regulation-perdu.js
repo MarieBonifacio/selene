@@ -120,16 +120,21 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
     const serveur5 = () => JSON.stringify((rows.get('u5') || {}).site || {});
     for (let i = 0; i < 60 && !serveur5().includes('Carnet du soir'); i++) await z.waitForTimeout(100);
     const kv = k => storeGet(z, k).catch(() => null);
+    /* Le stockage se lit dans IndexedDB : une écriture encore en route y est invisible. Sous un processeur ralenti et
+       quatre scénarios à la fois (CI), elle peut tarder : attendre l'état lui-même, largement, plutôt qu'un délai fixe. */
+    const jusqua27 = async (cond, ms = 30000) => { for (const end = Date.now() + ms; Date.now() < end; await z.waitForTimeout(100)) if (await cond()) return true; return !!(await cond()); };
     const connexion = async email => {
       if (!(await z.$('#authForm'))) { await z.click('[data-act="auth-open"] >> nth=0'); await z.waitForSelector('#authForm'); }
       await z.fill('#authEmail', email); await z.fill('#authPw', 'une phrase assez longue'); await z.click('#authForm button[type="submit"]');
-      await z.waitForFunction(() => !!document.querySelector('#nav > *') && !document.querySelector('#authForm'), null, { timeout: 10000 }).catch(() => {});
+      await z.waitForFunction(() => !!document.querySelector('#nav > *') && !document.querySelector('#authForm'), null, { timeout: 30000 }).catch(() => {});
     };
+    await jusqua27(async () => (await kv('selene-local-v1') || '').includes('NOTE-RLM027')); // la saisie écrite sur l'appareil
     await z.evaluate(() => localStorage.removeItem('selene-auth-session'));
     await z.reload(); await z.waitForSelector('#authForm, [data-act="auth-open"], [data-act="auth-local"]', { timeout: 10000 }).catch(() => {});
     const dehors27 = await z.evaluate(() => ({ entree: !!document.querySelector('#authForm, [data-act="auth-local"]'), nav: (document.querySelector('#nav') || {}).textContent || '' }));
     check(dehors27.entree && !dehors27.nav.includes('Carnet du soir'), 'session retirée, rechargée : l’app n’est plus connectée, l’écran d’entrée (RLM-027, étape 1)');
     await connexion('a@exemple.org');
+    await jusqua27(async () => (await kv('selene-local-v1:u5') || '').includes('NOTE-RLM027')); // la mise de côté, écrite
     await vers('recherche', '#searchIn'); await z.fill('#searchIn', 'NOTE-RLM027'); await z.waitForTimeout(300);
     const trouve27 = await z.evaluate(() => [...document.querySelectorAll('#main li, #main .item')].some(x => x.textContent.includes('NOTE-RLM027')));
     const stash = await kv('selene-local-v1:u5'), ici27 = await kv('selene-local-v1');
@@ -142,7 +147,8 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
     await z.waitForSelector('#authForm, [data-act="auth-local"]', { timeout: 10000 }).catch(() => {});
     check(!garde27 && !!(await z.$('#authForm, [data-act="auth-local"]')), 'A déconnecté : aucune garde, l’écran d’entrée (RLM-027, étape 3)');
     await connexion('p@exemple.org');
-    await vers('reprendre-la-main', '#main'); await z.waitForFunction(() => document.querySelector('#main').textContent.includes('NOTE-RLM027'), null, { timeout: 5000 }).catch(() => {});
+    await vers('reprendre-la-main', '#main'); await z.waitForFunction(() => document.querySelector('#main').textContent.includes('NOTE-RLM027'), null, { timeout: 30000 }).catch(() => {});
+    await jusqua27(async () => !(await kv('selene-local-v1:u5'))); // la mise de côté retirée, l'effacement écrit
     const retour27 = (await z.textContent('#main')).includes('NOTE-RLM027'), reste27 = await kv('selene-local-v1:u5');
     check(retour27 && (await z.textContent('#nav')).includes('Carnet du soir') && !reste27, 'P reconnecté : le suivi entier, la saisie NOTE-RLM027 ; l’entrée selene-local-v1:<P> a disparu (RLM-027, étape 4)' + (retour27 ? '' : ` (mise de côté : ${reste27 ? 'toujours là' : 'absente'})`));
 
