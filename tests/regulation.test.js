@@ -886,6 +886,19 @@ test('changement de compte sur le même appareil : les suivis locaux suivent leu
   app.site.disconnect(); app.board.disconnect();
 });
 
+test('A48 : un autre compte s’est connecté puis déconnecté ; au retour, le suivi mis de côté revient', async () => {
+  const server = fakeSupabase(), app = personal({ fetch: server.fetch }); await settle();
+  const id = await setupTracker(app); addUse(app, id);
+  app.localSwitch('u2');
+  assert.equal(app.localIds().length, 0, 'le compte suivant ne voit rien');
+  app.localErase(); // sa déconnexion : rien n'était gardé ici pour lui ; le document reste vide, sans propriétaire
+  assert.equal(app.local.data.owner, ''); assert.ok(app.storage.has('selene-local-v1:u1'), 'la mise de côté du premier compte survit');
+  app.localSwitch('u1');
+  assert.equal(app.localCopy(id).entries.length, 1, 'retrouvé au retour du compte'); assert.equal(app.local.data.owner, 'u1');
+  assert.ok(!app.storage.has('selene-local-v1:u1'), 'la mise de côté est rendue, pas laissée orpheline');
+  app.site.disconnect(); app.board.disconnect();
+});
+
 test('sauvegarde complète : le contenu gardé sur l’appareil y est ; restauré ailleurs, cet appareil en devient le détenteur', async () => {
   const server = fakeSupabase(), app = personal({ fetch: server.fetch }); await settle();
   const id = await setupTracker(app); addUse(app, id);

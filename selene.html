@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "91f53b50e7";
+const SELENE_BUILD = "1b99d60e24";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -5348,8 +5348,25 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   function localSwitch(uidNow) {
     const owner = local.data.owner;
     if (owner === uidNow) return;
+    let back = null;
+    try {
+      const raw = platform.storage.get(stashKey(uidNow));
+      back = raw ? JSON.parse(raw) : null;
+    } catch {
+    }
     if (!owner) {
+      const rest = {};
+      for (const [id, m] of Object.entries(back && back.modules || {})) {
+        if (Object.hasOwn(local.data.modules, id)) rest[id] = m;
+        else local.data.modules[id] = m;
+      }
+      try {
+        if (Object.keys(rest).length) platform.storage.set(stashKey(uidNow), JSON.stringify({ ...back, modules: rest }));
+        else platform.storage.remove(stashKey(uidNow));
+      } catch {
+      }
       local.data.owner = uidNow;
+      normalizeLocal(local.data);
       local.save();
       return;
     }
@@ -5359,10 +5376,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       } catch {
       }
     }
-    let back = null;
     try {
-      const raw = platform.storage.get(stashKey(uidNow));
-      back = raw ? JSON.parse(raw) : null;
       platform.storage.remove(stashKey(uidNow));
     } catch {
     }

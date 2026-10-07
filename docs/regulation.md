@@ -252,7 +252,8 @@ Trois questions distinctes, à ne pas confondre :
   - **Déconnexion** (qui vide l'appareil) : une garde demande quoi faire de ce qui n'existe qu'ici — télécharger une
     sauvegarde complète puis l'effacer, ou l'effacer (confirmé : le contenu et son talon, donc le nom, quittent l'appareil et
     le compte avec la synchronisation de la déconnexion) ; annuler ne déconnecte pas. **Changement de compte** sur le même appareil : les suivis locaux du compte précédent sont mis de côté
-    (`selene-local-v1:<compte>`), jamais montrés au suivant, retrouvés à son retour. **Suppression du compte** : effacés.
+    (`selene-local-v1:<compte>`), jamais montrés au suivant, retrouvés à son retour, y compris quand le compte suivant
+    s'est déconnecté entre-temps (A48 du cahier de recette). **Suppression du compte** : effacés.
   - **Sauvegarde complète** : elle contient aussi le contenu gardé sur l'appareil (c'est un fichier que la personne
     télécharge). **Restaurée** sur un appareil, celui-ci en devient le détenteur ; un talon sans contenu (sauvegarde
     faite ailleurs) reste un talon.
