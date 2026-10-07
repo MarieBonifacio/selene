@@ -88,6 +88,10 @@ const NEUF = '5a5a5a5a-1111-2222-3333-444455556666', ANCIEN = '6b6b6b6b-1111-222
     check((await main()).includes('Sur quoi travailles-tu'), 'l’app elle-même, et sa première question');
     check(await p.isVisible('#timerBtn') && (await p.textContent('#nav')).includes('Capture'), 'navigation et minuteur');
     await p.click('[data-act="welcome-path"][data-path="ecrire"]'); await settle();
+    // CPT-004, étape 1 : « Un long texte » dit ce qu'il crée, et les trois espaces sont dans la navigation.
+    const pour = (await p.textContent('#toast')).trim(), nav1 = await p.textContent('#nav');
+    check(pour === 'Pour commencer : Écriture, Sources, Tâches. Tout se renomme ou se retire dans Réglages.' && ['Écriture', 'Sources', 'Tâches'].every(x => nav1.includes(x)),
+      `« Un long texte » : « ${pour} » ; Écriture, Sources et Tâches dans la navigation (CPT-004, étape 1)`);
     await capturer('Une hypothèse sur le chapitre 3'); await settle();
     check(await p.waitForFunction(() => (document.querySelector('#toast') || {}).textContent?.includes("Gardé. Tu peux oublier, c'est écrit."), null, { timeout: 5000 }).then(() => true, () => false),
       'la capture : « Gardé. Tu peux oublier, c’est écrit. »');
@@ -129,6 +133,21 @@ const NEUF = '5a5a5a5a-1111-2222-3333-444455556666', ANCIEN = '6b6b6b6b-1111-222
     check(await storeGet(p, 'selene-sans-compte') === null, 'le choix « sans compte » s’efface : le compte prend le relais');
     await p.evaluate(() => { location.hash = 'reglages'; }); await p.waitForTimeout(300);
     check((await main()).includes('Connecté en tant que iris@exemple.org'), 'connectée');
+    // CPT-004, étape 5 : le compte neuf a reçu l'appareil tel quel, ses trois espaces et la capture ; l'appareil aussi.
+    const espaces5 = Object.values(lignes.get(NEUF).site.modules).map(m => m.label), nav5 = await p.textContent('#nav');
+    check(['Écriture', 'Sources', 'Tâches'].every(x => espaces5.includes(x) && nav5.includes(x)) && noteSur(lignes.get(NEUF), 'chapitre 3'),
+      `le compte a Écriture, Sources, Tâches et la capture ; la navigation aussi (étape 5)`);
+    // Étape 6 : un second navigateur, connecté au même compte par l'écran d'entrée, retrouve les mêmes espaces et la capture.
+    const q = await appareil(NEUF, lignes);
+    await q.goto(BASE + '/index.html'); await q.waitForSelector('#authForm');
+    await q.fill('#authEmail', 'iris@exemple.org'); await q.fill('#authPw', 'une phrase assez longue'); await q.click('#authForm button[type="submit"]');
+    await q.waitForFunction(() => !document.querySelector('#authForm') && (document.querySelector('#nav') || {}).textContent?.includes('Sources'), null, { timeout: 10000 }).catch(() => {});
+    const nav6 = await q.textContent('#nav');
+    await q.evaluate(() => { location.hash = 'inbox'; }); await q.waitForFunction(() => location.hash === '#inbox');
+    await q.waitForFunction(() => document.querySelector('#main').textContent.includes('chapitre 3'), null, { timeout: 5000 }).catch(() => {});
+    check(['Écriture', 'Sources', 'Tâches'].every(x => nav6.includes(x)) && (await q.textContent('#main')).includes('Une hypothèse sur le chapitre 3'),
+      'un second navigateur connecté au même compte : les mêmes espaces, et la capture dans sa boîte (étape 6)');
+    await q.context().close();
   } catch (e) { check(false, e.message.split('\n')[0]); }
 
   try {
