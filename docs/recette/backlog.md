@@ -553,7 +553,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   ESP-002 : 108 et 84 ; MOD-025 avance (étapes 1 et 2), son temps sur téléphone reste à la main ; C26, A54. Sept mutants,
   sept contrôles qui tombent. Puis EXT-008, EXT-017, EXT-009 et RLM-005 : 112 et 80 ; A55 (le délai de `run.js` suit le
   processeur ralenti). Puis RLM-008, RLM-020 et TRV-012 : 115 et 77 ; C27 (le cahier lisait un tableau que U9 a remplacé par une phrase).
-  Puis AST-006 et CPT-013 : 117 et 75 ; A56 (au retour du réseau, ce qui attendait patientait jusqu'au relevé de 30 s). Puis SYN-001 : 118 et 74 ; A57 (rien n'était relevé au retour au premier plan).
+  Puis AST-006 et CPT-013 : 117 et 75 ; A56 (au retour du réseau, ce qui attendait patientait jusqu'au relevé de 30 s). Puis SYN-001 : 118 et 74 ; A57 (rien n'était relevé au retour au premier plan). Puis PEN-008 : 119 et 73.
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`
