@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Dehors (connexions externes, phase 2, vague 6b : docs/connexions.md).
    Version hébergée simulée : faux Supabase, faux passeur qui sert des flux. Lancé par tests/browser/run.js. */
-const { storeSet, storeJSON, until, ouvrir, entree, suivre, calme, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeSet, storeJSON, until, ouvrir, entree, suivre, calme, fauxSupabase, synchro, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 const col = (label, extra) => ({ type: 'collection', label, config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1, addLabel: 'Ajouter',
   fields: { title: 'Titre', subtitle: 'Variantes', tag: '', due: '', text: 'Notes' }, ...extra }, entries: [] });
@@ -39,9 +39,7 @@ const PAGES = {
     if (mode === 'refus') return json(route, 403, { erreur: "ce compte n'est pas autorisé à utiliser ce passeur", code: 'compte-non-autorise' });
     return q.genre ? null : json(route, 400, { erreur: 'genre inconnu', code: 'genre-inconnu' });
   };
-  await ctx.route('https://*.supabase.co/**', route => {
-    const req = route.request(), u = new URL(req.url());
-    if (u.pathname.startsWith('/auth/')) return json(route, 200, {});
+  await fauxSupabase(ctx, (route, req, u) => {
     if (u.pathname === '/functions/v1/passeur') {
       const q = req.postDataJSON(), a = access(route, q); if (a) return a; calls.push(q);
       const pg = PAGES[q.url];
@@ -49,8 +47,6 @@ const PAGES = {
       if (pg.etag && q.etag === pg.etag) return json(route, 200, { status: 304, url: q.url, etag: pg.etag });
       return json(route, 200, { status: 200, url: q.url, type: pg.type, etag: pg.etag || null, modifie: null, texte: pg.texte });
     }
-    if (req.method() === 'GET') return json(route, 200, []);
-    return route.fulfill({ status: 201, body: '' });
   });
   const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
   await ctx.addInitScript(([d, s, uid]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); } }, [JSON.stringify(demo), session, UID]);
@@ -67,6 +63,7 @@ const PAGES = {
   };
   const titles = () => p.$$eval('.dehors .item', ls => ls.map(l => (l.querySelector('.t-title, b') || {}).textContent.replace(' ↗', '')));
 
+  ok(!(await synchro(p)), 'synchronisé pour de vrai, sans « Non synchronisé » (BL-23)');
   console.log('suivre, découvrir');
   // La vue ne dit « Aucun flux suivi » qu'une fois la session prête : l'attendre, pas un délai (sous charge, 600 ms ne
   // suffisaient pas toujours, A10 du cahier de recette). Si elle ne vient pas en 10 s, la vérification échoue comme avant.
@@ -151,11 +148,8 @@ const PAGES = {
   {
     mode = 'refus'; probes.n = 0;
     const ctx3 = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
-    await ctx3.route('https://*.supabase.co/**', route => {
-      const req = route.request(), u = new URL(req.url());
+    await fauxSupabase(ctx3, (route, req, u) => {
       if (u.pathname === '/functions/v1/passeur') { const q = req.postDataJSON(); return access(route, q) || json(route, 200, { status: 200, url: q.url, type: 'text/html', texte: '<html></html>' }); }
-      if (u.pathname.startsWith('/auth/')) return json(route, 200, {});
-      return req.method() === 'GET' ? json(route, 200, []) : route.fulfill({ status: 201, body: '' });
     });
     await ctx3.addInitScript(([d, s, uid]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); } }, [JSON.stringify(demo), session, UID]);
     const f = suivre(await ctx3.newPage()); f.on('pageerror', e => errs.push(e.message));

@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Research Watch dans Dehors (connexions externes, phase 2, vague 6d : docs/connexions.md).
    Version hébergée simulée (faux Supabase), OpenAlex simulé ; pas besoin du passeur. Lancé par tests/browser/run.js. */
-const { storeGet, storeJSON, suivre, calme, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeGet, storeJSON, suivre, calme, fauxSupabase, synchro, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, sources: true, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1,
   fields: { title: 'Titre', subtitle: 'Auteurs', tag: 'Type', due: '', text: 'Résumé' } }, entries: [] };
@@ -13,7 +13,7 @@ const WORK = (n, extra = {}) => ({ id: `https://openalex.org/W${n}`, doi: `https
   const ok = check, errs = [], oa = [];
   let mode = 'ok';
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
-  await ctx.route('https://*.supabase.co/**', r => { const req = r.request(); if (new URL(req.url()).pathname.startsWith('/functions/')) return r.fulfill({ status: 404, body: '' }); r.fulfill({ contentType: 'application/json', body: req.method() === 'GET' ? '[]' : '{}' }); });
+  await fauxSupabase(ctx, (r, req, u) => u.pathname.startsWith('/functions/') ? r.fulfill({ status: 404, body: '' }) : undefined);
   await ctx.route('https://api.openalex.org/**', r => {
     const u = new URL(r.request().url()); oa.push(u);
     if (mode === 'quota') return r.fulfill({ status: 429, body: '' });
@@ -34,6 +34,7 @@ const WORK = (n, extra = {}) => ({ id: `https://openalex.org/W${n}`, doi: `https
     await p.waitForTimeout(700);
   };
 
+  ok(!(await synchro(p)), 'synchronisé pour de vrai, sans « Non synchronisé » (BL-23)');
   console.log('une recherche, sans clé');
   ok(!oa.length, 'rien n’est demandé avant la première veille');
   await watch('depersonalization', 'ecriture');

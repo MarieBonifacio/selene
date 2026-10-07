@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Zotero en lecture seule (connexions externes, phase 2, vague 6f : docs/connexions.md).
    Version hébergée simulée (faux Supabase, faux passeur), API Zotero simulée. Lancé par tests/browser/run.js. */
-const { storeGet, storeJSON, until, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeGet, storeJSON, until, fauxSupabase, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, sources: true, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1,
   fields: { title: 'Titre', subtitle: 'Auteurs', tag: 'Type', due: '', text: 'Résumé' } }, entries: [] };
@@ -30,13 +30,12 @@ const ITEMS = [
       if (mode === 'cors') return r.abort('failed'); // ce que voit le navigateur quand CORS est refusé
       const x = reply(u, h['zotero-api-key']); r.fulfill({ status: x.status, contentType: 'application/json', body: x.body });
     });
-    await ctx.route('https://*.supabase.co/**', r => {
+    await fauxSupabase(ctx, r => {
       const req = r.request(), u = new URL(req.url());
       if (u.pathname === '/functions/v1/passeur') {
         const q = req.postDataJSON(); p.passeur.push(q); const zu = new URL(q.url), x = reply(zu, zu.searchParams.get('key'));
         return r.fulfill({ contentType: 'application/json', body: JSON.stringify(x.status === 200 ? { status: 200, url: q.url, type: 'application/json', texte: x.body } : { status: x.status, url: q.url, erreur: `le site répond ${x.status}` }) });
       }
-      r.fulfill({ contentType: 'application/json', body: req.method() === 'GET' ? '[]' : '{}' });
     });
     const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
     await ctx.addInitScript(([d, s, uid]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); } }, [JSON.stringify(demo), session, UID]);

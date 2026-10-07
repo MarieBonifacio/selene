@@ -42,6 +42,13 @@ contient au moins une assertion (six tests de `sync.test.js` passent par l'assis
   1 500 ms (*Check › browser (chromium, démarrage lent)*). `SELENE_CPU=<facteur>` ralentit le processeur de Chromium
   (protocole DevTools), contre les délais fixes qui suivent un geste ; la CI la rejoue à ×4, quatre scénarios à la fois
   (*Check › browser (chromium, processeur ralenti)*, [BL-22](backlog.md#bl-22)).
+- **Un faux Supabase fidèle** : `fauxSupabase(ctx, autre)` de `helpers.js` répond comme PostgREST pour `app_state` (une
+  ligne par compte, lecture filtrée, création, écriture conditionnelle), sur le modèle de `fakeSupabase` des tests Node ;
+  `autre` sert ce qui est propre au scénario (le passeur, une fonction). Un scénario « connecté » l'est donc vraiment :
+  son branchement réussit, l'app ne le retente pas en fond (A31), et `synchro(p)` (l'indicateur `#saving`) est vide.
+  Dix-sept scénarios s'en servent ([BL-23](backlog.md#bl-23)) ; les autres tiennent leur propre table de lignes, aussi
+  fidèle (`sync-deux-appareils.js`, `hors-ligne-reel.js`, `regulation*.js`, `secours.js`, `sauvegarde-complete.js`,
+  `sans-compte.js`, `sources.js`), ou ne se connectent pas.
 - **`deno test`** : assertion levée ; **`deno check`** : erreur de typage.
 - **`cargo test`** : `assert!` ou `assert_eq!` en échec.
 - **`build.py --check`** : sort en erreur si un HTML généré ne correspond plus aux sources.
@@ -1064,7 +1071,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/indexeddb.js`](../../tests/browser/indexeddb.js) · **mode** H · **écran** O
 - **Conditions** : Document dans localStorage au départ.
-- **Vérifie** : migration vers IndexedDB (secrets laissés) ; capture écrite et relue après relance ; un autre onglet se met à jour ; un document de plus de 5 millions de caractères est enregistré.
+- **Vérifie** : migration vers IndexedDB (secrets laissés) ; capture écrite et relue après relance ; un autre onglet se met à jour ; un document de plus de 5 millions de caractères est enregistré ; synchronisé pour de vrai (BL-23).
 - **Cas manuels** : [DON-008](manuels/donnees-sauvegardes.md#don-008)
 
 <a id="tn-secours"></a>
@@ -1198,7 +1205,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/dehors.js`](../../tests/browser/dehors.js) · **mode** H puis A · **écran** O
 - **Conditions** : Faux passeur qui sert des flux.
-- **Vérifie** : une porte dans la navigation ; sonde du passeur ; le champ « L'adresse d'un site ou d'un flux… » ; suivre un site par son flux annoncé, « Suivi : … » ; la semaine écoulée, rangée par projet ; titre piégé inerte ; lien `javascript:` neutralisé ; page sans flux ou flux déjà suivi : dit ; garder (source avec provenance), vers une note, vu ; douze au plus ; ligne d'accueil sans pastille ; seulement mes motifs ; tout marquer comme vu (synchronisé), « Tout est vu. Dehors se tait jusqu'à la prochaine parution. » ; ETag et 304 ; pas de relecture avant trois heures ; retirer un flux ; artefact : pas de Dehors.
+- **Vérifie** : une porte dans la navigation ; sonde du passeur ; le champ « L'adresse d'un site ou d'un flux… » ; suivre un site par son flux annoncé, « Suivi : … » ; la semaine écoulée, rangée par projet ; titre piégé inerte ; lien `javascript:` neutralisé ; page sans flux ou flux déjà suivi : dit ; garder (source avec provenance), vers une note, vu ; douze au plus ; ligne d'accueil sans pastille ; seulement mes motifs ; tout marquer comme vu (synchronisé), « Tout est vu. Dehors se tait jusqu'à la prochaine parution. » ; ETag et 304 ; pas de relecture avant trois heures ; retirer un flux ; artefact : pas de Dehors ; synchronisé pour de vrai (BL-23).
 - **Cas manuels** : [EXT-013](manuels/connexions.md#ext-013), [EXT-019](manuels/connexions.md#ext-019)
 
 <a id="tn-dehors-croise"></a>
@@ -1222,7 +1229,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/veille.js`](../../tests/browser/veille.js) · **mode** H · **écran** O
 - **Conditions** : OpenAlex simulé.
-- **Vérifie** : rien avant la première veille ; « En veille : … Première lecture… » ; une requête depuis un mois, sans clé ; articles avec revue, autrice, résumé ; garder : source avec DOI et provenance « Veille » ; ORCID et clé : « Clé OpenAlex gardée dans ce navigateur. », clé hors des données synchronisées ; veille en double dite ; pas de nouvelle demande dans la semaine ; quota épuisé dit ; se déconnecter efface la clé et ce que le dehors a apporté.
+- **Vérifie** : rien avant la première veille ; « En veille : … Première lecture… » ; une requête depuis un mois, sans clé ; articles avec revue, autrice, résumé ; garder : source avec DOI et provenance « Veille » ; ORCID et clé : « Clé OpenAlex gardée dans ce navigateur. », clé hors des données synchronisées ; veille en double dite ; pas de nouvelle demande dans la semaine ; quota épuisé dit ; se déconnecter efface la clé et ce que le dehors a apporté ; synchronisé pour de vrai (BL-23).
 - **Cas manuels** : [CPT-013](manuels/entree-et-comptes.md#cpt-013), [EXT-014](manuels/connexions.md#ext-014)
 
 <a id="tn-cites"></a>
@@ -1238,7 +1245,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/agenda.js`](../../tests/browser/agenda.js) · **mode** H · **écran** O
 - **Conditions** : Faux passeur qui sert un `.ics` ; horloge fixée. Avant chaque rechargement, plus aucune requête en vol depuis 2,5 s (`calme()` de `helpers.js`, A19, A31).
-- **Vérifie** : rien sans adresse ; `webcal://` devient `https://` ; adresse gardée dans ce navigateur, hors synchronisation, jamais réaffichée ; le plombier sous Chantier ; récurrence ; le passé écarté ; journée entière demain ; titre piégé inerte ; cache d'une heure ; « oublier » retire adresse et cache, et le dit : « Calendrier oublié sur cet appareil. » (EXT-015).
+- **Vérifie** : rien sans adresse ; `webcal://` devient `https://` ; adresse gardée dans ce navigateur, hors synchronisation, jamais réaffichée ; le plombier sous Chantier ; récurrence ; le passé écarté ; journée entière demain ; titre piégé inerte ; cache d'une heure ; « oublier » retire adresse et cache, et le dit : « Calendrier oublié sur cet appareil. » (EXT-015) ; synchronisé pour de vrai, et l'adresse secrète absente des données du serveur (BL-23).
 - **Cas manuels** : [CPT-013](manuels/entree-et-comptes.md#cpt-013), [EXT-015](manuels/connexions.md#ext-015)
 
 <a id="tn-zotero"></a>

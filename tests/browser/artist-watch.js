@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Artist Watch dans Dehors (connexions externes, phase 2, vague 6c : docs/connexions.md).
    Version hébergée simulée (faux Supabase), MusicBrainz simulé ; pas besoin du passeur. Lancé par tests/browser/run.js. */
-const { storeSet, storeJSON, until, ouvrir, entree, suivre, calme, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeSet, storeJSON, until, ouvrir, entree, suivre, calme, fauxSupabase, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const U = n => `0000000${n}-aaaa-bbbb-cccc-dddddddddddd`.slice(-36);
 const iso = d => new Date(d).toISOString().slice(0, 10);
 const demo = JSON.parse(fixture());
@@ -20,7 +20,7 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
   const b = await engine.launch(launchOptions);
   const ok = check, errs = [], mb = [];
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
-  await ctx.route('https://*.supabase.co/**', r => { const req = r.request(); if (new URL(req.url()).pathname.startsWith('/functions/')) return r.fulfill({ status: 404, body: '' }); r.fulfill({ contentType: 'application/json', body: req.method() === 'GET' ? '[]' : '{}' }); });
+  await fauxSupabase(ctx, (r, req, u) => u.pathname.startsWith('/functions/') ? r.fulfill({ status: 404, body: '' }) : undefined);
   await ctx.route('https://musicbrainz.org/**', r => { const u = new URL(r.request().url()); mb.push({ at: Date.now(), a: u.searchParams.get('artist') }); r.fulfill({ contentType: 'application/json', body: JSON.stringify({ 'release-groups': GROUPS[u.searchParams.get('artist')] || [] }) }); });
   await ctx.route('https://coverartarchive.org/**', r => r.fulfill({ status: 404, body: '' }));
   // L'écart se mesure à l'envoi, dans la page, comme l'app le règle : à l'arrivée dans la route, la latence d'envoi s'y

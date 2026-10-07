@@ -45,7 +45,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | ~~BL-03 : l'isolation entre comptes rejouée chaque semaine~~ (fait le 6 octobre 2026, PR #124 : le workflow attend ses six secrets, plus bas) | une session | P1 | — | [BL-03](#bl-03) |
 | ~~BL-20 : un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait le 6 octobre 2026, PR #124) | une session | P3 | — | [BL-20](#bl-20) |
 | ~~BL-19 : nommer, dans la matrice, les étapes que les tests ne couvrent pas~~ (les 73 cas P1 : fait le 6 octobre 2026, PR #125 ; les 88 cas P2 et P3 : fait le 7 octobre 2026) | une session | P3 | — | [BL-19](#bl-19) |
-| BL-23 : un faux Supabase commun, qui réponde comme PostgREST | une session | P3 | — | [BL-23](#bl-23) |
+| ~~BL-23 : un faux Supabase commun, qui réponde comme PostgREST~~ (fait le 7 octobre 2026) | une session | P3 | — | [BL-23](#bl-23) |
 | BL-18 : la page du cahier à cocher sous contrôle de la CI | une session | P3 | si la PR #118 est fusionnée | [BL-18](#bl-18) |
 | BL-16 : la fumée de l'app iOS sur simulateur | une session | P3 | avant la première version iOS | [BL-16](#bl-16) |
 
@@ -121,7 +121,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 | [BL-20](#bl-20) | ~~Un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait) | outillage | P3 | onze étapes, voir ci-dessous |
 | [BL-21](#bl-21) | ~~Fermer le réseau aux scénarios de navigateur~~ (fait) | hygiène des essais | P2 | tous les scénarios ; A20 |
 | [BL-22](#bl-22) | ~~Débusquer les délais fixes après un geste : un job au processeur ralenti~~ (fait) | fiabilité de la CI | P2 | tous les scénarios ; A10, A11, A16, A21 à A23 |
-| [BL-23](#bl-23) | Un faux Supabase commun, qui réponde comme PostgREST | hygiène des essais | P3 | les scénarios au faux serveur simpliste ; A29, A31 |
+| [BL-23](#bl-23) | ~~Un faux Supabase commun, qui réponde comme PostgREST~~ (fait) | hygiène des essais | P3 | dix-sept scénarios ; A29, A31 |
 
 ---
 
@@ -577,7 +577,17 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 - **Niveau** : outillage des scénarios.
 - **Bénéfice attendu** : les scénarios connectés le sont vraiment ; plus de reprises de fond, donc plus de requêtes
   coupées par un rechargement ; un contrôle possible de l'indicateur « synchronisé » partout.
-- **État** : à faire. En attendant, `calme()` attend 2,5 s sans requête avant chaque rechargement (A31).
+- **État** : **fait** le 7 octobre 2026. `fauxSupabase(ctx, autre)` dans `helpers.js` ; dix-sept scénarios y passent,
+  verts sous Chromium, aussi à ×4. `agenda.js`, `indexeddb.js`, `dehors.js` et `veille.js` vérifient qu'ils sont
+  synchronisés pour de vrai (`synchro(p)` vide), un contrôle qui échoue avec l'ancien faux. `agenda.js` vérifie en plus
+  que l'adresse secrète du calendrier n'arrive pas au serveur. Trois scénarios ont dû suivre, sans défaut de l'app :
+  - `indexeddb.js` déposait un document dans IndexedDB pendant que l'app enregistrait encore la saisie d'avant ;
+    synchronisée, l'app le réécrivait par-dessus. Il attend désormais le calme avant de le déposer.
+  - `assistant-injoignable.js` comptait les rendus dès l'ouverture, branchement compris (trois rendus, puis plus rien en
+    dix secondes) ; il les compte une fois l'app au repos, et une boucle le ferait toujours échouer.
+  - `mot-de-passe.js` lisait la bulle d'entrée aussitôt entré ; elle vient une fois le branchement fini, plus long quand
+    il réussit, et à ×4 elle n'était pas encore là. Il l'attend.
+  Le calme de 2,5 s avant chaque rechargement (A31) reste : il protège aussi des écritures parties juste avant.
 
 ---
 

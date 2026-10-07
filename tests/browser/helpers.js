@@ -136,4 +136,37 @@ const storeGet = (p, k) => p.evaluate(inPage, { k, v: null, write: false });
 const storeSet = (p, k, v) => p.evaluate(inPage, { k, v, write: true });
 const storeJSON = async (p, k) => JSON.parse(await storeGet(p, k));
 
-module.exports = { storeGet, storeSet, storeJSON, until, ouvrir, demarree, entree, suivre, calme, engine, ENGINE, BASE, launchOptions, fixture, check };
+/* Un faux Supabase qui répond comme PostgREST pour `app_state` (BL-23), sur le modèle de `fakeSupabase`
+   (tests/hosted-harness.js) : une ligne par compte, GET filtré (la colonne, ou sa seule date), POST qui crée la ligne
+   vide sans rien écraser, PATCH conditionnel sur `col->>updatedAt` qui répond `[{ user_id }]`. Avec lui, un scénario
+   « connecté » l'est vraiment : le branchement réussit, rien n'est retenté en fond (A24, A31), et l'indicateur se tait.
+   `autre(route, req, url)` sert d'abord ce qui est propre au scénario (le passeur, une fonction…) et rend la promesse de
+   `route.fulfill` ; synchrone, il rend `undefined` pour ce qu'il ne sert pas, et alors /auth/ répond {}, les autres tables (activite, erreurs) prennent tout, un GET inconnu reçoit []. */
+async function fauxSupabase(ctx, autre = () => undefined) {
+  const lignes = new Map(), json = (r, status, body) => r.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+  await ctx.route('https://*.supabase.co/**', async r => {
+    const req = r.request(), u = new URL(req.url()), m = req.method();
+    const servi = autre(r, req, u); if (servi !== undefined) return servi; // la promesse de fulfill : servi, ne pas l'attendre ici
+    if (u.pathname.startsWith('/auth/')) return json(r, 200, {});
+    if (u.pathname !== '/rest/v1/app_state') return m === 'GET' ? json(r, 200, []) : r.fulfill({ status: 201, body: '' });
+    const uid = (u.searchParams.get('user_id') || '').replace(/^eq\./, ''), row = lignes.get(uid);
+    if (m === 'GET') {
+      const col = u.searchParams.get('select') || '', date = col.match(/^u:(\w+)->>updatedAt$/);
+      if (date) return json(r, 200, row ? [{ u: row[date[1]] && row[date[1]].updatedAt != null ? String(row[date[1]].updatedAt) : null }] : []);
+      return json(r, 200, row ? [{ [col]: row[col] }] : []);
+    }
+    if (m === 'POST') { for (const x of req.postDataJSON()) if (!lignes.has(x.user_id)) lignes.set(x.user_id, { board: {}, site: {}, ...x }); return r.fulfill({ status: 201, body: '' }); }
+    if (m !== 'PATCH' || !row) return json(r, 200, []);
+    for (const [k, g] of u.searchParams) if (k.includes('->>')) {
+      const [col, champ] = k.split('->>'), cur = row[col] && row[col][champ];
+      if (!(g === 'is.null' ? cur == null : cur != null && String(cur) === g.slice(3))) return json(r, 200, []);
+    }
+    Object.assign(row, req.postDataJSON());
+    return json(r, 200, [{ user_id: uid }]);
+  });
+  return lignes;
+}
+/* Ce que dit l'indicateur d'enregistrement : vide quand tout est synchronisé. */
+const synchro = p => p.evaluate(() => ((document.querySelector('#saving') || {}).textContent || '').trim());
+
+module.exports = { storeGet, storeSet, storeJSON, until, ouvrir, demarree, entree, suivre, calme, fauxSupabase, synchro, engine, ENGINE, BASE, launchOptions, fixture, check };

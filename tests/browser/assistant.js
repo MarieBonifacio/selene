@@ -2,7 +2,7 @@
    « assistant » : la clé part une fois au serveur et ne revient jamais ; un échange passe par la fonction, jamais par
    api.anthropic.com ; une clé laissée dans l'appareil par une ancienne version est confiée au serveur puis effacée.
    Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { fauxSupabase, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const UID = '0b8f0c2e-1111-2222-3333-444455556666', CLE = 'sk-ant-api03-' + 'a'.repeat(40) + 'wxyz';
 const demo = JSON.parse(fixture());
 demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').concat({ id: 'assistant', on: true });
@@ -15,9 +15,9 @@ demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').conc
     const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
     p.fn = []; p.anthropic = 0; p.serveur = { cle: null };
     await ctx.route('https://api.anthropic.com/**', r => { p.anthropic++; r.abort(); });
-    await ctx.route('https://*.supabase.co/**', r => {
+    await fauxSupabase(ctx, r => {
       const req = r.request(), u = new URL(req.url());
-      if (u.pathname !== '/functions/v1/assistant') return r.fulfill({ contentType: 'application/json', body: req.method() === 'GET' ? '[]' : '{}' });
+      if (u.pathname !== '/functions/v1/assistant') return;
       const q = req.postDataJSON(); p.fn.push(q);
       const json = (o, status = 200) => r.fulfill({ status, contentType: 'application/json', body: JSON.stringify(o) });
       if (q.action === 'etat') return json(p.serveur.cle ? { cle: true, indice: '…' + p.serveur.cle.slice(-4) } : { cle: false });
