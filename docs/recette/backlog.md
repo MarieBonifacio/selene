@@ -21,11 +21,13 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| A45 : `tests/browser/regulation-appareil.js` instable sous WebKit (RLM-015, le bouton d'objectif introuvable après les refus), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A45](perimetre.md#anomalies-et-observations) |
+| ~~A44 : suivre un flux pendant une relecture de Dehors effaçait ses éléments~~ (fait le 7 octobre 2026, PR #141) | une session | P2 | — | [A44](perimetre.md#anomalies-et-observations) |
 | A43 : `tests/browser/regulation.js` instable sous Firefox (« les quatre actions ont une cible de 44 px au moins »), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A43](perimetre.md#anomalies-et-observations) |
 | ~~A42 : « En jachère » disait « plus de 1 jours »~~ (fait le 7 octobre 2026, PR #137) | une session | P3 | — | [A42](perimetre.md#anomalies-et-observations) |
 | ~~A41 : renommer une enveloppe dans les Réglages renommait ses opérations sans le dire~~ (fait le 7 octobre 2026, PR #136) | une session | P3 | — | [A41](perimetre.md#anomalies-et-observations) |
 | ~~A40 : un rendu de fond tombé pendant un appui faisait perdre le clic (la boîte de confirmation jamais ouverte)~~ (fait le 7 octobre 2026, PR #135) | une session | P2 | — | [A40](perimetre.md#anomalies-et-observations) |
-| A39 : `tests/browser/dehors.js` instable sous Firefox (l'élément du flux Atom pas venu), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A39](perimetre.md#anomalies-et-observations) |
+| ~~A39 : `tests/browser/dehors.js` instable sous Firefox (l'élément du flux Atom pas venu)~~ (cause établie le 7 octobre 2026 : A44, corrigée, PR #141) | une session | P3 | — | [A39](perimetre.md#anomalies-et-observations) |
 | ~~A38 : « Chercher « … » partout » de la palette gardait les filtres de la recherche précédente~~ (fait le 7 octobre 2026, PR #135) | une session | P2 | — | [A38](perimetre.md#anomalies-et-observations) |
 | ~~A37 : un rendu de fond faisait perdre le focus clavier hors des champs (synchro, autre onglet, fin d'un envoi)~~ (fait le 7 octobre 2026, PR #133) | une session | P2 | — | [A37](perimetre.md#anomalies-et-observations) |
 | A36 : `tests/browser/veille.js` instable sous Firefox (« une veille en double : dit »), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A36](perimetre.md#anomalies-et-observations) |
@@ -530,6 +532,10 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   pas de module, `firstOfType` ne retenant que les espaces affichés : la garde est double).
   Puis deux de « Reprendre la main », sur le chemin S (sans compte, `rlm-en-cours.json` importé : RLM-006, RLM-013) :
   82 et 110. Six mutants, six contrôles qui tombent.
+  Puis RLM-025 et RLM-015, sur le même chemin : 84 et 108. RLM-015 fige l'horloge (le 7 octobre à 20 h à Paris, déjà le
+  8 à Auckland) : les deux fuseaux ne tombent pas le même jour, quel que soit l'horaire de la CI. En chemin, deux
+  contrôles qui passaient à vide : le suivi de ce jeu vit dans le site, pas dans le document local ; une bulle
+  « Objectif enregistré » restée de la configuration. Six mutants, six contrôles qui tombent.
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`

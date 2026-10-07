@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "4e055005b4";
+const SELENE_BUILD = "91f53b50e7";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -12994,7 +12994,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     try {
       if (due) {
         for (const f of feeds) {
-          const c2 = dehorsCache(), fc = c2.feeds[f.id] || { items: [] };
+          const fc = { ...dehorsCache().feeds[f.id] || { items: [] } };
           try {
             const r = await passeurFetch(f.url, "feed", { etag: fc.etag, modifie: fc.modifie });
             if (r.status === 304) fc.err = "";
@@ -13012,6 +13012,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
             fc.err = e.message;
           }
           fc.at = Date.now();
+          const c2 = dehorsCache();
           c2.feeds[f.id] = fc;
           dehorsStore(c2);
           if (passeurEtat === "absent") break;

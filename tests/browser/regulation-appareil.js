@@ -7,6 +7,7 @@
    - se déconnecter avec un suivi gardé ici : la garde propose l'export ou l'effacement ; effacer vide l'appareil et retire
      aussi le talon du compte.
    Lancé par tests/browser/run.js. */
+const fs = require('node:fs');
 const path = require('node:path');
 const { engine, BASE, launchOptions, check, storeJSON, ouvrir, entree } = require('./helpers');
 const rows = new Map();
@@ -159,6 +160,114 @@ async function device(browser, errs, personnel = true, id = 'u1') {
       dits.push((await bulle2()).startsWith(attendu) && !(await ligne(id)));
     }
     check(dits.length === 2 && dits.every(Boolean), '« suppr. » sur l’envie puis l’action du 11 : « Envie du 11 sept. supprimée. », puis « Action du 11 sept. supprimée. » (RLM-013, étape 4)');
+
+    console.log('chemin S : exporter ce suivi, la sauvegarde complète le contient (RLM-025)');
+    const jeuRlm = path.join(__dirname, '..', '..', 'docs', 'recette', 'donnees', 'rlm-en-cours.json');
+    const importer = async fichier => { await vers('reglages', 'input[data-act="imp"]'); await viderBulle(); await S.setInputFiles('input[data-act="imp"]', fichier); };
+    await importer(jeuRlm); // le jeu de nouveau tel quel : les suppressions de RLM-013 sont défaites
+    await S.waitForSelector('#cdlg[open]', { timeout: 5000 }).catch(() => {}); if (await S.$('#cdlg[open]')) await S.click('#cdlg button[value="ok"]');
+    await bulleS('Sauvegarde importée.');
+    const suivi = async () => ((await storeJSON(S, 'selene-local-v1')) || { modules: {} }).modules[cid];
+    await vers(cid, `#rlmPriv-${cid}`); await S.evaluate(x => { document.querySelector(`#rlmPriv-${x}`).open = true; }, cid);
+    await S.click(`#rlmPriv-${cid} [data-act="rlm-export"]`); await S.waitForSelector('#cdlg[open]');
+    const demandeExport = (await S.textContent('#cmsg')).trim();
+    check(demandeExport === 'Exporter ce suivi dans un fichier lisible, non chiffré ? Il contient tout le journal, notes comprises.', `« Exporter ce suivi » : « ${demandeExport} » (étape 1)`);
+    const [dlSuivi] = await Promise.all([S.waitForEvent('download'), S.click('#cdlg button[value="ok"]')]);
+    const fSuivi = await dlSuivi.path(), jSuivi = JSON.parse(fs.readFileSync(fSuivi, 'utf8')), jour = await S.evaluate(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; });
+    check(dlSuivi.suggestedFilename() === `selene-suivi-${jour}.json` && jSuivi.format === 'selene-regulation-v1' && jSuivi.about.includes('Restauration : par la sauvegarde complète de Selene.') && jSuivi.module.label === 'Carnet du soir'
+      && jSuivi.module.config.subject === 'alcool' && jSuivi.module.goals.length === 2 && jSuivi.module.entries.length === 7 && JSON.stringify(jSuivi).includes('Repas de famille'),
+      `${dlSuivi.suggestedFilename()} : selene-regulation-v1, « Restauration : par la sauvegarde complète… », Carnet du soir, alcool, 2 objectifs, 7 entrées, « Repas de famille » (étape 2)`);
+    await vers('reglages', '[data-act="exp"]');
+    const [dlTout] = await Promise.all([S.waitForEvent('download'), S.click('[data-act="exp"]')]);
+    const fTout = await dlTout.path(), jTout = JSON.parse(fs.readFileSync(fTout, 'utf8')), dans = ((jTout.site || {}).modules || {})[cid] || {};
+    check(dlTout.suggestedFilename() === `selene-${jour}.json` && (dans.entries || []).length === 7 && JSON.stringify(dans).includes('Repas de famille'),
+      `la sauvegarde complète ${dlTout.suggestedFilename()} : le suivi, ses 7 entrées et « Repas de famille » (étape 3)`);
+    const avantImport = JSON.stringify(await suivi());
+    await importer(fSuivi); await bulleS('Rien n\'a été importé'); await S.waitForTimeout(600); // une absence : la boîte de remplacement ne doit pas venir
+    check((await bulle2()).startsWith('Ce fichier n\'est pas une sauvegarde Selene. Rien n\'a été importé.') && !(await S.$('#cdlg[open]')) && JSON.stringify(await suivi()) === avantImport,
+      'l’export du suivi importé : « Ce fichier n’est pas une sauvegarde Selene. Rien n’a été importé. », sans boîte « Remplacer tout l’état… », rien ne change (étape 4)');
+    await importer(fTout);
+    await S.waitForSelector('#cdlg[open]', { timeout: 5000 }).catch(() => {}); if (await S.$('#cdlg[open]')) await S.click('#cdlg button[value="ok"]');
+    const importee = await bulleS('Sauvegarde importée.');
+    const sans = o => JSON.stringify(o, (k, v) => (k === 'updatedAt' ? undefined : v));
+    check(importee && sans((await suivi()) || {}).length > 100 && sans(await suivi()) === sans(JSON.parse(avantImport)), 'la sauvegarde complète importée : « Sauvegarde importée. », le suivi identique (étape 5)');
+
+    console.log('chemin S : dates à venir refusées, le fuseau ne reclasse rien (RLM-015)');
+    // L'horloge figée le 7 octobre 2026 à 20 h à Paris : à Auckland, c'est déjà le 8 à 7 h, quel que soit l'horaire de la CI.
+    const INSTANT = new Date('2026-10-07T20:00:00+02:00'), J = '2026-10-07', J1 = '2026-10-08', Jm1 = '2026-10-06';
+    const cz = await browser.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block', timezoneId: 'Europe/Paris' });
+    const Z = await cz.newPage(); Z.on('pageerror', e => errs.push(e.message)); await Z.clock.setFixedTime(INSTANT);
+    await ouvrir(Z, BASE + '/index.html#sans-compte', entree);
+    const versZ = async (h, sel) => { await Z.evaluate(x => { location.hash = x; }, h); await Z.waitForSelector(sel, { state: 'attached' }); };
+    const bulleZ = t => Z.waitForFunction(x => ((document.querySelector('#toast') || {}).textContent || '').includes(x), t, { timeout: 5000 }).then(() => true, () => false);
+    await versZ('reglages', 'input[data-act="imp"]');
+    await Z.setInputFiles('input[data-act="imp"]', path.join(__dirname, '..', '..', 'docs', 'recette', 'donnees', 'rlm-a-configurer.json'));
+    await Z.waitForSelector('#cdlg[open]', { timeout: 5000 }).catch(() => {}); if (await Z.$('#cdlg[open]')) await Z.click('#cdlg button[value="ok"]');
+    await bulleZ('Sauvegarde importée.');
+    const zid = await Z.evaluate(() => { const a = [...document.querySelectorAll('#nav a')].find(x => x.textContent.includes('Carnet du soir')); return a ? a.getAttribute('href').slice(1) : ''; });
+    // Le contenu du suivi, là où il vit : dans le document local s'il est « gardé sur cet appareil », sinon dans le site
+    // (sans compte, ce jeu-ci ne porte pas de stockage : son contenu reste dans le site, qui ne part nulle part).
+    const local = async q => {
+      const st = ((await storeJSON(q, 'selene-site-v1')) || { modules: {} }).modules[zid] || { config: {}, entries: [] };
+      return st.config && st.config.storage === 'device' ? (((await storeJSON(q, 'selene-local-v1')) || { modules: {} }).modules[zid] || { entries: [] }) : st;
+    };
+    // Configurer : « Alcool », « Observer, sans cible », à partir de J-1.
+    await versZ(zid, '[data-act="rlm-setup"]'); await Z.click('[data-act="rlm-setup"]'); await Z.waitForFunction(() => document.querySelector('#dlg').open);
+    await Z.selectOption('#form [name="subject"]', 'alcool'); await Z.click('#form button[value="save"]');
+    await Z.waitForFunction(() => document.querySelector('#dlg').open && document.querySelector('#form h2').textContent === 'Mon intention');
+    await Z.selectOption('#form [name="mode"]', 'observer'); await Z.fill('#form [name="date"]', Jm1); await Z.click('#form button[value="save"]');
+    await Z.waitForFunction(() => !document.querySelector('#dlg').open); await Z.waitForSelector('[data-act="rlm-use"]');
+    // Fermer un formulaire refusé : sous Firefox, la bulle de validation avale le premier geste (Échap, plusieurs fois).
+    // Chaque Échap attend la fermeture avant le suivant : sous WebKit, la boîte paraît ouverte un instant de plus.
+    const fermer = async () => {
+      for (let i = 0; i < 4 && await Z.evaluate(() => document.querySelector('#dlg').open); i++) {
+        await Z.keyboard.press('Escape'); await Z.waitForFunction(() => !document.querySelector('#dlg').open, null, { timeout: 1000 }).catch(() => {});
+      }
+    };
+    const refuses = [];
+    for (const act of ['rlm-use', 'rlm-urge', 'rlm-action', 'rlm-day-other']) {
+      const n0 = (await local(Z)).entries.length;
+      await Z.click(`[data-act="${act}"]`); await Z.waitForFunction(() => document.querySelector('#dlg').open);
+      if (act === 'rlm-use') await Z.fill('#form [name="value"]', '1');
+      await Z.fill('#form [name="date"]', J1); await Z.click('#form button[value="save"]'); await Z.waitForTimeout(400);
+      const ouvert = await Z.evaluate(() => document.querySelector('#dlg').open), max = await Z.getAttribute('#form [name="date"]', 'max');
+      await fermer();
+      refuses.push(`${act}:${ouvert && max === J && (await local(Z)).entries.length === n0}`);
+    }
+    check(refuses.every(x => x.endsWith(':true')), `J+1 dans « Noter », « J'ai une envie », « J'ai réalisé une action », « Confirmer une autre journée… » : refusé, rien d’enregistré (${refuses.join(', ')}) (étape 1)`);
+    // Revenir à l'espace, toute boîte fermée, et dire où l'on était : sous WebKit, le bouton « Faire évoluer mon objectif »
+    // n'était plus là après ces refus (run 37587724950), sans que rien ne dise pourquoi.
+    if (await Z.$('#cdlg[open]')) await Z.click('#cdlg button[value="cancel"]');
+    await fermer();
+    const ou = await Z.evaluate(() => `${location.hash} ; boîte ${document.querySelector('#dlg').open ? 'ouverte' : 'fermée'} ; confirmation ${document.querySelector('#cdlg').open ? 'ouverte' : 'fermée'} ; bouton ${document.querySelector('[data-act="rlm-goal"]') ? 'présent' : 'absent'}`);
+    await versZ(zid, '[data-act="rlm-goal"]');
+    const longue = d => Z.evaluate(x => new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(new Date(x + 'T12:00')).map(p => p.type === 'day' && p.value === '1' ? '1er' : p.value).join(''), d);
+    await Z.click('[data-act="rlm-goal"]'); await Z.waitForFunction(() => document.querySelector('#dlg').open);
+    // La configuration a déjà dit « Objectif enregistré. … » : vider la bulle, sans quoi l'attente pourrait relire l'ancienne.
+    await Z.selectOption('#form [name="mode"]', 'arreter'); await Z.fill('#form [name="date"]', J1);
+    await Z.evaluate(() => { document.querySelector('#toast').textContent = ''; }); await Z.click('#form button[value="save"]');
+    await bulleZ('Objectif enregistré');
+    const ditObjectif = (await Z.textContent('#toast')).replace(/\s+/g, ' ').trim();
+    check(ditObjectif === `Objectif enregistré, à partir du ${await longue(J1)}. D'ici là, rien ne change.`, `un objectif « Viser l'arrêt » à partir de J+1 : « ${ditObjectif} » (étape 2 ; après les refus : ${ou})`);
+    await Z.click('[data-act="rlm-use"]'); await Z.waitForFunction(() => document.querySelector('#dlg').open);
+    await Z.fill('#form [name="value"]', '1'); await Z.click('#form button[value="save"]'); await Z.waitForFunction(() => !document.querySelector('#dlg').open);
+    let note = null; // l'écriture vers IndexedDB suit la fermeture du formulaire : l'attendre
+    for (let i = 0; i < 100 && !note; i++) { note = (await local(Z)).entries.find(e => e.kind === 'use'); if (!note) await Z.waitForTimeout(50); }
+    const jdate = async q => q.$eval(`#main li.item[data-id="${note.id}"] .jdate`, x => x.textContent.trim()).catch(() => '');
+    check(!!note && note.date === J && (await jdate(Z)) === '7 oct.', `à Paris : 1 verre standard noté à J, au journal le « ${note ? await jdate(Z) : '?'} » (étape 3)`);
+    const etat = await cz.storageState({ indexedDB: true });
+    const ca = await browser.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block', timezoneId: 'Pacific/Auckland', storageState: etat });
+    const NZ = await ca.newPage(); NZ.on('pageerror', e => errs.push(e.message)); await NZ.clock.setFixedTime(INSTANT);
+    await ouvrir(NZ, BASE + '/index.html#' + zid, entree); await NZ.waitForSelector(`#main li.item[data-id="${note.id}"]`, { timeout: 10000 }).catch(() => {});
+    const auckland = ((await local(NZ)).entries.find(e => e.id === note.id) || {}).date, dateline = await NZ.textContent('#dateline');
+    check(auckland === J && (await jdate(NZ)) === '7 oct.' && dateline.includes('8 octobre'), `rouvert à Auckland, où l’on est le 8 : la saisie reste du 7 (« ${await jdate(NZ)} ») (étape 4)`);
+    await ca.close();
+    await versZ(zid, `#rlmPriv-${zid}`); await Z.evaluate(x => { document.querySelector(`#rlmPriv-${x}`).open = true; }, zid);
+    await Z.click(`#rlmPriv-${zid} [data-act="rlm-export"]`); await Z.waitForSelector('#cdlg[open]');
+    const [dlZ] = await Promise.all([Z.waitForEvent('download'), Z.click('#cdlg button[value="ok"]')]);
+    const exportee = JSON.parse(fs.readFileSync(await dlZ.path(), 'utf8')).module.entries.find(e => e.id === note.id) || {};
+    check(exportee.date === J && exportee.zone === 'Europe/Paris', `exportée : "date": "${exportee.date}", "zone": "${exportee.zone}" (étape 5)`);
+    await cz.close();
     check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   } catch (e) { console.log('  ✗', e.stack.split('\n').slice(0, 3).join(' ')); process.exitCode = 1; } finally { await browser.close(); }
 })();
