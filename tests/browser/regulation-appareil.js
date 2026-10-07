@@ -16,6 +16,7 @@ async function supabase(route) {
   const req = route.request(), u = new URL(req.url()), m = req.method();
   if (u.pathname.startsWith('/auth/')) return json(route, 200, {});
   if (u.pathname === '/rest/v1/activite') return route.fulfill({ status: 201, body: '' }); // la mesure d'usage (services/activite.js)
+  if (u.pathname === '/functions/v1/assistant') return json(route, 200, { cle: false }); // l'état de la clé, demandé dès que l'assistant est allumé
   const uid = (u.searchParams.get('user_id') || '').replace('eq.', ''), row = rows.get(uid);
   if (m === 'GET') return json(route, 200, row ? [{ [u.searchParams.get('select')]: row[u.searchParams.get('select')] }] : []);
   if (m === 'POST') { for (const r of req.postDataJSON()) if (!rows.has(r.user_id)) rows.set(r.user_id, { board: {}, site: {}, ...r }); return route.fulfill({ status: 201, body: '' }); }
@@ -377,6 +378,103 @@ async function device(browser, errs, personnel = true, id = 'u1') {
     check(zero === 'Pour réduire, indique une limite quotidienne positive dans l\'unité du suivi. Pour zéro, choisis plutôt de viser l\'arrêt.' && !(await r.q.evaluate(() => document.querySelector('#dlg').open))
       && (await r.q.textContent('#main')).includes('Alcool · viser l\'arrêt'), `réduire à 0 : le formulaire se ferme, « ${zero} » ; l’en-tête reste « Alcool · viser l'arrêt » (étape 6)`);
     await r.c.close();
+
+    console.log('chemin S : mes sept derniers jours, deux semaines en regard (RLM-019)');
+    const w = await cheminS({ mode: 'observer', depuis: jj(-13) });
+    const vide = await w.q.evaluate(() => {
+      const sec = document.querySelector('[id^="rlmWeekH-"]').closest('section'), regle = sec.querySelector('p.hint'), phrase = sec.querySelector('p.empty'), jours = sec.querySelector('ul.rlm-days');
+      const avant = (a, b) => !!(a && b && a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+      return { tableau: !!sec.querySelector('.rlm-cmp'), phrase: phrase ? phrase.textContent.replace(/\s+/g, ' ').trim() : '', regle: regle ? regle.textContent.trim() : '', ordre: avant(regle, phrase) && avant(phrase, jours), boutons: jours.querySelectorAll('[data-act="rlm-day-at"]').length };
+    });
+    check(!vide.tableau && vide.phrase === 'Rien à comparer pour l\'instant : ce tableau ne compte que les journées confirmées, et aucune ne l\'est encore. « Faire mon point du jour », le soir venu, confirme la première.'
+      && vide.regle.startsWith('Une journée inconnue ne vaut jamais zéro, ni un échec') && vide.ordre && vide.boutons === 7,
+      `avant toute confirmation : pas de tableau, « ${vide.phrase.slice(0, 60)}… » ; la règle au-dessus, les ${vide.boutons} jours et leurs « confirmer » en dessous (étape 1)`);
+    // « Confirmer une autre journée… » : une journée hors de la liste des sept derniers jours.
+    const autre = async date => {
+      await w.vider(); await w.q.click('[data-act="rlm-day-other"]'); await w.q.waitForFunction(() => document.querySelector('#dlg').open);
+      await w.q.fill('#form [name="date"]', date); await w.q.click('#form button[value="save"]'); await w.q.waitForSelector('#cdlg[open]'); await w.q.click('#cdlg button[value="ok"]');
+      await w.bulle('confirmée'); await w.jusqua(d => d.entries.some(e => e.id === `day-${date}`)); return w.dit();
+    };
+    const dits19 = [];
+    for (const n of [-13, -12, -11, -10]) dits19.push(await autre(jj(n)));
+    await w.noter(jj(0), 2);
+    for (const n of [-3, -2, -1, 0]) dits19.push((await w.confirmer(jj(n)))[1]);
+    check(dits19.length === 8 && dits19.every(x => /^Journée du \d+ (sept|oct)\. confirmée\.$/.test(x)), `chaque confirmation : « Journée du … confirmée. » (${dits19.slice(0, 2).join(' | ')} …) (étape 2)`);
+    const lire19 = () => w.q.evaluate(() => {
+      const t = document.querySelector('.rlm-cmp'), apres = t && t.closest('.rlm-tablewrap').nextElementSibling;
+      return { entetes: t ? [...t.querySelectorAll('thead th')].map(x => x.textContent.trim()) : [], lignes: t ? [...t.querySelectorAll('tbody tr')].map(tr => [...tr.children].map(c => c.textContent.replace(/\s+/g, ' ').trim())) : [], note: apres ? apres.textContent.replace(/\s+/g, ' ').trim() : '' };
+    });
+    // La ligne dont l'intitulé commence par `l`, ses deux valeurs : « Ces 7 jours », « Les 7 d'avant ».
+    const paire = (t, l) => ((t.lignes.find(x => x[0].startsWith(l)) || []).slice(1)).join(' / ');
+    const dire = t => t.lignes.map(x => x.join(' = ')).join(' ; ');
+    const t3 = await lire19();
+    check(t3.entetes.includes('Ces 7 jours') && t3.entetes.includes('Les 7 d\'avant') && paire(t3, 'Journées suivies') === '7 / 7' && paire(t3, 'Complètes') === '4 / 4' && paire(t3, 'Inconnues') === '3 / 3'
+      && paire(t3, 'Quantités déclarées') === '2 verres standard / 0 verre standard' && paire(t3, 'Moyenne') === '0,5 verre standard / 0 verre standard' && paire(t3, 'Objectif atteint') === '— / —'
+      && t3.note === 'Les deux périodes sont renseignées de façon voisine : leurs moyennes peuvent se comparer.', `le tableau : ${dire(t3)} ; « ${t3.note} » (étape 3)`);
+    for (const n of [-6, -5, -4]) await w.confirmer(jj(n));
+    const t4 = await lire19();
+    check(paire(t4, 'Complètes') === '7 / 4' && paire(t4, 'Moyenne') === '0,29 verre standard / 0 verre standard'
+      && t4.note === 'Les deux périodes ne sont pas renseignées de la même façon (7 et 4 journées complètes) : leurs moyennes ne se comparent pas telles quelles.', `J-6, J-5, J-4 confirmées : ${dire(t4)} ; « ${t4.note} » (étape 4)`);
+    // « laisser inconnue » : la confirmation retirée de la journée, caché au repos sur un écran tactile.
+    for (const n of [0, -1, -2, -3]) {
+      await w.vider(); await w.q.$eval(`#main li.item[data-id="day-${jj(n)}"] [data-act="rlm-del"]`, x => x.click());
+      await w.bulle('redevient inconnue'); await w.jusqua(d => !d.entries.some(e => e.id === `day-${jj(n)}`));
+    }
+    const t5 = await lire19();
+    check(paire(t5, 'Complètes') === '3 / 4' && t5.note === 'Moins de 4 journées complètes dans l\'une des périodes : leurs moyennes ne se comparent pas, l\'écart dirait surtout ce qui manque.',
+      `J, J-1, J-2, J-3 laissées inconnues : ${dire(t5)} ; « ${t5.note} » (étape 5)`);
+    await w.c.close();
+
+    console.log('chemin P : supprimer le suivi depuis l’appareil qui le garde (RLM-026)');
+    // Un autre compte personnel, ses deux appareils : le premier configure « Carnet du soir », le second n'en voit que le nom.
+    const serveur3 = () => JSON.stringify((rows.get('u3') || {}).site || {});
+    const AP1 = await device(browser, errs, true, 'u3'), ap1 = AP1.page;
+    await ap1.waitForSelector('#welcome-all', { state: 'attached' }); await ap1.evaluate(() => { document.getElementById('welcome-all').open = true; });
+    await ap1.click('[data-tpl="regulation"]'); await go('reprendre-la-main', ap1); await ap1.click('[data-act="rlm-setup"]');
+    await ap1.fill('#form [name="name"]', 'Carnet du soir'); await ap1.selectOption('#form [name="subject"]', 'alcool'); await ap1.click('#form button[value="save"]');
+    await ap1.waitForFunction(() => document.querySelector('#form h2').textContent === 'Mon intention');
+    await ap1.selectOption('#form [name="mode"]', 'observer'); await ap1.click('#form button[value="save"]'); await ap1.waitForFunction(() => !document.querySelector('#dlg').open);
+    await ap1.click('[data-act="rlm-use"]'); await ap1.fill('#form [name="value"]', '1'); await ap1.fill('#form [name="note"]', 'NOTE-RLM026'); await ap1.click('#form button[value="save"]');
+    await ap1.waitForFunction(() => !document.querySelector('#dlg').open);
+    for (let i = 0; i < 60 && !serveur3().includes('Carnet du soir'); i++) await ap1.waitForTimeout(100);
+    // L'assistant, éteint par défaut, allumé parmi les espaces : sa liste « Ce que Claude peut lire » nomme chaque espace.
+    await go('reglages', ap1); await ap1.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
+    await ap1.locator('.set.mod:has(input[data-act="mod-label"][value="Assistant"]) [data-act="mod-on"]').check();
+    await ap1.waitForSelector('[data-act="as-share"]', { state: 'attached' });
+    const AP2 = await device(browser, errs, true, 'u3'), ap2 = AP2.page;
+    await go('reprendre-la-main', ap2);
+    await ap2.waitForFunction(() => document.querySelector('#main').textContent.includes('gardé sur un autre de tes appareils'), null, { timeout: 10000 }).catch(() => {});
+    const local26 = async () => ((await storeJSON(ap1, 'selene-local-v1').catch(() => null)) || { modules: {} }).modules['reprendre-la-main'];
+    check(!!(await local26()) && (await ap2.textContent('#main')).includes('gardé sur un autre de tes appareils'), 'préalable : l’appareil 1 garde le suivi, l’appareil 2 n’en a que le nom');
+    const bulle26 = t => ap1.waitForFunction(x => ((document.querySelector('#toast') || {}).textContent || '').includes(x), t, { timeout: 5000 }).then(() => true, () => false);
+    const supprimer = async nom => {
+      await go('reprendre-la-main', ap1); await ap1.evaluate(() => { document.querySelector('.rlm-privacy').open = true; document.querySelector('#toast').textContent = ''; });
+      await ap1.click('.rlm-privacy [data-act="mod-del"]'); await ap1.waitForFunction(() => document.querySelector('#dlg').open);
+      const f = await ap1.evaluate(() => [document.querySelector('#form h2').textContent.trim(), document.querySelector('#form').textContent.replace(/\s+/g, ' ')]);
+      await ap1.fill('#form [name="confirm"]', nom); await ap1.click('#form button[value="save"]'); await ap1.waitForFunction(() => !document.querySelector('#dlg').open);
+      return f;
+    };
+    const [titre26, form26] = await supprimer('carnet');
+    check(titre26 === 'Supprimer « Carnet du soir »' && form26.includes('Retape « Carnet du soir » pour confirmer la suppression définitive de ses données, sur tous tes appareils.') && !form26.includes('il n\'y a que le nom'),
+      `« Supprimer ce suivi… » : « ${titre26} », « Retape « Carnet du soir » pour confirmer… sur tous tes appareils. » ; pas d’avertissement « il n'y a que le nom » (étape 1)`);
+    await bulle26('Nom incorrect');
+    const refus26 = (await ap1.textContent('#toast')).trim();
+    // Réglages → Assistant, « Ce que Claude peut lire » : un espace par case, le suivi compris (non coché : sensible).
+    const lisibles = async () => { await go('reglages', ap1); return ap1.$$eval('[data-act="as-share"]', xs => xs.map(x => x.closest('label').textContent.trim())); };
+    const intact = await local26(), avant26 = await lisibles();
+    check(refus26 === 'Nom incorrect, rien n\'a été supprimé.' && !!intact && intact.entries.some(e => e.note === 'NOTE-RLM026') && (await ap1.textContent('#nav')).includes('Carnet du soir') && avant26.includes('Carnet du soir'),
+      `« carnet » : « ${refus26} » ; le suivi est intact, sa saisie, son nom dans la navigation et dans Réglages → Assistant (étape 2)`);
+    await supprimer('Carnet du soir'); await bulle26('supprimé');
+    const dit26 = (await ap1.textContent('#toast')).trim(), apres26 = await lisibles(), reste = await local26();
+    check(dit26.startsWith('« Carnet du soir » supprimé.') && !(await ap1.textContent('#nav')).includes('Carnet du soir') && !apres26.includes('Carnet du soir') && apres26.length === avant26.length - 1 && !reste,
+      `« Carnet du soir » : « ${dit26} » ; il quitte la navigation et Réglages → Assistant ; plus d’entrée dans selene-local-v1 (étape 3)`);
+    for (let i = 0; i < 60 && serveur3().includes('Carnet du soir'); i++) await ap1.waitForTimeout(100);
+    await ouvrir(ap2, BASE + '/index.html', entree);
+    // Rechargé, l'appareil montre d'abord ce qu'il gardait, puis ce que dit le compte : attendre celui-ci, 10 s au plus.
+    await ap2.waitForFunction(() => !document.querySelector('#nav').textContent.includes('Carnet du soir'), null, { timeout: 10000 }).catch(() => {});
+    const nav2 = await ap2.textContent('#nav');
+    check(!serveur3().includes('Carnet du soir') && !nav2.includes('Carnet du soir'), 'appareil 2 rechargé : « Carnet du soir » a disparu, du compte aussi (étape 4)');
+    await AP1.ctx.close(); await AP2.ctx.close();
     check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   } catch (e) { console.log('  ✗', e.stack.split('\n').slice(0, 3).join(' ')); process.exitCode = 1; } finally { await browser.close(); }
 })();
