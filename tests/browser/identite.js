@@ -1,5 +1,5 @@
 /* Scénario de navigateur : identité (évolution de l'interface, vague 3a : docs/evolution-ui.md). Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, donnee, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.config.modules.find(m => m.id === 'moth').group = 'Création';
 demo.config.modules.find(m => m.id === 'ecriture').group = 'Création';
@@ -76,6 +76,33 @@ demo.config.modules.find(m => m.id === 'ecriture').group = 'Création';
   await m.$eval('#dlg', el => Promise.all(el.getAnimations().map(a => a.finished)));
   const box = await m.$eval('#dlg', el => { const r = el.getBoundingClientRect(); return { bottom: r.bottom, width: r.width }; });
   ok(Math.abs(box.bottom - 844) < 2 && box.width >= 389, 'sur téléphone, un formulaire monte du bas, pleine largeur');
+
+  // ESP-008, sur téléphone et le jeu d'essai du cahier : « régler » en tête de Tableau, un tiroir du bas, pleine largeur ;
+  // le champ « Sous-titre » nommé `Lieu` ; le tiroir fermé par son voile, toujours dans Tableau, et le formulaire
+  // d'ajout qui propose « Lieu ».
+  console.log('régler sur téléphone, le jeu d’essai (ESP-008)');
+  const essai = donnee('jeu-essai.json');
+  const ct = await b.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  await ct.addInitScript(([st, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', st); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essai.site), JSON.stringify(essai.board)]);
+  const t = await ct.newPage(); t.on('pageerror', e => errs.push(e.message));
+  await t.goto(BASE + '/index.html#tableau'); await t.waitForSelector('#main .board .col');
+  const sansLieu = !(await (async () => { await t.tap('[data-act="col-new"]'); await t.waitForSelector('#dlg[open]'); const x = await t.$('#form [name="subtitle"]'); await t.keyboard.press('Escape'); await t.waitForFunction(() => !document.querySelector('#dlg').open); return x; })());
+  await t.tap('#main .plate [data-act="goto-groups"]'); await t.waitForSelector('#sheet[open] [data-set-mod="tableau.fields.subtitle"]', { state: 'attached', timeout: 5000 }).catch(() => {});
+  await t.$eval('#sheet', el => Promise.all(el.getAnimations().map(a => a.finished)));
+  const tiroir = await t.evaluate(() => { const s = document.querySelector('#sheet'), r = s.getBoundingClientRect(); return { bas: r.bottom, large: r.width, haut: r.top, titre: ((s.querySelector('#sheetTitle') || {}).textContent || '').trim(), hash: location.hash, dessous: !!document.querySelector('#main .board .col') }; });
+  ok(Math.abs(tiroir.bas - 844) < 2 && tiroir.large >= 389 && tiroir.titre === 'Tableau' && tiroir.hash === '#tableau' && tiroir.dessous,
+    `« régler » sur téléphone : un tiroir du bas (${Math.round(tiroir.haut)} → ${Math.round(tiroir.bas)} px), pleine largeur (${Math.round(tiroir.large)} px), les réglages de « ${tiroir.titre} », l’espace dessous (étape 1)`);
+  await t.fill('#sheet [data-set-mod="tableau.fields.subtitle"]', 'Lieu'); await t.press('#sheet [data-set-mod="tableau.fields.subtitle"]', 'Tab');
+  await t.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.tableau.config.fields.subtitle === 'Lieu', null, { timeout: 5000 }).catch(() => {});
+  await t.touchscreen.tap(195, Math.max(4, tiroir.haut / 2)); // le voile, au-dessus du tiroir
+  await t.waitForFunction(() => !document.querySelector('#sheet').open, null, { timeout: 5000 }).catch(() => {});
+  const ferme = await t.evaluate(() => ({ ouvert: document.querySelector('#sheet').open, hash: location.hash, tableau: !!document.querySelector('#main .board .col'), titre: document.querySelector('#main h2').textContent.trim() }));
+  ok(!ferme.ouvert && ferme.hash === '#tableau' && ferme.tableau && ferme.titre === 'Tableau', `le tiroir fermé par son voile : toujours dans « ${ferme.titre} » (${ferme.hash}) (étape 3)`);
+  await t.tap('[data-act="col-new"]'); await t.waitForSelector('#dlg[open]');
+  const lieu = await t.evaluate(() => { const i = document.querySelector('#form [name="subtitle"]'); return i ? (i.closest('label') || {}).textContent.trim() : ''; });
+  ok(sansLieu && lieu.startsWith('Lieu') && (await t.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.tableau.config.fields.subtitle)) === 'Lieu',
+    `« Lieu » donné au champ « Sous-titre », le champ quitté : le formulaire d’ajout, qui ne l’avait pas, propose « ${lieu} » (étape 2)`);
+  await t.keyboard.press('Escape');
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

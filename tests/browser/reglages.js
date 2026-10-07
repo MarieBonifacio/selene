@@ -24,6 +24,9 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   console.log('infobulles');
   ok(await visibleTips() === 0, 'fermées, les bulles ne s’affichent pas');
   const tipBtn = p.locator('.reg-keys .tip').first();
+  // NAV-008, étape 1 : le pointeur posé sur le « ? », sans clic, n'ouvre rien (le survol seul ne suffit jamais).
+  await tipBtn.hover(); await p.waitForTimeout(400);
+  ok(await visibleTips() === 0, 'survolé sans clic, un « ? » n’ouvre rien (NAV-008, étape 1)');
   await tipBtn.click(); await p.waitForTimeout(150);
   const box = await p.evaluate(() => { const o = document.querySelector('.tipb:popover-open'); if (!o) return null; const r = o.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: innerWidth, h: innerHeight, txt: o.textContent }; });
   ok(box && box.txt.startsWith('Un mot libre') && box.l >= 0 && box.r <= box.w && box.t >= 0 && box.b <= box.h, 'un clic ouvre la bulle, entière dans l’écran');
@@ -150,6 +153,17 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   ok(!wide.length, 'à 320 px, chaque option du menu « Modèle ou type » tient dans sa largeur' + (wide.length ? ' : ' + wide.slice(0, 3).join(' | ') : ''));
   await q.tap('.reg-keys .tip >> nth=1'); await q.waitForTimeout(150);
   ok(await q.evaluate(() => { const o = document.querySelector('.tipb:popover-open'); if (!o) return false; const r = o.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }), 'une bulle tient dans un écran de téléphone');
+  // NAV-008, étape 5 : le « ? » le plus près du bord droit, là où une bulle risque le plus de sortir de l'écran.
+  await q.keyboard.press('Escape'); await q.waitForTimeout(100);
+  const droite = await q.evaluate(() => {
+    const ts = [...document.querySelectorAll('.tip')].filter(x => x.getBoundingClientRect().width > 0);
+    const t = ts.reduce((a, x) => (x.getBoundingClientRect().right > a.getBoundingClientRect().right ? x : a), ts[0]);
+    return { cible: t.getAttribute('popovertarget'), bord: Math.round(innerWidth - t.getBoundingClientRect().right), w: innerWidth };
+  });
+  await q.tap(`.tip[popovertarget="${droite.cible}"]`); await q.waitForTimeout(150);
+  const bulleD = await q.evaluate(() => { const o = document.querySelector('.tipb:popover-open'); if (!o) return null; const r = o.getBoundingClientRect(); return { id: o.id, l: Math.round(r.left), r: Math.round(r.right) }; });
+  ok(bulleD && bulleD.id === droite.cible && bulleD.l >= 0 && bulleD.r <= droite.w && droite.bord < 60,
+    `le « ? » le plus à droite (à ${droite.bord} px du bord) : sa bulle tient dans l’écran (${bulleD ? bulleD.l + ' → ' + bulleD.r : 'fermée'} sur ${droite.w} px) (NAV-008, étape 5)`);
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
