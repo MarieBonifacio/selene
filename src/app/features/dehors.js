@@ -101,7 +101,9 @@ export async function dehorsRefresh(force = false) {
   try {
     if (due) {
       for (const f of feeds) {
-        const c = dehorsCache(), fc = c.feeds[f.id] || { items: [] };
+        // Le cache est relu après l'attente, et seul ce flux y est remplacé : réécrire une copie lue avant effaçait ce qui
+        // avait changé pendant la lecture, un flux suivi entre-temps et ses éléments, un élément écarté (A44).
+        const fc = { ...(dehorsCache().feeds[f.id] || { items: [] }) };
         try {
           const r = await passeurFetch(f.url, "feed", { etag: fc.etag, modifie: fc.modifie });
           if (r.status === 304) fc.err = "";
@@ -111,7 +113,7 @@ export async function dehorsRefresh(force = false) {
             else { fc.items = feedMerge(fc.items, pf.items, Date.now()); fc.etag = r.etag || ""; fc.modifie = r.modifie || ""; fc.err = ""; }
           } else fc.err = serverMsg(r, tr`le site répond ${r.status}`);
         } catch (e) { fc.err = e.message; }
-        fc.at = Date.now(); c.feeds[f.id] = fc; dehorsStore(c);
+        fc.at = Date.now(); const c = dehorsCache(); c.feeds[f.id] = fc; dehorsStore(c);
         if (passeurEtat === "absent") break;
       }
       const c = dehorsCache(); c.at = Date.now(); dehorsStore(c);

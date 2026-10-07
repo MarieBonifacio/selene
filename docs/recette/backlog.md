@@ -21,11 +21,12 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| ~~A44 : suivre un flux pendant une relecture de Dehors effaçait ses éléments~~ (fait le 7 octobre 2026, PR #141) | une session | P2 | — | [A44](perimetre.md#anomalies-et-observations) |
 | A43 : `tests/browser/regulation.js` instable sous Firefox (« les quatre actions ont une cible de 44 px au moins »), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A43](perimetre.md#anomalies-et-observations) |
 | ~~A42 : « En jachère » disait « plus de 1 jours »~~ (fait le 7 octobre 2026, PR #137) | une session | P3 | — | [A42](perimetre.md#anomalies-et-observations) |
 | ~~A41 : renommer une enveloppe dans les Réglages renommait ses opérations sans le dire~~ (fait le 7 octobre 2026, PR #136) | une session | P3 | — | [A41](perimetre.md#anomalies-et-observations) |
 | ~~A40 : un rendu de fond tombé pendant un appui faisait perdre le clic (la boîte de confirmation jamais ouverte)~~ (fait le 7 octobre 2026, PR #135) | une session | P2 | — | [A40](perimetre.md#anomalies-et-observations) |
-| A39 : `tests/browser/dehors.js` instable sous Firefox (l'élément du flux Atom pas venu), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A39](perimetre.md#anomalies-et-observations) |
+| ~~A39 : `tests/browser/dehors.js` instable sous Firefox (l'élément du flux Atom pas venu)~~ (cause établie le 7 octobre 2026 : A44, corrigée, PR #141) | une session | P3 | — | [A39](perimetre.md#anomalies-et-observations) |
 | ~~A38 : « Chercher « … » partout » de la palette gardait les filtres de la recherche précédente~~ (fait le 7 octobre 2026, PR #135) | une session | P2 | — | [A38](perimetre.md#anomalies-et-observations) |
 | ~~A37 : un rendu de fond faisait perdre le focus clavier hors des champs (synchro, autre onglet, fin d'un envoi)~~ (fait le 7 octobre 2026, PR #133) | une session | P2 | — | [A37](perimetre.md#anomalies-et-observations) |
 | A36 : `tests/browser/veille.js` instable sous Firefox (« une veille en double : dit »), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A36](perimetre.md#anomalies-et-observations) |

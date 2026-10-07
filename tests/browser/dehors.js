@@ -23,7 +23,8 @@ const PAGES = {
   'https://revue.example/feed.xml': { type: 'application/rss+xml', texte: RSS, etag: '"r-v1"' },
   'https://blog.example/atom.xml': { type: 'application/atom+xml', texte: ATOM },
   'https://news.example/feed.json': { type: 'application/feed+json', texte: JSONFEED },
-  'https://vide.example/': { type: 'text/html', texte: '<html><head><title>Rien</title></head></html>' }
+  'https://vide.example/': { type: 'text/html', texte: '<html><head><title>Rien</title></head></html>' },
+  'https://tard.example/rss.xml': { type: 'application/rss+xml', texte: '<?xml version="1.0"?><rss version="2.0"><channel><title>Pas de côté</title><item><title>Un pas de côté</title><link>https://tard.example/un</link><guid>t1</guid><pubDate>' + new Date(Date.now() - 3600000).toUTCString() + '</pubDate></item></channel></rss>' }
 };
 (async () => {
   const b = await engine.launch(launchOptions);
@@ -33,7 +34,7 @@ const PAGES = {
   const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
   /* Le faux passeur répond comme le vrai : une demande sans genre (la sonde d'accès de Dehors) est refusée après les
      vérifications d'accès ; mode « refus » : le compte n'est pas dans PASSEUR_USERS. */
-  const probes = { n: 0 }; let mode = 'ok';
+  const probes = { n: 0 }; let mode = 'ok', lent = ''; // `lent` : une adresse que le faux passeur sert avec 2,5 s de retard (A44)
   const access = (route, q) => { // la réponse d'accès, ou null : la demande est à servir
     if (!q.genre) probes.n++;
     if (mode === 'refus') return json(route, 403, { erreur: "ce compte n'est pas autorisé à utiliser ce passeur", code: 'compte-non-autorise' });
@@ -42,10 +43,13 @@ const PAGES = {
   await fauxSupabase(ctx, (route, req, u) => {
     if (u.pathname === '/functions/v1/passeur') {
       const q = req.postDataJSON(), a = access(route, q); if (a) return a; calls.push(q);
-      const pg = PAGES[q.url];
-      if (!pg) return json(route, 200, { status: 404, url: q.url, erreur: 'le site répond 404' });
-      if (pg.etag && q.etag === pg.etag) return json(route, 200, { status: 304, url: q.url, etag: pg.etag });
-      return json(route, 200, { status: 200, url: q.url, type: pg.type, etag: pg.etag || null, modifie: null, texte: pg.texte });
+      const servir = () => {
+        const pg = PAGES[q.url];
+        if (!pg) return json(route, 200, { status: 404, url: q.url, erreur: 'le site répond 404' });
+        if (pg.etag && q.etag === pg.etag) return json(route, 200, { status: 304, url: q.url, etag: pg.etag });
+        return json(route, 200, { status: 200, url: q.url, type: pg.type, etag: pg.etag || null, modifie: null, texte: pg.texte });
+      };
+      return q.url === lent ? new Promise(res => setTimeout(res, 2500)).then(servir) : servir();
     }
   });
   const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
@@ -182,6 +186,19 @@ const PAGES = {
   await ctx2.addInitScript(d => { window.claude = { use: async () => null }; localStorage.setItem('selene-site-v1', d); }, JSON.stringify(demo));
   await c.goto(BASE + '/index.html#dehors'); await c.waitForTimeout(400);
   ok(!(await c.$('#nav a[href="#dehors"]')) && (await c.$('.hero')), 'dans l’artefact claude.ai : pas de Dehors, retour à l’accueil');
+
+  console.log('suivre un flux pendant une relecture (A44)');
+  // Une relecture en cours attend un site lent ; pendant ce temps, on suit un autre flux. Avant le correctif, la relecture
+  // réécrivait au retour tout le cache lu avant d'attendre : le flux suivi entre-temps perdait ses éléments.
+  lent = (await data()).config.dehors.feeds[0].url; calls.length = 0;
+  await p.click('[data-act="dehors-refresh"]');
+  await jusqua(() => calls.some(c => c.url === lent));
+  await follow('https://tard.example/rss.xml');
+  const enCours = await lit();
+  await jusqua(async () => !(await lit()), 15000); lent = '';
+  const tard = ((await data()).config.dehors.feeds.find(f => f.url === 'https://tard.example/rss.xml') || {}).id;
+  const garde = ((((await storeJSON(p, 'selene-dehors')) || {}).feeds || {})[tard] || {}).items || [];
+  ok(enCours && garde.length === 1 && (await titles()).includes('Un pas de côté'), `suivi pendant que la relecture attendait un site : ses éléments restent, au cache et à l’écran (${garde.length} élément)` + (enCours ? '' : ' (la relecture était déjà finie)'));
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
