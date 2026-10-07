@@ -837,7 +837,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : chemin P, avec un suivi configuré gardé sur cet appareil et une saisie de contexte `NOTE-RLM027` ;
   le compte de recette A disponible.
 - **Données** : aucune autre.
-- **Automatisés associés** : `TU-REG-33`
+- **Automatisés associés** : `TU-REG-33`, `TU-REG-42`, `TN-regulation-perdu`
 - **Source** : [TEST] `TU-REG-33` ; [CODE] `localSwitch`, `authConnectStores` (`src/app/services/auth.js`). Le chemin
   de reproduction (session supprimée à la main) est déduit du code.
 
