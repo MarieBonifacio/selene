@@ -385,15 +385,16 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
     await pz.q.click('#form button[value="save"]'); await pz.q.waitForFunction(() => !document.querySelector('#dlg').open);
     await pz.bulle('Envie notée'); await pz.q.waitForSelector('#rlmPause[role="timer"]'); await pz.q.clock.runFor(10);
     const p1 = await pause(), dit17 = await pz.dit();
-    check(dit17 === 'Envie notée. Cinq minutes, à ton rythme.' && p1 && p1.titre === 'Cinq minutes de pause' && p1.reste === '5:00'
+    // L'horloge installée avance aussi en temps réel (démarrage lent, processeur ralenti) : à quelques secondes près, comme
+    // aux étapes 2 et 3 (A64 : « 4:59 » sous un processeur ralenti). Ce qui compte : une pause de cinq minutes qui commence, pas sa seconde exacte.
+    const secondes = t => { const m = /^(\d+):(\d\d)$/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : NaN; };
+    check(dit17 === 'Envie notée. Cinq minutes, à ton rythme.' && p1 && p1.titre === 'Cinq minutes de pause' && secondes(p1.reste) <= 300 && secondes(p1.reste) >= 290
       && p1.aide.includes('Jusqu\'à 20:05. Elle continue si tu fermes l\'app ou si l\'écran se met en veille. Tu peux l\'arrêter quand tu veux.')
       && JSON.stringify(p1.boutons) === JSON.stringify(['J\'ai fait : Marcher quelques minutes', 'Arrêter la pause']),
-      `« ${dit17} » ; « ${p1 && p1.titre} », ${p1 && p1.reste}, « Jusqu'à 20:05… », ${p1 && p1.boutons.map(x => `« ${x} »`).join(' et ')} (RLM-017, étape 1)`);
+      `« ${dit17} » ; « ${p1 && p1.titre} », ${p1 && p1.reste} (5:00 à quelques secondes près), « Jusqu'à 20:05… », ${p1 && p1.boutons.map(x => `« ${x} »`).join(' et ')} (RLM-017, étape 1)`);
     await pz.q.clock.runFor(60000); await pz.q.reload(); await pz.vers(pz.id, '#rlmPause[role="timer"]'); await pz.q.clock.runFor(10);
     const p2 = await pause();
-    // L'horloge installée avance aussi en temps réel pendant un chargement (démarrage lent, processeur ralenti) : à
-    // quelques secondes près. Ce qui compte : ni 5:00 (la pause remise à zéro), ni plus rien (perdue).
-    const secondes = t => { const m = /^(\d+):(\d\d)$/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : NaN; };
+    // Une minute plus tard : ni 5:00 (la pause remise à zéro), ni plus rien (perdue).
     check(p2 && secondes(p2.reste) <= 240 && secondes(p2.reste) >= 225 && p2.aide.includes('Jusqu\'à 20:05.'), `une minute plus tard, rechargée : ${p2 && p2.reste} (4:00 à quelques secondes près), toujours « Jusqu'à 20:05 » (étape 2)`);
     // L'onglet fermé, une minute passe, un autre onglet s'ouvre sur l'espace.
     await pz.q.close(); await pz.c.clock.runFor(60000);
