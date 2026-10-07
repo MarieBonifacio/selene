@@ -34,7 +34,8 @@ const PAGES = {
   const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
   /* Le faux passeur répond comme le vrai : une demande sans genre (la sonde d'accès de Dehors) est refusée après les
      vérifications d'accès ; mode « refus » : le compte n'est pas dans PASSEUR_USERS. */
-  const probes = { n: 0 }; let mode = 'ok', lent = ''; // `lent` : une adresse que le faux passeur sert avec 2,5 s de retard (A44)
+  const probes = { n: 0 }; let mode = 'ok', lent = ''; const retenues = []; // `lent` : une adresse que le faux passeur retient jusqu'à `lacher()` (A44)
+  const lacher = () => { lent = ''; retenues.splice(0).forEach(r => r()); };
   const access = (route, q) => { // la réponse d'accès, ou null : la demande est à servir
     if (!q.genre) probes.n++;
     if (mode === 'refus') return json(route, 403, { erreur: "ce compte n'est pas autorisé à utiliser ce passeur", code: 'compte-non-autorise' });
@@ -49,7 +50,8 @@ const PAGES = {
         if (pg.etag && q.etag === pg.etag) return json(route, 200, { status: 304, url: q.url, etag: pg.etag });
         return json(route, 200, { status: 200, url: q.url, type: pg.type, etag: pg.etag || null, modifie: null, texte: pg.texte });
       };
-      return q.url === lent ? new Promise(res => setTimeout(res, 2500)).then(servir) : servir();
+      // Retenue, pas retardée : un délai fixe peut s'écouler avant la fin du geste qu'on veut glisser pendant l'attente.
+      return q.url === lent ? new Promise(res => retenues.push(res)).then(servir) : servir();
     }
   });
   const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
@@ -195,7 +197,8 @@ const PAGES = {
   await jusqua(() => calls.some(c => c.url === lent));
   await follow('https://tard.example/rss.xml');
   const enCours = await lit();
-  await jusqua(async () => !(await lit()), 15000); lent = '';
+  lacher();
+  await jusqua(async () => !(await lit()), 15000);
   const tard = ((await data()).config.dehors.feeds.find(f => f.url === 'https://tard.example/rss.xml') || {}).id;
   const garde = ((((await storeJSON(p, 'selene-dehors')) || {}).feeds || {})[tard] || {}).items || [];
   ok(enCours && garde.length === 1 && (await titles()).includes('Un pas de côté'), `suivi pendant que la relecture attendait un site : ses éléments restent, au cache et à l’écran (${garde.length} élément)` + (enCours ? '' : ' (la relecture était déjà finie)'));
