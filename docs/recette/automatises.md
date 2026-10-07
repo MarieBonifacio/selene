@@ -727,7 +727,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/sans-compte.js`](../../tests/browser/sans-compte.js) · **mode** H · **écran** O
 - **Conditions** : Écran d'entrée sans session ; faux Supabase en mémoire.
-- **Vérifie** : l'écran d'entrée dit la promesse, la lune du jour, pas de minuteur ; « Commencer sans compte » ouvre l'app et sa première question ; le choix survit au rechargement ; rien de ce qui est écrit ne part au serveur ; Réglages → Compte : ce que veut dire « sans compte » ; l'assistant demande un compte ; créer un compte verse la capture et l'espace Écriture dans le compte neuf ; le choix « sans compte » s'efface ; se connecter à un compte existant : capture gardée, espaces des deux côtés gardés, réglages du compte appliqués ; la capture dit « Gardé. Tu peux oublier, c'est écrit. » et se retrouve dans la boîte après rechargement (CPT-002).
+- **Vérifie** : l'écran d'entrée dit la promesse, la lune du jour, pas de minuteur ; « Commencer sans compte » ouvre l'app et sa première question ; le choix survit au rechargement ; rien de ce qui est écrit ne part au serveur ; Réglages → Compte : ce que veut dire « sans compte », effacer le navigateur efface tout, exporter de temps en temps ; l'assistant demande un compte ; revenir de l'écran d'entrée laisse l'espace à l'identique ; créer un compte verse la capture et l'espace Écriture dans le compte neuf ; le choix « sans compte » s'efface ; se connecter à un compte existant : capture gardée, espaces des deux côtés gardés, réglages du compte appliqués ; la capture dit « Gardé. Tu peux oublier, c'est écrit. » et se retrouve dans la boîte après rechargement (CPT-002).
 - **Limites** : Supabase Auth et PostgREST simulés.
 - **Cas manuels** : [CPT-001](manuels/entree-et-comptes.md#cpt-001), [CPT-002](manuels/entree-et-comptes.md#cpt-002), [CPT-003](manuels/entree-et-comptes.md#cpt-003), [CPT-004](manuels/entree-et-comptes.md#cpt-004), [CPT-005](manuels/entree-et-comptes.md#cpt-005), [AST-001](manuels/assistant.md#ast-001)
 
@@ -772,7 +772,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/navigation.js`](../../tests/browser/navigation.js) · **mode** A · **écran** O puis T
 - **Conditions** : 150 fragments (le plus ancien au-delà de la première page).
-- **Vérifie** : ordinateur : barre latérale avec le Bilan ; domaines en titres ; ⌘K ouvre la palette, un espace trouvé par son nom, un texte mène à son entrée dépliée et surlignée, la puce ramène à la recherche telle qu'elle était ; l'accueil propose de reprendre le dernier espace et son brouillon ; « Ouvrir sur : là où j'en étais » ; téléphone : barre basse ; Espaces ouvre une feuille ; toucher un espace y mène ; Capturer garde dans la boîte ; le voile ferme ; le brouillon de capture survit à la fermeture ; téléphone : les cinq entrées de la barre dans l'ordre, « Aujourd'hui » actif sur l'accueil, la capture par ⊕ dite (NAV-001).
+- **Vérifie** : ordinateur : barre latérale avec le Bilan ; domaines en titres ; ⌘K ouvre la palette (« Aller, agir, chercher… »), un espace trouvé par son nom, un texte mène à son entrée dépliée et surlignée ; la palette garde une phrase dans la boîte, lance le minuteur, ne propose que garder ou chercher quand rien n'est trouvé (C12), et Échap la ferme ; la puce ramène à la recherche telle qu'elle était ; l'accueil propose de reprendre le dernier espace et son brouillon ; « Ouvrir sur : là où j'en étais » ; téléphone : barre basse ; Espaces ouvre une feuille ; toucher un espace y mène ; Capturer garde dans la boîte ; le voile ferme ; le brouillon de capture survit à la fermeture ; téléphone : les cinq entrées de la barre dans l'ordre, « Aujourd'hui » actif sur l'accueil, la capture par ⊕ dite (NAV-001).
 - **Cas manuels** : [NAV-001](manuels/navigation-reglages.md#nav-001), [NAV-002](manuels/navigation-reglages.md#nav-002), [NAV-003](manuels/navigation-reglages.md#nav-003), [NAV-006](manuels/navigation-reglages.md#nav-006), [NAV-011](manuels/navigation-reglages.md#nav-011), [ESP-005](manuels/espaces.md#esp-005), [MOD-023](manuels/types-de-module.md#mod-023), [MOD-025](manuels/types-de-module.md#mod-025)
 
 <a id="tn-interface"></a>
@@ -885,7 +885,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/notes.js`](../../tests/browser/notes.js) · **mode** A · **écran** —
 - **Conditions** : Données au format 6 sans boîte désignée, puis avec.
-- **Vérifie** : compteur de la boîte ; « à trier » sur l'accueil ; capture rapide par Entrée ; destinations selon ce que chaque type accepte ; vers le Chantier, le formulaire de tâche ; désigner une autre boîte retire l'ancienne désignation ; sans boîte, une explication.
+- **Vérifie** : compteur de la boîte ; « à trier » sur l'accueil ; capture rapide par Entrée ; destinations selon ce que chaque type accepte ; vers le Chantier, le formulaire de tâche ; désigner une autre boîte retire l'ancienne désignation, case décochée à l'écran ; sans boîte, « Aucune boîte de réception. Coche… » à la place du champ, qui revient avec la case.
 - **Cas manuels** : [ESP-009](manuels/espaces.md#esp-009), [MOD-014](manuels/types-de-module.md#mod-014), [MOD-015](manuels/types-de-module.md#mod-015), [TRV-015](manuels/transverse.md#trv-015)
 
 <a id="tn-import-markdown"></a>

@@ -40,12 +40,15 @@ const v3 = { updatedAt: 10, schemaVersion: 3,
   await go('reglages'); await openAll(); await p.selectOption('#newModType', 'notes'); await p.fill('#newModName', 'Rêves'); await p.click('[data-act="mod-add"]'); await p.waitForTimeout(200);
   await openAll(); await p.check('#mreg-reves [data-act="notes-inbox"]'); await p.waitForTimeout(200);
   d = await data(); ok(d.modules.reves.config.inbox && !d.modules.inbox.config.inbox, 'désigner « Rêves » retire la désignation de l’ancienne');
+  await openAll(); ok(await p.isChecked('#mreg-reves [data-act="notes-inbox"]') && !(await p.isChecked('#mreg-inbox [data-act="notes-inbox"]')), 'et la case de l’ancienne se décoche à l’écran');
   await go('accueil'); await p.fill('#capIn', 'une forêt inversée'); await p.click('[data-act="cap-add"]'); await p.waitForTimeout(200);
   ok((await data()).modules.reves.entries[0].text === 'une forêt inversée', 'la capture rapide suit la nouvelle boîte');
   await go('reves'); await p.fill('#noteIn', 'deuxième rêve'); await p.press('#noteIn', 'Enter'); await p.waitForTimeout(150);
   ok((await main()).includes('deuxième rêve'), 'ajout direct dans une boîte (Entrée)');
   await go('reglages'); await openAll(); await p.uncheck('#mreg-reves [data-act="notes-inbox"]'); await p.waitForTimeout(150);
-  await go('accueil'); ok((await main()).includes('Aucune boîte de réception'), 'sans boîte : explication au lieu d’un champ muet');
+  await go('accueil'); ok((await main()).includes('Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans Réglages.') && !(await p.$('#capIn')), 'sans boîte : « Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans Réglages. », au lieu d’un champ muet');
+  await go('reglages'); await openAll(); await p.check('#mreg-inbox [data-act="notes-inbox"]'); await p.waitForTimeout(150);
+  await go('accueil'); ok(await p.isVisible('#capIn') && !(await main()).includes('Aucune boîte de réception'), 'la case recochée : le champ de capture revient');
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();
