@@ -291,16 +291,16 @@ Identifiants retirés : aucun.
 - **Préconditions** : chemin S, `rlm-a-configurer.json` importé ; configurer « Alcool », « Réduire… », limite `2`, à
   partir de `J-2`.
 - **Données** : `1` à `J-1`.
-- **Automatisés associés** : `TU-REG-06`, `TN-regulation`
+- **Automatisés associés** : `TU-REG-06`, `TN-regulation`, `TN-regulation-perdu`
 - **Source** : [DOC] [regulation.md](../../regulation.md#règles) ; [TEST] `TU-REG-06`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Lire l'espace sans rien noter. | « Aujourd'hui, déjà noté : 0 verre standard · pas encore confirmée » ; liste : J, J-1, J-2 « inconnue », chacun avec « confirmer » ; rien avant J-2 ; « Une journée inconnue ne vaut jamais zéro, ni un échec. Les jours d'avant le début du suivi ne comptent pas. » |
-| 2 | Lire le tableau. | Journées suivies 3, Complètes 0, Inconnues ou à reconfirmer 3, Moyenne « — », Objectif atteint « — ». |
-| 3 | Noter les données. | J-1 : « inconnue · déjà noté : 1 verre standard, pas encore confirmée » ; Quantités déclarées 1 verre standard, Moyenne toujours « — ». |
+| 2 | Lire la section des sept derniers jours. | Pas de tableau tant qu'aucune journée n'est confirmée : « Rien à comparer pour l'instant : ce tableau ne compte que les journées confirmées, et aucune ne l'est encore. « Faire mon point du jour », le soir venu, confirme la première. » |
+| 3 | Noter les données. | J-1 : « inconnue · déjà noté : 1 verre standard, pas encore confirmée » ; toujours pas de tableau, la même phrase. |
 | 4 | « confirmer » sur J-2 ; lire la boîte ; « Annuler ». | « … : 0 verre standard au total. Aucune consommation notée ce jour-là : confirmer en fait une journée à zéro. Confirmer, c'est dire que toutes les consommations de cette journée sont notées. Annuler la laisse inconnue, sans pénalité. » ; après « Annuler », J-2 reste « inconnue », aucun message. |
-| 5 | « confirmer » sur J-2 → « Confirmer ». | J-2 : « complète : 0 verre standard · objectif atteint » ; Complètes 1, Moyenne « 0 verre standard ». |
+| 5 | « confirmer » sur J-2 → « Confirmer ». | « Journée du <J-2> confirmée. » ; J-2 : « complète : 0 verre standard · objectif atteint » ; le tableau paraît : Journées suivies 3, Complètes 1, Inconnues ou à reconfirmer 2, Quantités déclarées 1 verre standard, Moyenne « 0 verre standard », Objectif atteint « 1 sur 1 journée évaluable ». |
 
 - **État final attendu** : J-2 complète à zéro ; J-1 inconnue avec 1 verre ; J inconnue.
 - **Nettoyage** : aucun.
