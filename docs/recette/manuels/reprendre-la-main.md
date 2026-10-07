@@ -893,7 +893,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : chemin P, avec un suivi configuré et une saisie de contexte `NOTE-RLM029` ; une sauvegarde complète
   téléchargée juste avant (Réglages → Compte et données → Sauvegarde → Exporter).
 - **Données** : aucune autre.
-- **Automatisés associés** : `TN-regulation-perdu` (étapes 1 à 3), `TU-REG-39` (étape 4)
+- **Automatisés associés** : `TN-regulation-perdu` (étapes 1 à 3, et l'étape 4 sous Chromium), `TU-REG-39` (étape 4)
 - **Source** : [CODE] `elsewhereHTML`, `holderText` (`modules/regulation.js`), `describeDevice` (`state/local.js`) ; [TEST]
   `tests/browser/regulation-perdu.js` (étapes 1 à 3, depuis le 5 octobre 2026), `TU-REG-39` (étape 4, depuis le 6).
 
