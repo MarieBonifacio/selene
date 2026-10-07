@@ -480,7 +480,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : chemin S, `rlm-a-configurer.json` importé ; configurer « Alcool », « Observer, sans cible », à
   partir de `J-1` ; Chrome, outils de développement → ⋮ → More tools → Sensors.
 - **Données** : date `J+1` ; `1` à J.
-- **Automatisés associés** : `TU-REG-04`, `TU-REG-05`, `TU-REG-25`
+- **Automatisés associés** : `TU-REG-04`, `TU-REG-05`, `TU-REG-25`, `TN-regulation-appareil`
 - **Source** : [DOC] [regulation.md](../../regulation.md#règles) (dates locales) ; [TEST] `TU-REG-05`.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -785,7 +785,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : chemin S, `rlm-en-cours.json` importé.
 - **Données** : aucune.
-- **Automatisés associés** : `TU-REG-24`, `TU-REG-34`
+- **Automatisés associés** : `TU-REG-24`, `TU-REG-34`, `TN-regulation-appareil`
 - **Source** : [DOC] [regulation.md](../../regulation.md#confidentialité) (export dédié) ; [CODE] `rlm-export` ; vérifié par
   une sonde Chromium le 4 octobre 2026.
 
