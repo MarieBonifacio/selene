@@ -627,7 +627,7 @@ Identifiants retirés : aucun.
 |---|---|---|
 | 1 | Téléphone : ⊕ Capturer → « Lancer le minuteur (15 min) ». | La feuille se ferme ; l'en-tête montre le temps qui reste et « Pause », sur la même ligne. |
 | 2 | « Pause », puis « Reprendre ». | Le temps s'arrête, puis repart. |
-| 3 | Ouvrir Yoga et attendre la fin. | L'anneau autour de la petite lune s'est refermé ; un message propose « Noter 15 min » ; le champ « Je m'arrête ici… » s'ouvre. |
+| 3 | Ouvrir Yoga et attendre la fin. | L'anneau autour de la petite lune s'est refermé ; un message propose « Noter 15 min » ; le champ du prochain geste s'ouvre (« Le prochain geste, pour la prochaine fois… », avec « Garder » et « plus tard »), celui qu'ouvre « Je m'arrête ici… ». |
 | 4 | « Noter 15 min ». | Une séance de 15 min, aujourd'hui. |
 | 5 | Ordinateur : appui long sur la petite lune. | Le minuteur démarre, sans suivre le lien de l'accueil. |
 

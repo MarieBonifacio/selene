@@ -548,7 +548,8 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   MOD-011, MOD-015 et MOD-021, de même : 97 et 95 ; C22 (« → Chantier » ouvre « Modifier la tâche », la tâche déjà
   créée). Sept mutants, sept contrôles qui tombent. Puis MOD-013 et MOD-014, de même : 99 et 93 ; C23. Six mutants, six
   contrôles qui tombent. Le journal sans compte passé dans `regulation-perdu.js` (A51). Puis NAV-008, NAV-010 et ESP-008 :
-  102 et 90 ; C24. Huit mutants, huit contrôles qui tombent.
+  102 et 90 ; C24. Huit mutants, huit contrôles qui tombent. A53, un défaut de l'app trouvé par `dehors.js` en CI. Puis
+  PEN-010, MOD-023 et MOD-024 : 105 et 87 ; C25. Sept mutants, sept contrôles qui tombent.
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`
