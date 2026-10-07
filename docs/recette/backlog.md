@@ -21,6 +21,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| A43 : `tests/browser/regulation.js` instable sous Firefox (« les quatre actions ont une cible de 44 px au moins »), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A43](perimetre.md#anomalies-et-observations) |
 | ~~A42 : « En jachère » disait « plus de 1 jours »~~ (fait le 7 octobre 2026, PR #137) | une session | P3 | — | [A42](perimetre.md#anomalies-et-observations) |
 | ~~A41 : renommer une enveloppe dans les Réglages renommait ses opérations sans le dire~~ (fait le 7 octobre 2026, PR #136) | une session | P3 | — | [A41](perimetre.md#anomalies-et-observations) |
 | ~~A40 : un rendu de fond tombé pendant un appui faisait perdre le clic (la boîte de confirmation jamais ouverte)~~ (fait le 7 octobre 2026, PR #135) | une session | P2 | — | [A40](perimetre.md#anomalies-et-observations) |
