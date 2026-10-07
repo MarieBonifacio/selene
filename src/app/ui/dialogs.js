@@ -19,8 +19,12 @@ export function openForm(title, fields, values, cb, description = "") {
   formCb = cb;
   $("#form").innerHTML = `<h2>${esc(title)}</h2>${description ? `<p class="hint">${esc(description)}</p>` : ""}` + fields.map(f => f.row ? `<div class="field-row">${f.row.map(x => fieldHTML(x, values)).join("")}</div>` : fieldHTML(f, values)).join("") +
     `<div class="row"><button class="btn solid" value="save">${tr`Enregistrer`}</button><button class="btn" value="cancel" formnovalidate>${trp("formulaire", "Annuler")}</button></div>`;
+  $("#dlg").returnValue = ""; // comme ask() : la valeur de la fermeture précédente ne vaut rien pour celle-ci (A62)
   $("#dlg").showModal();
 }
+/* Échap ferme une boîte « sans valeur » : Firefox laisse alors returnValue tel quel, donc « save » si le formulaire
+   précédent avait été enregistré, et le formulaire abandonné était enregistré à son tour (A62). */
+$("#dlg").addEventListener("cancel", () => { $("#dlg").returnValue = ""; });
 $("#dlg").addEventListener("close", () => {
   if ($("#dlg").returnValue !== "save" || !formCb) return;
   const v = {}; new FormData($("#form")).forEach((x, k) => v[k] = typeof x === "string" ? x.trim() : x);

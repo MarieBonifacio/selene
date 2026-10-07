@@ -130,6 +130,15 @@ demo.modules.chantier.entries = [tache('t1', 'Poser le velux'), tache('t2', 'Cha
   await p.waitForFunction(() => !document.querySelector('#dlg').open, null, { timeout: 5000 }).catch(() => {}); await p.waitForTimeout(300);
   const apres5 = await p.evaluate(() => ({ ouvert: document.querySelector('#dlg').open, act: document.activeElement.dataset.act || document.activeElement.tagName, n: JSON.parse(localStorage.getItem('selene-site-v1')).modules.chantier.entries.length, texte: document.querySelector('#main').textContent.includes('Jamais enregistrée') }));
   check(!apres5.ouvert && apres5.n === n5 && !apres5.texte && apres5.act === 'task-new', `Échap : le formulaire fermé, rien d’enregistré (${apres5.n} tâches), le focus sur « Ajouter une tâche » (${apres5.act}) (étape 5)`);
+  // Échap comme le fait Firefox : « cancel », puis la boîte fermée sans valeur, returnValue laissé tel quel, donc
+  // « save » après l'enregistrement de l'étape 2 ; le formulaire abandonné était enregistré (A62). Chromium remet
+  // returnValue à vide sur Échap : la séquence de Firefox est rejouée telle quelle.
+  await p.focus('[data-act="task-new"]'); await p.keyboard.press('Enter'); await p.waitForFunction(() => document.querySelector('#dlg').open, null, { timeout: 5000 }).catch(() => {});
+  await p.keyboard.type('Abandonnée sous Firefox');
+  await p.evaluate(() => { const d = document.querySelector('#dlg'); d.returnValue = 'save'; d.dispatchEvent(new Event('cancel', { cancelable: true })); d.close(); });
+  await p.waitForTimeout(300);
+  const apres5b = await p.evaluate(() => ({ n: JSON.parse(localStorage.getItem('selene-site-v1')).modules.chantier.entries.length, texte: document.querySelector('#main').textContent.includes('Abandonnée sous Firefox') }));
+  check(apres5b.n === n5 && !apres5b.texte, `Échap à la manière de Firefox (returnValue laissé à « save ») : rien d’enregistré (${apres5b.n} tâches) (étape 5, A62)`);
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

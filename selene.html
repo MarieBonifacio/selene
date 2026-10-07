@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "9f034ece88";
+const SELENE_BUILD = "9f4855ca58";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -6479,8 +6479,12 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   function openForm(title, fields, values, cb, description = "") {
     formCb = cb;
     $("#form").innerHTML = `<h2>${esc(title)}</h2>${description ? `<p class="hint">${esc(description)}</p>` : ""}` + fields.map((f) => f.row ? `<div class="field-row">${f.row.map((x) => fieldHTML(x, values)).join("")}</div>` : fieldHTML(f, values)).join("") + `<div class="row"><button class="btn solid" value="save">${tr`Enregistrer`}</button><button class="btn" value="cancel" formnovalidate>${trp("formulaire", "Annuler")}</button></div>`;
+    $("#dlg").returnValue = "";
     $("#dlg").showModal();
   }
+  $("#dlg").addEventListener("cancel", () => {
+    $("#dlg").returnValue = "";
+  });
   $("#dlg").addEventListener("close", () => {
     if ($("#dlg").returnValue !== "save" || !formCb) return;
     const v = {};
