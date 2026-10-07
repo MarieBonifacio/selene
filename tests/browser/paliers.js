@@ -1,6 +1,6 @@
 /* Scénario de navigateur : paliers d'un programme (critères rédigés et cochés à la main). Lancé par tests/browser/run.js.
    SELENE_SHOTS=dossier y dépose une capture d'écran (téléphone). */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, ouvrir, BASE, launchOptions, fixture, donnee, check } = require('./helpers');
 const SHOTS = process.env.SELENE_SHOTS;
 const demo = JSON.parse(fixture());
 demo.modules.kundalini.config.start = '2026-01-05';
@@ -66,6 +66,35 @@ demo.modules.kundalini.config.start = '2026-01-05';
 
   const wide = await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   check(!wide, 'aucun débordement horizontal sur téléphone');
+  console.log('le jeu d’essai : les paliers de Yoga (MOD-008)');
+  const essai = donnee('jeu-essai.json');
+  const q = await b.newPage({ viewport: { width: 1280, height: 900 } }); q.on('pageerror', e => errs.push(e.message));
+  await q.addInitScript(([st, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', st); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essai.site), JSON.stringify(essai.board)]);
+  const palier = () => q.evaluate(() => { const p = [...document.querySelectorAll('#main p.hint')].find(x => /sur \d+ critère/.test(x.textContent)); return p ? p.textContent.replace(/\s+/g, ' ').trim() : ''; });
+  const yoga = () => q.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.yoga.config.tiers[0]);
+  await ouvrir(q, BASE + '/index.html#yoga', () => !!document.querySelector('#main .cal'));
+  let ph = await palier();
+  check((await q.textContent('#main')).includes('Souffle') && (await yoga()).criteria.every(c => !c.done) && ph === '0 sur 2 critères coché. Coché ou non, rien ne fait avancer le palier à ta place.', `« Souffle », deux critères non cochés : « ${ph} » (étape 1)`);
+  for (const c of ['12 séances à 20 min', "Tenir la posture de l'arbre une minute"]) {
+    await q.check(`#main li:has-text("${c}") input[type=checkbox]`);
+    await q.waitForFunction(t => JSON.parse(localStorage.getItem('selene-site-v1')).modules.yoga.config.tiers[0].criteria.find(x => x.text === t).done, c, { timeout: 5000 }).catch(() => {});
+  }
+  ph = await palier();
+  check(ph === '2 sur 2 critères cochés. Tous cochés. Le passage reste ton choix, pas une formalité automatique.' && !(await yoga()).advancedAt, `les deux cochés : « ${ph} » ; le palier n’a pas changé (étape 2, C17)`);
+  await ouvrir(q, null, () => !!document.querySelector('#main .cal'));
+  check((await yoga()).criteria.every(c => c.done) && (await palier()).startsWith('2 sur 2 critères cochés.') && (await q.$$eval('#main li input[type=checkbox]:checked', x => x.length)) >= 2, 'rechargé : toujours « Souffle », les critères cochés (étape 3)');
+  await q.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+  await q.click('[data-act="tier-advance"]'); await q.waitForFunction(() => document.querySelector('#dlg').open, null, { timeout: 5000 }).catch(() => {});
+  const formulaire = await q.evaluate(() => [document.querySelector('#form h2')?.textContent.trim(), document.querySelector('#form [name=title]')?.value]);
+  // Le jeu a un espace Décisions : le passage ouvre le formulaire seul, sans bulle ; « Palier « … » atteint » en est le titre (C17).
+  const jour = await q.evaluate(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; });
+  check(!(await q.textContent('#toast')).trim() && (await yoga()).advancedAt === jour && formulaire[0] === 'Noter la décision : « Souffle »' && formulaire[1] === 'Palier « Souffle » atteint (Yoga)',
+    `« Passer au palier suivant » : daté du jour ; le formulaire « ${formulaire[0]} », titre prérempli « ${formulaire[1]} » (étape 4, C17)`);
+  const decisions = () => q.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.decisions.entries.length);
+  const n0 = await decisions();
+  await q.click('#form button[value=cancel]'); await q.waitForFunction(() => !document.querySelector('#dlg').open); await q.waitForTimeout(600); // une absence
+  check((await decisions()) === n0 && (await q.textContent('#main')).includes('« Souffle » atteint le'), '« Annuler » : aucune décision ajoutée ; l’historique dit « « Souffle » atteint le … » (étape 5)');
+
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

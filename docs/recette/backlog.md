@@ -21,6 +21,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| ~~A41 : renommer une enveloppe dans les Réglages renommait ses opérations sans le dire~~ (fait le 7 octobre 2026, PR #136) | une session | P3 | — | [A41](perimetre.md#anomalies-et-observations) |
 | ~~A40 : un rendu de fond tombé pendant un appui faisait perdre le clic (la boîte de confirmation jamais ouverte)~~ (fait le 7 octobre 2026, PR #135) | une session | P2 | — | [A40](perimetre.md#anomalies-et-observations) |
 | A39 : `tests/browser/dehors.js` instable sous Firefox (l'élément du flux Atom pas venu), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A39](perimetre.md#anomalies-et-observations) |
 | ~~A38 : « Chercher « … » partout » de la palette gardait les filtres de la recherche précédente~~ (fait le 7 octobre 2026, PR #135) | une session | P2 | — | [A38](perimetre.md#anomalies-et-observations) |
@@ -509,7 +510,10 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   contrôles qui tombent. Puis quatre (CPT-006, ESP-004, ESP-003, NAV-005) : 61 et 131 ; en chemin, A38 (« Chercher
   « … » partout » gardait les filtres d'avant), corrigé, et deux attendus du cahier, C15 et C16, corrigés dans le cas.
   Puis trois dont seule la règle était prouvée, sans aucun écran (DON-010, MOD-012, PEN-005) : 64 et 128, tous trois sur
-  le jeu d'essai.
+  le jeu d'essai. En chemin, A40 : le premier passage Firefox de cette PR a perdu un clic, et la cause était dans l'app
+  (un rendu de fond tombé pendant l'appui), corrigée. Puis six (MOD-006, ESP-005, NAV-002, NAV-006, MOD-008, PEN-006) :
+  70 et 122 ; MOD-006 et MOD-008 sur le jeu d'essai. En chemin, A41 (renommer une enveloppe dans les Réglages ne le disait
+  pas), corrigé, et C17 (deux attendus de MOD-008), corrigé dans le cas. Treize mutants, treize contrôles qui tombent.
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`

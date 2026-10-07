@@ -32,17 +32,20 @@ const SHOTS = process.env.SELENE_SHOTS;
   check(f.ep === 'inx' && f.epLog.length === 1, 'statut changé sur place, et daté');
 
   console.log('pont de reprise');
+  // Le pont, ou à sa place, dans la planche, « Je m'arrête ici… » : lus sans attendre (un pont absent ne vient pas).
+  const pont = () => p.evaluate(() => { const b = document.querySelector('#main .bridge'), e = document.querySelector('#main .plate [data-act="bridge-edit"]'); return b ? b.textContent.replace(/\s+/g, ' ').trim() : e ? '+' + e.textContent.trim() : ''; });
+  check((await pont()) === '+Je m\'arrête ici…', 'sans pont, l’espace propose « Je m’arrête ici… »' + ` (${await pont()})`);
   await p.click('[data-act="bridge-edit"]'); await p.waitForTimeout(150);
-  check(await p.evaluate(() => document.activeElement && document.activeElement.id === 'bridgeIn'), 'le champ s’ouvre et prend le focus');
-  await p.fill('#bridgeIn', 'réécrire l’ouverture du ch. 3'); await p.press('#bridgeIn', 'Enter'); await p.waitForTimeout(200);
-  check((await main()).includes('Reprendre : réécrire l’ouverture du ch. 3'), 'le pont s’affiche en haut du module');
+  check(await p.evaluate(() => document.activeElement && document.activeElement.id === 'bridgeIn' && document.activeElement.placeholder === 'Le prochain geste, pour la prochaine fois…'), 'le champ « Le prochain geste, pour la prochaine fois… » s’ouvre et prend le focus');
+  await p.fill('#bridgeIn', 'réécrire l’ouverture du ch. 3'); await p.click('[data-act="bridge-save"]'); await p.waitForTimeout(200); // PEN-006, étape 2 : « Garder »
+  check((await main()).includes('Reprendre : réécrire l’ouverture du ch. 3') && (await p.textContent('#toast')) === 'Noté. La prochaine fois commencera ici.', 'gardé : « Noté. La prochaine fois commencera ici. », et le pont en haut du module');
   await shot('ecriture');
   await go('accueil');
-  check((await main()).includes('↳ réécrire l’ouverture du ch. 3'), 'et sur l’accueil, sous la ligne du module');
+  check((await p.textContent('#main small.resume').catch(() => '')).trim() === '↳ réécrire l’ouverture du ch. 3 · aujourd\'hui', 'et sur l’accueil, sous la ligne du module : « ↳ … · aujourd’hui »');
   await go('ecriture'); await p.click('[data-act="bridge-done"]'); await p.waitForTimeout(150);
-  check(!(await data()).modules.ecriture.resume, '« fait » lève le pont');
+  check(!(await data()).modules.ecriture.resume && (await p.textContent('#toast')).startsWith('Repris. Le pont est levé.') && (await pont()) === '+Je m\'arrête ici…', '« fait » : « Repris. Le pont est levé. », le pont disparaît de l’écran et des données');
   await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
-  check((await data()).modules.ecriture.resume.text === 'réécrire l’ouverture du ch. 3', '« Annuler » le remet');
+  check((await data()).modules.ecriture.resume.text === 'réécrire l’ouverture du ch. 3' && (await pont()).includes('Reprendre : réécrire l’ouverture du ch. 3'), '« Annuler » le remet, à l’écran comme dans les données');
 
   console.log('décisions');
   await go('reglages'); await p.evaluate(() => document.querySelectorAll('details').forEach(d => d.open = true));

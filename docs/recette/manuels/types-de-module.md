@@ -227,9 +227,9 @@ Identifiants retirés : aucun.
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Ouvrir Yoga. | Le palier « Souffle » et ses deux critères, non cochés ; « Coché ou non, rien ne fait avancer le palier à ta place. » |
-| 2 | Cocher les deux critères. | « 2 sur 2 coché. Tous cochés. Le passage reste ton choix, pas une formalité automatique. » ; le palier n'a pas changé. |
+| 2 | Cocher les deux critères. | « 2 sur 2 critères cochés. Tous cochés. Le passage reste ton choix, pas une formalité automatique. » ; le palier n'a pas changé. |
 | 3 | Recharger. | Toujours « Souffle », critères cochés. |
-| 4 | « Passer au palier suivant ». | « Palier « Souffle » atteint. » ; « « Souffle » atteint le [date du jour] » dans l'historique ; un formulaire « Noter la décision : « Souffle » » s'ouvre, titre prérempli. |
+| 4 | « Passer au palier suivant ». | Un formulaire « Noter la décision : « Souffle » » s'ouvre, titre prérempli « Palier « Souffle » atteint (Yoga) », sans autre message (sans espace Décisions, c'est la bulle « Palier « Souffle » atteint. » qui le dit, C17) ; derrière lui, « « Souffle » atteint le [date du jour] » dans l'historique. |
 | 5 | Annuler le formulaire. | Aucune décision ajoutée dans Décisions. |
 
 - **État final attendu** : palier franchi, aucune décision nouvelle.

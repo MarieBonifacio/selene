@@ -83,7 +83,8 @@ registerType("budget", {
     "env-del": async el => { const c = instOf(el).config, i = +el.closest("[data-vi]").dataset.vi; if (await ask(tr`Supprimer l'enveloppe « ${c.envelopes[i].name} » ? Les opérations restent.`)) { c.envelopes.splice(i, 1); site.save(); render(); } }
   },
   change: {
-    "env-name": el => { const inst = instOf(el), v = inst.config.envelopes[+el.closest("[data-vi]").dataset.vi], to = el.value.trim(); if (to && to !== v.name) { inst.entries.forEach(e => { if (e.cat === v.name) e.cat = to; }); v.name = to; } site.save(); el.blur(); render(); },
+    // Renommer emporte les opérations de l'enveloppe, ce que le champ seul ne montre pas : le dire, comme depuis le registre (A41).
+    "env-name": el => { const inst = instOf(el), v = inst.config.envelopes[+el.closest("[data-vi]").dataset.vi], to = el.value.trim(), from = v.name; if (to && to !== from) { inst.entries.forEach(e => { if (e.cat === from) e.cat = to; }); v.name = to; } site.save(); el.blur(); render(); if (to && to !== from) toast(tr`« ${from} » s'appelle désormais « ${to} ».`); },
     "env-limit": el => { instOf(el).config.envelopes[+el.closest("[data-vi]").dataset.vi].limit = Math.max(0, +el.value || 0); site.save(); el.blur(); render(); }
   }
 });
