@@ -1233,7 +1233,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/veille.js`](../../tests/browser/veille.js) · **mode** H · **écran** O
 - **Conditions** : OpenAlex simulé.
-- **Vérifie** : rien avant la première veille ; « En veille : … Première lecture… » ; une requête depuis un mois, sans clé ; articles avec revue, autrice, résumé ; garder : source avec DOI et provenance « Veille » ; ORCID et clé : « Clé OpenAlex gardée dans ce navigateur. », clé hors des données synchronisées ; veille en double dite ; pas de nouvelle demande dans la semaine ; quota épuisé dit ; se déconnecter efface la clé et ce que le dehors a apporté ; synchronisé pour de vrai (BL-23) ; une synchro pendant la frappe de la clé ne l'efface pas (A33).
+- **Vérifie** : rien avant la première veille ; « En veille : … Première lecture… » ; une requête depuis un mois, sans clé ; articles avec revue, autrice, résumé ; garder : source avec DOI et provenance « Veille » ; ORCID et clé : « Clé OpenAlex gardée dans ce navigateur. », clé hors des données synchronisées ; une veille en double : « Déjà en veille. », seule bulle depuis le clic, rien d'ajouté (le journal des bulles le dit sinon : A36) ; pas de nouvelle demande dans la semaine ; quota épuisé dit ; se déconnecter efface la clé et ce que le dehors a apporté ; synchronisé pour de vrai (BL-23) ; une synchro pendant la frappe de la clé ne l'efface pas (A33).
 - **Cas manuels** : [CPT-013](manuels/entree-et-comptes.md#cpt-013), [EXT-014](manuels/connexions.md#ext-014), [SYN-001](manuels/synchronisation.md#syn-001)
 
 <a id="tn-cites"></a>

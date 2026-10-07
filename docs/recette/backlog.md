@@ -21,6 +21,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| A36 : `tests/browser/veille.js` instable sous Firefox (« une veille en double : dit »), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A36](perimetre.md#anomalies-et-observations) |
 | ~~A35 : `tests/browser/dehors-croise.js` instable sous WebKit (un rechargement pendant une reprise du branchement)~~ (fait le 7 octobre 2026, PR #132) | une session | P3 | — | [A35](perimetre.md#anomalies-et-observations) |
 | ~~A34 : `tests/browser/navigation.js` instable sous le processeur ralenti (la palette lue 150 ms après la frappe)~~ (fait le 7 octobre 2026, PR #132) | une session | P3 | — | [A34](perimetre.md#anomalies-et-observations) |
 | ~~A33 : une synchro pendant une frappe effaçait la saisie d'un champ sans identifiant, hors des Réglages (la clé OpenAlex de Dehors)~~ (fait le 7 octobre 2026, PR #132) | une session | P2 | — | [A33](perimetre.md#anomalies-et-observations) |
