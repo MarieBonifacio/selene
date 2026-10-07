@@ -158,7 +158,7 @@ Identifiants retirés : aucun.
   ([EXT-015](connexions.md#ext-015)) avec un événement hebdomadaire à 18 h 30, heure de Paris, qui traverse le dernier
   dimanche d'octobre (sinon : étape non applicable).
 - **Données** : capture `Fuseau TRV-005`.
-- **Automatisés associés** : `TU-REG-05`, `TU-AGD-02`
+- **Automatisés associés** : `TU-REG-05`, `TU-AGD-02`, `TN-minuit`, `TN-agenda`
 - **Source** : [DOC] [regulation.md](../../regulation.md#règles) (dates locales) ; [TEST] `TU-REG-05`, `TU-AGD-02`.
 
 | Étape | Action précise | Résultat attendu observable |

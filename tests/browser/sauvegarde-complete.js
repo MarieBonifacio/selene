@@ -105,6 +105,53 @@ async function relu(p, ok) {
     check(vieux.schemaVersion >= 8 && t.includes('Poser le velux') && t.includes('Mon livre') && t.includes('Une phrase qui passe') && t.includes('acheter des clous'),
       `migré au format ${vieux.schemaVersion} : la tâche, le livre, le fragment, la note sont là`);
     check(Object.values(vieux.modules).some(m => m.label === 'Aragne') || JSON.stringify(vieux.config.labels || {}).includes('Aragne'), 'un nom d’espace personnalisé gardé (« Aragne »)');
+
+    console.log('aller-retour vers un autre navigateur (DON-007)');
+    // Deux navigateurs sans compte, sans rien en commun que le fichier. Le premier : le jeu d'essai, modifié à la main.
+    const N1 = await appareil(b, errs, alertes, false), N2 = await appareil(b, errs, alertes, false);
+    await reglages(N1); await N1.setInputFiles('input[data-act="imp"]', jeu('jeu-essai.json'));
+    if (await confirmation(N1)) await N1.click('#cdlg button[value="ok"]');
+    await bulle(N1, 'Sauvegarde importée.');
+    await relu(N1, d => !!(d.modules && d.modules.yoga));
+    const va = async (p, h, sel) => { await p.evaluate(x => { location.hash = x; }, h); await p.waitForSelector(sel); };
+    // Un fragment de plus : la note n3 liée (« fait écho à » f1), rangée dans Écriture (sa provenance), puis son statut.
+    await va(N1, 'inbox', 'li[data-id="n3"] [data-act="link-form"]');
+    await N1.click('li[data-id="n3"] [data-act="link-form"]'); await N1.waitForFunction(() => document.querySelector('#dlg').open);
+    await N1.selectOption('#form [name="type"]', 'echo'); await N1.selectOption('#form [name="to"]', 'ecriture/f1'); await N1.click('#form button[value="save"]');
+    await bulle(N1, 'Lié');
+    const avantN1 = (await storeJSON(N1, 'selene-site-v1')).modules.ecriture.scraps.map(x => x.id);
+    await N1.click('li[data-id="n3"] [data-act="note-to"][data-to="ecriture"]');
+    const d1a = await relu(N1, d => d.modules.ecriture.scraps.length > avantN1.length), ne = d1a.modules.ecriture.scraps.find(x => !avantN1.includes(x.id));
+    await va(N1, 'ecriture', `li[data-id="${ne.id}"] select.ep`);
+    await N1.selectOption(`li[data-id="${ne.id}"] select.ep`, 'int');
+    await relu(N1, d => (d.modules.ecriture.scraps.find(x => x.id === ne.id) || {}).ep === 'int');
+    // Un palier coché : le premier critère de « Souffle », dans Yoga.
+    await va(N1, 'yoga', '#main .cal');
+    await N1.check('#main li:has-text("12 séances à 20 min") input[type=checkbox]');
+    const d1 = await relu(N1, d => d.modules.yoga.config.tiers[0].criteria[0].done === true);
+    const [dl] = await Promise.all([N1.waitForEvent('download'), (async () => { await reglages(N1); await N1.click('[data-act="exp"]'); })()]);
+    const fichier = await dl.path(), taille = fichier ? fs.statSync(fichier).size : 0;
+    check(/\.json$/.test(dl.suggestedFilename()) && taille > 1000, `navigateur 1 : « exporter » donne un fichier (${dl.suggestedFilename()}, ${taille} octets) (étape 1)`);
+    await reglages(N2); await N2.setInputFiles('input[data-act="imp"]', fichier);
+    if (await confirmation(N2)) await N2.click('#cdlg button[value="ok"]');
+    check(await bulle(N2, 'Sauvegarde importée.'), 'navigateur 2 : « Sauvegarde importée. » (étape 2)');
+    const d2 = await relu(N2, d => !!(d.modules && d.modules.ecriture && d.modules.ecriture.scraps.some(x => x.id === ne.id)));
+    // Espace par espace, ce qu'il contient : identique, à l'horodatage près.
+    const sans = o => JSON.stringify(o, (k, v) => (k === 'updatedAt' ? undefined : v));
+    const ecarts = Object.keys(d1.modules).filter(k => sans(d1.modules[k]) !== sans((d2.modules || {})[k]));
+    const f2 = d2.modules.ecriture.scraps.find(x => x.id === ne.id) || {};
+    await va(N2, 'ecriture', `li[data-id="${ne.id}"]`);
+    const ligne = (await N2.textContent(`li[data-id="${ne.id}"]`)).replace(/\s+/g, ' ');
+    const statut = await N2.$eval(`li[data-id="${ne.id}"] select.ep`, s => s.value);
+    await va(N2, 'yoga', '#main .cal');
+    const coche = await N2.$eval('#main li:has-text("12 séances à 20 min") input[type=checkbox]', c => c.checked);
+    check(!ecarts.length && Object.keys(d2.modules).length === Object.keys(d1.modules).length && f2.ep === 'int' && f2.origin && statut === 'int'
+      && ligne.includes("fait écho à « La lisière n'est pas une frontière") && ligne.includes('↳ de Boîte') && coche,
+      `espace par espace, identiques${ecarts.length ? ' sauf ' + ecarts.join(', ') : ''} ; le fragment ajouté garde son statut, son lien et sa provenance ; le palier coché l’est encore (étape 3)`);
+    const reglage = d => sans({ palette: d.config.palette, mode: d.config.mode, ordre: d.config.modules.map(m => [m.id, m.on, m.group || '', m.sigil || '']), partage: d.config.assistant && d.config.assistant.share });
+    await reglages(N2);
+    const palette = await N2.$eval('.swatches [data-act="pal"].on', x => x.dataset.p).catch(() => '');
+    check(reglage(d2) === reglage(d1) && palette === d1.config.palette, `les Réglages : palette, domaines, ordre et partage avec l’assistant identiques (${d1.config.palette}) (étape 4)`);
   } catch (e) { check(false, e.message.split('\n')[0]); }
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

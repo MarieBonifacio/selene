@@ -256,7 +256,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, ART
 - **Préconditions** : assistant activé (Réglages → Espaces → cocher « Assistant ») ; connectée (version hébergée) ou artefact.
 - **Données** : nouvel espace Carnet `Journal privé ESP-010` avec la note `mot-témoin-ESP010`.
-- **Automatisés associés** : `TU-MOD-23`, `TU-MOD-09`
+- **Automatisés associés** : `TU-MOD-23`, `TU-MOD-09`, `TN-assistant`
 - **Source** : [DOC] README, « Modules » ; [DOC] [reglages-aide.js](../../../src/app/views/reglages-aide.js) (« Un nouvel espace est coché d'office ») ; [TEST] `TU-MOD-23`, `TU-MOD-09`.
 
 | Étape | Action précise | Résultat attendu observable |

@@ -19,7 +19,7 @@ const bulle = (p, t) => p.waitForFunction(x => ((document.querySelector('#toast'
     const q = req.postDataJSON(); calls.push(q);
     return r.fulfill({ contentType: 'application/json', body: JSON.stringify(q.url === SECRET ? { status: 200, url: q.url, type: 'text/calendar', texte: ICS } : { status: 404, url: q.url, erreur: 'le site répond 404' }) });
   });
-  const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.parse('2026-09-29T07:00:00Z') / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
+  const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.parse('2026-11-30T00:00:00Z') / 1000), /* jusqu'après le changement d'heure (TRV-005) : le script d'initialisation la repose à chaque rechargement */ user: { id: UID, email: 'a@b.c' } });
   await ctx.addInitScript(([d, s, uid]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); } }, [fixture(), session, UID]);
   const p = suivre(await ctx.newPage()); p.on('pageerror', e => errs.push(e.message));
   await p.clock.setFixedTime(new Date('2026-09-29T09:00:00+02:00'));
@@ -51,6 +51,17 @@ const bulle = (p, t) => p.waitForFunction(x => ((document.querySelector('#toast'
   { const c = await storeJSON(p, 'selene-ics'); c.at = await p.evaluate(() => Date.now()) - 2 * 3600000; /* l'heure de la page (horloge simulée) */ await storeSet(p, 'selene-ics', JSON.stringify(c)); }
   await calme(p); await ouvrir(p, null, entree); await until(() => calls.length >= 1);
   ok(calls.length === 1, 'plus tard : relu');
+
+  console.log('le changement d’heure du 25 octobre (TRV-005, étape 4)');
+  // Le mardi d'avant et celui d'après, à 9 h à Paris : le Yoga de 18 h 30, heure de Paris, y reste à 18 h 30.
+  const mardi = async quand => {
+    await p.clock.setFixedTime(new Date(quand)); await calme(p); await ouvrir(p, null, entree);
+    await p.waitForFunction(() => !!document.querySelector('.agenda-day'), null, { timeout: 10000 }).catch(() => {});
+    return (await p.$$eval('.agenda-day', ds => ds.map(d => d.textContent.replace(/\s+/g, ' ')))).find(t => t.includes('Yoga')) || '';
+  };
+  const avantH = await mardi('2026-10-20T09:00:00+02:00'), apresH = await mardi('2026-10-27T09:00:00+01:00');
+  ok(avantH.includes('18 h 30–19 h 30 Yoga') && apresH.includes('18 h 30–19 h 30 Yoga'), `18 h 30 la semaine d’avant et celle d’après (« ${avantH.slice(0, 60)} » | « ${apresH.slice(0, 60)} »)`);
+  await p.clock.setFixedTime(new Date('2026-09-29T09:00:00+02:00'));
   await calme(p); await p.goto(BASE + '/index.html#reglages'); await p.waitForTimeout(300);
   await p.click('[data-act="ics-forget"]');
   ok(await bulle(p, 'Calendrier oublié sur cet appareil.'), 'oublier : « Calendrier oublié sur cet appareil. »');

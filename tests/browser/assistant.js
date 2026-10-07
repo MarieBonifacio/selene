@@ -67,6 +67,35 @@ demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').conc
   ok((await p.textContent('.chat')).includes('Bonsoir, lucidement.'), 'la réponse s’affiche');
   ok(p.anthropic === 0, 'la page n’a jamais appelé api.anthropic.com');
 
+  console.log('un nouvel espace, partagé puis gardé privé (ESP-010)');
+  const vers = async (h, sel) => { await p.evaluate(x => { location.hash = x; }, h); await p.waitForSelector(sel, { state: 'attached' }); };
+  await vers('reglages', '#newModType'); await p.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
+  await p.selectOption('#newModType', 'notes'); await p.fill('#newModName', 'Journal privé ESP-010'); await p.click('[data-act="mod-add"]');
+  await p.waitForFunction(() => [...document.querySelectorAll('#nav a')].some(a => a.textContent.includes('Journal privé ESP-010')), null, { timeout: 5000 }).catch(() => {});
+  const jid = await p.evaluate(() => { const a = [...document.querySelectorAll('#nav a')].find(x => x.textContent.includes('Journal privé ESP-010')); return a ? a.getAttribute('href').slice(1) : ''; });
+  await vers(jid, '#noteIn'); await p.fill('#noteIn', 'mot-témoin-ESP010'); await p.click('[data-act="note-add"]');
+  await p.waitForFunction(() => document.querySelector('#main').textContent.includes('mot-témoin-ESP010'), null, { timeout: 5000 }).catch(() => {});
+  ok(!!jid && (await p.textContent('#main')).includes('mot-témoin-ESP010'), `« Journal privé ESP-010 » dans la navigation, la note affichée dans l’espace (étape 1)`);
+  const partage = async () => { await vers('reglages', `[data-act="as-share"][data-k="${jid}"]`); return p.$eval(`[data-act="as-share"][data-k="${jid}"]`, c => c.checked); };
+  ok(await partage(), '« Ce que Claude peut lire » : le nouvel espace est coché d’office (étape 2)');
+  // Ce que reçoit la fonction, l'espace encore partagé : le mot-témoin y est, la sonde le voit.
+  const demander = async () => {
+    const n = p.fn.length; await vers('assistant', '#chatIn');
+    await p.fill('#chatIn', 'Cite le mot-témoin de mon journal privé.'); await p.click('[data-act="chat-send"]');
+    for (let i = 0; i < 100 && !p.fn.slice(n).some(q => q.action === 'message'); i++) await p.waitForTimeout(50);
+    return JSON.stringify(p.fn.slice(n).find(q => q.action === 'message') || null);
+  };
+  const avant = await demander();
+  ok(avant.includes('mot-témoin-ESP010'), 'partagé : le mot-témoin part bien avec la question (la sonde le voit)');
+  await partage(); await p.uncheck(`[data-act="as-share"][data-k="${jid}"]`);
+  // Décoché, relu après un détour : l'état vient du réglage enregistré, pas de la case restée sous le doigt.
+  await vers('accueil', '#nav a'); const decoche = !(await partage());
+  await vers('assistant', '#main .status');
+  const entete = (await p.textContent('#main .status')).replace(/\s+/g, ' ');
+  ok(decoche && entete.includes('Données partagées') && !entete.includes('Journal privé ESP-010'), `décoché ; l’en-tête de l’assistant n’en parle plus (« ${entete.slice(entete.indexOf('Données partagées'), entete.indexOf('Données partagées') + 90)}… ») (étape 3)`);
+  const apres = await demander();
+  ok(apres !== 'null' && !apres.includes('mot-témoin-ESP010') && !apres.includes('Journal privé ESP-010'), 'la même question : ni le mot-témoin ni l’espace ne partent vers l’assistant (étape 4)');
+
   console.log('oublier');
   await p.evaluate(() => location.hash = 'reglages'); await p.waitForTimeout(300);
   await p.click('[data-act="as-forget"]'); await p.waitForTimeout(400);
