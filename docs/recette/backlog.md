@@ -21,6 +21,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| ~~A40 : un rendu de fond tombé pendant un appui faisait perdre le clic (la boîte de confirmation jamais ouverte)~~ (fait le 7 octobre 2026, PR #135) | une session | P2 | — | [A40](perimetre.md#anomalies-et-observations) |
 | A39 : `tests/browser/dehors.js` instable sous Firefox (l'élément du flux Atom pas venu), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A39](perimetre.md#anomalies-et-observations) |
 | ~~A38 : « Chercher « … » partout » de la palette gardait les filtres de la recherche précédente~~ (fait le 7 octobre 2026, PR #135) | une session | P2 | — | [A38](perimetre.md#anomalies-et-observations) |
 | ~~A37 : un rendu de fond faisait perdre le focus clavier hors des champs (synchro, autre onglet, fin d'un envoi)~~ (fait le 7 octobre 2026, PR #133) | une session | P2 | — | [A37](perimetre.md#anomalies-et-observations) |

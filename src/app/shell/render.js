@@ -83,7 +83,22 @@ function focusBack(m) {
   const zone = document.getElementById(m.zone), el = zone && alike(zone, { tagName: m.tag, dataset: { act: m.act } }, m.sig)[m.n];
   if (el) try { el.focus({ preventScroll: true }); } catch {}
 }
+/* Un rendu de fond tombé entre l'appui et le relâchement remplaçait l'élément pressé : le relâchement atterrissait sur son
+   remplaçant, et le navigateur ne donne « click » qu'à l'élément qui a reçu les deux. Le clic se perdait sans un mot (A40 :
+   « confirmer » une journée, sous Firefox, à la fin d'un envoi au serveur ; A9 sous WebKit). Pendant un appui, un rendu de
+   fond attend donc le relâchement, et part juste après le clic qui le suit ; deux secondes au plus (un appui long, un
+   relâchement jamais reçu). */
+let pressAt = 0, held = false;
+const pressing = () => pressAt && Date.now() - pressAt < 2000;
+const release = () => { pressAt = 0; if (held) { held = false; setTimeout(render); } };
+document.addEventListener("pointerdown", e => { if (e.isPrimary) pressAt = Date.now(); }, true);
+for (const t of ["pointerup", "pointercancel", "dragstart"]) document.addEventListener(t, release, true);
+if (typeof window !== "undefined") window.addEventListener("blur", release); // la fenêtre quittée en plein appui
 export function render() {
+  if (pressing() && !inGesture()) {
+    if (!held) { held = true; setTimeout(() => { if (held) { held = false; render(); } }, 2000 - (Date.now() - pressAt)); }
+    return;
+  }
   renderMemo = new Map(); renderDay = todayISO();
   try { renderNow(); } finally { renderMemo = null; }
   skyWatch();

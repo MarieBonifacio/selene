@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-TwSmssF3WWOYgg0LEtOqYidcnVoVkA6LPaHkiNZ+03U=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-SvRaU7H3V8dtV5V7c4TjLApXMwsCwBznQ1hPskFl4XM=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -752,7 +752,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "44dff0a083";
+const SELENE_BUILD = "6938bfb0de";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -13456,7 +13456,34 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     } catch {
     }
   }
+  var pressAt = 0;
+  var held2 = false;
+  var pressing = () => pressAt && Date.now() - pressAt < 2e3;
+  var release = () => {
+    pressAt = 0;
+    if (held2) {
+      held2 = false;
+      setTimeout(render);
+    }
+  };
+  document.addEventListener("pointerdown", (e) => {
+    if (e.isPrimary) pressAt = Date.now();
+  }, true);
+  for (const t of ["pointerup", "pointercancel", "dragstart"]) document.addEventListener(t, release, true);
+  if (typeof window !== "undefined") window.addEventListener("blur", release);
   function render() {
+    if (pressing() && !inGesture()) {
+      if (!held2) {
+        held2 = true;
+        setTimeout(() => {
+          if (held2) {
+            held2 = false;
+            render();
+          }
+        }, 2e3 - (Date.now() - pressAt));
+      }
+      return;
+    }
     renderMemo = /* @__PURE__ */ new Map();
     renderDay = todayISO();
     try {
