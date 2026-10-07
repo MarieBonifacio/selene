@@ -853,8 +853,8 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/taches.js`](../../tests/browser/taches.js) · **mode** A · **écran** —
 - **Conditions** : Données au format 5 avec un `board`.
-- **Vérifie** : tâches du `board` versées dans le module, nom personnalisé gardé, `board` vidé ; échéances, coûts, étapes, filtre par pièce, budget estimé ; troisième tâche du jour acceptée, quatrième refusée, aussi entre deux modules ; réglages : types, coûts désactivés, « Lieu » ; une note rangée ouvre le formulaire de tâche ; « 1/2 étapes » ; un titre vide refusé par le formulaire ; la tâche et son étape cochée relues après rechargement (MOD-001).
-- **Cas manuels** : [MOD-001](manuels/types-de-module.md#mod-001), [MOD-002](manuels/types-de-module.md#mod-002)
+- **Vérifie** : tâches du `board` versées dans le module, nom personnalisé gardé, `board` vidé ; échéances, coûts, étapes, filtre par pièce, budget estimé ; troisième tâche du jour acceptée, quatrième refusée, aussi entre deux modules ; le tirage, la journée pleine : « Aujourd'hui est plein. Le hasard respecte les plafonds. » ; réglages : types, coûts désactivés, « Lieu » ; une note rangée ouvre le formulaire de tâche ; « 1/2 étapes » ; un titre vide refusé par le formulaire ; la tâche et son étape cochée relues après rechargement (MOD-001).
+- **Cas manuels** : [MOD-001](manuels/types-de-module.md#mod-001), [MOD-002](manuels/types-de-module.md#mod-002), [MOD-004](manuels/types-de-module.md#mod-004)
 
 <a id="tn-budget"></a>
 #### `TN-budget` — Budget
@@ -869,7 +869,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/collections.js`](../../tests/browser/collections.js) · **mode** A · **écran** —
 - **Conditions** : Données au format 2.
-- **Vérifie** : post migré dans sa colonne ; ajout, avancée jusqu'à « Publié », phrase de fin, modification ; filtre par groupe et par statut ; album sans sous-titre : « préciser album » ; champ masqué, statut ajouté et renommé, colonnes ; titre vidé → gardé ; statut supprimé après confirmation.
+- **Vérifie** : post migré dans sa colonne ; ajout, avancée jusqu'à « Publié », phrase de fin, modification ; filtre par groupe et par statut ; album sans sous-titre : « préciser album » ; champ masqué, statut ajouté et renommé, colonnes ; titre vidé → gardé ; statut supprimé après confirmation, qui le nomme et compte ses éléments, versés au statut voisin ; à deux statuts : « Deux statuts minimum : sinon rien ne peut avancer. ».
 - **Cas manuels** : [MOD-017](manuels/types-de-module.md#mod-017), [MOD-018](manuels/types-de-module.md#mod-018)
 
 <a id="tn-ecrans"></a>
@@ -958,8 +958,8 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/recherche-minuteur.js`](../../tests/browser/recherche-minuteur.js) · **mode** A · **écran** —
 - **Conditions** : Horloge simulée pour quinze minutes.
-- **Vérifie** : « / » ouvre la recherche ; sans accents, tous les mots, surlignage ; frappe continue ; fin des 15 min sur un protocole : « Noter 15 min » ; sur l'Écriture : curseur dans le compteur ; tâche finie : coût proposé au budget, dépense ajoutée ; l'onglet dit « Chercher — … » ; un mot qu'aucun texte ne contient : « Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire. » (NAV-004).
-- **Cas manuels** : [NAV-004](manuels/navigation-reglages.md#nav-004), [MOD-003](manuels/types-de-module.md#mod-003), [MOD-024](manuels/types-de-module.md#mod-024), [TRV-015](manuels/transverse.md#trv-015)
+- **Vérifie** : « / » ouvre la recherche ; sans accents, tous les mots, surlignage ; frappe continue ; fin des 15 min sur un protocole : « Noter 15 min » ; sur l'Écriture : curseur dans le compteur ; accueil sans tâche du jour : « Aucune tâche choisie. » ; le tirage : « Le sort a désigné : « … ». Pas de recours possible. », l'étoile allumée et dite (`aria-pressed`, A30) ; tâche finie : « Fait. 250,00 € estimés : les passer au budget (Travaux) ? », rien d'ajouté sans le bouton, « Ajouté à Budget. L'argent, lui, était déjà parti. », la dépense au Budget du mois ; l'onglet dit « Chercher — … » ; un mot qu'aucun texte ne contient : « Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire. » (NAV-004).
+- **Cas manuels** : [NAV-004](manuels/navigation-reglages.md#nav-004), [MOD-003](manuels/types-de-module.md#mod-003), [MOD-024](manuels/types-de-module.md#mod-024), [TRV-015](manuels/transverse.md#trv-015), [MOD-004](manuels/types-de-module.md#mod-004)
 
 <a id="tn-signatures"></a>
 #### `TN-signatures` — Fiche, minuteur et tri
@@ -982,7 +982,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/liaisons.js`](../../tests/browser/liaisons.js) · **mode** A · **écran** T
 - **Conditions** : Fragments liés.
-- **Vérifie** : dériver : bandeau, curseur, lien vers la source et lien entrant ; « contredit » ouvre une tension, listée au bilan ; « résoudre » ouvre la synthèse qui la lève ; dossier : entrées numérotées et renvois ; dossier d'une recherche ; dossier d'une tension.
+- **Vérifie** : dériver : bandeau, curseur, « Dérivé, et relié à sa source. », le bandeau parti, lien vers la source dit des deux côtés ; « contredit » : « Tension ouverte. Elle attendra sa synthèse. », listée au bilan depuis le jour, avec « résoudre » et « dossier » ; « résoudre » ouvre la synthèse qui la lève, « Synthèse gardée. La tension est levée. » ; dossier : entrées numérotées et renvois ; dossier d'une recherche ; dossier d'une tension.
 - **Cas manuels** : [PEN-003](manuels/penser-avec.md#pen-003), [PEN-004](manuels/penser-avec.md#pen-004), [PEN-008](manuels/penser-avec.md#pen-008)
 
 <a id="tn-marges"></a>
@@ -1022,7 +1022,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/vocabulaire.js`](../../tests/browser/vocabulaire.js) · **mode** A · **écran** T
 - **Conditions** : Notes sur sept mois.
-- **Vérifie** : comparaison aux six périodes d'avant ; émergents (pluriel ramené), absents ; aucun mot vide ; sans module Motifs, pas de « + » ; un mot mène à la recherche ; « + » en fait un motif aussitôt compté.
+- **Vérifie** : comparaison aux six périodes d'avant ; émergents (pluriel ramené), absents ; aucun mot vide ; sans module Motifs, pas de « + » ; un mot mène à la recherche ; « + » en fait un motif aussitôt compté, et le dit (« … devient un motif de … On verra s'il revient. »).
 - **Cas manuels** : [PEN-012](manuels/penser-avec.md#pen-012)
 
 <a id="tn-planche"></a>
@@ -1056,7 +1056,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/sources-oubliees.js`](../../tests/browser/sources-oubliees.js) · **mode** A · **écran** O
 - **Conditions** : Sources gardées il y a longtemps.
-- **Vérifie** : les sortes annoncent une source oubliée (titre, revue, depuis quand) ; « documente… » vers une note ou un fragment ; la carte s'efface ; le fragment dit qui le documente, la source ce qu'elle documente ; dossier avec DOI.
+- **Vérifie** : les sortes annoncent une source oubliée (titre, revue, depuis quand) ; « documente… » vers une note ou un fragment, « Reliée. Elle apparaît en marge de ce qu'elle documente. » ; la carte s'efface ; le fragment dit qui le documente, la source ce qu'elle documente ; relier deux fois : « Déjà reliée ainsi. », un seul lien ; dossier avec DOI.
 - **Cas manuels** : [PEN-009](manuels/penser-avec.md#pen-009), [EXT-004](manuels/connexions.md#ext-004), [PEN-008](manuels/penser-avec.md#pen-008)
 
 <a id="tn-indexeddb"></a>
@@ -1182,7 +1182,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/sources.js`](../../tests/browser/sources.js) · **mode** H puis A · **écran** O
 - **Conditions** : Crossref, Microlink simulés ; partage par `?url=`.
-- **Vérifie** : un seul appel à Crossref pour un DOI ; aperçu, « Trouvée : « … » » pour le lecteur d'écran ; gardée avec « À lire », « Gardée : « … » » par son titre (A28) et « La relier à une idée » ; lien vers l'original à part ; doublon reconnu et nommé, « Garder » désactivé ; page par Microlink, titre piégé en texte ; adresse nettoyée ; quota épuisé : gardable avec l'adresse seule ; ni lien ni DOI : aucun appel ; note → source avec provenance ; lien partagé : attend la connexion, puis note de la boîte, l'adresse de la page nettoyée, une seule fois ; favori ; export BibTeX (clé lisible, auteurs « Nom, Prénom », revue, DOI ; une page en `@misc`, caractères de LaTeX échappés) et CSL-JSON (types, noms structurés, DOI, adresse et date de consultation) ; Selene dans le menu « Partager » d'Android (manifeste).
+- **Vérifie** : un seul appel à Crossref pour un DOI ; aperçu, « Trouvée : « … » » pour le lecteur d'écran ; gardée avec « À lire », « Gardée : « … » » par son titre (A28) et « La relier à une idée » ; lien vers l'original à part ; doublon reconnu et nommé, « Garder » désactivé ; page par Microlink, titre piégé en texte ; adresse nettoyée ; quota épuisé : gardable avec l'adresse seule ; ni lien ni DOI : aucun appel ; note → source avec provenance, « Rangée dans Sources : « … » » ; lien partagé : attend la connexion, puis note de la boîte, l'adresse de la page nettoyée, une seule fois ; favori ; export BibTeX (clé lisible, auteurs « Nom, Prénom », revue, DOI ; une page en `@misc`, caractères de LaTeX échappés) et CSL-JSON (types, noms structurés, DOI, adresse et date de consultation) ; Selene dans le menu « Partager » d'Android (manifeste).
 - **Cas manuels** : [EXT-001](manuels/connexions.md#ext-001), [EXT-002](manuels/connexions.md#ext-002), [EXT-003](manuels/connexions.md#ext-003), [EXT-004](manuels/connexions.md#ext-004), [EXT-017](manuels/connexions.md#ext-017), [PLT-002](manuels/plateformes.md#plt-002), [TRV-008](manuels/transverse.md#trv-008), [EXT-020](manuels/connexions.md#ext-020)
 
 <a id="tn-passeur"></a>
@@ -1222,7 +1222,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/veille.js`](../../tests/browser/veille.js) · **mode** H · **écran** O
 - **Conditions** : OpenAlex simulé.
-- **Vérifie** : rien avant la première veille ; une requête depuis un mois, sans clé ; articles avec revue, autrice, résumé ; garder : source avec DOI et provenance « Veille » ; ORCID et clé : clé hors des données synchronisées ; veille en double dite ; pas de nouvelle demande dans la semaine ; quota épuisé dit ; se déconnecter efface la clé et ce que le dehors a apporté.
+- **Vérifie** : rien avant la première veille ; « En veille : … Première lecture… » ; une requête depuis un mois, sans clé ; articles avec revue, autrice, résumé ; garder : source avec DOI et provenance « Veille » ; ORCID et clé : « Clé OpenAlex gardée dans ce navigateur. », clé hors des données synchronisées ; veille en double dite ; pas de nouvelle demande dans la semaine ; quota épuisé dit ; se déconnecter efface la clé et ce que le dehors a apporté.
 - **Cas manuels** : [CPT-013](manuels/entree-et-comptes.md#cpt-013), [EXT-014](manuels/connexions.md#ext-014)
 
 <a id="tn-cites"></a>

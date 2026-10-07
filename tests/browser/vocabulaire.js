@@ -33,6 +33,7 @@ let n = 0; const note = (text, k) => demo.modules.inbox.entries.push({ id: 'v' +
   await go('bilan');
   await p.click('.chip:has-text("brouillard") [data-act="motif-add"]'); await p.waitForTimeout(200);
   check((await data()).modules.motifs.entries.some(e => e.title === 'brouillard'), '« + » en fait un motif');
+  check((await p.textContent('#toast')) === `« brouillard » devient un motif de ${(await data()).modules.motifs.label}. On verra s'il revient.`, '« « brouillard » devient un motif de Motifs. On verra s’il revient. »');
   check(!(await p.isVisible('.chip:has-text("brouillard") [data-act="motif-add"]')), 'et le bouton disparaît pour ce mot');
   if (SHOTS) await p.screenshot({ path: `${SHOTS}/vocabulaire.png`, fullPage: true });
   await go('motifs');

@@ -46,6 +46,8 @@ const board = { updatedAt: 9, tasks: [T('t1', 'Poser le velux', { due: today, co
   await p.click('[data-act="task-new"]'); await p.fill('#form [name=title]', 'Peindre'); await save();
   await p.click('li:has-text("Peindre") [data-act="task-today"] >> nth=0'); await p.waitForTimeout(150);
   ok((await p.textContent('#toast')).includes('plafond'), 'quatrième refusée : plafond de trois');
+  await p.click('#main [data-act="task-pick"]'); await p.waitForTimeout(150);
+  ok((await p.textContent('#toast')) === "Aujourd'hui est plein. Le hasard respecte les plafonds." && (await data()).modules.chantier.entries.filter(x => x.today).length === 3, 'tirer au sort, la journée pleine : « Aujourd’hui est plein. Le hasard respecte les plafonds. »');
   await p.click('li[data-task="t2"] [data-act="task-done"] >> nth=0'); await p.waitForTimeout(150);
   ok((await main()).includes('Fait récemment') && (await data()).modules.chantier.entries.find(x => x.id === 't2').done, 'tâche terminée');
   await p.selectOption('[data-act="f-room"]', 'Cuisine'); await p.waitForTimeout(150);

@@ -34,7 +34,7 @@ demo.config.modules.push({ id: 'sources', on: true });
   let s = null;
   for (const end = Date.now() + 5000; Date.now() < end; await p.waitForTimeout(50)) { s = (await data()).modules.sources.entries[0]; if (s.links && s.links.length) break; }
   ok(!!s.links && s.links.length === 1 && s.links[0].to === 'ecriture/f1' && s.links[0].type === 'documente', 'la source documente le fragment');
-  ok(!(await p.$('.card')) && (await p.textContent('#toast')).includes('Reliée'), 'la carte s’efface : elle n’est plus oubliée');
+  ok(!(await p.$('.card')) && (await p.textContent('#toast')) === "Reliée. Elle apparaît en marge de ce qu'elle documente.", '« Reliée. Elle apparaît en marge de ce qu’elle documente. » ; la carte s’efface : elle n’est plus oubliée');
   await p.click('[data-act="sortes-draw"]'); await p.waitForTimeout(200);
   ok((await p.textContent('#toast')).includes('Rien d\'assez ancien'), 'plus rien à tirer : reliée, elle a quitté le bassin');
 
@@ -44,6 +44,10 @@ demo.config.modules.push({ id: 'sources', on: true });
   await p.evaluate(() => location.hash = 'sources'); await p.waitForTimeout(300);
   ok((await p.textContent('[data-id="s1"] .src-docs')).includes('documente « Le soi qui se regarde'), 'la source dit ce qu’elle documente');
   ok(!!(await p.$('[data-id="s1"] [data-act="src-link"]')), 'et se relie depuis sa ligne');
+  await p.click('[data-id="s1"] [data-act="src-link"]'); await p.waitForSelector('#form [name=to]', { timeout: 5000 }).catch(() => {});
+  await p.selectOption('#form [name=to]', 'ecriture/f1'); await p.click('#form button[value=save]');
+  await p.waitForFunction(() => ((document.querySelector('#toast') || {}).textContent || '').includes('Déjà reliée'), null, { timeout: 5000 }).catch(() => {});
+  ok((await p.textContent('#toast')) === 'Déjà reliée ainsi.' && (await data()).modules.sources.entries[0].links.length === 1, 'relier deux fois au même fragment : « Déjà reliée ainsi. », un seul lien');
 
   console.log('dans le dossier de passation');
   await p.evaluate(() => location.hash = 'ecriture'); await p.waitForTimeout(300);

@@ -111,10 +111,10 @@ Identifiants retirés : aucun.
 |---|---|---|
 | 1 | Cocher « Marquer comme fait » sur « Poser une étagère ». | Message « Fait. 35,00 € estimés : les passer au budget (Travaux) ? » avec un bouton. |
 | 2 | Laisser passer le message sans cliquer. | Aucune opération ajoutée au Budget. |
-| 3 | Décocher puis recocher ; cette fois cliquer le bouton du message. | « Ajouté à Budget. L'argent, lui, était déjà parti. » ; le Budget du mois en cours montre une dépense de 35,00 € dans Travaux, note « Poser une étagère ». |
+| 3 | Sous « Fait récemment », « annuler » sur la tâche, puis la recocher ; cette fois cliquer le bouton du message (C11). | « Ajouté à Budget. L'argent, lui, était déjà parti. » ; le Budget du mois en cours montre une dépense de 35,00 € dans Travaux, note « Poser une étagère ». |
 
 - **État final attendu** : tâche faite ; une dépense de 35 €.
-- **Nettoyage** : supprimer la dépense ; décocher la tâche.
+- **Nettoyage** : supprimer la dépense ; « annuler » la tâche sous « Fait récemment ».
 
 ---
 
@@ -126,7 +126,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P3 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai, aucune étoile allumée.
 - **Données** : aucune.
-- **Automatisés associés** : `TN-compte-neuf`
+- **Automatisés associés** : `TN-compte-neuf`, `TN-recherche-minuteur`, `TN-taches`
 - **Source** : [CODE] `task-pick` (`modules/taches.js`) ; [TEST] `tests/browser/compte-neuf.js`.
 
 | Étape | Action précise | Résultat attendu observable |

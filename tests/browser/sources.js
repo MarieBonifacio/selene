@@ -79,6 +79,8 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   await n.click('[data-id="n1"] [data-act="note-source"]'); await n.waitForTimeout(400);
   const d = await data(n), s = d.modules.sources.entries[0];
   ok(!d.modules.inbox.entries.length && s && s.src.doi === '10.1016/j.concog.2020.102946' && s.origin && s.origin.from === 'Capture' && s.origin.text.includes('à lire'), 'la note devient une source, avec sa provenance');
+  { const bulle = await n.textContent('#toast'), dit = bulle === 'Rangée dans Sources : « Depersonalization and the self ».';
+    ok(dit, '« Rangée dans Sources : « Depersonalization and the self ». »' + (dit ? '' : ` (la bulle : « ${bulle} »)`)); }
 
   console.log('recevoir un lien depuis ailleurs (version hébergée, compte Supabase simulé)');
   const rows = new Map(), json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
