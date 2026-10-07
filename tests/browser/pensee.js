@@ -117,6 +117,104 @@ const SHOTS = process.env.SELENE_SHOTS;
   // Le nombre de lunaisons d'absence dépend du jour où la CI passe ; la phrase s'accorde au nombre de jours (A42).
   check(/^brume · \d+ lunaisons?$/.test(jachere.liste) && jachere.dit === 'Vivants, mais absents depuis plus de 1 jour. Reposés, pas perdus.' && jachere.brume === true && jachere.lisiere === false && jachere.phalene === false,
     `jachère après un jour : « brume » y passe ; « lisière », vue aujourd’hui dans le Carnet, reste vivante ; « phalène », épuisé, absent depuis le 18 août, n’y est pas (C18) (${JSON.stringify(jachere)}) (étape 3)`);
+
+  console.log('le jeu d’essai : décisions, statut, provenance (MOD-019, PEN-001, PEN-002)');
+  // Un ordinateur, le jeu d'essai, l'horloge figée le 7 octobre 2026 à 10 h à Paris.
+  const r = await b.newPage({ viewport: { width: 1280, height: 900 }, timezoneId: 'Europe/Paris' }); r.on('pageerror', e => errs.push(e.message));
+  await r.clock.setFixedTime(new Date('2026-10-07T10:00:00+02:00'));
+  await r.addInitScript(([st, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', st); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essai.site), JSON.stringify(essai.board)]);
+  await ouvrir(r, BASE + '/index.html', () => !!document.querySelector('#main > *'));
+  const vers = async (h, sel) => { await r.evaluate(x => { location.hash = x; }, h); await r.waitForSelector(sel, { state: 'attached' }); };
+  const bulle = () => r.evaluate(() => document.querySelector('#toast').textContent.replace(/\s+/g, ' ').trim());
+  const vider = () => r.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+  const site = () => r.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')));
+  const deux = () => r.evaluate(() => new Promise(ok => requestAnimationFrame(() => requestAnimationFrame(ok))));
+  const fiche = async sel => { await r.click(sel); await r.waitForFunction(() => /Fiche de l|Réexamens|Voir dans/.test((document.querySelector('#sheet') || {}).textContent || '')); const t = (await r.textContent('#sheet')).replace(/\s+/g, ' '); await r.keyboard.press('Escape'); return t; };
+  const decision = async () => (await site()).modules.decisions.entries.find(e => e.id === 'd1');
+  const ligneD1 = () => r.evaluate(() => { const x = document.querySelector('#main [data-act="col-keep"][data-id="d1"]'), li = x && x.closest('li'); return li ? li.textContent.replace(/\s+/g, ' ').trim() : ''; });
+
+  await vers('accueil', '#main [data-act="col-keep"][data-id="d1"]');
+  const l1 = await ligneD1(), placo = await r.evaluate(() => !!document.querySelector('#main [data-act="col-keep"][data-id="d2"]') || [...document.querySelectorAll('#main li.item.alert')].some(l => l.textContent.includes('Placo')));
+  check(l1.startsWith('« Enduit à la chaux pour le mur nord » : à réexaminer (Décisions)') && l1.includes('relire') && l1.includes('maintenue') && !placo,
+    `l’accueil : « ${l1.replace(/relire ?maintenue$/, '').trim()} », avec « relire » et « maintenue » ; aucun rendez-vous pour « Placo », abandonnée (MOD-019, étape 1)`);
+  await r.click('[data-act="col-reread"][data-id="d1"]'); await r.waitForFunction(() => document.querySelector('#dlg').open);
+  const raison = await r.inputValue('#form [name=text]');
+  check(raison === 'Humidité du mur nord. Réviser si le devis dépasse 1 200 €.', `« relire » : « ${raison} » (MOD-019, étape 2)`);
+  await r.click('#form button[value=cancel]'); await r.waitForFunction(() => !document.querySelector('#dlg').open);
+  await vider(); await r.click('[data-act="col-keep"][data-id="d1"]'); await r.waitForFunction(() => document.querySelector('#toast').textContent.includes('Maintenue'));
+  const dit3 = await bulle(), parti = !(await r.$('#main [data-act="col-keep"][data-id="d1"]'));
+  // La fiche lue pendant que la bulle offre encore « Annuler » (6 s).
+  await vers('decisions', 'li[data-id="d1"] [data-act="specimen"]');
+  const fiche3 = await fiche('li[data-id="d1"] [data-act="specimen"]');
+  check(dit3.startsWith('Maintenue. La raison d\'alors tient encore.') && parti && fiche3.includes('Réexamens') && fiche3.includes('maintenue, le 7 octobre 2026'),
+    `« maintenue » : « ${dit3.replace(/ ?Annuler$/, '')} » ; la ligne quitte l’accueil ; la fiche : « Réexamens · maintenue, le 7 octobre 2026 » (MOD-019, étape 3)`);
+  const annulable = !!(await r.$('#toast [data-act="undo"]'));
+  if (annulable) await r.click('#toast [data-act="undo"]');
+  await vers('accueil', '#main'); await r.waitForSelector('#main [data-act="col-keep"][data-id="d1"]', { timeout: 5000 }).catch(() => {});
+  const d4 = await decision();
+  check(annulable && !!(await r.$('#main [data-act="col-keep"][data-id="d1"]')) && d4.due === '2020-01-01' && !(d4.reviews || []).length,
+    `« Annuler » : la décision revient sur l’accueil, son rendez-vous rétabli (${d4.due})${annulable ? '' : ' (la bulle n’offrait plus « Annuler »)'} (MOD-019, étape 4)`);
+  await vers('decisions', 'li[data-id="d1"] [data-act="col-edit"]'); await r.click('li[data-id="d1"] [data-act="col-edit"]'); await r.waitForFunction(() => document.querySelector('#dlg').open);
+  await r.fill('#form [name=due]', '2027-04-07'); await r.click('#form button[value=save]'); await r.waitForFunction(() => !document.querySelector('#dlg').open);
+  await r.waitForFunction(() => (JSON.parse(localStorage.getItem('selene-site-v1')).modules.decisions.entries.find(e => e.id === 'd1') || {}).due === '2027-04-07', null, { timeout: 5000 }).catch(() => {});
+  await vers('accueil', '#main'); await deux();
+  const d5 = await decision(), revue = (d5.reviews || []).at(-1) || {};
+  check(!(await r.$('#main [data-act="col-keep"][data-id="d1"]')) && d5.due === '2027-04-07' && revue.verdict === 'revue' && revue.date === '2026-10-07',
+    `la date mise dans six mois (${d5.due}) : la décision quitte l’accueil ; un réexamen « ${revue.verdict} » du ${revue.date} est noté (MOD-019, étape 5)`);
+
+  await vers('accueil', '#capIn'); await vider();
+  await r.fill('#capIn', '? les hêtres gèlent avant les sapins'); await r.click('[data-act="cap-add"]');
+  await r.waitForFunction(() => document.querySelector('#toast').textContent.includes('hypothèse'), null, { timeout: 5000 }).catch(() => {});
+  const dit1 = await bulle();
+  await r.fill('#capIn', 'pourquoi ? parce que'); await r.click('[data-act="cap-add"]');
+  await r.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.inbox.entries.some(e => e.text === 'pourquoi ? parce que'), null, { timeout: 5000 }).catch(() => {});
+  await vers('inbox', '#main li.item[data-id]');
+  const notes = await r.$$eval('#main li.item[data-id]', xs => xs.map(x => [x.dataset.id, ((x.querySelector('.ntext') || {}).textContent || '').trim(), (x.querySelector('select.ep') || {}).value]));
+  const hetres = notes.find(x => x[1] === 'les hêtres gèlent avant les sapins'), pourquoi = notes.find(x => x[1] === 'pourquoi ? parce que');
+  check(dit1 === 'Gardé comme hypothèse. Elle attendra ses preuves.' && !!hetres && hetres[2] === 'hyp', `« ? les hêtres… » : « ${dit1} » ; dans la boîte, « ${hetres && hetres[1]} », statut « hypothèse » (PEN-001, étape 1)`);
+  check(!!pourquoi && pourquoi[2] === '', `« pourquoi ? parce que » : gardé tel quel, sans statut (PEN-001, étape 2)`);
+  await r.selectOption(`li[data-id="${hetres[0]}"] select.ep`, 'inx');
+  await r.waitForFunction(id => (JSON.parse(localStorage.getItem('selene-site-v1')).modules.inbox.entries.find(e => e.id === id) || {}).ep === 'inx', hetres[0], { timeout: 5000 }).catch(() => {});
+  const surPlace = await r.$eval(`li[data-id="${hetres[0]}"] select.ep`, x => x.value);
+  const ficheN = await fiche(`li[data-id="${hetres[0]}"] [data-act="specimen"]`);
+  check(surPlace === 'inx' && ficheN.includes('Statut, au fil du temps') && ficheN.includes('7 octobre 2026 : hypothèse → inexpliqué'), `« inexpliqué » sur place ; la fiche : « 7 octobre 2026 : hypothèse → inexpliqué » (PEN-001, étape 3)`);
+  // Les résultats sont rendus à la frappe : deux images plus tard, ils disent la requête du champ.
+  const chercher = async q => {
+    await vers('recherche', '#searchIn'); await r.fill('#searchIn', q); await r.waitForFunction(v => document.querySelector('#searchIn').value === v, q); await deux();
+    return r.$$eval('#main li.item', xs => xs.map(x => { const d = x.querySelector('div').cloneNode(true); d.querySelectorAll('.meta').forEach(m => m.remove()); return d.textContent.trim(); }));
+  };
+  const attendus = ['la brume précède la pluie', 'Les sapins gardent la nuit plus longtemps que les hêtres.'];
+  const h4 = await chercher('statut:hypothèse'), h5 = await chercher('status:hyp');
+  check(h4.join('|') === attendus.join('|'), `« statut:hypothèse » : ${h4.join(' ; ')} ; pas la note passée à inexpliqué (PEN-001, étape 4)`);
+  check(h5.join('|') === h4.join('|'), `« status:hyp » : les mêmes résultats (PEN-001, étape 5)`);
+  await vers('bilan', '[data-act="bilan-mode"][data-m="mois"]'); await r.click('[data-act="bilan-mode"][data-m="mois"]');
+  await r.waitForFunction(() => /octobre 2026/i.test(document.querySelector('#main').textContent)); await r.click('[data-act="bilan-nav"][data-d="1"]');
+  await r.waitForFunction(() => /septembre 2026/i.test(document.querySelector('#main').textContent));
+  const statuts = await r.evaluate(() => { const h = [...document.querySelectorAll('#main h3')].find(x => x.textContent.trim() === 'Statut des idées notées'), sec = h && h.closest('section'); return sec ? [...sec.querySelectorAll('[data-act="search-for"]')].map(x => [x.textContent.trim(), x.dataset.q]) : []; });
+  const hyp = statuts.find(x => x[1] === 'statut:hypothèse');
+  if (hyp) await r.click('#main [data-act="search-for"][data-q="statut:hypothèse"]');
+  await r.waitForFunction(() => location.hash === '#recherche', null, { timeout: 5000 }).catch(() => {});
+  check(!!hyp && hyp[0] === '1 hypothèse' && (await r.inputValue('#searchIn').catch(() => '')) === 'statut:hypothèse',
+    `septembre 2026, en mois : « Statut des idées notées » compte ${hyp ? hyp[0] : 'rien'} (${statuts.map(x => x[0]).join(', ')}) ; le statut mène à la recherche filtrée (PEN-001, étape 6)`);
+
+  await vers('inbox', 'li[data-id="n3"] [data-act="note-file"]'); await vider(); await r.click('li[data-id="n3"] [data-act="note-file"]');
+  await r.waitForFunction(() => document.querySelector('#toast').textContent.includes('Rangé'), null, { timeout: 5000 }).catch(() => {});
+  const ecrit = (await site()).modules.ecriture.scraps.find(s => s.text === 'la lisière comme seuil');
+  check(!(await r.$('#main li[data-id="n3"]')) && !!ecrit && (await bulle()).startsWith('Rangé : « la lisière comme seuil » dans Écriture.'), '« Ranger » : la note quitte la boîte ; un fragment « la lisière comme seuil » dans Écriture (PEN-002, étape 1)');
+  const marge = async t => { await vers('ecriture', '#main li.item'); return r.evaluate(x => { const li = [...document.querySelectorAll('#main li.item')].find(l => l.textContent.includes(x)), o = li && li.querySelector('aside.marg .origin'); return o ? o.textContent.trim() : ''; }, t); };
+  const m2 = await marge('la lisière comme seuil');
+  check(m2 === '↳ de Boîte, 23 sept. : « Écriture : la lisière comme seuil »', `en marge du fragment : « ${m2} » (PEN-002, étape 2)`);
+  await vers('inbox', 'li[data-id="n6"] [data-act="note-to"][data-to="carnet"]'); await r.click('li[data-id="n6"] [data-act="note-to"][data-to="carnet"]');
+  await r.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.carnet.entries.some(e => e.text === 'Penser à rappeler la quincaillerie'), null, { timeout: 5000 }).catch(() => {});
+  await vers('carnet', '#main li.item');
+  await r.evaluate(() => { const li = [...document.querySelectorAll('#main li.item')].find(l => l.textContent.includes('quincaillerie')); li.querySelector('[data-act="note-to"][data-to="ecriture"]').click(); });
+  // Selon l'espace d'arrivée, le rangement passe ou non par un formulaire : l'un ou l'autre, puis l'enregistrer s'il s'ouvre.
+  const versEcriture = () => document.querySelector('#dlg').open || JSON.parse(localStorage.getItem('selene-site-v1')).modules.ecriture.scraps.some(s => s.text === 'Penser à rappeler la quincaillerie');
+  await r.waitForFunction(versEcriture, null, { timeout: 5000 }).catch(() => {});
+  if (await r.evaluate(() => document.querySelector('#dlg').open)) await r.click('#form button[value=save]');
+  await r.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.ecriture.scraps.some(s => s.text === 'Penser à rappeler la quincaillerie'), null, { timeout: 5000 }).catch(() => {});
+  const m3 = await marge('Penser à rappeler la quincaillerie');
+  check(m3.startsWith('↳ de Boîte, 2 août') && !m3.includes('Carnet'), `rangée dans Carnet, puis de Carnet dans Écriture : « ${m3} », sa première naissance (PEN-002, étape 3)`);
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();
