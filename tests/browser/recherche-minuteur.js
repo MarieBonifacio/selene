@@ -36,11 +36,28 @@ demo.modules.chantier.entries = [{ id: 't1', title: 'Poser le velux', room: 'Cha
   await p.click('#timerReset'); await go('ecriture'); await p.click('#timerBtn'); await p.clock.runFor(15 * 60 * 1000 + 1000);
   ok((await p.evaluate(() => document.activeElement.id)) === 'cumIn' && (await p.textContent('#toast')).includes('Combien de mots'), 'sur l’Écriture : curseur dans le compteur');
 
+  console.log('le tirage au sort, depuis l’accueil');
+  await go('');
+  ok((await main()).includes('Aucune tâche choisie. Tirer une petite tâche au sort'), '« Aucune tâche choisie. » et le bouton du tirage');
+  await p.click('#main [data-act="task-pick"]'); await p.clock.runFor(200);
+  ok((await p.textContent('#toast')) === 'Le sort a désigné : « Poser le velux ». Pas de recours possible.', '« Le sort a désigné : « Poser le velux ». Pas de recours possible. »');
+  ok((await data()).modules.chantier.entries.find(x => x.id === 't1').today === true && (await main()).includes('Poser le velux') && !(await main()).includes('Aucune tâche choisie'), 'la tâche tirée est du jour, et l’accueil la montre');
+  await go('chantier');
+  ok(await p.getAttribute('li[data-task="t1"] [data-act="task-today"]', 'aria-pressed') === 'true' && !!(await p.$('li[data-task="t1"] .star.on')), 'son étoile est allumée, et le dit au lecteur d’écran (aria-pressed, A30)');
+
   console.log('tâche → budget');
-  await go('chantier'); await p.click('li[data-task="t1"] [data-act="task-done"]'); await p.clock.runFor(200);
-  ok((await p.textContent('#toast')).includes('250,00') && (await p.textContent('#toast')).includes('Travaux'), 'coût proposé au budget, enveloppe Travaux');
+  const velux = async () => (await data()).modules.budget.entries.filter(e => e.note === 'Poser le velux');
+  await p.click('li[data-task="t1"] [data-act="task-done"]'); await p.clock.runFor(200);
+  ok(/^Fait\. 250,00\s€ estimés : les passer au budget \(Travaux\) \? Ajouter$/.test((await p.textContent('#toast')).trim()), 'coût proposé au budget, enveloppe Travaux : « Fait. 250,00 € estimés : les passer au budget (Travaux) ? »');
+  await p.clock.runFor(11000);
+  ok(!(await p.isVisible('#toast.show')) && !(await velux()).length, 'le message passé sans le bouton : rien n’est ajouté');
+  await p.click('li[data-task="t1"] [data-act="task-undo"]'); await p.clock.runFor(200); // « annuler » : la tâche n'est plus faite
+  await p.click('li[data-task="t1"] [data-act="task-done"]'); await p.clock.runFor(200); // refaite : la proposition revient
   await p.click('#toast [data-act="undo"]'); await p.clock.runFor(200);
-  ok((await data()).modules.budget.entries.some(e => e.amount === 250 && e.cat === 'Travaux' && e.note === 'Poser le velux'), 'dépense ajoutée');
+  ok((await velux()).some(e => e.amount === 250 && e.cat === 'Travaux'), 'dépense ajoutée');
+  ok((await p.textContent('#toast')) === `Ajouté à ${(await data()).modules.budget.label}. L'argent, lui, était déjà parti.`, '« Ajouté à Budget. L’argent, lui, était déjà parti. »');
+  await go('budget');
+  ok(/Poser le velux/.test(await main()) && /250,00\s€/.test(await main()), 'le Budget du mois montre la dépense');
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

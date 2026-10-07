@@ -59,9 +59,23 @@ const legacy = { updatedAt: 10, schemaVersion: 2,
   await go('musique'); t = await main();
   ok(t.includes('Abandonné 0') && !t.includes('à préciser'), 'vue en colonnes avec le nouveau statut, sous-titre masqué');
   await go('reglages'); await openAll();
-  await p.click(blk + '[data-si="3"] [data-act="st-del"]'); await p.click('#cdlg button[value=ok]'); await p.waitForTimeout(150);
+  await p.click(blk + '[data-si="3"] [data-act="st-del"]'); await p.waitForSelector('#cdlg[open]', { timeout: 5000 }).catch(() => {});
+  ok((await p.textContent('#cmsg')) === 'Supprimer le statut « Abandonné » ?', 'la confirmation nomme le statut, sans compte s’il est vide');
+  await p.click('#cdlg button[value=ok]'); await p.waitForTimeout(150);
   ok((await data()).modules.musique.config.statuses.length === 3, 'statut supprimé après confirmation');
   await go('accueil'); ok((await main()).includes('Musique') && (await main()).includes('Retenu : 1'), 'résumé d’accueil fourni par le type');
+
+  console.log('supprimer un statut qui a des éléments ; deux au moins');
+  await go('reglages'); await openAll();
+  const [premier, second] = (await data()).modules.musique.config.statuses, dedans = (await data()).modules.musique.entries.filter(e => e.status === premier).map(e => e.id);
+  await p.click(blk + '[data-si="0"] [data-act="st-del"]'); await p.waitForSelector('#cdlg[open]', { timeout: 5000 }).catch(() => {});
+  const compte = dedans.length === 1 ? `1 élément passera à « ${second} ».` : `${dedans.length} éléments passeront à « ${second} ».`;
+  ok(dedans.length > 0 && (await p.textContent('#cmsg')) === `Supprimer le statut « ${premier} » ? ${compte}`, `la confirmation compte les éléments et dit où ils iront (« ${compte} »)`);
+  await p.click('#cdlg button[value=ok]'); await p.waitForTimeout(150);
+  m = (await data()).modules.musique;
+  ok(m.config.statuses.length === 2 && dedans.every(id => m.entries.find(e => e.id === id).status === second), 'après accord, ils ont un statut existant');
+  await openAll(); await p.click(blk + '[data-si="0"] [data-act="st-del"]'); await p.waitForTimeout(150);
+  ok(!(await p.isVisible('#cdlg[open]')) && (await p.textContent('#toast')) === 'Deux statuts minimum : sinon rien ne peut avancer.' && (await data()).modules.musique.config.statuses.length === 2, '« Deux statuts minimum : sinon rien ne peut avancer. »');
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

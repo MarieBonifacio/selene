@@ -95,7 +95,7 @@ Identifiants retirés : aucun.
 | 3 | Rouvrir, taper `phrase NAV-003 gardée`, choisir la ligne « « phrase NAV-003 gardée » dans Boîte ». | « Gardé. Tu peux oublier, c'est écrit. » ; la phrase est dans la boîte. |
 | 4 | Rouvrir, taper `hésite`, choisir le texte trouvé (fragment d'Écriture). | L'Écriture s'ouvre sur le fragment « La lisière n'est pas une frontière, c'est un lieu où l'on hésite. », surligné. |
 | 5 | Rouvrir, choisir « Lancer le minuteur (15 min) ». | Le minuteur démarre (temps qui reste et « Pause »). |
-| 6 | Rouvrir, taper `zzzz`. | « Rien. Ni espace, ni action, ni trace écrite. » ; Échap ferme la palette. |
+| 6 | Rouvrir, taper `zzzz`. | Deux lignes seulement : « Garder « zzzz » dans Boîte » et « Chercher « zzzz » partout » (C12) ; Échap ferme la palette. |
 
 - **État final attendu** : une phrase de plus dans la boîte ; minuteur lancé.
 - **Nettoyage** : supprimer la phrase ; remettre le minuteur à zéro.

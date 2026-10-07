@@ -22,7 +22,7 @@ demo.modules.ecriture.scraps = Array.from({ length: 150 }, (_, i) => ({ id: 'f' 
 
   console.log('palette');
   await d.keyboard.press('Control+k'); await d.waitForTimeout(100);
-  ok(await d.isVisible('#palette'), '⌘K / Ctrl+K ouvre la palette');
+  ok(await d.isVisible('#palette') && (await d.getAttribute('#palIn', 'placeholder')) === 'Aller, agir, chercher…', '⌘K / Ctrl+K ouvre la palette, son champ dit « Aller, agir, chercher… »');
   await d.keyboard.type('écri'); await d.waitForTimeout(100); await d.keyboard.press('Enter'); await d.waitForTimeout(250);
   ok(await hash(d) === '#ecriture' && !(await d.isVisible('#palette')), 'un espace trouvé par son nom, Entrée y mène');
   await go(d, 'accueil');
@@ -32,6 +32,26 @@ demo.modules.ecriture.scraps = Array.from({ length: 150 }, (_, i) => ({ id: 'f' 
   await d.keyboard.press('Enter'); await d.waitForTimeout(300);
   ok(await hash(d) === '#ecriture/f0', 'un texte trouvé dans la palette mène à son entrée');
   ok(await d.$eval('[data-id="f0"]', el => el.classList.contains('flash') && el.getBoundingClientRect().top >= 0 && el.getBoundingClientRect().bottom <= innerHeight), 'l’entrée, au-delà de la première page, est dépliée, montrée et surlignée');
+  // Choisir une ligne de la palette : la chercher, puis y descendre au clavier, comme une personne.
+  const choisir = async (q, ligne) => {
+    await d.keyboard.press('Control+k'); await d.keyboard.type(q); await d.waitForTimeout(150);
+    const i = await d.$$eval('#palList li', (lis, t) => lis.findIndex(li => li.textContent.includes(t)), ligne);
+    for (let k = 0; k < i; k++) await d.keyboard.press('ArrowDown');
+    await d.keyboard.press('Enter'); await d.waitForTimeout(250);
+    return i;
+  };
+  await go(d, 'accueil');
+  const boite = () => d.evaluate(() => { const s = JSON.parse(localStorage.getItem('selene-site-v1')); return Object.values(s.modules).find(m => m.type === 'notes' && m.config.inbox).entries.map(e => e.text); });
+  const garde = await choisir('phrase NAV-003 gardée', '« phrase NAV-003 gardée » dans');
+  ok(garde >= 0 && (await d.textContent('#toast')).startsWith("Gardé. Tu peux oublier, c'est écrit.") && (await boite()).includes('phrase NAV-003 gardée'), 'garder depuis la palette : « Gardé. Tu peux oublier, c’est écrit. », la phrase est dans la boîte');
+  const minuteur = await choisir('minuteur', 'Lancer le minuteur (15 min)');
+  ok(minuteur >= 0 && (await d.textContent('#timerBtn')) === 'Pause' && !(await d.isVisible('#palette')), '« Lancer le minuteur (15 min) » le démarre');
+  await d.click('#timerBtn'); await d.click('#timerReset');
+  await d.keyboard.press('Control+k'); await d.keyboard.type('zzzz'); await d.waitForTimeout(150);
+  const rien = (await d.$$eval('#palList li', lis => lis.map(li => li.textContent))).join(' | ');
+  ok(/^Garder« zzzz » dans .+ \| Chercher« zzzz » partout$/.test(rien), `rien de trouvé : garder ou chercher partout, rien d’autre (${rien}) (C12)`);
+  await d.keyboard.press('Escape'); await d.waitForTimeout(100);
+  ok(!(await d.isVisible('#palette')), 'Échap ferme la palette');
 
   console.log('liens directs et retour');
   await go(d, 'recherche'); await d.fill('#searchIn', 'aulnes'); await d.waitForTimeout(200);

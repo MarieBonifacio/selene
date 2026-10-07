@@ -81,12 +81,14 @@ const NEUF = '5a5a5a5a-1111-2222-3333-444455556666', ANCIEN = '6b6b6b6b-1111-222
     console.log('Réglages → Compte, sans compte');
     await p.evaluate(() => { location.hash = 'reglages'; }); await p.waitForSelector('[data-act="auth-open"]');
     check((await main()).includes('Sans compte : tout reste sur cet appareil') && !!(await p.$('[data-act="err-reports"]')), 'ce que veut dire « sans compte », et le journal des erreurs, qu’on peut couper');
+    check((await main()).includes("Effacer les données du navigateur, ou désinstaller l'app, efface tout : exporte une sauvegarde de temps en temps.") && (await p.textContent('[data-act="auth-open"] >> nth=0')).includes('Créer un compte ou me connecter'), 'la mise en garde : effacer le navigateur efface tout, exporter de temps en temps ; « Créer un compte ou me connecter »');
     await p.check('[data-act="mod-on"][aria-label="Activer Assistant"]'); await settle();
     check((await main()).includes('Sans compte, pas d\'assistant') && !(await p.$('[data-act="as-key"]')), 'l’assistant, qui garde la clé sur le serveur, demande un compte : pas de champ qui échouerait');
+    const modules = async () => JSON.stringify(JSON.parse(await storeGet(p, 'selene-site-v1')).modules), avant = await modules();
     await p.click('[data-act="auth-open"] >> nth=0'); await p.waitForSelector('#authForm');
     check((await main()).includes('Créer un compte') && (await main()).includes('Revenir à Selene sans compte'), 'créer un compte, ou revenir');
     await p.click('[data-act="auth-local"]'); await p.waitForSelector('#capIn');
-    check((await p.textContent('#nav')).includes('Écriture'), 'revenir : l’espace est intact');
+    check((await p.textContent('#nav')).includes('Écriture') && (await modules()) === avant, 'revenir : l’espace est intact, ses données à l’identique');
 
     console.log('un compte neuf, plus tard : ce qui a été noté le rejoint');
     await versCompte();

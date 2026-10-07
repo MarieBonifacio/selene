@@ -25,6 +25,8 @@ demo.modules.ecriture.scraps = [
   await p.fill('#scrapIn', 'Le soi comme effet de réseau'); await p.click('[data-act="scrap-add"]'); await p.waitForTimeout(200);
   let s = (await data()).modules.ecriture.scraps, c = s.find(x => x.text === 'Le soi comme effet de réseau');
   check(c && c.links.length === 1 && c.links[0].type === 'derive' && c.links[0].to === 'ecriture/a', 'le nouveau fragment dérive de sa source');
+  check((await p.textContent('#toast')) === 'Dérivé, et relié à sa source.' && !(await p.$('#main .derive')), '« Dérivé, et relié à sa source. » ; le bandeau disparaît');
+  check((await p.textContent(frag(c.id))).includes('dérive de « Le DMN fabrique le sentiment de soi »'), 'le nouveau fragment dit de quoi il dérive');
   check((await p.textContent(frag('a'))).includes('a donné « Le soi comme effet de réseau »'), 'la source montre ce qu’elle a donné');
 
   console.log('contredire');
@@ -32,18 +34,20 @@ demo.modules.ecriture.scraps = [
   await p.selectOption('#form [name=type]', 'contredit');
   await p.selectOption('#form [name=to]', 'ecriture/a');
   await p.click('#form button[value=save]'); await p.waitForTimeout(200);
-  check((await p.textContent('#toast')).includes('Tension ouverte'), 'lier par « contredit » ouvre une tension');
+  check((await p.textContent('#toast')) === 'Tension ouverte. Elle attendra sa synthèse.', 'lier par « contredit » ouvre une tension : « Tension ouverte. Elle attendra sa synthèse. »');
   check((await p.textContent(frag('a'))).includes('contredit par « Le soi est d’abord symbolique »'), 'lien entrant affiché sur la cible');
   if (SHOTS) await p.screenshot({ path: `${SHOTS}/liaisons.png`, fullPage: true });
 
   console.log('résoudre');
   await go('bilan');
   check((await main()).includes('Tensions ouvertes') && (await main()).includes('« Le soi est d’abord symbolique » contredit « Le DMN fabrique'), 'le bilan liste la tension');
+  check((await main()).includes("ouverte aujourd'hui") && await p.isVisible('[data-act="tension-resolve"]') && await p.isVisible('[data-act="tension-dossier"]'), 'depuis quand elle est ouverte, avec « résoudre » et « dossier »');
   await p.click('[data-act="tension-resolve"]'); await p.waitForTimeout(250);
   check((await p.evaluate(() => location.hash)) === '#ecriture' && (await main()).includes('Synthèse de « Le soi est d’abord symbolique » et « Le DMN fabrique'), '« résoudre » ouvre une synthèse des deux');
   await p.fill('#scrapIn', 'Le soi : un symbole que le réseau se donne'); await p.click('[data-act="scrap-add"]'); await p.waitForTimeout(200);
   s = (await data()).modules.ecriture.scraps; c = s.at(-1);
   check(c.links.map(l => l.to).sort().join() === 'ecriture/a,ecriture/b', 'la synthèse dérive des deux');
+  check((await p.textContent('#toast')) === 'Synthèse gardée. La tension est levée.', '« Synthèse gardée. La tension est levée. »');
   await go('bilan');
   check(!(await main()).includes('Tensions ouvertes'), 'et la tension est levée');
   console.log('dossiers');

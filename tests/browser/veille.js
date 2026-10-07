@@ -38,6 +38,7 @@ const WORK = (n, extra = {}) => ({ id: `https://openalex.org/W${n}`, doi: `https
   ok(!oa.length, 'rien n’est demandé avant la première veille');
   await watch('depersonalization', 'ecriture');
   const u = oa[0];
+  ok((await p.textContent('#toast')) === 'En veille : depersonalization. Première lecture…', '« En veille : depersonalization. Première lecture… »');
   ok(oa.length === 1 && u.searchParams.get('search') === 'depersonalization' && /^from_publication_date:\d{4}-\d{2}-\d{2}$/.test(u.searchParams.get('filter')) && !u.searchParams.get('api_key'), 'une requête : la recherche, depuis un mois, sans clé');
   let t = (await p.textContent('.dehors')).replace(/\s+/g, ' ');
   ok(t.includes('Depersonalization and the self') && !(await p.evaluate(() => window.__pwn)) && t.includes('Veille : depersonalization') && t.includes('Consciousness and Cognition · Anna Ciaunica — Un résumé'), 'les articles, avec revue, autrice et résumé ; les balises d’un titre piégé retirées');
@@ -53,6 +54,7 @@ const WORK = (n, extra = {}) => ({ id: `https://openalex.org/W${n}`, doi: `https
      l'enregistrement, qui redessine la page, arrivait alors au champ suivant et effaçait ce qu'on venait d'y taper. */
   const gardee = () => p.waitForFunction(() => (document.querySelector('#toast') || {}).textContent?.includes('Clé OpenAlex gardée'), null, { timeout: 5000 }).then(() => true, () => false);
   if (!await gardee()) { console.log('    (Tab n’a pas quitté le champ de la clé : il le quitte autrement)'); await p.locator('[data-act="oa-key"]').blur(); await gardee(); }
+  ok((await p.textContent('#toast')) === 'Clé OpenAlex gardée dans ce navigateur.', '« Clé OpenAlex gardée dans ce navigateur. »');
   const avant = oa.length;
   await watch('https://orcid.org/0000-0002-1825-0097');
   const a = oa.length > avant ? oa[oa.length - 1] : null, filtre = a ? a.searchParams.get('filter') || '' : '', dit = ((await p.textContent('#toast')) || '').trim();

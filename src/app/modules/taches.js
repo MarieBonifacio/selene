@@ -61,7 +61,7 @@ export function taskHTML(id, t) {
     <input type="checkbox" class="check" data-act="task-done" ${t.done ? "checked" : ""} aria-label="${tr`Marquer comme fait`}">
     <div><button class="t-title" data-act="task-open">${esc(t.title)}</button>
       <div class="meta">${t.room ? `<span class="tag">${esc(t.room)}</span>` : ""}<span class="${t.done ? "" : d.cls}">${esc(d.txt)}</span><span>${esc(t.cat)}</span><span>${"●".repeat(ef)}${"○".repeat(3 - ef)}</span>${(t.steps || []).length ? `<span>${tr`${sd}/${t.steps.length} étapes`}</span>` : ""}${c.costs && t.cost ? `<span>${tr`${esc(t.cost)} €`}</span>` : ""}${outdoorRain(c, t)}</div></div>
-    <button class="star ${t.today ? "on" : ""}" data-act="task-today" title="${tr`Faire aujourd'hui`}" aria-label="${tr`Faire aujourd'hui`}">★</button>
+    <button class="star ${t.today ? "on" : ""}" data-act="task-today" title="${tr`Faire aujourd'hui`}" aria-label="${tr`Faire aujourd'hui`}" aria-pressed="${t.today ? "true" : "false"}">★</button>
     <div class="details">
       ${(t.steps || []).length ? `<ul class="steps">${t.steps.map((x, i) => `<li><input type="checkbox" data-act="task-step" data-i="${i}" ${x.d ? "checked" : ""} id="s${esc(t.id)}-${i}"><label for="s${esc(t.id)}-${i}" style="font-weight:400;display:inline">${esc(x.t)}</label></li>`).join("")}</ul>` : ""}
       ${t.note ? `<p class="note">${esc(t.note)}</p>` : ""}${t.origin ? `<p class="meta">${originHTML(t, t.title)}</p>` : ""}
