@@ -78,10 +78,13 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   console.log('réglages');
   const r = await open('ok', '/index.html#reglages');
   ok((await r.textContent('#passeur')).includes(UID), 'ton identifiant, pour le secret PASSEUR_USERS');
-  await r.click('[data-act="passeur-check"]'); await r.waitForTimeout(400);
+  // « Vérifier » finit toujours par une bulle (la réponse, ou le refus) : l'attendre, pas 400 ms (A47 : sous processeur
+  // ralenti, la vérification n'avait pas encore répondu).
+  const verifie = (x, mot) => x.waitForFunction(m => ((document.querySelector('#toast') || {}).textContent || '').includes(m), mot, { timeout: 5000 }).catch(() => {});
+  await r.click('[data-act="passeur-check"]'); await verifie(r, 'il répond');
   ok(r.passeur.length === 1 && r.passeur[0].url.endsWith('/index.html') && (await r.textContent('#passeur')).includes('Déployé'), 'Vérifier : le passeur lit la page de Selene elle-même, et répond');
   const f = await open('refus', '/index.html#reglages');
-  await f.click('[data-act="passeur-check"]'); await f.waitForTimeout(400);
+  await f.click('[data-act="passeur-check"]'); await verifie(f, "n'est pas autorisé");
   ok((await f.textContent('#passeur')).includes("n'est pas autorisé") && (await f.textContent('#toast')).includes("n'est pas autorisé"), 'compte non listé : dit pourquoi');
 
   console.log('hors version hébergée');
