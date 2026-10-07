@@ -25,7 +25,8 @@ demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').conc
       if (q.action === 'etat') return json(p.serveur.cle ? { cle: true, indice: '…' + p.serveur.cle.slice(-4) } : { cle: false });
       if (q.action === 'cle') { if (!/^sk-ant-/.test(q.cle)) return json({ erreur: "ce n'est pas une clé d'API Anthropic (sk-ant-…)" }, 400); if (q.cle.includes('RECETTE-fausse')) return json({ erreur: 'Anthropic refuse cette clé' }, 400); p.serveur.cle = q.cle; return json({ cle: true, indice: '…' + q.cle.slice(-4) }); }
       if (q.action === 'oublier') { p.serveur.cle = null; return json({ cle: false }); }
-      if (q.action === 'message') {
+      if (q.action === 'message') return (async () => {
+        if (p.retenir) await p.retenir; // AST-002, étape 2 : la réponse retenue, le temps de lire l'attente
         // Comme la vraie fonction : sans clé enregistrée pour le compte, un refus 409 au code « sans-cle » (AST-006).
         if (!p.serveur.cle) return json({ erreur: 'aucune clé enregistrée pour ce compte', code: 'sans-cle' }, 409);
         // Un modèle qui tente d'écrire même quand on ne lui offre aucun outil : l'app doit refuser à l'exécution (AST-005).
@@ -34,7 +35,7 @@ demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').conc
         if (/Fixer la tringle/.test(der.content)) return dit([{ type: 'tool_use', id: 'tu1', name: 'ajouter_tache', input: { titre: 'Fixer la tringle' } }], 'tool_use');
         if (/dépense de 9 €/.test(der.content)) return dit([{ type: 'tool_use', id: 'tu2', name: 'ajouter_operation', input: { montant: 9, type: 'dépense', enveloppe: 'Courses' } }], 'tool_use');
         return dit([{ type: 'text', text: 'Bonsoir, lucidement.' }]);
-      }
+      })();
       return json({ erreur: 'action inconnue' }, 400);
     });
     await ctx.addInitScript(([d, bd, s, uid, k]) => {
@@ -75,11 +76,29 @@ demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').conc
   ok(dansIdb === 'absente' || dansIdb === 'vide', `ni dans IndexedDB (${dansIdb})`);
 
   console.log('un échange');
-  await p.evaluate(() => location.hash = 'assistant'); await p.waitForTimeout(300);
-  await p.fill('#chatIn', 'Bonsoir ?'); await p.click('[data-act="chat-send"]'); await p.waitForTimeout(600);
+  // AST-002, étape 1 : le modèle choisi dans les Réglages, puis l'en-tête de l'Assistant et ses suggestions.
+  await p.selectOption('[data-act="as-model"]', 'claude-haiku-4-5-20251001');
+  await p.evaluate(() => location.hash = 'assistant'); await p.waitForSelector('#chatIn');
+  const tete = (await p.textContent('#main .status')).replace(/\s+/g, ' ').trim(), puces = await p.$$eval('[data-act="chat-chip"]', bs => bs.map(x => x.textContent.trim()));
+  ok(tete.startsWith('Branché via ta clé API, modèle claude-haiku-4-5-20251001. Chaque échange est facturé sur ton compte.') && /Données partagées : .+\. Peut agir sur le tableau de bord\.$/.test(tete)
+    && puces.includes('Qu\'est-ce que je fais aujourd\'hui ?') && puces.some(x => x.startsWith('Fais le point sur ')),
+    `Haiku 4.5 choisi : « ${tete.slice(0, 110)}… » ; les suggestions « ${puces.slice(0, 2).join(' », « ')} » (AST-002, étape 1)`);
+  // Étape 2 : la réponse retenue, l'attente se lit : la question affichée, « … », « Envoyer » désactivé.
+  let lacher; p.retenir = new Promise(r => { lacher = r; });
+  await p.fill('#chatIn', 'Bonsoir ?'); await p.click('[data-act="chat-send"]');
+  await p.waitForSelector('#pending', { timeout: 5000 }).catch(() => {});
+  const attente = await p.evaluate(() => ({ question: [...document.querySelectorAll('.chat .msg.user')].some(x => x.textContent === 'Bonsoir ?'), points: (document.querySelector('#pending') || {}).textContent, bouton: document.querySelector('[data-act="chat-send"]').disabled }));
+  lacher(); p.retenir = null;
+  ok(attente.question && attente.points === '…' && attente.bouton, `pendant l’attente : la question affichée, « ${attente.points} », « Envoyer » désactivé (étape 2)`);
+  await p.waitForFunction(() => document.querySelector('.chat').textContent.includes('Bonsoir, lucidement.'), null, { timeout: 5000 }).catch(() => {});
   const m = p.fn.find(q => q.action === 'message');
-  ok(m && m.requete.messages.at(-1).content === 'Bonsoir ?' && m.requete.max_tokens === 1500 && !('x-api-key' in m), 'la question part vers la fonction, sans clé');
-  ok((await p.textContent('.chat')).includes('Bonsoir, lucidement.'), 'la réponse s’affiche');
+  ok(m && m.requete.messages.at(-1).content === 'Bonsoir ?' && m.requete.max_tokens === 1500 && m.requete.model === 'claude-haiku-4-5-20251001' && !('x-api-key' in m), 'la question part vers la fonction, sans clé, le modèle choisi (claude-haiku-4-5-20251001)');
+  ok((await p.textContent('.chat')).includes('Bonsoir, lucidement.') && !(await p.$('#pending')) && !(await p.$eval('[data-act="chat-send"]', b => b.disabled)), 'la réponse s’affiche, l’attente finie');
+  // Étape 5 : rechargée, la conversation est toujours là, et les suggestions ne reviennent pas.
+  await p.reload(); await p.evaluate(() => location.hash = 'assistant'); await p.waitForSelector('#chatIn');
+  await p.waitForFunction(() => document.querySelector('.chat').textContent.includes('Bonsoir, lucidement.'), null, { timeout: 5000 }).catch(() => {});
+  const relue = await p.evaluate(() => ({ q: [...document.querySelectorAll('.chat .msg.user')].map(x => x.textContent), r: document.querySelector('.chat').textContent.includes('Bonsoir, lucidement.'), puces: document.querySelectorAll('[data-act="chat-chip"]').length }));
+  ok(relue.q.includes('Bonsoir ?') && relue.r && !relue.puces, 'rechargée : la question et la réponse toujours là, plus de suggestions (étape 5)');
   ok(p.anthropic === 0, 'la page n’a jamais appelé api.anthropic.com');
 
   console.log('un nouvel espace, partagé puis gardé privé (ESP-010)');
