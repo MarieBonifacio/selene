@@ -32,6 +32,12 @@ const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_
     const deplier = q => q.waitForSelector('#welcome-all', { state: 'attached' }).then(() => q.evaluate(() => { document.getElementById('welcome-all').open = true; }));
     await a.goto(BASE + '/index.html'); await deplier(a); await a.waitForSelector('[data-tpl="carnet"]');
     check(!(await a.$('[data-tpl="regulation"]')), 'accueil : d’autres modèles, pas celui-ci');
+    // RLM-002, étape 3 : les Réglages de l'artefact, comme ceux d'un compte ordinaire.
+    await a.evaluate(() => { location.hash = 'reglages'; }); await a.waitForSelector('.tpl-grid [data-act="tpl-add"]', { state: 'attached' });
+    const a3 = await a.evaluate(() => ({ modeles: [...document.querySelectorAll('.tpl-grid .tpl b')].map(b => b.textContent.trim()),
+      groupes: [...document.querySelectorAll('#newModType optgroup')].map(g => [...g.querySelectorAll('option')].map(o => o.value + ' ' + o.textContent.trim())) }));
+    check(a3.modeles.length === 13 && a3.modeles[12] === 'Carnet' && !a3.modeles.includes('Reprendre la main') && a3.groupes.length === 2 && a3.groupes.every(g => g.length && g.every(o => !/regulation|Reprendre la main/.test(o))),
+      `artefact, « + Créer un espace » : ${a3.modeles.length} modèles, le dernier « ${a3.modeles.at(-1)} », « Reprendre la main » nulle part (RLM-002, étape 3)`);
     await anon.close();
 
     await ctx.route('https://*.supabase.co/**', supabase);

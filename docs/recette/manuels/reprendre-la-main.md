@@ -660,7 +660,7 @@ Identifiants retirés : aucun.
   assistant activé et clé de recette enregistrée ([AST-001](assistant.md#ast-001)) ; Network filtré sur
   `functions/v1/assistant`.
 - **Données** : question `Bonjour ?`.
-- **Automatisés associés** : `TU-REG-23`, `TU-REG-36`, `TN-regulation`
+- **Automatisés associés** : `TU-REG-23`, `TU-REG-36`, `TN-regulation`, `TN-regulation-appareil`
 - **Source** : [DOC] [regulation.md](../../regulation.md#confidentialité) (assistant) ; [TEST] `TU-REG-23`,
   `tests/browser/regulation.js` ; vérifié par une sonde Chromium le 4 octobre 2026.
 

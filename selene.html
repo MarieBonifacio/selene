@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "46f68c6ab4";
+const SELENE_BUILD = "9f4855ca58";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -5103,7 +5103,8 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     async function syncOnce(db, prefetched) {
       const doc = db.doc(path);
       for (let attempt = 0; attempt < 3; attempt++) {
-        const snap = prefetched || await doc.get();
+        let snap = prefetched || await doc.get();
+        if (prefetched && s.base && snap.exists && (snap.data().updatedAt || 0) < (s.base.updatedAt || 0)) snap = await doc.get();
         prefetched = null;
         if (s.db !== db) return;
         const remote = snap.exists ? snap.data() : null, local2 = clone(s.data), force = s.force;
@@ -5341,6 +5342,8 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       siteDoc.modules[id] = stubOf(localCopy(id), me);
       changed = true;
       if (siteDoc.config && siteDoc.config.deleted) delete siteDoc.config.deleted[tombKey(id)];
+      const share = siteDoc.config && siteDoc.config.assistant && siteDoc.config.assistant.share;
+      if (share && !Object.hasOwn(share, id)) share[id] = false;
     }
     if (localChanged) local.save();
     return changed;
@@ -6476,8 +6479,12 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   function openForm(title, fields, values, cb, description = "") {
     formCb = cb;
     $("#form").innerHTML = `<h2>${esc(title)}</h2>${description ? `<p class="hint">${esc(description)}</p>` : ""}` + fields.map((f) => f.row ? `<div class="field-row">${f.row.map((x) => fieldHTML(x, values)).join("")}</div>` : fieldHTML(f, values)).join("") + `<div class="row"><button class="btn solid" value="save">${tr`Enregistrer`}</button><button class="btn" value="cancel" formnovalidate>${trp("formulaire", "Annuler")}</button></div>`;
+    $("#dlg").returnValue = "";
     $("#dlg").showModal();
   }
+  $("#dlg").addEventListener("cancel", () => {
+    $("#dlg").returnValue = "";
+  });
   $("#dlg").addEventListener("close", () => {
     if ($("#dlg").returnValue !== "save" || !formCb) return;
     const v = {};
@@ -11215,7 +11222,7 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
       sendChat(e.target.value);
     }
   });
-  document.addEventListener("change", (e) => {
+  function onChange(e) {
     const el = e.target, act = el.dataset.act;
     if (act && Object.hasOwn(CHANGE, act)) runAction(CHANGE, act, el);
     else if (act && act.startsWith("grp-") && act !== "grp-filter") {
@@ -11368,7 +11375,17 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
       el.blur();
       render();
     }
-  });
+  }
+  document.addEventListener("change", onChange);
+  var armed = /* @__PURE__ */ new WeakSet();
+  document.addEventListener("click", (e) => {
+    const el = e.target;
+    if (!el || el.tagName !== "INPUT" || el.type !== "file" || armed.has(el)) return;
+    armed.add(el);
+    el.addEventListener("change", (ev) => {
+      if (!el.isConnected) onChange(ev);
+    });
+  }, true);
 
   // src/app/features/musique.js
   var MB = "https://musicbrainz.org/ws/2";
