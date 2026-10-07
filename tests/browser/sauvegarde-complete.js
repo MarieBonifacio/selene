@@ -87,6 +87,12 @@ async function relu(p, ok) {
     check(await bulle(A, "Sauvegarde créée par une version plus récente de Selene : mets l'application à jour d'abord.") && !(await A.$('#cdlg[open]')), 'un fichier plus récent : refusé, dit, sans confirmation');
     await A.setInputFiles('input[data-act="imp"]', jeu('refus-hostile.json'));
     check(await bulle(A, "Le contenu de cette sauvegarde n'est pas valide : le fichier est peut-être abîmé ou a été modifié. Rien n'a été importé.") && !(await A.$('#cdlg[open]')), 'un fichier piégé : refusé, dit, sans confirmation');
+    // DON-005, étape 2 : un fichier texte quelconque nommé photo.json, puis un JSON valide qui n'est pas une sauvegarde.
+    await A.setInputFiles('input[data-act="imp"]', { name: 'photo.json', mimeType: 'application/json', buffer: Buffer.from('Ceci est une photo de vacances, pas une sauvegarde.') });
+    const photo = await bulle(A, "Ce fichier ne se lit pas comme une sauvegarde : il est peut-être abîmé ou incomplet. Rien n'a été importé.") && !(await A.$('#cdlg[open]'));
+    await A.setInputFiles('input[data-act="imp"]', { name: 'liste.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ courses: ['pain', 'lait'], date: '2026-10-07' })) });
+    const sansFormat = await bulle(A, "Ce fichier n'est pas une sauvegarde Selene. Rien n'a été importé.") && !(await A.$('#cdlg[open]'));
+    check(photo && sansFormat, '« photo.json » : « Ce fichier ne se lit pas comme une sauvegarde… » ; un JSON sans format : « Ce fichier n’est pas une sauvegarde Selene. » ; aucune confirmation (DON-005, étape 2)');
     check(JSON.stringify((await storeJSON(A, 'selene-site-v1')).modules) === avant && ecritures === n, 'le jeu d’essai est intact, rien n’est parti');
     check(!alertes.length, 'aucune boîte d’alerte ouverte par un texte piégé' + (alertes.length ? ` (${alertes.join(' | ')})` : ''));
     await calme(A); await ouvrir(A, null, entree); // DON-003, étape 3 : rechargé

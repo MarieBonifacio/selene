@@ -1,7 +1,7 @@
 /* Le DOM au plus simple : sélecteur, échappement HTML, messages éphémères (avec « Annuler »), pagination des listes
    longues, état d'enregistrement. */
 import { CLICK } from "../registry.js";
-import { tr, trp } from "../i18n/index.js";
+import { tr, trp, uiLocale } from "../i18n/index.js";
 
 export const $ = s => document.querySelector(s);
 export const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -49,11 +49,12 @@ try {
   }).observe(document.body, { childList: true, subtree: true });
 } catch { /* sans observateur (tests, vieux navigateur), les messages restent écrits à l'écran */ }
 /* Longues listes : les PAGE premiers éléments, puis « Voir les suivants ». Propre à l'appareil, remis à zéro
-   quand on change de vue : une liste de milliers de fragments se calcule vite mais se parcourt mal au pouce. */
+   quand on change de vue : une liste de milliers de fragments se calcule vite mais se parcourt mal au pouce. Le reste
+   s'écrit comme les autres nombres de l'app, à la façon de la langue : « 1 406 de plus », pas « 1406 » (A54). */
 export const PAGE = 100, pageSize = {};
 export function paged(key, list) {
   const n = pageSize[key] || PAGE, rest = list.length - n;
-  return { items: list.slice(0, n), more: rest > 0 ? `<li class="more-row"><button class="btn ghost sm" data-act="page-more" data-k="${esc(key)}">${tr`Voir les ${Math.min(PAGE, rest)} suivants (${rest} de plus)`}</button></li>` : "" };
+  return { items: list.slice(0, n), more: rest > 0 ? `<li class="more-row"><button class="btn ghost sm" data-act="page-more" data-k="${esc(key)}">${tr`Voir les ${Math.min(PAGE, rest)} suivants (${rest.toLocaleString(uiLocale())} de plus)`}</button></li>` : "" };
 }
 export function setSaving(t) { $("#saving").textContent = t; }
 CLICK["undo"] = () => { const f = undoFn; undoFn = null; $("#toast").classList.remove("show", "act"); if (f) f(); };

@@ -549,7 +549,9 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   créée). Sept mutants, sept contrôles qui tombent. Puis MOD-013 et MOD-014, de même : 99 et 93 ; C23. Six mutants, six
   contrôles qui tombent. Le journal sans compte passé dans `regulation-perdu.js` (A51). Puis NAV-008, NAV-010 et ESP-008 :
   102 et 90 ; C24. Huit mutants, huit contrôles qui tombent. A53, un défaut de l'app trouvé par `dehors.js` en CI. Puis
-  PEN-010, MOD-023 et MOD-024 : 105 et 87 ; C25. Sept mutants, sept contrôles qui tombent.
+  PEN-010, MOD-023 et MOD-024 : 105 et 87 ; C25. Sept mutants, sept contrôles qui tombent. Puis DON-005, CPT-007 et
+  ESP-002 : 108 et 84 ; MOD-025 avance (étapes 1 et 2), son temps sur téléphone reste à la main ; C26, A54. Sept mutants,
+  sept contrôles qui tombent.
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`
