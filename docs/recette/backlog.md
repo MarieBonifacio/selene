@@ -552,7 +552,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   PEN-010, MOD-023 et MOD-024 : 105 et 87 ; C25. Sept mutants, sept contrôles qui tombent. Puis DON-005, CPT-007 et
   ESP-002 : 108 et 84 ; MOD-025 avance (étapes 1 et 2), son temps sur téléphone reste à la main ; C26, A54. Sept mutants,
   sept contrôles qui tombent. Puis EXT-008, EXT-017, EXT-009 et RLM-005 : 112 et 80 ; A55 (le délai de `run.js` suit le
-  processeur ralenti).
+  processeur ralenti). Puis RLM-008, RLM-020 et TRV-012 : 115 et 77 ; C27 (le cahier lisait un tableau que U9 a remplacé par une phrase).
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`
