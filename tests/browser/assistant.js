@@ -1,6 +1,7 @@
 /* Scénario de navigateur : l'assistant hébergé (ADR 12, docs/assistant.md). Faux Supabase, fausse fonction
    « assistant » : la clé part une fois au serveur et ne revient jamais ; un échange passe par la fonction, jamais par
-   api.anthropic.com ; une clé laissée dans l'appareil par une ancienne version est confiée au serveur puis effacée.
+   api.anthropic.com ; « Oublier la clé » vaut pour tous les appareils du compte (AST-006) ; une clé laissée dans
+   l'appareil par une ancienne version est confiée au serveur puis effacée.
    Lancé par tests/browser/run.js. */
 const { fauxSupabase, storeJSON, donnee, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const UID = '0b8f0c2e-1111-2222-3333-444455556666', CLE = 'sk-ant-api03-' + 'a'.repeat(40) + 'wxyz';
@@ -25,6 +26,8 @@ demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').conc
       if (q.action === 'cle') { if (!/^sk-ant-/.test(q.cle)) return json({ erreur: "ce n'est pas une clé d'API Anthropic (sk-ant-…)" }, 400); if (q.cle.includes('RECETTE-fausse')) return json({ erreur: 'Anthropic refuse cette clé' }, 400); p.serveur.cle = q.cle; return json({ cle: true, indice: '…' + q.cle.slice(-4) }); }
       if (q.action === 'oublier') { p.serveur.cle = null; return json({ cle: false }); }
       if (q.action === 'message') {
+        // Comme la vraie fonction : sans clé enregistrée pour le compte, un refus 409 au code « sans-cle » (AST-006).
+        if (!p.serveur.cle) return json({ erreur: 'aucune clé enregistrée pour ce compte', code: 'sans-cle' }, 409);
         // Un modèle qui tente d'écrire même quand on ne lui offre aucun outil : l'app doit refuser à l'exécution (AST-005).
         const der = q.requete.messages.at(-1), dit = (b, stop = 'end_turn') => json({ id: 'm', type: 'message', role: 'assistant', content: b, stop_reason: stop });
         if (Array.isArray(der.content)) return dit([{ type: 'text', text: 'Résultat : ' + der.content.map(c => c.content).join(' | ') }]);
@@ -108,10 +111,31 @@ demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').conc
   const apres = await demander();
   ok(apres !== 'null' && !apres.includes('mot-témoin-ESP010') && !apres.includes('Journal privé ESP-010'), 'la même question : ni le mot-témoin ni l’espace ne partent vers l’assistant (étape 4)');
 
-  console.log('oublier');
-  await p.evaluate(() => location.hash = 'reglages'); await p.waitForTimeout(300);
-  await p.click('[data-act="as-forget"]'); await p.waitForTimeout(400);
-  ok(p.serveur.cle === null && !(await p.isVisible('[data-act="as-forget"]')), 'la clé est effacée du serveur');
+  console.log('oublier (AST-006)');
+  // L'appareil B : le même compte, ouvert sur l'Assistant pendant que A oublie la clé. Les deux pages partagent le
+  // même faux serveur, comme deux appareils le même compte.
+  const B = await open('', demo, null, CLE); B.serveur = p.serveur;
+  await B.evaluate(() => location.hash = 'assistant'); await B.waitForFunction(() => !!document.querySelector('#chatIn') && !document.querySelector('#chatIn').disabled, null, { timeout: 5000 }).catch(() => {});
+  const statut = async x => (await x.textContent('#main .status')).replace(/\s+/g, ' ').trim();
+  await p.evaluate(() => location.hash = 'reglages'); await p.waitForSelector('[data-act="as-forget"]');
+  await p.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+  await p.click('[data-act="as-forget"]'); const dit6 = await bulle('Clé effacée du serveur.');
+  await p.waitForFunction(() => !document.querySelector('[data-act="as-forget"]'), null, { timeout: 5000 }).catch(() => {});
+  ok(dit6 && p.serveur.cle === null && !(await p.$('[data-act="as-forget"]')) && (await cfg()).includes('Clé API Anthropic') && !(await cfg()).includes('enregistrée : …') && (await p.getAttribute(cle, 'placeholder')) === 'sk-ant-…',
+    '« Oublier la clé » : « Clé effacée du serveur. », la clé effacée du serveur ; le libellé redevient « Clé API Anthropic », l’indication « sk-ant-… », le bouton disparaît (AST-006, étape 1)');
+  await p.evaluate(() => location.hash = 'assistant'); await p.waitForSelector('#chatIn');
+  ok((await statut(p)).startsWith('Pas encore branché. Colle ta clé API dans Réglages.') && await p.isDisabled('#chatIn'), `A, l’Assistant : « ${(await statut(p)).slice(0, 51)} », la zone « Écris à Claude… » désactivée (étape 2)`);
+  const avantB = await B.isDisabled('#chatIn');
+  await B.fill('#chatIn', 'Bonjour ?'); await B.evaluate(() => { document.querySelector('#toast').textContent = ''; }); await B.click('[data-act="chat-send"]');
+  await B.waitForFunction(() => /aucune clé enregistrée pour ce compte/.test(document.body.textContent), null, { timeout: 5000 }).catch(() => {});
+  await B.waitForFunction(() => document.querySelector('#chatIn') && document.querySelector('#chatIn').disabled, null, { timeout: 5000 }).catch(() => {});
+  const vuB = (await B.textContent('.chat')).replace(/\s+/g, ' '), ditB = (await B.textContent('body')).includes('aucune clé enregistrée pour ce compte');
+  ok(!avantB && vuB.includes('Bonjour ?') && ditB && (await statut(B)).startsWith('Pas encore branché') && await B.isDisabled('#chatIn'),
+    `B, resté ouvert : « Bonjour ? » affiché, « aucune clé enregistrée pour ce compte » ; l’en-tête « ${(await statut(B)).slice(0, 30)}… », la zone désactivée (étape 3)`);
+  await B.reload(); await B.waitForSelector('#main .status');
+  await B.waitForFunction(() => document.querySelector('#main .status').textContent.includes('Pas encore branché'), null, { timeout: 5000 }).catch(() => {});
+  ok((await statut(B)).startsWith('Pas encore branché') && await B.isDisabled('#chatIn'), `B rechargé : « ${(await statut(B)).slice(0, 30)}… » dès l’ouverture (étape 4)`);
+  await B.context().close();
 
   console.log('une ancienne clé locale');
   const q = await open(CLE); await q.waitForTimeout(300);

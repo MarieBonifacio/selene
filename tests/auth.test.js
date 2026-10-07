@@ -114,6 +114,28 @@ test('A24 : the network back during a failing connect: the sync resumes at once,
   app.site.disconnect(); app.board.disconnect();
 });
 
+/* A56 du cahier de recette : branchée, une modification faite pendant une coupure ne part pas, « Non synchronisé »
+   s'affiche ; les stores restent branchés. Le réseau revient : ce qui attend repart aussitôt, pas au relevé suivant
+   (jusqu'à 30 s). Et l'échec du tableau, qui n'avait rien à envoyer (une déconnexion tentée hors ligne pousse les deux
+   stores), ne reste pas affiché indéfiniment. */
+test('A56 : a change made offline while connected leaves at « online », not at the next 30-second poll', async () => {
+  const server = fakeSupabase();
+  const app = launchHosted({ fetch: server.fetch });
+  await settle();
+  assert.ok(app.site.db && app.board.db, 'connected');
+  server.offline = true;
+  app.site.data.config.name = 'Recette A56'; app.site.save(); clearTimeout(app.site.timer); app.site.timer = null;
+  assert.equal(await app.site.sync(), false, 'the send fails offline');
+  assert.equal(await app.board.sync(), false, 'the board, with nothing to send, fails too');
+  assert.equal(app.board.unsynced(), false, 'nothing pending on the board');
+  assert.match(app.nodes.get('#saving').textContent, /Non synchronisé/);
+  assert.ok(app.site.db, 'still connected: only the send failed');
+  server.offline = false; app.fire('online'); await settle();
+  assert.equal(server.rows.get('u1').site.config.name, 'Recette A56', 'sent at once');
+  assert.equal(app.nodes.get('#saving').textContent, '');
+  app.site.disconnect(); app.board.disconnect();
+});
+
 /* Le réseau revenu ne l'est pas toujours tout à fait : « online » arrive, mais la première tentative échoue encore
    (réseau qui s'établit, nom pas encore résolu). Elle est retentée dans les secondes qui suivent, pas au minuteur. */
 test('A24 : a reconnect that fails right after « online » is retried within seconds, not at the 5-minute timer', async () => {

@@ -340,7 +340,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob, AND, IOS, WIN
 - **Préconditions** : connecté au compte A, sans suivi « Reprendre la main » gardé sur l'appareil (sinon voir RLM-023).
 - **Données** : capture `Recette CPT-013 avant départ` ; un brouillon `brouillon CPT-013` laissé dans la capture.
-- **Automatisés associés** : `TU-SYN-13`, `TU-SYN-17`, `TU-PLT-18`, `TN-veille`, `TN-agenda`
+- **Automatisés associés** : `TU-SYN-13`, `TU-SYN-17`, `TU-PLT-18`, `TN-veille`, `TN-agenda`, `TN-compte`, `TU-AUTH-12`
 - **Source** : [DOC] README, « Comptes et synchronisation » ; [TEST] `TU-SYN-13`, `TU-SYN-17`.
 
 | Étape | Action précise | Résultat attendu observable |
