@@ -261,7 +261,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : chemin S, `rlm-a-configurer.json` importé ; configurer « Alcool », « Réduire… », limite `2`, à
   partir de `J-3`.
 - **Données** : les quantités et dates des étapes.
-- **Automatisés associés** : `TU-REG-02`, `TU-REG-04`, `TN-regulation-appareil`
+- **Automatisés associés** : `TU-REG-02`, `TU-REG-04`, `TN-regulation-perdu`
 - **Source** : [DOC] [regulation.md](../../regulation.md#règles) ; [CODE] `regulationDay`, `dayStatus` ; vérifié par une
   sonde Chromium le 4 octobre 2026.
 
@@ -373,7 +373,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : chemin S, `rlm-a-configurer.json` importé ; configurer « Alcool », « Observer, sans cible », à
   partir de `J-2` ; noter `1` à `J-2` et `1` à `J-1` ; confirmer `J-2` et `J-1`.
 - **Données** : nouvelles valeurs `0.5`, puis date `J-2`.
-- **Automatisés associés** : `TU-REG-07`, `TU-REG-17`, `TN-regulation-appareil`
+- **Automatisés associés** : `TU-REG-07`, `TU-REG-17`, `TN-regulation-perdu`
 - **Source** : [TEST] `TU-REG-07`, `TU-REG-17` ; [CODE] `useForm`.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -599,7 +599,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : chemin S, `rlm-a-configurer.json` importé ; configurer « Alcool », « Observer, sans cible », à
   partir de `J-13`.
 - **Données** : confirmations à zéro de `J-13`, `J-12`, `J-11`, `J-10` ; `2` verres à J ; confirmations de `J-3` à J.
-- **Automatisés associés** : `TU-REG-11`, `TU-REG-12`, `TU-REG-40`, `TN-regulation`, `TN-regulation-appareil`
+- **Automatisés associés** : `TU-REG-11`, `TU-REG-12`, `TU-REG-40`, `TN-regulation`, `TN-regulation-perdu`
 - **Source** : [DOC] [regulation.md](../../regulation.md#bilan-sur-sept-jours) ; [TEST] `TU-REG-12`, `TU-REG-40` ; vérifié
   par une sonde Chromium le 4 octobre 2026 ; l'état sans journée confirmée, le 6 octobre 2026 (U9 de l'audit).
 
