@@ -22,7 +22,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
 | ~~A31 : les reprises d'A24 rendaient plus fréquentes les requêtes coupées par un rechargement, sous WebKit~~ (fait le 7 octobre 2026, PR #129) | une session | P3 | — | [A31](perimetre.md#anomalies-et-observations) |
-| ~~A30 : l'étoile « Faire aujourd'hui » ne disait pas son état au lecteur d'écran~~ (fait le 7 octobre 2026) | une session | P2 | — | [A30](perimetre.md#anomalies-et-observations) |
+| ~~A30 : l'étoile « Faire aujourd'hui » ne disait pas son état au lecteur d'écran~~ (fait le 7 octobre 2026, PR #130) | une session | P2 | — | [A30](perimetre.md#anomalies-et-observations) |
 | ~~A29 : `tests/browser/indexeddb.js` instable sous WebKit (un rechargement coupait une écriture en vol)~~ (fait le 7 octobre 2026, PR #129) | une session | P3 | — | [A29](perimetre.md#anomalies-et-observations) |
 | ~~A28 : une source se nommait par son résumé (« Gardée : « Nous montrons que… » »), dans les messages, les liens et la carte~~ (fait le 7 octobre 2026, PR #129) | une session | P3 | — | [A28](perimetre.md#anomalies-et-observations) |
 | ~~A24 : le réseau revenu pendant un branchement parti hors ligne ne rebranchait plus la synchronisation avant le minuteur de 5 min (régression de la PR #122)~~ (fait le 6 octobre 2026, PR #127) | une session | P2 | — | [A24](perimetre.md#anomalies-et-observations) |
