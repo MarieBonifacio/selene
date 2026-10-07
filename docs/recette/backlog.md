@@ -21,6 +21,8 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| A43 : `tests/browser/regulation.js` instable sous Firefox (« les quatre actions ont une cible de 44 px au moins »), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A43](perimetre.md#anomalies-et-observations) |
+| ~~A42 : « En jachère » disait « plus de 1 jours »~~ (fait le 7 octobre 2026, PR #137) | une session | P3 | — | [A42](perimetre.md#anomalies-et-observations) |
 | ~~A41 : renommer une enveloppe dans les Réglages renommait ses opérations sans le dire~~ (fait le 7 octobre 2026, PR #136) | une session | P3 | — | [A41](perimetre.md#anomalies-et-observations) |
 | ~~A40 : un rendu de fond tombé pendant un appui faisait perdre le clic (la boîte de confirmation jamais ouverte)~~ (fait le 7 octobre 2026, PR #135) | une session | P2 | — | [A40](perimetre.md#anomalies-et-observations) |
 | A39 : `tests/browser/dehors.js` instable sous Firefox (l'élément du flux Atom pas venu), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A39](perimetre.md#anomalies-et-observations) |
@@ -514,6 +516,10 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   (un rendu de fond tombé pendant l'appui), corrigée. Puis six (MOD-006, ESP-005, NAV-002, NAV-006, MOD-008, PEN-006) :
   70 et 122 ; MOD-006 et MOD-008 sur le jeu d'essai. En chemin, A41 (renommer une enveloppe dans les Réglages ne le disait
   pas), corrigé, et C17 (deux attendus de MOD-008), corrigé dans le cas. Treize mutants, treize contrôles qui tombent.
+  Puis quatre dont il ne restait que l'écran (MOD-010, NAV-011, MOD-020, PEN-012) : 74 et 118, trois sur le jeu d'essai ;
+  en chemin, A42 (« plus de 1 jours », dans Motifs), corrigé, et C18 : l'attendu « phalène, épuisé, n'y est jamais » ne
+  pouvait pas échouer, « phalène » n'apparaissant dans aucun texte du jeu ; le jeu en gagne une occurrence ancienne. Huit
+  mutants, huit contrôles qui tombent.
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`

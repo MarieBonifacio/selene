@@ -85,12 +85,27 @@ demo.modules.ecriture.scraps = Array.from({ length: 150 }, (_, i) => ({ id: 'f' 
   await go(d, 'accueil');
   const box = (await d.textContent('.resume-box')).replace(/\s+/g, ' ');
   ok(box.includes('Écriture') && box.includes('un fragment en cours'), 'l’accueil propose de reprendre le dernier espace et son brouillon');
-  await go(d, 'reglages'); await d.selectOption('[data-act="open-on"]', 'last'); await d.waitForTimeout(100);
+  // NAV-011, étapes 2 à 4 : le réglage le dit, se marque « cet appareil », et se défait.
+  const ouvrirSur = async v => {
+    await go(d, 'reglages'); await d.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+    await d.selectOption('[data-act="open-on"]', v);
+    await d.waitForFunction(() => !!document.querySelector('#toast').textContent.trim(), null, { timeout: 5000 }).catch(() => {});
+    return (await d.textContent('#toast')).trim();
+  };
+  let dit = await ouvrirSur('last');
+  const marque = await d.evaluate(() => { const f = document.querySelector('[data-act="open-on"]').closest('.fld'), m = f && f.querySelector('.dev'); return m ? m.textContent.trim() : ''; });
+  ok(dit === "L'app rouvrira le dernier espace où tu étais." && marque === 'cet appareil', `« Là où j’en étais » : « ${dit} », le réglage marqué « ${marque} » (NAV-011, étape 2)`);
   await go(d, 'ecriture');
   const d2 = await ctxD.newPage(); d2.on('pageerror', e => errs.push(e.message));
   await d2.goto(BASE + '/index.html#accueil'); await d2.waitForTimeout(400);
   ok(await hash(d2) === '#ecriture', '« Ouvrir sur : là où j’en étais » rouvre le dernier espace');
   await d2.close();
+  dit = await ouvrirSur('accueil');
+  await go(d, 'ecriture');
+  const d3 = await ctxD.newPage(); d3.on('pageerror', e => errs.push(e.message));
+  await d3.goto(BASE + '/index.html#accueil'); await d3.waitForTimeout(400);
+  ok(dit === "L'app s'ouvrira sur l'accueil." && await hash(d3) === '#accueil' && !!(await d3.$('#main .resume-box')), `« L’accueil » remis : « ${dit} », et l’app rouvre sur l’accueil (${await hash(d3)}) (NAV-011, étape 4)`);
+  await d3.close();
 
   console.log('iPhone : barre basse et feuilles');
   const ctxM = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });

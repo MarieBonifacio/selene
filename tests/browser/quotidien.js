@@ -134,6 +134,24 @@ demo.modules.moth.entries = [{ id: 'p1', title: 'Le lichen', subtitle: '', tag: 
   const relu = await q.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.yoga.config);
   ok((await q.textContent('#toast')).includes('Sauvegarde importée.') && relu.weeks === 1 && relu.perWeek === 7, 'exportée puis réimportée : « Sauvegarde importée. », les bornes gardées (étape 4)');
 
+  console.log('le jeu d’essai : la fin estimée d’Écriture (MOD-010)');
+  // Un contexte neuf : le jeu tel quel, sans les saisies du jour faites plus haut. Sa dernière saisie d'Écriture date du
+  // 2 septembre 2026 : passé le 2 octobre, rien dans les trente derniers jours.
+  const r = await (await b.newContext({ viewport: { width: 1280, height: 900 } })).newPage(); r.on('pageerror', e => errs.push(e.message));
+  const brut = donnee('jeu-essai.json');
+  await r.addInitScript(([s, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', s); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(brut.site), JSON.stringify(brut.board)]);
+  await ouvrir(r, BASE + '/index.html#ecriture', () => !!document.querySelector('#cumIn'));
+  const prophetie = () => r.evaluate(() => { const p = [...document.querySelectorAll('#main p.hint')].find(x => x.textContent.includes('Dernière session')); return p ? p.textContent.replace(/\s+/g, ' ').trim() : ''; });
+  let pr = await prophetie();
+  ok(pr.endsWith("Pas assez d'élan ces 30 derniers jours pour prédire une fin. La prophétie attendra."), `sans saisie depuis trente jours : « ${pr} » (étape 1)`);
+  await r.fill('#cumIn', '8300'); await r.click('[data-act="entry-add"]');
+  await r.waitForFunction(() => document.querySelector('#main').textContent.includes('Au rythme des 30 derniers jours'), null, { timeout: 5000 }).catch(() => {});
+  // 3 000 mots en trente jours : 100 par jour ; il en reste 41 700, soit 417 jours. La date telle que ce moteur l'écrit.
+  const fin = await r.evaluate(() => { const d = new Date(); d.setDate(d.getDate() + 417); return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(d).map(x => x.type === 'day' && x.value === '1' ? '1er' : x.value).join(''); });
+  pr = await prophetie();
+  ok((await r.textContent('#main .big')).replace(/\s+/g, ' ').trim().startsWith('8 300 mots sur 50 000') && pr.endsWith(`Au rythme des 30 derniers jours (100 mots par jour), objectif atteint vers le ${fin}.`),
+    `3 000 mots de plus, 8 300 en tout : « ${pr.slice(pr.indexOf('Au rythme'))} » (étape 2)`);
+
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

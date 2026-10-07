@@ -217,8 +217,12 @@ const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_
     }
     await go(id);
     check(!(await overflow()), 'téléphone : aucun débordement horizontal');
-    const small = await p.$$eval('.rlm-acts .btn', bs => bs.filter(x => x.getBoundingClientRect().height < 44).length);
-    check(small === 0, 'téléphone : les quatre actions ont une cible de 44 px au moins');
+    // A43 : sous Firefox, ce contrôle a échoué une fois sans dire ce qu'il avait lu. Les quatre actions de l'espace ouvert,
+    // attendues posées (5 s au plus), puis mesurées ; leurs hauteurs sont dites.
+    const cibles = () => p.$$eval('#main .rlm-acts .btn', bs => bs.map(x => Math.round(x.getBoundingClientRect().height * 100) / 100));
+    await p.waitForFunction(() => { const bs = [...document.querySelectorAll('#main .rlm-acts .btn')]; return bs.length === 4 && bs.every(x => x.getBoundingClientRect().height >= 44); }, null, { timeout: 5000 }).catch(() => {});
+    const hauteurs = await cibles();
+    check(hauteurs.length === 4 && hauteurs.every(x => x >= 44), `téléphone : les quatre actions ont une cible de 44 px au moins (${hauteurs.join(', ')} px)`);
     if (process.env.SHOTS) await p.screenshot({ path: `${process.env.SHOTS}/regulation-phone.png`, fullPage: true });
 
     console.log('ordinateur, clavier, anglais');

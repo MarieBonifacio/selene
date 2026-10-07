@@ -1,6 +1,6 @@
 /* Scénario de navigateur : dérive lexicale du bilan. Lancé par tests/browser/run.js.
    SELENE_SHOTS=dossier y dépose une capture d'écran (téléphone). */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, ouvrir, BASE, launchOptions, fixture, donnee, check } = require('./helpers');
 const SHOTS = process.env.SELENE_SHOTS;
 const demo = JSON.parse(fixture());
 // Des notes réparties sur sept mois : « lune » et « brouillard » montent ce mois-ci, « cendre » s'éteint.
@@ -40,6 +40,16 @@ let n = 0; const note = (text, k) => demo.modules.inbox.entries.push({ id: 'v' +
   check(/brouillard.*2 occurrences/.test(await main()), 'le nouveau motif est aussitôt compté');
   const wide = await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   check(!wide, 'aucun débordement horizontal sur téléphone');
+
+  console.log('le jeu d’essai : trop peu de textes ce mois-ci (PEN-012, étape 1)');
+  // Les textes du jeu sont datés d'août et septembre 2026 : le mois en cours n'en a aucun, les six d'avant, selon le jour.
+  const essai = donnee('jeu-essai.json');
+  const q = await b.newPage({ viewport: { width: 1280, height: 900 } }); q.on('pageerror', e => errs.push(e.message));
+  await q.addInitScript(([st, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', st); localStorage.setItem('selene-board-v1', bd); } localStorage.setItem('selene-bilan', 'mois'); }, [JSON.stringify(essai.site), JSON.stringify(essai.board)]);
+  await ouvrir(q, BASE + '/index.html#bilan', () => [...document.querySelectorAll('#main h3')].some(h => h.textContent.trim() === 'Vocabulaire'));
+  const vocab = await q.evaluate(() => { const h = [...document.querySelectorAll('#main h3')].find(x => x.textContent.trim() === 'Vocabulaire'), sec = h.closest('section'); return { dit: sec.querySelector('p.hint').textContent.replace(/\s+/g, ' ').trim(), puces: sec.querySelectorAll('.chip').length }; });
+  check(/^Pas encore assez de textes datés pour parler de dérive : 0 texte dans la période, \d+ textes? dans les six mois d'avant \(5 de chaque côté au moins\)\.$/.test(vocab.dit) && !vocab.puces,
+    `le Bilan du mois, sous le seuil : « ${vocab.dit} », aucun mot proposé`);
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

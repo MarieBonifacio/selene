@@ -233,7 +233,7 @@ export default {
   "voisins : {0}": "neighbours: {0}",
   "carte": "map",
   "En jachère": "Lying fallow",
-  "Vivants, mais absents depuis plus de {0} jours. Reposés, pas perdus.": "Alive, but absent for more than {0} days. Resting, not lost.",
+  "Vivants, mais absents depuis plus de {0} jour. Reposés, pas perdus.": { one: "Alive, but absent for more than {0} day. Resting, not lost.", other: "Alive, but absent for more than {0} days. Resting, not lost." },
   "{0} lunaison": { one: "{0} lunation", other: "{0} lunations" },
   "Aucun motif. Ajoute un mot qui revient ; l'app comptera ses retours.": "No motifs. Add a word that keeps coming back; the app will count its returns.",
   "{0} motif": { one: "{0} motif", other: "{0} motifs" },
