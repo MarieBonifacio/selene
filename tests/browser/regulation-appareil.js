@@ -359,7 +359,13 @@ async function device(browser, errs, personnel = true, id = 'u1') {
       await go('reprendre-la-main', ap1); await ap1.evaluate(() => { document.querySelector('.rlm-privacy').open = true; document.querySelector('#toast').textContent = ''; });
       await ap1.click('.rlm-privacy [data-act="mod-del"]'); await ap1.waitForFunction(() => document.querySelector('#dlg').open);
       const f = await ap1.evaluate(() => [document.querySelector('#form h2').textContent.trim(), document.querySelector('#form').textContent.replace(/\s+/g, ' ')]);
-      await ap1.fill('#form [name="confirm"]', nom); await ap1.click('#form button[value="save"]'); await ap1.waitForFunction(() => !document.querySelector('#dlg').open);
+      await ap1.fill('#form [name="confirm"]', nom); await ap1.click('#form button[value="save"]');
+      // Vu une fois sous Firefox (PR #156) : la boîte restée ouverte après « Enregistrer ». Son état, s'il se reproduit.
+      if (!(await ap1.waitForFunction(() => !document.querySelector('#dlg').open, null, { timeout: 10000 }).then(() => true, () => false)))
+        console.log('    boîte restée ouverte :', JSON.stringify(await ap1.evaluate(() => { const c = document.querySelector('#form [name="confirm"]'), a = document.activeElement;
+          return { dlg: document.querySelector('#dlg').open, cdlg: document.querySelector('#cdlg').open, cmsg: document.querySelector('#cmsg').textContent.slice(0, 80), titre: (document.querySelector('#form h2') || {}).textContent, valeur: c && c.value, valide: c && c.validity.valid,
+            actif: a && (a.tagName + ' ' + (a.name || a.value || a.dataset.act || '')), bulle: document.querySelector('#toast').textContent + ' @' + document.querySelector('#toast').parentNode.id, ouvertes: [...document.querySelectorAll('dialog[open]')].map(d => d.id) }; })));
+      await ap1.waitForFunction(() => !document.querySelector('#dlg').open);
       return f;
     };
     const [titre26, form26] = await supprimer('carnet');

@@ -3,7 +3,8 @@
    au lieu de le laisser retomber sur la page entière, sans rien annoncer ; un champ qui a le focus le garde (« / »
    ouvre la recherche, curseur dans le champ). Les messages d'état qui naissent avec un contenu redessiné
    (« Recherche… », l'aperçu d'une source) sont répétés par une région permanente, hors de l'écran (#sr-say), que les
-   lecteurs d'écran écoutent à coup sûr. Données synthétiques, réseau simulé. Lancé par tests/browser/run.js. */
+   lecteurs d'écran écoutent à coup sûr. Enfin le clavier seul (TRV-002) : le contour à chaque arrêt de Tab, une tâche
+   créée sans souris, Échap qui ferme sans rien garder et rend le focus. Données synthétiques, réseau simulé. Lancé par tests/browser/run.js. */
 const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources',
@@ -92,6 +93,43 @@ demo.modules.chantier.entries = [tache('t1', 'Poser le velux'), tache('t2', 'Cha
     if (ouvert) { await p.click('#form button[value=cancel]'); await p.waitForFunction(() => !document.querySelector('#dlg').open); }
   }
   await onglet.close();
+
+  console.log('au clavier seul (TRV-002)');
+  // Étape 1 : depuis le haut de la page, Tab jusqu'à « Chantier » ; à chaque arrêt, un contour visible (:focus-visible,
+  // au moins 1 px, à l'écran). Puis Entrée : l'écran s'ouvre, le focus à son titre.
+  // Le point de départ en haut du document : l'app met le focus au titre de l'écran (A28), et Tab en repartirait, ferait
+  // le tour du contenu, puis passerait par l'interface du navigateur avant de revenir en haut.
+  await p.evaluate(() => { location.hash = 'accueil'; }); await p.waitForSelector('#capIn');
+  await p.evaluate(() => { window.scrollTo(0, 0); const d = document.body; d.setAttribute('tabindex', '-1'); d.focus(); d.removeAttribute('tabindex'); });
+  const arrets = [];
+  for (let i = 0; i < 80; i++) {
+    await p.keyboard.press('Tab');
+    const a = await p.evaluate(() => { const el = document.activeElement, s = getComputedStyle(el), r = el.getBoundingClientRect();
+      return { nom: `${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}${el.getAttribute('href') || ''}`, chantier: el.matches('#nav a[href="#chantier"]'),
+        vu: el.matches(':focus-visible') && s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) >= 1 && r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight }; });
+    arrets.push(a); if (a.chantier) break;
+  }
+  const sansContour = arrets.filter(a => !a.vu).map(a => a.nom);
+  await p.keyboard.press('Enter'); await p.waitForFunction(() => location.hash === '#chantier', null, { timeout: 5000 }).catch(() => {}); await p.waitForTimeout(300);
+  check(arrets.at(-1)?.chantier && !sansContour.length && /^h2:Chantier/.test(await focused()),
+    `Tab depuis le haut : ${arrets.length} arrêts jusqu’à « Chantier », chacun avec son contour${sansContour.length ? ' (sans : ' + sansContour.join(', ') + ')' : ''} ; Entrée : Chantier, le focus à son titre (${await focused()}) (TRV-002, étape 1)`);
+  // Étape 2 : la tâche créée au clavier seul ; le focus revient dans l'espace, pas en haut de la page.
+  const versBouton = async act => { for (let i = 0; i < 40 && (await p.evaluate(() => document.activeElement.dataset.act)) !== act; i++) await p.keyboard.press('Tab'); return (await p.evaluate(() => document.activeElement.dataset.act)) === act; };
+  const atteint = await versBouton('task-new');
+  await p.keyboard.press('Enter'); await p.waitForFunction(() => document.querySelector('#dlg').open, null, { timeout: 5000 }).catch(() => {});
+  const dansForm = await p.evaluate(() => !!document.activeElement.closest('#form'));
+  await p.keyboard.type('Clavier TRV-002'); await p.keyboard.press('Enter');
+  await p.waitForFunction(() => !document.querySelector('#dlg').open, null, { timeout: 5000 }).catch(() => {});
+  await p.waitForFunction(() => document.querySelector('#main').textContent.includes('Clavier TRV-002'), null, { timeout: 5000 }).catch(() => {});
+  const apres2 = await p.evaluate(() => ({ dans: !!document.activeElement.closest('#main'), act: document.activeElement.dataset.act || document.activeElement.tagName, cree: JSON.parse(localStorage.getItem('selene-site-v1')).modules.chantier.entries.some(t => t.title === 'Clavier TRV-002') }));
+  check(atteint && dansForm && apres2.cree && apres2.dans, `Tab jusqu’à « Ajouter une tâche », Entrée, le titre tapé, Entrée : la tâche créée ; le focus dans l’espace (${apres2.act}) (étape 2)`);
+  // Étape 5 : un formulaire ouvert puis fermé par Échap : rien d'enregistré, le focus sur le bouton qui l'a ouvert.
+  const n5 = await p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.chantier.entries.length);
+  await p.focus('[data-act="task-new"]'); await p.keyboard.press('Enter'); await p.waitForFunction(() => document.querySelector('#dlg').open, null, { timeout: 5000 }).catch(() => {});
+  await p.keyboard.type('Jamais enregistrée'); await p.keyboard.press('Escape');
+  await p.waitForFunction(() => !document.querySelector('#dlg').open, null, { timeout: 5000 }).catch(() => {}); await p.waitForTimeout(300);
+  const apres5 = await p.evaluate(() => ({ ouvert: document.querySelector('#dlg').open, act: document.activeElement.dataset.act || document.activeElement.tagName, n: JSON.parse(localStorage.getItem('selene-site-v1')).modules.chantier.entries.length, texte: document.querySelector('#main').textContent.includes('Jamais enregistrée') }));
+  check(!apres5.ouvert && apres5.n === n5 && !apres5.texte && apres5.act === 'task-new', `Échap : le formulaire fermé, rien d’enregistré (${apres5.n} tâches), le focus sur « Ajouter une tâche » (${apres5.act}) (étape 5)`);
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
