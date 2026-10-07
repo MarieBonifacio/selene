@@ -10,7 +10,8 @@
    Enfin le journal d'un suivi sans compte, l'horloge figée : corriger une saisie (RLM-011), observer, réduire, viser
    l'arrêt (RLM-007), deux semaines en regard (RLM-019) ; venu de regulation-appareil.js, trop long sous un processeur
    ralenti (A51). Puis une journée sans saisie, inconnue jusqu'à sa confirmation, jamais zéro (RLM-008) ; et aucun
-   détail hors de l'espace : recherche, palette, motifs, rangement d'une note (RLM-020).
+   détail hors de l'espace : recherche, palette, motifs, rangement d'une note (RLM-020) ; la pause de cinq minutes,
+   l'horloge avancée à la main, rechargée, l'onglet fermé, arrêtée puis échue (RLM-017).
    Lancé par tests/browser/run.js. */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -150,9 +151,10 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
     const INSTANT = new Date('2026-10-07T20:00:00+02:00');
     // Un chemin S neuf, rlm-a-configurer.json configuré : J le 7 octobre 2026.
     const jj = n => { const d = new Date(Date.UTC(2026, 9, 7 + n, 12)); return d.toISOString().slice(0, 10); };
-    async function cheminS({ mode, limit, depuis }) {
+    // `sujet` : celui que choisit le formulaire ; `horloge` : « installee » pour une horloge qu'on avance (la pause de RLM-017).
+    async function cheminS({ mode, limit, depuis, sujet = 'alcool', horloge = 'figee' }) {
       const c = await browser.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block', timezoneId: 'Europe/Paris' });
-      const q = await c.newPage(); q.on('pageerror', e => errs.push(e.message)); await q.clock.setFixedTime(INSTANT);
+      const q = await c.newPage(); q.on('pageerror', e => errs.push(e.message)); if (horloge === 'installee') await q.clock.install({ time: INSTANT }); else await q.clock.setFixedTime(INSTANT);
       await ouvrir(q, BASE + '/index.html#sans-compte', entree);
       const vers = async (h, sel) => { await q.evaluate(x => { location.hash = x; }, h); await q.waitForSelector(sel, { state: 'attached' }); };
       const bulle = t => q.waitForFunction(x => ((document.querySelector('#toast') || {}).textContent || '').includes(x), t, { timeout: 5000 }).then(() => true, () => false);
@@ -164,7 +166,7 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
       await bulle('Sauvegarde importée.');
       const id = await q.evaluate(() => { const a = [...document.querySelectorAll('#nav a')].find(x => x.textContent.includes('Carnet du soir')); return a ? a.getAttribute('href').slice(1) : ''; });
       await vers(id, '[data-act="rlm-setup"]'); await q.click('[data-act="rlm-setup"]'); await q.waitForFunction(() => document.querySelector('#dlg').open);
-      await q.selectOption('#form [name="subject"]', 'alcool'); await q.click('#form button[value="save"]');
+      await q.selectOption('#form [name="subject"]', sujet); await q.click('#form button[value="save"]');
       await q.waitForFunction(() => document.querySelector('#dlg').open && document.querySelector('#form h2').textContent === 'Mon intention');
       await q.selectOption('#form [name="mode"]', mode); if (limit != null) await q.fill('#form [name="limit"]', String(limit));
       await q.fill('#form [name="date"]', depuis); await q.click('#form button[value="save"]');
@@ -335,6 +337,49 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
       && ligne8(s5, 'Journées suivies') === '3' && ligne8(s5, 'Inconnues') === '2' && ligne8(s5, 'Quantités déclarées') === '1 verre standard' && ligne8(s5, 'Objectif atteint') === '1 sur 1 journée évaluable',
       `« Confirmer » : « ${dit8} » ; J-2 « ${avant8} » ; le tableau : ${(s5.lignes || []).map(x => x.slice(0, 2).join(' = ')).join(' ; ')} (étape 5)`);
     await u.c.close();
+
+    console.log('chemin S : la pause de cinq minutes, rechargée, fermée, arrêtée, échue (RLM-017)');
+    // Tabac, observer depuis J ; l'horloge installée à 20 h, avancée à la main : la pause se lit à la seconde près.
+    const pz = await cheminS({ mode: 'observer', depuis: jj(0), sujet: 'tabac', horloge: 'installee' });
+    const pause = () => pz.q.evaluate(() => { const s = document.querySelector('section.rlm-pause'); return s ? { titre: s.querySelector('h3').textContent.trim(), reste: (document.querySelector('#rlmPause') || {}).textContent || '', aide: [...s.querySelectorAll('p')].map(p => p.textContent.replace(/\s+/g, ' ').trim()).join(' | '), boutons: [...s.querySelectorAll('button')].map(b => b.textContent.trim()) } : null; });
+    // Les aides de cheminS gardent la première page ; celles-ci lisent la page en cours (l'onglet est rouvert à l'étape 3).
+    const contenuZ = async () => ((await storeJSON(pz.q, 'selene-site-v1')) || { modules: {} }).modules[pz.id] || { entries: [] };
+    const versZ = async (h, sel) => { await pz.q.evaluate(x => { location.hash = x; }, h); await pz.q.waitForSelector(sel, { state: 'attached' }); };
+    const journal17 = async () => (await contenuZ()).entries.length;
+    await pz.vider(); await pz.q.click('[data-act="rlm-urge"]'); await pz.q.waitForFunction(() => document.querySelector('#dlg').open);
+    await pz.q.selectOption('#form [name="strategy"]', 'Marcher quelques minutes'); await pz.q.selectOption('#form [name="pause"]', 'oui');
+    await pz.q.click('#form button[value="save"]'); await pz.q.waitForFunction(() => !document.querySelector('#dlg').open);
+    await pz.bulle('Envie notée'); await pz.q.waitForSelector('#rlmPause[role="timer"]'); await pz.q.clock.runFor(10);
+    const p1 = await pause(), dit17 = await pz.dit();
+    check(dit17 === 'Envie notée. Cinq minutes, à ton rythme.' && p1 && p1.titre === 'Cinq minutes de pause' && p1.reste === '5:00'
+      && p1.aide.includes('Jusqu\'à 20:05. Elle continue si tu fermes l\'app ou si l\'écran se met en veille. Tu peux l\'arrêter quand tu veux.')
+      && JSON.stringify(p1.boutons) === JSON.stringify(['J\'ai fait : Marcher quelques minutes', 'Arrêter la pause']),
+      `« ${dit17} » ; « ${p1 && p1.titre} », ${p1 && p1.reste}, « Jusqu'à 20:05… », ${p1 && p1.boutons.map(x => `« ${x} »`).join(' et ')} (RLM-017, étape 1)`);
+    await pz.q.clock.runFor(60000); await pz.q.reload(); await pz.vers(pz.id, '#rlmPause[role="timer"]'); await pz.q.clock.runFor(10);
+    const p2 = await pause();
+    // L'horloge installée avance aussi en temps réel pendant un chargement (démarrage lent, processeur ralenti) : à
+    // quelques secondes près. Ce qui compte : ni 5:00 (la pause remise à zéro), ni plus rien (perdue).
+    const secondes = t => { const m = /^(\d+):(\d\d)$/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : NaN; };
+    check(p2 && secondes(p2.reste) <= 240 && secondes(p2.reste) >= 225 && p2.aide.includes('Jusqu\'à 20:05.'), `une minute plus tard, rechargée : ${p2 && p2.reste} (4:00 à quelques secondes près), toujours « Jusqu'à 20:05 » (étape 2)`);
+    // L'onglet fermé, une minute passe, un autre onglet s'ouvre sur l'espace.
+    await pz.q.close(); await pz.c.clock.runFor(60000);
+    pz.q = await pz.c.newPage(); pz.q.on('pageerror', e => errs.push(e.message));
+    await pz.q.goto(BASE + '/index.html#' + pz.id); await pz.q.waitForSelector('#rlmPause[role="timer"]'); await pz.q.clock.runFor(10);
+    const p3 = await pause();
+    check(p3 && secondes(p3.reste) <= 180 && secondes(p3.reste) >= 165 && secondes(p3.reste) < secondes(p2.reste) - 50, `l’onglet fermé une minute, puis rouvert : ${p3 && p3.reste} (3:00 à quelques secondes près) (étape 3)`);
+    await pz.q.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+    await pz.q.click('[data-act="rlm-pause-stop"]'); await pz.q.waitForFunction(() => !document.querySelector('section.rlm-pause'));
+    check(!(await pause()) && !(await pz.q.textContent('#toast')).trim(), '« Arrêter la pause » : l’encadré disparaît, sans message (étape 4)');
+    const avant17 = await journal17(), marques17 = (await contenuZ()).entries.filter(e => e.kind === 'action').length;
+    await pz.q.click('[data-act="rlm-pause"]'); await pz.q.waitForSelector('#rlmPause[role="timer"]');
+    await pz.q.clock.runFor(5 * 60000 + 1000);
+    await pz.q.waitForFunction(() => (document.querySelector('section.rlm-pause h3') || {}).textContent === 'Pause terminée', null, { timeout: 5000 }).catch(() => {});
+    const p5 = await pause(), apres17 = await journal17(), marques17b = (await contenuZ()).entries.filter(e => e.kind === 'action').length;
+    check(p5 && p5.titre === 'Pause terminée' && p5.aide === 'Tu peux noter ce qui t\'a aidé, ou simplement fermer cet encadré.' && p5.boutons.includes('Fermer') && apres17 === avant17 && marques17b === marques17,
+      `« Pause de 5 min » sur l’envie, cinq minutes plus tard : « ${p5 && p5.titre} », « ${p5 && p5.aide} », ${p5 && p5.boutons.map(x => `« ${x} »`).join(', ')} ; le journal (${avant17} → ${apres17}) et les gestes faits inchangés (étape 5)`);
+    await versZ('accueil', '#capIn'); await pz.q.clock.runFor(11 * 60000); await versZ(pz.id, '[data-act="rlm-urge"]'); await pz.q.clock.runFor(10);
+    check(!(await pause()), 'revenue plus de dix minutes après l’échéance : l’encadré n’est plus là (étape 6)');
+    await pz.c.close();
 
     console.log('chemin S : aucun détail hors de l’espace (RLM-020)');
     // rlm-en-cours.json importé : « Carnet du soir », ses notes « Repas de famille », « Après le travail », son appui

@@ -134,6 +134,27 @@ demo.modules.ecriture.scraps = [
   await q.waitForFunction(() => !document.querySelector('li[data-id="f2"]'), null, { timeout: 5000 }).catch(() => {});
   const orphelin = ne ? (await q.textContent(`li[data-id="${ne.id}"]`)).replace(/\s+/g, ' ') : '';
   check(orphelin.includes('fait écho à (supprimé)'), `la cible supprimée : « fait écho à (supprimé) » (étape 3)`);
+
+  console.log('le jeu d’essai : le dossier de passation, lu entrée par entrée (PEN-008)');
+  // Une page neuve, le jeu d'essai intact (la précédente a supprimé f2) : Écriture → « Dossier », le fichier lu tel quel.
+  const r8 = await b.newPage({ viewport: { width: 1280, height: 900 } }); r8.on('pageerror', e => errs.push(e.message));
+  await r8.addInitScript(([s, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', s); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essai.site), JSON.stringify(essai.board)]);
+  await r8.goto(BASE + '/index.html#ecriture'); await r8.waitForSelector('[data-act="scrap-dossier"]');
+  const [dl8] = await Promise.all([r8.waitForEvent('download'), r8.click('[data-act="scrap-dossier"]')]);
+  const md8 = read(dl8), texte8 = await md8;
+  const entrees = texte8.split(/\n(?=## \d+\. )/).slice(1).map(x => ({ tete: x.split('\n')[0], corps: x }));
+  const de = debut => entrees.findIndex(x => x.corps.includes(debut));
+  const [i1, i2, i3, i5] = ['La lisière n\'est pas une frontière', 'Le brouillard efface la route', 'Toute lisière est un seuil', 'Les sapins gardent la nuit'].map(de);
+  const tetes = entrees.map(x => x.tete), forme = /^## \d+\. \d{1,2}(er)? \p{L}+ 2026 · Écriture( · (observé|hypothèse|interprétation|inexpliqué))?$/u;
+  check(texte8.startsWith('---\n') && texte8.includes('\nentrees: 6\n') && texte8.includes('\nreferences: 1\n') && texte8.includes('perimetre: "Écriture : fragments"')
+    && texte8.includes('Ne pas traiter une hypothèse comme un fait') && texte8.includes('Qu\'une source documente une entrée ne la prouve pas.'),
+    `${dl8.suggestedFilename()} : l’en-tête YAML (périmètre, 6 entrées, references: 1) et le préambule (une hypothèse n’est pas un fait ; une source qui documente ne prouve pas) (PEN-008, étape 2)`);
+  check(entrees.length === 6 && tetes.every(t => forme.test(t)) && tetes[i2].endsWith('12 août 2026 · Écriture · observé') && tetes[i5].endsWith('16 août 2026 · Écriture · hypothèse') && tetes[i1].endsWith('11 août 2026 · Écriture'),
+    `chaque fragment daté en lettres, avec son espace et son statut : ${tetes.map(t => t.replace(/^## /, '')).join(' | ')} (étape 2)`);
+  check(entrees[i3].corps.includes(`*Liens : dérive de [${i1 + 1}]*`) && entrees[i2].corps.includes('*Documenté par : [S1]*')
+    && texte8.includes('## Références\n\n[S1] Ciaunica, Charlton, Farmer (2020). *Depersonalization and the self*. Consciousness and Cognition. https://doi.org/10.1016/j.concog.2020.102946'),
+    `« Toute lisière est un seuil… » renvoie à [${i1 + 1}] ; « Le brouillard… » porte « Documenté par : [S1] » ; la référence avec son DOI (étape 2)`);
+  await r8.context().close();
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();
