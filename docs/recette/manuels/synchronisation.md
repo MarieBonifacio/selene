@@ -83,14 +83,14 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob
 - **Préconditions** : A1 et A2 sur Chantier, à jour.
 - **Données** : tâche « Appeler le plombier » ; tâche « Poser une étagère ».
-- **Automatisés associés** : `TU-SYN-04`, `TU-SYN-03`
+- **Automatisés associés** : `TU-SYN-04`, `TU-SYN-03`, `TN-sync-deux-appareils`
 - **Source** : [DOC] README, « Comptes et synchronisation » ; [TEST] `TU-SYN-03`, `TU-SYN-04`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Couper le réseau sur A1 et A2. | « Non synchronisé » des deux côtés. |
-| 2 | A1 : supprimer « Appeler le plombier » (laisser passer « Annuler ») et « Poser une étagère ». | Les deux tâches disparaissent de la liste d'A1 ; « Non synchronisé » reste affiché. |
-| 3 | A2 : modifier « Appeler le plombier » (note `urgent, mardi`). | Sur A2, « Appeler le plombier » porte la note `urgent, mardi` ; « Non synchronisé » reste affiché. |
+| 1 | Couper le réseau sur A1 et A2. | Rien ne change à l'écran : l'indicateur ne parle qu'à la première écriture qui ne part pas, même après une relève du serveur (toutes les 30 s). |
+| 2 | A1 : supprimer « Appeler le plombier » (laisser passer « Annuler ») et « Poser une étagère ». | Les deux tâches disparaissent de la liste d'A1 ; « Non synchronisé — enregistré sur cet appareil seulement ». |
+| 3 | A2 : modifier « Appeler le plombier » (note `urgent, mardi`). | Sur A2, « Appeler le plombier » porte la note `urgent, mardi` ; « Non synchronisé — enregistré sur cet appareil seulement ». |
 | 4 | Rétablir le réseau sur A1, attendre, puis sur A2, attendre 30 s ; revenir sur A1. | Sur les deux : « Appeler le plombier » existe avec la note `urgent, mardi` ; « Poser une étagère » est supprimée. |
 
 - **État final attendu** : une tâche supprimée, une conservée modifiée.
@@ -197,7 +197,7 @@ Identifiants retirés : aucun.
   commit de septembre, `npm ci && npm run build:dist`, servir `dist/web`) **connecté au même compte de recette**, pendant que
   la version courante a déjà écrit.
 - **Données** : sur l'ancienne version, capture `vieille version SYN-007`.
-- **Automatisés associés** : `TU-SYN-16`
+- **Automatisés associés** : `TU-SYN-16`, `TN-sync-deux-appareils`
 - **Source** : [DOC] [architecture.md](../../architecture.md#données) ; [TEST] `TU-SYN-16`.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -220,7 +220,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web
 - **Préconditions** : A1 et A2 hors ligne, à jour.
 - **Données** : A1 désigne « Carnet » ; A2 désigne un nouvel espace Notes `Vrac SYN-008`.
-- **Automatisés associés** : `TU-MOD-18`
+- **Automatisés associés** : `TU-MOD-18`, `TN-sync-deux-appareils`
 - **Source** : [DOC] [architecture.md](../../architecture.md#modules) ; [TEST] `TU-MOD-18`.
 
 | Étape | Action précise | Résultat attendu observable |

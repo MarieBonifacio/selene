@@ -1,7 +1,11 @@
 /* Scénario de navigateur : deux appareils du même compte, branchés sur un faux Supabase (interception réseau).
    Vérifie la fusion (B n'a jamais vu ce qu'a écrit A) et qu'une saisie faite juste avant de fermer l'onglet
-   n'est pas perdue : restée sur l'appareil, elle part à la réouverture. Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, check, until } = require('./helpers');
+   n'est pas perdue : restée sur l'appareil, elle part à la réouverture. Puis, sur un second compte rempli du jeu
+   d'essai, deux appareils coupés du réseau qui divergent et se réconcilient (SYN-003, SYN-008), et un appareil qui
+   trouve sur le serveur un format plus récent que le sien (SYN-007). Lancé par tests/browser/run.js. */
+const fs = require('node:fs');
+const path = require('node:path');
+const { engine, BASE, launchOptions, check, until, donnee, ouvrir, entree, storeJSON, synchro } = require('./helpers');
 const rows = new Map();
 const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 async function supabase(route) {
@@ -19,17 +23,24 @@ async function supabase(route) {
     Object.assign(row, req.postDataJSON()); return json(route, 200, [{ user_id: uid }]);
   }
 }
-const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'u1', email: 'a@b.c' } });
+const sessionFor = id => JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id, email: 'a@b.c' } });
+const session = sessionFor('u1');
+const coupes = new Set(); // les appareils dont le réseau est coupé : leurs requêtes au faux serveur échouent
 // Ce que chaque appareil a demandé au faux serveur : affiché si la dernière vérification échoue.
 const log = [];
 const inbox = () => ((rows.get('u1') || {}).site?.modules?.inbox?.entries || []).map(i => i.text);
-async function device(browser, errs, tag) {
-  const ctx = await browser.newContext({ serviceWorkers: 'block' });
-  await ctx.route('https://*.supabase.co/**', r => { const u = new URL(r.request().url()); if (!u.pathname.startsWith('/auth/')) log.push(`${tag} ${r.request().method()} ${(u.searchParams.get('select') || '').slice(0, 20)}`); return supabase(r); });
-  await ctx.addInitScript(s => { if (!localStorage.getItem('selene-auth-session')) { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', 'u1'); } }, session);
+/* `uid` : le compte ; `essai` : un jeu (site, board) posé sur l'appareil avant le premier chargement ; `horloge` : l'horloge
+   de la page installée, pour avancer jusqu'à la relève de 30 s au lieu de l'attendre. */
+async function device(browser, errs, tag, { uid = 'u1', essai = null, horloge = false } = {}) {
+  const ctx = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 1280, height: 900 } });
+  await ctx.route('https://*.supabase.co/**', r => { const u = new URL(r.request().url()); if (coupes.has(tag)) return r.abort('internetdisconnected'); if (!u.pathname.startsWith('/auth/')) log.push(`${tag} ${r.request().method()} ${(u.searchParams.get('select') || '').slice(0, 20)}`); return supabase(r); });
+  await ctx.addInitScript(([s, id]) => { if (!localStorage.getItem('selene-auth-session')) { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', id); } }, [sessionFor(uid), uid]);
+  if (essai) await ctx.addInitScript(([si, bd]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', si); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essai.site), JSON.stringify(essai.board)]);
   const page = await ctx.newPage(); page.on('pageerror', e => errs.push(e.message));
-  await page.goto(BASE + '/index.html'); await page.waitForTimeout(600);
-  return { ctx, page };
+  if (horloge) await page.clock.install();
+  if (uid === 'u1') { await page.goto(BASE + '/index.html'); await page.waitForTimeout(600); } else await ouvrir(page, BASE + '/index.html', entree);
+  const couper = async on => { if (on) coupes.add(tag); else coupes.delete(tag); await ctx.setOffline(on); };
+  return { ctx, page, couper };
 }
 const capture = async (p, text) => { await p.fill('#capIn', text); await p.click('[data-act="cap-add"]'); };
 (async () => {
@@ -57,6 +68,96 @@ const capture = async (p, text) => { await p.fill('#capIn', text); await p.click
     console.log(`    A fermée : ${A.page.isClosed()} ; gamma dans l'IndexedDB de A2 : ${local} ; serveur : ${inbox().join(', ')}`);
     console.log(`    requêtes : ${log.slice(-14).join(' | ')}`);
   }
+
+  console.log('deux appareils hors ligne, puis réconciliés (SYN-003, SYN-008)');
+  // Un second compte : P pose le jeu d'essai sur le serveur, Q s'y branche ensuite et le reçoit.
+  const essai = donnee('jeu-essai.json');
+  const serveur2 = () => (rows.get('u2') || {}).site || {};
+  const P = await device(browser, errs, 'P', { uid: 'u2', essai, horloge: true });
+  await until(() => !!serveur2().modules?.chantier);
+  const Q = await device(browser, errs, 'Q', { uid: 'u2', horloge: true });
+  const site = x => storeJSON(x.page, 'selene-site-v1');
+  const vers = async (x, h, sel) => { await x.page.evaluate(v => { location.hash = v; }, h); await x.page.waitForSelector(sel, { state: 'attached' }); };
+  const nonSynchro = x => x.page.waitForFunction(() => /Non synchronisé/.test((document.querySelector('#saving') || {}).textContent || ''), null, { timeout: 10000 }).then(() => true, () => false);
+  // La relève du serveur, toutes les 30 s : l'horloge de la page avancée d'autant.
+  const releve = x => x.page.clock.fastForward(31000);
+  const taches = async x => ((await site(x)).modules.chantier.entries || []);
+  // `until` des aides n'attend pas une condition asynchrone : celle-ci l'attend, et rend ce qu'elle a vu en dernier.
+  const jusqua = async (cond, ms = 10000) => { for (const end = Date.now() + ms; Date.now() < end; await new Promise(r => setTimeout(r, 100))) if (await cond()) return true; return !!(await cond()); };
+  await vers(Q, 'chantier', 'li.item[data-task="t3"]');
+  for (const x of [P, Q]) await x.couper(true);
+  for (const x of [P, Q]) await releve(x);
+  await P.page.waitForTimeout(300);
+  const dits1 = [await synchro(P.page), await synchro(Q.page)];
+  check(dits1.every(d => !d), `réseau coupé des deux côtés : rien ne s'affiche tant que rien n'est écrit, même après une relève (« ${dits1.join(' » / « ')} ») (SYN-003, étape 1 ; C21)`);
+  await vers(P, 'chantier', 'li.item[data-task="t3"]');
+  for (const t of ['t3', 't2']) {
+    await P.page.$eval(`li.item[data-task="${t}"] [data-act="task-del"]`, x => x.click()); // « Annuler » laissé passer
+    await P.page.waitForFunction(x => !document.querySelector(`li.item[data-task="${x}"]`), t, { timeout: 5000 }).catch(() => {});
+  }
+  const p2 = (await taches(P)).map(e => e.id);
+  check(!p2.includes('t3') && !p2.includes('t2') && !(await P.page.$('li.item[data-task="t3"], li.item[data-task="t2"]')) && await nonSynchro(P),
+    `P : « Appeler le plombier » et « Poser une étagère » quittent la liste ; « ${await synchro(P.page)} » (SYN-003, étape 2)`);
+  await Q.page.$eval('li.item[data-task="t3"] [data-act="task-edit"]', x => x.click()); await Q.page.waitForFunction(() => document.querySelector('#dlg').open);
+  await Q.page.fill('#form [name="note"]', 'urgent, mardi'); await Q.page.click('#form button[value="save"]'); await Q.page.waitForFunction(() => !document.querySelector('#dlg').open);
+  await Q.page.click('li.item[data-task="t3"] [data-act="task-open"]');
+  const noteQ = await Q.page.$eval('li.item[data-task="t3"] .note', x => x.textContent.trim()).catch(() => '');
+  check(noteQ === 'urgent, mardi' && await nonSynchro(Q), `Q : « Appeler le plombier » porte la note « ${noteQ} » ; « ${await synchro(Q.page)} » (SYN-003, étape 3)`);
+  // SYN-008, dans la même coupure : P désigne « Carnet », Q crée « Vrac SYN-008 » et le désigne.
+  const boite = async (x, id) => {
+    await vers(x, 'reglages', `[data-act="notes-inbox"][data-mod="${id}"]`); await x.page.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
+    await x.page.locator(`[data-act="notes-inbox"][data-mod="${id}"]`).check();
+    await x.page.waitForFunction(i => !!(document.querySelector(`[data-act="notes-inbox"][data-mod="${i}"]`) || {}).checked, id);
+  };
+  await boite(P, 'carnet');
+  await vers(Q, 'reglages', '#newModType'); await Q.page.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
+  await Q.page.selectOption('#newModType', 'notes'); await Q.page.fill('#newModName', 'Vrac SYN-008'); await Q.page.click('[data-act="mod-add"]');
+  let vrac = null;
+  for (let i = 0; i < 50 && !vrac; i++) { vrac = (Object.entries((await site(Q)).modules).find(([, m]) => m.label === 'Vrac SYN-008') || [])[0]; if (!vrac) await Q.page.waitForTimeout(100); }
+  await boite(Q, vrac);
+  const boites = async x => Object.entries((await site(x)).modules).filter(([, m]) => m.type === 'notes' && m.config.inbox).map(([k]) => k);
+  const [b1P, b1Q] = [await boites(P), await boites(Q)];
+  check(b1P.join() === 'carnet' && b1Q.join() === vrac && await nonSynchro(P) && await nonSynchro(Q), `hors ligne, chacun sa boîte : P « ${b1P} », Q « ${b1Q} » ; « Non synchronisé » des deux côtés (SYN-008, étape 1)`);
+  // Le réseau rendu à P, relève ; puis à Q, relève ; puis une relève de P, qui reçoit ce que Q a fusionné.
+  await P.couper(false); await releve(P);
+  await until(() => !(serveur2().modules?.chantier?.entries || []).some(e => e.id === 't2'));
+  await Q.couper(false); await releve(Q);
+  await until(() => ((serveur2().modules?.chantier?.entries || []).find(e => e.id === 't3') || {}).note === 'urgent, mardi');
+  await releve(P);
+  await jusqua(async () => ((await taches(P)).find(e => e.id === 't3') || {}).note === 'urgent, mardi');
+  const fin = [];
+  for (const x of [P, Q]) {
+    await vers(x, 'chantier', 'li.item[data-task="t1"]');
+    const t = await taches(x), plombier = t.find(e => e.id === 't3') || {};
+    fin.push(plombier.note === 'urgent, mardi' && !t.some(e => e.id === 't2') && !!(await x.page.$('li.item[data-task="t3"]')) && !(await x.page.$('li.item[data-task="t2"]')));
+  }
+  check(fin.length === 2 && fin.every(Boolean), `réseau rendu, puis relevé : sur les deux, « Appeler le plombier » existe avec « urgent, mardi », « Poser une étagère » est supprimée (SYN-003, étape 4)`);
+  const [b2P, b2Q] = [await boites(P), await boites(Q)];
+  await vers(Q, 'accueil', '#capIn'); await Q.page.fill('#capIn', 'capture SYN-008'); await Q.page.click('[data-act="cap-add"]');
+  const recue = await jusqua(async () => (((await site(Q)).modules[b2Q[0]] || {}).entries || []).some(e => e.text === 'capture SYN-008'));
+  check(b2P.length === 1 && b2P.join() === b2Q.join() && recue, `une seule boîte, la même sur les deux (« ${b2P} » / « ${b2Q} ») ; la capture rapide y va (SYN-008, étape 2)`);
+  await P.ctx.close(); await Q.ctx.close();
+
+  console.log('un format plus récent sur le serveur (SYN-007)');
+  // Une version plus récente a déjà écrit sur ce compte : son document porte un format que celle-ci ne connaît pas.
+  const FORMAT = Number(fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'core', 'domain.js'), 'utf8').match(/export const SCHEMA_VERSION = (\d+);/)[1]);
+  const futur = JSON.parse(JSON.stringify(essai.site));
+  Object.assign(futur, { schemaVersion: FORMAT + 1, updatedAt: Date.now() });
+  futur.modules.inbox.entries.push({ id: 'n-futur', text: 'écrite par une version plus récente', date: '2026-10-07' });
+  rows.set('u3', { user_id: 'u3', site: futur, board: JSON.parse(JSON.stringify(essai.board)) });
+  const avant7 = JSON.stringify(rows.get('u3').site);
+  const V = await device(browser, errs, 'V', { uid: 'u3' });
+  await V.page.waitForFunction(() => /mise à jour sur un autre appareil/.test((document.querySelector('#saving') || {}).textContent || ''), null, { timeout: 10000 }).catch(() => {});
+  const dit7 = await synchro(V.page);
+  check(dit7 === 'Selene a été mise à jour sur un autre appareil : recharge la page pour synchroniser', `l'ancienne version branchée : « ${dit7} » (SYN-007, étape 2)`);
+  await vers(V, 'accueil', '#capIn'); await V.page.fill('#capIn', 'vieille version SYN-007'); await V.page.click('[data-act="cap-add"]');
+  await V.page.waitForTimeout(1500); // le délai d'envoi (900 ms) passé : rien ne doit partir
+  const ici7 = JSON.stringify(await site(V)).includes('vieille version SYN-007');
+  check(ici7 && JSON.stringify(rows.get('u3').site) === avant7 && /mise à jour sur un autre appareil/.test(await synchro(V.page)), 'sa capture reste sur l’appareil ; rien n’est écrit au serveur ; l’indicateur le dit toujours (SYN-007, étape 3)');
+  const apres7 = rows.get('u3').site;
+  check(apres7.schemaVersion === FORMAT + 1 && apres7.modules.inbox.entries.some(e => e.text === 'écrite par une version plus récente') && !JSON.stringify(apres7).includes('vieille version SYN-007'),
+    'le serveur intact : son format, sa note, et pas la capture de l’ancienne version (SYN-007, étape 4)');
+  await V.ctx.close();
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await browser.close();
 })();
