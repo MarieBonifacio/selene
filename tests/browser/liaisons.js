@@ -1,6 +1,6 @@
 /* Scénario de navigateur : liaisons entre fragments (dériver, contredire, résoudre une tension). Lancé par tests/browser/run.js.
    SELENE_SHOTS=dossier y dépose une capture d'écran (téléphone). */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, ouvrir, BASE, launchOptions, fixture, donnee, check } = require('./helpers');
 const SHOTS = process.env.SELENE_SHOTS;
 const demo = JSON.parse(fixture());
 demo.modules.ecriture.scraps = [
@@ -71,6 +71,21 @@ demo.modules.ecriture.scraps = [
   check(md.includes('contredit') && md.includes('Le soi est d’abord symbolique') && md.includes('Le soi comme effet de réseau'), 'dossier d’une tension : les deux entrées et leur voisinage');
   const wide = await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   check(!wide, 'aucun débordement horizontal sur téléphone');
+
+  console.log('le jeu d’essai : ses liens et sa tension (PEN-003, PEN-004)');
+  const essai = donnee('jeu-essai.json');
+  const q = await b.newPage({ viewport: { width: 1280, height: 900 } }); q.on('pageerror', e => errs.push(e.message));
+  await q.addInitScript(([s, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', s); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essai.site), JSON.stringify(essai.board)]);
+  await ouvrir(q, BASE + '/index.html#ecriture', () => !!document.querySelector('li[data-id="f1"]'));
+  const f1 = (await q.textContent('li[data-id="f1"]')).replace(/\s+/g, ' ');
+  check(f1.includes("a donné « Toute lisière est un seuil que l'on traverse sans le voir. »") && f1.includes('contredit par « La lisière est au contraire une frontière nette, tracée par … »'),
+    '« La lisière n’est pas une frontière… » montre ce qui en dérive et qui la contredit (PEN-003, étape 4)');
+  await q.evaluate(() => { location.hash = 'bilan'; }); await q.waitForSelector('[data-act="tension-resolve"]');
+  // La tension du jeu date du 15 août 2026 : son âge, en jours, se compte d'ici (heure de midi, comme l'app).
+  const age = await q.evaluate(() => { const d = new Date(), j = new Date(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T12:00`); return Math.round((j - new Date('2026-08-15T12:00')) / 86400000); });
+  const bilan = (await q.textContent('#main')).replace(/\s+/g, ' ');
+  check(bilan.includes("« La lisière est au contraire une frontière nette, tracée par … » contredit « La lisière n'est pas une frontière, c'est un lieu où l'on hé… »") && bilan.includes(`ouverte il y a ${age} j`),
+    `le Bilan : la tension du jeu, « ouverte il y a ${age} j » (PEN-004, étape 1)`);
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

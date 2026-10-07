@@ -21,6 +21,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| A39 : `tests/browser/dehors.js` instable sous Firefox (l'élément du flux Atom pas venu), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A39](perimetre.md#anomalies-et-observations) |
 | ~~A37 : un rendu de fond faisait perdre le focus clavier hors des champs (synchro, autre onglet, fin d'un envoi)~~ (fait le 7 octobre 2026, PR #133) | une session | P2 | — | [A37](perimetre.md#anomalies-et-observations) |
 | A36 : `tests/browser/veille.js` instable sous Firefox (« une veille en double : dit »), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A36](perimetre.md#anomalies-et-observations) |
 | ~~A35 : `tests/browser/dehors-croise.js` instable sous WebKit (un rechargement pendant une reprise du branchement)~~ (fait le 7 octobre 2026, PR #132) | une session | P3 | — | [A35](perimetre.md#anomalies-et-observations) |
@@ -499,7 +500,11 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   MOD-001) : 40 et 152 ; C13 (EXT-002 attendait une adresse que l'aperçu n'affiche pas). Puis neuf dont il ne restait
   qu'une étape, souvent la dernière (NAV-007, CPT-002, MOD-005, EXT-006, MOD-009, MOD-007, TRV-006, DON-003, MOD-002) :
   49 et 143. Trois se vérifient désormais sur le jeu d'essai du cahier lui-même (`donnee()` dans `helpers.js`) ; chaque
-  contrôle ajouté échoue sous un mutant de l'app ; C14 (MOD-007 attendait « Yoga » là où l'app écrit « yoga »).
+  contrôle ajouté échoue sous un mutant de l'app ; C14 (MOD-007 attendait « Yoga » là où l'app écrit « yoga »). En
+  chemin, A37 : un rendu de fond faisait perdre le focus clavier, corrigé. Puis huit (PEN-003, PEN-004, PEN-007, NAV-004,
+  RLM-004, EXT-001, CPT-001, PEN-013) : 57 et 135. NAV-004, PEN-003 et PEN-004 se vérifient sur le jeu d'essai ; la réponse
+  de Crossref, retenue, laisse lire « Recherche… » ; le fichier de la planche s'ouvre hors ligne. Neuf mutants, neuf
+  contrôles qui tombent.
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`

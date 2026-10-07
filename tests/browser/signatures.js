@@ -39,6 +39,8 @@ demo.modules.inbox.entries = [
   ok((await data(d)).modules.ecriture.scraps.find(x => x.id === 'a').ep === 'obs' && (await d.textContent('#sheet')).includes('hypothèse → observé'), 'changer le statut depuis la fiche : gardé et daté, la fiche se redessine');
   await d.click('#sheet a[href="#ecriture/a"]'); await d.waitForTimeout(300);
   ok(!(await d.isVisible('#sheet')) && (await d.evaluate(() => location.hash)) === '#ecriture/a', '« Voir dans… » ferme la fiche et mène à l’entrée');
+  await d.waitForFunction(() => !!document.querySelector('#main [data-id="a"].flash'), null, { timeout: 5000 }).catch(() => {});
+  ok(await d.$eval('#main [data-id="a"]', el => el.classList.contains('flash') && el.getBoundingClientRect().top >= 0 && el.getBoundingClientRect().bottom <= innerHeight), 'et le fragment y est surligné, à l’écran (PEN-007, étape 3)');
 
   console.log('le Halo');
   const h = await open({ viewport: { width: 1280, height: 800 } }, true);

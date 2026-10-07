@@ -1,5 +1,5 @@
 /* Scénario de navigateur : recherche-minuteur. Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, ouvrir, BASE, launchOptions, fixture, donnee, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.kundalini.config.start = '2026-01-05';
 demo.modules.ecriture.scraps = [{ id: 'f1', text: 'Une phrase sur l’été dissocié', date: '2026-09-01' }];
@@ -58,6 +58,43 @@ demo.modules.chantier.entries = [{ id: 't1', title: 'Poser le velux', room: 'Cha
   ok((await p.textContent('#toast')) === `Ajouté à ${(await data()).modules.budget.label}. L'argent, lui, était déjà parti.`, '« Ajouté à Budget. L’argent, lui, était déjà parti. »');
   await go('budget');
   ok(/Poser le velux/.test(await main()) && /250,00\s€/.test(await main()), 'le Budget du mois montre la dépense');
+  console.log('le jeu d’essai : chercher (NAV-004)');
+  const essai = donnee('jeu-essai.json');
+  // Les résultats, groupés par espace : « Espace n » et le texte de chaque entrée.
+  const groupes = q => q.evaluate(() => JSON.stringify([...document.querySelectorAll('#main p.search-grp')].map(g => [g.textContent.replace(/\s+/g, ' ').trim(),
+    [...g.nextElementSibling.querySelectorAll('li.item')].map(li => (li.querySelector('div') || li).textContent.replace(/\s+/g, ' ').trim())])));
+  const LISIERE = JSON.stringify([['Boîte 1', ['Écriture : la lisière comme seuil']], ['Écriture 3', ['La lisière est au contraire une frontière nette, tracée par la coupe.',
+    "Toute lisière est un seuil que l'on traverse sans le voir.", "La lisière n'est pas une frontière, c'est un lieu où l'on hésite."]], ['Motifs 1', ['lisière']]]);
+  const essaiPage = async opts => {
+    const q = await (await b.newContext(opts)).newPage(); q.on('pageerror', e => errs.push(e.message));
+    await q.addInitScript(([st, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', st); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essai.site), JSON.stringify(essai.board)]);
+    await ouvrir(q, BASE + '/index.html', () => !!document.querySelector('#nav a[href="#recherche"]'));
+    return q;
+  };
+  // La recherche se redessine à chaque frappe, sans délai (événement input, render() synchrone) : la saisie rendue, l'écran est à jour.
+  const chercher = async (q, t, tape = false) => {
+    if (tape) await q.keyboard.type(t); else await q.fill('#searchIn', t);
+    await q.waitForFunction(v => document.querySelector('#searchIn').value === v, t, { timeout: 5000 }).catch(() => {});
+  };
+  const q = await essaiPage({ viewport: { width: 1280, height: 900 } });
+  await q.keyboard.press('/'); await q.waitForFunction(() => document.activeElement && document.activeElement.id === 'searchIn', null, { timeout: 5000 }).catch(() => {});
+  ok((await q.evaluate(() => location.hash)) === '#recherche' && (await q.evaluate(() => document.activeElement.id)) === 'searchIn' && (await q.title()) === 'Chercher — Selene', '« / » : la recherche, le curseur dans le champ, l’onglet « Chercher — Selene »');
+  await chercher(q, 'LISIERE', true);
+  let g = await groupes(q), marks = await q.$$eval('#main mark', ms => ms.map(m => m.textContent));
+  ok(g === LISIERE, `« LISIERE » : Écriture, la Boîte et Motifs (${g})`);
+  ok(marks.length === 5 && marks.every(m => m === 'lisière') && (await q.evaluate(() => document.activeElement.id)) === 'searchIn' && (await q.inputValue('#searchIn')) === 'LISIERE', '« lisière » surligné dans chaque extrait, la frappe n’a jamais perdu le champ');
+  await chercher(q, 'lisière seuil'); g = await groupes(q);
+  ok(g === JSON.stringify([['Boîte 1', ['Écriture : la lisière comme seuil']], ['Écriture 1', ["Toute lisière est un seuil que l'on traverse sans le voir."]]]), `« lisière seuil » : les deux entrées qui ont les deux mots (${g})`);
+  await chercher(q, 'lisiere zzz');
+  ok((await q.textContent('#main')).includes("Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire.") && (await groupes(q)) === '[]', '« lisiere zzz » : « Rien. Soit ça n’existe pas, soit tu l’as pensé sans l’écrire. »');
+  await chercher(q, 'brouillard'); g = JSON.parse(await groupes(q));
+  ok(g.length === 2 && g[0][0] === 'Écriture 1' && g[0][1][0].startsWith("Le brouillard efface la route avant d'effacer la forêt.") && g[1][0] === 'Motifs 1' && g[1][1][0] === 'brume · brouillard',
+    `« brouillard » : le fragment, et le motif « brume » dont c’est une variante (${JSON.stringify(g)})`);
+  const t = await essaiPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  await t.tap('#bar a[href="#recherche"]'); await t.waitForSelector('#searchIn');
+  await t.tap('#searchIn'); await chercher(t, 'LISIERE', true); g = await groupes(t);
+  ok(g === LISIERE, 'sur téléphone, « Chercher » dans la barre basse : les mêmes résultats');
+
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

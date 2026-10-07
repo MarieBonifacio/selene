@@ -68,6 +68,22 @@ const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_
     check(goalForm.includes('10 g d\'alcool pur') && goalForm.includes('plusieurs verres standard'), 'verre standard expliqué, distinct du verre servi');
     await p.selectOption('#form [name="mode"]', 'reduire'); await fill({ limit: '2' }); await submit();
     check((await main()).includes('Alcool · au plus 2 verres standard par jour'), 'objectif choisi, affiché tel quel');
+    // RLM-004, étapes 2 et 3 : un bloc replié sous les actions ; déplié, les trois paragraphes de l'étape 1 ; le lien, à part.
+    const bloc = '#main details.rlm-info';
+    check(!(await p.$eval(bloc, d => d.open)) && (await p.textContent(`${bloc} > summary`)).trim() === 'Alcool : sevrage, urgences, aide', 'sous les actions, un bloc replié « Alcool : sevrage, urgences, aide »');
+    await p.click(`${bloc} > summary`); await p.waitForFunction(sel => document.querySelector(sel).open, bloc, { timeout: 5000 }).catch(() => {});
+    const paras = await p.$$eval(`${bloc} p`, ps => ps.map(x => x.textContent.replace(/\s+/g, ' ').trim()));
+    check(paras.length === 3 && paras[0].startsWith("En cas de dépendance à l'alcool") && paras[0].includes('convulsions ou un delirium tremens. Prépare ce changement avec un médecin ou un CSAPA')
+      && paras[1].includes('appelle le 15 (Samu) ou le 112') && paras[1].includes('le 114') && paras[2] === 'Alcool Info Service : 0 980 980 930, de 8 h à 2 h, 7 jours sur 7, anonyme et non surtaxé. alcool-info-service.fr',
+      'déplié : le sevrage, les urgences et Alcool Info Service, comme avant l’objectif (RLM-004, étape 3)');
+    await ctx.route('https://www.alcool-info-service.fr/**', r => r.fulfill({ contentType: 'text/html', body: '<title>Alcool Info Service</title>' }));
+    const ici = await p.evaluate(() => location.hash);
+    const [onglet] = await Promise.all([ctx.waitForEvent('page', { timeout: 10000 }).catch(() => null), p.click(`${bloc} a`)]);
+    if (onglet) await onglet.waitForLoadState().catch(() => {});
+    const parti = onglet ? onglet.url() : `aucun onglet ; la page est sur ${p.url()}`;
+    check(!!onglet && onglet.url() === 'https://www.alcool-info-service.fr/' && (await p.evaluate(() => location.hash).catch(() => '')) === ici, `« alcool-info-service.fr » s’ouvre dans un nouvel onglet, Selene reste où elle était (${parti})`);
+    check(await p.$eval(`${bloc} a`, a => a.target === '_blank' && /noopener/.test(a.rel)), 'sans donner la main à l’onglet ouvert (noopener)');
+    if (onglet) await onglet.close();
     check((await main()).includes('pas encore confirmée'), 'aujourd’hui : inconnue, pas zéro');
     for (const name of ['J\'ai une envie', 'Noter une consommation / durée', 'J\'ai réalisé une action', 'Faire mon point du jour'])
       check(await p.getByRole('button', { name, exact: true }).count() === 1, `action principale : ${name}`);

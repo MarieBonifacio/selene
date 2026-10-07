@@ -56,6 +56,16 @@ demo.config.modules.push({ id: 'motifs', on: true }, { id: 'sources', on: true }
   const [dl] = await Promise.all([p.waitForEvent('download'), p.click('[data-act="planche-dl"]')]);
   const file = fs.readFileSync(await dl.path(), 'utf8');
   ok(dl.suggestedFilename() === `planche-${k}.html` && file.startsWith('<!doctype html>') && file.includes(`Planche ${k}`) && file.includes('@page') && !/<script/i.test(file), 'le fichier téléchargé est une planche autonome, sans script');
+  { // PEN-013, étape 3 : le fichier ouvert hors ligne. Son HTML chargé tel quel dans une page sans réseau (setContent) :
+    // WebKit refuse d'ouvrir une adresse file:// dans un contexte hors ligne (« internal error »), les trois moteurs ceci.
+    const hors = await b.newContext({ offline: true }), f = await hors.newPage(), demandes = [];
+    f.on('request', r => { if (!/^(about|data):/.test(r.url())) demandes.push(r.url()); });
+    await f.setContent(file, { waitUntil: 'load' });
+    const vu = (await f.textContent('body')).replace(/\s+/g, ' ');
+    ok(vu.includes(`Planche ${k}`) && vu.includes('Lunaison du') && !demandes.length && await f.evaluate(() => !document.querySelector('script') && document.body.getBoundingClientRect().height > 200),
+      'ouvert hors ligne, le fichier montre la planche seule, sans rien demander au réseau (PEN-013, étape 3)' + (demandes.length ? ` (${demandes.join(', ')})` : ''));
+    await hors.close();
+  }
   await p.emulateMedia({ media: 'print' });
   ok(!(await p.isVisible('.pl-tools')) && !(await p.isVisible('.app > .side')), 'à l’impression : ni barre latérale ni boutons');
   if (ENGINE === 'chromium') { // page.pdf n'existe que dans Chromium : WebKit s'arrête à l'aperçu d'impression ci-dessus

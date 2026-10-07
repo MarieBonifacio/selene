@@ -15,7 +15,8 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   const open = async (opts = {}, path = '/index.html#sources', microlink = 'ok', hostedMode = false) => {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, ...opts }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
     p.calls = [];
-    await ctx.route('https://api.crossref.org/**', r => { p.calls.push(r.request().url()); r.fulfill({ contentType: 'application/json', body: JSON.stringify(CROSSREF) }); });
+    // `p.retenue` : une promesse que la réponse de Crossref attend, pour lire ce que l'écran dit pendant qu'elle tarde.
+    await ctx.route('https://api.crossref.org/**', async r => { p.calls.push(r.request().url()); if (p.retenue) await p.retenue; r.fulfill({ contentType: 'application/json', body: JSON.stringify(CROSSREF) }); });
     await ctx.route('https://api.microlink.io/**', r => {
       p.calls.push(r.request().url());
       if (microlink === 'quota') return r.fulfill({ status: 429, contentType: 'application/json', body: '{"status":"fail"}' });
@@ -30,7 +31,11 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
 
   console.log('un DOI, complété par Crossref');
   const p = await open();
-  await search(p, 'https://doi.org/10.1016/J.CONCOG.2020.102946');
+  let lacher; p.retenue = new Promise(r => { lacher = r; });
+  await p.fill('#srcIn', 'https://doi.org/10.1016/J.CONCOG.2020.102946'); await p.click('[data-act="src-fetch"]');
+  const cherche = await p.waitForFunction(() => ((document.querySelector('#main p[data-status]') || {}).textContent || '') === 'Recherche…', null, { timeout: 5000 }).then(() => true, () => false);
+  ok(cherche && !(await p.$('.src-prev')), '« Recherche… », le temps que Crossref réponde (EXT-001, étape 1)');
+  lacher(); p.retenue = null; await p.waitForSelector('.src-prev', { timeout: 10000 }).catch(() => {});
   let prev = (await p.textContent('.src-prev')).replace(/\s+/g, ' ');
   ok(p.calls.length === 1 && p.calls[0].includes('api.crossref.org/works/10.1016'), 'un seul appel, à Crossref, pour le DOI reconnu dans l’adresse');
   ok(prev.includes('Depersonalization and the self') && prev.includes('Anna Ciaunica, B C, D E et al.') && prev.includes('Consciousness and Cognition') && prev.includes('2020'), 'aperçu : titre, auteurs, revue, date');
