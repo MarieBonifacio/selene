@@ -1101,9 +1101,9 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/sync-deux-appareils.js`](../../tests/browser/sync-deux-appareils.js) · **mode** H · **écran** —
 - **Conditions** : Deux contextes de navigateur, un faux Supabase partagé.
-- **Vérifie** : le premier appareil crée la ligne ; fusion : les deux captures sur le serveur ; B affiche ce qu'a écrit A ; une saisie faite juste avant la fermeture part à la réouverture.
-- **Limites** : Un seul faux serveur ; pas de vrai réseau ni de latence réelle.
-- **Cas manuels** : [SYN-001](manuels/synchronisation.md#syn-001), [SYN-002](manuels/synchronisation.md#syn-002), [SYN-005](manuels/synchronisation.md#syn-005)
+- **Vérifie** : le premier appareil crée la ligne ; fusion : les deux captures sur le serveur ; B affiche ce qu'a écrit A ; une saisie faite juste avant la fermeture part à la réouverture ; sur un second compte rempli du jeu d'essai, deux appareils coupés du réseau (requêtes refusées, `setOffline`), l'horloge avancée jusqu'aux relèves de 30 s : l'indicateur muet tant que rien n'est écrit (C21), une suppression d'un côté et une modification de l'autre (la tâche modifiée gardée, l'autre supprimée, sur les deux), deux boîtes de réception désignées (une seule après la fusion, la même, où va la capture) (SYN-003, SYN-008) ; un format plus récent sur le serveur : le message « recharge la page », la capture gardée sur l'appareil, rien d'écrit, le serveur intact (SYN-007). Mutation vérifiée : la suppression qui l'emporte sur la modification, la boîte unique non rétablie, le refus du format plus récent retiré, une relève ratée qui parlerait, et ces contrôles échouent.
+- **Limites** : Un seul faux serveur ; pas de vrai réseau ni de latence réelle ; la version plus récente de SYN-007 n'est qu'un document posé sur le faux serveur.
+- **Cas manuels** : [SYN-001](manuels/synchronisation.md#syn-001), [SYN-002](manuels/synchronisation.md#syn-002), [SYN-003](manuels/synchronisation.md#syn-003), [SYN-005](manuels/synchronisation.md#syn-005), [SYN-007](manuels/synchronisation.md#syn-007), [SYN-008](manuels/synchronisation.md#syn-008)
 
 <a id="tn-hors-ligne"></a>
 #### `TN-hors-ligne` — Service worker

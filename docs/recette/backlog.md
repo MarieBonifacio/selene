@@ -539,7 +539,9 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   86 et 106 ; C19 (RLM-007 attendait une colonne « Les 7 d'avant » que l'app ne montre pas sans semaine précédente).
   Sept mutants, sept contrôles qui tombent. Puis RLM-019 et RLM-026 : 88 et 104 ; C20 (connecté, la suppression se dit
   « sur tous tes appareils »). Neuf mutants, huit contrôles qui tombent ; le neuvième, la pierre tombale retirée, ne
-  change rien sur ce chemin (l'appareil 2 n'a rien modifié entre-temps) : `TU-SYN-05` et `TU-SYN-22` la prouvent.
+  change rien sur ce chemin (l'appareil 2 n'a rien modifié entre-temps) : `TU-SYN-05` et `TU-SYN-22` la prouvent. Puis
+  SYN-003, SYN-007 et SYN-008, deux appareils coupés du réseau et l'horloge avancée jusqu'aux relèves : 91 et 101 ; C21
+  (couper le réseau ne fait rien dire à l'indicateur). Quatre mutants, quatre contrôles qui tombent.
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`
