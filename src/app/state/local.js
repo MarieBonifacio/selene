@@ -108,10 +108,20 @@ export function absorbDeviceTrackers(siteDoc) {
 export function localSwitch(uidNow) {
   const owner = local.data.owner;
   if (owner === uidNow) return;
-  if (!owner) { local.data.owner = uidNow; local.save(); return; } // sans propriétaire : adopté, jamais vidé
-  if (localIds().length) { try { platform.storage.set(stashKey(owner), JSON.stringify(local.data)); } catch {} }
   let back = null;
-  try { const raw = platform.storage.get(stashKey(uidNow)); back = raw ? JSON.parse(raw) : null; platform.storage.remove(stashKey(uidNow)); } catch {}
+  try { const raw = platform.storage.get(stashKey(uidNow)); back = raw ? JSON.parse(raw) : null; } catch {}
+  /* Sans propriétaire (un appareil sans compte, ou vidé par la déconnexion d'un autre compte) : adopté, jamais vidé ; et ce
+     que ce compte avait mis de côté ici le rejoint. Avant A48, la déconnexion d'un autre compte laissait un document vide
+     et sans propriétaire : le compte qui revenait l'adoptait tel quel, et ses suivis restaient de côté, invisibles. Un
+     suivi présent des deux côtés reste de côté : rien n'est écrasé. */
+  if (!owner) {
+    const rest = {};
+    for (const [id, m] of Object.entries((back && back.modules) || {})) { if (Object.hasOwn(local.data.modules, id)) rest[id] = m; else local.data.modules[id] = m; }
+    try { if (Object.keys(rest).length) platform.storage.set(stashKey(uidNow), JSON.stringify({ ...back, modules: rest })); else platform.storage.remove(stashKey(uidNow)); } catch {}
+    local.data.owner = uidNow; normalizeLocal(local.data); local.save(); return;
+  }
+  if (localIds().length) { try { platform.storage.set(stashKey(owner), JSON.stringify(local.data)); } catch {} }
+  try { platform.storage.remove(stashKey(uidNow)); } catch {}
   local.reset(back || { updatedAt: 0, owner: uidNow, modules: {} });
   local.data.owner = uidNow; local.save();
 }
