@@ -2,7 +2,8 @@
    connecté sur un faux Supabase, le service worker permis : une première visite, puis le réseau coupé et la page
    rechargée. L'app doit s'ouvrir depuis le cache, avec ses données ; une capture, un fragment et une dépense faits hors
    ligne restent sur l'appareil, dits « Non synchronisé », et partent au serveur au retour du réseau, puis à un second
-   appareil (SYN-004). La coupure de Playwright (setOffline) n'atteint pas
+   appareil (SYN-004). Avant la coupure, la politique et la page de présentation ouvertes : hors ligne, l'adresse de l'app
+   rouvre l'app, et la politique n'est pas servie (SYN-010). La coupure de Playwright (setOffline) n'atteint pas
    les requêtes du service worker : le serveur de fichiers est aussi rendu injoignable par une route, que Chromium
    applique au service worker ; sous Firefox, le rechargement hors ligne n'est pas éprouvé, et le scénario le dit.
    Sous WebKit, rien n'est joué : une page tenue par le service worker y échappe aux routes de Playwright, ses requêtes
@@ -23,6 +24,8 @@ async function supabase(route) {
   const req = route.request(), u = new URL(req.url()), m = req.method();
   if (u.pathname.startsWith('/auth/')) return json(route, 200, {});
   if (u.pathname === '/rest/v1/activite') return route.fulfill({ status: 201, body: '' });
+  // Une autre table (la mesure de la page de présentation, SYN-010) : comme PostgREST, une écriture acceptée, une lecture vide.
+  if (u.pathname !== '/rest/v1/app_state') return m === 'GET' ? json(route, 200, []) : route.fulfill({ status: 201, body: '' });
   const uid = (u.searchParams.get('user_id') || '').replace('eq.', ''), row = rows.get(uid);
   const stamp = (u.searchParams.get('select') || '').match(/^u:(\w+)->>updatedAt$/);
   if (m === 'GET' && stamp) return json(route, 200, row ? [{ u: row[stamp[1]] && row[stamp[1]].updatedAt != null ? String(row[stamp[1]].updatedAt) : null }] : []);
@@ -85,6 +88,13 @@ const troisSaisies = async p => {
     if (!pret) { console.log('  – pas de service worker dans ce moteur : rien à vérifier ici'); check(!errs.length, 'aucune erreur JavaScript'); await b.close(); return; }
     await ouvrir(p, null, entree); // rechargée : la page est désormais tenue par le service worker
     check(await p.evaluate(() => !!navigator.serviceWorker.controller), 'le service worker tient la page');
+    // SYN-010, étape 1 : en ligne, après l'app, la politique puis la page de présentation.
+    await p.goto(BASE + '/confidentialite.html'); await p.waitForSelector('h1');
+    const politique = (await p.textContent('h1')).trim();
+    await p.goto(BASE + '/essai.html?src=recette'); await p.waitForSelector('#attente');
+    check(!!politique && await p.isVisible('#attente'), `en ligne : l’app, la politique (« ${politique} »), puis la page de présentation s’affichent (SYN-010, étape 1)`);
+    // Ailleurs que sous Chromium, la coupure n'atteint pas le service worker : retour à l'app en ligne.
+    if (ENGINE !== 'chromium') await ouvrir(p, BASE + '/index.html', entree);
 
     console.log('réseau coupé, page rechargée');
     coupe = true; await ctx.setOffline(true); note('réseau coupé');
@@ -93,11 +103,18 @@ const troisSaisies = async p => {
     const fichiers = r => r.abort('internetdisconnected');
     await ctx.route(u => u.href.startsWith(BASE), fichiers);
     if (ENGINE === 'chromium') {
-      await ouvrir(p, null, entree);
-      const ici = await p.evaluate(() => document.querySelector('#main').textContent);
-      check(ici.length > 0 && !(await p.$('#authForm')), 'hors ligne, rechargée : l’app s’ouvre depuis le cache, pas l’écran d’entrée');
+      // SYN-010, étape 2 : l'adresse de l'app, ouverte hors ligne après les deux autres pages.
+      await ouvrir(p, BASE + '/index.html', entree).catch(() => {}); // une autre page ouverte à sa place : le contrôle le dit
+      const ici = await p.evaluate(() => (document.querySelector('#main') || {}).textContent || ''), titre = await p.title();
+      check(ici.length > 0 && !(await p.$('#authForm')) && !(await p.$('#attente')) && /Selene/.test(titre), `hors ligne, l’adresse de l’app : l’app s’ouvre depuis le cache (« ${titre} »), ni la politique, ni la page de présentation, ni l’écran d’entrée (SYN-010, étape 2)`);
       await p.evaluate(() => { location.hash = 'inbox'; }); await p.waitForFunction(() => location.hash === '#inbox');
       check((await p.textContent('#main')).includes('en ligne BL-15'), 'avec ses données, relues sur l’appareil');
+      // Étape 3 : la politique n'est pas gardée hors ligne ; l'erreur réseau du navigateur est le comportement voulu.
+      // Dans un autre onglet : la page d'erreur qui suit interromprait la navigation suivante de celui-ci.
+      const onglet = await ctx.newPage();
+      const refus = await onglet.goto(BASE + '/confidentialite.html').then(() => '', e => e.message.split('\n')[0]);
+      check(/net::ERR_/.test(refus), `hors ligne, confidentialite.html : une erreur réseau du navigateur (« ${refus} »), la page n’étant pas gardée (étape 3)`);
+      await onglet.close();
     } else console.log(`  – ${ENGINE} : le service worker échappe à la coupure simulée ; le rechargement hors ligne n'est éprouvé que sous Chromium`);
     await p.evaluate(() => { location.hash = 'accueil'; }); await p.waitForSelector('#capIn');
     const avant = appels;
