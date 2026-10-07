@@ -535,7 +535,9 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   Puis RLM-025 et RLM-015, sur le même chemin : 84 et 108. RLM-015 fige l'horloge (le 7 octobre à 20 h à Paris, déjà le
   8 à Auckland) : les deux fuseaux ne tombent pas le même jour, quel que soit l'horaire de la CI. En chemin, deux
   contrôles qui passaient à vide : le suivi de ce jeu vit dans le site, pas dans le document local ; une bulle
-  « Objectif enregistré » restée de la configuration. Six mutants, six contrôles qui tombent.
+  « Objectif enregistré » restée de la configuration. Six mutants, six contrôles qui tombent. Puis RLM-011 et RLM-007 :
+  86 et 106 ; C19 (RLM-007 attendait une colonne « Les 7 d'avant » que l'app ne montre pas sans semaine précédente).
+  Sept mutants, sept contrôles qui tombent.
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`
