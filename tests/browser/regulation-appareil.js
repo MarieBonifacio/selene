@@ -7,6 +7,7 @@
    - se déconnecter avec un suivi gardé ici : la garde propose l'export ou l'effacement ; effacer vide l'appareil et retire
      aussi le talon du compte.
    Lancé par tests/browser/run.js. */
+const path = require('node:path');
 const { engine, BASE, launchOptions, check, storeJSON, ouvrir, entree } = require('./helpers');
 const rows = new Map();
 const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
@@ -110,6 +111,54 @@ async function device(browser, errs, personnel = true, id = 'u1') {
     await p.waitForSelector('#authForm');
     check((await storeJSON(p, 'selene-local-v1').catch(() => null))?.modules?.['reprendre-la-main'] == null, 'déconnectée : plus rien du suivi sur l’appareil');
     check(!!JSON.parse(server()).modules && JSON.parse(server()).modules['reprendre-la-main'] === undefined && !server().includes('Carnet du soir'), 'effacé : le nom du suivi a aussi quitté le compte (plus de talon)');
+
+    console.log('chemin S : « Carnet du soir » importé (RLM-006, RLM-013)');
+    // Un navigateur sans compte, le jeu rlm-en-cours.json importé : un suivi d'alcool commencé le 1er septembre 2026.
+    const cs = await browser.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
+    const S = await cs.newPage(); S.on('pageerror', e => errs.push(e.message));
+    await ouvrir(S, BASE + '/index.html#sans-compte', entree);
+    const vers = async (h, sel) => { await S.evaluate(x => { location.hash = x; }, h); await S.waitForSelector(sel, { state: 'attached' }); };
+    const bulleS = t => S.waitForFunction(x => ((document.querySelector('#toast') || {}).textContent || '').includes(x), t, { timeout: 5000 }).then(() => true, () => false);
+    await vers('reglages', 'input[data-act="imp"]');
+    await S.setInputFiles('input[data-act="imp"]', path.join(__dirname, '..', '..', 'docs', 'recette', 'donnees', 'rlm-en-cours.json'));
+    await S.waitForSelector('#cdlg[open]', { timeout: 5000 }).catch(() => {}); if (await S.$('#cdlg[open]')) await S.click('#cdlg button[value="ok"]');
+    await bulleS('Sauvegarde importée.');
+    const cid = await S.evaluate(() => { const a = [...document.querySelectorAll('#nav a')].find(x => x.textContent.includes('Carnet du soir')); return a ? a.getAttribute('href').slice(1) : ''; });
+    await vers(cid, '[data-act="rlm-goal"]');
+    check(!(await S.$('[data-act="rlm-setup"]')) && !(await S.textContent('#main')).includes('Commencer : choisir ce que je veux suivre'), 'le suivi commencé n’offre plus « Commencer : choisir ce que je veux suivre » (RLM-006, étape 3)');
+    await S.click('[data-act="rlm-goal"]'); await S.waitForFunction(() => document.querySelector('#dlg').open);
+    const champs = await S.$$eval('#form label', ls => ls.map(l => (l.firstChild && l.firstChild.textContent || l.textContent).replace(/\s+/g, ' ').trim()));
+    const sujet = !!(await S.$('#form [name="subject"]'));
+    check(champs.some(x => x.startsWith('Intention')) && champs.some(x => x.startsWith('Limite quotidienne pour réduire (verres standard)')) && champs.some(x => x.startsWith('À partir du')) && !sujet,
+      `« Faire évoluer mon objectif » : Intention, Limite quotidienne pour réduire (verres standard), À partir du ; aucun champ de sujet (${champs.join(' | ').slice(0, 160)}) (RLM-006, étape 1)`);
+    await S.click('#form button[value="cancel"]'); await S.waitForFunction(() => !document.querySelector('#dlg').open);
+    await vers('reglages', `#mreg-${cid}`); await S.evaluate(x => { document.querySelector(`#mreg-${x}`).open = true; }, cid);
+    const reglage = (await S.textContent(`#mreg-${cid}`)).replace(/\s+/g, ' ');
+    check(reglage.includes('Appuis et récompenses') && reglage.includes('Ouvrir le suivi') && !(await S.$(`#mreg-${cid} [name="subject"], #mreg-${cid} [data-set-mod="${cid}.subject"], #mreg-${cid} [data-set-mod="${cid}.unit"]`)),
+      'ses réglages : « Appuis et récompenses », « Ouvrir le suivi » ; aucun réglage de sujet ni d’unité (RLM-006, étape 2)');
+
+    const ligne = async id => (await S.$eval(`#main li.item[data-id="${id}"]`, l => l.textContent.replace(/\s+/g, ' ').trim()).catch(() => ''));
+    const bulle2 = async () => (await S.textContent('#toast')).replace(/\s+/g, ' ').trim();
+    const viderBulle = () => S.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+    await vers(cid, '#main li.item[data-id="u2"]');
+    await viderBulle(); await S.$eval('#main li.item[data-id="u2"] [data-act="rlm-del"]', x => x.click()); // « suppr. » : caché au repos sur un écran tactile
+    await bulleS('Supprimé');
+    const dit1 = await bulle2(), annulable = !!(await S.$('#toast [data-act="undo"]')), jour10 = await ligne('day-2026-09-10');
+    check(dit1.startsWith('Supprimé : 1 verre standard le 10 septembre 2026. Cette journée est à reconfirmer.') && annulable && jour10.includes('Confirmation à refaire : la journée a changé depuis'),
+      `« suppr. » sur 1 verre standard du 10 : « ${dit1.slice(0, 90)} », avec « Annuler » ; le 10 : « Confirmation à refaire… » (RLM-013, étape 1)`);
+    await S.click('#toast [data-act="undo"]'); await bulleS('Rétabli');
+    await S.waitForSelector('#main li.item[data-id="u2"]', { timeout: 5000 }).catch(() => {});
+    check((await bulle2()).startsWith('Rétabli. Rien ne s\'est passé.') && !!(await ligne('u2')) && (await ligne('day-2026-09-10')).includes('Journée confirmée'), '« Annuler » : « Rétabli. Rien ne s’est passé. », la saisie revient, le 10 redevient « Journée confirmée » (RLM-013, étape 2)');
+    await viderBulle(); await S.$eval('#main li.item[data-id="day-2026-09-11"] [data-act="rlm-del"]', x => x.click());
+    await bulleS('redevient inconnue');
+    await S.waitForFunction(() => !document.querySelector('#main li.item[data-id="day-2026-09-11"]'), null, { timeout: 5000 }).catch(() => {});
+    check((await bulle2()).startsWith('La journée du 11 sept. redevient inconnue.') && !!(await S.$('#toast [data-act="undo"]')) && !(await ligne('day-2026-09-11')), '« laisser inconnue » sur le 11 : « La journée du 11 sept. redevient inconnue. », avec « Annuler » ; la ligne disparaît (RLM-013, étape 3)');
+    const dits = [];
+    for (const [id, attendu] of [['e1', 'Envie du 11 sept. supprimée.'], ['a1', 'Action du 11 sept. supprimée.']]) {
+      await viderBulle(); await S.$eval(`#main li.item[data-id="${id}"] [data-act="rlm-del"]`, x => x.click()); await bulleS(attendu.slice(0, 12));
+      dits.push((await bulle2()).startsWith(attendu) && !(await ligne(id)));
+    }
+    check(dits.length === 2 && dits.every(Boolean), '« suppr. » sur l’envie puis l’action du 11 : « Envie du 11 sept. supprimée. », puis « Action du 11 sept. supprimée. » (RLM-013, étape 4)');
     check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   } catch (e) { console.log('  ✗', e.stack.split('\n').slice(0, 3).join(' ')); process.exitCode = 1; } finally { await browser.close(); }
 })();

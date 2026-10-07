@@ -235,7 +235,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web
 - **Préconditions** : chemin S, `rlm-en-cours.json` importé.
 - **Données** : aucune.
-- **Automatisés associés** : `TU-REG-01`
+- **Automatisés associés** : `TU-REG-01`, `TN-regulation-appareil`
 - **Source** : [DOC] [regulation.md](../../regulation.md#parcours), étape 2 ; [CODE] `setupRegulation`, `addRegulationGoal`.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -423,7 +423,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : chemin S, `rlm-en-cours.json` importé.
 - **Données** : les saisies du jeu (10 et 11 septembre).
-- **Automatisés associés** : `TU-REG-07`
+- **Automatisés associés** : `TU-REG-07`, `TN-regulation-appareil`
 - **Source** : [DOC] [regulation.md](../../regulation.md#parcours), étape 4 ; [CODE] `removeEntry` ; vérifié par une sonde
   Chromium le 4 octobre 2026.
 
