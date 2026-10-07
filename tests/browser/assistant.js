@@ -184,7 +184,10 @@ demo.config.modules = demo.config.modules.filter(m => m.id !== 'assistant').conc
   await e.waitForFunction(() => !document.querySelector('.chat .msg'), null, { timeout: 5000 }).catch(() => {});
   check(!(await bulles()) && !(await e.$('[data-act="chat-clear"]')) && (await e.$$('[data-act="chat-chip"]')).length >= 2, 'confirmé : la conversation est vide, le bouton disparaît, les suggestions reviennent (étape 3)');
   await demande('Bonsoir ?');
-  const avantDeco = await storeJSON(e, 'selene-chat');
+  // La réponse affichée, son enregistrement peut suivre : attendre que la conversation gardée ait la question et la
+  // réponse (A49 : lue trop tôt, elle n'avait que la question).
+  let avantDeco = null;
+  for (let i = 0; i < 50; i++) { avantDeco = await storeJSON(e, 'selene-chat').catch(() => null); if (Array.isArray(avantDeco) && avantDeco.length >= 2) break; await e.waitForTimeout(100); }
   await aller('reglages', '[data-act="auth-out"]'); await e.click('[data-act="auth-out"]');
   await e.waitForSelector('#authForm', { timeout: 10000 }).catch(() => {});
   const apresDeco = await storeJSON(e, 'selene-chat');
