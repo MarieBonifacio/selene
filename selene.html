@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "ade5545e65";
+const SELENE_BUILD = "44dff0a083";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1462,6 +1462,7 @@ var __selene = (() => {
     sceneNow: () => sceneNow,
     scrapsMarkdown: () => scrapsMarkdown,
     searchAll: () => searchAll,
+    searchFresh: () => searchFresh,
     searchQuery: () => searchQuery,
     seasonAt: () => seasonAt,
     sendChat: () => sendChat,
@@ -1474,7 +1475,6 @@ var __selene = (() => {
     setRegulationPlan: () => setRegulationPlan,
     setResume: () => setResume,
     setSaving: () => setSaving,
-    setSearchQuery: () => setSearchQuery,
     setTaskDone: () => setTaskDone,
     setTaskToday: () => setTaskToday,
     setupRegulation: () => setupRegulation,
@@ -10995,7 +10995,7 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
       } });
       for (const h of searchAll(text).slice(0, 6)) out.push({ k: label(h.id), t: h.text.replace(/\s+/g, " ").slice(0, 110), sub: h.date ? fmt(h.date) : "", run: goTo(h.id + (h.eid ? "/" + h.eid : "")) });
       out.push({ k: tr`Chercher`, t: tr`« ${text} » partout`, run: () => {
-        setSearchQuery(text);
+        searchFresh(text);
         goTo("recherche")();
       } });
     }
@@ -12326,8 +12326,9 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
 
   // src/app/views/recherche.js
   var searchQuery = "";
-  var setSearchQuery = (q) => {
+  var searchFresh = (q) => {
     searchQuery = q;
+    Object.assign(searchFacets, { mod: "", period: "", ep: "" });
   };
   document.addEventListener("input", (e) => {
     if (e.target.id === "searchIn") {
@@ -12429,8 +12430,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     }
   };
   CLICK["search-for"] = (el) => {
-    searchQuery = el.dataset.q;
-    Object.assign(searchFacets, { mod: "", period: "", ep: "" });
+    searchFresh(el.dataset.q);
     if (location.hash === "#recherche") render();
     else location.hash = "recherche";
   };

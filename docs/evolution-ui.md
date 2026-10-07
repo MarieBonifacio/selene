@@ -349,7 +349,8 @@ Livrée en quatre temps, pour que chaque pull request reste relisible.
       lecteur d'écran son titre, sa colonne et ces deux touches ; déplacée, elle garde le focus et dit sa nouvelle colonne.
 - [x] Recherche à facettes : espace, période (depuis la nouvelle lune, ce mois-ci), statut ; chaque puce compte ce qu'elle
       donnerait, les autres facettes appliquées ; résultats groupés par espace, « N résultats sur M ». Une recherche
-      lancée d'ailleurs (un mot du bilan, un motif) repart sans filtre ; l'export en dossier suit les filtres.
+      lancée d'ailleurs (un mot du bilan, un motif, « Chercher « … » partout » de la palette) repart sans filtre ;
+      « / » ramène à la page Chercher telle qu'on l'a laissée ; l'export en dossier suit les filtres.
 
 ### Vague 4 : les pistes expérimentales
 

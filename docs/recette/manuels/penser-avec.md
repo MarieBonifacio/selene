@@ -141,7 +141,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : note « la brume précède la pluie » ; fragment « Le brouillard efface la route… ».
-- **Automatisés associés** : `TU-MOD-50`, `TU-MOD-49`
+- **Automatisés associés** : `TN-liaisons`, `TU-MOD-50`, `TU-MOD-49`
 - **Source** : [DOC] README, « Liaisons » ; [TEST] `TU-MOD-50`, `TU-MOD-49`.
 
 | Étape | Action précise | Résultat attendu observable |

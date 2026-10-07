@@ -16,7 +16,10 @@ import { periodOf } from "./bilan.js";
    Dans tous les textes de tous les modules (chaque type dit lesquels : TYPE_UI[type].texts), sans tenir
    compte des accents ni de la casse ; tous les mots doivent apparaître. */
 export let searchQuery = "";
-export const setSearchQuery = q => { searchQuery = q; };
+/* Une recherche lancée d'ailleurs (un mot du bilan, un motif, « Chercher « … » partout » de la palette) repart sans
+   filtre : « partout » le promet (evolution-ui.md ; A38). Revenir à la page Chercher (« / », « ‹ Recherche ») la laisse
+   telle qu'elle était, ses filtres dits par « N résultats sur M ». */
+export const searchFresh = q => { searchQuery = q; Object.assign(searchFacets, { mod: "", period: "", ep: "" }); };
 document.addEventListener("input", e => { if (e.target.id === "searchIn") { searchQuery = e.target.value; render(); } });
 // Chaque caractère devient sa forme sans accent et en minuscule, de même longueur exactement (sinon il reste tel
 // quel : emoji sur deux unités, « İ » qui devient deux lettres) : les positions restent alignées pour surligner.
@@ -96,4 +99,4 @@ CLICK["search-dossier"] = () => {
   if (items.length) dossierFile(tr`Recherche — ${q}`, tr`Résultats de la recherche « ${q} »`, items);
 };
 CLICK["facet"] = el => { const k = el.dataset.k; if (Object.hasOwn(searchFacets, k)) { searchFacets[k] = searchFacets[k] === el.dataset.v ? "" : el.dataset.v; render(); } };
-CLICK["search-for"] = el => { searchQuery = el.dataset.q; Object.assign(searchFacets, { mod: "", period: "", ep: "" }); if (location.hash === "#recherche") render(); else location.hash = "recherche"; };
+CLICK["search-for"] = el => { searchFresh(el.dataset.q); if (location.hash === "#recherche") render(); else location.hash = "recherche"; };
