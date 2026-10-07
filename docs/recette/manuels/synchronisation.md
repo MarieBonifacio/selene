@@ -136,7 +136,7 @@ Identifiants retirés : aucun.
   A2.
 - **Données** : captures `dernière seconde SYN-005` puis `dernière seconde lourde SYN-005` ; le jeu de volume
   (`npm run recette -- donnees`, `dist/recette/volume.json`, 3,5 Mo environ).
-- **Automatisés associés** : `TN-sync-deux-appareils`, `TU-SYN-12`
+- **Automatisés associés** : `TN-fermeture`, `TN-sync-deux-appareils`, `TU-SYN-12`
 - **Source** : [DOC] [architecture.md](../../architecture.md#lire-fusionner-écrire-sous-condition) ; [CODE] `s.flush`
   et `KEEPALIVE_MAX` (`src/app/state/store.js`) ; [TEST] `TU-SYN-12`, `tests/browser/sync-deux-appareils.js`. Réécrit le
   6 octobre 2026 : l'ancienne version acceptait « arrivée, ou au plus tard à la réouverture » et ne pouvait pas
