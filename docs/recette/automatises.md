@@ -1146,11 +1146,11 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Cas manuels** : [SYN-004](manuels/synchronisation.md#syn-004), [SYN-010](manuels/synchronisation.md#syn-010)
 
 <a id="tn-injection"></a>
-#### `TN-injection` — Identifiants et nombres piégés
+#### `TN-injection` — Identifiants et nombres piégés, puis le piège saisi à la main
 
-- **Fichier** : [`tests/browser/injection.js`](../../tests/browser/injection.js) · **mode** A · **écran** —
-- **Conditions** : Données corrompues injectées.
-- **Vérifie** : aucun script injecté exécuté ; aucune balise injectée dans la page.
+- **Fichier** : [`tests/browser/injection.js`](../../tests/browser/injection.js) · **mode** A · **écran** O
+- **Conditions** : Données corrompues injectées ; puis le jeu d'essai, chaque alerte, chaque message `TRV008` de la console, chaque image `src=x` et chaque script qui contiendrait `TRV008` relevés.
+- **Vérifie** : aucun script injecté exécuté ; aucune balise injectée dans la page. Puis TRV-008 : `<img src=x onerror=alert('TRV008')>` capturé, une tâche intitulée `"><script>alert('TRV008')</script>`, un motif nommé par le piège, « Carnet » renommé par lui ; dans la boîte, le Chantier, les Motifs, la navigation, chacun en texte, chevrons visibles, rien d'injecté dans la vue lue (étape 1) ; l'accueil, la boîte, le Chantier, les Motifs, le Bilan, la planche, la palette (« TRV008 ») et la recherche (« TRV008 ») : le piège et la tâche en texte, aucune image ni script, aucune alerte, rien à la console (étape 2) ; le fichier de la planche téléchargé puis ouvert : le piège y est du texte, ni image ni script (étape 3). Mutation vérifiée : la palette, une note, le motif de la planche écrits sans échappement, et ces contrôles échouent.
 - **Cas manuels** : [DON-005](manuels/donnees-sauvegardes.md#don-005), [TRV-008](manuels/transverse.md#trv-008)
 
 <a id="tn-csp"></a>
