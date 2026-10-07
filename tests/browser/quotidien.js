@@ -152,6 +152,41 @@ demo.modules.moth.entries = [{ id: 'p1', title: 'Le lichen', subtitle: '', tag: 
   ok((await r.textContent('#main .big')).replace(/\s+/g, ' ').trim().startsWith('8 300 mots sur 50 000') && pr.endsWith(`Au rythme des 30 derniers jours (100 mots par jour), objectif atteint vers le ${fin}.`),
     `3 000 mots de plus, 8 300 en tout : « ${pr.slice(pr.indexOf('Au rythme'))} » (étape 2)`);
 
+  console.log('le jeu d’essai : les rappels de Plantes (MOD-013)');
+  // Le jeu d'essai, l'horloge figée le 7 octobre 2026 à 10 h à Paris ; Arrosage tous les 3 jours, fait le 1er septembre.
+  const cr = await b.newContext({ viewport: { width: 1280, height: 900 }, timezoneId: 'Europe/Paris' });
+  const pl = await cr.newPage(); pl.on('pageerror', e => errs.push(e.message)); await pl.clock.setFixedTime(new Date('2026-10-07T10:00:00+02:00'));
+  const essai13 = donnee('jeu-essai.json');
+  await pl.addInitScript(([st, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', st); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essai13.site), JSON.stringify(essai13.board)]);
+  await ouvrir(pl, BASE + '/index.html', () => !!document.querySelector('#main > *'));
+  const versR = async (h, sel) => { await pl.evaluate(x => { location.hash = x; }, h); await pl.waitForSelector(sel, { state: 'attached' }); };
+  const plantes = async () => JSON.parse(await pl.evaluate(() => localStorage.getItem('selene-site-v1'))).modules.plantes;
+  // La ligne de Plantes dans « Aujourd'hui », avec son « fait », ou rien.
+  const ligneP = () => pl.evaluate(() => { const x = document.querySelector('#main [data-act="entry-log"][data-mod="plantes"]'), li = x && x.closest('li'); return li ? li.querySelector('div').textContent.replace(/\s+/g, ' ').trim() + ' · ' + [...li.querySelectorAll('.row > *')].map(b => b.textContent.trim()).join(', ') : ''; });
+  const l13 = await ligneP();
+  check(l13.startsWith('Plantes : Arrosage (il y a 36 j)') && l13.includes('fait'), `l’accueil : « ${l13} » (MOD-013, étape 1)`);
+  await pl.click('#main [data-act="entry-log"][data-mod="plantes"]');
+  await pl.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.plantes.entries.some(e => e.type === 'arrosage' && e.date === '2026-10-07'), null, { timeout: 5000 }).catch(() => {});
+  const parti = !(await ligneP());
+  await versR('plantes', '#main [data-act="entry-log"][data-t="arrosage"]');
+  const arrosage = await pl.evaluate(() => { const x = document.querySelector('#main [data-act="entry-log"][data-t="arrosage"]').closest('.set'); return `${x.querySelector('span').textContent.trim()} : ${x.querySelector('.hint').textContent.trim()}`; });
+  check(parti && arrosage === 'Arrosage : aujourd\'hui, tous les 3 j', `« fait » : la ligne quitte l’accueil ; dans Plantes, « ${arrosage} » (MOD-013, étape 2)`);
+  await pl.fill('#rapNote', 'Nouvelle pousse sur le ficus'); await pl.click('[data-act="entry-note"][data-mod="plantes"]');
+  await pl.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.plantes.entries.some(e => e.note === 'Nouvelle pousse sur le ficus'), null, { timeout: 5000 }).catch(() => {});
+  const obs13 = (await plantes()).entries.find(e => e.note === 'Nouvelle pousse sur le ficus') || {};
+  const auJournal = await pl.evaluate(() => { const li = [...document.querySelectorAll('#main li.item')].find(l => l.textContent.includes('Nouvelle pousse sur le ficus')); return li ? li.querySelector('.jdate').textContent.trim() : ''; });
+  check(obs13.date === '2026-10-07' && obs13.type === 'note' && auJournal === '7 oct.', `l’observation au journal, datée du ${auJournal} (MOD-013, étape 3)`);
+  await versR('reglages', '#mreg-plantes'); await pl.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
+  await pl.fill('#mreg-plantes [data-ti="0"] [data-act="typ-every"]', '1'); await pl.press('#mreg-plantes [data-ti="0"] [data-act="typ-every"]', 'Tab');
+  await pl.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.plantes.config.types[0].every === 1, null, { timeout: 5000 }).catch(() => {});
+  await versR('accueil', '#main > *'); const memeJour = await ligneP();
+  await pl.clock.setFixedTime(new Date('2026-10-08T10:00:00+02:00')); await ouvrir(pl, BASE + '/index.html', () => !!document.querySelector('#main > *'));
+  const lendemain = await ligneP();
+  check((await plantes()).config.types[0].every === 1 && !memeJour && lendemain.startsWith('Plantes : Arrosage (hier)'), `fréquence à 1 : rien le jour même ; le lendemain, « ${lendemain} » revient (MOD-013, étape 4)`);
+  const rempotage = (await plantes()).config.types.find(t => t.id === 'rempotage') || {};
+  check(!rempotage.every && !lendemain.includes('Rempotage') && !(await pl.evaluate(() => [...document.querySelectorAll('#main li.item.alert')].some(l => l.textContent.includes('Rempotage')))),
+    'Rempotage, fréquence 0, fait il y a 54 jours : aucun rappel sur l’accueil (MOD-013, étape 5)');
+
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

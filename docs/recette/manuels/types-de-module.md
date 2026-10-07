@@ -346,7 +346,7 @@ Identifiants retirés : aucun.
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Ouvrir l'accueil. | Dans « Aujourd'hui », une ligne pour Plantes (Arrosage en retard) avec « fait ». |
-| 2 | Cliquer « fait ». | La ligne disparaît ; dans Plantes, « Arrosage : aujourd'hui ». |
+| 2 | Cliquer « fait ». | La ligne disparaît ; dans Plantes, « Arrosage » et « aujourd'hui, tous les 3 j ». |
 | 3 | Dans Plantes, noter l'observation des données. | Elle apparaît au journal, datée d'aujourd'hui. |
 | 4 | Réglages → « régler » sous Plantes : fréquence d'Arrosage à `1`. | Le lendemain (ou en avançant la date de l'appareil d'un jour), le rappel revient sur l'accueil. |
 | 5 | Rempotage (fréquence 0) : vérifier l'accueil. | Jamais de rappel pour Rempotage. |

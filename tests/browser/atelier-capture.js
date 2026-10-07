@@ -81,6 +81,43 @@ demo.modules.ecriture.config.categories = [{ id: 'c1', name: 'Prologue', goal: 0
   const fin = (await donneesQ()).modules.ecriture;
   ok(demande === 'Supprimer « Prologue » ? Les entrées déjà ajoutées passeront hors catégorie.' && !fin.config.categories.some(c => c.id === 'c1') && fin.scraps.length === nAvant && !fin.scraps.some(s => s.category === 'c1')
     && ['f1', 'f3'].every(id => fin.scraps.some(s => s.id === id && !s.category)), `« Prologue » supprimé après « ${demande} » : ses fragments hors chapitre, aucun supprimé (${fin.scraps.length} sur ${nAvant}) (MOD-011, étape 5)`);
+
+  console.log('le jeu d’essai : la capture et ses trois motifs (MOD-014)');
+  // Un contexte neuf, le jeu d'essai, l'horloge figée le 7 octobre 2026 à 10 h à Paris.
+  const cc = await b.newContext({ viewport: { width: 1280, height: 900 }, timezoneId: 'Europe/Paris' });
+  const c = await cc.newPage(); c.on('pageerror', e => errs.push(e.message)); await c.clock.setFixedTime(new Date('2026-10-07T10:00:00+02:00'));
+  await c.addInitScript(([st, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', st); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essai.site), JSON.stringify(essai.board)]);
+  await ouvrir(c, BASE + '/index.html', () => !!document.querySelector('#capIn'));
+  const siteC = () => c.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')));
+  const versC = async (h, sel) => { await c.evaluate(x => { location.hash = x; }, h); await c.waitForSelector(sel, { state: 'attached' }); };
+  const bulleC = () => c.evaluate(() => { const t = document.querySelector('#toast'); return { texte: t.textContent.replace(/\s+/g, ' ').trim(), action: !!t.querySelector('[data-act="undo"]') }; });
+  const capturer = async t => { await versC('accueil', '#capIn'); await c.evaluate(() => { document.querySelector('#toast').textContent = ''; }); await c.fill('#capIn', t); await c.click('[data-act="cap-add"]'); await c.waitForFunction(() => !!document.querySelector('#toast').textContent.trim(), null, { timeout: 5000 }).catch(() => {}); return bulleC(); };
+  const dansBoite = async t => (await siteC()).modules.inbox.entries.some(e => e.text === t);
+  const b1 = await capturer('8,40 € courses légumes');
+  ok(await dansBoite('8,40 € courses légumes') && b1.action && b1.texte === '8,40 € en dépense dans Budget (Courses) ? Ranger', `« 8,40 € courses légumes » : dans la boîte ; le bandeau « ${b1.texte} » (MOD-014, étape 1)`);
+  await c.click('#toast [data-act="undo"]'); await c.waitForFunction(() => document.querySelector('#toast').textContent.includes('Rangé'), null, { timeout: 5000 }).catch(() => {});
+  const b2 = await bulleC(), depense = (await siteC()).modules.budget.entries.find(e => e.amount === 8.4 && e.cat === 'Courses') || {};
+  ok(b2.texte === 'Rangé : 8,40 € en dépense dans Budget (Courses).' && !(await dansBoite('8,40 € courses légumes')) && depense.date === '2026-10-07', `accepté : « ${b2.texte} » ; la note quitte la boîte ; la dépense est au Budget, le ${depense.date} (MOD-014, étape 2)`);
+  const b3 = await capturer('20 min yoga');
+  await versC('inbox', '#main li.item');
+  const ranger = await c.evaluate(() => { const li = [...document.querySelectorAll('#main li.item')].find(l => (l.querySelector('.ntext') || {}).textContent === '20 min yoga'); const x = li && li.querySelector('[data-act="note-file"]'); return x ? x.textContent.trim() : ''; });
+  ok(b3.action && b3.texte === '20 min dans Yoga ? Ranger' && ranger === 'Ranger : 20 min dans Yoga', `« 20 min yoga », le bandeau ignoré : la note reste dans la boîte, avec « ${ranger} » (MOD-014, étape 3)`);
+  const yogaAvant = JSON.stringify((await siteC()).modules.yoga);
+  await c.evaluate(() => { const li = [...document.querySelectorAll('#main li.item')].find(l => (l.querySelector('.ntext') || {}).textContent === '20 min yoga'); li.querySelector('[data-act="note-file"]').click(); });
+  await c.waitForFunction(() => !JSON.parse(localStorage.getItem('selene-site-v1')).modules.inbox.entries.some(e => e.text === '20 min yoga'), null, { timeout: 5000 }).catch(() => {});
+  const yoga = (await siteC()).modules.yoga, seances = JSON.stringify(yoga) !== yogaAvant ? (yoga.entries || yoga.log || []).filter(e => +e.value === 20 && e.date === '2026-10-07') : [];
+  ok(seances.length === 1 && !(await dansBoite('20 min yoga')), `rangé depuis la boîte : une séance de 20 min dans Yoga, le 7 octobre, la date de la note ; la note quitte la boîte (MOD-014, étape 4)`);
+  const b5 = await capturer('Plantes : feuilles jaunes');
+  if (b5.action) await c.click('#toast [data-act="undo"]');
+  await c.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.plantes.entries.some(e => e.note === 'feuilles jaunes'), null, { timeout: 5000 }).catch(() => {});
+  const obs = (await siteC()).modules.plantes.entries.find(e => e.note === 'feuilles jaunes') || {};
+  await versC('plantes', '#main li.item');
+  const journal = await c.evaluate(() => [...document.querySelectorAll('#main li.item')].some(l => l.textContent.includes('feuilles jaunes')));
+  ok(b5.action && obs.date === '2026-10-07' && journal && !(await dansBoite('Plantes : feuilles jaunes')), `« Plantes : feuilles jaunes », rangé : une observation « feuilles jaunes » au journal de Plantes, le ${obs.date} (MOD-014, étape 5)`);
+  const b6a = await capturer('rdv : 14h chez le dentiste'), b6b = await capturer('acheter du pain');
+  await versC('inbox', '#main li.item');
+  const sans = await c.evaluate(() => ['rdv : 14h chez le dentiste', 'acheter du pain'].map(t => { const li = [...document.querySelectorAll('#main li.item')].find(l => (l.querySelector('.ntext') || {}).textContent === t); return li ? !li.querySelector('[data-act="note-file"]') : false; }));
+  ok(!b6a.action && !b6b.action && b6a.texte.startsWith('Gardé') && b6b.texte.startsWith('Gardé') && sans.every(Boolean), `« rdv : 14h chez le dentiste », puis « acheter du pain » : « ${b6a.texte} », sans bandeau ni « Ranger » ; deux notes gardées (MOD-014, étape 6)`);
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();
