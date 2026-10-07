@@ -19,6 +19,7 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
     await ctx.route('https://api.microlink.io/**', r => {
       p.calls.push(r.request().url());
       if (microlink === 'quota') return r.fulfill({ status: 429, contentType: 'application/json', body: '{"status":"fail"}' });
+      if (microlink === 'bloque') return r.abort('failed'); // bloqué dans les outils de développement, ou hors ligne (EXT-003)
       r.fulfill({ contentType: 'application/json', body: JSON.stringify({ status: 'success', data: { title: 'La lisière <img src=x onerror=window.__pwn=1>', publisher: 'Revue des sous-bois', date: '2026-09-01T08:00:00Z', description: 'Un texte.', url: 'https://www.sousbois.fr/lisiere/?utm_source=mastodon&fbclid=x' } }) });
     });
     await ctx.addInitScript(([d, h]) => { if (!h) window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) localStorage.setItem('selene-site-v1', d); }, [JSON.stringify(demo), hostedMode]);
@@ -50,6 +51,7 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   await search(p, 'https://sousbois.fr/lisiere?utm_campaign=z');
   prev = await p.textContent('.src-prev');
   ok(p.calls.some(u => u.includes('api.microlink.io')) && prev.includes('<img src=x') && !(await p.evaluate(() => window.__pwn)), 'une page passe par Microlink ; un titre piégé s’affiche en texte');
+  ok(prev.includes('Revue des sous-bois') && !/utm_|sousbois\.fr\//.test(prev), 'l’aperçu dit le titre et le site, pas l’adresse (C13)');
   await p.click('[data-act="src-keep"]'); await p.waitForTimeout(250);
   e = (await data(p)).modules.sources.entries[1];
   ok(e.src.url === 'https://www.sousbois.fr/lisiere' && e.src.site === 'Revue des sous-bois' && e.src.date === '2026-09-01', 'adresse normalisée (traceurs retirés), site, date');
@@ -71,8 +73,16 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   await q.click('[data-act="src-keep"]'); await q.waitForTimeout(200);
   e = (await data(q)).modules.sources.entries[0];
   ok(e.src.url === 'https://inconnu.example/texte' && e.src.site === 'inconnu.example', 'gardée avec son adresse seule');
+  const muet = await open({}, '/index.html#sources', 'bloque');
+  await search(muet, 'https://exemple.org/article-recette-ext003');
+  await muet.waitForSelector('.src-prev', { timeout: 10000 }).catch(() => {});
+  ok((await muet.textContent('.src-prev')).includes("Métadonnées indisponibles (hors ligne, service muet ou quota du jour atteint) : elle sera gardée avec son adresse seule."), 'service bloqué : « Métadonnées indisponibles (hors ligne, service muet ou quota du jour atteint) : elle sera gardée avec son adresse seule. »');
+  await muet.click('[data-act="src-keep"]'); await muet.waitForTimeout(200);
+  e = (await data(muet)).modules.sources.entries[0];
+  ok(e && e.title === 'https://exemple.org/article-recette-ext003' && e.src.url === e.title, 'gardée quand même, son titre égal à son adresse');
+  const avant = q.calls.length;
   await q.fill('#srcIn', 'rien du tout'); await q.click('[data-act="src-fetch"]'); await q.waitForTimeout(150);
-  ok((await q.textContent('#toast')).includes('Ni lien ni DOI'), 'ni lien ni DOI : aucun appel, un message');
+  ok((await q.textContent('#toast')) === 'Ni lien ni DOI reconnu. Un lien commence par https://, un DOI par 10.' && q.calls.length === avant, 'ni lien ni DOI : « Ni lien ni DOI reconnu. Un lien commence par https://, un DOI par 10. », aucun appel');
 
   console.log('depuis la boîte de réception');
   const n = await open({}, '/index.html#inbox');
