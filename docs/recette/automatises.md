@@ -1335,7 +1335,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/assistant-accord.js`](../../tests/browser/assistant-accord.js) · **mode** H · **écran** O
 - **Conditions** : Le faux assistant tente une injection indirecte (consigne glissée dans une source).
-- **Vérifie** : la fenêtre dit ce qui serait écrit, rien interprété comme du HTML ; refusé : rien n'est écrit, le modèle l'apprend ; confirmé : la note est déposée et le modèle l'apprend.
+- **Vérifie** : la fenêtre dit ce qui serait écrit, rien interprété comme du HTML ; refusé : rien n'est écrit, le modèle l'apprend ; confirmé : la note est déposée et le modèle l'apprend. AST-004, étapes 1 à 3 : une tâche demandée, la fenêtre dit « ajouter la tâche « Changer l'ampoule du couloir » » ; « Annuler » : refus appris et dit, rien au Chantier ; « Confirmer » : la tâche, avec la note « Ajoutée par l'assistant » (mutation vérifiée : l'outil qui écrit malgré le refus, la note retirée, et ces contrôles échouent).
 - **Cas manuels** : [AST-004](manuels/assistant.md#ast-004)
 
 <a id="tn-assistant-injoignable"></a>
