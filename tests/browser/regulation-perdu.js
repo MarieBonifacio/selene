@@ -357,14 +357,16 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
       `« ${dit17} » ; « ${p1 && p1.titre} », ${p1 && p1.reste}, « Jusqu'à 20:05… », ${p1 && p1.boutons.map(x => `« ${x} »`).join(' et ')} (RLM-017, étape 1)`);
     await pz.q.clock.runFor(60000); await pz.q.reload(); await pz.vers(pz.id, '#rlmPause[role="timer"]'); await pz.q.clock.runFor(10);
     const p2 = await pause();
-    check(p2 && p2.reste === '4:00' && p2.aide.includes('Jusqu\'à 20:05.'), `une minute plus tard, rechargée : ${p2 && p2.reste}, toujours « Jusqu'à 20:05 » (étape 2)`);
+    // L'horloge installée avance aussi en temps réel pendant un chargement (démarrage lent, processeur ralenti) : à
+    // quelques secondes près. Ce qui compte : ni 5:00 (la pause remise à zéro), ni plus rien (perdue).
+    const secondes = t => { const m = /^(\d+):(\d\d)$/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : NaN; };
+    check(p2 && secondes(p2.reste) <= 240 && secondes(p2.reste) >= 225 && p2.aide.includes('Jusqu\'à 20:05.'), `une minute plus tard, rechargée : ${p2 && p2.reste} (4:00 à quelques secondes près), toujours « Jusqu'à 20:05 » (étape 2)`);
     // L'onglet fermé, une minute passe, un autre onglet s'ouvre sur l'espace.
     await pz.q.close(); await pz.c.clock.runFor(60000);
     pz.q = await pz.c.newPage(); pz.q.on('pageerror', e => errs.push(e.message));
     await pz.q.goto(BASE + '/index.html#' + pz.id); await pz.q.waitForSelector('#rlmPause[role="timer"]'); await pz.q.clock.runFor(10);
     const p3 = await pause();
-    // Le chargement du nouvel onglet compte aussi : 3:00 ou une seconde de moins, jamais 5:00 ni 4:00.
-    check(p3 && /^(3:00|2:5\d)$/.test(p3.reste), `l’onglet fermé une minute, puis rouvert : ${p3 && p3.reste} (étape 3)`);
+    check(p3 && secondes(p3.reste) <= 180 && secondes(p3.reste) >= 165 && secondes(p3.reste) < secondes(p2.reste) - 50, `l’onglet fermé une minute, puis rouvert : ${p3 && p3.reste} (3:00 à quelques secondes près) (étape 3)`);
     await pz.q.evaluate(() => { document.querySelector('#toast').textContent = ''; });
     await pz.q.click('[data-act="rlm-pause-stop"]'); await pz.q.waitForFunction(() => !document.querySelector('section.rlm-pause'));
     check(!(await pause()) && !(await pz.q.textContent('#toast')).trim(), '« Arrêter la pause » : l’encadré disparaît, sans message (étape 4)');
