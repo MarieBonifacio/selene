@@ -474,7 +474,8 @@ async function device(browser, errs, personnel = true, id = 'u1') {
     await ap2.waitForFunction(() => !document.querySelector('#nav').textContent.includes('Carnet du soir'), null, { timeout: 10000 }).catch(() => {});
     const nav2 = await ap2.textContent('#nav');
     check(!serveur3().includes('Carnet du soir') && !nav2.includes('Carnet du soir'), 'appareil 2 rechargé : « Carnet du soir » a disparu, du compte aussi (étape 4)');
-    await AP1.ctx.close(); await AP2.ctx.close();
+    // Les deux appareils restent ouverts jusqu'à la fin : fermés avec une requête en vol, WebKit lève une erreur que le
+    // contrôle final prendrait pour celle de l'app (A50).
     check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   } catch (e) { console.log('  ✗', e.stack.split('\n').slice(0, 3).join(' ')); process.exitCode = 1; } finally { await browser.close(); }
 })();

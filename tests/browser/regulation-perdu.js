@@ -92,7 +92,8 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
     await p.fill('#form [name="confirm"]', 'Carnet du soir'); await submit();
     check((await p.textContent('#toast')).includes('« Carnet du soir » supprimé.'), 'supprimé, et dit');
     check(await waitServer(s => !s.includes('Carnet du soir')), 'le nom quitte le compte : plus de talon impossible à effacer');
-    await ctx.close();
+    // Le premier appareil reste ouvert : fermé avec une requête en vol, WebKit lève une erreur que le contrôle final
+    // prendrait pour celle de l'app (A50). Le navigateur entier se ferme à la fin.
 
     console.log('un autre compte sur le même appareil, sans déconnexion (RLM-027)');
     // La session posée une fois (sessionStorage survit au rechargement de l'onglet) : retirée à la main, elle ne revient pas.
@@ -138,7 +139,6 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
     await vers('reprendre-la-main', '#main'); await z.waitForFunction(() => document.querySelector('#main').textContent.includes('NOTE-RLM027'), null, { timeout: 5000 }).catch(() => {});
     const retour27 = (await z.textContent('#main')).includes('NOTE-RLM027'), reste27 = await kv('selene-local-v1:u5');
     check(retour27 && (await z.textContent('#nav')).includes('Carnet du soir') && !reste27, 'P reconnecté : le suivi entier, la saisie NOTE-RLM027 ; l’entrée selene-local-v1:<P> a disparu (RLM-027, étape 4)' + (retour27 ? '' : ` (mise de côté : ${reste27 ? 'toujours là' : 'absente'})`));
-    await cx.close();
     check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   } catch (e) { console.log('  ✗', e.stack.split('\n').slice(0, 3).join(' ')); process.exitCode = 1; } finally { await browser.close(); }
 })();
