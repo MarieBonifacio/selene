@@ -62,9 +62,10 @@ const attendre = async (cond, ms = 15000) => { for (const fin = Date.now() + ms;
     const settle = p => p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     const vers = async (p, h, sel) => { await p.evaluate(x => { location.hash = x; }, h); await p.waitForFunction(x => location.hash === '#' + x, h); await p.waitForSelector(sel, { state: 'attached' }); await settle(p); };
     const taille = async () => { await vers(a1, 'reglages', '#reg-size'); return (await a1.textContent('#reg-size')).replace(/\s+/g, ' ').trim(); };
-    // Le journal d'A1, lu (puis vidé) depuis une page neutre de la même origine.
+    // Le journal d'A1, lu (puis vidé) depuis une page neutre de la même origine : la politique, sans aucun script (le
+    // manifeste, que Firefox télécharge au lieu de l'afficher, ne convient pas).
     const journal = async () => {
-      const r = await A1.ctx.newPage(); await r.goto(BASE + '/manifest.webmanifest');
+      const r = await A1.ctx.newPage(); await r.goto(BASE + '/confidentialite.html');
       const j = await r.evaluate(() => { const v = localStorage.getItem('fermeture-journal'); localStorage.removeItem('fermeture-journal'); return JSON.parse(v || '[]'); });
       await r.close(); return j;
     };
