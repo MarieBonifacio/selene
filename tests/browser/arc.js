@@ -89,7 +89,11 @@ demo.modules.ecriture.scraps = [{ id: 'f1', text: 'Le seuil comme allégorie de 
   const supprimer = async ok => {
     await versQ('reglages', '#mreg-arc [data-act="stat-del"]'); await q.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
     await q.evaluate(() => { const i = [...document.querySelectorAll('#mreg-arc [data-act="stat-name"]')].find(x => x.value === 'Étape 2'); i.closest('.set').querySelector('[data-act="stat-del"]').click(); });
-    await q.waitForSelector('#cdlg[open]'); const m = (await q.textContent('#cmsg')).trim(); await q.click(`#cdlg button[value=${ok ? 'ok' : 'cancel'}]`); await q.waitForFunction(() => !document.querySelector('#cdlg').open); return m;
+    await q.waitForSelector('#cdlg[open]'); const m = (await q.textContent('#cmsg')).trim();
+    // Attendre l'événement « close », pas la boîte fermée : il part en file d'attente, et la demande suivante, lancée par
+    // un script, pouvait rouvrir la boîte avant lui ; il tranchait alors cette nouvelle demande, refusée (A52).
+    await q.evaluate(() => { window.__ferme = new Promise(r => document.querySelector('#cdlg').addEventListener('close', () => setTimeout(r), { once: true })); });
+    await q.click(`#cdlg button[value=${ok ? 'ok' : 'cancel'}]`); await q.evaluate(() => window.__ferme); return m;
   };
   const dit4 = await supprimer(false), arc4 = (await donneesQ()).modules.arc;
   check(dit4 === 'Supprimer l\'étape « Étape 2 » ? 1 placement sera retiré.' && arc4.config.stations.length === 3 && arc4.entries.length === 2, `supprimer l'Étape 2 : « ${dit4} » ; « Annuler » : rien ne change (MOD-021, étape 4)`);
