@@ -2,7 +2,7 @@
    faux Supabase : une exception non rattrapée et une promesse rejetée partent vers /rest/v1/erreurs, sans leur
    message, sans jeton, une fois chacune ; une erreur réseau ne part pas ; couper l'envoi dans Réglages → Compte arrête
    tout. Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { suivre, calme, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 (async () => {
   const b = await engine.launch(launchOptions);
   const recus = [];
@@ -17,7 +17,7 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
     if (sessionStorage.getItem('init')) return; sessionStorage.setItem('init', '1');
     localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', 'u1');
   }, [fixture(), session]);
-  const p = await ctx.newPage(), attendues = [];
+  const p = suivre(await ctx.newPage()), attendues = [];
   p.on('pageerror', e => attendues.push(e.message)); // les erreurs provoquées ici : attendues
   try {
     await p.goto(BASE + '/index.html#reglages'); await p.waitForSelector('[data-act="err-reports"]', { timeout: 10000 });
@@ -44,7 +44,7 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
     await p.evaluate(() => { setTimeout(() => { undefined.autre(); }, 0); });
     await p.waitForTimeout(400);
     check(recus.length === 2, 'coupé : plus rien ne part');
-    await p.reload(); await p.waitForSelector('[data-act="err-reports"]');
+    await calme(p); await p.reload(); await p.waitForSelector('[data-act="err-reports"]');
     check(!(await p.isChecked('[data-act="err-reports"]')), 'le réglage tient au rechargement, sur cet appareil');
     check(attendues.length >= 3, 'les erreurs provoquées ont bien eu lieu');
   } catch (e) { console.log('  ✗', e.stack.split('\n').slice(0, 3).join(' ')); process.exitCode = 1; } finally { await b.close(); }

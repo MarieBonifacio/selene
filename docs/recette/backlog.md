@@ -21,6 +21,9 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| ~~A31 : les reprises d'A24 rendaient plus fréquentes les requêtes coupées par un rechargement, sous WebKit~~ (fait le 7 octobre 2026, PR #129) | une session | P3 | — | [A31](perimetre.md#anomalies-et-observations) |
+| ~~A29 : `tests/browser/indexeddb.js` instable sous WebKit (un rechargement coupait une écriture en vol)~~ (fait le 7 octobre 2026, PR #129) | une session | P3 | — | [A29](perimetre.md#anomalies-et-observations) |
+| ~~A28 : une source se nommait par son résumé (« Gardée : « Nous montrons que… » »), dans les messages, les liens et la carte~~ (fait le 7 octobre 2026, PR #129) | une session | P3 | — | [A28](perimetre.md#anomalies-et-observations) |
 | ~~A24 : le réseau revenu pendant un branchement parti hors ligne ne rebranchait plus la synchronisation avant le minuteur de 5 min (régression de la PR #122)~~ (fait le 6 octobre 2026, PR #127) | une session | P2 | — | [A24](perimetre.md#anomalies-et-observations) |
 | ~~A25 : `tests/browser/dehors.js` instable sous WebKit~~ (fait le 6 octobre 2026, PR #127) | une session | P3 | — | [A25](perimetre.md#anomalies-et-observations) |
 | ~~A26 : `tests/browser/artist-watch.js` instable sous le processeur ralenti~~ (fait le 6 octobre 2026, PR #127) | une session | P3 | — | [A26](perimetre.md#anomalies-et-observations) |
@@ -41,6 +44,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | ~~BL-03 : l'isolation entre comptes rejouée chaque semaine~~ (fait le 6 octobre 2026, PR #124 : le workflow attend ses six secrets, plus bas) | une session | P1 | — | [BL-03](#bl-03) |
 | ~~BL-20 : un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait le 6 octobre 2026, PR #124) | une session | P3 | — | [BL-20](#bl-20) |
 | ~~BL-19 : nommer, dans la matrice, les étapes que les tests ne couvrent pas~~ (les 73 cas P1 : fait le 6 octobre 2026, PR #125 ; les 88 cas P2 et P3 : fait le 7 octobre 2026) | une session | P3 | — | [BL-19](#bl-19) |
+| BL-23 : un faux Supabase commun, qui réponde comme PostgREST | une session | P3 | — | [BL-23](#bl-23) |
 | BL-18 : la page du cahier à cocher sous contrôle de la CI | une session | P3 | si la PR #118 est fusionnée | [BL-18](#bl-18) |
 | BL-16 : la fumée de l'app iOS sur simulateur | une session | P3 | avant la première version iOS | [BL-16](#bl-16) |
 
@@ -116,6 +120,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 | [BL-20](#bl-20) | ~~Un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait) | outillage | P3 | onze étapes, voir ci-dessous |
 | [BL-21](#bl-21) | ~~Fermer le réseau aux scénarios de navigateur~~ (fait) | hygiène des essais | P2 | tous les scénarios ; A20 |
 | [BL-22](#bl-22) | ~~Débusquer les délais fixes après un geste : un job au processeur ralenti~~ (fait) | fiabilité de la CI | P2 | tous les scénarios ; A10, A11, A16, A21 à A23 |
+| [BL-23](#bl-23) | Un faux Supabase commun, qui réponde comme PostgREST | hygiène des essais | P3 | les scénarios au faux serveur simpliste ; A29, A31 |
 
 ---
 
@@ -476,6 +481,10 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   `TN-sources-oubliees` vérifie l'étape 2 de PEN-008 (les références du dossier) et `TN-compte-neuf` et
   `TN-recherche-minuteur` deux états vides de TRV-015 : reliés ; deux attendus faux, C9 et C10, corrigés dans le cahier.
   Ce qui reste est, le plus souvent, un message exact à relire, une seconde plateforme ou un vrai appareil.
+  **Le même jour, les messages** : sept cas dont il ne restait qu'un message, ou un geste sans effet vérifié, passent
+  « couvert automatiquement » (EXT-005, EXT-013, EXT-015, EXT-016, DON-009, MOD-016, MOD-017) : 28 automatiques et 164
+  partiels. Chaque contrôle ajouté échoue si le message change. EXT-001 ne garde que « Recherche… ». En lisant
+  `zotero.js`, A28 : une source se nommait par son résumé, corrigée (`TU-MOD-65`).
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`
@@ -547,6 +556,22 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   lanceur, sans erreur. Les trois premiers attendent désormais l'état ; ×4 garde de la marge (`mot-de-passe.js` : 33 s
   seul). Son premier passage en CI a trouvé mieux qu'un délai fixe : une régression de l'app, A24 (le retour du réseau
   perdu pendant un branchement en cours), corrigée dans la même PR.
+
+<a id="bl-23"></a>
+### BL-23 — Un faux Supabase commun, qui réponde comme PostgREST
+
+- **Risque couvert** : plusieurs scénarios (`agenda.js`, `indexeddb.js`, `dehors.js`, `veille.js`, `zotero.js`…)
+  simulent Supabase en répondant `[]` à toute lecture et `{}` (ou rien) à toute écriture. Le branchement au démarrage y échoue après trois essais ; l'app le retente à 2, 5, 15, 30 et 60 s (A24), et
+  affiche « Non synchronisé ». Ces scénarios, écrits pour un compte connecté, tournent donc dans un état dégradé qu'ils
+  ne disent pas ; leurs rafales de fond rendent les rechargements fragiles (A29, A31), et un défaut qui ne se voit
+  qu'avec une synchronisation réussie leur échappe.
+- **Proposition** : un faux Supabase partagé dans `helpers.js`, sur le modèle de `fakeSupabase` de
+  `tests/hosted-harness.js` et de celui de `sources.js` : une ligne par compte, `GET` filtré, `POST` qui crée, `PATCH`
+  conditionnel qui répond `[{ user_id }]`. Les scénarios y passent un à un, chacun vérifié vert sous les trois moteurs.
+- **Niveau** : outillage des scénarios.
+- **Bénéfice attendu** : les scénarios connectés le sont vraiment ; plus de reprises de fond, donc plus de requêtes
+  coupées par un rechargement ; un contrôle possible de l'indicateur « synchronisé » partout.
+- **État** : à faire. En attendant, `calme()` attend 2,5 s sans requête avant chaque rechargement (A31).
 
 ---
 

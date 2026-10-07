@@ -39,7 +39,10 @@ export function refFind(ref) {
   const e = memoInRender("refs:" + mod, () => new Map([...m.entries, ...(m.scraps || [])].map(x => [x.id, x]))).get(id);
   return e ? { mod, e } : null;
 }
-export const excerpt = (e, n = 60) => { const t = String(e.text || e.title || e.note || "").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n) + "…" : t; };
+/* Le nom d'une entrée, pour la citer : son titre, sinon son texte. Une note ou un fragment n'a que son texte ; un
+   élément de collection a un titre, et son texte est un résumé ou un commentaire (A28 : une source se nommait par son
+   résumé). */
+export const excerpt = (e, n = 60) => { const t = String(e.title || e.text || e.note || "").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n) + "…" : t; };
 /* Liens entrants : pour chaque entrée, qui la vise et comment. Calculé une fois par rendu. */
 export const backlinks = () => memoInRender("backlinks", () => {
   const by = new Map();

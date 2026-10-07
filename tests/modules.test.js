@@ -1358,3 +1358,12 @@ test('minuit : chaque vue suit la date d’elle-même, une minute après au plus
   app.nodes.get('#main').innerHTML = 'RIEN_A_REDESSINER'; tick();
   assert.equal(app.nodes.get('#main').innerHTML, 'RIEN_A_REDESSINER', 'le jour une fois suivi, plus de rendu à chaque minute');
 });
+
+test('une entrée se nomme par son titre, sinon par son texte : une source, pas par son résumé (A28)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const e = app.keepSource('musique', { title: 'Depersonalization and the self', authors: 'Anna Ciaunica', doi: '10.1016/j.concog.2020.102946', abstract: 'Nous montrons que la dépersonnalisation…' });
+  assert.equal(app.excerpt(e, 50), 'Depersonalization and the self', 'une source gardée : son titre');
+  assert.match(app.refHTML(`musique/${e.id}`), /« Depersonalization and the self »/, 'et de même dans un lien');
+  assert.equal(app.excerpt({ id: 'n', text: 'Une note,  sans titre' }), 'Une note, sans titre', 'une note : son texte');
+  assert.equal(app.excerpt({ id: 'x', title: '', text: 'Faute de titre, le texte' }), 'Faute de titre, le texte');
+});

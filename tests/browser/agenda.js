@@ -9,6 +9,7 @@ const ICS = ['BEGIN:VCALENDAR', 'VERSION:2.0',
   'BEGIN:VEVENT', 'UID:d', 'SUMMARY:Hier', 'DTSTART:20260928T100000Z', 'END:VEVENT',
   'END:VCALENDAR'].join('\r\n');
 const SECRET = 'https://calendar.example/ical/secret-abc/basic.ics';
+const bulle = (p, t) => p.waitForFunction(x => ((document.querySelector('#toast') || {}).textContent || '').includes(x), t, { timeout: 5000 }).then(() => true, () => false);
 (async () => {
   const b = await engine.launch(launchOptions);
   const ok = check, errs = [], calls = [];
@@ -49,7 +50,8 @@ const SECRET = 'https://calendar.example/ical/secret-abc/basic.ics';
   await calme(p); await ouvrir(p, null, entree); await until(() => calls.length >= 1);
   ok(calls.length === 1, 'plus tard : relu');
   await calme(p); await p.goto(BASE + '/index.html#reglages'); await p.waitForTimeout(300);
-  await p.click('[data-act="ics-forget"]'); await p.waitForTimeout(200);
+  await p.click('[data-act="ics-forget"]');
+  ok(await bulle(p, 'Calendrier oublié sur cet appareil.'), 'oublier : « Calendrier oublié sur cet appareil. »');
   await p.evaluate(() => location.hash = ''); await p.waitForTimeout(300);
   ok(!(await p.$('.agenda-day')) && !((await storeGet(p, 'selene-ics-url')) || (await storeGet(p, 'selene-ics'))), 'oublié : adresse et cache retirés, l’accueil se tait');
 

@@ -1,5 +1,5 @@
 /* Scénario de navigateur : écrans (évolution de l'interface, vague 3d : docs/evolution-ui.md). Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { ouvrir, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const today = iso(new Date()), old = '2024-01-15';
 const demo = JSON.parse(fixture());
@@ -44,6 +44,8 @@ demo.modules.moth.entries = [
   ok(!(await d.isVisible('#main .seg')) && (await d.$$eval('#main .board .col', cs => cs.filter(c => c.offsetParent).length)) === 4, 'toutes les colonnes, pas de sélecteur');
   await d.dragAndDrop('#main .card[data-id="c1"]', '#main .col[data-ci="2"]'); await d.waitForTimeout(250);
   ok(await status(d, 'c1') === 'Prêt', 'glisser une carte dans une colonne change son statut');
+  await ouvrir(d, null); await d.waitForSelector('#main .board', { timeout: 10000 }).catch(() => {});
+  ok(!!(await d.$('#main .col[data-ci="2"] .card[data-id="c1"]')), 'rechargée, la page montre la carte là où elle a été glissée');
   await d.focus('#main .card[data-id="c2"]'); await d.keyboard.press(']'); await d.waitForTimeout(200);
   ok(await status(d, 'c2') === 'Prêt' && (await d.evaluate(() => document.activeElement.dataset.id)) === 'c2', '« ] » avance la carte, qui garde le focus');
   ok(/, Prêt : \[ pour reculer/.test(await d.evaluate(() => document.activeElement.getAttribute('aria-label'))), 'la carte dit sa nouvelle colonne au lecteur d’écran');

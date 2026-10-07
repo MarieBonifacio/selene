@@ -96,8 +96,11 @@ async function ouvrir(p, url, etat = demarree) {
 /* Les requêtes vers le faux Supabase encore en vol. Sous WebKit, un rechargement qui en coupe une écrit à la console
    « Fetch API cannot load … due to access control checks. », que Playwright compte comme une erreur de la page, alors que
    l'app rattrape l'échec (A1 pour activite.js, le 4 octobre 2026 ; agenda.js le 6). `suivre(p)` dès la page ouverte, puis
-   `calme(p)` avant un rechargement : 1,2 s sans aucune requête, plus que les 900 ms après lesquelles un enregistrement
-   part au serveur (10 s au plus). waitForLoadState('networkidle') n'y suffit pas : une page chargée l'a déjà atteint. */
+   `calme(p)` avant un rechargement : 2,5 s sans aucune requête (10 s au plus). C'est plus que les 900 ms après lesquelles
+   un enregistrement part au serveur, et plus que les 2 s de la première reprise d'un branchement raté (A24). Les faux
+   Supabase les plus simples ne répondent pas comme PostgREST : le branchement y échoue, et l'app le retente à 2, 5,
+   15, 30 et 60 s. Après 2,5 s de calme, la première reprise est passée, et la suivante est à 2,5 s au moins (A31).
+   waitForLoadState('networkidle') n'y suffit pas : une page chargée l'a déjà atteint. */
 const enVol = new WeakMap();
 function suivre(p) {
   const n = { v: 0 }, api = r => /\.supabase\.co\//.test(r.url());
@@ -109,7 +112,7 @@ function suivre(p) {
 async function calme(p, ms = 10000) {
   const n = enVol.get(p);
   if (!n) throw new Error('calme() sans suivre() : les requêtes de cette page ne sont pas comptées');
-  for (let quiet = 0, end = Date.now() + ms; quiet < 24 && Date.now() < end; await new Promise(r => setTimeout(r, 50))) quiet = n.v ? 0 : quiet + 1;
+  for (let quiet = 0, end = Date.now() + ms; quiet < 50 && Date.now() < end; await new Promise(r => setTimeout(r, 50))) quiet = n.v ? 0 : quiet + 1;
 }
 
 /* Le stockage de Selene vu depuis la page : IndexedDB (base « selene », magasin « kv ») en version hébergée, localStorage

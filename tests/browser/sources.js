@@ -33,7 +33,10 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
   let prev = (await p.textContent('.src-prev')).replace(/\s+/g, ' ');
   ok(p.calls.length === 1 && p.calls[0].includes('api.crossref.org/works/10.1016'), 'un seul appel, à Crossref, pour le DOI reconnu dans l’adresse');
   ok(prev.includes('Depersonalization and the self') && prev.includes('Anna Ciaunica, B C, D E et al.') && prev.includes('Consciousness and Cognition') && prev.includes('2020'), 'aperçu : titre, auteurs, revue, date');
+  ok((await p.getAttribute('.src-prev', 'data-status')) === 'Trouvée : « Depersonalization and the self ».', 'et le lecteur d’écran entend « Trouvée : « Depersonalization and the self ». »');
   await p.click('[data-act="src-keep"]'); await p.waitForTimeout(250);
+  { const bulle = await p.textContent('#toast'), dit = bulle.includes('Gardée : « Depersonalization and the self ».') && bulle.includes('La relier à une idée');
+    ok(dit, '« Gardée : « Depersonalization and the self ». », par son titre et non par son résumé (A28), et « La relier à une idée »' + (dit ? '' : ` (la bulle : « ${bulle} »)`)); }
   let e = (await data(p)).modules.sources.entries[0];
   ok(e && e.src.doi === '10.1016/j.concog.2020.102946' && e.src.site === 'Consciousness and Cognition' && e.src.date === '2020-05-12' && e.tag === 'article' && e.subtitle.includes('Ciaunica') && e.status === 'À lire', 'gardée, avec ses références et le statut « À lire »');
   const link = await p.$eval('#main .src-link', a => ({ href: a.getAttribute('href'), target: a.target, rel: a.rel }));
@@ -42,7 +45,7 @@ const CROSSREF = { message: { DOI: '10.1016/j.concog.2020.102946', type: 'journa
 
   console.log('doublon, page, quota');
   await p.fill('#srcIn', '10.1016/j.concog.2020.102946'); await p.press('#srcIn', 'Enter'); await p.waitForTimeout(300);
-  ok((await p.textContent('.src-prev')).includes('Déjà gardée') && await p.isDisabled('[data-act="src-keep"]'), 'Entrée lance la recherche ; le doublon est reconnu, « Garder » désactivé');
+  ok((await p.textContent('.src-prev')).includes('Déjà gardée : « Depersonalization and the self »') && await p.isDisabled('[data-act="src-keep"]'), 'Entrée lance la recherche ; le doublon est reconnu et nommé, « Garder » désactivé');
   await p.click('[data-act="src-cancel"]'); await p.waitForTimeout(150);
   await search(p, 'https://sousbois.fr/lisiere?utm_campaign=z');
   prev = await p.textContent('.src-prev');

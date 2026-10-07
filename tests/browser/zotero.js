@@ -64,9 +64,11 @@ const ITEMS = [
   await p.click('.zot-list [data-zi="0"] [data-act="zot-keep"]'); await p.waitForTimeout(250);
   let e = (await data(p)).modules.sources.entries[0];
   ok(e && e.zot.k === 'ABCD2345' && e.zot.l === 'https://www.zotero.org/marie/items/ABCD2345' && e.src.doi === '10.1016/j.concog.2020.102946' && e.src.site === 'Consciousness and Cognition' && e.subtitle === 'Anna Ciaunica' && e.origin.from === 'Zotero', 'gardée comme Source, reliée à sa fiche Zotero, avec sa provenance');
+  ok((await p.textContent('#toast')).startsWith('Gardée, reliée à Zotero : « Depersonalization'), 'et Selene le dit, la source nommée par son titre, pas par son résumé (A28)');
   ok((await p.getAttribute(`[data-id="${e.id}"] .src-link:has-text("Zotero")`, 'href')) === 'https://www.zotero.org/marie/items/ABCD2345', 'un lien vers la fiche dans Zotero');
   await p.click('.zot-list [data-zi="1"] [data-act="zot-keep"]'); await p.waitForTimeout(250);
-  ok((await p.$$('.zot-list [data-act="zot-keep"]')).length === 0 && (await p.textContent('.zot-list')).includes('déjà gardée'), 'un livre sans DOI ni adresse : reconnu par sa clé Zotero, pas de doublon');
+  ok((await p.textContent('#toast')) === 'Gardée, reliée à Zotero : « Les racines de la conscience ».', '« Gardée, reliée à Zotero : « Les racines de la conscience ». »');
+  ok((await p.$$('.zot-list [data-act="zot-keep"]')).length === 0 && (await p.textContent('.zot-list [data-zi="1"]')).includes('déjà gardée'), 'un livre sans DOI ni adresse : reconnu par sa clé Zotero, « déjà gardée », pas de doublon');
   await p.click('[data-act="zot-recent"]'); await p.waitForTimeout(400);
   ok(p.zot[p.zot.length - 1].u.searchParams.get('sort') === 'dateAdded' && (await p.textContent('.zot-bar')).includes('dix dernières'), '« récents » : les dernières fiches ajoutées');
 

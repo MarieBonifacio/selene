@@ -1,6 +1,6 @@
 /* Scénario de navigateur : Research Watch dans Dehors (connexions externes, phase 2, vague 6d : docs/connexions.md).
    Version hébergée simulée (faux Supabase), OpenAlex simulé ; pas besoin du passeur. Lancé par tests/browser/run.js. */
-const { storeGet, storeJSON, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeGet, storeJSON, suivre, calme, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.sources = { type: 'collection', label: 'Sources', config: { ...JSON.parse(JSON.stringify(demo.modules.musique.config)), music: false, sources: true, display: 'liste', statuses: ['À lire', 'Lue'], doneFrom: 1,
   fields: { title: 'Titre', subtitle: 'Auteurs', tag: 'Type', due: '', text: 'Résumé' } }, entries: [] };
@@ -22,7 +22,7 @@ const WORK = (n, extra = {}) => ({ id: `https://openalex.org/W${n}`, doi: `https
   });
   const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
   await ctx.addInitScript(([d, s, uid]) => { if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', d); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', uid); } }, [JSON.stringify(demo), session, UID]);
-  const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
+  const p = suivre(await ctx.newPage()); p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + '/index.html#dehors'); await p.waitForTimeout(800);
   const data = () => storeJSON(p, 'selene-site-v1');
   /* Ajouter une veille, puis attendre sa requête à OpenAlex (ou le refus d'un doublon) avant de laisser la page la rendre :
@@ -65,7 +65,7 @@ const WORK = (n, extra = {}) => ({ id: `https://openalex.org/W${n}`, doi: `https
 
   console.log('une fois par semaine, quota');
   const n = oa.length;
-  await p.reload(); await p.waitForTimeout(2200);
+  await calme(p); await p.reload(); await p.waitForTimeout(2200);
   ok(oa.length === n, 'rouvert dans la semaine : OpenAlex n’est pas redemandé');
   mode = 'quota';
   await p.click('[data-act="dehors-refresh"]'); await p.waitForTimeout(1200);
