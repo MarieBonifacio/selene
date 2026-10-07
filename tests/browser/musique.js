@@ -54,6 +54,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   await p.click(`#sheet [data-rg="${U(2)}"] [data-act="mb-pick"]`); await p.waitForTimeout(300);
   let e = (await data(p)).find(x => x.id === 'e1');
   ok(e.subtitle === 'Bergtatt' && e.mb.a === U(1) && e.mb.rg === U(2) && e.mb.y === '1995', 'album choisi : titre, identifiants, année');
+  ok((await p.textContent('#toast')).includes("« Bergtatt » : c'est noté."), 'et Selene le dit : « « Bergtatt » : c’est noté. »');
   await p.click(`#sheet [data-rg="${U(3)}"] [data-act="mb-add"]`); await p.waitForTimeout(300);
   ok((await data(p)).some(x => x.title === 'Ulver' && x.mb && x.mb.rg === U(3)), 'un autre album ajouté d’un geste');
   ok(!(await p.$(`#sheet [data-rg="${U(3)}"] [data-act="mb-add"]`)), 'et ne se propose plus');

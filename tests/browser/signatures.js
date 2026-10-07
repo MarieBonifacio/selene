@@ -66,8 +66,12 @@ demo.modules.inbox.entries = [
   ok((await count()).includes('2 sur 2') && (await m.textContent('#sheet')).includes('à jeter'), '« Plus tard » passe à la suivante sans rien toucher');
   await m.tap('#sheet [data-act="note-del"]'); await m.waitForTimeout(250);
   ok(await m.isVisible('#sheet #toast.show [data-act="undo"]'), 'supprimer : « Annuler » reste visible, dans la feuille');
+  await m.tap('#sheet #toast [data-act="undo"]'); // l'état, pas un délai (BL-22)
+  await m.waitForFunction(() => (document.querySelector('#sheet .spec-text') || {}).textContent === 'à jeter', null, { timeout: 5000 }).catch(() => {});
+  ok((await data(m)).modules.inbox.entries.some(e => e.text === 'à jeter') && (await m.textContent('#sheet .spec-text')) === 'à jeter' && (await m.textContent('#toast')).includes('Rétabli'), '« Annuler » la remet, dans la boîte et sous les yeux');
+  await m.tap('#sheet [data-act="note-del"]'); await m.waitForTimeout(250);
   await m.tap('#sheet [data-act="note-to"][data-to="ecriture"]'); await m.waitForTimeout(300);
-  ok((await m.textContent('#sheet')).includes('La boîte est vide') && (await data(m)).modules.ecriture.scraps.some(f => f.text === 'idée de chapitre'), 'rangée dans un espace par son sigil ; la boîte est vide');
+  ok((await m.textContent('#sheet')).includes('La boîte est vide. Tout a trouvé sa place, ou presque.') && (await data(m)).modules.ecriture.scraps.some(f => f.text === 'idée de chapitre'), 'rangée dans un espace par son sigil ; la boîte est vide');
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

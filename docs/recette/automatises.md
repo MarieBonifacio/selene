@@ -10,7 +10,7 @@ Identifiants retirés : aucun.
 
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
-| Tests unitaires et d'intégration Node | `npm test` | 322 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
+| Tests unitaires et d'intégration Node | `npm test` | 323 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
 | Scénarios de navigateur | `npm run test:browser` | 81 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent et au processeur ralenti | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
@@ -464,6 +464,7 @@ sans navigateur.
 | <a id="tu-mod-62"></a>`TU-MOD-62` | programme installation waits for a chosen practice and validates its settings | Le modèle Protocole ne crée rien tant que le formulaire n'est pas validé ; 9 séances par semaine refusées ; les valeurs saisies sont gardées. | [ESP-004](manuels/espaces.md#esp-004) |
 | <a id="tu-mod-63"></a>`TU-MOD-63` | l’adresse d’un espace désactivé mène à l’accueil, et le dit une fois par visite ; une adresse inconnue, sans un mot | Ouvert, l'espace s'affiche ; désactivé, son adresse mène à l'accueil et « « Chantier » est désactivé : Réglages → Espaces pour le rouvrir. » s'affiche une fois (un autre rendu ne le répète pas, revenir à l'adresse le redit) ; une adresse qui ne désigne aucun espace mène à l'accueil sans message. | [ESP-006](manuels/espaces.md#esp-006) |
 | <a id="tu-mod-64"></a>`TU-MOD-64` | minuit : chaque vue suit la date d’elle-même, une minute après au plus ; jamais sous un formulaire ouvert ni pendant une saisie | Horloge simulée : sur le Chantier, rien avant minuit ; passé minuit, pas de rendu tant qu'un formulaire est ouvert (son contenu reste) ou qu'un champ est en cours de saisie ; la minute suivante, l'en-tête dit « mercredi 7 octobre » ; ensuite, plus de rendu à chaque minute. | [TRV-004](manuels/transverse.md#trv-004) |
+| <a id="tu-mod-65"></a>`TU-MOD-65` | une entrée se nomme par son titre, sinon par son texte : une source, pas par son résumé (A28) | Une source gardée avec un résumé se nomme par son titre, dans `excerpt` comme dans un lien (`refHTML`) ; une note, qui n'a pas de titre, par son texte, espaces resserrés ; une entrée au titre vide, par son texte. Échoue sans le correctif d'A28. | [EXT-001](manuels/connexions.md#ext-001), [EXT-016](manuels/connexions.md#ext-016) |
 
 ### Notes Markdown (Obsidian, Zettlr) — `tests/markdown.test.js`
 
@@ -876,7 +877,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/ecrans.js`](../../tests/browser/ecrans.js) · **mode** A · **écran** O et T
 - **Conditions** : Jeu d'essai.
-- **Vérifie** : date en marge ; registre en lignes ; glisser une carte change son statut ; « ] » et « [ » au clavier, focus gardé, colonne annoncée ; téléphone : une colonne à la fois par onglets ; recherche : résultats groupés par espace ; facettes période, statut, espace, avec décomptes ; recliquer défait.
+- **Vérifie** : date en marge ; registre en lignes ; glisser une carte change son statut, et la page rechargée la montre dans sa colonne ; « ] » et « [ » au clavier, focus gardé, colonne annoncée ; téléphone : une colonne à la fois par onglets ; recherche : résultats groupés par espace ; facettes période, statut, espace, avec décomptes ; recliquer défait.
 - **Cas manuels** : [NAV-005](manuels/navigation-reglages.md#nav-005), [MOD-017](manuels/types-de-module.md#mod-017), [TRV-002](manuels/transverse.md#trv-002)
 
 <a id="tn-notes"></a>
@@ -965,7 +966,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/signatures.js`](../../tests/browser/signatures.js) · **mode** A · **écran** O et T
 - **Conditions** : Horloge simulée.
-- **Vérifie** : fiche dans un tiroir : provenance, liens entrants, motifs, histoire du statut ; changer le statut ; « Voir dans… » ; anneau du minuteur à mi-course et à la fin ; appui long sur la lune ; trier : la plus ancienne d'abord, rangement reconnu, « Plus tard », supprimer avec « Annuler » visible, rangée par sigil.
+- **Vérifie** : fiche dans un tiroir : provenance, liens entrants, motifs, histoire du statut ; changer le statut ; « Voir dans… » ; anneau du minuteur à mi-course et à la fin ; appui long sur la lune ; trier : la plus ancienne d'abord, rangement reconnu, « Plus tard », supprimer avec « Annuler » visible, qui remet la note ; rangée par sigil, jusqu'à « La boîte est vide. Tout a trouvé sa place, ou presque. ».
 - **Cas manuels** : [MOD-016](manuels/types-de-module.md#mod-016), [MOD-024](manuels/types-de-module.md#mod-024), [PEN-007](manuels/penser-avec.md#pen-007)
 
 <a id="tn-pensee"></a>
@@ -1080,7 +1081,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/taille.js`](../../tests/browser/taille.js) · **mode** H · **écran** O
 - **Conditions** : Limite abaissée par le test.
-- **Vérifie** : Réglages → Sauvegarde dit la taille en octets UTF-8 et la limite ; près de la limite, l'alerte nomme le module le plus lourd ; refus du serveur (23514) dit en clair.
+- **Vérifie** : Réglages → Sauvegarde dit la taille en octets UTF-8 et la limite ; près de la limite, l'alerte conseille d'exporter une sauvegarde, puis d'alléger les plus lourds, et nomme le plus lourd ; refus du serveur (23514) dit en clair.
 - **Cas manuels** : [DON-009](manuels/donnees-sauvegardes.md#don-009)
 
 <a id="tn-sync-deux-appareils"></a>
@@ -1181,7 +1182,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/sources.js`](../../tests/browser/sources.js) · **mode** H puis A · **écran** O
 - **Conditions** : Crossref, Microlink simulés ; partage par `?url=`.
-- **Vérifie** : un seul appel à Crossref pour un DOI ; aperçu ; gardée avec « À lire » ; lien vers l'original à part ; doublon reconnu, « Garder » désactivé ; page par Microlink, titre piégé en texte ; adresse nettoyée ; quota épuisé : gardable avec l'adresse seule ; ni lien ni DOI : aucun appel ; note → source avec provenance ; lien partagé : attend la connexion, puis note de la boîte, adresse nettoyée, une seule fois ; favori ; export BibTeX (clé lisible, auteurs « Nom, Prénom », revue, DOI ; une page en `@misc`, caractères de LaTeX échappés) et CSL-JSON (types, noms structurés, DOI, adresse et date de consultation) ; Selene dans le menu « Partager » d'Android (manifeste).
+- **Vérifie** : un seul appel à Crossref pour un DOI ; aperçu, « Trouvée : « … » » pour le lecteur d'écran ; gardée avec « À lire », « Gardée : « … » » par son titre (A28) et « La relier à une idée » ; lien vers l'original à part ; doublon reconnu et nommé, « Garder » désactivé ; page par Microlink, titre piégé en texte ; adresse nettoyée ; quota épuisé : gardable avec l'adresse seule ; ni lien ni DOI : aucun appel ; note → source avec provenance ; lien partagé : attend la connexion, puis note de la boîte, l'adresse de la page nettoyée, une seule fois ; favori ; export BibTeX (clé lisible, auteurs « Nom, Prénom », revue, DOI ; une page en `@misc`, caractères de LaTeX échappés) et CSL-JSON (types, noms structurés, DOI, adresse et date de consultation) ; Selene dans le menu « Partager » d'Android (manifeste).
 - **Cas manuels** : [EXT-001](manuels/connexions.md#ext-001), [EXT-002](manuels/connexions.md#ext-002), [EXT-003](manuels/connexions.md#ext-003), [EXT-004](manuels/connexions.md#ext-004), [EXT-017](manuels/connexions.md#ext-017), [PLT-002](manuels/plateformes.md#plt-002), [TRV-008](manuels/transverse.md#trv-008), [EXT-020](manuels/connexions.md#ext-020)
 
 <a id="tn-passeur"></a>
@@ -1197,7 +1198,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/dehors.js`](../../tests/browser/dehors.js) · **mode** H puis A · **écran** O
 - **Conditions** : Faux passeur qui sert des flux.
-- **Vérifie** : une porte dans la navigation ; sonde du passeur ; suivre un site par son flux annoncé ; la semaine écoulée, rangée par projet ; titre piégé inerte ; lien `javascript:` neutralisé ; page sans flux ou flux déjà suivi : dit ; garder (source avec provenance), vers une note, vu ; douze au plus ; ligne d'accueil sans pastille ; seulement mes motifs ; tout marquer comme vu (synchronisé) ; ETag et 304 ; pas de relecture avant trois heures ; retirer un flux ; artefact : pas de Dehors.
+- **Vérifie** : une porte dans la navigation ; sonde du passeur ; le champ « L'adresse d'un site ou d'un flux… » ; suivre un site par son flux annoncé, « Suivi : … » ; la semaine écoulée, rangée par projet ; titre piégé inerte ; lien `javascript:` neutralisé ; page sans flux ou flux déjà suivi : dit ; garder (source avec provenance), vers une note, vu ; douze au plus ; ligne d'accueil sans pastille ; seulement mes motifs ; tout marquer comme vu (synchronisé), « Tout est vu. Dehors se tait jusqu'à la prochaine parution. » ; ETag et 304 ; pas de relecture avant trois heures ; retirer un flux ; artefact : pas de Dehors.
 - **Cas manuels** : [EXT-013](manuels/connexions.md#ext-013), [EXT-019](manuels/connexions.md#ext-019)
 
 <a id="tn-dehors-croise"></a>
@@ -1237,7 +1238,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/agenda.js`](../../tests/browser/agenda.js) · **mode** H · **écran** O
 - **Conditions** : Faux passeur qui sert un `.ics` ; horloge fixée. Avant chaque rechargement, plus aucune requête en vol depuis 1,2 s (`calme()` de `helpers.js`, A19).
-- **Vérifie** : rien sans adresse ; `webcal://` devient `https://` ; adresse gardée dans ce navigateur, hors synchronisation, jamais réaffichée ; le plombier sous Chantier ; récurrence ; le passé écarté ; journée entière demain ; titre piégé inerte ; cache d'une heure ; « oublier » retire adresse et cache.
+- **Vérifie** : rien sans adresse ; `webcal://` devient `https://` ; adresse gardée dans ce navigateur, hors synchronisation, jamais réaffichée ; le plombier sous Chantier ; récurrence ; le passé écarté ; journée entière demain ; titre piégé inerte ; cache d'une heure ; « oublier » retire adresse et cache, et le dit : « Calendrier oublié sur cet appareil. » (EXT-015).
 - **Cas manuels** : [CPT-013](manuels/entree-et-comptes.md#cpt-013), [EXT-015](manuels/connexions.md#ext-015)
 
 <a id="tn-zotero"></a>
@@ -1245,7 +1246,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/zotero.js`](../../tests/browser/zotero.js) · **mode** H puis A · **écran** O
 - **Conditions** : API Zotero et passeur simulés.
-- **Vérifie** : rien sans clé ; clé en en-tête, à qui elle est, lecture seule ; clé hors synchronisation ; recherche, pièces jointes écartées, titre piégé inerte ; garder : source reliée à la fiche ; doublon par clé ; récents ; relais par le passeur ; clé qui peut écrire signalée ; clé refusée dite ; artefact : pas de Zotero.
+- **Vérifie** : rien sans clé ; clé en en-tête, à qui elle est, lecture seule ; clé hors synchronisation ; recherche, pièces jointes écartées, titre piégé inerte ; garder : source reliée à la fiche, « Gardée, reliée à Zotero : « … » », nommée par son titre et non par son résumé (A28) ; doublon par clé, « déjà gardée » ; récents ; relais par le passeur ; clé qui peut écrire signalée ; clé refusée dite ; artefact : pas de Zotero.
 - **Cas manuels** : [EXT-016](manuels/connexions.md#ext-016), [EXT-019](manuels/connexions.md#ext-019)
 
 <a id="tn-musique"></a>
@@ -1253,7 +1254,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/musique.js`](../../tests/browser/musique.js) · **mode** A · **écran** O
 - **Conditions** : MusicBrainz simulé.
-- **Vérifie** : homonymes : Selene demande ; discographie studio sans live ; titre piégé inerte ; album choisi (identifiants, année), autre album ajouté ; une requête par seconde au plus ; pochette, ou rien si absente ; nouvelles sorties : l'année écoulée, puis rien le même jour ; service muet dit ; réglable par collection.
+- **Vérifie** : homonymes : Selene demande ; discographie studio sans live ; titre piégé inerte ; album choisi (identifiants, année) et « « Bergtatt » : c'est noté. » (EXT-005), autre album ajouté ; une requête par seconde au plus ; pochette, ou rien si absente ; nouvelles sorties : l'année écoulée, puis rien le même jour ; service muet dit ; réglable par collection.
 - **Cas manuels** : [EXT-005](manuels/connexions.md#ext-005), [EXT-006](manuels/connexions.md#ext-006)
 
 <a id="tn-radar"></a>

@@ -39,6 +39,7 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
   const g = await open(JSON.stringify(demo));
   const w = (await g.textContent('#reg-size')).replace(/\s+/g, ' ');
   ok(/Ton espace pèse 3,\d Mo/.test(w) && w.includes('approche de la limite') && w.includes(`${demo.modules.inbox.label} (3,2 Mo)`), `l'alerte nomme le module le plus lourd (${w.slice(0, 160)}…)`);
+  ok(w.includes(`Exporte une sauvegarde, puis allège les plus lourds : ${demo.modules.inbox.label} (3,2 Mo)`), 'et conseille d’exporter une sauvegarde, puis d’alléger les plus lourds');
   await until(() => g.patches.length > 0); await g.waitForTimeout(400);
   ok((await g.textContent('#saving')).includes('Trop volumineux pour le serveur'), 'le serveur refuse : dit en clair, au lieu de « non synchronisé »');
 

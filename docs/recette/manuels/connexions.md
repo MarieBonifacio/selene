@@ -47,7 +47,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai ; supprimer la source « Depersonalization and the self » (pour éviter le doublon).
 - **Données** : `https://doi.org/10.1016/j.concog.2020.102946`.
-- **Automatisés associés** : `TN-sources`, `TU-SRC-02`, `TU-SRC-03`
+- **Automatisés associés** : `TN-sources`, `TU-SRC-02`, `TU-SRC-03`, `TU-MOD-65`
 - **Source** : [DOC] [connexions.md](../../connexions.md#phase-1--presque-gratuit-sans-intermédiaire-sans-compte), 5a ; [TEST] `tests/browser/sources.js`.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -429,7 +429,7 @@ Identifiants retirés : aucun.
 - **Préconditions** : un compte Zotero de recette avec deux fiches (un article à DOI, un livre sans DOI) ; une clé en lecture
   seule et une clé avec écriture.
 - **Données** : recherche `lisière` (ou un mot du titre des fiches).
-- **Automatisés associés** : `TN-zotero`, `TU-ZOT-01`, `TU-ZOT-02`, `TU-ZOT-03`
+- **Automatisés associés** : `TN-zotero`, `TU-ZOT-01`, `TU-ZOT-02`, `TU-ZOT-03`, `TU-MOD-65`
 - **Source** : [DOC] README, « Zotero » ; [DOC] [connexions.md](../../connexions.md), 6f ; [TEST] `tests/browser/zotero.js`.
 
 | Étape | Action précise | Résultat attendu observable |

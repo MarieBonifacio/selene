@@ -21,6 +21,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| ~~A28 : une source se nommait par son résumé (« Gardée : « Nous montrons que… » »), dans les messages, les liens et la carte~~ (fait le 7 octobre 2026) | une session | P3 | — | [A28](perimetre.md#anomalies-et-observations) |
 | ~~A24 : le réseau revenu pendant un branchement parti hors ligne ne rebranchait plus la synchronisation avant le minuteur de 5 min (régression de la PR #122)~~ (fait le 6 octobre 2026, PR #127) | une session | P2 | — | [A24](perimetre.md#anomalies-et-observations) |
 | ~~A25 : `tests/browser/dehors.js` instable sous WebKit~~ (fait le 6 octobre 2026, PR #127) | une session | P3 | — | [A25](perimetre.md#anomalies-et-observations) |
 | ~~A26 : `tests/browser/artist-watch.js` instable sous le processeur ralenti~~ (fait le 6 octobre 2026, PR #127) | une session | P3 | — | [A26](perimetre.md#anomalies-et-observations) |
@@ -476,6 +477,10 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   `TN-sources-oubliees` vérifie l'étape 2 de PEN-008 (les références du dossier) et `TN-compte-neuf` et
   `TN-recherche-minuteur` deux états vides de TRV-015 : reliés ; deux attendus faux, C9 et C10, corrigés dans le cahier.
   Ce qui reste est, le plus souvent, un message exact à relire, une seconde plateforme ou un vrai appareil.
+  **Le même jour, les messages** : sept cas dont il ne restait qu'un message, ou un geste sans effet vérifié, passent
+  « couvert automatiquement » (EXT-005, EXT-013, EXT-015, EXT-016, DON-009, MOD-016, MOD-017) : 28 automatiques et 164
+  partiels. Chaque contrôle ajouté échoue si le message change. EXT-001 ne garde que « Recherche… ». En lisant
+  `zotero.js`, A28 : une source se nommait par son résumé, corrigée (`TU-MOD-65`).
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`

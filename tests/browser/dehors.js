@@ -76,12 +76,14 @@ const PAGES = {
   ok((await p.textContent('#nav a[href="#dehors"]')).replace(/\s+/g, ' ').trim() === 'Nouveautés Dehors' && (await p.textContent('#main h2')).replace(/\s+/g, ' ').trim() === 'Nouveautés · Dehors', 'elle dit « Nouveautés », Dehors en second');
   await until(() => probes.n === 1);
   ok(probes.n === 1 && (await storeJSON(p, 'selene-passeur-acces')).etat === 'ok' && await p.isVisible('#dehorsIn'), 'une sonde : le passeur est ouvert à ce compte, on peut suivre un site');
+  ok((await p.getAttribute('#dehorsIn', 'placeholder')) === "L'adresse d'un site ou d'un flux…", 'le champ dit ce qu’il attend : « L’adresse d’un site ou d’un flux… »');
   await follow('revue.example', 'ecriture'); await until(() => calls.length >= 2); // la page, puis le flux qu'elle annonce
   // Les deux premiers appels : le rafraîchissement lancé après le démarrage peut relire le flux tout juste suivi.
   ok(calls.slice(0, 2).map(c => c.url).join(' ') === 'https://revue.example/ https://revue.example/feed.xml' && calls.every(c => c.genre === 'feed'), 'une adresse de site : sa page annonce le flux, qui est suivi');
   let t = await titles();
   ok(t.length === 2 && t[0].startsWith('Les phalènes') && t[1] === 'Lien piégé' && !t.includes('Vieux numéro'), `la semaine écoulée seulement, du plus récent au plus ancien (${t.join(' | ')})`);
   ok((await p.textContent('#main h3')).includes('Écriture') && (await data()).config.dehors.feeds[0].title === 'Revue des lisières', 'rangé sous son projet, titré par le flux');
+  ok((await p.textContent('#toast')) === 'Suivi : Revue des lisières.', '« Suivi : Revue des lisières. »');
   ok(!(await p.evaluate(() => window.__pwn)) && (await p.textContent('.dehors')).includes('Un relevé de nuit.'), 'titre piégé inerte ; résumé en texte');
   ok(!(await p.$('.dehors [data-item="r2"] a')), 'un lien javascript: n’est pas un lien');
   await follow('https://vide.example/');
@@ -129,6 +131,8 @@ const PAGES = {
   await p.click('[data-act="dehors-seen"]');
   const rien = await jusqua(async () => (await p.textContent('#main')).includes('Rien de neuf')), stocke = await jusqua(vus);
   ok(rien && stocke, 'tout marqué comme vu, et c’est synchronisé' + (rien && stocke ? '' : ` (« Rien de neuf » : ${rien} ; dates « vu » enregistrées : ${stocke})`));
+  { const bulle = await p.textContent('#toast'), dit = bulle.includes("Tout est vu. Dehors se tait jusqu'à la prochaine parution.");
+    ok(dit, '« Tout est vu. Dehors se tait jusqu’à la prochaine parution. »' + (dit ? '' : ` (la bulle : « ${bulle} »)`)); }
   calls.length = 0;
   await p.click('[data-act="dehors-refresh"]');
   await jusqua(async () => calls.length >= 3 && !(await lit()));
