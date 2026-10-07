@@ -169,6 +169,14 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
   ok(!(await m.getAttribute('#authPw', 'minlength')), 'la connexion n’impose aucune longueur : un ancien mot de passe court entre toujours');
   await m.click('[data-act="auth-switch"]');
   ok((await m.getAttribute('#authPw', 'minlength')) === '10' && (await m.textContent('#authForm')).includes('10 caractères au moins'), 'à l’inscription : dix caractères au moins, et c’est écrit');
+  // CPT-007, étapes 1 et 2 : l'aide entière, puis `court1234` (9 caractères) refusé par le navigateur, avant tout envoi.
+  const aide = (await m.textContent('#authForm')).replace(/\s+/g, ' ');
+  ok(aide.includes('10 caractères au moins. Une courte phrase fait un bon mot de passe, facile à retenir.'), 'l’aide sous le mot de passe : « 10 caractères au moins. Une courte phrase fait un bon mot de passe, facile à retenir. » (CPT-007, étape 1)');
+  await m.fill('#authEmail', 'iris@exemple.org'); await m.fill('#authPw', 'court1234');
+  const avantEnvoi = m.calls.length; await submit(m);
+  const refus = await m.$eval('#authPw', i => ({ court: i.validity.tooShort, invalide: i.matches(':invalid'), bouton: document.querySelector('#authForm button[type="submit"]').textContent.trim() }));
+  ok(refus.court && refus.invalide && refus.bouton === 'Créer le compte' && !m.calls.slice(avantEnvoi).some(x => x.path === '/auth/v1/signup'),
+    `« ${refus.bouton} » avec « court1234 » : le navigateur refuse (champ en erreur, trop court), aucune requête /auth/v1/signup (CPT-007, étape 2)`);
   const c = await open(lien('recovery'));
   await c.fill('#authPw', 'court'); await c.fill('#authPw2', 'court'); await submit(c);
   ok(!c.calls.some(x => x.path === '/auth/v1/user') && (await c.getAttribute('#authPw', 'minlength')) === '10', 'nouveau mot de passe trop court : refusé avant tout envoi');

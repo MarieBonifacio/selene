@@ -80,6 +80,21 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   ok(site.config.welcome === false && Object.keys(site.modules).length === 4, 'trois espaces de plus que la Capture, enregistrés, accueil fermé');
   await p.reload(); await p.waitForTimeout(300);
   ok(!(await main()).includes('Composer ton espace'), 'la question ne revient pas');
+
+  // ESP-002, étapes 1 et 2, dans un navigateur neuf : les treize modèles, leur description, sans « Reprendre la main » ;
+  // « Carnet » ajouté deux fois, deux Carnet dans la navigation, la liste toujours dépliée.
+  console.log('choisir moi-même : les treize modèles (ESP-002)');
+  const q = await (await b.newContext()).newPage(); q.on('pageerror', e => errs.push(e.message));
+  await q.addInitScript(() => { window.claude = { use: async () => null }; });
+  await q.goto(BASE + '/index.html'); await q.waitForSelector('.welcome-all > summary');
+  await q.click('.welcome-all > summary'); await q.waitForSelector('[data-act="tpl-add"][data-tpl="carnet"]');
+  const modeles = await q.$$eval('.welcome-all [data-act="tpl-add"]', bs => bs.map(x => { const s = x.closest('.set'); return [s.querySelector('b').textContent.trim(), (s.querySelector('.hint') || {}).textContent || '', x.dataset.tpl]; }));
+  const NOMS = ['Tâches', 'Protocole', 'Écriture', 'Budget', 'Tableau de production', 'À découvrir', 'Décisions', 'Motifs', 'Musique', 'Sources', 'Arc', 'Soins', 'Carnet'];
+  ok(modeles.length === 13 && NOMS.every(n => modeles.some(([m]) => m === n)) && modeles.every(([, h]) => h.trim().length > 10) && !modeles.some(([m, , t]) => t === 'regulation' || m === 'Reprendre la main') && !(await q.textContent('.welcome-all')).includes('Reprendre la main'),
+    `« Choisir moi-même » : ${modeles.length} modèles, chacun décrit (${modeles.map(([m]) => m).join(', ')}) ; pas « Reprendre la main » (ESP-002, étape 1)`);
+  const carnets = () => q.$$eval('#nav a', as => as.filter(a => a.textContent.replace(/\s+/g, ' ').trim() === 'Carnet').length);
+  for (let i = 0; i < 2; i++) { const n = await carnets(); await q.click('[data-act="tpl-add"][data-tpl="carnet"]'); await q.waitForFunction(n => [...document.querySelectorAll('#nav a')].filter(a => a.textContent.replace(/\s+/g, ' ').trim() === 'Carnet').length > n, n, { timeout: 5000 }).catch(() => {}); }
+  ok((await carnets()) === 2 && (await q.locator('.welcome-all[open]').count()) === 1, `« Ajouter » deux fois sur Carnet : ${await carnets()} « Carnet » dans la navigation, la liste toujours dépliée (ESP-002, étape 2)`);
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

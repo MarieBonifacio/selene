@@ -644,13 +644,13 @@ Identifiants retirés : aucun.
 - **Objectif, risque vérifié** : liste interminable qui fige le téléphone ; éléments anciens inaccessibles.
 - **Priorité** : P3 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu de volume importé ([donnees/README.md](../donnees/README.md#volume)).
-- **Données** : la boîte (1 500 notes) ou Écriture (4 000 fragments).
-- **Automatisés associés** : `TU-MOD-54`, `TN-navigation`
+- **Données** : la boîte (1 506 notes : les 1 500 du jeu de volume et les 6 du jeu d'essai) ou Écriture (4 006 fragments).
+- **Automatisés associés** : `TU-MOD-54`, `TN-navigation`, `TN-notes`
 - **Source** : [DOC] README, « Longues listes » ; [TEST] `TU-MOD-54`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Ouvrir la boîte. | Cent notes, puis « Voir les 100 suivants (1 400 de plus) ». |
+| 1 | Ouvrir la boîte. | Cent notes, puis « Voir les 100 suivants (1 406 de plus) ». |
 | 2 | Cliquer le bouton. | Deux cents notes ; le bouton se met à jour. |
 | 3 | Mesurer à l'œil le temps d'ouverture de la boîte sur téléphone. | Moins de deux secondes (repère indicatif, voir TRV-007). |
 

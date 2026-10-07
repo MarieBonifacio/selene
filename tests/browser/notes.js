@@ -68,6 +68,34 @@ const v3 = { updatedAt: 10, schemaVersion: 3,
   const dq = await donneesQ(), taches = dq.modules.chantier.entries.filter(t => t.title === 'Penser à rappeler la quincaillerie');
   const vue = await q.evaluate(() => [...document.querySelectorAll('#main li.item[data-task] .t-title')].some(x => x.textContent.trim() === 'Penser à rappeler la quincaillerie'));
   ok(taches.length === 1 && vue && !dq.modules.inbox.entries.some(e => e.id === 'n6'), `« Enregistrer » : la tâche est dans Chantier, une seule ; la note a quitté la boîte (MOD-015, étape 3)`);
+
+  // MOD-025, étapes 1 et 2, sur un téléphone émulé : le jeu de volume (produit par `npm run recette -- donnees`) importé
+  // par les Réglages, la boîte et ses 1 506 notes, cent par cent. Le temps d'ouverture n'est qu'indiqué : sur un vrai
+  // téléphone, il reste à mesurer à la main (étape 3, TRV-007).
+  console.log('le jeu de volume : cent notes, puis « Voir les suivants » (MOD-025)');
+  const fs = require('node:fs'), path = require('node:path'), { execFileSync } = require('node:child_process');
+  const racine = path.join(__dirname, '..', '..');
+  execFileSync(process.execPath, [path.join(racine, 'scripts', 'recette.mjs'), 'donnees'], { cwd: racine, stdio: 'ignore' });
+  const volume = path.join(racine, 'dist', 'recette', 'volume.json');
+  const nNotes = JSON.parse(fs.readFileSync(volume, 'utf8')).site.modules.inbox.entries.length;
+  const tel = await (await b.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })).newPage(); tel.on('pageerror', e => errs.push(e.message));
+  await tel.addInitScript(() => { window.claude = { use: async () => null }; });
+  await ouvrir(tel, BASE + '/index.html#reglages', () => !!document.querySelector('input[data-act="imp"]'));
+  await tel.setInputFiles('input[data-act="imp"]', volume);
+  await tel.waitForSelector('#cdlg[open]', { timeout: 10000 }).catch(() => {}); if (await tel.$('#cdlg[open]')) await tel.click('#cdlg button[value="ok"]');
+  await tel.waitForFunction(() => (document.querySelector('#toast') || {}).textContent?.includes('Sauvegarde importée.'), null, { timeout: 15000 }).catch(() => {});
+  const ouverture = await tel.evaluate(() => new Promise(r => { const t0 = performance.now(); location.hash = 'inbox';
+    const fin = () => document.querySelectorAll('#main li.item').length >= 100 ? r(Math.round(performance.now() - t0)) : requestAnimationFrame(fin); fin(); }));
+  const lire = () => tel.evaluate(() => ({ n: document.querySelectorAll('#main li.item').length, bouton: ((document.querySelector('#main [data-act="page-more"]') || {}).textContent || '').trim() }));
+  const espaces = s => s.replace(/\s/g, ' '); // l'espace des milliers est une espace fine insécable
+  const page1 = await lire();
+  check(page1.n === 100 && espaces(page1.bouton) === espaces(`Voir les 100 suivants (${(nNotes - 100).toLocaleString('fr-FR')} de plus)`),
+    `la boîte de ${nNotes} notes : ${page1.n} notes, puis « ${page1.bouton} » ; ouverte en ${ouverture} ms sur un téléphone émulé (indicatif) (étape 1)`);
+  await tel.tap('#main [data-act="page-more"]');
+  await tel.waitForFunction(() => document.querySelectorAll('#main li.item').length >= 200, null, { timeout: 10000 }).catch(() => {});
+  const page2 = await lire();
+  check(page2.n === 200 && espaces(page2.bouton) === espaces(`Voir les 100 suivants (${(nNotes - 200).toLocaleString('fr-FR')} de plus)`), `« Voir les suivants » : ${page2.n} notes, le bouton dit « ${page2.bouton} » (étape 2)`);
+
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

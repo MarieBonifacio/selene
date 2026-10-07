@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "db4ee52023";
+const SELENE_BUILD = "cbf529fd4d";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -3560,7 +3560,7 @@ var __selene = (() => {
   var pageSize = {};
   function paged(key, list) {
     const n = pageSize[key] || PAGE, rest = list.length - n;
-    return { items: list.slice(0, n), more: rest > 0 ? `<li class="more-row"><button class="btn ghost sm" data-act="page-more" data-k="${esc(key)}">${tr`Voir les ${Math.min(PAGE, rest)} suivants (${rest} de plus)`}</button></li>` : "" };
+    return { items: list.slice(0, n), more: rest > 0 ? `<li class="more-row"><button class="btn ghost sm" data-act="page-more" data-k="${esc(key)}">${tr`Voir les ${Math.min(PAGE, rest)} suivants (${rest.toLocaleString(uiLocale())} de plus)`}</button></li>` : "" };
   }
   function setSaving(t) {
     $("#saving").textContent = t;
