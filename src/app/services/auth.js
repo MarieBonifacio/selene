@@ -298,7 +298,9 @@ function authRetryAfter() {
   if (authRetryN < AUTH_RETRY_MS.length) authRetryTimer = setTimeout(authKeepAlive, AUTH_RETRY_MS[authRetryN++]);
 }
 // Les minuteurs sont gelés quand un téléphone met l'onglet en veille : on rattrape au retour.
-window.addEventListener("online", () => { if (authReady()) { authRetryN = 0; authKeepAlive(); } });
+// Branchée, chaque store se resynchronise aussi tout de suite, sans attendre le relevé (A56) : ce qui n'a pas pu partir
+// pendant la coupure part, et l'échec d'un store qui n'avait rien à envoyer cesse de s'afficher (une lecture, sans écriture).
+window.addEventListener("online", () => { if (authReady()) { authRetryN = 0; authKeepAlive(); for (const st of [board, site]) if (st.db) st.sync(); } });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && authReady()) authKeepAlive(); });
 export async function authBoot() {
   if (!authReady()) return null;

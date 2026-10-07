@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "cbf529fd4d";
+const SELENE_BUILD = "f208c6e346";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -6851,6 +6851,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     if (authReady()) {
       authRetryN = 0;
       authKeepAlive();
+      for (const st of [board, site]) if (st.db) st.sync();
     }
   });
   document.addEventListener("visibilitychange", () => {
