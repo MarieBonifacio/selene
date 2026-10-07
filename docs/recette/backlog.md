@@ -21,6 +21,8 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| ~~A35 : `tests/browser/dehors-croise.js` instable sous WebKit (un rechargement pendant une reprise du branchement)~~ (fait le 7 octobre 2026, PR #132) | une session | P3 | — | [A35](perimetre.md#anomalies-et-observations) |
+| ~~A34 : `tests/browser/navigation.js` instable sous le processeur ralenti (la palette lue 150 ms après la frappe)~~ (fait le 7 octobre 2026, PR #132) | une session | P3 | — | [A34](perimetre.md#anomalies-et-observations) |
 | ~~A33 : une synchro pendant une frappe effaçait la saisie d'un champ sans identifiant, hors des Réglages (la clé OpenAlex de Dehors)~~ (fait le 7 octobre 2026, PR #132) | une session | P2 | — | [A33](perimetre.md#anomalies-et-observations) |
 | ~~A32 : `tests/browser/zotero.js` instable sous WebKit (la clé lue 500 ms après sa saisie)~~ (fait le 7 octobre 2026, PR #132) | une session | P3 | — | [A32](perimetre.md#anomalies-et-observations) |
 | ~~A31 : les reprises d'A24 rendaient plus fréquentes les requêtes coupées par un rechargement, sous WebKit~~ (fait le 7 octobre 2026, PR #129) | une session | P3 | — | [A31](perimetre.md#anomalies-et-observations) |
@@ -123,7 +125,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 | [BL-20](#bl-20) | ~~Un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait) | outillage | P3 | onze étapes, voir ci-dessous |
 | [BL-21](#bl-21) | ~~Fermer le réseau aux scénarios de navigateur~~ (fait) | hygiène des essais | P2 | tous les scénarios ; A20 |
 | [BL-22](#bl-22) | ~~Débusquer les délais fixes après un geste : un job au processeur ralenti~~ (fait) | fiabilité de la CI | P2 | tous les scénarios ; A10, A11, A16, A21 à A23 |
-| [BL-23](#bl-23) | ~~Un faux Supabase commun, qui réponde comme PostgREST~~ (fait) | hygiène des essais | P3 | dix-sept scénarios ; A29, A31 |
+| [BL-23](#bl-23) | ~~Un faux Supabase commun, qui réponde comme PostgREST~~ (fait) | hygiène des essais | P3 | dix-huit scénarios ; A29, A31, A35 |
 
 ---
 
@@ -579,7 +581,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 - **Niveau** : outillage des scénarios.
 - **Bénéfice attendu** : les scénarios connectés le sont vraiment ; plus de reprises de fond, donc plus de requêtes
   coupées par un rechargement ; un contrôle possible de l'indicateur « synchronisé » partout.
-- **État** : **fait** le 7 octobre 2026 (PR #132). `fauxSupabase(ctx, autre)` dans `helpers.js` ; dix-sept scénarios y passent,
+- **État** : **fait** le 7 octobre 2026 (PR #132). `fauxSupabase(ctx, autre)` dans `helpers.js` ; dix-huit scénarios y passent,
   verts sous Chromium, aussi à ×4. `agenda.js`, `indexeddb.js`, `dehors.js` et `veille.js` vérifient qu'ils sont
   synchronisés pour de vrai (`synchro(p)` vide), un contrôle qui échoue avec l'ancien faux. `agenda.js` vérifie en plus
   que l'adresse secrète du calendrier n'arrive pas au serveur. Trois scénarios ont dû suivre, sans défaut de l'app :
@@ -591,7 +593,8 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
     il réussit, et à ×4 elle n'était pas encore là. Il l'attend.
   La CI a trouvé un quatrième cas sous WebKit, A32 (`zotero.js`, la clé lue 500 ms après sa saisie), corrigé de même ; et,
   sous Firefox, un vrai défaut de l'app que l'ancien faux cachait, A33 : une synchro pendant une frappe effaçait la saisie
-  d'un champ sans identifiant, hors des Réglages. Corrigé, prouvé par `TU-MOD-66` et `TN-veille`.
+  d'un champ sans identifiant, hors des Réglages. Corrigé, prouvé par `TU-MOD-66` et `TN-veille`. Puis A34
+  (`navigation.js`, la palette lue trop tôt) et A35 (`dehors-croise.js`, migré à son tour).
   Le calme de 2,5 s avant chaque rechargement (A31) reste : il protège aussi des écritures parties juste avant.
 
 ---

@@ -23,10 +23,14 @@ demo.modules.ecriture.scraps = Array.from({ length: 150 }, (_, i) => ({ id: 'f' 
   console.log('palette');
   await d.keyboard.press('Control+k'); await d.waitForTimeout(100);
   ok(await d.isVisible('#palette') && (await d.getAttribute('#palIn', 'placeholder')) === 'Aller, agir, chercher…', '⌘K / Ctrl+K ouvre la palette, son champ dit « Aller, agir, chercher… »');
-  await d.keyboard.type('écri'); await d.waitForTimeout(100); await d.keyboard.press('Enter'); await d.waitForTimeout(250);
+  await d.keyboard.type('écri');
+  await d.waitForFunction(() => ((document.querySelector('#palList li') || {}).textContent || '').includes('Écriture'), null, { timeout: 10000 }).catch(() => {});
+  await d.keyboard.press('Enter'); await d.waitForFunction(() => location.hash === '#ecriture', null, { timeout: 10000 }).catch(() => {});
   ok(await hash(d) === '#ecriture' && !(await d.isVisible('#palette')), 'un espace trouvé par son nom, Entrée y mène');
   await go(d, 'accueil');
-  await d.keyboard.press('Control+k'); await d.keyboard.type('aulnes'); await d.waitForTimeout(150);
+  await d.keyboard.press('Control+k'); await d.keyboard.type('aulnes');
+  // La ligne cherchée, pas 150 ms : à ×4, la recherche dans 150 fragments n'avait pas encore répondu (BL-22).
+  await d.waitForFunction(t => [...document.querySelectorAll('#palList li')].some(li => li.textContent.includes(t)), 'La lisière des aulnes', { timeout: 10000 }).catch(() => {});
   const n = await d.$$eval('#palList li', lis => lis.findIndex(li => li.textContent.includes('La lisière des aulnes')));
   for (let i = 0; i < n; i++) await d.keyboard.press('ArrowDown');
   await d.keyboard.press('Enter'); await d.waitForTimeout(300);
@@ -34,7 +38,8 @@ demo.modules.ecriture.scraps = Array.from({ length: 150 }, (_, i) => ({ id: 'f' 
   ok(await d.$eval('[data-id="f0"]', el => el.classList.contains('flash') && el.getBoundingClientRect().top >= 0 && el.getBoundingClientRect().bottom <= innerHeight), 'l’entrée, au-delà de la première page, est dépliée, montrée et surlignée');
   // Choisir une ligne de la palette : la chercher, puis y descendre au clavier, comme une personne.
   const choisir = async (q, ligne) => {
-    await d.keyboard.press('Control+k'); await d.keyboard.type(q); await d.waitForTimeout(150);
+    await d.keyboard.press('Control+k'); await d.keyboard.type(q);
+    await d.waitForFunction(t => [...document.querySelectorAll('#palList li')].some(li => li.textContent.includes(t)), ligne, { timeout: 10000 }).catch(() => {});
     const i = await d.$$eval('#palList li', (lis, t) => lis.findIndex(li => li.textContent.includes(t)), ligne);
     for (let k = 0; k < i; k++) await d.keyboard.press('ArrowDown');
     await d.keyboard.press('Enter'); await d.waitForTimeout(250);
@@ -47,7 +52,8 @@ demo.modules.ecriture.scraps = Array.from({ length: 150 }, (_, i) => ({ id: 'f' 
   const minuteur = await choisir('minuteur', 'Lancer le minuteur (15 min)');
   ok(minuteur >= 0 && (await d.textContent('#timerBtn')) === 'Pause' && !(await d.isVisible('#palette')), '« Lancer le minuteur (15 min) » le démarre');
   await d.click('#timerBtn'); await d.click('#timerReset');
-  await d.keyboard.press('Control+k'); await d.keyboard.type('zzzz'); await d.waitForTimeout(150);
+  await d.keyboard.press('Control+k'); await d.keyboard.type('zzzz');
+  await d.waitForFunction(() => [...document.querySelectorAll('#palList li')].some(li => li.textContent.includes('« zzzz » partout')), null, { timeout: 10000 }).catch(() => {});
   const rien = (await d.$$eval('#palList li', lis => lis.map(li => li.textContent))).join(' | ');
   ok(/^Garder« zzzz » dans .+ \| Chercher« zzzz » partout$/.test(rien), `rien de trouvé : garder ou chercher partout, rien d’autre (${rien}) (C12)`);
   await d.keyboard.press('Escape'); await d.waitForTimeout(100);

@@ -46,7 +46,7 @@ contient au moins une assertion (six tests de `sync.test.js` passent par l'assis
   ligne par compte, lecture filtrée, création, écriture conditionnelle), sur le modèle de `fakeSupabase` des tests Node ;
   `autre` sert ce qui est propre au scénario (le passeur, une fonction). Un scénario « connecté » l'est donc vraiment :
   son branchement réussit, l'app ne le retente pas en fond (A31), et `synchro(p)` (l'indicateur `#saving`) est vide.
-  Dix-sept scénarios s'en servent ([BL-23](backlog.md#bl-23)) ; les autres tiennent leur propre table de lignes, aussi
+  Dix-huit scénarios s'en servent ([BL-23](backlog.md#bl-23)) ; les autres tiennent leur propre table de lignes, aussi
   fidèle (`sync-deux-appareils.js`, `hors-ligne-reel.js`, `regulation*.js`, `secours.js`, `sauvegarde-complete.js`,
   `sans-compte.js`, `sources.js`), ou ne se connectent pas.
 - **`deno test`** : assertion levée ; **`deno check`** : erreur de typage.
