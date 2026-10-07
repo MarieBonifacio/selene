@@ -75,9 +75,9 @@ Identifiants retirés : aucun.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Coller la première adresse, « Chercher ». | Aperçu avec titre de la page et site ; l'adresse affichée n'a plus `utm_source` ni `fbclid`. |
-| 2 | « Garder ». | Source gardée avec l'adresse nettoyée. |
-| 3 | Coller le DOI du jeu d'essai, « Chercher ». | « Déjà gardée dans Sources : « Depersonalization… » » ; « Garder » est désactivé. |
+| 1 | Coller la première adresse, « Chercher ». | Aperçu avec le titre de la page, son site, sa date et sa description ; l'adresse n'y est pas affichée (C13). |
+| 2 | « Garder ». | Source gardée avec l'adresse nettoyée : plus de `utm_source` ni de `fbclid` (« ouvrir ↗ » sur la source le montre). |
+| 3 | Coller le DOI du jeu d'essai, « Chercher ». | « Déjà gardée : « Depersonalization… » » ; « Garder » est désactivé. Depuis un autre module de sources, le message nommerait celui qui la garde : « Déjà gardée dans Sources : … » (C13). |
 | 4 | Coller `pas une adresse`. | « Ni lien ni DOI reconnu. Un lien commence par https://, un DOI par 10. » ; aucune requête. |
 
 - **État final attendu** : une source de plus.

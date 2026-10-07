@@ -43,6 +43,17 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   ok((await nav()).includes('Tableau de production'), 'création depuis un modèle dans Réglages (nom du modèle si vide)');
   await p.evaluate(() => location.hash = 'tableau-de-production'); await p.waitForTimeout(200);
   ok((await main()).includes('Idée') && (await main()).includes('Publié') && (await main()).includes('Nouvelle idée'), 'le modèle a réglé colonnes et bouton');
+
+  console.log('les états vides d’un compte neuf');
+  const vue = async id => { await p.evaluate(h => location.hash = h, id); await p.waitForTimeout(200); return main(); };
+  const ids = await p.evaluate(() => { const m = JSON.parse(localStorage.getItem('selene-site-v1')).modules, k = t => Object.keys(m).find(x => t(m[x])); return { boite: k(x => x.type === 'notes' && x.config.inbox), taches: k(x => x.type === 'taches') }; });
+  const vide = await vue(ids.taches);
+  ok(vide.includes("Coche l'étoile d'une tâche.") && vide.includes("Plus rien ici. Soit c'est fini, soit tu as filtré trop fort."), 'un espace de tâches vide : « Coche l’étoile d’une tâche. » et « Plus rien ici. Soit c’est fini, soit tu as filtré trop fort. »');
+  ok((await vue(ids.boite)).includes("Vide. Le silence d'une clairière, ou celui d'un cerveau."), 'la boîte vide : « Vide. Le silence d’une clairière, ou celui d’un cerveau. »');
+  await vue('reglages'); await p.evaluate(() => document.querySelectorAll('details').forEach(d => d.open = true));
+  await p.selectOption('#newModType', 'tpl:carnet'); await p.click('[data-act="mod-add"]'); await p.waitForTimeout(200);
+  const carnet = await p.evaluate(() => { const m = JSON.parse(localStorage.getItem('selene-site-v1')).modules; return Object.keys(m).find(x => m[x].type === 'notes' && !m[x].config.inbox); });
+  ok(!!carnet && (await vue(carnet)).includes("Rien pour l'instant."), 'un Carnet neuf : « Rien pour l’instant. »');
   await p.reload(); await p.waitForTimeout(300);
   ok(!(await main()).includes('Composer ton espace'), 'le bloc ne revient pas au rechargement');
 

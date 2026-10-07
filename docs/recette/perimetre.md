@@ -152,7 +152,7 @@ Les pages du cahier publiées en artefact (`npm run recette -- page`) sont des v
 
 ## Contradictions entre documentation, code et tests
 
-Relevées pendant l'analyse ; toutes corrigées depuis, le 5 octobre 2026 (voir [backlog.md](backlog.md#documentation)). C7 et C8, relevées le 6 octobre en automatisant les étapes que [BL-19](backlog.md#bl-19) a nommées, sont corrigées le même jour, dans le cahier : le code avait raison. C9 et C10, relevées en lisant les tests des cas P2 et P3, le sont le 7 octobre 2026, de même ; C11 et C12, relevées le même jour en automatisant MOD-003 et NAV-003, aussi.
+Relevées pendant l'analyse ; toutes corrigées depuis, le 5 octobre 2026 (voir [backlog.md](backlog.md#documentation)). C7 et C8, relevées le 6 octobre en automatisant les étapes que [BL-19](backlog.md#bl-19) a nommées, sont corrigées le même jour, dans le cahier : le code avait raison. C9 et C10, relevées en lisant les tests des cas P2 et P3, le sont le 7 octobre 2026, de même ; C11 à C13, relevées le même jour en automatisant MOD-003, NAV-003 et EXT-002, aussi.
 
 | # | Où | Ce qui est écrit | Ce que font le code et les tests | Conséquence pour la recette |
 |---|---|---|---|---|
@@ -168,6 +168,7 @@ Relevées pendant l'analyse ; toutes corrigées depuis, le 5 octobre 2026 (voir 
 | C10 | [EXT-009](manuels/connexions.md#ext-009), données et étape 3 | L'appareil réglé au 12 décembre, « veille des Géminides » : une ligne les annonce. | Le maximum est le 14 (`sky.js`) ; la ligne paraît la veille et le jour du maximum seulement (`skyEvents`, `TU-SKY-13`) : le 13 et le 14. Le 12, rien. | Même conséquence. L'appareil est réglé au 13 décembre. |
 | C11 | [MOD-003](manuels/types-de-module.md#mod-003), étape 3 et nettoyage | « Décocher puis recocher » la tâche faite. | Une tâche faite quitte la liste pour « Fait récemment », où elle n'a plus de case, mais un bouton « annuler » (`task-undo`, `taches.js`) ; `TN-recherche-minuteur` le joue ainsi. | Une étape impossible à jouer telle quelle. Elle dit « annuler », puis recocher. |
 | C12 | [NAV-003](manuels/navigation-reglages.md#nav-003), étape 6 | `zzzz` dans la palette : « Rien. Ni espace, ni action, ni trace écrite. » | Dès qu'un texte est tapé, la palette propose toujours « Chercher « … » partout », et « Garder « … » dans Boîte » s'il y a une boîte (`palette.js`) : sa liste n'est jamais vide, et ce message ne paraît jamais (sonde Chromium du 7 octobre ; `TN-navigation` le vérifie). | L'attendu ne pouvait que faire échouer une recette juste. Il dit les deux lignes. Le message lui-même est du code mort, sans conséquence. |
+| C13 | [EXT-002](manuels/connexions.md#ext-002), étapes 1 et 3 | L'aperçu montre « l'adresse » sans `utm_source` ni `fbclid` ; le doublon dit « Déjà gardée dans Sources : … ». | L'aperçu ne montre pas l'adresse : le titre, le site, la date, la sorte et la description (sonde Chromium du 7 octobre ; `sources.js`) ; c'est l'adresse gardée qui est nettoyée. Cherché depuis Sources même, le doublon dit « Déjà gardée : « … » » ; « dans … » ne nomme que l'autre module qui la garde. `TN-sources` vérifie les deux. | Deux attendus impossibles à observer. Ils disent ce que montre l'écran ; le nettoyage se lit sur la source gardée. |
 
 ## Anomalies et observations
 

@@ -1,13 +1,14 @@
 /* Scénario de navigateur : taches. Lancé par tests/browser/run.js. */
 const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const today = new Date().toISOString().slice(0, 10);
+const jour = n => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
 const T = (id, title, x = {}) => ({ id, title, room: 'Cuisine', cat: 'Bricolage', due: null, effort: 1, cost: null, note: '', today: false, done: false, doneAt: null, created: today, steps: [], ...x });
 const v5site = { updatedAt: 10, schemaVersion: 5,
   config: { name: 'Selene', palette: 'nigredo', mode: 'auto', labels: { chantier: 'Appartement' }, groups: { chantier: { on: true, by: 'room', sort: 'name', hideDone: false, title: '' } },
     modules: ['chantier', 'budget', 'inbox'].map(id => ({ id, on: true })), assistant: { model: 'claude-sonnet-5', actions: true, share: { chantier: true } } },
   modules: { inbox: { type: 'notes', label: 'Capture', config: { inbox: true, description: '', placeholder: '…' }, entries: [{ id: 'n1', text: 'réparer la porte', date: today }] },
     budget: { type: 'budget', label: 'Budget', config: { envelopes: [], groups: { on: true, by: 'cat', sort: 'name', hideDone: false, title: '' } }, entries: [] } } };
-const board = { updatedAt: 9, tasks: [T('t1', 'Poser le velux', { due: today, cost: 250, steps: [{ t: 'Devis', d: false }, { t: 'Achat', d: false }] }), T('t2', 'Plinthes', { room: 'Salon', today: true }), T('t3', 'Joints', { room: 'Salle de bain', today: true }), T('t4', 'Changer le robinet')] };
+const board = { updatedAt: 9, tasks: [T('t1', 'Poser le velux', { due: today, cost: 250, steps: [{ t: 'Devis', d: false }, { t: 'Achat', d: false }] }), T('t2', 'Plinthes', { room: 'Salon', today: true }), T('t3', 'Joints', { room: 'Salle de bain', today: true }), T('t4', 'Changer le robinet', { due: jour(-3) })] };
 (async () => {
   const b = await engine.launch(launchOptions);
   const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => d.accept());
@@ -31,6 +32,14 @@ const board = { updatedAt: 9, tasks: [T('t1', 'Poser le velux', { due: today, co
   await go('chantier'); let t = await main();
   ok(t.includes('Poser le velux') && t.includes('250 €') && t.includes('0/2 étapes') && t.includes('Pièce : tout'), 'vue : échéances, coûts, étapes, filtre par pièce');
   ok(t.includes('Budget estimé : 0 € engagés, 250 € encore à prévoir'), 'budget estimé');
+  ok(t.includes('En retard de 3 j'), 'une échéance passée : « En retard de 3 j »');
+  await p.click('[data-act="task-new"]'); // MOD-001, étape 2 : une tâche complète, dans une pièce nouvelle
+  await p.fill('#form [name=title]', 'Fixer la tringle'); await p.fill('#form [name=room]', 'Chambre'); await p.selectOption('#form [name=cat]', 'Bricolage');
+  await p.fill('#form [name=due]', jour(3)); await p.selectOption('#form [name=effort]', '2'); await p.fill('#form [name=cost]', '40'); await p.fill('#form [name=steps]', 'Percer\nVisser'); await save();
+  const semaine = (await p.textContent('#main div:has(> h3:has-text("Cette semaine"))').catch(() => '')).replace(/\s+/g, ' ');
+  const tringle = (await p.textContent('#main li:has-text("Fixer la tringle")').catch(() => '')).replace(/\s+/g, ' ');
+  ok(semaine.includes('Fixer la tringle') && tringle.includes('0/2 étapes') && tringle.includes('40 €') && tringle.includes('Chambre'), 'ajoutée par le formulaire : dans « Cette semaine », « 0/2 étapes », « 40 € », la Chambre' + (tringle ? '' : ' (introuvable)'));
+  ok((await p.$$eval('#main .rooms .room', rs => rs.map(r => r.textContent))).some(r => r.includes('Chambre')), 'la pièce « Chambre » paraît dans le registre');
   await p.click('li[data-task="t1"] [data-act="task-open"]'); await p.waitForTimeout(100);
   await p.check('li[data-task="t1"] [data-act="task-step"][data-i="0"]'); await p.waitForTimeout(150);
   ok((await data()).modules.chantier.entries.find(x => x.id === 't1').steps[0].d === true, 'étape cochée');
@@ -75,7 +84,7 @@ const board = { updatedAt: 9, tasks: [T('t1', 'Poser le velux', { due: today, co
   await go('inbox'); await p.click('[data-act="note-to"][data-to="chantier"]'); await p.waitForTimeout(200);
   ok(await p.isVisible('#dlg') && (await p.inputValue('#form [name=title]')) === 'réparer la porte', 'une note rangée dans le Chantier ouvre son formulaire');
   await p.click('#form button[value=cancel]');
-  await go('budget'); ok((await main()).includes('Les tâches en cours estiment encore 250,00 €'), 'le budget voit les coûts des tâches');
+  await go('budget'); ok((await main()).includes('Les tâches en cours estiment encore 290,00 €'), 'le budget voit les coûts des tâches (250 € et les 40 € de la tringle)');
   await go('accueil'); ok((await main()).includes('Appartement') && (await main()).includes('% fait'), 'résumé d’accueil fourni par le type');
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
