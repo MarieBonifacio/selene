@@ -1206,7 +1206,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/passeur.js`](../../tests/browser/passeur.js) · **mode** H puis A · **écran** O
 - **Conditions** : Faux passeur.
-- **Vérifie** : connectée : les pages passent par le passeur, avec la session ; Microlink non sollicité ; métadonnées, flux repéré, rien de la page exécuté ; og:url d'un autre site ignorée ; DOI de la page complété par Crossref ; passeur absent (404) ou refusé (403) : Microlink prend le relais, sans insister, et l'aide le dit ; identifiant pour `PASSEUR_USERS` ; « Vérifier » ; artefact : pas de passeur.
+- **Vérifie** : connectée : les pages passent par le passeur, avec la session ; Microlink non sollicité ; métadonnées, flux repéré, rien de la page exécuté ; og:url d'un autre site ignorée ; DOI de la page complété par Crossref ; passeur absent (404) ou refusé (403) : Microlink prend le relais, sans insister, et l'aide le dit ; identifiant pour `PASSEUR_USERS` ; « Vérifier » ; artefact : pas de passeur. « copier » : l'identifiant au presse-papiers (relevé dans la page), « Identifiant copié. » ; refusé : « Copie impossible ici : sélectionne-le à la main. » (EXT-012, étape 1).
 - **Cas manuels** : [EXT-012](manuels/connexions.md#ext-012), [EXT-019](manuels/connexions.md#ext-019)
 
 <a id="tn-dehors"></a>
