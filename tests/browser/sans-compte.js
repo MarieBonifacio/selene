@@ -62,6 +62,26 @@ const NEUF = '5a5a5a5a-1111-2222-3333-444455556666', ANCIEN = '6b6b6b6b-1111-222
     check(!(await p.$$eval('#main h2', hs => hs.some(h => h.textContent.trim() === 'Selene'))), '« Selene » n’est plus écrit deux fois');
     check(!(await p.isVisible('#timerBtn')) && !!(await p.$eval('#miniMoon', e => e.innerHTML)), 'la lune du jour, pas de minuteur avant d’être entrée');
     check(await p.isVisible('#authForm') && t.includes('J\'ai déjà un compte'), 'le compte, ensuite, pour qui en a un');
+    // CPT-001 : chaque texte de l'écran d'entrée, puis sa mise en page (la promesse à gauche, en haut sur téléphone).
+    const entree = q => q.evaluate(() => {
+      const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '', all = s => [...document.querySelectorAll(s)].map(txt);
+      const r = s => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return { l: b.left, r: b.right, t: b.top, b: b.bottom }; };
+      return { h2: all('#main h2'), ps: all('#main p'), lis: all('#main li'), h3: all('#main h3'), labels: all('#main label'), boutons: all('#main button'), h2r: r('#main h2'), h3r: r('#main h3'),
+        large: document.documentElement.scrollWidth <= innerWidth, dehors: [...document.querySelectorAll('#main button')].filter(x => { const b = x.getBoundingClientRect(); return !b.width || b.left < 0 || b.right > innerWidth; }).length };
+    });
+    const textes = e => e.h2[0] === 'Garde tes fragments, tes sources et tes hypothèses reliés.' && e.ps.includes("Et retrouve ce que tu avais oublié, jusqu'au dernier chapitre.")
+      && JSON.stringify(e.lis) === JSON.stringify(['Un compteur de mots, des chapitres, des fragments datés', "Des sources complétées depuis un lien ou un DOI, reliées à ce qu'elles documentent", "Ni publicité ni traceur : tout vit d'abord sur ton appareil"])
+      && e.ps.includes('Rien à créer : tout reste sur cet appareil. Un compte, plus tard, le retrouve sur tes autres appareils, avec ce que tu auras noté.')
+      && e.h3[0] === "J'ai déjà un compte" && e.labels.join() === 'E-mail,Mot de passe' && ['Commencer sans compte', 'Se connecter', 'Créer un compte', 'Mot de passe oublié ?'].every(x => e.boutons.includes(x));
+    const e1 = await entree(p);
+    check(textes(e1), 'la phrase et les trois puces ; « Commencer sans compte » et sa phrase ; « J’ai déjà un compte », ses deux champs et ses trois boutons (CPT-001)');
+    check(e1.h2r && e1.h3r && e1.h2r.r <= e1.h3r.l, 'sur ordinateur, la promesse à gauche du compte');
+    { const tel = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' })).newPage(); tel.on('pageerror', e => errs.push(e.message));
+      await tel.route('https://*.supabase.co/**', r => json(r, 200, new URL(r.request().url()).pathname === '/auth/v1/settings' ? { disable_signup: false } : []));
+      await tel.goto(BASE + '/index.html'); await tel.waitForSelector('[data-act="auth-local"]');
+      const e2 = await entree(tel);
+      check(textes(e2) && e2.h2r.b <= e2.h3r.t && e2.large && !e2.dehors, 'sur téléphone, à 390 px : les mêmes textes, la promesse en haut, aucun défilement horizontal, chaque bouton dans l’écran');
+      await tel.context().close(); }
 
     console.log('commencer sans compte');
     await p.click('[data-act="auth-local"]'); await settle();
