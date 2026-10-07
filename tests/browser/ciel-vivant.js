@@ -1,5 +1,5 @@
 /* Scénario de navigateur : le ciel vivant (évolution de l'interface, vague 3b : docs/evolution-ui.md). Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, ouvrir, BASE, launchOptions, fixture, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.config.sky = { name: 'Lille, Hauts-de-France, France', lat: 50.6, lon: 3.1, weather: true, realMoon: true };
 (async () => {
@@ -46,6 +46,12 @@ demo.config.sky = { name: 'Lille, Hauts-de-France, France', lat: 50.6, lon: 3.1,
   l = await layers(p);
   ok(!(await p.$('.hero.live')) && l.length && l.every(x => x.name === 'none'), 'décoché : le ciel est immobile, la pluie toujours dessinée');
   ok((await p.evaluate(() => localStorage.getItem('selene-sky-live'))) === 'off' && !JSON.stringify(await p.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).config.sky)).includes('live'), 'réglé sur cet appareil, pas dans le compte');
+  await ouvrir(p, null, () => !!document.querySelector('.hero .band')); // TRV-006, étape 4 : rechargé
+  l = await layers(p);
+  ok(!(await p.$('.hero.live')) && l.length && l.every(x => x.name === 'none'), 'rechargé : le ciel reste immobile');
+  await p.evaluate(() => location.hash = 'reglages'); await p.waitForSelector('[data-act="sky-live"]', { state: 'attached' });
+  ok(!(await p.isChecked('[data-act="sky-live"]')), 'et « Ciel vivant » reste décoché');
+  await p.evaluate(() => location.hash = '');
 
   const r = await open(rain, { reducedMotion: 'reduce' });
   ok((await layers(r)).every(x => x.name === 'none'), 'le système demande moins d’animations : rien ne bouge');

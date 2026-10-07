@@ -49,6 +49,9 @@ contient au moins une assertion (six tests de `sync.test.js` passent par l'assis
   Dix-huit scénarios s'en servent ([BL-23](backlog.md#bl-23)) ; les autres tiennent leur propre table de lignes, aussi
   fidèle (`sync-deux-appareils.js`, `hors-ligne-reel.js`, `regulation*.js`, `secours.js`, `sauvegarde-complete.js`,
   `sans-compte.js`, `sources.js`), ou ne se connectent pas.
+- **Le jeu d'essai du cahier** : `donnee(nom)` de `helpers.js` lit un jeu de `docs/recette/donnees/` tel quel. `budget.js`
+  et `quotidien.js` y vérifient ce que les cas MOD-005, MOD-007 et MOD-009 attendent de lui, chiffres compris ;
+  `sauvegarde-complete.js` en importe les fichiers.
 - **`deno test`** : assertion levée ; **`deno check`** : erreur de typage.
 - **`cargo test`** : `assert!` ou `assert_eq!` en échec.
 - **`build.py --check`** : sort en erreur si un HTML généré ne correspond plus aux sources.
@@ -735,7 +738,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/sans-compte.js`](../../tests/browser/sans-compte.js) · **mode** H · **écran** O
 - **Conditions** : Écran d'entrée sans session ; faux Supabase en mémoire.
-- **Vérifie** : l'écran d'entrée dit la promesse, la lune du jour, pas de minuteur ; « Commencer sans compte » ouvre l'app et sa première question ; le choix survit au rechargement ; rien de ce qui est écrit ne part au serveur ; Réglages → Compte : ce que veut dire « sans compte », effacer le navigateur efface tout, exporter de temps en temps ; l'assistant demande un compte ; revenir de l'écran d'entrée laisse l'espace à l'identique ; créer un compte verse la capture et l'espace Écriture dans le compte neuf ; le choix « sans compte » s'efface ; se connecter à un compte existant : capture gardée, espaces des deux côtés gardés, réglages du compte appliqués ; la capture dit « Gardé. Tu peux oublier, c'est écrit. » et se retrouve dans la boîte après rechargement (CPT-002).
+- **Vérifie** : l'écran d'entrée dit la promesse, la lune du jour, pas de minuteur ; « Commencer sans compte » ouvre l'app et sa première question ; le choix survit au rechargement, et à l'onglet fermé puis rouvert (CPT-002) ; rien de ce qui est écrit ne part au serveur : ni `app_state` ni `activite`, rien que la lecture des inscriptions ; Réglages → Compte : ce que veut dire « sans compte », effacer le navigateur efface tout, exporter de temps en temps ; l'assistant demande un compte ; revenir de l'écran d'entrée laisse l'espace à l'identique ; créer un compte verse la capture et l'espace Écriture dans le compte neuf ; le choix « sans compte » s'efface ; se connecter à un compte existant : capture gardée, espaces des deux côtés gardés, réglages du compte appliqués ; la capture dit « Gardé. Tu peux oublier, c'est écrit. » et se retrouve dans la boîte après rechargement (CPT-002).
 - **Limites** : Supabase Auth et PostgREST simulés.
 - **Cas manuels** : [CPT-001](manuels/entree-et-comptes.md#cpt-001), [CPT-002](manuels/entree-et-comptes.md#cpt-002), [CPT-003](manuels/entree-et-comptes.md#cpt-003), [CPT-004](manuels/entree-et-comptes.md#cpt-004), [CPT-005](manuels/entree-et-comptes.md#cpt-005), [AST-001](manuels/assistant.md#ast-001)
 
@@ -804,7 +807,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/reglages.js`](../../tests/browser/reglages.js) · **mode** A · **écran** O, T (390 et 320 px)
 - **Conditions** : Jeu d'essai.
-- **Vérifie** : six chapitres et un sommaire ; chaque espace une fois ; bloc déplié qui le reste ; infobulles au clic, entières dans l'écran, fermées par Échap ou un clic ailleurs ; le sommaire mène au chapitre, le focus suit, le chapitre lu est marqué ; premier accueil repliable et rouvrable ; rien ne déborde, même à 320 px ; un type vide sans nom : « Donne un nom au module. », rien de créé ; supprimer un espace fait retaper son nom : une autre casse est refusée (« Nom incorrect, rien n'a été supprimé. »), le nom exact le supprime de la navigation et des Réglages, et il ne revient pas au rechargement (ESP-003, ESP-007).
+- **Vérifie** : six chapitres et un sommaire ; chaque espace une fois ; bloc déplié qui le reste ; l'objectif d'Écriture changé, gardé à l'écran et dans le stockage (NAV-007) ; infobulles au clic, entières dans l'écran, fermées par Échap ou un clic ailleurs ; le sommaire mène au chapitre, le focus suit, le chapitre lu est marqué ; premier accueil repliable et rouvrable ; rien ne déborde, même à 320 px ; un type vide sans nom : « Donne un nom au module. », rien de créé ; supprimer un espace fait retaper son nom : une autre casse est refusée (« Nom incorrect, rien n'a été supprimé. »), le nom exact le supprime de la navigation et des Réglages, et il ne revient pas au rechargement (ESP-003, ESP-007).
 - **Cas manuels** : [NAV-007](manuels/navigation-reglages.md#nav-007), [NAV-008](manuels/navigation-reglages.md#nav-008), [EXT-019](manuels/connexions.md#ext-019), [TRV-014](manuels/transverse.md#trv-014), [ESP-003](manuels/espaces.md#esp-003), [ESP-007](manuels/espaces.md#esp-007)
 
 <a id="tn-langue"></a>
@@ -861,15 +864,15 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/taches.js`](../../tests/browser/taches.js) · **mode** A · **écran** —
 - **Conditions** : Données au format 5 avec un `board`.
-- **Vérifie** : tâches du `board` versées dans le module, nom personnalisé gardé, `board` vidé ; échéances (« En retard de 3 j »), coûts, étapes, filtre par pièce, budget estimé ; une tâche complète ajoutée par le formulaire, sa pièce nouvelle dans le registre ; troisième tâche du jour acceptée, quatrième refusée, aussi entre deux modules ; le tirage, la journée pleine : « Aujourd'hui est plein. Le hasard respecte les plafonds. » ; réglages : types, coûts désactivés, « Lieu » ; une note rangée ouvre le formulaire de tâche ; « 1/2 étapes » ; un titre vide refusé par le formulaire ; la tâche et son étape cochée relues après rechargement (MOD-001).
+- **Vérifie** : tâches du `board` versées dans le module, nom personnalisé gardé, `board` vidé ; échéances (« En retard de 3 j »), coûts, étapes, filtre par pièce, budget estimé ; une tâche complète ajoutée par le formulaire, sa pièce nouvelle dans le registre ; troisième tâche du jour acceptée, quatrième refusée, aussi entre deux modules, « Trois, c'est le plafond. Termine ou retire-en une. », l'étoile éteinte ; une tâche faite quitte « Aujourd'hui », l'accueil n'en montre plus que deux (MOD-002) ; le tirage, la journée pleine : « Aujourd'hui est plein. Le hasard respecte les plafonds. » ; réglages : types, coûts désactivés, « Lieu » ; une note rangée ouvre le formulaire de tâche ; « 1/2 étapes » ; un titre vide refusé par le formulaire ; la tâche et son étape cochée relues après rechargement (MOD-001).
 - **Cas manuels** : [MOD-001](manuels/types-de-module.md#mod-001), [MOD-002](manuels/types-de-module.md#mod-002), [MOD-004](manuels/types-de-module.md#mod-004)
 
 <a id="tn-budget"></a>
 #### `TN-budget` — Budget
 
 - **Fichier** : [`tests/browser/budget.js`](../../tests/browser/budget.js) · **mode** A · **écran** —
-- **Conditions** : Données au format 4 (budget en section).
-- **Vérifie** : revenus, dépenses, solde migrés ; jauge 40 % puis 50 % après ajout ; mois précédent vide ; clic sur une enveloppe filtre ; renommer l'enveloppe renomme ses opérations ; ajout d'enveloppe ; second budget indépendant ; résumé d'accueil ; un montant nul refusé, et dit ; un montant négatif compté en valeur absolue, le sens venant du type (MOD-005).
+- **Conditions** : Données au format 4 (budget en section) ; puis le jeu d'essai du cahier (`jeu-essai.json`).
+- **Vérifie** : revenus, dépenses, solde migrés ; jauge 40 % puis 50 % après ajout ; mois précédent vide ; clic sur une enveloppe filtre ; renommer l'enveloppe renomme ses opérations ; ajout d'enveloppe ; second budget indépendant ; résumé d'accueil ; un montant nul refusé, et dit ; un montant négatif compté en valeur absolue, le sens venant du type (MOD-005) ; sur le jeu d'essai du cahier, septembre 2026 : revenus, dépenses et solde, les jauges de Courses et de Travaux (MOD-005, étape 1).
 - **Cas manuels** : [MOD-005](manuels/types-de-module.md#mod-005), [MOD-006](manuels/types-de-module.md#mod-006), [TRV-015](manuels/transverse.md#trv-015)
 
 <a id="tn-collections"></a>
@@ -917,8 +920,8 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-quotidien` — Le quotidien sur téléphone
 
 - **Fichier** : [`tests/browser/quotidien.js`](../../tests/browser/quotidien.js) · **mode** A · **écran** T
-- **Conditions** : Programme commencé, élément en retard.
-- **Vérifie** : séance en un geste, élément en retard, « fait » sur un rappel, dernière durée ; paysage réduit à la deuxième ouverture du jour ; brouillon restauré puis effacé ; suppression avec « Annuler » ; écriture en total : +1 200 puis +650 ; projection ; en mode total, une coupe et un même total, avec leurs messages (MOD-009).
+- **Conditions** : Programme commencé, élément en retard ; puis, sur ordinateur, le jeu d'essai du cahier (`jeu-essai.json`), le protocole de Yoga commencé trois semaines plus tôt pour que son calendrier couvre hier.
+- **Vérifie** : séance en un geste, élément en retard, « fait » sur un rappel, dernière durée ; paysage réduit à la deuxième ouverture du jour ; brouillon restauré puis effacé ; suppression avec « Annuler » ; écriture en total : +1 200 puis +650 ; projection ; en mode total, une coupe et un même total, avec leurs messages (MOD-009) ; sur le jeu d'essai : « 5 300 mots sur 50 000 », « Je saisis » sur « Le total atteint (l'app calcule la différence) », puis `6000`, `5800`, `5800` avec leurs trois messages et leurs totaux (MOD-009) ; « Noter 25 min » pour Yoga, « Séance de yoga faite. », une séance de 30 min hier au calendrier et au journal, les deux relues au rechargement (MOD-007).
 - **Cas manuels** : [MOD-007](manuels/types-de-module.md#mod-007), [MOD-009](manuels/types-de-module.md#mod-009), [MOD-010](manuels/types-de-module.md#mod-010), [MOD-013](manuels/types-de-module.md#mod-013), [MOD-022](manuels/types-de-module.md#mod-022), [MOD-023](manuels/types-de-module.md#mod-023)
 
 <a id="tn-paliers"></a>
@@ -1124,7 +1127,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/sauvegarde-complete.js`](../../tests/browser/sauvegarde-complete.js) · **mode** H · **écran** O
 - **Conditions** : Deux appareils du même compte sur un faux Supabase partagé, puis un appareil sans compte ; les jeux du cahier (`jeu-essai.json`, `ancien-format-1.json`, `refus-version-future.json`, `refus-hostile.json`), choisis par le champ « Importer ».
-- **Vérifie** : importer demande « Remplacer tout l'état actuel par celui du fichier ? », puis « Sauvegarde importée. » ; l'appareil 1 a les treize espaces du jeu, la capture d'avant disparue ; le compte aussi ; l'appareil 2, à la relève, le même état, sans doublon (une seule boîte). Renoncer : aucun « Sauvegarde importée. », rien ne change, rien ne part. Un fichier plus récent, puis un fichier piégé : refusés avec leur message exact, sans confirmation, rien ne part, aucune boîte d'alerte. Sans compte, le format 1 migré au format courant, la tâche, le livre, le fragment, la note et le nom « Aragne » gardés. Mutation vérifiée : un import qui ignore « Annuler » fait échouer trois contrôles.
+- **Vérifie** : importer demande « Remplacer tout l'état actuel par celui du fichier ? », puis « Sauvegarde importée. » ; l'appareil 1 a les treize espaces du jeu, la capture d'avant disparue ; le compte aussi ; l'appareil 2, à la relève, le même état, sans doublon (une seule boîte). Renoncer : aucun « Sauvegarde importée. », rien ne change, rien ne part. Un fichier plus récent, puis un fichier piégé : refusés avec leur message exact, sans confirmation, rien ne part, aucune boîte d'alerte. Sans compte, le format 1 migré au format courant, la tâche, le livre, le fragment, la note et le nom « Aragne » gardés. Rechargé après ces refus : toujours les treize espaces du jeu, à l'identique (DON-003). Mutation vérifiée : un import qui ignore « Annuler » fait échouer trois contrôles ; un renoncement qui s'écrirait plus tard fait échouer celui du rechargement.
 - **Limites** : Faux serveur ; ni feuille de partage des apps, ni choix du fichier sur téléphone, ni artefact ; l'affichage de chaque espace migré n'est pas parcouru.
 - **Cas manuels** : [DON-002](manuels/donnees-sauvegardes.md#don-002), [DON-003](manuels/donnees-sauvegardes.md#don-003), [DON-004](manuels/donnees-sauvegardes.md#don-004), [DON-005](manuels/donnees-sauvegardes.md#don-005), [DON-006](manuels/donnees-sauvegardes.md#don-006), [TRV-008](manuels/transverse.md#trv-008)
 
@@ -1262,7 +1265,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/musique.js`](../../tests/browser/musique.js) · **mode** A · **écran** O
 - **Conditions** : MusicBrainz simulé.
-- **Vérifie** : homonymes : Selene demande ; discographie studio sans live ; titre piégé inerte ; album choisi (identifiants, année) et « « Bergtatt » : c'est noté. » (EXT-005), autre album ajouté ; une requête par seconde au plus ; pochette, ou rien si absente ; nouvelles sorties : l'année écoulée, puis rien le même jour ; service muet dit ; réglable par collection.
+- **Vérifie** : l'espace ouvert sans rien cliquer, aucune requête à MusicBrainz (EXT-006) ; homonymes : Selene demande ; discographie studio sans live ; titre piégé inerte ; album choisi (identifiants, année) et « « Bergtatt » : c'est noté. » (EXT-005), autre album ajouté ; une requête par seconde au plus ; pochette, ou rien si absente ; nouvelles sorties : l'année écoulée, puis rien le même jour ; service muet dit ; réglable par collection.
 - **Cas manuels** : [EXT-005](manuels/connexions.md#ext-005), [EXT-006](manuels/connexions.md#ext-006)
 
 <a id="tn-radar"></a>
@@ -1294,7 +1297,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/ciel-vivant.js`](../../tests/browser/ciel-vivant.js) · **mode** A · **écran** O et T
 - **Conditions** : Météo de Lille simulée (vent, précipitations).
-- **Vérifie** : nuages, brume, pluie suivent le vent ; seul `transform` est animé ; phase tirée de l'horloge ; hors de vue, immobile ; décoché ou mouvement réduit : immobile ; réglage propre à l'appareil ; vent d'est, neige, brume ; téléphone sans débordement.
+- **Vérifie** : nuages, brume, pluie suivent le vent ; seul `transform` est animé ; phase tirée de l'horloge ; hors de vue, immobile ; décoché ou mouvement réduit : immobile ; réglage propre à l'appareil, gardé au rechargement, le ciel immobile et la case décochée (TRV-006) ; vent d'est, neige, brume ; téléphone sans débordement.
 - **Cas manuels** : [EXT-008](manuels/connexions.md#ext-008), [TRV-006](manuels/transverse.md#trv-006)
 
 <a id="tn-fenetre"></a>

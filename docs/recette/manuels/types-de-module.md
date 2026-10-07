@@ -202,7 +202,7 @@ Identifiants retirés : aucun.
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Ouvrir l'accueil. | Une ligne propose « Noter 25 min » pour Yoga (dernière durée). |
-| 2 | Cliquer « Noter 25 min ». | « Séance de Yoga faite. » ; dans Yoga, une séance de 25 min datée d'aujourd'hui. |
+| 2 | Cliquer « Noter 25 min ». | « Séance de yoga faite. » (l'app écrit le nom de l'espace en minuscules) ; dans Yoga, une séance de 25 min datée d'aujourd'hui. |
 | 3 | Dans Yoga, « Noter une séance » : 30 min, date d'hier. | La séance apparaît à la date d'hier dans le journal et le calendrier. |
 | 4 | Recharger. | Les deux séances sont là. |
 

@@ -53,7 +53,8 @@ const NEUF = '5a5a5a5a-1111-2222-3333-444455556666', ANCIEN = '6b6b6b6b-1111-222
   });
   const noteSur = (ligne, texte) => !!(ligne && ligne.site && ligne.site.modules && Object.values(ligne.site.modules).some(x => x.type === 'notes' && JSON.stringify(x).includes(texte)));
   try {
-    const lignes = new Map(), p = await appareil(NEUF, lignes), { main, settle, until, capturer, versCompte } = outils(p);
+    const lignes = new Map();
+    let p = await appareil(NEUF, lignes), { main, settle, until, capturer, versCompte } = outils(p);
     console.log('l’écran d’entrée : la promesse d’abord');
     await p.goto(BASE + '/index.html'); await p.waitForSelector('[data-act="auth-local"]');
     const t = await main();
@@ -75,7 +76,16 @@ const NEUF = '5a5a5a5a-1111-2222-3333-444455556666', ANCIEN = '6b6b6b6b-1111-222
     await p.evaluate(() => { location.hash = 'inbox'; }); await p.waitForFunction(() => location.hash === '#inbox'); await settle();
     check((await main()).includes('Une hypothèse sur le chapitre 3'), 'et la capture est dans la boîte');
     await p.evaluate(() => { location.hash = 'accueil'; }); await p.waitForSelector('#capIn');
-    check(!p.appels.some(a => a.includes('/rest/v1/app_state')), 'rien de ce qui est écrit ne part au serveur');
+    check(!p.appels.some(a => /\/rest\/v1\/(app_state|activite)/.test(a)) && p.appels.every(a => a === 'GET /auth/v1/settings'),
+      `rien de ce qui est écrit ne part au serveur : ni app_state, ni activite, seulement la lecture des inscriptions (${[...new Set(p.appels)].join(', ') || 'aucune requête'})`);
+    // CPT-002, étape 5 : l'onglet fermé, le site rouvert dans un autre (un sessionStorage neuf, le reste de l'appareil gardé).
+    const ctx = p.context(), appels = p.appels; await p.close();
+    p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message)); p.appels = appels; ({ main, settle, until, capturer, versCompte } = outils(p));
+    await p.goto(BASE + '/index.html'); await p.waitForFunction(() => document.querySelector('#capIn') || document.querySelector('#authForm'));
+    check(!(await p.$('#authForm')) && (await p.textContent('#nav')).includes('Écriture'), 'l’onglet fermé puis rouvert : l’app, sans écran d’entrée');
+    await p.evaluate(() => { location.hash = 'inbox'; }); await p.waitForFunction(() => location.hash === '#inbox'); await settle();
+    check((await main()).includes('Une hypothèse sur le chapitre 3'), 'et la capture, toujours dans la boîte');
+    await p.evaluate(() => { location.hash = 'accueil'; }); await p.waitForSelector('#capIn');
 
     check(await storeGet(p, 'selene-sans-compte') === '1', 'le choix « sans compte » est gardé sur l’appareil');
     console.log('Réglages → Compte, sans compte');

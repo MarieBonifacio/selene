@@ -45,6 +45,9 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 
   console.log('préciser un album');
   const p = await open();
+  // EXT-006, étape 1 : l'espace ouvert, rien cliqué. Une absence ne s'attend pas : le temps qu'une requête parte, si elle devait partir.
+  await p.waitForSelector('[data-id="e1"] [data-act="mb-open"]'); await p.waitForTimeout(1500);
+  ok(!p.mb.length && !(await p.evaluate(() => window.__mbEnvois.length)), 'Musique ouverte, rien cliqué : aucune requête à MusicBrainz');
   await p.click('[data-id="e1"] [data-act="mb-open"]:has-text("préciser")'); await p.waitForTimeout(1500);
   ok(await p.isVisible('#sheet.drawer') && (await p.textContent('#sheet')).includes('Plusieurs artistes portent ce nom'), 'deux Ulver : Selene demande lequel');
   await p.click(`#sheet [data-act="mb-artist"][data-a="${U(1)}"]`); await p.waitForTimeout(1600);

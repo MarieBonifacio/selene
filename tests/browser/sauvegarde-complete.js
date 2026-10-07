@@ -5,7 +5,7 @@
    Lancé par tests/browser/run.js. */
 const fs = require('node:fs');
 const path = require('node:path');
-const { engine, BASE, launchOptions, check, until, ouvrir, entree, storeJSON } = require('./helpers');
+const { engine, BASE, launchOptions, check, until, ouvrir, entree, suivre, calme, storeJSON } = require('./helpers');
 const jeu = nom => ({ name: nom, mimeType: 'application/json', buffer: fs.readFileSync(path.join(__dirname, '..', '..', 'docs', 'recette', 'donnees', nom)) });
 const rows = new Map();
 let ecritures = 0;
@@ -34,7 +34,7 @@ async function appareil(b, errs, alertes, connecte = true) {
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
   await ctx.route('https://*.supabase.co/**', supabase);
   if (connecte) await ctx.addInitScript(s => { if (!localStorage.getItem('selene-auth-session')) { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', 'u1'); } }, session);
-  const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => { alertes.push(d.message()); d.dismiss(); });
+  const p = suivre(await ctx.newPage()); p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => { alertes.push(d.message()); d.dismiss(); });
   await ouvrir(p, BASE + '/index.html' + (connecte ? '' : '#sans-compte'), entree);
   return p;
 }
@@ -89,6 +89,10 @@ async function relu(p, ok) {
     check(await bulle(A, "Le contenu de cette sauvegarde n'est pas valide : le fichier est peut-être abîmé ou a été modifié. Rien n'a été importé.") && !(await A.$('#cdlg[open]')), 'un fichier piégé : refusé, dit, sans confirmation');
     check(JSON.stringify((await storeJSON(A, 'selene-site-v1')).modules) === avant && ecritures === n, 'le jeu d’essai est intact, rien n’est parti');
     check(!alertes.length, 'aucune boîte d’alerte ouverte par un texte piégé' + (alertes.length ? ` (${alertes.join(' | ')})` : ''));
+    await calme(A); await ouvrir(A, null, entree); // DON-003, étape 3 : rechargé
+    const relue = await storeJSON(A, 'selene-site-v1');
+    check(JSON.stringify(relue.modules) === avant && attendus.every(id => Object.hasOwn(relue.modules, id)) && !(await A.textContent('#toast')).includes('Sauvegarde importée.'),
+      `rechargé : toujours les ${attendus.length} espaces du jeu, rien d’importé`);
 
     console.log('sans compte, une sauvegarde du format 1 (DON-006)');
     const S = await appareil(b, errs, alertes, false);

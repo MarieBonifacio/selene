@@ -62,7 +62,9 @@ la PR fait le reste. La liste de contrôle courte vit dans le modèle de PR (`.g
    requête ne part). Connecté, il simule Supabase par `fauxSupabase(ctx)` (BL-23), qui répond comme le vrai : un faux
    qui répond `[]` à tout fait échouer le branchement, et l'app le retente en fond. S'il recharge la page, il la suit
    dès sa création (`suivre(p)`) et attend le calme avant chaque rechargement (`calme(p)`) : sous WebKit, une requête
-   coupée compte comme une erreur de la page (A1, A19, A29, A31). Le lancer une fois avec `SELENE_LENT=1500`, puis avec `SELENE_CPU=4` : c'est ce que fait la CI
+   coupée compte comme une erreur de la page (A1, A19, A29, A31). Un cas qui nomme le jeu d'essai se vérifie sur lui :
+   `donnee('jeu-essai.json')` lit un jeu de `docs/recette/donnees/` tel quel ; un écart nécessaire (une date ramenée à
+   aujourd'hui, pour qu'un calendrier couvre hier) se dit en commentaire. Le lancer une fois avec `SELENE_LENT=1500`, puis avec `SELENE_CPU=4` : c'est ce que fait la CI
    (*démarrage lent*, *processeur ralenti*).
 1. Lire les assertions du test, puis l'ajouter à [automatises.md](automatises.md) : identifiant (`TU-<CODE>-nn`, numéro
    libre suivant ; `TN-<fichier>` pour un scénario ; `TD-…`, `TR-…`, `TS-…`), chemin, nom exact, ce qu'il vérifie

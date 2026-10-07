@@ -494,7 +494,10 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   En chemin, A30 (l'étoile d'une tâche du jour, muette pour un lecteur d'écran) et C11 (MOD-003 demandait de
   « décocher » une tâche faite, qui n'a plus de case). Enfin trois (NAV-003, ESP-009, CPT-003) : 36 automatiques et
   156 partiels ; C12 (NAV-003 attendait un message que la palette n'affiche jamais). Puis quatre (TRV-015, EXT-002, EXT-003,
-  MOD-001) : 40 et 152 ; C13 (EXT-002 attendait une adresse que l'aperçu n'affiche pas).
+  MOD-001) : 40 et 152 ; C13 (EXT-002 attendait une adresse que l'aperçu n'affiche pas). Puis neuf dont il ne restait
+  qu'une étape, souvent la dernière (NAV-007, CPT-002, MOD-005, EXT-006, MOD-009, MOD-007, TRV-006, DON-003, MOD-002) :
+  49 et 143. Trois se vérifient désormais sur le jeu d'essai du cahier lui-même (`donnee()` dans `helpers.js`) ; chaque
+  contrôle ajouté échoue sous un mutant de l'app ; C14 (MOD-007 attendait « Yoga » là où l'app écrit « yoga »).
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`
