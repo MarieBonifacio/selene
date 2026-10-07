@@ -42,8 +42,8 @@ Identifiants retirés : aucun.
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Ouvrir l'accueil. | Une barre en bas : « Aujourd'hui », « Espaces », « ⊕ » (Capturer), « Chercher », « Bilan » ; aucune barre latérale ; « Aujourd'hui » est marqué actif. |
-| 2 | Toucher « Espaces ». | Une feuille monte : espaces récents, domaines « Maison » et « Création » avec leurs espaces, Réglages en pied ; « Espaces » est marqué actif dans la barre. |
-| 3 | Toucher « Écriture » dans la feuille. | L'espace Écriture s'affiche ; la feuille est fermée. |
+| 2 | Toucher « Espaces ». | Une feuille monte : espaces récents, domaines « Maison » et « Création » avec leurs espaces, Réglages en pied ; « Aujourd'hui » reste marqué actif dans la barre (on est toujours sur l'accueil). |
+| 3 | Toucher « Écriture » dans la feuille. | L'espace Écriture s'affiche ; la feuille est fermée ; « Espaces » est marqué actif dans la barre. |
 | 4 | Rouvrir « Espaces », puis toucher la zone sombre au-dessus de la feuille (le voile). | La feuille se ferme sans changer d'écran. |
 | 5 | Toucher « ⊕ », saisir les données, « Garder ». | « Gardé. Tu peux oublier, c'est écrit. » ; la feuille se ferme ; la capture est dans la boîte. |
 | 6 | Tourner le téléphone en paysage (apps natives seulement), puis revenir en portrait. | La barre reste en bas, rien ne déborde. |

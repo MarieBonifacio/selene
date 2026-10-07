@@ -156,6 +156,11 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
   ok(!(await i.evaluate(() => location.href)).includes('jeton-lien'), 'le jeton de l’invitation quitte aussitôt l’adresse');
   await i.fill('#authPw', 'premier-mdp'); await i.fill('#authPw2', 'premier-mdp'); await submit(i); await attendre(i, entree);
   ok(!(await i.$('#authForm')), 'et entrer');
+  // CPT-010, étape 3 : un compte neuf, sans ligne au serveur : l'accueil s'ouvre sur « Composer ton espace » et ses trois chemins.
+  await i.evaluate(() => { location.hash = 'accueil'; }); await attendre(i, () => !!document.querySelector('#main .welcome'));
+  const neuf = (await i.textContent('#main')).replace(/\s+/g, ' '), chemins = await i.$$eval('#main [data-act="welcome-path"]', xs => xs.length);
+  ok(neuf.includes('Composer ton espace') && neuf.includes('Sur quoi travailles-tu ?') && chemins === 3 && (await storeGet(i, 'selene-auth-last-uid')) === UID,
+    `l’invitation acceptée : connectée au compte invité, l’accueil d’un compte neuf, « Composer ton espace » et ses ${chemins} chemins (CPT-010, étape 3)`);
   const iv = await open(lien('invite', 'jeton-perime')); // une invitation déjà servie : le serveur refuse son jeton (CPT-010, étape 4)
   await iv.fill('#authPw', 'premier-mdp'); await iv.fill('#authPw2', 'premier-mdp'); await submit(iv, 'Cette invitation a expiré');
   ok((await note(iv)).includes("Cette invitation a expiré, ou elle a déjà servi : demande qu'on te la renvoie.") && !(await iv.$('#authPw2')) && await iv.isVisible('#authEmail'),

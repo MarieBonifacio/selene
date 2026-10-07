@@ -91,6 +91,13 @@ async function relu(p, ok) {
     console.log('refusés, sans confirmation (DON-004, DON-005)');
     await A.setInputFiles('input[data-act="imp"]', jeu('refus-version-future.json'));
     check(await bulle(A, "Sauvegarde créée par une version plus récente de Selene : mets l'application à jour d'abord.") && !(await A.$('#cdlg[open]')), 'un fichier plus récent : refusé, dit, sans confirmation');
+    // DON-004, étape 2 : le jeu d'essai intact, et la note du fichier, « venue du futur », nulle part : ni dans les données, ni dans la boîte.
+    const apresFutur = await storeJSON(A, 'selene-site-v1');
+    await A.evaluate(() => { location.hash = 'inbox'; }); await A.waitForFunction(() => location.hash === '#inbox');
+    const boiteFutur = await A.textContent('#main');
+    check(JSON.stringify(apresFutur.modules) === avant && !JSON.stringify(apresFutur).includes('venue du futur') && boiteFutur.includes('Boîte') && !boiteFutur.includes('venue du futur'),
+      'le jeu d’essai intact : aucune note « venue du futur », ni dans les données ni dans la boîte (DON-004, étape 2)');
+    await A.evaluate(() => { location.hash = 'reglages'; }); await A.waitForSelector('input[data-act="imp"]', { state: 'attached' });
     await A.setInputFiles('input[data-act="imp"]', jeu('refus-hostile.json'));
     check(await bulle(A, "Le contenu de cette sauvegarde n'est pas valide : le fichier est peut-être abîmé ou a été modifié. Rien n'a été importé.") && !(await A.$('#cdlg[open]')), 'un fichier piégé : refusé, dit, sans confirmation');
     // DON-005, étape 2 : un fichier texte quelconque nommé photo.json, puis un JSON valide qui n'est pas une sauvegarde.
