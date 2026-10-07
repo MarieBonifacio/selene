@@ -21,7 +21,9 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| ~~A40 : un rendu de fond tombé pendant un appui faisait perdre le clic (la boîte de confirmation jamais ouverte)~~ (fait le 7 octobre 2026, PR #135) | une session | P2 | — | [A40](perimetre.md#anomalies-et-observations) |
 | A39 : `tests/browser/dehors.js` instable sous Firefox (l'élément du flux Atom pas venu), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A39](perimetre.md#anomalies-et-observations) |
+| ~~A38 : « Chercher « … » partout » de la palette gardait les filtres de la recherche précédente~~ (fait le 7 octobre 2026, PR #135) | une session | P2 | — | [A38](perimetre.md#anomalies-et-observations) |
 | ~~A37 : un rendu de fond faisait perdre le focus clavier hors des champs (synchro, autre onglet, fin d'un envoi)~~ (fait le 7 octobre 2026, PR #133) | une session | P2 | — | [A37](perimetre.md#anomalies-et-observations) |
 | A36 : `tests/browser/veille.js` instable sous Firefox (« une veille en double : dit »), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A36](perimetre.md#anomalies-et-observations) |
 | ~~A35 : `tests/browser/dehors-croise.js` instable sous WebKit (un rechargement pendant une reprise du branchement)~~ (fait le 7 octobre 2026, PR #132) | une session | P3 | — | [A35](perimetre.md#anomalies-et-observations) |
@@ -504,7 +506,10 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   chemin, A37 : un rendu de fond faisait perdre le focus clavier, corrigé. Puis huit (PEN-003, PEN-004, PEN-007, NAV-004,
   RLM-004, EXT-001, CPT-001, PEN-013) : 57 et 135. NAV-004, PEN-003 et PEN-004 se vérifient sur le jeu d'essai ; la réponse
   de Crossref, retenue, laisse lire « Recherche… » ; le fichier de la planche s'ouvre hors ligne. Neuf mutants, neuf
-  contrôles qui tombent.
+  contrôles qui tombent. Puis quatre (CPT-006, ESP-004, ESP-003, NAV-005) : 61 et 131 ; en chemin, A38 (« Chercher
+  « … » partout » gardait les filtres d'avant), corrigé, et deux attendus du cahier, C15 et C16, corrigés dans le cas.
+  Puis trois dont seule la règle était prouvée, sans aucun écran (DON-010, MOD-012, PEN-005) : 64 et 128, tous trois sur
+  le jeu d'essai.
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`

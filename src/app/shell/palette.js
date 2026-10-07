@@ -13,7 +13,7 @@ import { render } from "./render.js";
 import { closeOverlays, closeSheet, openSheet } from "./sheets.js";
 import { S, enabled, label, shownModule, site } from "../state/site.js";
 import { bilanMode, setBilanOffset } from "../views/bilan.js";
-import { fold, searchAll, setSearchQuery } from "../views/recherche.js";
+import { fold, searchAll, searchFresh } from "../views/recherche.js";
 
 /* ---- palette de commandes (⌘K) : aller à un espace ou une vue, agir, garder une phrase, chercher ---- */
 let palIdx = 0, palItems = [];
@@ -35,7 +35,7 @@ function paletteItems(q) {
     const inbox = inboxId(s.modules), text = q.trim();
     if (inbox) out.push({ k: tr`Garder`, t: tr`« ${text} » dans ${label(inbox)}`, run: () => { const item = addNote(S().modules[inbox], text); site.save(); closeOverlays(); render(); afterCapture(inbox, item, tr`Gardé. Tu peux oublier, c'est écrit.`); } });
     for (const h of searchAll(text).slice(0, 6)) out.push({ k: label(h.id), t: h.text.replace(/\s+/g, " ").slice(0, 110), sub: h.date ? fmt(h.date) : "", run: goTo(h.id + (h.eid ? "/" + h.eid : "")) });
-    out.push({ k: tr`Chercher`, t: tr`« ${text} » partout`, run: () => { setSearchQuery(text); goTo("recherche")(); } });
+    out.push({ k: tr`Chercher`, t: tr`« ${text} » partout`, run: () => { searchFresh(text); goTo("recherche")(); } });
   }
   return out;
 }

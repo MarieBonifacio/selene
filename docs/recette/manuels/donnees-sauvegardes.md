@@ -250,7 +250,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : Yoga, durée `600` puis `-4` ; séances par semaine `9`.
-- **Automatisés associés** : `TU-MOD-44`
+- **Automatisés associés** : `TN-quotidien`, `TU-MOD-44`
 - **Source** : [TEST] `TU-MOD-44`.
 
 | Étape | Action précise | Résultat attendu observable |

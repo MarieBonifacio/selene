@@ -65,6 +65,35 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   const bulle = t => p.waitForFunction(x => ((document.querySelector('#toast') || {}).textContent || '').includes(x), t, { timeout: 5000 }).then(() => true, () => false);
   const nav = () => p.textContent('#nav');
   await p.evaluate(() => { document.querySelector('#toast').textContent = ''; document.querySelectorAll('#reg-espaces details').forEach(d => { d.open = true; }); });
+  // ESP-003, étapes 1 à 3 : ce que propose « + Créer un espace », puis un modèle, puis un type vide sous un nom choisi.
+  const creer = await p.evaluate(() => {
+    const d = document.querySelector('#mod-new'), t = s => (d.querySelector(s) || {}).textContent?.replace(/\s+/g, ' ').trim();
+    const tpls = [...d.querySelectorAll('.tpl')].map(x => [x.querySelector('b').textContent, !!x.querySelector('p.hint')?.textContent.trim(), x.querySelector('button').textContent.trim()]);
+    return { titre: t('summary'), tpls, groupes: [...d.querySelectorAll('#newModType optgroup')].map(g => g.label), libelles: [...d.querySelectorAll('.field-row label')].map(l => l.firstChild.textContent.trim()),
+      place: d.querySelector('#newModName').placeholder, sous: d.textContent.includes("D'un modèle") && d.textContent.includes('Sur mesure') };
+  });
+  ok(creer.titre === '+ Créer un espace' && creer.sous && creer.tpls.length >= 10 && creer.tpls.every(([n, h, b]) => n && h && b === 'Créer') && creer.groupes.join() === 'Modèles,Types vides'
+    && creer.libelles.join() === 'Modèle ou type,Nom' && creer.place === 'Nom du modèle si vide', `« + Créer un espace » : « D’un modèle », ${creer.tpls.length} modèles décrits avec « Créer » ; « Sur mesure » : « Modèle ou type » (Modèles, Types vides) et « Nom » (« Nom du modèle si vide ») (ESP-003, étape 1)`);
+  const ids = () => p.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('selene-site-v1')).modules));
+  const nouveau = async avant => (await ids()).find(x => !avant.includes(x));
+  let ids0 = await ids();
+  await p.click('#mod-new [data-act="tpl-add"][data-tpl="tableau"]');
+  const dit = await bulle('Module « Tableau de production » créé.'), tab = await nouveau(ids0);
+  await p.evaluate(h => { location.hash = h; }, tab); await p.waitForSelector('#main .board .col h3');
+  const colonnes = await p.$$eval('#main .board .col h3', hs => hs.map(h => h.firstChild.textContent.trim()).join());
+  ok(dit && colonnes === 'Idée,En cours,Prêt,Publié', `« Module « Tableau de production » créé. », l’espace en colonnes (${colonnes}) (ESP-003, étape 2)`);
+  await p.evaluate(() => { location.hash = 'reglages'; }); await p.waitForSelector('#newModType', { state: 'attached' });
+  await p.evaluate(() => { document.querySelectorAll('#reg-espaces details').forEach(d => { d.open = true; }); });
+  ids0 = await ids();
+  await p.selectOption('#newModType', 'collection'); await p.fill('#newModName', 'Lectures ESP-003'); await p.click('[data-act="mod-add"]');
+  await bulle('Module « Lectures ESP-003 » créé.'); const lec = await nouveau(ids0);
+  const conf = lec && await p.evaluate(id => JSON.parse(localStorage.getItem('selene-site-v1')).modules[id], lec);
+  await p.evaluate(h => { location.hash = h; }, lec); await p.waitForFunction(() => document.querySelector('#main h2')?.textContent.includes('Lectures ESP-003'), null, { timeout: 5000 }).catch(() => {});
+  const vue = (await p.textContent('#main')).replace(/\s+/g, ' ');
+  ok(conf && conf.label === 'Lectures ESP-003' && conf.config.display === 'liste' && conf.config.statuses.join() === 'À faire,En cours,Fait' && !(await p.$('#main .board')) && ['À faire', 'En cours', 'Fait'].every(x => vue.includes(x)),
+    `« Sur mesure », une collection vide nommée « Lectures ESP-003 » : en liste, statuts ${conf ? conf.config.statuses.join(', ') : '?'} (ESP-003, étape 3)`);
+  await p.evaluate(() => { location.hash = 'reglages'; }); await p.waitForSelector('#newModType', { state: 'attached' });
+  await p.evaluate(() => { document.querySelector('#toast').textContent = ''; document.querySelectorAll('#reg-espaces details').forEach(d => { d.open = true; }); });
   const blocs = () => p.$$eval('#main .modblock', x => x.length), avant = await blocs();
   await p.selectOption('#newModType', 'taches'); await p.fill('#newModName', ''); await p.click('[data-act="mod-add"]');
   ok(await bulle('Donne un nom au module.') && (await blocs()) === avant, 'un type vide, sans nom : « Donne un nom au module. », rien n’est créé');

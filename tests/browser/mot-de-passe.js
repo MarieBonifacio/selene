@@ -75,6 +75,17 @@ const lien = (type, jeton = 'jeton-lien') => `#access_token=${jeton}&expires_at=
   await p.fill('#authEmail', 'iris@exemple.org'); await p.fill('#authPw', 'mauvais-mdp'); await submit(p, 'Invalid login credentials');
   ok((await note(p)).includes('Invalid login credentials'), 'une connexion refusée : le message reste affiché (il disparaissait au rendu suivant)');
   ok((await p.inputValue('#authEmail')) === 'iris@exemple.org', 'l’adresse tapée reste dans le champ');
+  // CPT-006 : la couleur d'alerte, telle que la page la calcule (la variable --alarm du thème), distincte d'une aide.
+  const teintes = await p.evaluate(() => { const t = document.createElement('span'); t.style.color = 'var(--alarm)'; document.body.append(t); const alarme = getComputedStyle(t).color; t.remove();
+    const aide = [...document.querySelectorAll('#main p.hint')].find(x => x.id !== 'authErr'); return [getComputedStyle(document.querySelector('#authErr')).color, alarme, aide ? getComputedStyle(aide).color : ''] });
+  ok(teintes[0] === teintes[1] && teintes[0] !== teintes[2], `le message, en couleur d’alerte (${teintes[0]} ; une aide : ${teintes[2]}) (CPT-006, étape 1)`);
+  await p.waitForTimeout(10000); // une absence : dix secondes réelles, sans rien toucher, comme le cas le demande
+  ok((await note(p)).includes('Invalid login credentials') && (await p.inputValue('#authEmail')) === 'iris@exemple.org', 'dix secondes plus tard, sans un geste : le message et l’adresse sont toujours là (CPT-006, étape 2)');
+  const coupe = u => u.pathname === '/auth/v1/token';
+  await p.route(coupe, r => r.abort('internetdisconnected')); // le réseau coupé, pour la connexion seulement
+  await p.fill('#authPw', 'mauvais-mdp'); await submit(p, 'Impossible de joindre le serveur'); // recommencer : le mot de passe, vidé par le refus, ressaisi
+  ok((await note(p)).trim() === 'Impossible de joindre le serveur. Vérifie ta connexion.', `hors ligne : « ${(await note(p)).trim()} » (CPT-006, étape 4)`);
+  await p.unroute(coupe);
 
   console.log('mot de passe oublié');
   await p.click('[data-act="auth-forgot"]'); await p.waitForTimeout(200);

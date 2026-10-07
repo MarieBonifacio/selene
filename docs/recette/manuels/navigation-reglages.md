@@ -142,11 +142,11 @@ Identifiants retirés : aucun.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Chercher `lisière`. | Résultats groupés par espace, date en marge ; puces « Tous les espaces » et un espace par groupe, « Toute date », « Depuis la nouvelle lune », « Ce mois-ci », « Tout statut » et les statuts présents, chacune avec un nombre. |
+| 1 | Chercher `lisière`. | Résultats groupés par espace, date en marge ; puces « Tous les espaces » et un espace par groupe, « Toute date », « Depuis la nouvelle lune », « Ce mois-ci », chacune avec un nombre ; « Tout statut », sans nombre (ce serait le total déjà affiché), et les statuts présents, chacun avec le sien (C15). |
 | 2 | Cliquer « Ce mois-ci ». | Seul le fragment d'aujourd'hui reste ; le compteur dit « 1 résultat sur N ». |
 | 3 | Cliquer la puce « hypothèse ». | Toujours le fragment d'aujourd'hui (marqué hypothèse par le « ? ») ; les nombres des autres puces tiennent compte des filtres appliqués. |
 | 4 | Recliquer « Ce mois-ci ». | Le filtre de période est défait ; restent les hypothèses de toutes dates. |
-| 5 | Lancer une autre recherche depuis la palette ou « / ». | Elle repart sans filtre. |
+| 5 | Un filtre posé, quitter vers un espace ; puis ⌘K / Ctrl+K, taper un mot, « Chercher « … » partout ». Recommencer avec « / ». | La palette : la recherche repart sans filtre, partout (A38). « / » : la page Chercher telle qu'on l'a laissée, son filtre compris, et dit par « N résultats sur M » (C16). |
 
 - **État final attendu** : un fragment de plus.
 - **Nettoyage** : supprimer le fragment ajouté.

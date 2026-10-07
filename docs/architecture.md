@@ -271,7 +271,9 @@ rendu ; tant qu'un champ sans identifiant a le focus, la vue n'est pas redessin�
 ailleurs. Sinon, la saisie disparaîtrait, et le champ retiré lancerait son « change » au milieu du rendu (A33). Un
 bouton, un lien ou une case qui a le focus clavier le garde aussi : un rendu de fond (synchro, autre onglet, fin d'un
 envoi) le retrouve par ce qui le désigne et l'entrée qui le porte, jamais la case d'une autre tâche ; un rendu né d'un
-geste n'y touche pas, sans quoi la même touche Entrée réactiverait un bouton (A37).
+geste n'y touche pas, sans quoi la même touche Entrée réactiverait un bouton (A37). Pendant un appui (souris, doigt,
+stylet), un rendu de fond attend le relâchement, deux secondes au plus : remplacé entre l'appui et le relâchement,
+l'élément pressé ne recevait aucun « click », et le geste se perdait sans un mot (A40).
 
 Sans base (premier contact d'un appareil) : un appareil vierge adopte le serveur, sinon on fusionne
 sans rien supprimer. L'import d'une sauvegarde remplace au lieu de fusionner (`replaceAll`).

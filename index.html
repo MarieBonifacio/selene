@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-a/h34VL3GdRMfOhRJe2YoG050UpT97KbjCvxi5GNiQE=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-SvRaU7H3V8dtV5V7c4TjLApXMwsCwBznQ1hPskFl4XM=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -752,7 +752,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "ade5545e65";
+const SELENE_BUILD = "6938bfb0de";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1495,6 +1495,7 @@ var __selene = (() => {
     sceneNow: () => sceneNow,
     scrapsMarkdown: () => scrapsMarkdown,
     searchAll: () => searchAll,
+    searchFresh: () => searchFresh,
     searchQuery: () => searchQuery,
     seasonAt: () => seasonAt,
     sendChat: () => sendChat,
@@ -1507,7 +1508,6 @@ var __selene = (() => {
     setRegulationPlan: () => setRegulationPlan,
     setResume: () => setResume,
     setSaving: () => setSaving,
-    setSearchQuery: () => setSearchQuery,
     setTaskDone: () => setTaskDone,
     setTaskToday: () => setTaskToday,
     setupRegulation: () => setupRegulation,
@@ -11028,7 +11028,7 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
       } });
       for (const h of searchAll(text).slice(0, 6)) out.push({ k: label(h.id), t: h.text.replace(/\s+/g, " ").slice(0, 110), sub: h.date ? fmt(h.date) : "", run: goTo(h.id + (h.eid ? "/" + h.eid : "")) });
       out.push({ k: tr`Chercher`, t: tr`« ${text} » partout`, run: () => {
-        setSearchQuery(text);
+        searchFresh(text);
         goTo("recherche")();
       } });
     }
@@ -12359,8 +12359,9 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
 
   // src/app/views/recherche.js
   var searchQuery = "";
-  var setSearchQuery = (q) => {
+  var searchFresh = (q) => {
     searchQuery = q;
+    Object.assign(searchFacets, { mod: "", period: "", ep: "" });
   };
   document.addEventListener("input", (e) => {
     if (e.target.id === "searchIn") {
@@ -12462,8 +12463,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     }
   };
   CLICK["search-for"] = (el) => {
-    searchQuery = el.dataset.q;
-    Object.assign(searchFacets, { mod: "", period: "", ep: "" });
+    searchFresh(el.dataset.q);
     if (location.hash === "#recherche") render();
     else location.hash = "recherche";
   };
@@ -13456,7 +13456,34 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     } catch {
     }
   }
+  var pressAt = 0;
+  var held2 = false;
+  var pressing = () => pressAt && Date.now() - pressAt < 2e3;
+  var release = () => {
+    pressAt = 0;
+    if (held2) {
+      held2 = false;
+      setTimeout(render);
+    }
+  };
+  document.addEventListener("pointerdown", (e) => {
+    if (e.isPrimary) pressAt = Date.now();
+  }, true);
+  for (const t of ["pointerup", "pointercancel", "dragstart"]) document.addEventListener(t, release, true);
+  if (typeof window !== "undefined") window.addEventListener("blur", release);
   function render() {
+    if (pressing() && !inGesture()) {
+      if (!held2) {
+        held2 = true;
+        setTimeout(() => {
+          if (held2) {
+            held2 = false;
+            render();
+          }
+        }, 2e3 - (Date.now() - pressAt));
+      }
+      return;
+    }
     renderMemo = /* @__PURE__ */ new Map();
     renderDay = todayISO();
     try {

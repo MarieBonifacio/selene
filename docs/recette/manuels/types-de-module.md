@@ -316,7 +316,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : fragment « Les sapins gardent la nuit plus longtemps que les hêtres. » → `Les sapins gardent la nuit ; les hêtres la rendent.`
-- **Automatisés associés** : `TU-MOD-57`
+- **Automatisés associés** : `TN-liaisons`, `TU-MOD-57`
 - **Source** : [DOC] README, « Palimpseste » ; [TEST] `TU-MOD-57`.
 
 | Étape | Action précise | Résultat attendu observable |

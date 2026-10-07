@@ -86,6 +86,54 @@ demo.modules.ecriture.scraps = [
   const bilan = (await q.textContent('#main')).replace(/\s+/g, ' ');
   check(bilan.includes("« La lisière est au contraire une frontière nette, tracée par … » contredit « La lisière n'est pas une frontière, c'est un lieu où l'on hé… »") && bilan.includes(`ouverte il y a ${age} j`),
     `le Bilan : la tension du jeu, « ouverte il y a ${age} j » (PEN-004, étape 1)`);
+
+  console.log('le jeu d’essai : le palimpseste (MOD-012)');
+  const scraps = () => q.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.ecriture.scraps);
+  const modifier = async (texte) => {
+    await q.evaluate(() => { location.hash = 'ecriture'; }); await q.waitForSelector('li[data-id="f5"] [data-act="scrap-edit"]');
+    await q.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+    await q.click('li[data-id="f5"] [data-act="scrap-edit"]'); await q.waitForFunction(() => document.querySelector('#dlg').open);
+    await q.fill('#form [name="text"]', texte); await q.click('#form button[value="save"]');
+  };
+  await modifier('Les sapins gardent la nuit ; les hêtres la rendent.');
+  await q.waitForFunction(() => (document.querySelector('#toast').textContent || '').includes('Modifié'), null, { timeout: 5000 }).catch(() => {});
+  const f5 = (await q.textContent('li[data-id="f5"]')).replace(/\s+/g, ' ');
+  check((await q.textContent('#toast')).trim() === "Modifié. L'ancienne version reste lisible dessous." && f5.includes('Les sapins gardent la nuit ; les hêtres la rendent.') && f5.includes("modifié aujourd'hui") && f5.includes('1 version antérieure'),
+    '« Modifié. L’ancienne version reste lisible dessous. » ; le nouveau texte, « modifié aujourd’hui », « 1 version antérieure » (étape 1)');
+  const replie = await q.$('li[data-id="f5"] details.versions > summary');
+  if (replie) await replie.click();
+  const ancienne = replie ? (await q.textContent('li[data-id="f5"] details.versions p')).replace(/\s+/g, ' ').trim() : '(aucune version)';
+  check(ancienne.endsWith(': Les sapins gardent la nuit plus longtemps que les hêtres.') && /\d/.test(ancienne.split(':')[0]), `dépliée, l’ancienne version, datée (« ${ancienne} ») (étape 2)`);
+  // Une absence : l'événement « close » du formulaire part après que le dialogue s'est fermé ; lui laisser le temps.
+  await modifier('Les sapins gardent la nuit ; les hêtres la rendent.'); await q.waitForFunction(() => !document.querySelector('#dlg').open, null, { timeout: 5000 }).catch(() => {}); await q.waitForTimeout(600);
+  let v5 = (await scraps()).find(x => x.id === 'f5');
+  check((v5.versions || []).length === 1 && (await q.textContent('li[data-id="f5"]')).includes('1 version antérieure'), 'enregistré sans rien changer : toujours une seule version antérieure (étape 3)');
+  // Étape 4 : le texte vidé. Le champ est requis : le formulaire refuse l'envoi (chaque moteur le dit à sa façon : sous
+  // Firefox, une bulle qui peut avaler le clic suivant). Le dialogue fermé ensuite par Échap, jusqu'à ce qu'il le soit.
+  await modifier('');
+  const refuse = await q.evaluate(() => !document.querySelector('#form').checkValidity() && document.querySelector('#form [name="text"]').validity.valueMissing);
+  for (let k = 0; k < 4 && await q.evaluate(() => document.querySelector('#dlg').open); k++) { await q.keyboard.press('Escape'); await q.waitForTimeout(150); }
+  await q.waitForTimeout(600); // une absence, de même
+  v5 = (await scraps()).find(x => x.id === 'f5');
+  check(refuse && !(await q.evaluate(() => document.querySelector('#dlg').open)) && v5.text === 'Les sapins gardent la nuit ; les hêtres la rendent.' && (v5.versions || []).length === 1, 'le texte vidé : refusé par le formulaire, le texte reste (étape 4)');
+
+  console.log('le jeu d’essai : un lien qui suit la note rangée, puis sa cible supprimée (PEN-005)');
+  await q.evaluate(() => { location.hash = 'inbox'; }); await q.waitForSelector('li[data-id="n5"] [data-act="link-form"]');
+  await q.click('li[data-id="n5"] [data-act="link-form"]'); await q.waitForFunction(() => document.querySelector('#dlg').open);
+  await q.selectOption('#form [name="type"]', 'echo'); await q.selectOption('#form [name="to"]', 'ecriture/f2'); await q.click('#form button[value="save"]');
+  await q.waitForFunction(() => (document.querySelector('#toast').textContent || '').includes('Lié'), null, { timeout: 5000 }).catch(() => {});
+  check((await q.textContent('#toast')).trim() === 'Lié.', '« lier… », « fait écho à » le brouillard : « Lié. » (étape 1)');
+  const avantRange = (await scraps()).map(x => x.id);
+  await q.click('li[data-id="n5"] [data-act="note-to"][data-to="ecriture"]');
+  await q.waitForFunction(n => JSON.parse(localStorage.getItem('selene-site-v1')).modules.ecriture.scraps.length > n, avantRange.length, { timeout: 5000 }).catch(() => {});
+  const ne = (await scraps()).find(x => !avantRange.includes(x.id));
+  await q.evaluate(() => { location.hash = 'ecriture'; }); await q.waitForSelector('#scrapIn');
+  const lien = ne ? (await q.textContent(`li[data-id="${ne.id}"]`)).replace(/\s+/g, ' ') : '';
+  check(!!ne && ne.text === 'la brume précède la pluie' && lien.includes("fait écho à « Le brouillard efface la route avant d'effacer la forêt. »"), `rangée dans Écriture, le fragment né de la note garde son lien (${lien.slice(0, 160)}) (étape 2)`);
+  await q.click('li[data-id="f2"] [data-act="scrap-del"]');
+  await q.waitForFunction(() => !document.querySelector('li[data-id="f2"]'), null, { timeout: 5000 }).catch(() => {});
+  const orphelin = ne ? (await q.textContent(`li[data-id="${ne.id}"]`)).replace(/\s+/g, ' ') : '';
+  check(orphelin.includes('fait écho à (supprimé)'), `la cible supprimée : « fait écho à (supprimé) » (étape 3)`);
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

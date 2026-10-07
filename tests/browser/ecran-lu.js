@@ -79,6 +79,18 @@ demo.modules.chantier.entries = [tache('t1', 'Poser le velux'), tache('t2', 'Cha
   await p.focus('li[data-task="t2"] [data-act="task-done"]');
   { const r = redessine(); await ailleurs({ retire: 't2' }); await r; }
   check(!/^task-done/.test(await surQuoi()), `la tâche elle-même disparue : le focus ne passe pas à la case d’une autre (${await surQuoi()})`);
+  { // A40 : un rendu de fond entre l'appui et le relâchement remplaçait le bouton pressé ; le relâchement tombait sur son
+    // remplaçant, et le navigateur, qui ne donne « click » qu'à l'élément qui a reçu les deux, n'en donnait aucun.
+    const [x, y] = await p.$eval('[data-act="task-new"]', el => { const r = el.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; });
+    await p.mouse.move(x, y); await p.mouse.down();
+    await ailleurs({ retire: 't3' }); await p.waitForTimeout(400); // l'autre onglet enregistre, le doigt encore posé
+    await p.mouse.up();
+    await p.waitForFunction(() => document.querySelector('#dlg').open, null, { timeout: 5000 }).catch(() => {});
+    const ouvert = await p.evaluate(() => document.querySelector('#dlg').open);
+    await p.waitForFunction(() => !document.querySelector('#main [data-task="t3"]'), null, { timeout: 5000 }).catch(() => {});
+    check(ouvert && !(await p.$('#main [data-task="t3"]')), 'un appui pendant lequel un autre onglet enregistre : le clic ouvre le formulaire, l’écran se redessine ensuite (A40)');
+    if (ouvert) { await p.click('#form button[value=cancel]'); await p.waitForFunction(() => !document.querySelector('#dlg').open); }
+  }
   await onglet.close();
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));

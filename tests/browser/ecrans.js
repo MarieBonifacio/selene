@@ -72,6 +72,9 @@ demo.modules.moth.entries = [
   let g = await grps();
   ok(g.length === 2 && (await hint()).includes('3 résultats'), `résultats groupés par espace (${g.join(' | ')})`);
   ok(await d.isVisible('#main .search-grp + ul .jdate'), 'avec leur date dans la marge');
+  // NAV-005, étape 1 : chaque puce et son nombre ; « Tout statut » seul sans nombre, qui serait le total déjà dit (C15).
+  const puces = await d.$$eval('#main .chip-f', cs => cs.map(c => c.textContent.replace(/\s+/g, ' ').trim()).join(' | '));
+  ok(puces === 'Tous les espaces 3 | Écriture 2 | Capture 1 | Toute date 3 | Depuis la nouvelle lune 2 | Ce mois-ci 2 | Tout statut | observé 1 | hypothèse 1', `les puces : un espace par groupe, trois périodes, les statuts présents, chacune avec son nombre (${puces})`);
   await d.click('#main .chip-f[data-k="period"][data-v="mois"]'); await d.waitForTimeout(200);
   ok((await hint()).includes('2 résultats sur 3'), 'la période « ce mois-ci » écarte l’ancien, et le dit');
   await d.click('#main .chip-f[data-k="ep"][data-v="hyp"]'); await d.waitForTimeout(200);
@@ -84,6 +87,22 @@ demo.modules.moth.entries = [
   await d.evaluate(() => { const b = document.createElement('button'); b.dataset.act = 'search-for'; b.dataset.q = 'lune'; b.id = 'sf'; document.body.append(b); });
   await d.click('#sf'); await d.waitForTimeout(200);
   ok((await hint()).includes('3 résultats') && !(await hint()).includes('sur'), 'une recherche lancée d’ailleurs repart sans filtre');
+  // NAV-005, étape 5 : « / » ramène à la page Chercher telle qu'on l'a laissée, filtre compris et dit (« sur 3 »), comme
+  // « ‹ Recherche » ; une recherche lancée d'ailleurs, la palette, repart sans filtre (evolution-ui.md ; C16).
+  // Poser le filtre « Capture » (sans le basculer s'il l'est déjà) : chaque contrôle part du même état, quel que soit le précédent.
+  const capture = '#main .chip-f[data-k="mod"][data-v="inbox"]';
+  const filtre = async () => { if ((await d.getAttribute(capture, 'aria-pressed')) !== 'true') await d.click(capture); await d.waitForFunction(() => document.querySelector('#main .row .hint').textContent.includes('sur'), null, { timeout: 5000 }).catch(() => {}); };
+  await filtre(); await go(d, 'ecriture'); await d.evaluate(() => document.activeElement && document.activeElement.blur());
+  await d.keyboard.press('/'); await d.waitForFunction(() => document.activeElement && document.activeElement.id === 'searchIn', null, { timeout: 5000 }).catch(() => {});
+  ok((await d.inputValue('#searchIn')) === 'lune' && (await hint()).includes('1 résultat sur 3') && (await d.getAttribute('#main .chip-f[data-k="mod"][data-v="inbox"]', 'aria-pressed')) === 'true',
+    '« / » : la page Chercher telle qu’on l’a laissée, son filtre compris, et dit (« 1 résultat sur 3 »)');
+  await filtre(); await go(d, 'ecriture');
+  await d.keyboard.press('Control+k'); await d.keyboard.type('lune');
+  await d.waitForFunction(() => [...document.querySelectorAll('#palList li')].some(li => li.textContent.includes('« lune » partout')), null, { timeout: 5000 }).catch(() => {});
+  const i = await d.$$eval('#palList li', lis => lis.findIndex(li => li.textContent.includes('« lune » partout')));
+  for (let k = 0; k < i; k++) await d.keyboard.press('ArrowDown');
+  await d.keyboard.press('Enter'); await d.waitForFunction(() => location.hash === '#recherche', null, { timeout: 5000 }).catch(() => {});
+  ok(i >= 0 && (await hint()).includes('3 résultats') && !(await hint()).includes('sur'), 'le filtre toujours posé, « Chercher « lune » partout » depuis la palette : partout, sans filtre (A38)');
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

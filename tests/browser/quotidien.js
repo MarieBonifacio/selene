@@ -111,6 +111,29 @@ demo.modules.moth.entries = [{ id: 'p1', title: 'Le lichen', subtitle: '', tag: 
   v = await vue();
   ok(v.cal[20] === 'on' && v.cal[21] === 'on today' && v.journal[0] === `${date(0)} · 25 min` && v.journal[1] === `${date(-1)} · 30 min` && (await yoga()).length === 6, 'rechargé : les deux séances sont là');
 
+  console.log('le jeu d’essai : des valeurs hors bornes dans les réglages de Yoga (DON-010)');
+  await q.evaluate(() => { location.hash = 'reglages'; }); await q.waitForSelector('#mreg-yoga', { state: 'attached' });
+  await q.evaluate(() => { document.querySelector('#mreg-yoga').open = true; });
+  const borne = async (champ, v) => {
+    const sel = `#mreg-yoga [data-set-mod="yoga.${champ}"]`;
+    await q.fill(sel, v); await q.press(sel, 'Tab');
+    await q.waitForFunction(([c, x]) => String(JSON.parse(localStorage.getItem('selene-site-v1')).modules.yoga.config[c]) !== x, [champ, v], { timeout: 5000 }).catch(() => {});
+    return [(await q.evaluate(c => JSON.parse(localStorage.getItem('selene-site-v1')).modules.yoga.config[c], champ)), await q.inputValue(sel)];
+  };
+  let [g, aff] = await borne('weeks', '600');
+  ok(g === 520 && aff === '520', `durée en semaines 600 : la valeur devient 520 (${g}, affiché ${aff}) (étape 1)`);
+  [g, aff] = await borne('weeks', '-4');
+  ok(g === 1 && aff === '1', `-4 : la valeur devient 1 (${g}, affiché ${aff}) (étape 2)`);
+  [g, aff] = await borne('perWeek', '9');
+  ok(g === 7 && aff === '7', `séances par semaine 9 : la valeur devient 7 (${g}, affiché ${aff}) (étape 3)`);
+  const [dl] = await Promise.all([q.waitForEvent('download'), q.click('[data-act="exp"]')]);
+  await q.setInputFiles('input[data-act="imp"]', await dl.path());
+  await q.waitForFunction(() => document.querySelector('#cdlg[open]'), null, { timeout: 5000 }).catch(() => {});
+  if (await q.$('#cdlg[open]')) await q.click('#cdlg button[value="ok"]');
+  await q.waitForFunction(() => (document.querySelector('#toast').textContent || '').includes('Sauvegarde importée'), null, { timeout: 5000 }).catch(() => {});
+  const relu = await q.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.yoga.config);
+  ok((await q.textContent('#toast')).includes('Sauvegarde importée.') && relu.weeks === 1 && relu.perWeek === 7, 'exportée puis réimportée : « Sauvegarde importée. », les bornes gardées (étape 4)');
+
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();
