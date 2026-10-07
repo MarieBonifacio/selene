@@ -223,6 +223,12 @@ test('total quotidien : jamais additionné à ses propres saisies, refusé s’i
   assert.equal(c.regulationDay(inst, '2026-09-29').complete, false, '… et ne confirme rien tout seul');
   const rs = tracker(c, 'reseaux');
   assert.throws(() => c.saveRegulationTotal(rs, { date: TODAY, total: 1500 }, 'x', TODAY, 1), { code: 'reg-quantity' });
+  // Les quantités s'additionnent au pas de l'unité : 0,1 + 0,2 font 0,3, pas 0,30000000000000004, sans quoi un total
+  // déclaré de 0,3 passerait pour « plus bas » que les saisies (RLM-005, étape 5).
+  const al = tracker(c, 'alcool');
+  use(c, al, 'a1', 0.1); use(c, al, 'a2', 0.2);
+  assert.equal(c.regulationDay(al, TODAY).total, 0.3);
+  assert.equal(c.saveRegulationTotal(al, { date: TODAY, total: '0,3' }, 'a3', TODAY, 24), null, '0,3 déclaré après 0,1 et 0,2 : rien à ajouter');
 });
 
 /* ---------------- objectifs versionnés ---------------- */

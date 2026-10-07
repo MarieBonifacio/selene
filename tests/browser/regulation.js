@@ -195,13 +195,26 @@ const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_
 
     console.log('autres sujets : unités et bornes');
     await go('accueil');
-    for (const [subject, value, unit] of [['cannabis', '0.25', '0,25 g'], ['reseaux', '45', '45 minutes'], ['tabac', '3', '3 cigarettes']]) {
+    // RLM-005 : chaque sujet, ses refus et leur texte exact. Un refus du navigateur laisse le formulaire ouvert ; un refus
+    // de l'app le ferme et le dit ; dans les deux cas, le total du jour ne bouge pas.
+    const deja = async () => ((await main()).match(/Aujourd'hui, déjà noté : ([^·]+?) ·/) || [])[1] || '';
+    const noter = async value => {
+      await p.click('[data-act="rlm-use"]'); await p.waitForFunction(() => document.querySelector('#dlg').open); await fill({ value });
+      await p.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+      await p.click('#form button[value="save"]'); await settle();
+      await p.waitForFunction(() => !document.querySelector('#dlg').open || document.querySelector('#form :invalid'), null, { timeout: 5000 }).catch(() => {});
+      const ouvert = await p.evaluate(() => document.querySelector('#dlg').open);
+      if (ouvert) { await p.click('#form button[value="cancel"]'); await settle(); }
+      else await p.waitForFunction(() => document.querySelector('#toast').textContent.trim(), null, { timeout: 3000 }).catch(() => {});
+      return { refuseParLeNavigateur: ouvert, dit: (await p.textContent('#toast')).replace(/\s+/g, ' ').trim() };
+    };
+    for (const [subject, value, unit] of [['cannabis', '0.25', '0,25 g'], ['reseaux', '1000', '1 000 minutes'], ['tabac', '3', '3 cigarettes'], ['alcool', '0.1', '0,1 verre standard']]) {
       await deplier(p); await p.click('[data-tpl="regulation"]');
       const mods = (await site()).modules, mid = Object.keys(mods).filter(k => mods[k].type === 'regulation').pop();
       await go(mid); await p.click('[data-act="rlm-setup"]'); await fill({ name: `Suivi ${subject}` }); await p.selectOption('#form [name="subject"]', subject); await next('Mon intention');
       check((await p.textContent('#nav')).includes(`Suivi ${subject}`), `${subject} : nom choisi, visible dans la navigation`);
       const form = await p.textContent('#form');
-      check(!form.includes('CSAPA'), `${subject} : pas d’avertissement alcool`);
+      if (subject !== 'alcool') check(!form.includes('CSAPA'), `${subject} : pas d’avertissement alcool`);
       await submit(); // observer, aujourd'hui
       await p.click('[data-act="rlm-use"]'); await fill({ value }); await submit();
       check((await main()).includes(unit), `${subject} : ${unit}`);
@@ -213,6 +226,29 @@ const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_
       }
       if (subject === 'reseaux') check((await main()).includes('ne les bloque pas'), 'réseaux sociaux : ni mesure ni blocage automatiques');
       if (subject === 'cannabis') check((await main()).includes('pas une dose de THC'), 'cannabis : des grammes, pas une dose de THC');
+      if (subject === 'tabac') {
+        const entete = (await main()).includes('Le nombre de cigarettes fumées. Les substituts nicotiniques (patch, gomme, pastille, spray) ne se comptent pas ici'), total = await deja();
+        const [r201, r0] = [await noter('201'), await noter('0')], msg = 'Indique un nombre entier de cigarettes, 200 au plus.';
+        check(entete && total === '3 cigarettes' && [r201, r0].every(r => !r.refuseParLeNavigateur && r.dit === msg) && (await deja()) === '3 cigarettes',
+          `tabac : l’en-tête sur les substituts ; « déjà noté : ${total} » ; 201 puis 0 : « ${r201.dit} » ; le total reste ${await deja()} (RLM-005, étapes 1 et 3)`);
+      }
+      if (subject === 'cannabis') {
+        const [r255, r101] = [await noter('0.255'), await noter('101')];
+        check(r255.refuseParLeNavigateur && !r101.refuseParLeNavigateur && r101.dit === 'Indique une quantité en grammes, au centième près (0,25 par exemple), 100 au plus.' && (await deja()) === '0,25 g',
+          `cannabis : 0,255 refusé par le navigateur ; 101 : « ${r101.dit} » ; le total reste ${await deja()} (RLM-005, étape 4)`);
+      }
+      if (subject === 'alcool') {
+        await noter('0.2'); const somme = await deja();
+        const [r15, r101] = [await noter('0.15'), await noter('101')];
+        check(somme === '0,3 verre standard' && r15.refuseParLeNavigateur && !r101.refuseParLeNavigateur && r101.dit === 'Indique un nombre de verres standard, au dixième près (1,5 par exemple), 100 au plus.' && (await deja()) === '0,3 verre standard',
+          `alcool : 0,1 puis 0,2 : « déjà noté : ${somme} » ; 0,15 refusé par le navigateur ; 101 : « ${r101.dit} » (RLM-005, étapes 5 et 6)`);
+      }
+      if (subject === 'reseaux') {
+        const entete = (await main()).includes('Selene ne mesure pas ton usage des autres applications et ne les bloque pas.');
+        const [r500, r1441] = [await noter('500'), await noter('1441')];
+        check(entete && r500.dit === 'Une journée compte 1440 minutes : ce total les dépasserait.' && r1441.dit === 'Indique un nombre entier de minutes, 1440 au plus.' && (await deja()) === '1 000 minutes',
+          `réseaux sociaux : l’en-tête ; 1 000 puis 500 : « ${r500.dit} » ; 1441 : « ${r1441.dit} » ; le total reste ${await deja()} (RLM-005, étapes 7 et 8)`);
+      }
       await go('accueil');
     }
     await go(id);

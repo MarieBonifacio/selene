@@ -6,7 +6,7 @@ const task = (id, title, room, extra = {}) => ({ id, title, room, cat: 'Bricolag
 const site = sky => {
   const d = JSON.parse(fixture()); d.config.sky = sky;
   d.modules.chantier.entries = [task('t1', 'Peindre le balcon', 'Salon', { due: '2026-09-30' }), task('t2', 'Appeler le notaire', 'Bureau'),
-    task('t3', 'Nettoyer la terrasse', 'Dehors', { done: true }), task('t4', 'Tailler la haie', 'Jardin')];
+    task('t3', 'Nettoyer la terrasse', 'Dehors', { done: true }), task('t4', 'Tailler la haie', 'Jardin'), task('t5', 'Poser une étagère', 'Salon')];
   return JSON.stringify(d);
 };
 const week = (wet = {}) => { const time = ['2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04'];
@@ -56,6 +56,16 @@ const week = (wet = {}) => { const time = ['2026-09-28', '2026-09-29', '2026-09-
   ok(dry && !dry.rain && dry.t === 'sec jusqu\'à ven. 2', `sans pluie : « sec jusqu'à » la fin des cinq jours (${dry && dry.t})`);
   await p.evaluate(() => location.hash = 'reglages'); await p.waitForTimeout(300);
   ok((await p.$eval('[data-set-mod="chantier.outdoor"]', i => i.value)).includes('balcon'), 'les mots « à ciel ouvert » sont réglables, avec des mots par défaut');
+  // EXT-009, étape 2 : `salon` ajouté aux mots, une tâche d'intérieur du Salon reçoit la prévision.
+  const sansSalon = await (async () => { await p.evaluate(() => location.hash = 'chantier'); await p.waitForSelector('li[data-task="t5"]'); return wx('t5'); })();
+  await p.evaluate(() => location.hash = 'reglages'); await p.waitForSelector('[data-set-mod="chantier.outdoor"]', { state: 'attached' });
+  await p.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
+  const mots = await p.$eval('[data-set-mod="chantier.outdoor"]', i => i.value);
+  await p.fill('[data-set-mod="chantier.outdoor"]', mots + ', salon'); await p.press('[data-set-mod="chantier.outdoor"]', 'Tab');
+  await p.waitForFunction(() => /salon/.test(JSON.parse(localStorage.getItem('selene-site-v1')).modules.chantier.config.outdoor || ''), null, { timeout: 5000 }).catch(() => {});
+  await p.evaluate(() => location.hash = 'chantier'); await p.waitForSelector('li[data-task="t5"]');
+  const avecSalon = await wx('t5');
+  ok(!sansSalon && avecSalon && avecSalon.t === 'sec jusqu\'à ven. 2', `« salon » ajouté aux mots : « Poser une étagère » (Salon), sans prévision avant, montre « ${avecSalon && avecSalon.t} » (EXT-009, étape 2)`);
 
   console.log('sans lieu');
   p = await open('2026-12-13T19:00:00+01:00', null, week({ '2026-09-30': [5, 90] }));

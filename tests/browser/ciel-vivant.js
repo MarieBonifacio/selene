@@ -41,6 +41,9 @@ demo.config.sky = { name: 'Lille, Hauts-de-France, France', lat: 50.6, lon: 3.1,
   await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(400);
   ok((await layers(p)).every(x => x.state === 'running'), 'et repart quand elle revient');
   await p.evaluate(() => location.hash = 'reglages'); await p.waitForTimeout(300);
+  // EXT-008, étape 1 : le réglage dit lui-même qu'il ne vaut que pour cet appareil.
+  const libelleVivant = (await p.$eval('[data-act="sky-live"]', i => i.closest('label').textContent)).replace(/\s+/g, ' ').trim();
+  ok(libelleVivant.startsWith('Ciel vivant') && libelleVivant.includes('sur cet appareil'), `« Ciel vivant » porte la mention « cet appareil » (« ${libelleVivant.slice(0, 90)}… ») (EXT-008, étape 1)`);
   await p.uncheck('[data-act="sky-live"]'); await p.waitForTimeout(150);
   await p.evaluate(() => location.hash = ''); await p.waitForTimeout(300);
   l = await layers(p);
