@@ -140,6 +140,31 @@ demo.modules.chantier.entries = [tache('t1', 'Poser le velux'), tache('t2', 'Cha
   const apres5b = await p.evaluate(() => ({ n: JSON.parse(localStorage.getItem('selene-site-v1')).modules.chantier.entries.length, texte: document.querySelector('#main').textContent.includes('Abandonnée sous Firefox') }));
   check(apres5b.n === n5 && !apres5b.texte, `Échap à la manière de Firefox (returnValue laissé à « save ») : rien d’enregistré (${apres5b.n} tâches) (étape 5, A62)`);
 
+  console.log('à l’oreille : un message, des résultats groupés, une boîte qui prend le focus (TRV-001)');
+  // Étape 3 : la capture gardée, un message court, dans la région que les lecteurs d'écran annoncent poliment.
+  await p.evaluate(() => { location.hash = 'accueil'; }); await p.waitForSelector('#capIn');
+  await p.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+  await p.fill('#capIn', 'Lu sans voir TRV-001'); await p.press('#capIn', 'Enter');
+  await p.waitForFunction(() => (document.querySelector('#toast').textContent || '').trim().length > 0, null, { timeout: 5000 }).catch(() => {});
+  const t3 = await p.evaluate(() => { const t = document.querySelector('#toast'), b = t.querySelector('button'); return { texte: (b ? t.textContent.replace(b.textContent, '') : t.textContent).replace(/\s+/g, ' ').trim(), role: t.getAttribute('role'), live: t.getAttribute('aria-live') }; });
+  check(t3.role === 'status' && t3.live === 'polite' && t3.texte.startsWith('Gardé') && t3.texte.length <= 80, `la capture gardée : « ${t3.texte} », court, dans role="status" aria-live="polite" (TRV-001, étape 3)`);
+  // Étape 5 : « / », la recherche ; les résultats groupés par espace, chacun sous le nom de son espace.
+  await p.evaluate(() => document.activeElement && document.activeElement.blur()); await p.keyboard.press('/');
+  await p.waitForFunction(() => document.activeElement && document.activeElement.id === 'searchIn', null, { timeout: 5000 }).catch(() => {});
+  await p.keyboard.type('TRV-00');
+  await p.waitForFunction(() => document.querySelectorAll('#main .search-grp').length >= 2, null, { timeout: 5000 }).catch(() => {});
+  const g5 = await p.evaluate(() => [...document.querySelectorAll('#main .search-grp')].map(g => { const ul = g.nextElementSibling; return { nom: g.firstChild ? g.textContent.replace(/\s*\d+\s*$/, '').trim() : '', items: ul && ul.tagName === 'UL' ? [...ul.querySelectorAll('li.item')].map(li => li.textContent.replace(/\s+/g, ' ').trim()) : [] }; }));
+  const chantier5 = g5.find(g => g.nom.endsWith('Chantier')), boite5 = g5.find(g => g.items.some(t => t.includes('Lu sans voir TRV-001')));
+  check(chantier5 && chantier5.items.some(t => t.includes('Clavier TRV-002')) && boite5 && boite5 !== chantier5 && g5.every(g => g.nom && g.items.length),
+    `« / » puis « TRV-00 » : ${g5.length} groupes, chacun sous le nom de son espace (${g5.map(g => g.nom + ' : ' + g.items.length).join(' ; ')}) (étape 5)`);
+  // Étape 6 : une boîte de dialogue prend le focus, puis le rend où il était.
+  await p.evaluate(() => { location.hash = 'chantier'; }); await p.waitForSelector('[data-act="task-new"]');
+  await p.focus('[data-act="task-new"]'); await p.keyboard.press('Enter'); await p.waitForSelector('#dlg[open]');
+  const dans6 = await p.evaluate(() => !!document.activeElement.closest('#dlg'));
+  await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('#dlg').open);
+  const retour6 = await p.evaluate(() => document.activeElement.dataset.act);
+  check(dans6 && retour6 === 'task-new', `une boîte ouverte : le focus y entre ; fermée : il revient sur « ${retour6} » (étape 6)`);
+
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();
