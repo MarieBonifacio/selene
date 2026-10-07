@@ -30,6 +30,16 @@ fait). **Bloqué n'est jamais réussi**, et un cas non exécuté à la clôture 
 **Décision** : *go*, *go avec réserves* (chaque réserve écrite : l'écart, son ticket, qui l'accepte, jusqu'à quand), ou
 *no-go*. La décision appartient à la responsable du produit ; le compte rendu donne les faits.
 
+<a id="executer-une-campagne"></a>
+**Exécuter une campagne** : le [cahier à cocher](https://claude.ai/artifact/SxbYQSvENzVaMNp72dndbw) (privé à la
+responsable, qui le partage avec les exécutants) crée la campagne (la smoke et ses ajouts selon la livraison ; la
+ciblée par domaines et priorités ; la complète), donne une case par étape, un résultat par cas, et lit les critères de
+sortie ci-dessous à partir de ce qui est saisi. Les coches sont gardées dans la base de l'artefact, d'un appareil à
+l'autre. Il produit les sections *Identification*, *Résultats* et *Synthèse* du compte rendu, à compléter puis à verser
+par une PR : tant qu'il n'est pas versé, une campagne cochée n'est pas un fait du dépôt. Une case cochée dit « résultat
+attendu observé », jamais « étape lue ». Le cahier à cocher est une vue des cas : il se régénère depuis
+[manuels/](manuels/) ([maintenance.md](maintenance.md#la-vérification-de-cohérence)).
+
 **Un écart** : un ticket par écart, avec le cas, la plateforme, les étapes, le résultat observé, le résultat attendu, la
 preuve (capture, vidéo, extrait de console ou de Network) ; jamais de donnée personnelle ni de secret dans la preuve.
 Un écart dont la cause est le cahier (attendu faux, étape ambiguë) se corrige dans le cahier, pas dans l'app, et se note

@@ -25,6 +25,10 @@ export default [
   { files: ["scripts/**/*.mjs"], languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { process: "readonly", URL: "readonly", console: "readonly" } }, rules },
   // Le script des captures pilote une page : ce qu'il fait évaluer dedans voit le DOM.
   { files: ["scripts/store-screenshots.mjs", "scripts/essai-captures.mjs"], languageOptions: { globals: { window: "readonly", document: "readonly", localStorage: "readonly" } } },
+  // Le script du cahier à cocher (scripts/recette-campagne.client.js), inséré dans une page publiée en artefact : le DOM,
+  // le stockage local pour les préférences d'affichage, et window.claude (la base de l'artefact) quand la vue l'offre.
+  { files: ["scripts/recette-campagne.client.js"], languageOptions: { ecmaVersion: 2023, sourceType: "script",
+    globals: readonly(["window", "document", "location", "navigator", "localStorage", "setTimeout", "requestAnimationFrame", "Option"]) }, rules },
   // La vérification des sources de santé (npm run liens) interroge le réseau, avec un délai.
   { files: ["scripts/liens.mjs"], languageOptions: { globals: readonly(["fetch", "AbortController", "setTimeout", "clearTimeout"]) } },
   // Le test d'isolation entre comptes (npm run isolation) interroge un projet Supabase de préproduction.

@@ -8,6 +8,8 @@
    Usage : npm run recette            (vérifier ; code de sortie 1 s'il y a un écart, tous listés avec le geste qui le corrige)
            npm run recette -- jeux    (réécrire docs/recette/donnees/*.json, déterministe)
            npm run recette -- donnees (écrire dist/recette/volume.json, le jeu de volume, voir docs/recette/donnees/README.md)
+           npm run recette -- page    (écrire dist/recette/cahier.html, le cahier en une page, à publier en artefact)
+           npm run recette -- campagne (écrire dist/recette/campagne.html, le cahier à cocher, à publier en artefact)
    Le script ne lit que le dépôt : ni réseau, ni navigateur, ni node_modules ; il n'exécute aucun test (il ne dit donc
    jamais qu'un test passe). Dans GitHub Actions (job « recette » de check.yml, sur les pull requests), chaque écart devient
    une annotation rattachée au fichier concerné, et la liste complète va dans le résumé du job. */
@@ -28,6 +30,7 @@ const fail = (where, what, how = "") => problems.push({ where, what, how });
 if (process.argv[2] === "donnees") { volume(); process.exit(0); }
 if (process.argv[2] === "jeux") { await import("./recette-jeux.mjs"); process.exit(0); }
 if (process.argv[2] === "page") { await import("./recette-page.mjs"); process.exit(0); }
+if (process.argv[2] === "campagne") { await import("./recette-campagne.mjs"); process.exit(0); }
 
 /* ---------- cas manuels ---------- */
 // Les fichiers et leurs préfixes : la table du point d'entrée fait foi (docs/recette/README.md).
