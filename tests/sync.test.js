@@ -164,6 +164,23 @@ test('an idle poll reads only the date of the last write, not the document', asy
   assert.deepEqual([...server.selects].sort(), ['site', 'u:board->>updatedAt', 'u:site->>updatedAt'], 'the changed document only is read again');
 });
 
+/* A57 du cahier de recette : l'ADR 4 promet une relève au retour au premier plan. Onglet caché, la relève de 30 s ne fait
+   rien ; revenu, une relève part aussitôt, la date d'abord, et sans changement rien d'autre n'est lu (l'économie de T8). */
+test('A57 : back to the foreground, a poll runs at once (dates first), without waiting for the 30-second tick', async () => {
+  const { server, a, b } = await twoDevices();
+  b.document.hidden = true; b.document.visibilityState = 'hidden';
+  await edit(a, 'site', d => d.modules.chantier.entries.push(task('t1', 'Velux')));
+  await b.poll();
+  same(titles(b), [], 'hidden: the 30-second poll does nothing');
+  server.selects.length = 0;
+  b.document.hidden = false; b.document.visibilityState = 'visible'; b.fire('document:visibilitychange'); await settle();
+  same(titles(b), ['Velux'], 'visible again: the change arrives at once');
+  assert.ok(server.selects.includes('u:site->>updatedAt'), `the date first (${server.selects.join(', ')})`);
+  server.selects.length = 0;
+  b.fire('document:visibilitychange'); await settle();
+  assert.ok(server.selects.length > 0 && server.selects.every(s => /->>updatedAt$/.test(s)), `nothing new: dates only (${server.selects.join(', ')})`);
+});
+
 test('a poll still pushes edits that could not be sent, even when the server has nothing new', async () => {
   const { server, a } = await twoDevices();
   server.offline = true;

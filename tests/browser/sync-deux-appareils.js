@@ -1,6 +1,8 @@
 /* Scénario de navigateur : deux appareils du même compte, branchés sur un faux Supabase (interception réseau).
    Vérifie la fusion (B n'a jamais vu ce qu'a écrit A) et qu'une saisie faite juste avant de fermer l'onglet
-   n'est pas perdue : restée sur l'appareil, elle part à la réouverture. Puis, sur un second compte rempli du jeu
+   n'est pas perdue : restée sur l'appareil, elle part à la réouverture. Puis, sur un compte neuf, une saisie vue sur
+   l'autre appareil à la relève, une suppression vue dès le retour sur l'onglet (A57), la frappe que la relève
+   n'efface pas (SYN-001, A33). Puis, sur un second compte rempli du jeu
    d'essai, deux appareils coupés du réseau qui divergent et se réconcilient (SYN-003, SYN-008), et un appareil qui
    trouve sur le serveur un format plus récent que le sien (SYN-007). Lancé par tests/browser/run.js. */
 const fs = require('node:fs');
@@ -12,6 +14,7 @@ async function supabase(route) {
   const req = route.request(), u = new URL(req.url()), m = req.method();
   if (u.pathname.startsWith('/auth/')) return json(route, 200, {});
   if (u.pathname === '/rest/v1/activite') return route.fulfill({ status: 201, body: '' }); // la mesure d'usage (services/activite.js)
+  if (u.pathname !== '/rest/v1/app_state') return json(route, 404, {}); // fonctions (passeur…) : absentes ici
   const uid = (u.searchParams.get('user_id') || '').replace('eq.', ''), row = rows.get(uid);
   const stamp = (u.searchParams.get('select') || '').match(/^u:(\w+)->>updatedAt$/); // la date seule (polling)
   if (m === 'GET' && stamp) return json(route, 200, row ? [{ u: row[stamp[1]] && row[stamp[1]].updatedAt != null ? String(row[stamp[1]].updatedAt) : null }] : []);
@@ -68,6 +71,56 @@ const capture = async (p, text) => { await p.fill('#capIn', text); await p.click
     console.log(`    A fermée : ${A.page.isClosed()} ; gamma dans l'IndexedDB de A2 : ${local} ; serveur : ${inbox().join(', ')}`);
     console.log(`    requêtes : ${log.slice(-14).join(' | ')}`);
   }
+
+  console.log('une saisie faite sur un appareil apparaît sur l’autre (SYN-001)');
+  // Un compte neuf : D1 le crée ; D2, l'horloge installée, ne relève que quand on l'avance, ou à son retour au premier
+  // plan. L'onglet quitté puis retrouvé : visibilityState rendu « hidden », puis « visible », et l'événement joué.
+  const inbox4 = () => ((rows.get('u4') || {}).site?.modules?.inbox?.entries || []).map(i => i.text);
+  const D1 = await device(browser, errs, 'D1', { uid: 'u4' });
+  await until(() => !!rows.get('u4')?.site?.config);
+  const D2 = await device(browser, errs, 'D2', { uid: 'u4', horloge: true });
+  const versD = async (x, h, sel) => { await x.page.evaluate(v => { location.hash = v; }, h); await x.page.waitForSelector(sel, { state: 'attached' }); };
+  await versD(D2, 'inbox', '#main');
+  await versD(D1, 'accueil', '#capIn');
+  await D1.page.evaluate(() => { window.__vu = []; const s = document.querySelector('#saving'); new MutationObserver(() => window.__vu.push(s.textContent.trim())).observe(s, { childList: true, characterData: true, subtree: true }); });
+  await capture(D1.page, 'de A1 SYN-001'); await until(() => inbox4().includes('de A1 SYN-001'));
+  await D1.page.waitForFunction(() => !document.querySelector('#saving').textContent.trim(), null, { timeout: 10000 }).catch(() => {});
+  const vu1 = await D1.page.evaluate(() => window.__vu);
+  check(inbox4().includes('de A1 SYN-001') && vu1.includes('Enregistrement…') && vu1[vu1.length - 1] === '' && !(await synchro(D1.page)),
+    `A1 : la capture, l’indicateur « ${vu1.filter(Boolean).join(' » puis « ')} » puis effacé (SYN-001, étape 1)`);
+  const dansD2 = t => D2.page.evaluate(x => document.querySelector('#main').textContent.includes(x), t);
+  const avant2 = await dansD2('de A1 SYN-001');
+  await D2.page.clock.fastForward(31000);
+  await D2.page.waitForFunction(() => document.querySelector('#main').textContent.includes('de A1 SYN-001'), null, { timeout: 5000 }).catch(() => {});
+  check(!avant2 && await dansD2('de A1 SYN-001') && (await D2.page.evaluate(() => location.hash)) === '#inbox', 'A2, l’onglet visible, sans geste : la capture apparaît dans sa boîte à la relève de 30 s (étape 2)');
+  const onglet = (x, cache) => x.page.evaluate(h => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => (h ? 'hidden' : 'visible') });
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => h });
+    document.dispatchEvent(new Event('visibilitychange'));
+  }, cache);
+  await onglet(D2, true);
+  await versD(D1, 'inbox', '#main li.item');
+  await D1.page.evaluate(() => { const li = [...document.querySelectorAll('#main li.item')].find(l => (l.querySelector('.ntext') || {}).textContent === 'de A1 SYN-001'); li.querySelector('[data-act="note-del"]').click(); });
+  await until(() => !inbox4().includes('de A1 SYN-001')); // « Annuler » laissé passer : la suppression est partie
+  const encore3 = await dansD2('de A1 SYN-001');
+  await onglet(D2, false);
+  // Rien n'avance l'horloge de D2 ici : seul le retour au premier plan peut relever (la relève de 30 s est loin).
+  await D2.page.waitForFunction(() => !document.querySelector('#main').textContent.includes('de A1 SYN-001'), null, { timeout: 5000 }).catch(() => {});
+  check(!inbox4().includes('de A1 SYN-001') && encore3 && !(await dansD2('de A1 SYN-001')), 'A2 sur un autre onglet, A1 supprime la capture : de retour sur l’onglet, A2 ne la montre plus, sans attendre la relève (étape 3, A57)');
+  // Étape 4 (A33) : A2 tape la clé OpenAlex sans quitter le champ ; la capture de A1 arrive à la relève, pendant la frappe.
+  await versD(D2, 'dehors', 'text=Clé OpenAlex (facultative)'); await D2.page.click('text=Clé OpenAlex (facultative)');
+  await D2.page.fill('[data-act="oa-key"]', 'cle-de-recette');
+  await versD(D1, 'accueil', '#capIn'); await capture(D1.page, 'pendant la frappe'); await until(() => inbox4().includes('pendant la frappe'));
+  await D2.page.clock.fastForward(31000);
+  const arrivee = async () => JSON.stringify(await storeJSON(D2.page, 'selene-site-v1')).includes('pendant la frappe');
+  for (let i = 0; i < 50 && !(await arrivee()); i++) await D2.page.waitForTimeout(100);
+  const frappe = await D2.page.evaluate(() => { const a = document.activeElement; return { valeur: (document.querySelector('[data-act="oa-key"]') || {}).value, focus: !!a && a.dataset.act === 'oa-key', ouvert: !!a && !!a.closest('details[open]') }; });
+  await D2.page.locator('[data-act="oa-key"]').blur();
+  await D2.page.waitForFunction(() => (document.querySelector('#toast') || {}).textContent?.includes('Clé OpenAlex gardée'), null, { timeout: 5000 }).catch(() => {});
+  await versD(D2, 'inbox', '#main');
+  check(await arrivee() && frappe.valeur === 'cle-de-recette' && frappe.focus && frappe.ouvert && await dansD2('pendant la frappe'),
+    `A2 tape la clé quand la capture de A1 arrive : la clé reste (« ${frappe.valeur} »), le curseur dans le champ, le bloc ouvert ; le champ quitté, la capture est dans sa boîte (étape 4, A33)`);
+  await D1.ctx.close(); await D2.ctx.close();
 
   console.log('deux appareils hors ligne, puis réconciliés (SYN-003, SYN-008)');
   // Un second compte : P pose le jeu d'essai sur le serveur, Q s'y branche ensuite et le reçoit.

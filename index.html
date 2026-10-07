@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-mwWPWDPGLKpzzuwo4RCQipT1n2m4BUvoQm0eDCOhy+s=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-WdzYMgXZSLCKxbI5Nn2R3s3G8Yg40nNbc8gUVfUPooM=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -752,7 +752,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "f208c6e346";
+const SELENE_BUILD = "46f68c6ab4";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -6790,11 +6790,12 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
           const rows = await res.json();
           return rows[0] && rows[0].u != null ? String(rows[0].u) : null;
         },
-        /* Toutes les 30 s, page visible. `known()` : la date de la dernière version commune avec le serveur, si l'appareil
-           n'a rien à envoyer. Le serveur a la même : rien n'a bougé, le document n'est pas relu. Sinon, ou sans date
-           connue, on relit tout et le store fusionne (et renvoie ce qui attendait). */
+        /* Toutes les 30 s, page visible, et aussitôt revenue au premier plan (ADR 4 ; A57 : seul le minuteur relevait, et
+           l'onglet retrouvé attendait jusqu'à 30 s). `known()` : la date de la dernière version commune avec le serveur,
+           si l'appareil n'a rien à envoyer. Le serveur a la même : rien n'a bougé, le document n'est pas relu. Sinon, ou
+           sans date connue, on relit tout et le store fusionne (et renvoie ce qui attendait). */
         onSnapshot(cb, errCb, known = () => null) {
-          const timer = setInterval(async () => {
+          const tick2 = async () => {
             if (document.visibilityState !== "visible" || !authSession) return;
             try {
               const k = known();
@@ -6803,8 +6804,13 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
             } catch (e) {
               errCb && errCb(e);
             }
-          }, 3e4);
-          return () => clearInterval(timer);
+          };
+          const timer = setInterval(tick2, 3e4);
+          document.addEventListener("visibilitychange", tick2);
+          return () => {
+            clearInterval(timer);
+            document.removeEventListener("visibilitychange", tick2);
+          };
         }
       };
     }

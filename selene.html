@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "f208c6e346";
+const SELENE_BUILD = "46f68c6ab4";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -6757,11 +6757,12 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
           const rows = await res.json();
           return rows[0] && rows[0].u != null ? String(rows[0].u) : null;
         },
-        /* Toutes les 30 s, page visible. `known()` : la date de la dernière version commune avec le serveur, si l'appareil
-           n'a rien à envoyer. Le serveur a la même : rien n'a bougé, le document n'est pas relu. Sinon, ou sans date
-           connue, on relit tout et le store fusionne (et renvoie ce qui attendait). */
+        /* Toutes les 30 s, page visible, et aussitôt revenue au premier plan (ADR 4 ; A57 : seul le minuteur relevait, et
+           l'onglet retrouvé attendait jusqu'à 30 s). `known()` : la date de la dernière version commune avec le serveur,
+           si l'appareil n'a rien à envoyer. Le serveur a la même : rien n'a bougé, le document n'est pas relu. Sinon, ou
+           sans date connue, on relit tout et le store fusionne (et renvoie ce qui attendait). */
         onSnapshot(cb, errCb, known = () => null) {
-          const timer = setInterval(async () => {
+          const tick2 = async () => {
             if (document.visibilityState !== "visible" || !authSession) return;
             try {
               const k = known();
@@ -6770,8 +6771,13 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
             } catch (e) {
               errCb && errCb(e);
             }
-          }, 3e4);
-          return () => clearInterval(timer);
+          };
+          const timer = setInterval(tick2, 3e4);
+          document.addEventListener("visibilitychange", tick2);
+          return () => {
+            clearInterval(timer);
+            document.removeEventListener("visibilitychange", tick2);
+          };
         }
       };
     }

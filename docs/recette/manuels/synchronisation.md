@@ -34,7 +34,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob, AND, IOS, WIN
 - **Préconditions** : A1 et A2 ouverts sur l'accueil.
 - **Données** : capture `de A1 SYN-001`.
-- **Automatisés associés** : `TN-sync-deux-appareils`, `TU-SYN-08`, `TU-SYN-09`, `TU-MOD-66`, `TN-veille`
+- **Automatisés associés** : `TN-sync-deux-appareils`, `TU-SYN-08`, `TU-SYN-09`, `TU-MOD-66`, `TN-veille`, `TU-SYN-24`
 - **Source** : [DOC] README, « Comptes et synchronisation » ; [DOC] [architecture.md](../../architecture.md#synchronisation) ; [TEST] `tests/browser/sync-deux-appareils.js` ; [ANOMALIE] A33.
 
 | Étape | Action précise | Résultat attendu observable |
