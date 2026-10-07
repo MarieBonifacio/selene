@@ -60,7 +60,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | ~~BL-20 : un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait le 6 octobre 2026, PR #124) | une session | P3 | — | [BL-20](#bl-20) |
 | ~~BL-19 : nommer, dans la matrice, les étapes que les tests ne couvrent pas~~ (les 73 cas P1 : fait le 6 octobre 2026, PR #125 ; les 88 cas P2 et P3 : fait le 7 octobre 2026) | une session | P3 | — | [BL-19](#bl-19) |
 | ~~BL-23 : un faux Supabase commun, qui réponde comme PostgREST~~ (fait le 7 octobre 2026) | une session | P3 | — | [BL-23](#bl-23) |
-| BL-18 : la page du cahier à cocher sous contrôle de la CI | une session | P3 | la PR #118 est fusionnée (7 octobre 2026) : en cours | [BL-18](#bl-18) |
+| ~~BL-18 : la page du cahier à cocher sous contrôle de la CI~~ (fait le 7 octobre 2026 : générée en CI, l'empreinte étendue, `TN-campagne`) | une session | P3 | — | [BL-18](#bl-18) |
 | BL-16 : la fumée de l'app iOS sur simulateur | une session | P3 | avant la première version iOS | [BL-16](#bl-16) |
 
 ### À exécuter (recette à la main)
@@ -129,7 +129,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 | [BL-15](#bl-15) | ~~Le hors-ligne réel : réseau coupé, page rechargée, retour du réseau~~ (fait) | automatisation | P1 | SYN-004, PLT-001, SYN-010 |
 | [BL-16](#bl-16) | Fumée de l'app iOS sur simulateur, en CI | automatisation | P3 | PLT-008 |
 | [BL-17](#bl-17) | ~~Un échec sous Firefox doit se voir tant qu'il n'est pas bloquant~~ (fait) | fiabilité de la CI | P2 | tous |
-| [BL-18](#bl-18) | La page du cahier à cocher sous contrôle de la CI (la PR #118 fusionnée le 7 octobre 2026) | outillage | P3 | tous |
+| [BL-18](#bl-18) | ~~La page du cahier à cocher sous contrôle de la CI~~ (fait) | outillage | P3 | tous |
 | [BL-19](#bl-19) | ~~Matrice : nommer les étapes que les tests ne couvrent pas~~ (fait) | traçabilité | P3 | les 161 cas, étape par étape |
 | [BL-20](#bl-20) | ~~Un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait) | outillage | P3 | onze étapes, voir ci-dessous |
 | [BL-21](#bl-21) | ~~Fermer le réseau aux scénarios de navigateur~~ (fait) | hygiène des essais | P2 | tous les scénarios ; A20 |
@@ -376,7 +376,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   montraient pas (A15, corrigé par la PR #116). Le job « vert » ne le disait pas : avant de le rendre bloquant, lire son
   journal reste le seul moyen de savoir.
 - **Condition proposée pour le 20 octobre** (à confirmer par la responsable) : A16 corrigé, puis vingt passages Firefox
-  consécutifs sans échec : l'avertissement de [BL-17](#bl-17) absent, ou « 82 scénarios, tous verts. » (81 avant le 7 octobre 2026 au soir) à la fin du
+  consécutifs sans échec : l'avertissement de [BL-17](#bl-17) absent, ou « 83 scénarios, tous verts. » (81 avant le 7 octobre 2026 au soir, 82 avec `TN-fermeture`) à la fin du
   journal du pas ; sinon, décaler la date plutôt que rendre bloquant un scénario instable, qui apprendrait à
   relancer la CI sans la lire.
 
@@ -468,6 +468,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   l'empreinte aux préconditions et aux données.
 - **Niveau** : outillage de la recette.
 - **Dépendances** : la fusion de la PR #118, faite le 7 octobre 2026 par la responsable.
+- **Fait le 7 octobre 2026** : le job *Check › recette* lance `npm run recette -- campagne` ; l'empreinte couvre les préconditions et les données ; [`TN-campagne`](automatises.md#tn-campagne) ouvre la page avec une fausse base fidèle au contrat de la capacité « db » (création d'une smoke, coches, rechargement, étape à revérifier, lecture seule).
 
 <a id="bl-19"></a>
 ### BL-19 — Matrice : nommer les étapes que les tests ne couvrent pas

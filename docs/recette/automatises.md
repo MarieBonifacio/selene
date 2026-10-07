@@ -11,7 +11,7 @@ Identifiants retirés : aucun.
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
 | Tests unitaires et d'intégration Node | `npm test` | 328 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
-| Scénarios de navigateur | `npm run test:browser` | 82 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent et au processeur ralenti | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
+| Scénarios de navigateur | `npm run test:browser` | 83 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent et au processeur ralenti | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
 | Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
@@ -1405,6 +1405,15 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Vérifie** : Écriture et Sources installées ; trois idées par ⊕ ; source gardée par son DOI ; « documente… » proposé et relié ; Chercher retrouve sans accent ni casse ; l'Écriture vide mène au tri ; trois fragments triés, lien suivi ; dossier téléchargé.
 - **Limites** : Le robot sait où cliquer : ne mesure pas la facilité pour une personne (c'est l'objet d'E2, [validation.md](../validation.md#e2--tester-le-parcours-deux-fois-cinq-personnes)).
 - **Cas manuels** : [PEN-008](manuels/penser-avec.md#pen-008), [EXT-004](manuels/connexions.md#ext-004)
+
+<a id="tn-campagne"></a>
+#### `TN-campagne` — Le cahier à cocher
+
+- **Fichier** : [`tests/browser/campagne.js`](../../tests/browser/campagne.js) · **mode** A · **écran** O
+- **Conditions** : La page `dist/recette/campagne.html` générée par le scénario (`npm run recette -- campagne`) ; une fausse base `window.claude`, fidèle au contrat de la capacité « db » (runtime 0.2.74) : `set` remplace le document, `update` fusionne les objets imbriqués et refuse un document absent, instantanés gelés et leurs `docChanges` ; elle vit dans le localStorage de la page, pour survivre au rechargement.
+- **Vérifie** : sans base, les 192 cas se lisent, « Les coches ne s'enregistrent pas ici… », « Nouvelle campagne » désactivée ; avec la base, une smoke créée (« 16 cas, N cases à cocher. »), enregistrée avec ses cas et le commit du cahier ; deux étapes cochées, toutes deux gardées par la base avec leur empreinte ; rechargée, la campagne retrouvée, ses cas affichés, les coches gardées, un résultat observé piégé resté du texte, aucune alerte ; une empreinte changée dans la base : « Étape réécrite depuis sa coche : à revérifier. », le compteur « 1 étape à revérifier », l'étape voisine intacte ; un accès sans droit d'écriture : « Lecture seule… ». Mutation vérifiée : la détection des étapes réécrites retirée, une écriture qui écrase le document au lieu de le fusionner, et ces contrôles échouent.
+- **Limites** : La vraie base de claude.ai ne s'exerce que depuis le navigateur d'une personne connectée ; le changement d'empreinte est posé dans la base, pas obtenu en réécrivant un cas.
+- **Cas manuels** : —
 
 <a id="tn-essai"></a>
 #### `TN-essai` — Page publique de test
