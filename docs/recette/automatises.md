@@ -830,8 +830,8 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-ecran-lu` — Ce que dit un lecteur d'écran
 
 - **Fichier** : [`tests/browser/ecran-lu.js`](../../tests/browser/ecran-lu.js) · **mode** A · **écran** O
-- **Conditions** : Clavier.
-- **Vérifie** : le titre de la page nomme l'écran ; Entrée sur un lien du menu met le focus au titre, sans défiler ; Tab repart du contenu ; « / » met le curseur dans la recherche ; messages d'état courts, région permanente annoncée poliment.
+- **Conditions** : Clavier ; un second onglet du site, sans l'app, qui écrit dans le stockage.
+- **Vérifie** : le titre de la page nomme l'écran ; Entrée sur un lien du menu met le focus au titre, sans défiler ; Tab repart du contenu ; « / » met le curseur dans la recherche ; messages d'état courts, région permanente annoncée poliment ; un rendu de fond (l'autre onglet enregistre) garde le focus sur un bouton, et Entrée ouvre alors son formulaire ; sur la case d'une tâche, même quand une autre tâche disparaît ; la tâche elle-même disparue, le focus ne passe pas à la case d'une autre (A37). Mutation vérifiée : sans la restauration, ou sans l'entrée dans la signature, ces contrôles échouent.
 - **Limites** : Aucun lecteur d'écran réel : la région et le focus sont lus dans le DOM.
 - **Cas manuels** : [NAV-004](manuels/navigation-reglages.md#nav-004), [TRV-001](manuels/transverse.md#trv-001), [TRV-002](manuels/transverse.md#trv-002)
 

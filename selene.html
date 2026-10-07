@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "a15bfcacef";
+const SELENE_BUILD = "ade5545e65";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -13396,6 +13396,33 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
   var redirectedFrom = null;
   var renderDay = null;
   var renderedDay = () => renderDay;
+  var FOCUSABLE = "button, a[href], input, select, textarea, summary, [tabindex]";
+  var KEYED = "[data-id], [data-task], [data-item], [data-oa], [data-i], [data-rg], [data-vi], [data-ci]";
+  var dataSig = (el) => Object.keys(el.dataset).sort().map((k) => `${k}=${el.dataset[k]}`).join(",");
+  var focusSig = (el) => {
+    const o = el.parentElement && el.parentElement.closest(KEYED);
+    return [el.tagName, el.getAttribute("href") || "", el.getAttribute("aria-label") || "", dataSig(el), o ? dataSig(o) : ""].join("|");
+  };
+  var alike = (zone2, el, sig) => [...zone2.querySelectorAll(FOCUSABLE)].filter((x) => x.tagName === el.tagName && x.dataset.act === el.dataset.act && focusSig(x) === sig);
+  var inGesture = () => {
+    const e = window.event;
+    return !!e && /^(key|mouse|pointer|touch|click|dblclick|auxclick|contextmenu|input|change|submit|reset|focus|blur|select)/.test(e.type);
+  };
+  function focusMark() {
+    if (inGesture()) return null;
+    const el = document.activeElement, zone2 = el && el !== document.body && el.closest ? el.closest("#main, #nav, #bar") : null;
+    if (!zone2 || el.id) return null;
+    const sig = focusSig(el);
+    return { zone: zone2.id, tag: el.tagName, act: el.dataset.act, sig, n: alike(zone2, el, sig).indexOf(el) };
+  }
+  function focusBack(m) {
+    if (!m || m.n < 0 || document.activeElement && document.activeElement !== document.body) return;
+    const zone2 = document.getElementById(m.zone), el = zone2 && alike(zone2, { tagName: m.tag, dataset: { act: m.act } }, m.sig)[m.n];
+    if (el) try {
+      el.focus({ preventScroll: true });
+    } catch {
+    }
+  }
   function render() {
     renderMemo = /* @__PURE__ */ new Map();
     renderDay = todayISO();
@@ -13437,6 +13464,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       }
     } else redirectedFrom = null;
     const inst = !fixed(view) && Object.hasOwn(s.modules, view) ? s.modules[view] : null;
+    const mark = view === lastView ? focusMark() : null;
     $("#nav").innerHTML = navHTML(view);
     $("#bar").innerHTML = barHTML(view);
     if (inst && view !== lastView) noteVisit(view);
@@ -13484,7 +13512,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
         } catch {
         }
       }
-    }
+    } else focusBack(mark);
     if (view !== lastView) revealed = null;
     if (revealed) $("#main").querySelectorAll(".item[data-id], .card[data-id]").forEach((el) => {
       if (el.dataset.id === revealed) el.classList.add("reveal");

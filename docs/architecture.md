@@ -268,7 +268,10 @@ sinon, ou si elle échoue, les données restent locales (copie de secours, ADR 1
 
 Ce qu'une synchro apporte se dessine, sauf sous une frappe : un champ à identifiant garde sa valeur et son curseur au
 rendu ; tant qu'un champ sans identifiant a le focus, la vue n'est pas redessinée (`render.js`), dans les Réglages comme
-ailleurs. Sinon, la saisie disparaîtrait, et le champ retiré lancerait son « change » au milieu du rendu (A33).
+ailleurs. Sinon, la saisie disparaîtrait, et le champ retiré lancerait son « change » au milieu du rendu (A33). Un
+bouton, un lien ou une case qui a le focus clavier le garde aussi : un rendu de fond (synchro, autre onglet, fin d'un
+envoi) le retrouve par ce qui le désigne et l'entrée qui le porte, jamais la case d'une autre tâche ; un rendu né d'un
+geste n'y touche pas, sans quoi la même touche Entrée réactiverait un bouton (A37).
 
 Sans base (premier contact d'un appareil) : un appareil vierge adopte le serveur, sinon on fusionne
 sans rien supprimer. L'import d'une sauvegarde remplace au lieu de fusionner (`replaceAll`).
