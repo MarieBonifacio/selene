@@ -896,9 +896,9 @@ publique) ; écran : T téléphone, O ordinateur.
 <a id="tn-notes"></a>
 #### `TN-notes` — Notes et boîte de réception
 
-- **Fichier** : [`tests/browser/notes.js`](../../tests/browser/notes.js) · **mode** A · **écran** —
-- **Conditions** : Données au format 6 sans boîte désignée, puis avec.
-- **Vérifie** : compteur de la boîte ; « à trier » sur l'accueil ; capture rapide par Entrée ; destinations selon ce que chaque type accepte ; vers le Chantier, le formulaire de tâche ; désigner une autre boîte retire l'ancienne désignation, case décochée à l'écran ; sans boîte, « Aucune boîte de réception. Coche… » à la place du champ, qui revient avec la case.
+- **Fichier** : [`tests/browser/notes.js`](../../tests/browser/notes.js) · **mode** A · **écran** O
+- **Conditions** : Données au format 6 sans boîte désignée, puis avec ; puis le jeu d'essai, sur ordinateur (MOD-015).
+- **Vérifie** : compteur de la boîte ; « à trier » sur l'accueil ; capture rapide par Entrée ; destinations selon ce que chaque type accepte ; vers le Chantier, le formulaire de tâche ; désigner une autre boîte retire l'ancienne désignation, case décochée à l'écran ; sans boîte, « Aucune boîte de réception. Coche… » à la place du champ, qui revient avec la case. Puis, sur le jeu d'essai : les destinations sous une note, sans « → Yoga » ni « → Boîte » ; « → Chantier » ouvre « Modifier la tâche », titre prérempli ; enregistrée, une seule tâche, la note partie (MOD-015). Mutation vérifiée : un programme proposé en destination, le titre non prérempli, et ces contrôles échouent.
 - **Cas manuels** : [ESP-009](manuels/espaces.md#esp-009), [MOD-014](manuels/types-de-module.md#mod-014), [MOD-015](manuels/types-de-module.md#mod-015), [TRV-015](manuels/transverse.md#trv-015)
 
 <a id="tn-import-markdown"></a>
@@ -913,9 +913,9 @@ publique) ; écran : T téléphone, O ordinateur.
 <a id="tn-atelier-capture"></a>
 #### `TN-atelier-capture` — Atelier d'écriture et capture qui comprend
 
-- **Fichier** : [`tests/browser/atelier-capture.js`](../../tests/browser/atelier-capture.js) · **mode** A · **écran** —
-- **Conditions** : Chapitres réglés.
-- **Vérifie** : dernier chapitre présélectionné, fragments rattachés, déplacés, filtrés, export Markdown ; chapitre supprimé : fragments hors chapitre ; bandeau « 12,50 € en dépense dans Budget (Courses) ? », rangé ; proposition qui reste dans la boîte ; note ordinaire juste gardée.
+- **Fichier** : [`tests/browser/atelier-capture.js`](../../tests/browser/atelier-capture.js) · **mode** A · **écran** O
+- **Conditions** : Chapitres réglés ; puis le jeu d'essai, sur ordinateur, dans un contexte à part (MOD-011).
+- **Vérifie** : dernier chapitre présélectionné, fragments rattachés, déplacés, filtrés, export Markdown ; chapitre supprimé : fragments hors chapitre ; bandeau « 12,50 € en dépense dans Budget (Courses) ? », rangé ; proposition qui reste dans la boîte ; note ordinaire juste gardée. Puis, sur le jeu d'essai : le chapitre présélectionné, un fragment ajouté au Prologue et le compte du panneau, le filtre, l'ordre de l'export, la confirmation de la suppression et le nombre de fragments inchangé (MOD-011). Mutation vérifiée : le premier chapitre présélectionné au lieu du dernier, les fragments supprimés avec leur chapitre, l'export sans titres de chapitre, et ces contrôles échouent.
 - **Cas manuels** : [MOD-011](manuels/types-de-module.md#mod-011), [MOD-014](manuels/types-de-module.md#mod-014)
 
 <a id="tn-quotidien"></a>
@@ -937,9 +937,9 @@ publique) ; écran : T téléphone, O ordinateur.
 <a id="tn-arc"></a>
 #### `TN-arc` — Arcs
 
-- **Fichier** : [`tests/browser/arc.js`](../../tests/browser/arc.js) · **mode** A · **écran** T
-- **Conditions** : Un fragment.
-- **Vérifie** : trois étapes vides visibles ; placement sous sa station ; étape renommée ; placement retiré puis rétabli par « Annuler » ; suppression d'étape confirmée (avec ses placements) ; cible supprimée dite ; résumé d'accueil.
+- **Fichier** : [`tests/browser/arc.js`](../../tests/browser/arc.js) · **mode** A · **écran** T et O
+- **Conditions** : Un fragment ; puis le jeu d'essai, sur ordinateur (MOD-021).
+- **Vérifie** : trois étapes vides visibles ; placement sous sa station ; étape renommée ; placement retiré puis rétabli par « Annuler » ; suppression d'étape confirmée (avec ses placements) ; cible supprimée dite ; résumé d'accueil. Puis, sur le jeu d'essai : un élément du Tableau placé à l'Étape 2, retiré puis remis ; la suppression de l'étape, son message, annulée puis confirmée ; l'élément resté dans Tableau (MOD-021). Mutation vérifiée : le nombre de placements tu dans la question, les placements gardés après la suppression, et ces contrôles échouent.
 - **Cas manuels** : [MOD-021](manuels/types-de-module.md#mod-021)
 
 <a id="tn-annuler"></a>

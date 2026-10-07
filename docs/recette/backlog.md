@@ -544,7 +544,9 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   reste partiel (l'écriture de la version plus récente n'est qu'un document posé sur le faux serveur) ; C21 (couper le
   réseau ne fait rien dire à l'indicateur). Quatre mutants, quatre contrôles qui tombent. Puis RLM-027 : 91 et 101 ; en
   chemin, A48, un défaut de l'app (le suivi mis de côté ne revenait pas si l'autre compte s'était déconnecté), corrigé
-  et prouvé par `TU-REG-42`. Puis MOD-019, PEN-001 et PEN-002, sur le jeu d'essai et l'horloge figée : 94 et 98.
+  et prouvé par `TU-REG-42`. Puis MOD-019, PEN-001 et PEN-002, sur le jeu d'essai et l'horloge figée : 94 et 98. Puis
+  MOD-011, MOD-015 et MOD-021, de même : 97 et 95 ; C22 (« → Chantier » ouvre « Modifier la tâche », la tâche déjà
+  créée). Sept mutants, sept contrôles qui tombent.
 
 <a id="bl-20"></a>
 ### BL-20 — Un résultat observable à chaque étape, contrôlé par `npm run recette`

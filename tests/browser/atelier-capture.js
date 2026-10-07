@@ -1,5 +1,6 @@
 /* Scénario de navigateur : atelier-capture. Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const fs = require('node:fs');
+const { engine, BASE, launchOptions, fixture, donnee, ouvrir, check } = require('./helpers');
 const demo = JSON.parse(fixture());
 demo.modules.ecriture.config.categories = [{ id: 'c1', name: 'Prologue', goal: 0 }, { id: 'c2', name: 'La forêt', goal: 0 }];
 (async () => {
@@ -43,6 +44,43 @@ demo.modules.ecriture.config.categories = [{ id: 'c1', name: 'Prologue', goal: 0
   d = await data(); ok(d.modules.phidippus.entries.some(e => e.note === 'toile neuve') && !d.modules.inbox.entries.length, 'rangé depuis la boîte');
   await go('accueil'); await p.fill('#capIn', 'acheter du pain'); await p.press('#capIn', 'Enter'); await p.waitForTimeout(150);
   ok((await p.textContent('#toast')).includes('Gardé'), 'une note ordinaire : juste gardée');
+
+  console.log('le jeu d’essai : chapitres, filtre, export, suppression (MOD-011)');
+  // Un autre contexte : celui de la première partie a déjà son stockage (et plus de « Prologue »).
+  const cq = await b.newContext({ acceptDownloads: true, viewport: { width: 1280, height: 900 } });
+  const q = await cq.newPage(); q.on('pageerror', e => errs.push(e.message));
+  const essai = donnee('jeu-essai.json');
+  await q.addInitScript(([st, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', st); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essai.site), JSON.stringify(essai.board)]);
+  const donneesQ = () => q.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')));
+  const versQ = async (h, sel) => { await q.evaluate(x => { location.hash = x; }, h); await q.waitForSelector(sel, { state: 'attached' }); };
+  await ouvrir(q, BASE + '/index.html#ecriture', () => !!document.querySelector('#scrapCat'));
+  // Le panneau « Par chapitre » : le compte de fragments de chaque chapitre.
+  const panneau = () => q.evaluate(() => Object.fromEntries([...document.querySelectorAll('#main .rooms .room')].map(r => { const s = r.querySelectorAll('small'); return [s[0].textContent.trim(), s[1].textContent.trim()]; })));
+  const avant = await panneau(), pre = await q.inputValue('#scrapCat');
+  ok(pre === 'c2', `le champ de fragment présélectionne « La forêt », le chapitre du dernier fragment rattaché (« ${pre} ») (MOD-011, étape 1)`);
+  await q.fill('#scrapIn', 'Le ruisseau coupe la lisière en deux.'); await q.selectOption('#scrapCat', 'c1'); await q.click('[data-act="scrap-add"]');
+  await q.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.ecriture.scraps.some(s => s.text === 'Le ruisseau coupe la lisière en deux.'), null, { timeout: 5000 }).catch(() => {});
+  await q.waitForFunction(() => /3 fragments/.test([...document.querySelectorAll('#main .rooms .room')].map(r => r.textContent).join()), null, { timeout: 5000 }).catch(() => {});
+  const apres = await panneau(), ruisseau = (await donneesQ()).modules.ecriture.scraps.find(s => s.text === 'Le ruisseau coupe la lisière en deux.') || {};
+  const ligne = await q.evaluate(() => { const li = [...document.querySelectorAll('#main li.item')].find(l => l.textContent.includes('Le ruisseau coupe')); return li ? li.querySelector('[data-act="scrap-cat"]').value : ''; });
+  ok(ruisseau.category === 'c1' && ligne === 'c1' && /· 2 fragments$/.test(avant.Prologue) && /· 3 fragments$/.test(apres.Prologue), `ajouté au Prologue, il y apparaît rattaché ; le panneau : « ${avant.Prologue} », puis « ${apres.Prologue} » (MOD-011, étape 2)`);
+  await q.selectOption('[data-act="scrap-f"]', 'c2');
+  await q.waitForFunction(() => ![...document.querySelectorAll('#main li.item')].some(l => l.textContent.includes('Le ruisseau coupe')), null, { timeout: 5000 }).catch(() => {});
+  const filtres = await q.$$eval('#main li.item [data-act="scrap-cat"]', xs => xs.map(x => x.value));
+  ok(filtres.length === 2 && filtres.every(v => v === 'c2'), `« Par chapitre » sur « La forêt » : ses ${filtres.length} fragments seuls (MOD-011, étape 3)`);
+  const [dl2] = await Promise.all([q.waitForEvent('download'), q.click('[data-act="scrap-md"]')]);
+  const md2 = fs.readFileSync(await dl2.path(), 'utf8'), at = t => md2.indexOf(t);
+  const ordre = at('## Prologue') >= 0 && at('## Prologue') < at('La lisière n\'est pas une frontière') && at('Le ruisseau coupe la lisière en deux.') < at('## La forêt')
+    && at('## La forêt') < at('Le brouillard efface la route') && at('Le brouillard efface la route') < at('## Hors chapitre') && at('## Hors chapitre') < at('Une phrase sans chapitre, posée là comme une phalène');
+  ok(dl2.suggestedFilename().endsWith('.md') && ordre, `« Exporter en Markdown » : ${dl2.suggestedFilename()}, « ## Prologue » et ses fragments, « ## La forêt » et les siens, « ## Hors chapitre » et « Une phrase sans chapitre… » (MOD-011, étape 4)`);
+  const nAvant = (await donneesQ()).modules.ecriture.scraps.length;
+  await versQ('reglages', '#mreg-ecriture [data-ci="0"] [data-act="cat-del"]'); await q.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
+  await q.click('#mreg-ecriture [data-ci="0"] [data-act="cat-del"]'); await q.waitForSelector('#cdlg[open]');
+  const demande = (await q.textContent('#cmsg')).trim(); await q.click('#cdlg button[value=ok]');
+  await q.waitForFunction(() => !JSON.parse(localStorage.getItem('selene-site-v1')).modules.ecriture.config.categories.some(c => c.id === 'c1'), null, { timeout: 5000 }).catch(() => {});
+  const fin = (await donneesQ()).modules.ecriture;
+  ok(demande === 'Supprimer « Prologue » ? Les entrées déjà ajoutées passeront hors catégorie.' && !fin.config.categories.some(c => c.id === 'c1') && fin.scraps.length === nAvant && !fin.scraps.some(s => s.category === 'c1')
+    && ['f1', 'f3'].every(id => fin.scraps.some(s => s.id === id && !s.category)), `« Prologue » supprimé après « ${demande} » : ses fragments hors chapitre, aucun supprimé (${fin.scraps.length} sur ${nAvant}) (MOD-011, étape 5)`);
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

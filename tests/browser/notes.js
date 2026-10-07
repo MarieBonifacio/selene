@@ -1,5 +1,5 @@
 /* Scénario de navigateur : notes. Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, BASE, launchOptions, fixture, donnee, ouvrir, check } = require('./helpers');
 const v3 = { updatedAt: 10, schemaVersion: 3,
   config: { name: 'Selene', palette: 'nigredo', mode: 'auto', labels: {}, groups: {},
     modules: ['chantier', 'ecriture', 'moth', 'phidippus', 'budget', 'inbox'].map(id => ({ id, on: true })), assistant: { model: 'claude-sonnet-5', actions: true, share: {} } },
@@ -49,6 +49,25 @@ const v3 = { updatedAt: 10, schemaVersion: 3,
   await go('accueil'); ok((await main()).includes('Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans Réglages.') && !(await p.$('#capIn')), 'sans boîte : « Aucune boîte de réception. Coche « Boîte de réception » sur un module Notes, dans Réglages. », au lieu d’un champ muet');
   await go('reglages'); await openAll(); await p.check('#mreg-inbox [data-act="notes-inbox"]'); await p.waitForTimeout(150);
   await go('accueil'); ok(await p.isVisible('#capIn') && !(await main()).includes('Aucune boîte de réception'), 'la case recochée : le champ de capture revient');
+
+  console.log('le jeu d’essai : ranger une note dans un espace (MOD-015)');
+  const q = await b.newPage({ viewport: { width: 1280, height: 900 } }); q.on('pageerror', e => errs.push(e.message));
+  const essai = donnee('jeu-essai.json');
+  await q.addInitScript(([st, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', st); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essai.site), JSON.stringify(essai.board)]);
+  const donneesQ = () => q.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')));
+  const versQ = async (h, sel) => { await q.evaluate(x => { location.hash = x; }, h); await q.waitForSelector(sel, { state: 'attached' }); };
+  await ouvrir(q, BASE + '/index.html#inbox', () => !!document.querySelector('#main li[data-id="n6"]'));
+  const dest = await q.$$eval('#main li[data-id="n6"] [data-act="note-to"]', xs => xs.map(x => x.textContent.trim()));
+  ok(['→ Chantier', '→ Écriture', '→ Tableau', '→ Plantes', '→ Carnet'].every(x => dest.includes(x)) && !dest.includes('→ Yoga') && !dest.includes('→ Boîte'),
+    `sous « Penser à rappeler la quincaillerie » : ${dest.join(', ')} ; ni « → Yoga », ni « → Boîte » (MOD-015, étape 1)`);
+  await q.click('li[data-id="n6"] [data-act="note-to"][data-to="chantier"]'); await q.waitForFunction(() => document.querySelector('#dlg').open);
+  const titreForm = (await q.textContent('#form h2')).trim(), titreTache = await q.inputValue('#form [name=title]');
+  ok(titreForm === 'Modifier la tâche' && titreTache === 'Penser à rappeler la quincaillerie', `« → Chantier » : le formulaire « ${titreForm} » (la tâche existe déjà, C22), le titre prérempli « ${titreTache} » (MOD-015, étape 2)`);
+  await q.click('#form button[value=save]'); await q.waitForFunction(() => !document.querySelector('#dlg').open);
+  await versQ('chantier', '#main li.item[data-task]');
+  const dq = await donneesQ(), taches = dq.modules.chantier.entries.filter(t => t.title === 'Penser à rappeler la quincaillerie');
+  const vue = await q.evaluate(() => [...document.querySelectorAll('#main li.item[data-task] .t-title')].some(x => x.textContent.trim() === 'Penser à rappeler la quincaillerie'));
+  ok(taches.length === 1 && vue && !dq.modules.inbox.entries.some(e => e.id === 'n6'), `« Enregistrer » : la tâche est dans Chantier, une seule ; la note a quitté la boîte (MOD-015, étape 3)`);
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

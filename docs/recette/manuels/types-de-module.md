@@ -399,7 +399,7 @@ Identifiants retirés : aucun.
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Ouvrir la boîte, regarder les boutons sous la note. | « → Chantier », « → Écriture », « → Tableau », « → Plantes », « → Carnet »… ; ni « → Yoga », ni « → Boîte ». |
-| 2 | « → Chantier ». | Le formulaire « Nouvelle tâche » s'ouvre, titre prérempli. |
+| 2 | « → Chantier ». | La tâche est créée et la note quitte la boîte ; le formulaire « Modifier la tâche » s'ouvre pour la compléter, titre prérempli. |
 | 3 | « Enregistrer ». | La tâche est dans Chantier ; la note a quitté la boîte. |
 
 - **État final attendu** : une tâche de plus, une note de moins.
