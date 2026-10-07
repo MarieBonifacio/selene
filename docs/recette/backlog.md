@@ -60,7 +60,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | ~~BL-20 : un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait le 6 octobre 2026, PR #124) | une session | P3 | — | [BL-20](#bl-20) |
 | ~~BL-19 : nommer, dans la matrice, les étapes que les tests ne couvrent pas~~ (les 73 cas P1 : fait le 6 octobre 2026, PR #125 ; les 88 cas P2 et P3 : fait le 7 octobre 2026) | une session | P3 | — | [BL-19](#bl-19) |
 | ~~BL-23 : un faux Supabase commun, qui réponde comme PostgREST~~ (fait le 7 octobre 2026) | une session | P3 | — | [BL-23](#bl-23) |
-| BL-18 : la page du cahier à cocher sous contrôle de la CI | une session | P3 | si la PR #118 est fusionnée | [BL-18](#bl-18) |
+| BL-18 : la page du cahier à cocher sous contrôle de la CI | une session | P3 | la PR #118 est fusionnée (7 octobre 2026) : en cours | [BL-18](#bl-18) |
 | BL-16 : la fumée de l'app iOS sur simulateur | une session | P3 | avant la première version iOS | [BL-16](#bl-16) |
 
 ### À exécuter (recette à la main)
@@ -89,7 +89,6 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 |---|---|---|---|
 | À quelle condition Firefox devient-il bloquant ? | Vingt passages Firefox consécutifs sans échec depuis la correction d'A16 (PR #120) : sans l'avertissement « Scénarios en échec sous firefox (non bloquant) » ; sinon, décaler la date plutôt que bloquer sur un scénario instable | 20 octobre 2026 | [BL-13](#bl-13), [BL-17](#bl-17) |
 | L'assistant hébergé : le déployer pour la bêta ? | Non, et l'écrire : il n'est pas prioritaire pour la bêta, et sans lui la gestion des clés et le registre RGPD restent plus simples | avant d'inviter les bêta-testeurs | [a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait), [assistant.md](../assistant.md) |
-| La PR #118 (le cahier à cocher) : la fusionner ? | Oui : outillage seul, CI verte, et c'est le support qui manque pour exécuter une campagne ; puis [BL-18](#bl-18) | avant la première smoke | PR #118 |
 | Un appareil **connecté** qui importe une sauvegarde contenant un suivi encore marqué synchronisé : le ramener sur l'appareil ? Aujourd'hui il redevient synchronisé, contenu compris, et le bandeau propose de le ramener ([RLM-024](manuels/reprendre-la-main.md#rlm-024)) | Oui, à l'import, avec la confirmation du bandeau : aucun chemin ne devrait remettre un suivi sur le serveur. Ce n'est pas fait par A17, parce que la règle « Selene ne choisit pas l'appareil à la place de la personne » vaut pour un compte connecté | avant la bêta | [A17](perimetre.md#anomalies-et-observations) |
 | L'offre Pro de Supabase avant la bêta ? | Oui (une sauvegarde par jour, pas de mise en pause) ; décision de budget | avant d'inviter les bêta-testeurs | [a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait) |
 | Un montant négatif saisi dans le Budget : le compter en valeur absolue, comme aujourd'hui ? | Oui : le sens vient du type choisi (Dépense, Revenu), et saisir une dépense « −12 » est une habitude des relevés bancaires ; la refuser obligerait à la retaper. Le cahier le dit désormais (C7) | aucune | [MOD-005](manuels/types-de-module.md#mod-005), [C7](perimetre.md#contradictions-entre-documentation-code-et-tests) |
@@ -130,7 +129,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
 | [BL-15](#bl-15) | ~~Le hors-ligne réel : réseau coupé, page rechargée, retour du réseau~~ (fait) | automatisation | P1 | SYN-004, PLT-001, SYN-010 |
 | [BL-16](#bl-16) | Fumée de l'app iOS sur simulateur, en CI | automatisation | P3 | PLT-008 |
 | [BL-17](#bl-17) | ~~Un échec sous Firefox doit se voir tant qu'il n'est pas bloquant~~ (fait) | fiabilité de la CI | P2 | tous |
-| [BL-18](#bl-18) | La page du cahier à cocher sous contrôle de la CI (si la PR #118 est fusionnée) | outillage | P3 | tous |
+| [BL-18](#bl-18) | La page du cahier à cocher sous contrôle de la CI (la PR #118 fusionnée le 7 octobre 2026) | outillage | P3 | tous |
 | [BL-19](#bl-19) | ~~Matrice : nommer les étapes que les tests ne couvrent pas~~ (fait) | traçabilité | P3 | les 161 cas, étape par étape |
 | [BL-20](#bl-20) | ~~Un résultat observable à chaque étape, contrôlé par `npm run recette`~~ (fait) | outillage | P3 | onze étapes, voir ci-dessous |
 | [BL-21](#bl-21) | ~~Fermer le réseau aux scénarios de navigateur~~ (fait) | hygiène des essais | P2 | tous les scénarios ; A20 |
@@ -458,7 +457,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   en échec et leurs contrôles (`GITHUB_STEP_SUMMARY`).
 
 <a id="bl-18"></a>
-### BL-18 — La page du cahier à cocher sous contrôle de la CI (si la PR #118 est fusionnée)
+### BL-18 — La page du cahier à cocher sous contrôle de la CI (la PR #118 fusionnée le 7 octobre 2026)
 
 - **Risque couvert** : la PR #118 génère `dist/recette/campagne.html` (une case par étape) ; ses 62 vérifications ont été
   faites une fois, à la main, et ne sont pas versionnées ; le générateur ne tourne pas en CI. Un cas réécrit dans un format
@@ -468,7 +467,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   sur un format inconnu) ; versionner le test de la page (fausse base `window.claude`, comme la PR le décrit) ; étendre
   l'empreinte aux préconditions et aux données.
 - **Niveau** : outillage de la recette.
-- **Dépendances** : la fusion de la PR #118 (décision de la responsable, [plus bas](#decisions)).
+- **Dépendances** : la fusion de la PR #118, faite le 7 octobre 2026 par la responsable.
 
 <a id="bl-19"></a>
 ### BL-19 — Matrice : nommer les étapes que les tests ne couvrent pas
@@ -716,7 +715,7 @@ Les questions marquées [À ARBITRER] dans les cas, et ce qu'elles bloquent :
 | ~~Dans l'artefact, que devient un suivi « Reprendre la main » d'avant le 3 octobre, encore marqué synchronisé ? (A17)~~ : il est ramené sur l'appareil au chargement, avec un avis, et l'écran dit vrai sur ce que voit claude.ai ; jamais dans la base de l'artefact. Décidé le 6 octobre 2026 (la recommandation retenue par la responsable) ; corrigé le même jour (PR #121), le versement d'un appareil sans compte compris | [PLT-011](manuels/plateformes.md#plt-011), [RLM-024](manuels/reprendre-la-main.md#rlm-024) | la publication de l'artefact |
 | À quelle condition Firefox devient-il bloquant ? Proposition : vingt passages consécutifs sans échec depuis la correction d'A16 (PR #120), sans l'avertissement de [BL-17](#bl-17) ; sinon décaler la date | — | [BL-13](#bl-13) |
 | L'assistant hébergé : le déployer pour la bêta ? Proposition : non, et l'écrire | [AST-001](manuels/assistant.md#ast-001) à [AST-007](manuels/assistant.md#ast-007) | la recette de l'assistant hébergé |
-| La PR #118 (le cahier à cocher) : la fusionner ? Proposition : oui, puis [BL-18](#bl-18) | — | l'exécution des campagnes sur la page |
+| ~~La PR #118 (le cahier à cocher) : la fusionner ?~~ Fusionnée le 7 octobre 2026 par la responsable ; puis [BL-18](#bl-18) | — | l'exécution des campagnes sur la page |
 | Un montant négatif saisi dans le Budget : le compter en valeur absolue, comme aujourd'hui ? Proposition : oui, le sens vient du type choisi (C7) | [MOD-005](manuels/types-de-module.md#mod-005) | rien : `TN-budget` vérifie le comportement actuel |
 
 Les questions ouvertes d'avant ce cahier sont tranchées depuis le 6 octobre 2026 : l'adresse d'un espace désactivé

@@ -48,6 +48,10 @@ jobs:
           node-version-file: .nvmrc
       - name: Cahier de recette (cohérence avec les tests, les liens, les jeux de données)
         run: npm run recette
+      # Le cahier à cocher (BL-18) : la page se génère encore, chaque cas lu dans son format ; le générateur s'arrête en
+      # échec, sans rien écrire, sur un format qu'il ne reconnaît plus.
+      - name: Cahier à cocher (dist/recette/campagne.html se génère)
+        run: npm run recette -- campagne
   passeur:
     # Les fonctions Supabase Edge (passeur, assistant : docs/passeur.md, docs/assistant.md) : types et tests, avec Deno.
     runs-on: ubuntu-latest
