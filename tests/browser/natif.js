@@ -2,7 +2,7 @@
    `window.seleneNative` : deux coffres asynchrones dont les données vivent côté Node (comme derrière le pont de
    Capacitor ou de Tauri). Rien ne doit passer par localStorage ; tout doit survivre à un rechargement.
    Faux Supabase (compte connecté, serveur vide). Lancé par tests/browser/run.js. */
-const { engine, BASE, launchOptions, fixture, check, until } = require('./helpers');
+const { suivre, calme, engine, BASE, launchOptions, fixture, check, until } = require('./helpers');
 const UID = '0b8f0c2e-1111-2222-3333-444455556666';
 (async () => {
   const b = await engine.launch(launchOptions);
@@ -33,7 +33,7 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
       widget: { update: d => window.nativeCall('notify', 'widget', { widget: d }) },
       files: { share: (n, d, t) => window.nativeCall('notify', 'share', { share: { n, d, t } }) } };
   });
-  const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
+  const p = suivre(await ctx.newPage()); p.on('pageerror', e => errs.push(e.message));
   let downloads = 0; p.on('download', () => downloads++);
   // La page des coquilles natives (npm run build:dist).
   await p.goto(BASE + '/dist/native/index.html#accueil'); await p.waitForSelector('#nav a', { timeout: 10000 }).catch(() => {});
@@ -50,7 +50,7 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
   ok(vaults.storage.get('selene-bilan') === 'mois', 'un réglage part vers le coffre');
   ok(vaults.storage.has('selene-recent'), 'les derniers espaces ouverts aussi');
   ok(await p.evaluate(() => localStorage.length === 0), 'et toujours rien dans localStorage');
-  await p.reload(); await p.waitForSelector('#nav a', { timeout: 10000 }).catch(() => {});
+  await calme(p); await p.reload(); await p.waitForSelector('#nav a', { timeout: 10000 }).catch(() => {});
   await p.evaluate(() => location.hash = 'bilan');
   await p.waitForSelector('[data-act="bilan-mode"][data-m="mois"].acc', { timeout: 10000 }).catch(() => {});
   ok(await p.$eval('[data-act="bilan-mode"][data-m="mois"]', el => el.classList.contains('acc')).catch(() => false), 'après relance, le réglage est relu depuis le coffre');

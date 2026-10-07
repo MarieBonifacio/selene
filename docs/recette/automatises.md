@@ -1229,7 +1229,7 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-cites` — Ce que tes sources ont en commun
 
 - **Fichier** : [`tests/browser/cites.js`](../../tests/browser/cites.js) · **mode** H · **écran** O
-- **Conditions** : OpenAlex simulé ; chaque contrôle attend les requêtes ou l'écriture qu'il lit (A21) ; le premier clic attend que le branchement du démarrage ait fini, plus aucune requête vers Supabase en vol depuis 1,2 s (`calme()`, A27).
+- **Conditions** : OpenAlex simulé ; chaque contrôle attend les requêtes ou l'écriture qu'il lit (A21) ; le premier clic attend que le branchement du démarrage ait fini, plus aucune requête vers Supabase en vol depuis 2,5 s (`calme()`, A27, A31).
 - **Vérifie** : rien avant le clic ; deux appels ; OpenAlex ne reçoit que des DOI ; références communes (tes sources exclues), couplage, auteurs qui reviennent ; titres piégés inertes ; résultat sur l'appareil seulement ; garder une référence ; suivre un auteur dans la veille ; cache ; une seule source à DOI : pas de bouton.
 - **Cas manuels** : [EXT-018](manuels/connexions.md#ext-018)
 
@@ -1237,7 +1237,7 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-agenda` — Calendrier dédié
 
 - **Fichier** : [`tests/browser/agenda.js`](../../tests/browser/agenda.js) · **mode** H · **écran** O
-- **Conditions** : Faux passeur qui sert un `.ics` ; horloge fixée. Avant chaque rechargement, plus aucune requête en vol depuis 1,2 s (`calme()` de `helpers.js`, A19).
+- **Conditions** : Faux passeur qui sert un `.ics` ; horloge fixée. Avant chaque rechargement, plus aucune requête en vol depuis 2,5 s (`calme()` de `helpers.js`, A19, A31).
 - **Vérifie** : rien sans adresse ; `webcal://` devient `https://` ; adresse gardée dans ce navigateur, hors synchronisation, jamais réaffichée ; le plombier sous Chantier ; récurrence ; le passé écarté ; journée entière demain ; titre piégé inerte ; cache d'une heure ; « oublier » retire adresse et cache, et le dit : « Calendrier oublié sur cet appareil. » (EXT-015).
 - **Cas manuels** : [CPT-013](manuels/entree-et-comptes.md#cpt-013), [EXT-015](manuels/connexions.md#ext-015)
 
