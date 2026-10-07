@@ -1228,7 +1228,7 @@ publique) ; écran : T téléphone, O ordinateur.
 #### `TN-cites` — Ce que tes sources ont en commun
 
 - **Fichier** : [`tests/browser/cites.js`](../../tests/browser/cites.js) · **mode** H · **écran** O
-- **Conditions** : OpenAlex simulé ; chaque contrôle attend les requêtes ou l'écriture qu'il lit (A21).
+- **Conditions** : OpenAlex simulé ; chaque contrôle attend les requêtes ou l'écriture qu'il lit (A21) ; le premier clic attend que le branchement du démarrage ait fini, plus aucune requête vers Supabase en vol depuis 1,2 s (`calme()`, A27).
 - **Vérifie** : rien avant le clic ; deux appels ; OpenAlex ne reçoit que des DOI ; références communes (tes sources exclues), couplage, auteurs qui reviennent ; titres piégés inertes ; résultat sur l'appareil seulement ; garder une référence ; suivre un auteur dans la veille ; cache ; une seule source à DOI : pas de bouton.
 - **Cas manuels** : [EXT-018](manuels/connexions.md#ext-018)
 
