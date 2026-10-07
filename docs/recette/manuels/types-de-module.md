@@ -526,7 +526,7 @@ Identifiants retirés : aucun.
 |---|---|---|
 | 1 | Ouvrir Motifs. | « lisière » compte ses occurrences dans Écriture, la Boîte et le Carnet (« lisières » compté, « lisérés » non) ; « brume » compte aussi « brouillard » ; dernière apparition et espace indiqués. |
 | 2 | Lire les voisins de « lisière ». | « brume » n'y figure que s'ils se rencontrent dans au moins deux mêmes textes (sinon, aucun voisin). |
-| 3 | « régler » Motifs : jachère après `1` jour. | « lisière » et « brume » passent « En jachère » (sauf s'ils apparaissent dans un texte daté d'aujourd'hui — « lisière » apparaît dans la note du Carnet ajoutée aujourd'hui, donc reste vivant) ; « phalène », épuisé, n'y est jamais. |
+| 3 | « régler » Motifs : jachère après `1` jour. | « lisière » et « brume » passent « En jachère » (sauf s'ils apparaissent dans un texte daté d'aujourd'hui — « lisière » apparaît dans la note du Carnet ajoutée aujourd'hui, donc reste vivant) ; « phalène », épuisé, n'y est jamais, bien qu'absent depuis le 18 août 2026 (le fragment « … comme une phalène… »). |
 | 4 | « voir » sur « brume ». | La recherche s'ouvre sur ce motif. |
 
 - **État final attendu** : jachère à 1 jour.

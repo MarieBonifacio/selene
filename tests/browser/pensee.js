@@ -1,6 +1,6 @@
 /* Scénario de navigateur : statut épistémique, provenance, pont de reprise, décisions. Lancé par tests/browser/run.js.
    SELENE_SHOTS=dossier y dépose des captures d'écran (téléphone), pour relire l'affichage à l'œil. */
-const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { engine, ouvrir, BASE, launchOptions, fixture, donnee, check } = require('./helpers');
 const SHOTS = process.env.SELENE_SHOTS;
 (async () => {
   const b = await engine.launch(launchOptions);
@@ -95,6 +95,28 @@ const SHOTS = process.env.SELENE_SHOTS;
   check(!(await main()).includes('une phrase née ailleurs'), 'et ne garde que ce statut');
   const wide = await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   check(!wide, 'aucun débordement horizontal sur téléphone');
+
+  console.log('le jeu d’essai : la jachère des motifs (MOD-020)');
+  const essai = donnee('jeu-essai.json');
+  const q = await b.newPage({ viewport: { width: 1280, height: 900 } }); q.on('pageerror', e => errs.push(e.message));
+  await q.addInitScript(([st, bd]) => { window.claude = { use: async () => null }; if (!localStorage.getItem('selene-site-v1')) { localStorage.setItem('selene-site-v1', st); localStorage.setItem('selene-board-v1', bd); } }, [JSON.stringify(essai.site), JSON.stringify(essai.board)]);
+  await ouvrir(q, BASE + '/index.html#carnet', () => !!document.querySelector('#noteIn'));
+  await q.fill('#noteIn', 'Des lisières et des lisérés.'); await q.click('[data-act="note-add"]');
+  await q.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.carnet.entries.some(e => e.text === 'Des lisières et des lisérés.'), null, { timeout: 5000 }).catch(() => {});
+  await q.evaluate(() => { location.hash = 'motifs'; }); await q.waitForSelector('#main li.motif');
+  await q.click('[data-act="goto-groups"][data-mod="motifs"]'); await q.waitForSelector('#sheet [data-set-mod="motifs.fallowDays"]');
+  await q.fill('#sheet [data-set-mod="motifs.fallowDays"]', '1'); await q.press('#sheet [data-set-mod="motifs.fallowDays"]', 'Tab');
+  await q.waitForFunction(() => +JSON.parse(localStorage.getItem('selene-site-v1')).modules.motifs.config.fallowDays === 1, null, { timeout: 5000 }).catch(() => {});
+  await q.keyboard.press('Escape');
+  await q.waitForFunction(() => [...document.querySelectorAll('#main h3')].some(h => h.textContent.trim() === 'En jachère'), null, { timeout: 5000 }).catch(() => {});
+  const jachere = await q.evaluate(() => {
+    const h = [...document.querySelectorAll('#main h3')].find(x => x.textContent.trim() === 'En jachère'), sec = h && h.closest('section');
+    const marque = t => { const li = [...document.querySelectorAll('#main li.motif')].find(l => l.querySelector('b').textContent === t); return li ? !!li.querySelector('.late') : null; };
+    return { liste: sec ? [...sec.querySelectorAll('[data-act="search-for"]')].map(x => x.textContent.trim()).join() : '', dit: sec ? sec.querySelector('.hint').textContent.trim() : '', lisiere: marque('lisière'), brume: marque('brume'), phalene: marque('phalène') };
+  });
+  // Le nombre de lunaisons d'absence dépend du jour où la CI passe ; la phrase s'accorde au nombre de jours (A42).
+  check(/^brume · \d+ lunaisons?$/.test(jachere.liste) && jachere.dit === 'Vivants, mais absents depuis plus de 1 jour. Reposés, pas perdus.' && jachere.brume === true && jachere.lisiere === false && jachere.phalene === false,
+    `jachère après un jour : « brume » y passe ; « lisière », vue aujourd’hui dans le Carnet, reste vivante ; « phalène », épuisé, absent depuis le 18 août, n’y est pas (C18) (${JSON.stringify(jachere)}) (étape 3)`);
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();
 })();

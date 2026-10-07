@@ -66,7 +66,7 @@ const baseConfig = mods => ({ name: "Selene", palette: "nigredo", mode: "auto", 
     { id: "f3", text: "Toute lisière est un seuil que l'on traverse sans le voir.", date: "2026-08-14", category: "c1" },
     { id: "f4", text: "La lisière est au contraire une frontière nette, tracée par la coupe.", date: "2026-08-15", category: "c2" },
     { id: "f5", text: "Les sapins gardent la nuit plus longtemps que les hêtres.", date: "2026-08-16", ep: "hyp", epLog: [{ from: null, to: "hyp", date: "2026-08-16" }] },
-    { id: "f6", text: "Une phrase sans chapitre, posée là en attendant.", date: "2026-08-18" }
+    { id: "f6", text: "Une phrase sans chapitre, posée là comme une phalène, en attendant.", date: "2026-08-18" }
   ];
   addLink(ecr.scraps[2], "ecriture/f1", "derive", "l1", "2026-08-14");
   addLink(ecr.scraps[3], "ecriture/f1", "contredit", "l2", "2026-08-15");
