@@ -449,6 +449,10 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   un scénario vérifie qu'aucune vue ne viole la CSP et qu'un script injecté est bloqué. Les parcours de
   navigateur tournent dans Chromium et WebKit (matrice de `check.yml`, `SELENE_BROWSER`), et dans Firefox depuis le
   6 octobre 2026 ([BL-13](recette/backlog.md#bl-13) ; non bloquant jusqu'au 20 octobre).
+- **Limite** : `selene.html`, l'artefact, n'a pas de CSP : `build.py` ne l'ajoute qu'aux pages hébergée et native. Une
+  balise meta CSP ne vaut qu'enfant de `<head>`, et la publication d'un artefact pose la page dans le squelette de
+  claude.ai. L'échappement y reste le seul rempart ; `TN-artefact` le vérifie sur la page publiée (TRV-008, étape 6 :
+  une note affichée sans `esc()`, et le piège s'exécute).
 - **Écarté** : un fichier `.js` externe (casse l'artefact en un seul fichier) ; un nonce (exige un serveur
   qui en tire un à chaque requête, GitHub Pages sert des fichiers statiques) ; retirer `'unsafe-inline'` de
   `style-src` (l'interface pose plus de 150 attributs `style="…"`, qu'une empreinte ne couvre pas sans

@@ -12,7 +12,7 @@ disponible et le partiel ; l'envisagé figure ici pour qu'on ne le teste pas par
 
 | Cible | Statut | Construite et vérifiée en CI | Essai sur un vrai appareil |
 |---|---|---|---|
-| Site hébergé (`index.html`, GitHub Pages), navigateur d'ordinateur | disponible | build, tests unitaires, 83 scénarios dans Chromium, WebKit et Firefox (Firefox non bloquant jusqu'au 20 octobre 2026, [BL-13](backlog.md#bl-13)) ; publié par `pages.yml` seulement si Check est vert | Chromium et Firefox : oui, par la CI ; Safari : moteur WebKit en CI, pas Safari lui-même |
+| Site hébergé (`index.html`, GitHub Pages), navigateur d'ordinateur | disponible | build, tests unitaires, 84 scénarios dans Chromium, WebKit et Firefox (Firefox non bloquant jusqu'au 20 octobre 2026, [BL-13](backlog.md#bl-13)) ; publié par `pages.yml` seulement si Check est vert | Chromium et Firefox : oui, par la CI ; Safari : moteur WebKit en CI, pas Safari lui-même |
 | PWA installée (iPhone, Android) | disponible | service worker et manifeste vérifiés (`hors-ligne.js`, `build.test.js`) | jamais fait ([a-faire.md](../a-faire.md#essayer-sur-de-vrais-appareils)) |
 | Artefact claude.ai (`selene.html`) | disponible | testé dans une VM Node (faux DOM), jamais dans claude.ai | jamais fait (« Hors CI » dans [architecture.md](../architecture.md#vérification)) |
 | App Android (Capacitor) | disponible, non publiée | APK de débogage compilé, chemin de signature éprouvé avec une clé jetable (`android.yml`) ; lancé sur un émulateur Android 15 : démarrage, relance, mise à jour vers l'édition des stores (`android-fumee.yml`, [BL-07](backlog.md#bl-07)) | jamais fait |

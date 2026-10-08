@@ -93,7 +93,7 @@ Les six propositions ci-dessous, validées par la responsable le 7 octobre 2026.
 
 | Question | Décision | Ce qui suit | Détail |
 |---|---|---|---|
-| À quelle condition Firefox devient-il bloquant ? | Vingt passages Firefox consécutifs sans échec depuis la correction d'A16 (PR #120) : sans l'avertissement « Scénarios en échec sous firefox (non bloquant) », ou « 83 scénarios, tous verts. » à la fin du journal ; sinon, décaler la date plutôt que bloquer sur un scénario instable | le 20 octobre 2026, une session compte les passages et retire `continue-on-error`, ou propose une nouvelle date | [BL-13](#bl-13), [BL-17](#bl-17) |
+| À quelle condition Firefox devient-il bloquant ? | Vingt passages Firefox consécutifs sans échec depuis la correction d'A16 (PR #120) : sans l'avertissement « Scénarios en échec sous firefox (non bloquant) », ou « 84 scénarios, tous verts. » à la fin du journal ; sinon, décaler la date plutôt que bloquer sur un scénario instable | le 20 octobre 2026, une session compte les passages et retire `continue-on-error`, ou propose une nouvelle date | [BL-13](#bl-13), [BL-17](#bl-17) |
 | L'assistant hébergé : le déployer pour la bêta ? | Non : il n'est pas prioritaire, et sans lui la gestion des clés et le registre RGPD restent plus simples. L'app dit « Assistant non déployé » | rien avant la bêta ; [AST-001](manuels/assistant.md#ast-001) à [AST-007](manuels/assistant.md#ast-007) restent à jouer le jour où c'est oui | [a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait), [assistant.md](../assistant.md) |
 | Un appareil **connecté** qui importe une sauvegarde contenant un suivi encore marqué synchronisé : le ramener sur l'appareil ? | Oui, à l'import : la confirmation nomme le suivi et dit qu'il reviendra sur cet appareil seulement ; elle vaut accord. Aucun chemin ne remet un suivi sur le serveur | **fait** le 8 octobre 2026 (`trackersToKeep`, `shell/actions.js`), vérifié par `TU-REG-43` et `TN-regulation-appareil` | [RLM-024](manuels/reprendre-la-main.md#rlm-024), [A17](perimetre.md#anomalies-et-observations) |
 | L'offre Pro de Supabase avant la bêta ? | Oui (une sauvegarde par jour, pas de mise en pause) | la responsable la souscrit, avant d'inviter les bêta-testeurs : décision de budget, hors du dépôt | [a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait) |
@@ -383,7 +383,7 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   montraient pas (A15, corrigé par la PR #116). Le job « vert » ne le disait pas : avant de le rendre bloquant, lire son
   journal reste le seul moyen de savoir.
 - **Condition pour le 20 octobre** (décidée le 7 octobre 2026) : A16 corrigé, puis vingt passages Firefox
-  consécutifs sans échec : l'avertissement de [BL-17](#bl-17) absent, ou « 83 scénarios, tous verts. » (81 avant le 7 octobre 2026 au soir, 82 avec `TN-fermeture`) à la fin du
+  consécutifs sans échec : l'avertissement de [BL-17](#bl-17) absent, ou « 84 scénarios, tous verts. » (81 avant le 7 octobre 2026 au soir, 82 avec `TN-fermeture`, 83 avec `TN-campagne`, 84 avec `TN-artefact`) à la fin du
   journal du pas ; sinon, décaler la date plutôt que rendre bloquant un scénario instable, qui apprendrait à
   relancer la CI sans la lire.
 
