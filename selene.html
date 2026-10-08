@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "9f4855ca58";
+const SELENE_BUILD = "27a506e641";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -744,11 +744,14 @@ var __platform = (() => {
   __export(platform_exports, {
     RESCUE: () => RESCUE,
     SECRET_KEYS: () => SECRET_KEYS,
+    delta: () => delta,
+    digest: () => digest,
     hosted: () => hosted,
     migrateToIdb: () => migrateToIdb,
     mirror: () => mirror,
     platform: () => platform,
     restoreRescue: () => restoreRescue,
+    undelta: () => undelta,
     unreadable: () => unreadable,
     webStore: () => webStore
   });
@@ -791,14 +794,76 @@ var __platform = (() => {
   });
   var pendingWrites = /* @__PURE__ */ new Set();
   var RESCUE = "selene-secours:";
+  var SAUT = 256;
+  var ACCROCHE = 32;
+  function delta(a, b) {
+    const n = Math.min(a.length, b.length), head = [], tail = [];
+    let i = 0, from = 0;
+    for (; ; ) {
+      while (i < n && a.charCodeAt(i) === b.charCodeAt(i)) i++;
+      if (i >= n) break;
+      let k = i, run = 0;
+      while (k < n && k - i < SAUT + ACCROCHE && run < ACCROCHE) {
+        run = a.charCodeAt(k) === b.charCodeAt(k) ? run + 1 : 0;
+        k++;
+      }
+      if (run < ACCROCHE) break;
+      const back = k - ACCROCHE;
+      head.push([from, i], b.slice(i, back));
+      from = i = back;
+    }
+    head.push([from, i]);
+    const room = n - i, A = a.length, B = b.length;
+    let t = 0, upto = 0;
+    for (; ; ) {
+      while (t < room && a.charCodeAt(A - 1 - t) === b.charCodeAt(B - 1 - t)) t++;
+      if (t >= room) break;
+      let k = t, run = 0;
+      while (k < room && k - t < SAUT + ACCROCHE && run < ACCROCHE) {
+        run = a.charCodeAt(A - 1 - k) === b.charCodeAt(B - 1 - k) ? run + 1 : 0;
+        k++;
+      }
+      if (run < ACCROCHE) break;
+      const back = k - ACCROCHE;
+      tail.push([A - t, A - upto], b.slice(B - back, B - t));
+      upto = t = back;
+    }
+    tail.push([A - t, A - upto]);
+    const ops = [...head, b.slice(i, B - t), ...tail.reverse()];
+    return ops.filter((o) => typeof o === "string" ? o.length : o[1] > o[0]);
+  }
+  function undelta(a, ops) {
+    const out = [];
+    for (const o of ops) {
+      if (typeof o === "string") out.push(o);
+      else if (Array.isArray(o) && Number.isInteger(o[0]) && Number.isInteger(o[1]) && o[0] >= 0 && o[0] <= o[1] && o[1] <= a.length) out.push(a.slice(o[0], o[1]));
+      else return null;
+    }
+    return out.join("");
+  }
+  function digest(s) {
+    const imul = Math.imul;
+    let h1 = 3735928559 ^ s.length, h2 = 1103547991 ^ s.length;
+    for (let i = 0; i < s.length; i++) {
+      const c = s.charCodeAt(i);
+      h1 = imul(h1 ^ c, 2654435761);
+      h2 = imul(h2 ^ c, 1597334677);
+    }
+    h1 = imul(h1 ^ h1 >>> 16, 2246822507) ^ imul(h2 ^ h2 >>> 13, 3266489909);
+    h2 = imul(h2 ^ h2 >>> 16, 2246822507) ^ imul(h1 ^ h1 >>> 13, 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+  }
   function mirror(vault, written = () => {
   }, rescueArea = null) {
     const m = /* @__PURE__ */ new Map(), last = /* @__PURE__ */ new Map(), inflight = /* @__PURE__ */ new Map();
+    const held = /* @__PURE__ */ new Map();
     const send = (k, v, fn) => {
       inflight.set(k, v);
       let ok = false;
       const q = (last.get(k) || Promise.resolve()).then(fn).then(() => {
         ok = true;
+        if (v === null) held.delete(k);
+        else held.set(k, v);
         try {
           written(k);
         } catch {
@@ -819,14 +884,23 @@ var __platform = (() => {
     return {
       async hydrate() {
         m.clear();
-        for (const [k, v] of await vault.load()) if (typeof k === "string" && typeof v === "string") m.set(k, v);
+        held.clear();
+        for (const [k, v] of await vault.load()) if (typeof k === "string" && typeof v === "string") {
+          m.set(k, v);
+          held.set(k, v);
+        }
       },
       // Une autre fenêtre a écrit cette clé : la relire dans le coffre. Une valeur refusée ici, qui attendait encore,
       // n'est plus à sauver : celle de l'autre fenêtre a abouti, et elle est plus récente.
       async refresh(k) {
         const v = await vault.get(k);
-        if (typeof v === "string") m.set(k, v);
-        else m.delete(k);
+        if (typeof v === "string") {
+          m.set(k, v);
+          held.set(k, v);
+        } else {
+          m.delete(k);
+          held.delete(k);
+        }
         if (!last.has(k)) inflight.delete(k);
       },
       get: (k) => m.has(k) ? m.get(k) : null,
@@ -846,7 +920,11 @@ var __platform = (() => {
       rescue() {
         if (!rescueArea) return;
         const order = [...inflight].sort(([a], [b]) => a.endsWith("-base") - b.endsWith("-base"));
-        for (const [k, v] of order) rescueArea.set(RESCUE + k, JSON.stringify({ v }));
+        for (const [k, v] of order) {
+          if (rescueArea.set(RESCUE + k, JSON.stringify({ v }))) continue;
+          const base = held.get(k);
+          if (typeof v === "string" && typeof base === "string") rescueArea.set(RESCUE + k, JSON.stringify({ d: delta(base, v), n: base.length, h: digest(base) }));
+        }
       }
     };
   }
@@ -883,13 +961,19 @@ var __platform = (() => {
   async function restoreRescue(vault, area) {
     const found = area.keys().filter((k) => k.startsWith(RESCUE)), entries = [];
     for (const rk of found) {
-      let v;
+      let c;
       try {
-        v = JSON.parse(area.get(rk)).v;
+        c = JSON.parse(area.get(rk));
       } catch {
         continue;
       }
-      if (typeof v === "string" || v === null) entries.push([rk.slice(RESCUE.length), v]);
+      const k = rk.slice(RESCUE.length);
+      if (!c || typeof c !== "object") continue;
+      if (typeof c.v === "string" || c.v === null) entries.push([k, c.v]);
+      else if (Array.isArray(c.d) && vault.get) {
+        const base = await vault.get(k), v = typeof base === "string" && base.length === c.n && digest(base) === c.h ? undelta(base, c.d) : null;
+        if (v !== null) entries.push([k, v]);
+      }
     }
     if (entries.length) await vault.writeAll(entries);
     for (const rk of found) area.remove(rk);
@@ -1541,6 +1625,7 @@ var __selene = (() => {
     topFrame: () => topFrame,
     totalOf: () => totalOf,
     trackBack: () => trackBack,
+    trackersToKeep: () => trackersToKeep,
     uid: () => uid,
     undoOnKeys: () => undoOnKeys,
     urgeActionId: () => urgeActionId,
@@ -3038,6 +3123,8 @@ var __selene = (() => {
     "Clé vérifiée et enregistrée.": "Key verified and saved.",
     "Clé non enregistrée : {0}": "Key not saved: {0}",
     "Remplacer tout l'état actuel par celui du fichier ?": "Replace everything here with the contents of the file?",
+    "Remplacer tout l'état actuel par celui du fichier ? {0} y est encore marqué synchronisé : il reviendra sur cet appareil seulement, et ton compte n'en gardera que le nom.": "Replace everything here with the contents of the file? {0} is still marked as synced in it: it will come back to this device only, and your account will keep only its name.",
+    "Remplacer tout l'état actuel par celui du fichier ? {0} y sont encore marqués synchronisés : ils reviendront sur cet appareil seulement, et ton compte n'en gardera que le nom.": "Replace everything here with the contents of the file? {0} are still marked as synced in it: they will come back to this device only, and your account will keep only their names.",
     "Sauvegarde importée.": "Backup imported.",
     "Fichier illisible ou pas une sauvegarde Selene.": "Unreadable file, or not a Selene backup.",
     "Ce fichier n'est pas une sauvegarde Selene. Rien n'a été importé.": "This file is not a Selene backup. Nothing was imported.",
@@ -3573,7 +3660,7 @@ var __selene = (() => {
   };
 
   // plateforme:src/platform.js
-  var { RESCUE, SECRET_KEYS, hosted, migrateToIdb, mirror, platform, restoreRescue, unreadable, webStore } = __platform;
+  var { RESCUE, SECRET_KEYS, delta, digest, hosted, migrateToIdb, mirror, platform, restoreRescue, undelta, unreadable, webStore } = __platform;
 
   // src/app/services/host.js
   var sampleNS = null;
@@ -5307,6 +5394,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       local.save();
     }
   }
+  var trackersToKeep = (siteDoc) => Object.entries(siteDoc.modules || {}).filter(([, inst]) => inst && inst.type === "regulation" && !regulationOnDevice(inst)).map(([id, inst]) => inst.label || id);
   function keepTrackersHere(siteDoc) {
     const moved = [];
     for (const [id, inst] of Object.entries(siteDoc.modules || {})) {
@@ -11280,8 +11368,11 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
       if (!f) return;
       f.text().then(async (t) => {
         const d = parseBackup(t);
-        if (!await ask(tr`Remplacer tout l'état actuel par celui du fichier ?`)) return;
+        const kept = authReady() && authSession ? trackersToKeep(d.site) : [], list = kept.map((n) => `« ${n} »`).join(", ");
+        const question = !kept.length ? tr`Remplacer tout l'état actuel par celui du fichier ?` : kept.length === 1 ? tr`Remplacer tout l'état actuel par celui du fichier ? ${list} y est encore marqué synchronisé : il reviendra sur cet appareil seulement, et ton compte n'en gardera que le nom.` : tr`Remplacer tout l'état actuel par celui du fichier ? ${list} y sont encore marqués synchronisés : ils reviendront sur cet appareil seulement, et ton compte n'en gardera que le nom.`;
+        if (!await ask(question)) return;
         local.replaceAll(splitLocal(d.site));
+        if (kept.length) keepHere(d.site);
         site.replaceAll(d.site);
         board.replaceAll(d.board);
         render();

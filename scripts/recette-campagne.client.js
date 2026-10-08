@@ -6,8 +6,8 @@
      campagnes/<campagne>            { nom, type, cas: [identifiants], version, env, cahier, creee, par, archivee }
      campagnes/<campagne>/cas/<ID>   { etapes: { "1": { h, t, par } | null, final, nettoyage }, resultat, observe,
                                        plateforme, preuve, anomalie, maj, par }
-   `h` est l'empreinte du texte de l'étape au moment de la coche : si le cahier la réécrit, la coche ressort
-   « à revérifier » au lieu de valoir pour un texte qu'elle n'a pas vu. Une écriture à la fois par document ; les
+   `h` est l'empreinte de l'étape au moment de la coche (son texte, les préconditions et les données du cas) : si le
+   cahier change l'un d'eux, la coche ressort « à revérifier » au lieu de valoir pour ce qu'elle n'a pas vu. Une écriture à la fois par document ; les
    gestes rapides s'accumulent dans un correctif unique, envoyé dès que la précédente est revenue. */
 (function () {
   "use strict";

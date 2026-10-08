@@ -56,6 +56,10 @@ export function moveToDevice(siteDoc, id) {
   return full;
 }
 export function forgetLocal(id) { if (localCopy(id)) { delete local.data.modules[id]; local.save(); } }
+/* Les suivis qu'un document garde encore synchronisés, par leur nom : ceux que keepTrackersHere ramènerait ici
+   (l'import d'une sauvegarde les annonce avant d'agir, RLM-024). */
+export const trackersToKeep = siteDoc => Object.entries(siteDoc.modules || {})
+  .filter(([, inst]) => inst && inst.type === "regulation" && !regulationOnDevice(inst)).map(([id, inst]) => inst.label || id);
 /* Là où aucun compte Selene ne le gardait synchronisé (l'artefact claude.ai ; un appareil sans compte qui rejoint un
    compte), un suivi encore marqué synchronisé, d'avant le 3 octobre 2026 et venu d'une sauvegarde, n'a qu'une place :
    cet appareil (A17 du cahier de recette). Sinon il partirait, contenu compris, dans la base de claude.ai ou sur le

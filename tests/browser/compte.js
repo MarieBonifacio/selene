@@ -1,19 +1,20 @@
 /* Scénario de navigateur : supprimer son compte depuis l'app (ADR 20, docs/compte.md). Faux Supabase, fausse fonction
-   « compte » : rien ne part sans la confirmation tapée puis acceptée ; une panne laisse tout en place ; une réussite
+   « compte » : rien ne part sans la confirmation tapée puis acceptée ; le réseau coupé, puis une panne, laissent tout en place ; une réussite
    vide l'appareil (données, session) et ramène à l'écran de connexion. Avant cela, la politique de confidentialité
    suivie depuis les Réglages, en français puis en anglais (TRV-012). Enfin, dans un autre navigateur du même compte, se
    déconnecter : ce qui attend part d'abord, hors ligne la garde le dit, puis l'appareil est vidé (CPT-013).
    Lancé par tests/browser/run.js. */
 const path = require('node:path');
-const { fauxSupabase, engine, BASE, launchOptions, fixture, check, until, storeGet } = require('./helpers');
+const { fauxSupabase, engine, BASE, launchOptions, fixture, check, until, storeGet, storeJSON } = require('./helpers');
 const UID = '0b8f0c2e-1111-2222-3333-444455556666';
 (async () => {
   const b = await engine.launch(launchOptions);
   const ok = check, errs = [], appels = [];
-  let panne = true;
+  let panne = true, coupe = false;
   const session = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: UID, email: 'a@b.c' } });
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
   await fauxSupabase(ctx, r => {
+    if (coupe) return r.abort('internetdisconnected'); // CPT-015, étape 4 : plus de réseau, vers aucune adresse du serveur
     const req = r.request(), u = new URL(req.url());
     if (u.pathname !== '/functions/v1/compte') return;
     appels.push({ corps: req.postDataJSON(), auth: req.headers().authorization });
@@ -66,8 +67,26 @@ const UID = '0b8f0c2e-1111-2222-3333-444455556666';
   await p.click('#cdlg button[value=cancel]'); await p.waitForTimeout(200);
   ok(appels.length === 0, 'annulé à la confirmation : rien ne part');
 
+  console.log('réseau coupé (CPT-015, étape 4)');
+  // Les données du cas : une capture, « à effacer CPT-015 ».
+  await p.evaluate(() => { location.hash = 'accueil'; }); await p.waitForSelector('#capIn');
+  await p.fill('#capIn', 'à effacer CPT-015'); await p.click('[data-act="cap-add"]');
+  await p.evaluate(() => { location.hash = 'reglages'; }); await p.waitForSelector('#auth-delete');
+  await p.evaluate(() => { document.querySelector('#auth-delete').open = true; });
+  const capte = async () => ((await storeJSON(p, 'selene-site-v1')).modules.inbox.entries || []).some(e => e.text === 'à effacer CPT-015');
+  for (let i = 0; i < 50 && !(await capte()); i++) await p.waitForTimeout(100); // until n'attend pas une condition asynchrone
+  coupe = true; await ctx.setOffline(true);
+  await p.fill('#authDelIn', 'supprimer'); await p.click('[data-act="auth-delete"]'); await p.waitForSelector('#cdlg[open]', { timeout: 3000 }).catch(() => {});
+  await p.click('#cdlg button[value=ok]');
+  await p.waitForFunction(() => (document.querySelector('#toast') || {}).textContent?.includes('Compte non supprimé'), null, { timeout: 10000 }).catch(() => {});
+  const dit4 = (await p.textContent('#toast')).trim(), garde4 = await capte();
+  ok(dit4 === 'Compte non supprimé : Impossible de joindre le serveur. Vérifie ta connexion.' && garde4 && appels.length === 0
+    && await p.evaluate(() => !!localStorage.getItem('selene-auth-session')) && !!(await p.$('#auth-delete')),
+    `réseau coupé : « ${dit4} » ; la capture « à effacer CPT-015 » toujours là ; toujours connectée (CPT-015, étape 4)`);
+  coupe = false; await ctx.setOffline(false);
+
   console.log('panne du serveur');
-  await p.click('[data-act="auth-delete"]'); await p.waitForSelector('#cdlg[open]', { timeout: 3000 }).catch(() => {});
+  await p.fill('#authDelIn', 'supprimer'); await p.click('[data-act="auth-delete"]'); await p.waitForSelector('#cdlg[open]', { timeout: 3000 }).catch(() => {});
   await p.click('#cdlg button[value=ok]');
   await until(() => appels.length === 1); await p.waitForTimeout(300);
   ok(appels[0] && appels[0].corps.action === 'supprimer' && appels[0].corps.confirmation === 'supprimer' && appels[0].auth === 'Bearer a', 'la demande part avec la session');

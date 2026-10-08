@@ -1,10 +1,13 @@
 /* Scénario de navigateur : « Reprendre la main », l'appareil détenteur a perdu son stockage (BL-01 du cahier de recette,
-   cas RLM-029, étapes 1 à 3 ; l'étape 4, identité d'appareil perdue elle aussi, attend une décision). Compte personnel sur
+   cas RLM-029). Compte personnel sur
    un faux Supabase, comme regulation-appareil.js :
    - une saisie, puis la sauvegarde complète téléchargée ;
    - seul selene-local-v1 effacé (l'identité de l'appareil gardée), rechargement : l'espace l'avoue et dit quoi faire ;
    - la sauvegarde réimportée : le suivi est entier, de nouveau gardé ici ;
-   - effacé encore, puis retiré par les Réglages : sans l'avertissement « il n'y a que le nom », et le nom quitte le compte.
+   - effacé encore, puis retiré par les Réglages : sans l'avertissement « il n'y a que le nom », et le nom quitte le compte ;
+   - sous Chromium, un suivi recréé, puis un vrai « Clear site data » (Storage.clearDataForOrigin, l'appel du bouton des
+     outils de développement) : l'identité de l'appareil perdue elle aussi, le suivi se dit gardé ailleurs, et nomme le
+     poste (étape 4, décision du 6 octobre 2026).
    Puis RLM-027 : un autre compte connecté sur l'appareil, la session du premier perdue ; ses suivis mis de côté, jamais
    montrés, retrouvés à son retour, même après la déconnexion de l'autre (A48).
    Enfin le journal d'un suivi sans compte, l'horloge figée : corriger une saisie (RLM-011), observer, réduire, viser
@@ -15,7 +18,7 @@
    Lancé par tests/browser/run.js. */
 const fs = require('node:fs');
 const path = require('node:path');
-const { engine, BASE, launchOptions, check, storeGet, storeJSON, storeSet, ouvrir, entree } = require('./helpers');
+const { engine, ENGINE, BASE, launchOptions, check, storeGet, storeJSON, storeSet, ouvrir, entree } = require('./helpers');
 const rows = new Map();
 const COMPTES = { 'p@exemple.org': { id: 'u5', personnel: true }, 'a@exemple.org': { id: 'u6' } }; // RLM-027 : P, puis A
 const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
@@ -98,6 +101,31 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
     await p.fill('#form [name="confirm"]', 'Carnet du soir'); await submit();
     check((await p.textContent('#toast')).includes('« Carnet du soir » supprimé.'), 'supprimé, et dit');
     check(await waitServer(s => !s.includes('Carnet du soir')), 'le nom quitte le compte : plus de talon impossible à effacer');
+
+    console.log('un suivi recréé, puis « Clear site data » pour de bon (RLM-029, étape 4)');
+    if (ENGINE !== 'chromium') console.log(`  – ${ENGINE} : « Clear site data » passe par le protocole des outils de développement de Chromium ; étape jouée sous Chromium`);
+    else {
+      // Recréé depuis les Réglages (l'accueil ne propose plus les modèles) : un autre identifiant que l'espace supprimé.
+      await go('reglages'); await p.waitForSelector('.tpl-grid [data-act="tpl-add"][data-tpl="regulation"]', { state: 'attached' });
+      await p.evaluate(() => document.querySelector('.tpl-grid [data-act="tpl-add"][data-tpl="regulation"]').click());
+      const id4 = await p.evaluate(() => { const a = [...document.querySelectorAll('#nav a')].find(x => x.textContent.includes('Reprendre la main')); return a ? a.getAttribute('href').slice(1) : ''; });
+      await go(id4); await p.click('[data-act="rlm-setup"]');
+      await p.fill('#form [name="name"]', 'Carnet du matin'); await p.selectOption('#form [name="subject"]', 'tabac'); await p.click('#form button[value="save"]');
+      await p.waitForFunction(() => document.querySelector('#form h2').textContent === 'Mon intention');
+      await p.selectOption('#form [name="mode"]', 'observer'); await submit();
+      check(await waitServer(s => s.includes('Carnet du matin') && s.includes('"holder"')), 'recréé, configuré : le compte en a le talon, et son détenteur');
+      const avant4 = await storeGet(p, 'selene-device-id');
+      const cdp = await ctx.newCDPSession(p);
+      await cdp.send('Storage.clearDataForOrigin', { origin: new URL(BASE).origin, storageTypes: 'all' });
+      await reload(); // la session reposée au chargement : de nouveau connectée au même compte
+      await go(id4); await p.waitForFunction(() => document.querySelector('#main').textContent.includes('gardé sur un autre de tes appareils'), null, { timeout: 10000 }).catch(() => {});
+      const ailleurs4 = await main(), apres4 = await storeGet(p, 'selene-device-id');
+      const jour4 = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+      check(ailleurs4.includes('Ce suivi est gardé sur un autre de tes appareils') && ailleurs4.includes(`Il le garde sur : Chrome · Linux, depuis le ${jour4}.`)
+        && ailleurs4.includes("Si c'est celui-ci et que son stockage a été effacé (données du navigateur ou de l'app), une sauvegarde complète faite ici le restaure. Sinon (appareil perdu, Selene réinstallée), tu peux retirer ce nom dans les réglages.")
+        && !!avant4 && apres4 !== avant4 && !ailleurs4.includes("n'y sont plus"),
+        `« Clear site data », puis connectée : « Ce suivi est gardé sur un autre de tes appareils… Il le garde sur : Chrome · Linux, depuis le ${jour4}. » et ce qu’il reste à faire ; l’appareil a changé d’identité (étape 4)`);
+    }
     // Le premier appareil reste ouvert : fermé avec une requête en vol, WebKit lève une erreur que le contrôle final
     // prendrait pour celle de l'app (A50). Le navigateur entier se ferme à la fin.
 
@@ -357,15 +385,16 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
     await pz.q.click('#form button[value="save"]'); await pz.q.waitForFunction(() => !document.querySelector('#dlg').open);
     await pz.bulle('Envie notée'); await pz.q.waitForSelector('#rlmPause[role="timer"]'); await pz.q.clock.runFor(10);
     const p1 = await pause(), dit17 = await pz.dit();
-    check(dit17 === 'Envie notée. Cinq minutes, à ton rythme.' && p1 && p1.titre === 'Cinq minutes de pause' && p1.reste === '5:00'
+    // L'horloge installée avance aussi en temps réel (démarrage lent, processeur ralenti) : à quelques secondes près, comme
+    // aux étapes 2 et 3 (A64 : « 4:59 » sous un processeur ralenti). Ce qui compte : une pause de cinq minutes qui commence, pas sa seconde exacte.
+    const secondes = t => { const m = /^(\d+):(\d\d)$/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : NaN; };
+    check(dit17 === 'Envie notée. Cinq minutes, à ton rythme.' && p1 && p1.titre === 'Cinq minutes de pause' && secondes(p1.reste) <= 300 && secondes(p1.reste) >= 290
       && p1.aide.includes('Jusqu\'à 20:05. Elle continue si tu fermes l\'app ou si l\'écran se met en veille. Tu peux l\'arrêter quand tu veux.')
       && JSON.stringify(p1.boutons) === JSON.stringify(['J\'ai fait : Marcher quelques minutes', 'Arrêter la pause']),
-      `« ${dit17} » ; « ${p1 && p1.titre} », ${p1 && p1.reste}, « Jusqu'à 20:05… », ${p1 && p1.boutons.map(x => `« ${x} »`).join(' et ')} (RLM-017, étape 1)`);
+      `« ${dit17} » ; « ${p1 && p1.titre} », ${p1 && p1.reste} (5:00 à quelques secondes près), « Jusqu'à 20:05… », ${p1 && p1.boutons.map(x => `« ${x} »`).join(' et ')} (RLM-017, étape 1)`);
     await pz.q.clock.runFor(60000); await pz.q.reload(); await pz.vers(pz.id, '#rlmPause[role="timer"]'); await pz.q.clock.runFor(10);
     const p2 = await pause();
-    // L'horloge installée avance aussi en temps réel pendant un chargement (démarrage lent, processeur ralenti) : à
-    // quelques secondes près. Ce qui compte : ni 5:00 (la pause remise à zéro), ni plus rien (perdue).
-    const secondes = t => { const m = /^(\d+):(\d\d)$/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : NaN; };
+    // Une minute plus tard : ni 5:00 (la pause remise à zéro), ni plus rien (perdue).
     check(p2 && secondes(p2.reste) <= 240 && secondes(p2.reste) >= 225 && p2.aide.includes('Jusqu\'à 20:05.'), `une minute plus tard, rechargée : ${p2 && p2.reste} (4:00 à quelques secondes près), toujours « Jusqu'à 20:05 » (étape 2)`);
     // L'onglet fermé, une minute passe, un autre onglet s'ouvre sur l'espace.
     await pz.q.close(); await pz.c.clock.runFor(60000);

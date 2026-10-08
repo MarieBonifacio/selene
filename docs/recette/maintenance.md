@@ -118,8 +118,10 @@ nettoyage ; un résultat par cas ; le tout rangé par campagne dans la base de l
 (<https://claude.ai/artifact/SxbYQSvENzVaMNp72dndbw>, privé à la responsable), donc retrouvé d'un appareil à l'autre
 ([campagnes.md](campagnes.md#executer-une-campagne)). Après une PR qui change des cas, la régénérer et la republier à
 la même adresse : les coches restent, et celle d'une étape dont le texte a changé ressort « à revérifier » (chaque
-coche garde l'empreinte du texte qu'elle a vu). Le générateur s'arrête, sans rien écrire, s'il ne reconnaît plus le
-format d'un cas.
+coche garde l'empreinte de ce qu'elle a vu : le texte de l'étape, les préconditions et les données du cas). Le
+générateur s'arrête, sans rien écrire, s'il ne reconnaît plus le format d'un cas ; la CI le lance à chaque PR (job
+*Check › recette*), et un cas qu'il ne lit plus fait échouer le job ; `TN-campagne` ouvre la page générée avec une
+fausse base et la fait fonctionner (créer, cocher, recharger, revérifier).
 
 Ce que `npm run recette` vérifie (`scripts/recette.mjs`, sans réseau ni navigateur, en quelques secondes) :
 

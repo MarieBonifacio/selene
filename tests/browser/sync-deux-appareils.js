@@ -276,7 +276,12 @@ const capture = async (p, text) => { await p.fill('#capIn', text); await p.click
   };
   await G2.couper(true); await releve(G2);
   await tache(G2, T2); await lier(G2, 'ecriture/f5');
-  const hors2 = await nonSynchro(G2), dit2 = await synchro(G2.page);
+  const hors2 = await nonSynchro(G2);
+  // L'indicateur est commun au tableau (la tâche) et au site (le lien) : le dernier à parler l'emporte, et sous charge un
+  // « Enregistrement… » de l'un suit le « Non synchronisé » de l'autre, avant que son propre échec ne le remette (CI du
+  // 7 octobre 2026, A63). Lu jusqu'à ce qu'il se pose.
+  let dit2 = await synchro(G2.page);
+  await jusqua(async () => (dit2 = await synchro(G2.page)) === 'Non synchronisé — enregistré sur cet appareil seulement');
   // IndexedDB reçoit chaque écriture sans que l'app l'attende (platform.js) : sous charge, une lecture aussitôt après la
   // saisie voyait l'état d'avant (CI du 7 octobre 2026, processeur ralenti). Lu jusqu'à ce qu'elle y soit, comme aux
   // étapes 3 et 4 ; une saisie perdue échoue toujours.

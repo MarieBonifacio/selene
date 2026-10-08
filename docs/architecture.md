@@ -449,6 +449,10 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   un scénario vérifie qu'aucune vue ne viole la CSP et qu'un script injecté est bloqué. Les parcours de
   navigateur tournent dans Chromium et WebKit (matrice de `check.yml`, `SELENE_BROWSER`), et dans Firefox depuis le
   6 octobre 2026 ([BL-13](recette/backlog.md#bl-13) ; non bloquant jusqu'au 20 octobre).
+- **Limite** : `selene.html`, l'artefact, n'a pas de CSP : `build.py` ne l'ajoute qu'aux pages hébergée et native. Une
+  balise meta CSP ne vaut qu'enfant de `<head>`, et la publication d'un artefact pose la page dans le squelette de
+  claude.ai. L'échappement y reste le seul rempart ; `TN-artefact` le vérifie sur la page publiée (TRV-008, étape 6 :
+  une note affichée sans `esc()`, et le piège s'exécute).
 - **Écarté** : un fichier `.js` externe (casse l'artefact en un seul fichier) ; un nonce (exige un serveur
   qui en tire un à chaque requête, GitHub Pages sert des fichiers statiques) ; retirer `'unsafe-inline'` de
   `style-src` (l'interface pose plus de 150 attributs `style="…"`, qu'une empreinte ne couvre pas sans
@@ -576,7 +580,14 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   le démarrage suivant la reverse dans IndexedDB avant la migration (`restoreRescue`). Une écriture qui aboutit
   retire la copie de sa clé, dans tout onglet : une copie n'est jamais plus ancienne que ce qu'IndexedDB tient. Le
   store ne tente plus de `keepalive` au-delà de 60 000 octets et garde sa synchronisation ordinaire prévue
-  (`KEEPALIVE_MAX`). Reste une limite : un document plus gros que la place libre de `localStorage` n'a pas de copie.
+  (`KEEPALIVE_MAX`). Un document plus gros que la place libre de `localStorage` (Safari la plafonne vers 2,5 millions
+  de caractères par site : un espace de 3 Mo n'y entre pas, A65 du cahier de recette) laisse une **copie
+  différentielle** : seulement ce qui le sépare de la valeur qu'IndexedDB tient sûrement (lue au démarrage, ou écrite
+  et confirmée), en plages à recopier et morceaux nouveaux, avec la longueur et l'empreinte (53 bits) de cette valeur ;
+  au démarrage, elle ne s'applique qu'à elle, sinon elle est retirée (le coffre tient alors autre chose, d'ordinaire
+  l'écriture elle-même, qui avait abouti). Pour une capture, quelques centaines de caractères, calculés en une
+  trentaine de millisecondes sur 3 millions. Reste une limite : une différence qui ne tient pas non plus (beaucoup de
+  changements dispersés en moins d'une seconde) n'a pas de copie.
   Une écriture qu'IndexedDB **refuse** (quota plein, transaction annulée) n'est pas « aboutie » : elle reste en route,
   donc copiée à la fermeture, jusqu'à ce qu'une écriture de la même clé aboutisse ici, ou dans un autre onglet (qui le
   signale : `refresh`). Sans cela, une saisie refusée, serveur injoignable, était perdue des deux côtés

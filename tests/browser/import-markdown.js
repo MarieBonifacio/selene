@@ -51,9 +51,13 @@ const C = md('Long.md', '---\ncreated: 2024-03-01\n---\n' + Array.from({ length:
   fs.mkdirSync(path.join(dir, '.obsidian')); fs.writeFileSync(path.join(dir, '.obsidian', 'workspace.md'), 'réglages');
   fs.writeFileSync(path.join(dir, 'Nouvelle.md'), '---\ndate: 2024-04-01\n---\nUne suite au [[Le seuil]].');
   fs.writeFileSync(path.join(dir, 'image.png'), 'x');
-  await p.setInputFiles(folder, dir); await p.waitForTimeout(400);
+  // Pour un dossier, Playwright attend ensuite l'événement « input » de la page, sans autre borne que les 30 s de l'action ;
+  // sous WebKit, il ne l'a pas reçu une fois (A66, le 8 octobre 2026). Ce que le cas vérifie est la boîte de l'app : on
+  // l'attend elle, et l'erreur de Playwright, s'il y en a une, est dite avec le résultat.
+  const envoi = await p.setInputFiles(folder, dir, { timeout: 10000 }).then(() => '', e => e.message.split('\n')[0]);
+  await p.waitForSelector('#cdlg[open]', { timeout: 5000 }).catch(() => {});
   const q2 = await p.textContent('#cmsg');
-  ok(await p.isVisible('#cdlg') && q2.includes('Importer 1 note') && q2.includes('1 lien'), `un dossier : sa configuration .obsidian et ses images laissées (${q2})`);
+  ok(await p.isVisible('#cdlg') && q2.includes('Importer 1 note') && q2.includes('1 lien'), `un dossier : sa configuration .obsidian et ses images laissées (${q2})${envoi ? ` [Playwright : ${envoi}]` : ''}`);
   await p.click('#cdlg button[value=ok]'); await p.waitForTimeout(300);
   const after = await notes(), neuve = after.find(e => e.text.startsWith('Nouvelle'));
   ok(after.length === 4 && neuve && neuve.links && neuve.links[0].to === `carnet/${seuil.id}`, 'un lien vers une note déjà importée la retrouve');

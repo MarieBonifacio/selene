@@ -324,7 +324,7 @@ Identifiants retirés : aucun.
   (`python3 build.py`), publié par R1 comme artefact avec les capacités `db` et `user` ; un second navigateur connecté
   à R1 ; un troisième, connecté à R2.
 - **Données** : captures `Artefact PLT-011` (R1) et `Artefact PLT-011 R2` (R2) ; `donnees/rlm-synchronise-ancien.json`.
-- **Automatisés associés** : `TU-APP-01`, `TU-PLT-05`, `TU-ART-01`, `TU-ART-02`, `TU-ART-03`, `TU-ART-04`, `TU-ART-05`, `TU-ART-06`, `TU-ART-07`
+- **Automatisés associés** : `TN-artefact`, `TU-APP-01`, `TU-PLT-05`, `TU-ART-01`, `TU-ART-02`, `TU-ART-03`, `TU-ART-04`, `TU-ART-05`, `TU-ART-06`, `TU-ART-07`
 - **Source** : [CODE] `src/app/services/artifact-db.js`, `src/app/boot.js`, `src/platform.js` (runtime « artifact ») ;
   [DOC] ADR 33 de `docs/architecture.md`, contrat `db` de claude.ai (documents partagés par défaut, sous-arbre
   `data/users/<id>/` privé) ; [TEST] `tests/artifact.test.js` (faux claude.ai).

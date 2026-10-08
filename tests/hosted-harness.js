@@ -102,7 +102,7 @@ function launchHosted({ storage = new Map(), fetch, session = 'valid', bare = fa
     'globalThis.__test = { ...__selene, session: () => __selene.authSession, form: v => __selene.formCb(v), formOpen: () => !!__selene.formCb };\n});\n})();'); // form : le formulaire ouvert à cet instant (formCb change)
   vm.runInNewContext(instrumented, context);
   const poll = () => Promise.all([...intervals.values()].map(fn => fn()));
-  const fire = type => (listeners.get(type) || []).forEach(fn => fn({ type }));
+  const fire = (type, ev = {}) => (listeners.get(type) || []).forEach(fn => fn({ type, ...ev }));
   return { ...context.__test, nodes, storage, intervals, poll, fire, document, location: context.location };
 }
 

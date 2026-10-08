@@ -44,13 +44,72 @@ const pendingWrites = new Set();
    écriture qu'IndexedDB refuse (quota plein, transaction annulée) reste en route, et sa copie la sauvera ; une écriture
    de la même clé qui aboutit, ici ou dans un autre onglet, la remplace. */
 export const RESCUE = "selene-secours:";
+/* Une copie entière ne tient pas toujours : Safari plafonne localStorage vers 2,5 millions de caractères par site, et un
+   espace de 3 Mo n'y entre pas (A65 du cahier de recette : la capture de la dernière seconde était perdue). La copie dit
+   alors seulement ce qui sépare la valeur en route de celle qu'IndexedDB tient déjà : des plages à recopier de
+   celle-ci ([début, fin]) et des morceaux nouveaux (du texte). Une écriture change d'ordinaire peu de choses (un
+   horodatage réécrit, une capture insérée) : les plages égales se cherchent en avançant depuis le début, au même
+   décalage, puis en reculant depuis la fin, au décalage des longueurs ; un écart court entre deux plages égales
+   (moins de SAUT caractères, puis ACCROCHE égaux) devient un morceau nouveau. Exactes par construction, quoi qu'il
+   arrive : au pire, la copie grossit. */
+const SAUT = 256, ACCROCHE = 32;
+export function delta(a, b) { // exportée pour les tests
+  const n = Math.min(a.length, b.length), head = [], tail = [];
+  // Depuis le début : a[i] et b[i] côte à côte.
+  let i = 0, from = 0;
+  for (;;) {
+    while (i < n && a.charCodeAt(i) === b.charCodeAt(i)) i++;
+    if (i >= n) break;
+    let k = i, run = 0;
+    while (k < n && k - i < SAUT + ACCROCHE && run < ACCROCHE) { run = a.charCodeAt(k) === b.charCodeAt(k) ? run + 1 : 0; k++; }
+    if (run < ACCROCHE) break;
+    const back = k - ACCROCHE;
+    head.push([from, i], b.slice(i, back)); from = i = back;
+  }
+  head.push([from, i]);
+  // Depuis la fin : a[a.length - 1 - t] et b[b.length - 1 - t], sans revenir sur ce que le début a déjà pris.
+  const room = n - i, A = a.length, B = b.length;
+  let t = 0, upto = 0;
+  for (;;) {
+    while (t < room && a.charCodeAt(A - 1 - t) === b.charCodeAt(B - 1 - t)) t++;
+    if (t >= room) break;
+    let k = t, run = 0;
+    while (k < room && k - t < SAUT + ACCROCHE && run < ACCROCHE) { run = a.charCodeAt(A - 1 - k) === b.charCodeAt(B - 1 - k) ? run + 1 : 0; k++; }
+    if (run < ACCROCHE) break;
+    const back = k - ACCROCHE;
+    tail.push([A - t, A - upto], b.slice(B - back, B - t)); upto = t = back;
+  }
+  tail.push([A - t, A - upto]);
+  const ops = [...head, b.slice(i, B - t), ...tail.reverse()];
+  return ops.filter(o => (typeof o === "string" ? o.length : o[1] > o[0]));
+}
+// Rend la valeur, ou null si la copie ne s'applique pas à cette base.
+export function undelta(a, ops) {
+  const out = [];
+  for (const o of ops) {
+    if (typeof o === "string") out.push(o);
+    else if (Array.isArray(o) && Number.isInteger(o[0]) && Number.isInteger(o[1]) && o[0] >= 0 && o[0] <= o[1] && o[1] <= a.length) out.push(a.slice(o[0], o[1]));
+    else return null;
+  }
+  return out.join("");
+}
+// L'empreinte de la base d'une copie différentielle (53 bits, cyrb53) : la reconnaître au démarrage suivant.
+export function digest(s) {
+  const imul = Math.imul; // une fois : la boucle passe des millions de fois
+  let h1 = 0xdeadbeef ^ s.length, h2 = 0x41c6ce57 ^ s.length;
+  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); h1 = imul(h1 ^ c, 2654435761); h2 = imul(h2 ^ c, 1597334677); }
+  h1 = imul(h1 ^ (h1 >>> 16), 2246822507) ^ imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = imul(h2 ^ (h2 >>> 16), 2246822507) ^ imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
 export function mirror(vault, written = () => {}, rescueArea = null) { // exportée pour les tests
   const m = new Map(), last = new Map(), inflight = new Map(); // inflight : clé → valeur pas encore écrite (null : effacée)
+  const held = new Map(); // clé → la valeur que le coffre tient, sûrement : lue, ou écrite et confirmée
   // Une écriture attend la précédente sur la même clé : un coffre asynchrone ne doit pas les inverser.
   const send = (k, v, fn) => {
     inflight.set(k, v);
     let ok = false;
-    const q = (last.get(k) || Promise.resolve()).then(fn).then(() => { ok = true; try { written(k); } catch {} }, () => {});
+    const q = (last.get(k) || Promise.resolve()).then(fn).then(() => { ok = true; if (v === null) held.delete(k); else held.set(k, v); try { written(k); } catch {} }, () => {});
     last.set(k, q); pendingWrites.add(q);
     q.then(() => {
       pendingWrites.delete(q);
@@ -63,12 +122,16 @@ export function mirror(vault, written = () => {}, rescueArea = null) { // export
   };
   return {
     async hydrate() {
-      m.clear();
-      for (const [k, v] of await vault.load()) if (typeof k === "string" && typeof v === "string") m.set(k, v);
+      m.clear(); held.clear();
+      for (const [k, v] of await vault.load()) if (typeof k === "string" && typeof v === "string") { m.set(k, v); held.set(k, v); }
     },
     // Une autre fenêtre a écrit cette clé : la relire dans le coffre. Une valeur refusée ici, qui attendait encore,
     // n'est plus à sauver : celle de l'autre fenêtre a abouti, et elle est plus récente.
-    async refresh(k) { const v = await vault.get(k); if (typeof v === "string") m.set(k, v); else m.delete(k); if (!last.has(k)) inflight.delete(k); },
+    async refresh(k) {
+      const v = await vault.get(k);
+      if (typeof v === "string") { m.set(k, v); held.set(k, v); } else { m.delete(k); held.delete(k); }
+      if (!last.has(k)) inflight.delete(k);
+    },
     get: k => (m.has(k) ? m.get(k) : null),
     set(k, v) { v = String(v); m.set(k, v); send(k, v, () => vault.write(k, v)); return true; },
     remove(k) { m.delete(k); send(k, null, () => vault.remove(k)); },
@@ -78,7 +141,12 @@ export function mirror(vault, written = () => {}, rescueArea = null) { // export
     rescue() {
       if (!rescueArea) return;
       const order = [...inflight].sort(([a], [b]) => a.endsWith("-base") - b.endsWith("-base"));
-      for (const [k, v] of order) rescueArea.set(RESCUE + k, JSON.stringify({ v }));
+      for (const [k, v] of order) {
+        if (rescueArea.set(RESCUE + k, JSON.stringify({ v }))) continue;
+        // Trop lourde : la différence avec ce que le coffre tient, et l'empreinte de cette base (voir delta).
+        const base = held.get(k);
+        if (typeof v === "string" && typeof base === "string") rescueArea.set(RESCUE + k, JSON.stringify({ d: delta(base, v), n: base.length, h: digest(base) }));
+      }
     }
   };
 }
@@ -111,13 +179,21 @@ function idbVault() {
   };
 }
 /* Au démarrage, avant tout : les copies de secours laissées par une fermeture (voir RESCUE) rejoignent IndexedDB, en
-   une transaction, puis quittent localStorage. Une copie illisible est simplement retirée. */
+   une transaction, puis quittent localStorage. Une copie illisible est simplement retirée ; une copie différentielle ne
+   s'applique qu'à la valeur exacte d'où elle part (sa longueur, son empreinte), sinon elle est retirée aussi : le coffre
+   tient alors autre chose, d'ordinaire l'écriture elle-même, qui avait abouti. */
 export async function restoreRescue(vault, area) {
   const found = area.keys().filter(k => k.startsWith(RESCUE)), entries = [];
   for (const rk of found) {
-    let v;
-    try { v = JSON.parse(area.get(rk)).v; } catch { continue; }
-    if (typeof v === "string" || v === null) entries.push([rk.slice(RESCUE.length), v]);
+    let c;
+    try { c = JSON.parse(area.get(rk)); } catch { continue; }
+    const k = rk.slice(RESCUE.length);
+    if (!c || typeof c !== "object") continue;
+    if (typeof c.v === "string" || c.v === null) entries.push([k, c.v]);
+    else if (Array.isArray(c.d) && vault.get) {
+      const base = await vault.get(k), v = typeof base === "string" && base.length === c.n && digest(base) === c.h ? undelta(base, c.d) : null;
+      if (v !== null) entries.push([k, v]);
+    }
   }
   if (entries.length) await vault.writeAll(entries);
   for (const rk of found) area.remove(rk);

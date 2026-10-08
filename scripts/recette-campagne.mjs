@@ -4,7 +4,8 @@
    campagne dans la base de l'artefact, partagées entre appareils ; le compte rendu en Markdown, au format de
    comptes-rendus/modele.md. La page est une vue : les cas font foi dans docs/recette/manuels/, et une campagne ne
    devient un fait qu'une fois son compte rendu versé dans comptes-rendus/ par une PR.
-   Chaque étape porte l'empreinte de son texte : une étape réécrite après avoir été cochée ressort « à revérifier ».
+   Chaque étape porte l'empreinte de ce qu'elle demande : son texte, et les préconditions et les données du cas (BL-18) ;
+   une étape réécrite après avoir été cochée, ou dont le cas a changé de données, ressort « à revérifier ».
    Le script de la page est dans recette-campagne.client.js (vérifié par eslint comme le reste). */
 import fs from "node:fs";
 import path from "node:path";
@@ -95,7 +96,9 @@ for (const d of domaines) {
     const get = (arr, k) => (arr.find(([l]) => l === k) || [])[1];
     const prio = (get(avant, "Priorité") || "").match(/^(P[123]) · \*\*Plateformes\*\* : (.+)$/);
     if (!prio) { problems.push(`${id} : ligne « Priorité · Plateformes » illisible`); continue; }
-    const etapes = pl.slice(start + 2, end).map(cellsOf).map(([n, a, r]) => ({ n, a: inline(a, d.f), r: inline(r, d.f), h: empreinte(`${a}\u0001${r}`) }));
+    // Ce que vaut une coche dépend aussi des préconditions et des données du cas : elles entrent dans chaque empreinte.
+    const fond = `${get(avant, "Préconditions") || ""}\u0002${get(avant, "Données") || ""}\u0002`;
+    const etapes = pl.slice(start + 2, end).map(cellsOf).map(([n, a, r]) => ({ n, a: inline(a, d.f), r: inline(r, d.f), h: empreinte(`${fond}${a}\u0001${r}`) }));
     if (!etapes.length || etapes.some(e => !/^\d+$/.test(e.n))) { problems.push(`${id} : étapes absentes ou mal numérotées`); continue; }
     const fin = get(apres, "État final attendu"), net = get(apres, "Nettoyage");
     if (!fin || !net) { problems.push(`${id} : « État final attendu » ou « Nettoyage » manquant après les étapes`); continue; }
@@ -106,8 +109,8 @@ for (const d of domaines) {
       pre: inline(get(avant, "Préconditions") || "", d.f), don: inline(get(avant, "Données") || "", d.f),
       ctx: ctx.filter(k => get(avant, k)).map(k => [k, inline(get(avant, k), d.f)]),
       e: etapes,
-      fin: { html: inline(fin, d.f), h: empreinte(fin) },
-      net: /^aucun\.?$/i.test(net.trim()) ? null : { html: inline(net, d.f), h: empreinte(net) },
+      fin: { html: inline(fin, d.f), h: empreinte(fond + fin) },
+      net: /^aucun\.?$/i.test(net.trim()) ? null : { html: inline(net, d.f), h: empreinte(fond + net) },
       x: apres.filter(([l]) => l !== "État final attendu" && l !== "Nettoyage").map(([l, v]) => [l, inline(v, d.f)])
     });
   }

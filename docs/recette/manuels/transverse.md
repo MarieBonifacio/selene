@@ -240,7 +240,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, ART
 - **Préconditions** : communes ; console des outils de développement ouverte (*Preserve log*).
 - **Données** : `<img src=x onerror=alert('TRV008')>` (appelé ci-dessous « le piège ») ; `"><script>alert('TRV008')</script>`.
-- **Automatisés associés** : `TN-injection`, `TN-csp`, `TN-marges`, `TN-carte`, `TN-planche`, `TN-sources`, `TN-sauvegarde-complete`, `TN-instagram`
+- **Automatisés associés** : `TN-injection`, `TN-artefact`, `TN-csp`, `TN-marges`, `TN-carte`, `TN-planche`, `TN-sources`, `TN-sauvegarde-complete`, `TN-instagram`
 - **Source** : [TEST] les scénarios cités ; [CODE] `esc` (`src/app/lib/dom.js`), `parseBackup` (identifiants).
 
 | Étape | Action précise | Résultat attendu observable |
