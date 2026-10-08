@@ -753,6 +753,31 @@ test('A17 : un appareil sans compte qui rejoint un compte : un ancien suivi sync
   app.site.disconnect(); app.board.disconnect();
 });
 
+/* RLM-024 (décision du 7 octobre 2026) : un appareil connecté importe une sauvegarde où un suivi est encore marqué
+   synchronisé. La confirmation le nomme et dit où il ira : elle vaut accord. Acceptée, il revient sur l'appareil et le
+   compte n'en reçoit que le nom ; refusée, rien ne change. Le geste réel (shell/actions.js), jeu de données synthétique. */
+test('RLM-024 : connecté, l’import d’un ancien suivi synchronisé le dit avant d’agir, puis le garde sur l’appareil ; le compte n’en reçoit que le nom', async () => {
+  const server = fakeSupabase(), app = personal({ fetch: server.fetch }); await settle();
+  const texte = fs.readFileSync('docs/recette/donnees/rlm-synchronise-ancien.json', 'utf8'), id = 'carnet-du-soir';
+  assert.deepEqual([...app.trackersToKeep(JSON.parse(texte).site)], ['Carnet du soir'], 'les suivis à garder ici, par leur nom');
+  const importer = async () => { const el = { dataset: { act: 'imp' }, files: [{ text: async () => texte }], value: 'sauvegarde.json' }; app.fire('document:change', { target: el }); await settle(); return el; };
+  const refuse = await importer();
+  assert.equal(app.$('#cmsg').textContent, 'Remplacer tout l\'état actuel par celui du fichier ? « Carnet du soir » y est encore marqué synchronisé : il reviendra sur cet appareil seulement, et ton compte n\'en gardera que le nom.');
+  await confirmBox(app, false); await settle();
+  assert.equal(app.S().modules[id], undefined, 'refusée : rien d’importé'); assert.ok(!app.localCopy(id));
+  assert.equal(refuse.value, '', 'le champ vidé');
+  await importer(); await confirmBox(app, true); await settle(); await app.site.sync();
+  const stub = serverSite(server).modules[id];
+  assert.deepEqual([stub.config.storage, stub.entries.length, stub.goals.length, stub.config.subject, stub.config.consent], ['device', 0, 0, null, undefined], 'le compte : le talon seul, sans l’accord');
+  assert.doesNotMatch(JSON.stringify(serverSite(server)), /Pause café/, 'ni la note');
+  assert.equal(app.localCopy(id).entries[0].note, 'Pause café', 'rien de perdu : sur l’appareil');
+  assert.match(app.$('#toast').textContent, /^Sauvegarde importée\. « Carnet du soir » reste sur cet appareil seulement : Selene ne synchronise plus les suivis de santé, ton compte n'en garde que le nom\./);
+  const view = app.TYPE_UI.regulation.view(id);
+  assert.match(view, /Sur cet appareil seulement\. Ton compte n'en garde que le nom/); assert.doesNotMatch(view, /Ce suivi doit revenir sur un appareil|rlm-choice/, 'pas de bandeau : la confirmation a valu accord');
+  assert.equal(app.trackersToKeep(app.S()).length, 0, 'plus rien à garder ici');
+  app.site.disconnect(); app.board.disconnect();
+});
+
 test('hors de l’offre publique : l’espace n’est proposé qu’au compte marqué personnel par le serveur', async () => {
   const offeredIn = app => {
     const reg = app.VIEWS.reglages();

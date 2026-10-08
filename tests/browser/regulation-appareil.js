@@ -514,6 +514,40 @@ async function device(browser, errs, personnel = true, id = 'u1') {
     check(!nav9.includes('Carnet du soir') && !reglages9.includes('Carnet du soir') && !ailleurs9.includes("n'y sont plus") && !serveur4().includes('Carnet du soir'),
       'reconnectée : aucun « Carnet du soir » dans la navigation ni dans les Réglages ; l’écran « ses données n’y sont plus » nulle part (étape 9)');
 
+    console.log('chemin P : importer une sauvegarde où un suivi est encore marqué synchronisé (RLM-024)');
+    // Décision du 7 octobre 2026 : connecté, l'import ramène ce suivi sur l'appareil ; la confirmation le dit, et vaut
+    // accord. Un autre compte personnel (u6), deux appareils ; le jeu synthétique du cahier de recette.
+    const serveur6 = () => JSON.stringify((rows.get('u6') || {}).site || {});
+    const dernier6 = () => { const x = patches.filter(y => y.uid === 'u6').at(-1); return x ? x.body : ''; };
+    const local6 = q => q.evaluate(() => new Promise(ok => { const r = indexedDB.open('selene'); r.onsuccess = () => { const g = r.result.transaction('kv').objectStore('kv').get('selene-local-v1'); g.onsuccess = () => ok(g.result || ''); g.onerror = () => ok(''); }; r.onerror = () => ok(''); }));
+    const jeu6 = path.join(__dirname, '..', '..', 'docs', 'recette', 'donnees', 'rlm-synchronise-ancien.json');
+    const E1 = await device(browser, errs, true, 'u6'), e1 = E1.page;
+    const importer6 = async () => { await go('reglages', e1); await e1.waitForSelector('input[data-act="imp"]', { state: 'attached' }); await e1.setInputFiles('input[data-act="imp"]', jeu6); };
+    await importer6(); const annonce6 = await ask(false, e1); await e1.waitForTimeout(300);
+    const nav6 = await e1.textContent('#nav');
+    check(annonce6 === "Remplacer tout l'état actuel par celui du fichier ? « Carnet du soir » y est encore marqué synchronisé : il reviendra sur cet appareil seulement, et ton compte n'en gardera que le nom." && !nav6.includes('Carnet du soir'),
+      `la confirmation nomme le suivi et dit où il ira : « ${annonce6} » ; « Annuler » : rien d’importé (RLM-024, étapes 1 et 2)`);
+    await importer6(); await ask(true, e1);
+    await e1.waitForFunction(() => (document.querySelector('#toast') || {}).textContent?.includes('Sauvegarde importée.'), null, { timeout: 10000 }).catch(() => {});
+    const bulle6 = (await e1.textContent('#toast')).trim();
+    await go('carnet-du-soir', e1); await e1.waitForSelector('#rlmPriv-carnet-du-soir', { state: 'attached' });
+    await e1.evaluate(() => { document.querySelector('#rlmPriv-carnet-du-soir').open = true; });
+    const vue6 = (await e1.textContent('#main')).replace(/\s+/g, ' ');
+    check(bulle6 === "Sauvegarde importée. « Carnet du soir » reste sur cet appareil seulement : Selene ne synchronise plus les suivis de santé, ton compte n'en garde que le nom." && vue6.includes('Sur cet appareil seulement.')
+      && !vue6.includes('Ce suivi doit revenir sur un appareil') && (await local6(e1)).includes('Pause café'),
+      `confirmée : « ${bulle6} » ; pas de bandeau, « Sur cet appareil seulement. » ; la saisie « Pause café » gardée sur l’appareil (étape 3)`);
+    for (let i = 0; i < 60 && !serveur6().includes('Carnet du soir'); i++) await e1.waitForTimeout(100);
+    await e1.waitForTimeout(1500); // le temps qu'une synchronisation parte, si elle devait emporter le contenu
+    const p6b = dernier6(), talon6b = (((JSON.parse(p6b || '{}').site || {}).modules) || {})['carnet-du-soir'] || { config: {} };
+    check(talon6b.config.storage === 'device' && !!talon6b.config.holder && talon6b.config.subject === null && JSON.stringify(talon6b.entries) === '[]' && talon6b.config.consent === undefined
+      && !p6b.includes('Pause café') && !serveur6().includes('Pause café'),
+      'la dernière requête PATCH : le talon seul ("storage":"device", un holder, "subject":null, "entries":[], sans accord) ; « Pause café » ni dans la requête ni au serveur (étape 4)');
+    const E2 = await device(browser, errs, true, 'u6'), e2 = E2.page;
+    await go('carnet-du-soir', e2); await e2.waitForFunction(() => document.querySelector('#main').textContent.includes('Ce suivi est gardé sur un autre de tes appareils'), null, { timeout: 10000 }).catch(() => {});
+    const ailleurs6 = (await e2.textContent('#main')).replace(/\s+/g, ' ');
+    check(ailleurs6.includes('Ce suivi est gardé sur un autre de tes appareils') && !ailleurs6.includes('Pause café') && !ailleurs6.includes('Ce suivi doit revenir sur un appareil'),
+      'l’appareil 2 : « Ce suivi est gardé sur un autre de tes appareils… », sans la saisie (étape 5)');
+
     // Les deux appareils restent ouverts jusqu'à la fin : fermés avec une requête en vol, WebKit lève une erreur que le
     // contrôle final prendrait pour celle de l'app (A50).
     check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));

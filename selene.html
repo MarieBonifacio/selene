@@ -719,7 +719,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "b2450999af";
+const SELENE_BUILD = "27a506e641";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1625,6 +1625,7 @@ var __selene = (() => {
     topFrame: () => topFrame,
     totalOf: () => totalOf,
     trackBack: () => trackBack,
+    trackersToKeep: () => trackersToKeep,
     uid: () => uid,
     undoOnKeys: () => undoOnKeys,
     urgeActionId: () => urgeActionId,
@@ -3122,6 +3123,8 @@ var __selene = (() => {
     "Clé vérifiée et enregistrée.": "Key verified and saved.",
     "Clé non enregistrée : {0}": "Key not saved: {0}",
     "Remplacer tout l'état actuel par celui du fichier ?": "Replace everything here with the contents of the file?",
+    "Remplacer tout l'état actuel par celui du fichier ? {0} y est encore marqué synchronisé : il reviendra sur cet appareil seulement, et ton compte n'en gardera que le nom.": "Replace everything here with the contents of the file? {0} is still marked as synced in it: it will come back to this device only, and your account will keep only its name.",
+    "Remplacer tout l'état actuel par celui du fichier ? {0} y sont encore marqués synchronisés : ils reviendront sur cet appareil seulement, et ton compte n'en gardera que le nom.": "Replace everything here with the contents of the file? {0} are still marked as synced in it: they will come back to this device only, and your account will keep only their names.",
     "Sauvegarde importée.": "Backup imported.",
     "Fichier illisible ou pas une sauvegarde Selene.": "Unreadable file, or not a Selene backup.",
     "Ce fichier n'est pas une sauvegarde Selene. Rien n'a été importé.": "This file is not a Selene backup. Nothing was imported.",
@@ -5391,6 +5394,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       local.save();
     }
   }
+  var trackersToKeep = (siteDoc) => Object.entries(siteDoc.modules || {}).filter(([, inst]) => inst && inst.type === "regulation" && !regulationOnDevice(inst)).map(([id, inst]) => inst.label || id);
   function keepTrackersHere(siteDoc) {
     const moved = [];
     for (const [id, inst] of Object.entries(siteDoc.modules || {})) {
@@ -11364,8 +11368,11 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
       if (!f) return;
       f.text().then(async (t) => {
         const d = parseBackup(t);
-        if (!await ask(tr`Remplacer tout l'état actuel par celui du fichier ?`)) return;
+        const kept = authReady() && authSession ? trackersToKeep(d.site) : [], list = kept.map((n) => `« ${n} »`).join(", ");
+        const question = !kept.length ? tr`Remplacer tout l'état actuel par celui du fichier ?` : kept.length === 1 ? tr`Remplacer tout l'état actuel par celui du fichier ? ${list} y est encore marqué synchronisé : il reviendra sur cet appareil seulement, et ton compte n'en gardera que le nom.` : tr`Remplacer tout l'état actuel par celui du fichier ? ${list} y sont encore marqués synchronisés : ils reviendront sur cet appareil seulement, et ton compte n'en gardera que le nom.`;
+        if (!await ask(question)) return;
         local.replaceAll(splitLocal(d.site));
+        if (kept.length) keepHere(d.site);
         site.replaceAll(d.site);
         board.replaceAll(d.board);
         render();

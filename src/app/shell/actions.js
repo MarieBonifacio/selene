@@ -17,14 +17,14 @@ import { addNote, afterCapture } from "../modules/notes.js";
 import { confirmSensitiveShare } from "../modules/regulation.js";
 import { taskFilters } from "../modules/taches.js";
 import { refreshWeather, skyConf, skySearch } from "../scene/sky.js";
-import { personalAccount } from "../services/auth.js";
+import { authReady, authSession, personalAccount } from "../services/auth.js";
 import { reportError, topFrame } from "../services/journal.js";
 import { openPalette } from "./palette.js";
 import { rememberScroll, render } from "./render.js";
 import { closeSheet } from "./sheets.js";
 import { saveDraft } from "../state/drafts.js";
-import { local, splitLocal } from "../state/local.js";
-import { MODULE_DEFS, S, board, site, keptText } from "../state/site.js";
+import { local, splitLocal, trackersToKeep } from "../state/local.js";
+import { MODULE_DEFS, S, board, site, keepHere, keptText } from "../state/site.js";
 import { ask, openForm } from "../ui/dialogs.js";
 
 export const idOf = el => el.closest("[data-id]")?.dataset.id;
@@ -162,7 +162,17 @@ function onChange(e) {
   }
   else if (act === "imp") {
     const f = el.files && el.files[0]; if (!f) return;
-    f.text().then(async t => { const d = parseBackup(t); if (!await ask(tr`Remplacer tout l'état actuel par celui du fichier ?`)) return; local.replaceAll(splitLocal(d.site)); site.replaceAll(d.site); board.replaceAll(d.board); /* le local d'abord (ADR 27) */ /* le site d'abord : les tâches d'une ancienne sauvegarde y sont versées */ render(); toast([tr`Sauvegarde importée.`, keptText()].filter(Boolean).join(" ")); }).catch(e => toast(e && Object.hasOwn(CORE_ERRORS, e.code) ? errMsg(e) : tr`Fichier illisible ou pas une sauvegarde Selene.`)).finally(() => { el.value = ""; });
+    f.text().then(async t => {
+      const d = parseBackup(t);
+      /* RLM-024 (décision du 7 octobre 2026) : une session ouverte, un suivi que la sauvegarde garde encore synchronisé
+         revient sur cet appareil à l'import. La confirmation le dit, et vaut accord : aucun chemin ne remet un suivi sur
+         le serveur. Sans compte, rien ne part : il rejoindra l'appareil au versement (A17). */
+      const kept = authReady() && authSession ? trackersToKeep(d.site) : [], list = kept.map(n => `« ${n} »`).join(", ");
+      const question = !kept.length ? tr`Remplacer tout l'état actuel par celui du fichier ?`
+        : kept.length === 1 ? tr`Remplacer tout l'état actuel par celui du fichier ? ${list} y est encore marqué synchronisé : il reviendra sur cet appareil seulement, et ton compte n'en gardera que le nom.`
+        : tr`Remplacer tout l'état actuel par celui du fichier ? ${list} y sont encore marqués synchronisés : ils reviendront sur cet appareil seulement, et ton compte n'en gardera que le nom.`;
+      if (!await ask(question)) return;
+      local.replaceAll(splitLocal(d.site)); if (kept.length) keepHere(d.site); site.replaceAll(d.site); board.replaceAll(d.board); /* le local d'abord (ADR 27) */ /* le site d'abord : les tâches d'une ancienne sauvegarde y sont versées */ render(); toast([tr`Sauvegarde importée.`, keptText()].filter(Boolean).join(" ")); }).catch(e => toast(e && Object.hasOwn(CORE_ERRORS, e.code) ? errMsg(e) : tr`Fichier illisible ou pas une sauvegarde Selene.`)).finally(() => { el.value = ""; });
   }
   else if (act === "mod-group") {
     const m = S().config.modules[+el.closest("[data-i]").dataset.i], v = el.value.trim().slice(0, 40);

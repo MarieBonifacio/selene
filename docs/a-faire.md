@@ -26,11 +26,16 @@ dont le dépôt ne peut pas savoir s'ils ont eu lieu.
 
 - [ ] **Le 20 octobre 2026 : Firefox devient bloquant** ([BL-13](recette/backlog.md#bl-13)). Lire les dernières courses
   *Check › browser (firefox)* : le job reste vert même quand un scénario échoue ; un échec s'y voit à l'avertissement
-  « Scénarios en échec sous firefox (non bloquant) » sur la PR, et à la liste du résumé du job. Condition proposée :
-  vingt passages consécutifs sans cet avertissement depuis la correction d'A16 (PR #120, le 6 octobre). Si elle est remplie, retirer la ligne `continue-on-error` du job `browser`
+  « Scénarios en échec sous firefox (non bloquant) » sur la PR, et à la liste du résumé du job. Condition décidée le
+  7 octobre 2026 : vingt passages consécutifs sans cet avertissement depuis la correction d'A16 (PR #120, le 6 octobre). Si elle est remplie, retirer la ligne `continue-on-error` du job `browser`
   dans `.github/workflows/check.yml` (une session Claude Code peut le faire : « Firefox devient bloquant ») ; sinon,
   chaque échec propre à Firefox devient une anomalie du cahier, corrigée avant de retirer la ligne, quitte à décaler la
   date.
+
+- [ ] **Fin octobre 2026 : la carte céleste** (la « carte du voisinage » d'une fiche Spécimen, la « carte » d'un motif).
+  Décidé le 7 octobre 2026 : retirée si personne ne l'a ouverte pendant un mois. La mesure d'usage ne compte pas les
+  écrans, exprès : c'est votre usage qui juge. Si vous ne l'avez pas ouverte depuis le début d'octobre, demander à une
+  session Claude Code « Retire la carte céleste (critère de fin octobre) » ; sinon, cocher ici qu'elle reste.
 
 - [ ] **Protéger la branche `main`** (dix minutes, droits d'administration du dépôt) : `main` n'est pas protégée au
   6 octobre 2026, alors que le contrôle du cahier a été décidé obligatoire. *Settings* → *Rules* → *Rulesets* → *New
@@ -102,16 +107,16 @@ faire) : [backlog de la recette](recette/backlog.md#reste-a-faire).
   supprimé ensuite ([compte.md](compte.md#sauvegarder-la-base), cas [TRV-017](recette/manuels/transverse.md#trv-017)). La clé privée ne va jamais dans GitHub : la perdre rend
   toutes les sauvegardes illisibles.
 - [ ] **L'offre Pro de Supabase** (25 $ par mois : une sauvegarde par jour, pas de mise en pause), **avant d'inviter les
-  bêta-testeurs** : leurs données ne doivent pas dépendre d'un vidage hebdomadaire. Décision de budget.
+  bêta-testeurs** : leurs données ne doivent pas dépendre d'un vidage hebdomadaire. Décidé le 7 octobre 2026 : oui ;
+  reste à la souscrire (tableau de bord Supabase → l'organisation → *Billing*), ce que seule la personne qui paie peut faire.
 - [ ] **Mettre Postgres à jour** (*Project Settings* → *General* → *Service versions*), **après** une sauvegarde
   réussie, jamais avant : aucun retour en arrière n'est possible. Le projet tournait en 17.6 le 2 octobre, 17.11 était
   proposée (T18 de l'audit).
 - [ ] **SMTP d'abord**, puis les adresses de retour (*URL Configuration*), puis la traduction des modèles d'e-mail :
   sans SMTP, les liens « mot de passe oublié » et les invitations n'atteignent que l'équipe du projet
   ([compte.md](compte.md#mot-de-passe-oublié-invitation)).
-- [ ] **L'assistant hébergé : décider** s'il est déployé pour la bêta. Proposition : non, et l'écrire ici (il n'est pas
-  prioritaire pour la bêta ; sans lui, pas de clés d'API à garder ni de traitement de plus au registre RGPD). Le jour
-  où c'est oui : la mise en place de [assistant.md](assistant.md#mettre-en-place-une-fois) (le secret
+- [x] **L'assistant hébergé : pas déployé pour la bêta** (décidé le 7 octobre 2026 : il n'est pas prioritaire ; sans
+  lui, pas de clés d'API à garder ni de traitement de plus au registre RGPD). Rien à faire. Le jour où c'est oui : la mise en place de [assistant.md](assistant.md#mettre-en-place-une-fois) (le secret
   `ASSISTANT_KEY_SECRET`, la table des clés), puis [AST-001](recette/manuels/assistant.md#ast-001) à
   [AST-007](recette/manuels/assistant.md#ast-007) avec une clé Anthropic de recette à la dépense plafonnée. Au
   6 octobre 2026, ses quatre passages de CI ont sauté le déploiement, faute du secret : à moins d'un déploiement fait

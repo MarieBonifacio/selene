@@ -1478,6 +1478,8 @@ export default {
   "Clé vérifiée et enregistrée.": "Key verified and saved.",
   "Clé non enregistrée : {0}": "Key not saved: {0}",
   "Remplacer tout l'état actuel par celui du fichier ?": "Replace everything here with the contents of the file?",
+  "Remplacer tout l'état actuel par celui du fichier ? {0} y est encore marqué synchronisé : il reviendra sur cet appareil seulement, et ton compte n'en gardera que le nom.": "Replace everything here with the contents of the file? {0} is still marked as synced in it: it will come back to this device only, and your account will keep only its name.",
+  "Remplacer tout l'état actuel par celui du fichier ? {0} y sont encore marqués synchronisés : ils reviendront sur cet appareil seulement, et ton compte n'en gardera que le nom.": "Replace everything here with the contents of the file? {0} are still marked as synced in it: they will come back to this device only, and your account will keep only their names.",
   "Sauvegarde importée.": "Backup imported.",
   "Fichier illisible ou pas une sauvegarde Selene.": "Unreadable file, or not a Selene backup.",
   "Ce fichier n'est pas une sauvegarde Selene. Rien n'a été importé.": "This file is not a Selene backup. Nothing was imported.",

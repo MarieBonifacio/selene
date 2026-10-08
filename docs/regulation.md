@@ -21,6 +21,11 @@ aucun suivi :
   doit revenir sur un appareil » : le garder sur cet appareil le ramène, et le serveur n'en a plus que le talon à la
   synchronisation suivante. Selene ne choisit pas l'appareil à la place de la personne : tant qu'elle n'a pas choisi,
   rien ne change.
+- **Jamais de retour au serveur.** Une sauvegarde importée sur un appareil connecté, où un suivi est encore marqué
+  synchronisé, le ramène sur cet appareil : la confirmation de l'import le nomme et dit qu'il reviendra sur cet appareil
+  seulement, et vaut accord (décision du 7 octobre 2026, RLM-024 du cahier de recette ; `trackersToKeep`,
+  `shell/actions.js`). Le compte n'en reçoit que le talon. Le bandeau ne reste que pour un suivi resté synchronisé sur
+  le serveur depuis avant le 3 octobre.
 - **Jamais vers une base qui ne l'avait pas.** Là où aucun compte ne gardait ce suivi synchronisé, il reste sur
   l'appareil, sans question, et l'appareil le dit (anomalie A17, corrigée le 6 octobre 2026) : un appareil sans compte
   qui rejoint un compte n'y verse que son talon (`authConnectStores`) ; l'artefact claude.ai, qui n'a pas de compte

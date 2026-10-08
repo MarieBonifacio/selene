@@ -745,29 +745,37 @@ Identifiants retirés : aucun.
 <a id="rlm-024"></a>
 ### RLM-024 — Un suivi encore synchronisé revient sur un appareil
 
-- **Fonctionnalité et règle** : un suivi encore synchronisé (accord daté d'avant le 3 octobre 2026, ou d'avant la
-  question) affiche un bandeau ; « Le garder sur cet appareil seulement… » le ramène, et le serveur n'en a plus que le
-  talon ; Selene ne choisit pas l'appareil à la place de la personne ; aucun chemin ne fait l'inverse ; sans compte, pas
-  de question. Là où aucun compte ne le gardait synchronisé, il reste sur l'appareil sans question, et l'appareil le dit
-  (A17) : au versement d'un appareil sans compte dans un compte, et dans l'artefact claude.ai ([PLT-011](plateformes.md#plt-011)).
-- **Objectif, risque vérifié** : un suivi de santé qui reste sur le serveur sans que la personne le sache ; un choix
-  fait à sa place.
+- **Fonctionnalité et règle** : aucun chemin ne remet un suivi sur le serveur. Une sauvegarde importée sur un appareil
+  connecté, où un suivi est encore marqué synchronisé (accord daté d'avant le 3 octobre 2026, ou d'avant la question),
+  le ramène sur l'appareil : la confirmation de l'import le nomme et dit qu'il reviendra sur cet appareil seulement, et
+  elle vaut accord (décision du 7 octobre 2026) ; le serveur n'en reçoit que le talon. Là où aucun compte ne le gardait
+  synchronisé, il reste sur l'appareil sans question, et l'appareil le dit (A17) : au versement d'un appareil sans
+  compte dans un compte, et dans l'artefact claude.ai ([PLT-011](plateformes.md#plt-011)). Un suivi resté
+  synchronisé **sur le serveur** depuis avant le 3 octobre affiche encore un bandeau, « Ce suivi doit revenir sur un
+  appareil », et Selene n'y choisit pas l'appareil à la place de la personne ; aucun geste de l'interface ne produit
+  plus ce cas, vérifié par `TU-REG-28` et `TU-REG-29`.
+- **Objectif, risque vérifié** : un suivi de santé qui reste sur le serveur, ou y retourne, sans que la personne le
+  sache ; un choix fait à sa place, sans le lui dire.
 - **Priorité** : P1 · **Plateformes** : Web, Mob
-- **Préconditions** : chemin P sur l'appareil 1 ; un appareil 2 connecté au compte P ; Network filtré sur `app_state`.
+- **Préconditions** : chemin P sur l'appareil 1, sans « Carnet du soir » ; un appareil 2 connecté au compte P ; Network
+  filtré sur `app_state`.
 - **Données** : `rlm-synchronise-ancien.json`.
-- **Automatisés associés** : `TU-REG-28`, `TU-REG-29`, `TU-REG-41`, `TU-ART-06`, `TU-ART-07`
-- **Source** : [DOC] [regulation.md](../../regulation.md#hors-de-loffre-publique) ; [TEST] `TU-REG-28`, `TU-REG-29`, `TU-REG-41` ; anomalie A17 : avant le 6 octobre 2026, le versement envoyait le suivi entier au compte.
+- **Automatisés associés** : `TN-regulation-appareil`, `TU-REG-43`, `TU-REG-41`, `TU-REG-28`, `TU-REG-29`, `TU-ART-06`, `TU-ART-07`
+- **Source** : [DOC] [regulation.md](../../regulation.md#hors-de-loffre-publique) ; [CODE] `trackersToKeep`
+  (`src/app/state/local.js`), l'import (`src/app/shell/actions.js`) ; [TEST] `TU-REG-43`, `TU-REG-41`,
+  `tests/browser/regulation-appareil.js` ; anomalie A17 : avant le 6 octobre 2026, le versement envoyait le suivi
+  entier au compte. Réécrit le 8 octobre 2026 : avant, l'import sur un appareil connecté remettait le suivi sur le
+  serveur, contenu compris, et le bandeau proposait de le ramener (étapes 1 à 6 d'alors).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Appareil 1 : importer le jeu ; ouvrir « Carnet du soir ». | Bandeau « Ce suivi doit revenir sur un appareil » : « Selene ne synchronise plus les suivis de santé. Celui-ci l'est encore : garde-le sur l'appareil de ton choix, et son contenu quittera ton compte. Tant que tu n'as pas choisi, rien ne change. » et « Le garder sur cet appareil seulement… ». |
-| 2 | Déplier « Confidentialité et données ». | « Encore synchronisé avec ton compte, selon ton accord du 1er septembre 2026 : sur le serveur de Selene (hébergé par Supabase), lisible par ton seul compte, sans chiffrement de bout en bout… » |
-| 3 | Appareil 2 : recharger, ouvrir l'espace ; attendre deux minutes sur les deux appareils. | L'appareil 2 voit le même bandeau et la saisie « 3 cigarettes » « Pause café » ; rien ne change de soi-même. |
-| 4 | Appareil 1 : « Le garder sur cet appareil seulement… » ; lire ; « Confirmer ». | « Garder « Carnet du soir » sur cet appareil seulement ? À la prochaine synchronisation, ses données quittent ton compte… Les sauvegardes techniques de l'hébergeur peuvent encore le contenir 30 jours au plus… » ; puis « « Carnet du soir » est gardé sur cet appareil seulement. » ; plus de bandeau ; « Sur cet appareil seulement… » ; aucun bouton pour revenir en arrière. |
-| 5 | Network : la `PATCH` suivante vers `app_state`. | L'espace n'y a plus que `"storage":"device"`, `holder`, `"subject":null`, `"entries":[]` ; pas de « Pause café ». |
-| 6 | Appareil 2 : recharger. | « Ce suivi est gardé sur un autre de tes appareils… » |
-| 7 | Chemin S (sans compte) : importer le même jeu ; ouvrir l'espace. | Aucun bandeau ; « Sur cet appareil : sans compte, rien n'est envoyé au serveur de Selene. » |
-| 8 | Chemin S, toujours : « J'ai déjà un compte », se connecter au compte B, qui n'a aucun suivi (le versement : ce qui est sur l'appareil rejoint le compte) ; Network filtré sur `app_state`. | « « Carnet du soir » reste sur cet appareil seulement : Selene ne synchronise plus les suivis de santé, ton compte n'en garde que le nom. » ; la `PATCH` vers `app_state` n'a que le talon de l'espace (`"storage":"device"`, `"entries":[]`), pas de « Pause café » ; « Sur cet appareil seulement… » dans « Confidentialité et données ». |
+| 1 | Appareil 1 : Réglages → Compte et données → Sauvegarde → importer le jeu. | La confirmation : « Remplacer tout l'état actuel par celui du fichier ? « Carnet du soir » y est encore marqué synchronisé : il reviendra sur cet appareil seulement, et ton compte n'en gardera que le nom. » |
+| 2 | « Annuler ». | Rien d'importé : pas de « Carnet du soir » dans la navigation. |
+| 3 | Importer de nouveau le jeu ; « Confirmer » ; ouvrir « Carnet du soir » et déplier « Confidentialité et données ». | La bulle : « Sauvegarde importée. « Carnet du soir » reste sur cet appareil seulement : Selene ne synchronise plus les suivis de santé, ton compte n'en garde que le nom. » ; pas de bandeau « Ce suivi doit revenir sur un appareil » ; « Sur cet appareil seulement. Ton compte n'en garde que le nom… » ; la saisie « 3 cigarettes » « Pause café » est au journal. |
+| 4 | Network : la `PATCH` suivante vers `app_state`. | L'espace n'y a que `"storage":"device"`, `holder`, `"subject":null`, `"entries":[]`, pas de `consent` ; pas de « Pause café ». |
+| 5 | Appareil 2 : recharger, ouvrir l'espace. | « Ce suivi est gardé sur un autre de tes appareils… » ; ni la saisie, ni le bandeau. |
+| 6 | Chemin S (sans compte) : importer le même jeu ; ouvrir l'espace. | La confirmation ordinaire, « Remplacer tout l'état actuel par celui du fichier ? » ; aucun bandeau ; « Sur cet appareil : sans compte, rien n'est envoyé au serveur de Selene. » |
+| 7 | Chemin S, toujours : « J'ai déjà un compte », se connecter au compte B, qui n'a aucun suivi (le versement : ce qui est sur l'appareil rejoint le compte) ; Network filtré sur `app_state`. | « « Carnet du soir » reste sur cet appareil seulement : Selene ne synchronise plus les suivis de santé, ton compte n'en garde que le nom. » ; la `PATCH` vers `app_state` n'a que le talon de l'espace (`"storage":"device"`, `"entries":[]`), pas de « Pause café » ; « Sur cet appareil seulement… » dans « Confidentialité et données ». |
 
 - **État final attendu** : le suivi gardé sur l'appareil 1, un talon sur le compte P ; un autre sur l'appareil du chemin S, un talon sur le compte B.
 - **Nettoyage** : supprimer le suivi depuis l'appareil 1 ([RLM-026](#rlm-026)) si la campagne n'en a plus besoin ; sur l'appareil du chemin S, connecté au compte B, supprimer « Carnet du soir » de même, puis se déconnecter.
