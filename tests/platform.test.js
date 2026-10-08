@@ -210,6 +210,88 @@ test('secours : au démarrage, les copies rejoignent IndexedDB (effacements comp
   assert.deepEqual([...area.keys()], ['selene-auth-session'], 'localStorage ne garde que les secrets');
 });
 
+/* La copie différentielle (A65) : Safari plafonne localStorage vers 2,5 millions de caractères par site. Un espace de
+   3 Mo n'y entrait pas, et la capture de la dernière seconde, encore en route vers IndexedDB, était perdue. */
+const plafonne = limite => { // un localStorage qui refuse au-delà de `limite` caractères en tout, comme Safari
+  const ls = memory(), set = ls.setItem, taille = () => { let t = 0; for (let i = 0; i < ls.length; i++) { const k = ls.key(i); t += k.length + ls.getItem(k).length; } return t; };
+  ls.setItem = (k, v) => { const avant = ls.getItem(k); if (taille() - (avant === null ? 0 : k.length + avant.length) + k.length + String(v).length > limite) throw new Error('QuotaExceededError'); set(k, v); };
+  return ls;
+};
+const lourd = () => { // un document de 3 millions de caractères, son horodatage en tête, sa boîte de réception au milieu
+  const notes = Array.from({ length: 30000 }, (_, i) => ({ id: `n${i}`, text: `Fragment ${i} : une phrase ordinaire, pour peser.` }));
+  return JSON.stringify({ updatedAt: 1791417245870, schemaVersion: 8, modules: { boite: { entries: notes.slice(0, 5000) }, archives: { entries: notes } } });
+};
+test('secours : la différence entre deux valeurs se recompose exactement, quelle qu’elle soit', () => {
+  const { delta, undelta } = loadMigrate();
+  const cas = [['', ''], ['', 'abc'], ['abc', ''], ['même', 'même'], ['début', 'début et suite'], ['la fin', 'au début, la fin'],
+    ['{"updatedAt":1,"x":"' + 'y'.repeat(5000) + '"}', '{"updatedAt":2,"x":"' + 'y'.repeat(2500) + 'NOUVEAU' + 'y'.repeat(2500) + '"}'],
+    ['abcdefgh'.repeat(400), 'abcdefgh'.repeat(200) + 'X' + 'abcdefgh'.repeat(200)], ['tout autre chose', 'rien à voir']];
+  let graine = 7; const hasard = n => { graine = (graine * 1103515245 + 12345) % 2147483648; return graine % n; };
+  const lettres = 'ab{}":,0123456789 éàœ😀';
+  for (let c = 0; c < 400; c++) { // des chaînes au hasard, et des modifications au hasard : insertions, retraits, remplacements
+    let a = ''; for (let i = hasard(3000); i > 0; i--) a += lettres[hasard(lettres.length)];
+    let b = a; for (let e = hasard(5); e > 0; e--) { const p = hasard(b.length + 1), q = Math.min(b.length, p + hasard(60)); let ins = ''; for (let i = hasard(80); i > 0; i--) ins += lettres[hasard(lettres.length)]; b = b.slice(0, p) + ins + b.slice(hasard(2) ? q : p); }
+    cas.push([a, b]);
+  }
+  for (const [a, b] of cas) { const d = JSON.parse(JSON.stringify(delta(a, b))); assert.equal(undelta(a, d), b, `${a.length} → ${b.length}`); }
+  assert.equal(undelta('court', [[0, 99]]), null, 'une plage hors de la base : refusée');
+  assert.equal(undelta('court', [{}]), null);
+});
+
+test('secours : un document trop lourd pour localStorage laisse sa différence avec ce qu’IndexedDB tient, et elle revient au démarrage', async () => {
+  const { mirror, restoreRescue, webStore, RESCUE } = loadMigrate(), ls = plafonne(2500000), area = webStore(() => ls);
+  const avant = lourd(), apres = avant.replace('"updatedAt":1791417245870', '"updatedAt":1791417250000').replace('{"id":"n2500"', '{"id":"capture","text":"à effacer SYN-005 dernière"},{"id":"n2500"');
+  assert.ok(avant.length > 2500000, `${avant.length} caractères : plus que ce que Safari garde`);
+  const idb = { ...fakeIdb({ 'selene-site-v1': avant }), get: async k => idb.data.get(k), write: () => new Promise(() => {}) }; // la fermeture : jamais finie
+  const m = mirror(idb, () => {}, area); await m.hydrate();
+  m.set('selene-site-v1', apres); m.set('selene-draft-x', 'brouillon');
+  m.rescue();
+  const copie = ls.getItem(RESCUE + 'selene-site-v1');
+  assert.ok(copie && copie.length < 2000, `la copie : ${copie && copie.length} caractères`);
+  assert.equal(ls.getItem(RESCUE + 'selene-draft-x'), '{"v":"brouillon"}', 'ce qui tient reste une copie entière');
+  await restoreRescue(idb, area);
+  assert.equal(idb.data.get('selene-site-v1'), apres, 'au démarrage suivant : la capture est là, le reste intact');
+  assert.equal(idb.data.get('selene-draft-x'), 'brouillon');
+  assert.deepEqual([...area.keys()], [], 'les copies quittent localStorage');
+});
+
+test('secours : une copie différentielle ne s’applique qu’à sa base ; le coffre qui tient autre chose est laissé tel quel', async () => {
+  const { mirror, restoreRescue, webStore, RESCUE } = loadMigrate(), ls = plafonne(2500000), area = webStore(() => ls);
+  const avant = lourd(), apres = avant.replace('{"id":"n10"', '{"id":"capture"},{"id":"n10"');
+  const idb = { ...fakeIdb({ 'selene-site-v1': avant }), get: async k => idb.data.get(k), write: () => new Promise(() => {}) };
+  const m = mirror(idb, () => {}, area); await m.hydrate();
+  m.set('selene-site-v1', apres); m.rescue();
+  assert.match(ls.getItem(RESCUE + 'selene-site-v1'), /^\{"d":/);
+  const autre = avant.replace('"schemaVersion":8', '"schemaVersion":9'); // même longueur, autre contenu : l'empreinte le voit
+  idb.data.set('selene-site-v1', autre);
+  await restoreRescue(idb, area);
+  assert.equal(idb.data.get('selene-site-v1'), autre, 'pas appliquée sur une autre base');
+  assert.deepEqual([...area.keys()], [], 'et retirée');
+  // Sans valeur confirmée dans le coffre (rien lu, rien écrit), pas de base : rien de plus qu'avant.
+  const ls2 = plafonne(2500000), vide = mirror({ write: () => new Promise(() => {}) }, () => {}, webStore(() => ls2));
+  vide.set('selene-site-v1', apres); vide.rescue();
+  assert.equal(ls2.getItem(RESCUE + 'selene-site-v1'), null);
+});
+
+test('secours : la base suit chaque écriture confirmée, et ce qu’un autre onglet a écrit', async () => {
+  const { mirror, restoreRescue, webStore, RESCUE } = loadMigrate(), ls = plafonne(2500000), area = webStore(() => ls);
+  const v0 = lourd(), v1 = v0.replace('{"id":"n7"', '{"id":"un"},{"id":"n7"'), v2 = v1.replace('{"id":"n9"', '{"id":"deux"},{"id":"n9"');
+  let fige = false;
+  const idb = { ...fakeIdb({ 'selene-site-v1': v0 }), get: async k => idb.data.get(k) };
+  idb.write = (k, v) => (fige ? new Promise(() => {}) : Promise.resolve(idb.data.set(k, v)));
+  const m = mirror(idb, () => {}, area); await m.hydrate();
+  m.set('selene-site-v1', v1); await new Promise(r => setTimeout(r, 0)); // confirmée : la base devient v1
+  fige = true; m.set('selene-site-v1', v2); m.rescue();
+  await restoreRescue(idb, area);
+  assert.equal(idb.data.get('selene-site-v1'), v2);
+  // Un autre onglet écrit, celui-ci relit : la base devient la sienne.
+  const v3 = v2.replace('{"id":"n11"', '{"id":"trois"},{"id":"n11"'), v4 = v3.replace('{"id":"n13"', '{"id":"quatre"},{"id":"n13"');
+  idb.data.set('selene-site-v1', v3); await m.refresh('selene-site-v1');
+  m.set('selene-site-v1', v4); m.rescue();
+  await restoreRescue(idb, area);
+  assert.equal(idb.data.get('selene-site-v1'), v4);
+});
+
 test('migration : les clés ordinaires passent dans IndexedDB, les secrets restent, IndexedDB l’emporte', async () => {
   const { migrateToIdb, webStore } = loadMigrate(), ls = memory();
   ls.setItem('selene-site-v1', 'ancien'); ls.setItem('selene-bilan', 'mois'); ls.setItem('selene-auth-session', 'jeton'); ls.setItem('selene-api-key', 'sk');

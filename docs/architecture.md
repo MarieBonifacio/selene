@@ -576,7 +576,14 @@ Hors CI, à vérifier à la main : la PWA installée sur iPhone et l'artefact cl
   le démarrage suivant la reverse dans IndexedDB avant la migration (`restoreRescue`). Une écriture qui aboutit
   retire la copie de sa clé, dans tout onglet : une copie n'est jamais plus ancienne que ce qu'IndexedDB tient. Le
   store ne tente plus de `keepalive` au-delà de 60 000 octets et garde sa synchronisation ordinaire prévue
-  (`KEEPALIVE_MAX`). Reste une limite : un document plus gros que la place libre de `localStorage` n'a pas de copie.
+  (`KEEPALIVE_MAX`). Un document plus gros que la place libre de `localStorage` (Safari la plafonne vers 2,5 millions
+  de caractères par site : un espace de 3 Mo n'y entre pas, A65 du cahier de recette) laisse une **copie
+  différentielle** : seulement ce qui le sépare de la valeur qu'IndexedDB tient sûrement (lue au démarrage, ou écrite
+  et confirmée), en plages à recopier et morceaux nouveaux, avec la longueur et l'empreinte (53 bits) de cette valeur ;
+  au démarrage, elle ne s'applique qu'à elle, sinon elle est retirée (le coffre tient alors autre chose, d'ordinaire
+  l'écriture elle-même, qui avait abouti). Pour une capture, quelques centaines de caractères, calculés en une
+  trentaine de millisecondes sur 3 millions. Reste une limite : une différence qui ne tient pas non plus (beaucoup de
+  changements dispersés en moins d'une seconde) n'a pas de copie.
   Une écriture qu'IndexedDB **refuse** (quota plein, transaction annulée) n'est pas « aboutie » : elle reste en route,
   donc copiée à la fermeture, jusqu'à ce qu'une écriture de la même clé aboutisse ici, ou dans un autre onglet (qui le
   signale : `refresh`). Sans cela, une saisie refusée, serveur injoignable, était perdue des deux côtés
