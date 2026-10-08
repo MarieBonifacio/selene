@@ -106,6 +106,7 @@ Les six propositions ci-dessous, validées par la responsable le 7 octobre 2026.
 |---|---|---|---|
 | A2 : `secours.js`, deux échecs sur sa propre branche | 4 octobre 2026 | aucun échec jusqu'au 20 octobre : classer « non reproduit » | [perimetre.md](perimetre.md#anomalies-et-observations) |
 | A9 : `regulation.js` sous WebKit, un clic perdu | 5 octobre 2026 | aucun échec jusqu'au 20 octobre : confirmée | [perimetre.md](perimetre.md#anomalies-et-observations) |
+| A66 : `import-markdown.js` sous WebKit, l'envoi d'un dossier resté sans réponse de Playwright (contourné dans le test) | 8 octobre 2026 | aucun « [Playwright : … » dans son résultat jusqu'au 20 octobre : classer « contourné » ; sinon, chercher plus loin | [perimetre.md](perimetre.md#anomalies-et-observations) |
 | `sync-deux-appareils.js` : deux échecs sur une branche en cours, jamais sur `main` | 3 octobre 2026 | aucun échec jusqu'au 20 octobre : classer « non reproduit » | [perimetre.md](perimetre.md#anomalies-et-observations) |
 
 ### Moins urgent, sans décision à prendre
