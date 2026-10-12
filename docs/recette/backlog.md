@@ -11,7 +11,7 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 <a id="reste-a-faire"></a>
 ## Reste à faire, d'un coup d'œil
 
-Tout ce qui reste ouvert, du plus urgent au moins urgent dans chaque groupe, tenu à jour le 7 octobre 2026. Une ligne
+Tout ce qui reste ouvert, du plus urgent au moins urgent dans chaque groupe, tenu à jour le 12 octobre 2026. Une ligne
 renvoie à son détail, qui fait foi ; une chose faite est barrée et datée ici comme dans son détail, jamais retirée. Les
 démarches à la main qui ne touchent pas la qualité (stores, RGPD, validation du marché) restent dans
 [a-faire.md](../a-faire.md) seulement. « Une session » : une session Claude Code ouverte sur ce dépôt, qui fait le
@@ -67,11 +67,11 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
-| La sauvegarde de la base, réglée puis restaurée sur un projet neuf ([TRV-017](manuels/transverse.md#trv-017)) | la personne qui administre Supabase | P1 | avant tout autre réglage du projet | [a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait) |
+| La sauvegarde de la base, réglée puis restaurée sur un projet neuf ([TRV-017](manuels/transverse.md#trv-017)) | la personne qui administre Supabase | P1 | avant tout autre réglage du projet : au 12 octobre 2026, le workflow *Sauvegarde* saute toutes ses étapes faute de réglages, et aucune sauvegarde n'existe | [a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait) |
 | L'isolation entre comptes sur la préproduction ([TRV-016](manuels/transverse.md#trv-016)) | la personne qui administre Supabase | P1 | avant d'inviter les bêta-testeurs | [compte.md](../compte.md#vérifier-lisolation-entre-comptes) |
 | La première smoke : aucun des 192 cas n'a encore été exécuté | la responsable | P1 | avant la prochaine mise en ligne qui change un comportement | [campagnes.md](campagnes.md#smoke) |
 | Les appareils réels : [PLT-001](manuels/plateformes.md#plt-001), [PLT-003](manuels/plateformes.md#plt-003), [PLT-008](manuels/plateformes.md#plt-008), [PLT-010](manuels/plateformes.md#plt-010) ; [TRV-007](manuels/transverse.md#trv-007) sur un téléphone d'entrée de gamme ; une heure de lecteur d'écran ([TRV-001](manuels/transverse.md#trv-001)) | la responsable | P1 et P2 | avant la bêta | [a-faire.md](../a-faire.md#essayer-sur-de-vrais-appareils) |
-| L'artefact dans le vrai claude.ai : [PLT-011](manuels/plateformes.md#plt-011), [AST-009](manuels/assistant.md#ast-009) | la responsable | P2 | après A17, à la publication de l'artefact | [BL-11](#bl-11) |
+| L'artefact dans le vrai claude.ai : [PLT-011](manuels/plateformes.md#plt-011), [AST-009](manuels/assistant.md#ast-009) | la responsable | P2 | à la publication de l'artefact, que plus rien n'empêche (A17 corrigée le 6 octobre 2026, PR #121) ; aucun artefact Selene publié au 12 octobre | [BL-11](#bl-11) |
 | La recette complète | la responsable | P1 | avant une version des stores ou l'ouverture de la bêta, puis chaque trimestre | [campagnes.md](campagnes.md#complete) |
 
 ### À régler (hors du dépôt)
@@ -79,13 +79,15 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
 | Les six secrets `ISOLATION_*` du workflow *Isolation* (les valeurs de `.env.isolation`) | la personne qui administre Supabase | P1 | après le premier `npm run isolation` réussi à la main (TRV-016) | [compte.md](../compte.md#vérifier-lisolation-entre-comptes), [BL-03](#bl-03) |
-| Protéger `main` : PR obligatoire, contrôles `recette` et `build-and-test` requis | la personne qui administre le dépôt | P2 | dès que possible : `main` n'est pas protégée au 6 octobre 2026 | [BL-12](#bl-12), [a-faire.md](../a-faire.md#tout-de-suite-une-minute) |
-| Firefox bloquant : retirer `continue-on-error` de `check.yml` | une session, à la demande | P2 | le 20 octobre 2026, si la condition décidée le 7 octobre est remplie | [BL-13](#bl-13) |
-| Les réglages du projet Supabase (SMTP, fonction `compte`, tables, compte personnel marqué, Postgres, offre Pro) | la personne qui administre Supabase | P1 et P2 | voir chaque ligne | [a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait) |
+| Protéger `main` : PR obligatoire, contrôles `recette` et `build-and-test` requis | la personne qui administre le dépôt | P2 | dès que possible : `main` n'est toujours pas protégée au 12 octobre 2026 | [BL-12](#bl-12), [a-faire.md](../a-faire.md#tout-de-suite-une-minute) |
+| Firefox bloquant : retirer `continue-on-error` de `check.yml` | une session, à la demande | P2 | le 20 octobre 2026, si la condition décidée le 7 octobre est remplie : au 12 octobre, 5 passages consécutifs sur 20 (dernier échec le 7 octobre, `fermeture.js`), et aucune course depuis le 8 | [BL-13](#bl-13) |
+| Les réglages du projet Supabase (SMTP, mots de passe, essai de la fonction `compte`, tables, plafond `app_state_taille`, compte personnel marqué, Postgres, offre Pro) | la personne qui administre Supabase | P1 et P2 | voir chaque ligne | [a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait) |
 
 ### À décider
 
-Rien d'ouvert au 8 octobre 2026.
+| Question | Proposition | Ce qui suit | Détail |
+|---|---|---|---|
+| La « version courte » des deux politiques dit que Selene « ne mesure rien » (*measures nothing*), alors que la même page décrit la mesure d'usage de la bêta et l'audience de la page de test : la corriger ? | Oui : « Selene ne vend rien, ne montre aucune publicité et n'a aucun traceur. Elle ne compte que deux choses, sans rien lire de ce que tu écris : tes jours d'usage pendant la bêta, si tu ne coupes pas cette mesure, et les ouvertures de sa page de présentation. » (constaté le 12 octobre 2026) | sur décision de la responsable, une session la pose dans `confidentialite.html` et `privacy.html`, avec une nouvelle date | [rgpd.md](../rgpd.md#points-à-trancher) |
 
 ### Décidé le 7 octobre 2026
 

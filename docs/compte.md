@@ -409,7 +409,8 @@ Elle change avec ce qui s'ajoute :
 - **Brancher Brevo** (SMTP) : nommer Brevo parmi les services, puisque les e-mails du compte passent alors par lui.
 - **Un statut d'entreprise** (micro-entreprise) : le nom commercial et le numéro SIREN remplacent « personne
   physique ».
-- **Un nouveau service, une nouvelle donnée gardée** : les deux versions changent ensemble, avec une nouvelle date.
+- **Un nouveau service, une nouvelle donnée gardée** : les deux versions changent ensemble, avec une nouvelle date, et
+  le registre des traitements de [rgpd.md](rgpd.md) avec elles.
 
 **L'accord de traitement des données (DPA) de Supabase** est à demander à <https://supabase.com/legal/dpa>. C'est le
 contrat de sous-traitance que l'article 28 du RGPD exige entre la responsable du traitement et son hébergeur.
