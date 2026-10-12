@@ -255,10 +255,10 @@ brouillon le 12 octobre 2026 dans [rgpd.md](rgpd.md) : à relire, compléter (le
 - [ ] **L'accord de sous-traitance de Supabase** (DPA, article 28), à demander sur
   <https://supabase.com/legal/dpa> ([compte.md](compte.md#politique-de-confidentialité)) ; puis vérifier ceux de
   GitHub, de Brevo une fois choisi, et le cas de la boîte Gmail ([rgpd.md](rgpd.md#les-contrats-de-sous-traitance-article-28)).
-- [ ] **Les points à trancher** du brouillon ([rgpd.md](rgpd.md#points-à-trancher)), d'abord celui-ci : la « version
-  courte » de la politique dit que Selene « ne mesure rien », alors que la même page décrit la mesure d'usage de la
-  bêta et l'audience de la page de test. Une phrase de remplacement y est proposée ; une session peut la poser dans
-  les deux langues.
+- [ ] **Les points à trancher** du brouillon ([rgpd.md](rgpd.md#points-à-trancher)) : la base légale des échanges à
+  l'adresse de contact, les durées des notes d'entretien et des retours de bêta. Le premier, la « version courte » de
+  la politique qui disait que Selene « ne mesure rien », est réglé le 12 octobre 2026 : les deux politiques nomment
+  désormais ce qu'elle compte.
 - [ ] **La double authentification** sur les comptes Supabase, GitHub et Google de la responsable, si ce n'est pas
   déjà fait : chacun ouvre toutes les données ([rgpd.md](rgpd.md#la-sécurité-article-32)).
 
