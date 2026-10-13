@@ -4,8 +4,14 @@ Ce que ni le code ni la CI ne peuvent faire : essayer Selene sur de vrais appare
 stores, tenir les obligations de la responsable du traitement. Une case par démarche, avec un lien vers le détail.
 Une démarche faite : cocher la case, ou retirer la ligne, de préférence dans la PR qui la rend inutile.
 
-Tenue à jour le 6 octobre 2026. Les étapes marquées *(si ce n'est pas déjà fait)* sont des réglages de mise en place
+Tenue à jour le 12 octobre 2026. Les étapes marquées *(si ce n'est pas déjà fait)* sont des réglages de mise en place
 dont le dépôt ne peut pas savoir s'ils ont eu lieu.
+
+**Un workflow vert n'est pas un workflow qui a travaillé.** *Sauvegarde*, *Isolation*, *Compte* et *Assistant* sautent
+leurs étapes, avec un simple avis, quand il leur manque un réglage : la course reste verte. Le lundi 12 octobre 2026,
+*Sauvegarde* et *Isolation* ont ainsi « réussi » sans rien faire. Seul le contenu le dit : l'artefact `selene-base` en
+bas de la page d'une sauvegarde, la ligne « Douze requêtes qui doivent être refusées » exécutée (et non grisée) dans le
+journal d'un test d'isolation.
 
 ## Tout de suite (une minute)
 
@@ -15,10 +21,12 @@ dont le dépôt ne peut pas savoir s'ils ont eu lieu.
   de la page. L'ouvrir dans un navigateur : si elle s'affiche, rien à faire ; sinon, remplacer l'adresse dans
   `docs/regulation.md`. Ce lien n'apparaît pas dans l'interface.
 
-- [ ] **L'artefact claude.ai, à publier avec `db` et `user`** (ADR 33 de [architecture.md](architecture.md)), **pas
-  avant la fusion de la correction d'A17** (PR #121 : un ancien suivi « Reprendre la main » y partait dans la base de
-  claude.ai, [anomalie A17](recette/perimetre.md#anomalies-et-observations)). Aucun artefact Selene n'est publié sur le
-  compte au 6 octobre 2026. Le jour où il l'est : dans une session Claude Code
+- [ ] **L'artefact claude.ai, à publier avec `db` et `user`** (ADR 33 de [architecture.md](architecture.md)). Plus
+  rien ne l'empêche : la correction d'A17 est fusionnée depuis le 6 octobre 2026 (PR #121 : un ancien suivi
+  « Reprendre la main » y partait dans la base de claude.ai,
+  [anomalie A17](recette/perimetre.md#anomalies-et-observations)). Aucun artefact Selene n'est publié sur le compte au
+  12 octobre 2026. La [smoke](recette/campagnes.md#smoke) se joue avant chaque publication de l'artefact. Le jour où il
+  l'est : dans une session Claude Code
   ouverte sur ce dépôt, demander « Publie `selene.html` comme artefact avec les capacités `db` et `user` » (ou mettre
   à jour l'artefact existant par son lien, avec les mêmes capacités). Sans `user`, Selene y fonctionne mais ne
   synchronise rien entre navigateurs ; elle ne range jamais rien dans un document partagé. Puis jouer
@@ -30,18 +38,21 @@ dont le dépôt ne peut pas savoir s'ils ont eu lieu.
   7 octobre 2026 : vingt passages consécutifs sans cet avertissement depuis la correction d'A16 (PR #120, le 6 octobre). Si elle est remplie, retirer la ligne `continue-on-error` du job `browser`
   dans `.github/workflows/check.yml` (une session Claude Code peut le faire : « Firefox devient bloquant ») ; sinon,
   chaque échec propre à Firefox devient une anomalie du cahier, corrigée avant de retirer la ligne, quitte à décaler la
-  date.
+  date. **Au 12 octobre 2026 : 5 passages consécutifs sur 20.** Le dernier échec date du 7 octobre (23 h 27 UTC,
+  `fermeture.js`, sur une PR) ; d'autres l'ont précédé depuis la PR #120 (`reseau-ferme.js`, `cites.js` deux fois,
+  `import-markdown.js`). Et rien n'a tourné depuis le 8 octobre : la CI ne passe qu'avec une PR ou une fusion, si bien
+  que le compteur n'avance pas tout seul. Sans une quinzaine de courses d'ici le 20, la date est à décaler.
 
 - [ ] **Fin octobre 2026 : la carte céleste** (la « carte du voisinage » d'une fiche Spécimen, la « carte » d'un motif).
   Décidé le 7 octobre 2026 : retirée si personne ne l'a ouverte pendant un mois. La mesure d'usage ne compte pas les
   écrans, exprès : c'est votre usage qui juge. Si vous ne l'avez pas ouverte depuis le début d'octobre, demander à une
   session Claude Code « Retire la carte céleste (critère de fin octobre) » ; sinon, cocher ici qu'elle reste.
 
-- [ ] **Protéger la branche `main`** (dix minutes, droits d'administration du dépôt) : `main` n'est pas protégée au
-  6 octobre 2026, alors que le contrôle du cahier a été décidé obligatoire. *Settings* → *Rules* → *Rulesets* → *New
-  branch ruleset*, cible : la branche par défaut ; cocher *Require a pull request before merging* (sans approbation
-  obligatoire), *Require status checks to pass* avec `recette` et `build-and-test`, et *Require branches to be up to
-  date before merging* ; ne jamais y mettre `apk`, `simulator` ni `windows`, qui ne tournent pas sur toutes les PR et
+- [ ] **Protéger la branche `main`** (dix minutes, droits d'administration du dépôt) : `main` n'est toujours pas
+  protégée au 12 octobre 2026, alors que le contrôle du cahier a été décidé obligatoire. *Settings* → *Rules* →
+  *Rulesets* → *New branch ruleset*, cible : la branche par défaut ; cocher *Require a pull request before merging*
+  (sans approbation obligatoire), *Require status checks to pass* avec `recette` et `build-and-test`, et *Require
+  branches to be up to date before merging* ; ne jamais y mettre `apk`, `simulator` ni `windows`, qui ne tournent pas sur toutes les PR et
   bloqueraient les autres pour toujours. Le détail et les raisons : [BL-12](recette/backlog.md#bl-12). Vérifier
   ensuite que `main` apparaît comme protégée dans la liste des branches.
 
@@ -84,7 +95,8 @@ connaît pas le format 8 et refuse d'écrire.
 ## Jouer la recette
 
 Aucun des 192 cas du [cahier de recette](recette/README.md) n'a encore été exécuté : la CI vérifie ce qui se simule,
-pas un usage réel. Ce qui reste à faire côté qualité, d'un coup d'œil (y compris ce qu'une session Claude Code peut
+pas un usage réel, et le [cahier à cocher](https://claude.ai/artifact/SxbYQSvENzVaMNp72dndbw) n'a aucune campagne au
+12 octobre 2026. Ce qui reste à faire côté qualité, d'un coup d'œil (y compris ce qu'une session Claude Code peut
 faire) : [backlog de la recette](recette/backlog.md#reste-a-faire).
 
 - [ ] **La première smoke** (une heure environ, sur ordinateur et un téléphone) avant la prochaine mise en ligne qui
@@ -105,15 +117,24 @@ faire) : [backlog de la recette](recette/backlog.md#reste-a-faire).
   *Sauvegarde* la copie chiffrée chaque lundi, une fois réglés une clé age, la variable `SAUVEGARDE_CLE_AGE` et le
   secret `SUPABASE_DB_URL` (dix minutes) ; puis un *Run workflow*, et un exercice de restauration sur un projet neuf,
   supprimé ensuite ([compte.md](compte.md#sauvegarder-la-base), cas [TRV-017](recette/manuels/transverse.md#trv-017)). La clé privée ne va jamais dans GitHub : la perdre rend
-  toutes les sauvegardes illisibles.
+  toutes les sauvegardes illisibles. **Aucune sauvegarde n'existe au 12 octobre 2026** : le premier passage du lundi a
+  sauté toutes ses étapes, faute des deux réglages.
 - [ ] **L'offre Pro de Supabase** (25 $ par mois : une sauvegarde par jour, pas de mise en pause), **avant d'inviter les
   bêta-testeurs** : leurs données ne doivent pas dépendre d'un vidage hebdomadaire. Décidé le 7 octobre 2026 : oui ;
   reste à la souscrire (tableau de bord Supabase → l'organisation → *Billing*), ce que seule la personne qui paie peut faire.
 - [ ] **Mettre Postgres à jour** (*Project Settings* → *General* → *Service versions*), **après** une sauvegarde
   réussie, jamais avant : aucun retour en arrière n'est possible. Le projet tournait en 17.6 le 2 octobre, 17.11 était
   proposée (T18 de l'audit).
+- [ ] **Le plafond de taille d'un espace** (5 Mo, contrainte `app_state_taille`) : le projet de l'app date d'avant le
+  2 octobre 2026, jour où la contrainte est entrée dans `supabase/schema.sql`. Dans l'éditeur SQL, la lecture d'abord,
+  puis l'`alter table` de [compte.md](compte.md#taille-dun-espace) si aucune ligne ne dépasse ; « already exists » :
+  c'est déjà fait.
 - [ ] **SMTP d'abord**, puis les adresses de retour (*URL Configuration*), puis la traduction des modèles d'e-mail :
   sans SMTP, les liens « mot de passe oublié » et les invitations n'atteignent que l'équipe du projet
+  ([compte.md](compte.md#mot-de-passe-oublié-invitation)).
+- [ ] **Les mots de passe, côté serveur** : *Authentication → Sign In / Providers → Email*, *Minimum password length* à
+  `10` et *Require current password when updating* activé ([compte.md](compte.md#mots-de-passe)). Pour une bêta
+  fermée, couper aussi *Allow new users to sign up* et inviter les comptes un par un
   ([compte.md](compte.md#mot-de-passe-oublié-invitation)).
 - [x] **L'assistant hébergé : pas déployé pour la bêta** (décidé le 7 octobre 2026 : il n'est pas prioritaire ; sans
   lui, pas de clés d'API à garder ni de traitement de plus au registre RGPD). Rien à faire. Le jour où c'est oui : la mise en place de [assistant.md](assistant.md#mettre-en-place-une-fois) (le secret
@@ -122,17 +143,20 @@ faire) : [backlog de la recette](recette/backlog.md#reste-a-faire).
   6 octobre 2026, ses quatre passages de CI ont sauté le déploiement, faute du secret : à moins d'un déploiement fait
   à la main, l'app dit « Assistant non déployé ».
 - [ ] **La fonction `compte`** déployée (workflow *Compte*), puis un essai : créer un compte jetable, le supprimer
-  depuis l'app, vérifier qu'il a disparu ([compte.md](compte.md#déployer)).
+  depuis l'app, vérifier qu'il a disparu ([compte.md](compte.md#déployer)). Le déploiement a eu lieu le 1er octobre
+  2026 (l'étape « Déployer » de la course a tourné, et la fonction n'a pas changé depuis) : reste l'essai.
 - [ ] **Marquer le compte personnel**, une fois, dans l'éditeur SQL : sans cette marque, « Reprendre la main » n'est
   proposé à personne ([regulation.md](regulation.md#hors-de-loffre-publique)). Ne pas se déconnecter pour l'obtenir
   plus vite : la déconnexion vide l'appareil.
 - [ ] **Ramener sur un appareil un suivi encore synchronisé**, s'il en existe un : son bandeau « Ce suivi doit revenir
-  sur un appareil » le propose. Selene ne synchronise plus les suivis de santé depuis le 3 octobre 2026.
+  sur un appareil » le propose. Selene ne synchronise plus les suivis de santé depuis le 3 octobre 2026. Pour savoir
+  s'il en reste, et chez qui : la requête de [rgpd.md](rgpd.md#lhébergement-de-données-de-santé-hds) (lecture seule).
 - [ ] **Le test d'isolation entre comptes**, sur un projet de préproduction, puis la comparaison de ses règles avec
   celles de la production ([compte.md](compte.md#vérifier-lisolation-entre-comptes)). Ensuite, les six valeurs de
   `.env.isolation` en secrets du dépôt (`ISOLATION_*`, dix minutes) : le workflow *Isolation* le rejoue alors chaque
   lundi et à chaque changement des règles, et écrit par e-mail s'il échoue
-  ([compte.md](compte.md#vérifier-lisolation-entre-comptes), « Chaque semaine, sans y penser »).
+  ([compte.md](compte.md#vérifier-lisolation-entre-comptes), « Chaque semaine, sans y penser »). Le 12 octobre 2026,
+  son passage du lundi a sauté le test, faute des secrets.
 - [ ] **La table du journal des erreurs** : coller la partie « Le journal des erreurs » de `supabase/schema.sql` dans
   l'éditeur SQL. D'ici là, l'app reçoit un refus et n'envoie rien, sans gêne pour personne
   ([compte.md](compte.md#journal-des-erreurs)).
@@ -211,21 +235,32 @@ Le chemin complet (comptes, clés, secrets, premier envoi) est dans [publication
 ## Conformité (RGPD)
 
 La politique de confidentialité remplit l'article 13 : responsable, bases légales, durées, transferts
-([compte.md](compte.md#politique-de-confidentialité)). Restent les obligations qu'aucune page ne remplit :
+([compte.md](compte.md#politique-de-confidentialité)). Restent les obligations qu'aucune page ne remplit, rédigées en
+brouillon le 12 octobre 2026 dans [rgpd.md](rgpd.md) : à relire, compléter (les mentions **À COMPLÉTER**) et valider.
 
 - [ ] **Le registre des activités de traitement** (article 30). La dispense des structures de moins de 250 personnes
-  ne s'applique pas à un traitement qui n'est pas occasionnel, comme un compte synchronisé en continu. La CNIL publie
-  un modèle. Y décrire : le compte et sa synchronisation, l'assistant, la sécurité, le journal des erreurs, la mesure
-  d'usage de la bêta, la liste d'attente et la mesure d'audience de la page de test, avec pour chacun les données, la base légale, la durée et les
-  sous-traitants ; et les suivis de santé encore synchronisés, tant qu'il en reste.
+  ne s'applique pas à un traitement qui n'est pas occasionnel, comme un compte synchronisé en continu. Le brouillon
+  suit le modèle de la CNIL : douze fiches (le compte, les suivis de santé encore synchronisés, l'assistant, le passeur,
+  la sécurité, le journal des erreurs, la mesure d'usage, la liste d'attente, l'audience, le contact, les entretiens,
+  la bêta), les sous-traitants, la sécurité et un registre des violations
+  ([rgpd.md](rgpd.md#le-registre-des-activités-de-traitement-article-30)).
 - [ ] **L'analyse d'impact (AIPD, article 35)** : évaluer si elle est obligatoire, et écrire la conclusion avec ses
-  raisons, même négative. Depuis que les suivis de santé ne passent plus par le serveur, le critère des données
-  sensibles ne joue plus que pour ceux d'avant le 3 octobre 2026.
+  raisons, même négative. Le brouillon conclut que non : un seul des neuf critères européens est rempli (un carnet
+  personnel synchronisé est une donnée « à caractère hautement personnel », les suivis de santé d'avant le 3 octobre
+  2026 aussi) ; il dit aussi quand y revenir ([rgpd.md](rgpd.md#lanalyse-dimpact-article-35--est-elle-obligatoire-)).
 - [ ] **L'hébergement de données de santé (HDS**, article L.1111-8 du Code de la santé publique) : la question ne se
   pose plus une fois les derniers suivis synchronisés ramenés sur un appareil (plus haut). D'ici là, ou si la
-  synchronisation revenait, la faire trancher par un juriste.
+  synchronisation revenait, la faire trancher par un juriste. La requête qui dit s'il en reste :
+  [rgpd.md](rgpd.md#lhébergement-de-données-de-santé-hds).
 - [ ] **L'accord de sous-traitance de Supabase** (DPA, article 28), à demander sur
-  <https://supabase.com/legal/dpa> ([compte.md](compte.md#politique-de-confidentialité)).
+  <https://supabase.com/legal/dpa> ([compte.md](compte.md#politique-de-confidentialité)) ; puis vérifier ceux de
+  GitHub, de Brevo une fois choisi, et le cas de la boîte Gmail ([rgpd.md](rgpd.md#les-contrats-de-sous-traitance-article-28)).
+- [ ] **Les points à trancher** du brouillon ([rgpd.md](rgpd.md#points-à-trancher)) : les durées des notes d'entretien
+  et des retours de bêta. Les deux premiers sont réglés dans les politiques : la « version courte », qui disait que
+  Selene « ne mesure rien », nomme ce qu'elle compte (12 octobre 2026) ; la base légale des échanges à l'adresse de
+  contact y figure (13 octobre).
+- [ ] **La double authentification** sur les comptes Supabase, GitHub et Google de la responsable, si ce n'est pas
+  déjà fait : chacun ouvre toutes les données ([rgpd.md](rgpd.md#la-sécurité-article-32)).
 
 ## À tenir dans la durée
 

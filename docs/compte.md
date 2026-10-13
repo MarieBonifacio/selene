@@ -376,7 +376,8 @@ Elle remplit l'article 13 du RGPD, et `build.test.js` le vérifie dans les deux 
 - une adresse de contact privée (jamais un ticket public) ;
 - une base légale par usage : le contrat (6.1.b), le consentement explicite pour la santé synchronisée (9.2.a),
   le consentement pour la liste d'attente de la page de test (6.1.a), l'intérêt légitime pour la sécurité, le journal
-  des erreurs, la mesure d'audience et la mesure d'usage de la bêta (6.1.f) ;
+  des erreurs, la mesure d'audience et la mesure d'usage de la bêta (6.1.f) ; l'obligation légale pour les demandes de
+  droits reçues à l'adresse de contact (6.1.c), l'intérêt légitime pour les autres échanges ;
 - les durées de conservation ;
 - les transferts hors de l'Union ;
 - le droit de réclamation auprès de la CNIL.
@@ -409,7 +410,8 @@ Elle change avec ce qui s'ajoute :
 - **Brancher Brevo** (SMTP) : nommer Brevo parmi les services, puisque les e-mails du compte passent alors par lui.
 - **Un statut d'entreprise** (micro-entreprise) : le nom commercial et le numéro SIREN remplacent « personne
   physique ».
-- **Un nouveau service, une nouvelle donnée gardée** : les deux versions changent ensemble, avec une nouvelle date.
+- **Un nouveau service, une nouvelle donnée gardée** : les deux versions changent ensemble, avec une nouvelle date, et
+  le registre des traitements de [rgpd.md](rgpd.md) avec elles.
 
 **L'accord de traitement des données (DPA) de Supabase** est à demander à <https://supabase.com/legal/dpa>. C'est le
 contrat de sous-traitance que l'article 28 du RGPD exige entre la responsable du traitement et son hébergeur.
