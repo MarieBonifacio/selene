@@ -87,7 +87,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Question | Proposition | Ce qui suit | Détail |
 |---|---|---|---|
-| ~~La « version courte » des deux politiques dit que Selene « ne mesure rien » (*measures nothing*), alors que la même page décrit la mesure d'usage de la bêta et l'audience de la page de test : la corriger ?~~ Oui, décidé le 12 octobre 2026 par la responsable | « Selene ne vend rien, ne montre aucune publicité et n'a aucun traceur. Elle ne compte que deux choses, sans rien lire de ce que tu écris : tes jours d'usage pendant la bêta, si tu ne coupes pas cette mesure, et les ouvertures de sa page de présentation. » (constaté le 12 octobre 2026) | **fait** le 12 octobre 2026 : `confidentialite.html` et `privacy.html`, datées du 12 octobre | [rgpd.md](../rgpd.md#points-à-trancher) |
+| ~~La « version courte » des deux politiques dit que Selene « ne mesure rien » (*measures nothing*), alors que la même page décrit la mesure d'usage de la bêta et l'audience de la page de test : la corriger ?~~ Oui, décidé le 12 octobre 2026 par la responsable | « Selene ne vend rien, ne montre aucune publicité et n'a aucun traceur. Elle ne compte que deux choses, sans rien lire de ce que tu écris : tes jours d'usage pendant la bêta, si tu ne coupes pas cette mesure, et les ouvertures de sa page de présentation. » (constaté le 12 octobre 2026) | **fait** le 12 octobre 2026 : `confidentialite.html` et `privacy.html` ; le 13, la base légale des échanges à l'adresse de contact (6.1.c, 6.1.f) les rejoint, et `TU-BLD-04` l'exige | [rgpd.md](../rgpd.md#points-à-trancher) |
 
 ### Décidé le 7 octobre 2026
 

@@ -146,7 +146,7 @@ claude.ai, hors de portée de la responsable (ADR 33) ; à réexaminer s'il est 
 - **Finalité** : répondre aux questions ; traiter les demandes d'accès, de rectification, d'effacement, d'opposition et
   de suppression de compte.
 - **Base légale** : l'obligation légale pour les demandes de droits (article 6.1.c, articles 12 à 22) ; l'intérêt
-  légitime pour les autres échanges (article 6.1.f). La politique ne nomme pas encore cette base
+  légitime pour les autres échanges (article 6.1.f). La politique la nomme depuis le 13 octobre 2026
   ([points à trancher](#points-à-trancher)).
 - **Données** : l'adresse, le message, ce qu'il contient.
 - **Durée** : le temps de répondre, puis un an au plus après le dernier échange.
@@ -297,7 +297,7 @@ synchronisé et celui d'avant le choix, ignore celui gardé sur un appareil et l
 
 | Point | Proposition | Où |
 |---|---|---|
-| ~~La « version courte » de la politique dit « Selene […] ne mesure rien » (*measures nothing* en anglais), alors que la même page décrit la mesure d'usage de la bêta (T7) et la mesure d'audience de la page de test (T9). Une information qui doit être loyale et transparente (articles 5.1.a et 12) ne peut pas se contredire.~~ Fait le 12 octobre 2026, sur décision de la responsable : les deux politiques, datées du 12 octobre. | « Selene ne vend rien, ne montre aucune publicité et n'a aucun traceur. Elle ne compte que deux choses, sans rien lire de ce que tu écris : tes jours d'usage pendant la bêta, si tu ne coupes pas cette mesure, et les ouvertures de sa page de présentation. » Et l'anglais à l'identique. | `confidentialite.html`, `privacy.html` |
-| La base légale des échanges à l'adresse de contact (T10) n'est pas dans « Pourquoi, et sur quelle base ». | Ajouter la ligne : demandes de droits, obligation légale (6.1.c) ; autres échanges, intérêt légitime (6.1.f). | les deux politiques |
+| ~~La « version courte » de la politique dit « Selene […] ne mesure rien » (*measures nothing* en anglais), alors que la même page décrit la mesure d'usage de la bêta (T7) et la mesure d'audience de la page de test (T9). Une information qui doit être loyale et transparente (articles 5.1.a et 12) ne peut pas se contredire.~~ Fait le 12 octobre 2026, sur décision de la responsable : les deux politiques. | « Selene ne vend rien, ne montre aucune publicité et n'a aucun traceur. Elle ne compte que deux choses, sans rien lire de ce que tu écris : tes jours d'usage pendant la bêta, si tu ne coupes pas cette mesure, et les ouvertures de sa page de présentation. » Et l'anglais à l'identique. | `confidentialite.html`, `privacy.html` |
+| ~~La base légale des échanges à l'adresse de contact (T10) n'est pas dans « Pourquoi, et sur quelle base ».~~ Fait le 13 octobre 2026 : la ligne est dans les deux politiques, datées du 13 octobre, et `TU-BLD-04` exige désormais la base 6.1.c. | Ajouter la ligne : demandes de droits, obligation légale (6.1.c) ; autres échanges, intérêt légitime (6.1.f). | les deux politiques |
 | Les durées des notes d'entretien (T11) et des retours de bêta (T12). | Celles proposées dans leurs fiches. | ce fichier, puis l'information de T11 |
 | La double authentification des comptes d'administration. | L'activer partout où elle ne l'est pas. | Supabase, GitHub, Google |

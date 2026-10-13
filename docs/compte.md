@@ -376,7 +376,8 @@ Elle remplit l'article 13 du RGPD, et `build.test.js` le vérifie dans les deux 
 - une adresse de contact privée (jamais un ticket public) ;
 - une base légale par usage : le contrat (6.1.b), le consentement explicite pour la santé synchronisée (9.2.a),
   le consentement pour la liste d'attente de la page de test (6.1.a), l'intérêt légitime pour la sécurité, le journal
-  des erreurs, la mesure d'audience et la mesure d'usage de la bêta (6.1.f) ;
+  des erreurs, la mesure d'audience et la mesure d'usage de la bêta (6.1.f) ; l'obligation légale pour les demandes de
+  droits reçues à l'adresse de contact (6.1.c), l'intérêt légitime pour les autres échanges ;
 - les durées de conservation ;
 - les transferts hors de l'Union ;
 - le droit de réclamation auprès de la CNIL.
