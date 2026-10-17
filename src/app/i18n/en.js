@@ -1689,6 +1689,7 @@ export default {
   "Télécharger": "Download",
 
   // views/recherche.js
+  "Aussi {0} résultat dans « {1} », désactivé : {2} → Espaces pour le rouvrir.": { one: "Also {0} result in “{1}”, turned off: {2} → Spaces to turn it back on.", other: "Also {0} results in “{1}”, turned off: {2} → Spaces to turn it back on." },
   "Tous les espaces": "All spaces",
   "Toute date": "Any date",
   "Depuis la nouvelle lune": "Since the new moon",

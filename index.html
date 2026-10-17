@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-T80L2ztACioM0Zfp/6uepxHD+wr9nEbqEYeiRC9SsOE=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-CYiK1TXK5z6Tpzjw6zKfX9eTCBm2xGGH77uOCGRwiG4=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -752,7 +752,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "a61a384df8";
+const SELENE_BUILD = "74f2f12e13";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1580,6 +1580,7 @@ var __selene = (() => {
     scrapsMarkdown: () => scrapsMarkdown,
     searchAll: () => searchAll,
     searchFresh: () => searchFresh,
+    searchHidden: () => searchHidden,
     searchQuery: () => searchQuery,
     seasonAt: () => seasonAt,
     sendChat: () => sendChat,
@@ -3364,6 +3365,7 @@ var __selene = (() => {
     "Un fichier .html autonome, si l'impression est bloquée": "A standalone .html file, if printing is blocked",
     "Télécharger": "Download",
     // views/recherche.js
+    "Aussi {0} résultat dans « {1} », désactivé : {2} → Espaces pour le rouvrir.": { one: "Also {0} result in “{1}”, turned off: {2} → Spaces to turn it back on.", other: "Also {0} results in “{1}”, turned off: {2} → Spaces to turn it back on." },
     "Tous les espaces": "All spaces",
     "Toute date": "Any date",
     "Depuis la nouvelle lune": "Since the new moon",
@@ -12520,11 +12522,18 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     const q = w.slice(w.indexOf(":") + 1);
     return q && Object.keys(EP_STATUS).find((k) => fold(EP_STATUS[k]).startsWith(q) || fold(epLabel(k)).startsWith(q)) || null;
   };
-  function searchAll(q) {
+  var searchAll = (q) => searchIn(q, (m) => enabled(m.id));
+  var searchHidden = (q) => {
+    const n = {};
+    for (const h of searchIn(q, (m) => !m.on && !absentModule(m.id))) n[h.id] = (n[h.id] || 0) + 1;
+    return Object.entries(n).map(([id, count]) => ({ id, count }));
+  };
+  function searchIn(q, keep) {
     const words2 = fold(q).split(/\s+/).filter(Boolean), st = words2.find(isEpWord), want = st ? epQuery(st) : null;
     const terms = words2.filter((w) => !isEpWord(w)), out = [];
     if (st && !want || !terms.length && !want) return out;
     for (const m of S().config.modules) {
+      if (!keep(m)) continue;
       const inst = Object.hasOwn(S().modules, m.id) ? S().modules[m.id] : null, ui = inst && TYPE_UI[inst.type];
       if (!ui || !ui.texts) continue;
       for (const t of ui.texts(inst)) {
@@ -12577,10 +12586,11 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       return shown.length ? `<p class="grp search-grp ${tintOf(id)}">${sigil(id)}${esc(label(id))} <span>${l.length}</span></p><ul class="plain">${shown.map((h) => `<li class="item"><span class="jdate">${h.date ? fmt(h.date) : ""}</span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}${h.ep ? `<div class="meta"><span>${epGlyph(h.ep)}${esc(epLabel(h.ep))}</span></div>` : ""}</div><a class="btn ghost sm" href="#${esc(h.id)}${h.eid ? "/" + esc(h.eid) : ""}">${tr`ouvrir`}</a></li>`).join("")}</ul>` : "";
     }).join("");
     const filtered = hits.length !== all.length;
+    const hidden = searchHidden(searchQuery).map((h) => `<p class="hint">${trn(h.count, "Aussi {0} résultat dans « {1} », désactivé : {2} → Espaces pour le rouvrir.", "Aussi {0} résultats dans « {1} », désactivé : {2} → Espaces pour le rouvrir.", esc(label(h.id)), `<a href="#reglages">${tr`Réglages`}</a>`)}</p>`).join("");
     return `<h2>${tr`Chercher`}</h2><p class="hint">${tr`Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « ${`${trp("recherche", "statut")}:${epLabel("hyp")}`} » ne garde que les hypothèses (de même pour ${["obs", "int", "inx"].map(epLabel).join(", ")}). Touche « / » pour venir ici.`}</p>
   <input id="searchIn" type="search" value="${esc(searchQuery)}" placeholder="${tr`Un mot, un bout de phrase…`}" aria-label="${tr`Chercher`}" autocomplete="off" style="max-width:520px">
   ${searchQuery.trim() ? `<div class="row" style="margin-top:12px"><p class="hint" style="margin:0">${hits.length ? filtered ? trn(hits.length, "{0} résultat sur {1}", "{0} résultats sur {1}", all.length) : trn(hits.length, "{0} résultat", "{0} résultats") : all.length ? tr`Rien avec ces filtres.` : tr`Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire.`}</p>${hits.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="search-dossier" title="${tr`Les résultats affichés, avec dates, statuts, provenance et liens, pour une lecture assistée`}">${tr`Exporter en dossier`}</button>` : ""}</div>
-  ${facets}${groups}` : ""}`;
+  ${hidden}${facets}${groups}` : ""}`;
   };
   CLICK["search-dossier"] = () => {
     const q = searchQuery.trim(), thoughts = thoughtItems();

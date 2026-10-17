@@ -1398,3 +1398,17 @@ test('le journal des Rappels nomme chaque geste par son libellé, jamais par son
   app.removeWithUndo(id, 'entries', 'j1');
   assert.match(app.nodes.get('#toast').innerHTML, /Supprimé : « Arroser le figuier »/, 'la bulle « Annuler » le nomme aussi');
 });
+
+test('chercher ne mène pas dans un espace désactivé : il le dit, et dit où le rouvrir (A69)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  app.addCapture(d.modules.inbox.entries, 'Le héron revient à la même pierre', 'n1', '2026-09-02');
+  d.modules.ecriture.scraps.push({ id: 'f1', text: 'Un héron dans le chapitre deux', date: '2026-09-01' });
+  d.config.modules.find(m => m.id === 'ecriture').on = false; // Réglages → Espaces, la case décochée
+  assert.deepEqual([...app.searchAll('heron').map(h => h.id)], ['inbox'], 'la palette et Chercher ne proposent que ce qui s\'ouvre');
+  app.searchFresh('heron'); app.location.hash = '#recherche'; app.render();
+  const html = app.nodes.get('#main').innerHTML;
+  assert.doesNotMatch(html, /href="#ecriture/, 'aucun lien vers l\'espace fermé');
+  assert.match(html, /Aussi 1 résultat dans « Écriture », désactivé/, 'le résultat caché est compté et nommé');
+  assert.match(html, /href="#reglages"/, 'avec le chemin pour le rouvrir');
+});

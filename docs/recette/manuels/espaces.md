@@ -160,15 +160,17 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : espace « Carnet » (une note : « Le héron revient chaque matin à la même pierre. »).
-- **Automatisés associés** : `TU-MOD-58`, `TU-MOD-63`
-- **Source** : [CODE] `mod-on` (`shell/actions.js`), `renderNow` (`shell/render.js`) ; [TEST] `TU-MOD-58` (un module
-  désactivé ne contribue pas aux sortes), `TU-MOD-63` (l'adresse d'un espace désactivé).
+- **Automatisés associés** : `TU-MOD-58`, `TU-MOD-63`, `TU-MOD-68`
+- **Source** : [CODE] `mod-on` (`shell/actions.js`), `renderNow` (`shell/render.js`), `searchAll` (`views/recherche.js`) ;
+  [TEST] `TU-MOD-58` (un module désactivé ne contribue pas aux sortes), `TU-MOD-63` (l'adresse d'un espace désactivé),
+  `TU-MOD-68` (la recherche ne mène pas dans un espace désactivé, A69).
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Décocher « Activer Carnet ». | Carnet disparaît de la navigation et de « Où en sont les choses » ; sa ligne reste dans les Réglages, grisée, son nom toujours modifiable. |
 | 2 | Ouvrir l'adresse `#carnet`. | L'accueil s'affiche, avec « « Carnet » est désactivé : Réglages → Espaces pour le rouvrir. » ; recharger la page ne le répète pas deux fois. |
-| 3 | Recocher « Activer Carnet ». | Carnet revient avec sa note. |
+| 3 | Carnet toujours désactivé : Chercher `héron`, puis ⌘K (Ctrl+K) `héron`. | Chercher ne montre aucun lien vers Carnet et dit « Aussi 1 résultat dans « Carnet », désactivé : Réglages → Espaces pour le rouvrir. » ; la palette ne propose pas la note (A69). |
+| 4 | Recocher « Activer Carnet ». | Carnet revient avec sa note ; Chercher `héron` la trouve et « ouvrir » y mène. |
 
 - **État final attendu** : Carnet actif, note intacte.
 - **Nettoyage** : aucun.
