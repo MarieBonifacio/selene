@@ -1690,3 +1690,13 @@ test('abandonner une tâche : gardée sous « Abandonnées », hors des listes, 
   app.pickTask('chantier');
   assert.match(app.nodes.get('#toast').textContent + app.nodes.get('#toast').innerHTML, /Rien à tirer/, 'le tirage au sort ne la tire pas');
 });
+
+test('un carnet vide dit qu’une note ne se corrige pas, et où écrire un texte qui change ; la boîte garde sa phrase (TU-MOD-82)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  d.modules.carnet = { type: 'notes', label: 'Carnet', config: { inbox: false }, entries: [] }; d.config.modules.push({ id: 'carnet', on: true });
+  const carnet = ['carnet', d.modules.carnet], boite = ['inbox', d.modules.inbox];
+  boite[1].entries = [];
+  assert.match(app.TYPE_UI.notes.view(carnet[0]), /Une note ne se corrige pas : elle se garde ou s’efface\. Pour un texte qui change, les fragments d’un espace d’écriture gardent leurs versions\./);
+  assert.match(app.TYPE_UI.notes.view(boite[0]), /Le silence d'une clairière/, 'la boîte vide garde sa phrase');
+});

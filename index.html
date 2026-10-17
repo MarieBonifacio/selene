@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-roVpVOo1rsjsivStTiwvQhRLIaCsqB2PyVPZQrK61Aw=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-JBIy1iMzYf9voQuFJobszwPOTHRpeM5p5aqjc7HBEWs=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -767,7 +767,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "eda32a1fb7";
+const SELENE_BUILD = "df6b675050";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -2057,6 +2057,7 @@ var __selene = (() => {
     "Absent cette fois, fréquent avant": "Absent this time, frequent before",
     "{0} avant": "{0} before",
     // features/digest.js
+    "{0} tâche en retard": { one: "{0} task overdue", other: "{0} tasks overdue" },
     "Échéance : {0}": "Deadline: {0}",
     "Selene : {0} chose ce jour": { one: "Selene: {0} thing that day", other: "Selene: {0} things that day" },
     "Selene : {0} chose aujourd'hui": { one: "Selene: {0} thing today", other: "Selene: {0} things today" },
@@ -2603,6 +2604,7 @@ var __selene = (() => {
     "Ranger : {0}": "File: {0}",
     "Garder comme source": "Keep as a source",
     "Vide. Le silence d'une clairière, ou celui d'un cerveau.": "Empty. The silence of a clearing, or of a brain.",
+    "Rien pour l'instant. Une note ne se corrige pas : elle se garde ou s’efface. Pour un texte qui change, les fragments d’un espace d’écriture gardent leurs versions.": "Nothing yet. A note can't be edited: you keep it or delete it. For a text that changes, the fragments of a writing space keep their versions.",
     "Boîte de réception : reçoit la capture rapide de l'accueil": "Inbox: receives the quick capture from Today",
     "Description": "Description",
     "Une phrase sous le titre": "A sentence under the title",
@@ -8635,7 +8637,7 @@ ${body}` : title, cut = false;
     ${sourcesModule() && (findDoi(x.text) || findUrl(x.text)) ? `<div class="row" style="margin-top:6px"><button class="btn sm" data-act="note-source">${tr`Garder comme source`}</button></div>` : ""}
     ${targets.length ? `<div class="row${c.inbox ? "" : " ra"}" style="margin-top:6px">${targets.map((k) => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
     ${margHTML(id, x, x.text)}<button class="btn ghost sm ra" data-act="note-del">${tr`suppr.`}</button></li>`;
-      }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? tr`Vide. Le silence d'une clairière, ou celui d'un cerveau.` : tr`Rien pour l'instant.`}</li>`}</ul></div>`;
+      }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? tr`Vide. Le silence d'une clairière, ou celui d'un cerveau.` : tr`Rien pour l'instant. Une note ne se corrige pas : elle se garde ou s’efface. Pour un texte qui change, les fragments d’un espace d’écriture gardent leurs versions.`}</li>`}</ul></div>`;
     },
     settings: (id, { config: c }) => `<label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="notes-inbox" data-mod="${esc(id)}" ${c.inbox ? "checked" : ""}>${tr`Boîte de réception : reçoit la capture rapide de l'accueil`}</label>
     <div class="field-row" style="margin-top:8px"><label>${tr`Description`}<input data-set-mod="${esc(id)}.description" value="${esc(c.description)}" placeholder="${tr`Une phrase sous le titre`}"></label><label>${tr`Texte d'invite`}<input data-set-mod="${esc(id)}.placeholder" value="${esc(c.placeholder)}" required></label></div>
@@ -9464,6 +9466,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     for (const [id, t] of allTasks()) if (enabled(id) && taskOpen(t) && !t.wait && t.due === day) out.push(tr`Échéance : ${t.title}`);
     return out;
   }
+  var lateOn = (day) => allTasks().filter(([id, t]) => enabled(id) && taskOpen(t) && !t.wait && t.due && t.due < day).length;
   function digestPlan(nowMs = Date.now(), days = 7) {
     const { on, at } = notifyConf();
     if (!on) return [];
@@ -9475,11 +9478,12 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       if (d.getTime() <= nowMs) continue;
       const items = dayDigest(iso(d));
       if (!items.length) continue;
+      const late = lateOn(iso(d));
       plan.push({
         id: 100 + i,
         at: d.toISOString(),
         title: i ? trn(items.length, "Selene : {0} chose ce jour", "Selene : {0} choses ce jour") : trn(items.length, "Selene : {0} chose aujourd'hui", "Selene : {0} choses aujourd'hui"),
-        body: items.slice(0, 3).join(" · ") + (items.length > 3 ? " · " + tr`et ${items.length - 3} de plus` : "")
+        body: items.slice(0, 3).join(" · ") + (items.length > 3 ? " · " + tr`et ${items.length - 3} de plus` : "") + (late ? " · " + trn(late, "{0} tâche en retard", "{0} tâches en retard") : "")
       });
     }
     return plan;

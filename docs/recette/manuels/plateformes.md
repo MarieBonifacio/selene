@@ -146,12 +146,14 @@ Identifiants retirés : aucun.
 - **Fonctionnalité et règle** : Réglages → « Notifications » (seulement dans les apps mobiles) : une notification par
   jour, à l'heure choisie, pour les sept jours qui viennent, avec ce qui demande un geste (rappels dus, échéances) ; en
   texte brut ; jamais dans le passé ; silence les jours sans rien ; programmée par le téléphone, elle sonne app fermée.
+  Les tâches en retard (ni en attente, ni abandonnées) y sont comptées en fin de texte, sans jamais faire sonner un jour à
+  elles seules (audit du 12 octobre 2026, section C).
 - **Objectif, risque vérifié** : une notification qui ne sonne pas app fermée ; du HTML brut dans la notification ;
-  une notification les jours sans rien.
+  une notification les jours sans rien ; un retard qui ne fait jamais signe, ou qui sonne chaque jour comme un reproche.
 - **Priorité** : P3 · **Plateformes** : AND, IOS
 - **Préconditions** : app connectée au compte A (jeu d'essai) ; une tâche `Rendre le livre` à échéance `J+1` dans Chantier.
 - **Données** : heure = maintenant + 3 minutes.
-- **Automatisés associés** : `TN-natif`, `TU-NAT-08`, `TU-APP-04`, `TU-PLT-19`
+- **Automatisés associés** : `TN-natif`, `TU-NAT-08`, `TU-APP-04`, `TU-APP-07`, `TU-PLT-19`
 - **Source** : [DOC] [android.md](../../android.md#ce-que-lapp-ajoute-à-la-pwa), [ios.md](../../ios.md#ce-que-lapp-ajoute) ;
   [CODE] `digestPlan` (`src/app/features/digest.js`) ; [TEST] `TU-APP-04`.
 
@@ -159,7 +161,7 @@ Identifiants retirés : aucun.
 |---|---|---|
 | 1 | Réglages → « Notifications ». (Vérifier aussi sur la version web : la section n'existe pas.) | « Sur cet appareil : chaque matin, ce qui t'attend (rappels, échéances), programmé par le téléphone lui-même, même app fermée. Rien ne part sur un serveur. Les jours sans rien, silence. », case « Résumé du matin », champ « Heure » (08:30 par défaut). |
 | 2 | Cocher « Résumé du matin » ; accepter la demande d'autorisation du système. | Case cochée. |
-| 3 | Régler l'heure sur les données ; fermer l'app ; attendre. | À l'heure dite, une notification « Selene : N choses aujourd'hui » (N ≥ 1) dont le texte cite au plus trois éléments séparés par « · », dont le rappel Plantes ; aucun chevron ni entité HTML. |
+| 3 | Régler l'heure sur les données ; fermer l'app ; attendre. | À l'heure dite, une notification « Selene : N choses aujourd'hui » (N ≥ 1) dont le texte cite au plus trois éléments séparés par « · », dont le rappel Plantes, et finit par « · 1 tâche en retard » (« Repeindre la rambarde du balcon ») ; aucun chevron ni entité HTML. |
 | 4 | Remettre 08:30 ; le lendemain à 08:30 (ou en avançant l'horloge du téléphone d'un jour). | Une notification « Selene : N choses ce jour » qui cite « Échéance : Rendre le livre ». |
 | 5 | Décocher « Résumé du matin ». | Plus aucune notification les jours suivants. |
 

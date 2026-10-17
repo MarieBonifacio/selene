@@ -432,7 +432,7 @@ Identifiants retirés : aucun.
 - **Priorité** : P3 · **Plateformes** : Web, Mob
 - **Préconditions** : chemin « sans compte » dans un profil neuf, sans import.
 - **Données** : aucune.
-- **Automatisés associés** : `TN-budget`, `TN-notes`, `TN-compte-neuf`, `TN-recherche-minuteur`, `TU-MOD-77`
+- **Automatisés associés** : `TN-budget`, `TN-notes`, `TN-compte-neuf`, `TN-recherche-minuteur`, `TU-MOD-77`, `TU-MOD-82`
 - **Source** : [CODE] les messages `class="empty"` des modules ; [TEST] `tests/browser/budget.js`, `tests/browser/notes.js`, `TU-MOD-77`.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -441,7 +441,7 @@ Identifiants retirés : aucun.
 | 2 | Accueil. | « Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens. » |
 | 3 | Créer un espace depuis le modèle « Tâches » ; l'ouvrir. | « Aujourd'hui » : « Coche l'étoile d'une tâche. » ; la liste : « Plus rien ici. Soit c'est fini, soit tu as filtré trop fort. » |
 | 4 | Créer un espace depuis le modèle « Budget » ; l'ouvrir. | « Aucune opération ce mois-ci. Suspect. » |
-| 5 | Créer un espace depuis le modèle « Carnet » ; l'ouvrir. | « Rien pour l'instant. » |
+| 5 | Créer un espace depuis le modèle « Carnet » ; l'ouvrir. | « Rien pour l'instant. Une note ne se corrige pas : elle se garde ou s’efface. Pour un texte qui change, les fragments d’un espace d’écriture gardent leurs versions. » |
 | 6 | Chercher `zzz-introuvable`. | « Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire. » |
 | 7 | Créer un espace depuis le modèle « Tableau de production » (colonnes) ; l'ouvrir. | Au-dessus des colonnes, visible : « Rien encore : « Nouvelle idée », en haut, pour commencer. » ; en liste, le même message, jamais « Rien dans ce filtre. » sans filtre. |
 

@@ -341,6 +341,7 @@ export default {
   "Absent cette fois, fréquent avant": "Absent this time, frequent before",
   "{0} avant": "{0} before",
   // features/digest.js
+  "{0} tâche en retard": { one: "{0} task overdue", other: "{0} tasks overdue" },
   "Échéance : {0}": "Deadline: {0}",
   "Selene : {0} chose ce jour": { one: "Selene: {0} thing that day", other: "Selene: {0} things that day" },
   "Selene : {0} chose aujourd'hui": { one: "Selene: {0} thing today", other: "Selene: {0} things today" },
@@ -891,6 +892,7 @@ export default {
   "Ranger : {0}": "File: {0}",
   "Garder comme source": "Keep as a source",
   "Vide. Le silence d'une clairière, ou celui d'un cerveau.": "Empty. The silence of a clearing, or of a brain.",
+  "Rien pour l'instant. Une note ne se corrige pas : elle se garde ou s’efface. Pour un texte qui change, les fragments d’un espace d’écriture gardent leurs versions.": "Nothing yet. A note can't be edited: you keep it or delete it. For a text that changes, the fragments of a writing space keep their versions.",
   "Boîte de réception : reçoit la capture rapide de l'accueil": "Inbox: receives the quick capture from Today",
   "Description": "Description",
   "Une phrase sous le titre": "A sentence under the title",

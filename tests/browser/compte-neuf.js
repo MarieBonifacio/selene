@@ -65,7 +65,7 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
   await vue('reglages'); await p.evaluate(() => document.querySelectorAll('details').forEach(d => d.open = true));
   await p.selectOption('#newModType', 'tpl:carnet'); await p.click('[data-act="mod-add"]'); await p.waitForTimeout(200);
   const carnet = await p.evaluate(() => { const m = JSON.parse(localStorage.getItem('selene-site-v1')).modules; return Object.keys(m).find(x => m[x].type === 'notes' && !m[x].config.inbox); });
-  ok(!!carnet && (await vue(carnet)).includes("Rien pour l'instant."), 'un Carnet neuf : « Rien pour l’instant. »');
+  ok(!!carnet && (await vue(carnet)).includes("Rien pour l'instant. Une note ne se corrige pas : elle se garde ou s’efface."), 'un Carnet neuf : « Rien pour l’instant. », et qu’une note ne se corrige pas');
   await p.reload(); await p.waitForTimeout(300);
   ok(!(await main()).includes('Composer ton espace'), 'le bloc ne revient pas au rechargement');
 
