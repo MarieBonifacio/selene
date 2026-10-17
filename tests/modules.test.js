@@ -505,7 +505,7 @@ test('writing: a projected end date from the last 30 days, and honest when there
 test('home: a due reminder can be done, a session logged with the last duration, due items surface', () => {
   const app = launch(new Map(), { claude: { use: async () => null } });
   const d = app.S();
-  d.modules.kundalini.config.start = '2026-01-05';
+  Object.assign(d.modules.kundalini.config, { start: '2026-01-05', weeks: 520 }); // en cours : fini, il ne relancerait plus (A71)
   app.addJournalEntry(d.modules.kundalini, { date: '2026-01-05', value: 25 }, 'k1', '2026-01-05');
   app.saveCollectionItem(d.modules.moth, { title: 'Le lichen', due: '2020-01-01', status: 'Prêt' }, 'p1');
   app.location.hash = '#accueil'; app.render();
@@ -1411,4 +1411,21 @@ test('chercher ne mène pas dans un espace désactivé : il le dit, et dit où l
   assert.doesNotMatch(html, /href="#ecriture/, 'aucun lien vers l\'espace fermé');
   assert.match(html, /Aussi 1 résultat dans « Écriture », désactivé/, 'le résultat caché est compté et nommé');
   assert.match(html, /href="#reglages"/, 'avec le chemin pour le rouvrir');
+});
+
+test('un programme dont la durée est écoulée ne relance plus chaque jour : il dit qu’il est terminé (A71)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), id = app.slugId('Course', d.config.modules.map(m => m.id));
+  app.createModuleInstance(d.modules, 'programme', 'Course', id);
+  const inst = d.modules[id];
+  Object.assign(inst.config, { start: '2020-01-06', weeks: 4, perWeek: 3, unitLabel: 'min' }); // fini le 2 février 2020
+  app.addJournalEntry(inst, { date: '2020-01-07', value: 20 }, 's1', '2020-01-07');
+  const T = app.TYPE_UI.programme;
+  assert.deepEqual([...T.alerts(id, inst, today())], [], 'plus de « Pas encore de séance » une fois la durée passée');
+  assert.match(T.summary(id, inst), /^Terminé le 2 févr\. 2020, 1 séance/, 'la ligne de l’accueil le dit, avec sa date');
+  const view = T.view(id);
+  assert.match(view, /Terminé le 2 févr\. 2020/, 'l’espace le dit');
+  assert.match(view, /data-act="goto-groups"/, 'et dit où le prolonger');
+  inst.config.weeks = 400; // prolongé : il reprend
+  assert.equal(T.alerts(id, inst, today()).length, 1, 'prolongé, l’alerte du jour revient');
 });

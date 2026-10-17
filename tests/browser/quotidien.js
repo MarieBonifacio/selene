@@ -1,7 +1,7 @@
 /* Scénario de navigateur : quotidien. Lancé par tests/browser/run.js. */
 const { engine, ouvrir, BASE, launchOptions, fixture, donnee, check } = require('./helpers');
 const demo = JSON.parse(fixture());
-demo.modules.kundalini.config.start = '2026-01-05';
+Object.assign(demo.modules.kundalini.config, { start: '2026-01-05', weeks: 520 }); // en cours : fini, il ne relancerait plus (A71)
 demo.modules.kundalini.entries = [{ id: 'k1', date: '2026-01-05', value: 25, note: '' }];
 demo.modules.moth.entries = [{ id: 'p1', title: 'Le lichen', subtitle: '', tag: 'Nigredo', due: '2020-01-01', text: '', status: 'Prêt' }];
 (async () => {

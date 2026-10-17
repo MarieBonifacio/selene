@@ -876,6 +876,8 @@ export default {
   "{0} note": { one: "{0} note", other: "{0} notes" },
   "Rangé dans {0}.": "Filed in {0}.",
   // modules/programme.js
+  "Terminé le {0}": "Finished on {0}",
+  "Pour continuer, allonge sa durée dans {0}.": "To keep going, extend its length in {0}.",
   "Semaine {0}": "Week {0}",
   "{0} sur {1} séances": "{0} of {1} sessions",
   "Par semaine": "By week",
