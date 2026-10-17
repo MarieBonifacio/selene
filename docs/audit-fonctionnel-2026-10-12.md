@@ -18,6 +18,37 @@ Conventions :
   - « téléphone » : émulation d'un iPhone 13 (390 × 844, tactile, échelle 3). **Une émulation ne remplace pas un vrai
     iPhone.**
 
+## Suites (17 octobre 2026)
+
+Le lot 1 de l'[ordre de travail](#f-ordre-de-travail-recommandé), « corriger les dysfonctionnements », est fait sur la
+branche `claude/lucid-hawking-t99f2a`. Il n'est ni fusionné ni déployé. Chaque correctif a :
+- un test qui échouait avant lui ;
+- un cas de recette mis à jour ;
+- une ligne d'anomalie dans [perimetre.md](recette/perimetre.md#anomalies-et-observations).
+
+| Anomalie | Constat de l'audit | Correctif | Tests |
+|---|---|---|---|
+| A67 | Couleur d'accent imperceptible, aperçu infidèle, Albedo ≈ gris, Citrinitas à 4,41:1 | Plan A.6, étapes 1 à 3, sans thème complet. Albedo `#3f5554` / `#d3dfcc`, Citrinitas clair `#806017`. Les cases rondes passent à 21 × 21 (une règle `width:auto` les écrasait). Pixels qui changent sur les Réglages : 0,19 → 0,59 % (ordinateur), 0,72 → 2,24 % (téléphone) | `TU-PAL-01` à `05`, `TN-fenetre` |
+| A68 | Journal des Rappels : identifiant au lieu du nom | Libellé, « Observation », « Geste supprimé » ; bulle « Annuler » aussi | `TU-MOD-67` |
+| A69 | Chercher mène dans un espace désactivé | Seuls les espaces ouverts, plus une ligne « Aussi N résultats dans « … », désactivé » | `TU-MOD-68` |
+| A70 | Téléphone : ni Dehors ni palette | « Nouveautés » et « Aller à… » dans la feuille Espaces | `TN-navigation`, `TN-dehors` |
+| A71 | Programme sans fin, relance quotidienne | « Terminé le … », plus d'alerte, « Pour continuer, allonge sa durée dans Réglages » ; jeu d'essai à 52 semaines | `TU-MOD-69` |
+| A72 | Radar : « il faut ton passeur (… connectée) » à une personne connectée ; commentaires « CORS ouvert » | Trois raisons distinguées ; commentaires alignés sur `connexions.md` | `TN-radar` |
+
+Écarts avec le plan A.6 et A.7 :
+- **NAV-010 n'a pas d'étape « 1 bis »** : le cahier à cocher n'accepte que des étapes numérotées. La comparaison des
+  pastilles est entrée dans l'étape 1 ; le rechargement est l'étape 5.
+- **Les candidats calculés « olive » de Citrinitas n'ont pas été appliqués** : Citrinitas et Rubedo restent voisines
+  des couleurs d'état. C'est une décision ouverte au [backlog](recette/backlog.md#à-décider).
+- **Le message « Passeur non déployé (voir docs/passeur.md) » est resté tel quel** : il ne paraît que si le serveur est
+  mal installé, c'est-à-dire pour l'opératrice.
+
+État au dernier commit :
+- `npm run check` vert (341 tests Node, i18n à 100 %, Deno, cahier sans écart) ;
+- les 84 scénarios navigateur verts sous Chromium ;
+- **WebKit et Firefox non rejoués ici** : la CI le fera sur la PR ;
+- **vrai iPhone, toujours non vérifié**.
+
 ---
 
 ## A. Diagnostic des couleurs
