@@ -5,7 +5,7 @@ import { SHEETS, TYPE_UI, VIEWS } from "../registry.js";
 import { $, esc, pageSize, toast } from "../lib/dom.js";
 import { applyLang, tr, trp, uiLocale } from "../i18n/index.js";
 import { todayISO } from "../lib/format.js";
-import { bridgeBar, bridgeOpen, setBridgeOpen } from "../features/bridge.js";
+import { bridgeBar, bridgeLog, bridgeOpen, setBridgeOpen } from "../features/bridge.js";
 import { dehorsOn } from "../features/dehors.js";
 import { notifySoon } from "../features/digest.js";
 import { widgetSoon } from "../features/widget.js";
@@ -153,7 +153,7 @@ function renderNow() {
   // Pas de pont dans un espace sensible (ADR 27) : son texte partirait dans le document synchronisé, même pour un suivi
   // gardé sur l'appareil seulement.
   const bridgeable = inst && !TYPE_UI[inst.type].sensitive, bridging = bridgeable && (inst.resume || bridgeOpen === view);
-  $("#main").innerHTML = back + (inst ? `<div class="view ${tintOf(view)}">${plateHTML(view, bridging || !bridgeable ? "" : `<button class="btn ghost sm" data-act="bridge-edit" data-mod="${esc(view)}">${tr`Je m'arrête ici…`}</button>`)}${bridging ? bridgeBar(view, inst) : ""}${TYPE_UI[inst.type].view(view)}</div>` : VIEWS[view]());
+  $("#main").innerHTML = back + (inst ? `<div class="view ${tintOf(view)}">${plateHTML(view, bridging || !bridgeable ? "" : `<button class="btn ghost sm" data-act="bridge-edit" data-mod="${esc(view)}">${tr`Je m'arrête ici…`}</button>`)}${bridging ? bridgeBar(view, inst) : ""}${bridgeable ? bridgeLog(inst) : ""}${TYPE_UI[inst.type].view(view)}</div>` : VIEWS[view]());
   // La feuille « régler » ouverte se redessine aussi, sauf pendant une frappe dans l'un de ses champs.
   const fa = document.activeElement, typingSheet = fa && fa.closest && fa.closest("#sheet") && (fa.tagName === "TEXTAREA" || (fa.tagName === "INPUT" && !["checkbox", "radio"].includes(fa.type)));
   if (["module", "specimen", "vasculum"].includes(sheetKind) && $("#sheet").open && !typingSheet) $("#sheetBody").innerHTML = SHEETS[sheetKind](sheetArg);

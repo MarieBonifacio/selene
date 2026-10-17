@@ -166,8 +166,8 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : `réécrire l'ouverture du chapitre 2`.
-- **Automatisés associés** : `TU-MOD-41`, `TN-pensee`
-- **Source** : [DOC] README, « Pont de reprise » ; [TEST] `TU-MOD-41`, `tests/browser/pensee.js`.
+- **Automatisés associés** : `TU-MOD-41`, `TU-MOD-75`, `TN-pensee`
+- **Source** : [DOC] README, « Pont de reprise » ; [TEST] `TU-MOD-41`, `TU-MOD-75`, `tests/browser/pensee.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -176,9 +176,10 @@ Identifiants retirés : aucun.
 | 3 | Ouvrir l'accueil. | Sous la ligne d'Écriture : « ↳ réécrire l'ouverture du chapitre 2 · aujourd'hui ». |
 | 4 | Dans Écriture, « fait ». | « Repris. Le pont est levé. » ; le pont disparaît. |
 | 5 | « Annuler » dans le message. | Le pont revient. |
+| 6 | « Je m'arrête ici… » de nouveau, un autre geste, « Garder » ; puis « fait » ; déplier « Fil des reprises ». | Sans pont en cours, « Fil des reprises (2) » reste sous la planche : le plus récent d'abord, chacun « noté le …, remplacé le … » ou « … repris le … ». |
 
-- **État final attendu** : pont présent.
-- **Nettoyage** : « fait ».
+- **État final attendu** : aucun pont en cours ; un fil de deux reprises.
+- **Nettoyage** : aucun (le fil garde trente reprises au plus).
 
 ---
 

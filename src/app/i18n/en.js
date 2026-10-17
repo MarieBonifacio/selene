@@ -174,6 +174,9 @@ export default {
   "Clé non effacée : {0}": "Key not erased: {0}",
 
   // features/bridge.js
+  "Fil des reprises ({0})": "Trail of resumptions ({0})",
+  "noté le {0}, repris le {1}": "noted {0}, resumed {1}",
+  "noté le {0}, remplacé le {1}": "noted {0}, replaced {1}",
   "Le prochain geste, pour la prochaine fois…": "The next step, for next time…",
   "Prochain geste": "Next step",
   "plus tard": "later",

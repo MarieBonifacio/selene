@@ -496,6 +496,7 @@ select.ep.on{color:var(--accent);border-color:var(--rule)}
 .bridge.off{justify-content:flex-end;margin-bottom:4px}
 .bridge input{flex:1 1 240px}
 .bridge.stale,.resume.stale{opacity:.6}
+.bridge-log{margin:-8px 0 16px;font-size:.9rem}.bridge-log summary{color:var(--muted);cursor:pointer}.bridge-log li{padding:2px 0}
 .over .resume{display:block;color:var(--ink);font-size:.88rem;margin-top:2px}
 
 /* overview rows */
@@ -731,7 +732,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "09e54cda85";
+const SELENE_BUILD = "fe3d7e746c";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1268,6 +1269,7 @@ var __selene = (() => {
     bilanOffset: () => bilanOffset,
     board: () => board,
     bridgeBar: () => bridgeBar,
+    bridgeLog: () => bridgeLog,
     bridgeOpen: () => bridgeOpen,
     bridgeSave: () => bridgeSave,
     bridgeStale: () => bridgeStale,
@@ -1844,6 +1846,9 @@ var __selene = (() => {
     "Clé effacée du serveur.": "Key erased from the server.",
     "Clé non effacée : {0}": "Key not erased: {0}",
     // features/bridge.js
+    "Fil des reprises ({0})": "Trail of resumptions ({0})",
+    "noté le {0}, repris le {1}": "noted {0}, resumed {1}",
+    "noté le {0}, remplacé le {1}": "noted {0}, replaced {1}",
     "Le prochain geste, pour la prochaine fois…": "The next step, for next time…",
     "Prochain geste": "Next step",
     "plus tard": "later",
@@ -5642,6 +5647,11 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     if (bridgeOpen === id) return `<div class="bridge"><input id="bridgeIn" data-mod="${m}" maxlength="200" value="${esc(r ? r.text : "")}" placeholder="${tr`Le prochain geste, pour la prochaine fois…`}" aria-label="${tr`Prochain geste`}"><button class="btn sm acc" data-act="bridge-save" data-mod="${m}">${tr`Garder`}</button><button class="btn ghost sm" data-act="bridge-close">${tr`plus tard`}</button></div>`;
     if (r) return `<div class="bridge on ${bridgeStale(r) ? "stale" : ""}"><span>↳ <b>${tr`Reprendre :`}</b> ${esc(r.text)} <span class="hint">· ${tr`noté ${ago(r.at)}`}</span></span><span class="acts"><button class="btn ghost sm" data-act="bridge-done" data-mod="${m}">${tr`fait`}</button><button class="btn ghost sm" data-act="bridge-edit" data-mod="${m}">${tr`modifier`}</button></span></div>`;
     return `<div class="bridge off"><button class="btn ghost sm" data-act="bridge-edit" data-mod="${m}">${tr`Je m'arrête ici…`}</button></div>`;
+  }
+  function bridgeLog(inst) {
+    const log = [...inst.resumeLog || []].reverse();
+    if (!log.length) return "";
+    return `<details class="bridge-log"><summary>${tr`Fil des reprises (${log.length})`}</summary><ol class="plain">${log.map((x) => `<li>${tr`« ${esc(x.text)} »`} <span class="hint">${x.how === "repris" ? tr`noté le ${fmt(x.at)}, repris le ${fmt(x.end)}` : tr`noté le ${fmt(x.at)}, remplacé le ${fmt(x.end)}`}</span></li>`).join("")}</ol></details>`;
   }
   function bridgeSave(id) {
     const inst = S().modules[id], inp = $("#bridgeIn");
@@ -13722,7 +13732,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     }
     const back = backTo && backTo.to === view ? `<a class="back" href="#${esc(backTo.from)}">‹ ${esc(backTo.label)}</a>` : "";
     const bridgeable = inst && !TYPE_UI[inst.type].sensitive, bridging = bridgeable && (inst.resume || bridgeOpen === view);
-    $("#main").innerHTML = back + (inst ? `<div class="view ${tintOf(view)}">${plateHTML(view, bridging || !bridgeable ? "" : `<button class="btn ghost sm" data-act="bridge-edit" data-mod="${esc(view)}">${tr`Je m'arrête ici…`}</button>`)}${bridging ? bridgeBar(view, inst) : ""}${TYPE_UI[inst.type].view(view)}</div>` : VIEWS[view]());
+    $("#main").innerHTML = back + (inst ? `<div class="view ${tintOf(view)}">${plateHTML(view, bridging || !bridgeable ? "" : `<button class="btn ghost sm" data-act="bridge-edit" data-mod="${esc(view)}">${tr`Je m'arrête ici…`}</button>`)}${bridging ? bridgeBar(view, inst) : ""}${bridgeable ? bridgeLog(inst) : ""}${TYPE_UI[inst.type].view(view)}</div>` : VIEWS[view]());
     const fa = document.activeElement, typingSheet = fa && fa.closest && fa.closest("#sheet") && (fa.tagName === "TEXTAREA" || fa.tagName === "INPUT" && !["checkbox", "radio"].includes(fa.type));
     if (["module", "specimen", "vasculum"].includes(sheetKind) && $("#sheet").open && !typingSheet) $("#sheetBody").innerHTML = SHEETS[sheetKind](sheetArg);
     const h2 = $("#main h2"), here = h2 && String(h2.textContent || "").replace(/\s+/g, " ").trim();

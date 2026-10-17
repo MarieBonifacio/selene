@@ -1521,3 +1521,18 @@ test('les historiques ne s’arrêtent plus : tâches faites, journal des Rappel
     assert.equal(count(html, re), first + rest, `${mod} : tout se déroule`);
   }
 });
+
+test('le fil des reprises se relit : ce qu’on comptait faire, quand, et ce qu’il en est advenu', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const c = app.S().modules.chantier;
+  app.setResume(c, 'Poncer la rambarde', '2026-09-01');
+  app.setResume(c, 'Acheter la sous-couche', '2026-09-05'); // remplacé
+  app.setResume(c, '', '2026-09-20'); // repris : plus de pont en cours
+  app.location.hash = '#chantier'; app.render();
+  const html = app.nodes.get('#main').innerHTML;
+  assert.match(html, /<details class="bridge-log"><summary>Fil des reprises \(2\)<\/summary>/, 'même sans pont en cours, le fil est là, replié');
+  const i = html.indexOf('Acheter la sous-couche'), j = html.indexOf('Poncer la rambarde');
+  assert.ok(i > 0 && j > i, 'le plus récent d’abord');
+  assert.match(html, /« Acheter la sous-couche »[^<]*<span class="hint">[^<]*repris le 20 sept\./, 'repris, et quand');
+  assert.match(html, /« Poncer la rambarde »[^<]*<span class="hint">[^<]*remplacé le 5 sept\./, 'remplacé, et quand');
+});
