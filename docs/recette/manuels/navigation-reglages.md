@@ -11,7 +11,7 @@ treize espaces, dont deux domaines (« Maison », « Création »), des fragment
 |---|---|---|---|
 | [NAV-001](#nav-001) | Téléphone : barre basse, feuille Espaces, voile qui ferme | P1 | Mob, AND, IOS |
 | [NAV-002](#nav-002) | Ordinateur : barre latérale, onglet actif annoncé | P2 | Web, WIN, ART |
-| [NAV-003](#nav-003) | Palette de commandes (⌘K ou Ctrl+K) | P2 | Web, WIN, ART |
+| [NAV-003](#nav-003) | Palette de commandes (⌘K ou Ctrl+K) | P2 | Web, Mob, WIN, ART |
 | [NAV-004](#nav-004) | Chercher : sans accents ni casse, tous les mots, surlignage, touche « / » | P1 | Web, Mob, AND, IOS, WIN, ART |
 | [NAV-005](#nav-005) | Chercher : facettes d'espace, de période et de statut | P2 | Web, Mob |
 | [NAV-006](#nav-006) | « ouvrir » un résultat mène à l'entrée, même lointaine ; retour à la recherche | P2 | Web, Mob |
@@ -80,10 +80,10 @@ Identifiants retirés : aucun.
 ### NAV-003 — Palette de commandes (⌘K ou Ctrl+K)
 
 - **Fonctionnalité et règle** : la palette va à un espace, lance le minuteur, garde une phrase dans la boîte, retrouve un
-  texte et y mène.
-- **Objectif, risque vérifié** : raccourci inopérant ; une phrase gardée au mauvais endroit.
-- **Priorité** : P2 · **Plateformes** : Web, WIN, ART
-- **Préconditions** : jeu d'essai ; ordinateur.
+  texte et y mène. Sur téléphone, sans clavier, « Aller à… » de la feuille Espaces l'ouvre (A70).
+- **Objectif, risque vérifié** : raccourci inopérant ; une phrase gardée au mauvais endroit ; palette inatteignable sans clavier.
+- **Priorité** : P2 · **Plateformes** : Web, Mob, WIN, ART
+- **Préconditions** : jeu d'essai ; ordinateur (étapes 1 à 6), téléphone (étape 7).
 - **Données** : `plant`, `phrase NAV-003 gardée`, `hésite`.
 - **Automatisés associés** : `TN-navigation`
 - **Source** : [DOC] README, « Palette » ; [TEST] `tests/browser/navigation.js`.
@@ -96,6 +96,7 @@ Identifiants retirés : aucun.
 | 4 | Rouvrir, taper `hésite`, choisir le texte trouvé (fragment d'Écriture). | L'Écriture s'ouvre sur le fragment « La lisière n'est pas une frontière, c'est un lieu où l'on hésite. », surligné. |
 | 5 | Rouvrir, choisir « Lancer le minuteur (15 min) ». | Le minuteur démarre (temps qui reste et « Pause »). |
 | 6 | Rouvrir, taper `zzzz`. | Deux lignes seulement : « Garder « zzzz » dans Boîte » et « Chercher « zzzz » partout » (C12) ; Échap ferme la palette. |
+| 7 | Sur téléphone : « Espaces » dans la barre basse, puis « Aller à… » sous « Système ». | La feuille se ferme, la palette s'ouvre, son champ prêt (A70). |
 
 - **État final attendu** : une phrase de plus dans la boîte ; minuteur lancé.
 - **Nettoyage** : supprimer la phrase ; remettre le minuteur à zéro.

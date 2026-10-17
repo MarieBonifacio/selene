@@ -1555,6 +1555,7 @@ export default {
   "Confirmer": "Confirm",
   "Je m'arrête ici…": "I'm stopping here…",
   // shell/sheets.js
+  "un espace, une action, un texte": "a space, an action, a text",
   "Récents": "Recent",
   "Système": "System",
   "Ce module n'existe plus.": "This module no longer exists.",

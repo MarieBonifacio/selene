@@ -353,7 +353,7 @@ Identifiants retirés : aucun.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Navigation → « Nouveautés · Dehors ». | « Aucun flux suivi… » et le champ « L'adresse d'un site ou d'un flux… ». |
+| 1 | Navigation → « Nouveautés · Dehors » (sur téléphone : « Espaces » dans la barre basse, puis « Nouveautés » sous « Système », A70). | « Aucun flux suivi… » et le champ « L'adresse d'un site ou d'un flux… ». |
 | 2 | Coller l'adresse, choisir le projet, « Suivre ». | « Suivi : … » ; les éléments de la semaine écoulée, douze au plus, du plus récent au plus ancien (ou par raison de croisement), rangés sous le projet ; « Et N autres, qui attendront. » s'il y en a plus. |
 | 3 | « garder » sur un élément. | Il devient une source (provenance « Dehors ») et quitte Dehors. |
 | 4 | « vu » sur un autre. | Il disparaît. |

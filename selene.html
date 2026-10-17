@@ -197,6 +197,7 @@ dialog.sheet[open]{animation:sheet-in var(--t-3) var(--ease)}
 @media (max-width:640px){.carte-toggle{display:inline-flex;margin:6px 0}.carte:not(.show-sky) .carte-sky,.carte:not(.show-sky) .carte-legend{display:none}}
 .srow{display:flex;align-items:baseline;gap:12px;min-height:48px;padding:11px 2px;border-top:1px solid var(--rule);text-decoration:none}
 .srow b{font-family:"Cormorant Garamond",serif;font-size:1.3rem;font-weight:600}
+button.srow{width:100%;background:none;border:0;border-top:1px solid var(--rule);border-radius:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .srow .sub{color:var(--muted);font-size:.85rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .recents{display:flex;gap:8px;flex-wrap:wrap}.recents .btn{text-decoration:none}
 /* Palette de commandes (⌘K) : aller, agir, chercher. */
@@ -719,7 +720,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "74f2f12e13";
+const SELENE_BUILD = "c28fc5ab6c";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -3201,6 +3202,7 @@ var __selene = (() => {
     "Confirmer": "Confirm",
     "Je m'arrête ici…": "I'm stopping here…",
     // shell/sheets.js
+    "un espace, une action, un texte": "a space, an action, a text",
     "Récents": "Recent",
     "Système": "System",
     "Ce module n'existe plus.": "This module no longer exists.",
@@ -9944,7 +9946,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       return `<h2 id="sheetTitle">${tr`Espaces`}</h2>
       ${rec.length ? `<p class="grp">${tr`Récents`}</p><div class="recents">${rec.map((r) => `<a class="btn" href="#${esc(r.id)}">${esc(label(r.id))}</a>`).join("")}</div>` : ""}
       ${domains().map((d) => `<p class="grp">${esc(d.name || tr`Espaces`)}</p>${d.ids.map(row).join("")}`).join("")}
-      <p class="grp">${tr`Système`}</p>${enabled("assistant") ? `<a class="srow" href="#assistant"><b>${esc(label("assistant"))}</b></a>` : ""}<a class="srow" href="#reglages"><b>${tr`Réglages`}</b></a>`;
+      <p class="grp">${tr`Système`}</p>${dehorsOn() ? `<a class="srow" href="#dehors"><b>${tr`Nouveautés`}</b><span class="sub">${tr`Dehors`}</span></a>` : ""}${enabled("assistant") ? `<a class="srow" href="#assistant"><b>${esc(label("assistant"))}</b></a>` : ""}
+      <button type="button" class="srow" data-act="palette-open"><b>${tr`Aller à…`}</b><span class="sub">${tr`un espace, une action, un texte`}</span></button><a class="srow" href="#reglages"><b>${tr`Réglages`}</b></a>`;
     },
     module(mod) {
       if (!Object.hasOwn(S().modules, mod)) return `<p class="empty">${tr`Ce module n'existe plus.`}</p>`;
