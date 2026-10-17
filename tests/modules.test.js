@@ -1468,3 +1468,20 @@ test('passer un palier se défait : « Annuler » le rend en cours, critères co
   assert.equal(k.config.tiers[0].criteria[0].done, true, 'ses critères cochés le restent');
   assert.equal(app.tierCurrent(k.config).id, 't1');
 });
+
+test('un lien se retire depuis la fiche, des deux côtés ; une tension posée par erreur se referme ; « Annuler » le rend', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const box = app.S().modules.inbox;
+  app.addCapture(box.entries, 'Le seuil est un lieu', 'n1', '2026-09-01');
+  app.addCapture(box.entries, 'Le seuil n’est pas un lieu', 'n2', '2026-09-02');
+  app.addLink(box.entries.find(e => e.id === 'n1'), 'inbox/n2', 'contredit', 'l1', '2026-09-03');
+  assert.equal(app.openTensions().length, 1, 'une tension ouverte');
+  const fiche = app.SHEETS.specimen('inbox/n2'); // vue depuis l'entrée visée : « contredit par »
+  assert.match(fiche, /data-act="link-del" data-from="inbox\/n1" data-to="inbox\/n2" data-type="contredit"/, 'retirer, aussi depuis l’autre bout');
+  app.CLICK['link-del']({ dataset: { from: 'inbox/n1', to: 'inbox/n2', type: 'contredit' } });
+  assert.equal((box.entries.find(e => e.id === 'n1').links || []).length, 0, 'le lien est retiré');
+  assert.equal(app.openTensions().length, 0, 'la tension se referme sans synthèse');
+  assert.match(app.nodes.get('#toast').innerHTML, /Lien retiré\..*data-act="undo"/);
+  app.CLICK.undo();
+  assert.deepEqual([...box.entries.find(e => e.id === 'n1').links.map(l => l.id)], ['l1'], '« Annuler » le rend tel quel');
+});

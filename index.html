@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-WunKLYSQrHnBBDpaw8kp+1X81RTp0qza/IMdD+aXMU4=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-GSOJhjvmRvL/KJO7lNy/6niUASqkinIwlWq6CeiayQY=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -764,7 +764,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "ec722b6f15";
+const SELENE_BUILD = "045fbf9730";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -2060,6 +2060,7 @@ var __selene = (() => {
     "Chaque entrée porte sa date, son module et, s'il est indiqué, son statut épistémique : *observé* (ce qui s'est présenté), *hypothèse* (une conjecture à tester), *interprétation* (une lecture, un cadre appliqué), *inexpliqué* (laissé ouvert à dessein). Ne pas traiter une hypothèse comme un fait, ni combler un inexpliqué. Les renvois [n] désignent les entrées de ce dossier.": "Each entry carries its date, its module and, when given, its epistemic status: *observed* (what presented itself), *hypothesis* (a conjecture to test), *interpretation* (a reading, an applied frame), *unexplained* (left open on purpose). Do not treat a hypothesis as a fact, nor fill in an unexplained. References [n] point to the entries of this dossier.",
     "Références": "References",
     // features/links.js
+    "Lien retiré.": "Link removed.",
     "a donné": "gave rise to",
     "contredit par": "contradicted by",
     "écho de": "echo of",
@@ -2210,6 +2211,7 @@ var __selene = (() => {
     "Exporter en CSL-JSON": "Export as CSL-JSON",
     "Toutes les sources de cet espace, pour Zotero, Zettlr ou Pandoc": "All the sources in this space, for Zotero, Zettlr or Pandoc",
     // features/specimen.js
+    "retirer": "remove",
     "Cette entrée n'existe plus.": "This entry no longer exists.",
     "{0} : ": "{0}: ",
     "{0}, le {1}": "{0}, on {1}",
@@ -2362,7 +2364,6 @@ var __selene = (() => {
     "Ce module a été supprimé entre-temps.": "This module was deleted in the meantime.",
     "Déjà à cette étape.": "Already at this stage.",
     "(supprimé)": "(deleted)",
-    "retirer": "remove",
     "Placer un élément": "Place an item",
     "Vide.": "Empty.",
     "Aucune étape pour l'instant. Ajoute-en dans {0}.": "No stages yet. Add some in {0}.",
@@ -12857,6 +12858,26 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     render();
   };
   CLICK["link-form"] = (el) => linkForm(el.dataset.mod, idOf(el));
+  CLICK["link-del"] = (el) => {
+    const { from, to, type } = el.dataset, hit = refFind(from);
+    if (!hit) return;
+    const links = hit.e.links || [], i = links.findIndex((l) => l.to === to && l.type === type);
+    if (i < 0) return;
+    const link = links[i];
+    hit.e.links = links.filter((l) => l !== link);
+    site.save();
+    render();
+    toastUndo(tr`Lien retiré.`, () => {
+      const cur = refFind(from);
+      if (!cur || (cur.e.links || []).some((l) => l.to === to && l.type === type)) return;
+      const ls = [...cur.e.links || []];
+      ls.splice(Math.min(i, ls.length), 0, link);
+      cur.e.links = ls;
+      site.save();
+      render();
+      toast(tr`Rétabli. Rien ne s'est passé.`);
+    });
+  };
   CLICK["tension-resolve"] = (el) => {
     const a = el.dataset.a, b = el.dataset.b, hit = refFind(a);
     if (!hit) return;
@@ -14446,7 +14467,8 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
     const thought = inst.type === "notes" || inst.type === "cumul" && (inst.scraps || []).includes(e);
     const long = (d) => fmt(d, { day: "numeric", month: "long", year: "numeric" }), when = e.date || e.due || e.created;
     const chapter2 = inst.type === "cumul" && e.category ? (c.categories.find((x) => x.id === e.category) || {}).name : "";
-    const links = [...(e.links || []).map((l) => `<li>${esc(linkLabel(l.type))} ${refHTML(l.to)}</li>`), ...(backlinks().get(`${mod}/${e.id}`) || []).map((b) => `<li>${esc(tr(LINK_BACK[b.type]))} ${refHTML(b.from)}</li>`)];
+    const self = `${mod}/${e.id}`, del = (from, to, type) => `<button class="btn ghost sm" data-act="link-del" data-from="${esc(from)}" data-to="${esc(to)}" data-type="${esc(type)}">${tr`retirer`}</button>`;
+    const links = [...(e.links || []).map((l) => `<li>${esc(linkLabel(l.type))} ${refHTML(l.to)} ${del(self, l.to, l.type)}</li>`), ...(backlinks().get(self) || []).map((b) => `<li>${esc(tr(LINK_BACK[b.type]))} ${refHTML(b.from)} ${del(b.from, self, b.type)}</li>`)];
     const motifs = motifsOf([e.title, e.subtitle, text].filter(Boolean).join(" "));
     const log = [...e.epLog || []].reverse().map((x) => `<li>${x.date ? tr`${long(x.date)} : ` : ""}${esc(epLabel(x.from))} → ${epGlyph(x.to)}${esc(epLabel(x.to))}</li>`);
     const reviews = [...e.reviews || []].reverse().map((r) => `<li>${tr`${esc(r.verdict === "maintenue" ? tr`maintenue` : r.verdict)}, le ${long(r.date)}`}</li>`);

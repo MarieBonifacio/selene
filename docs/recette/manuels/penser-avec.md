@@ -116,8 +116,8 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai (une tension ouverte).
 - **Données** : synthèse `La lisière est une frontière que le regard refuse de voir.`
-- **Automatisés associés** : `TU-MOD-49`, `TN-liaisons`
-- **Source** : [DOC] README, « Tensions » ; [TEST] `TU-MOD-49`, `tests/browser/liaisons.js`.
+- **Automatisés associés** : `TU-MOD-49`, `TU-MOD-72`, `TN-liaisons`
+- **Source** : [DOC] README, « Tensions » ; [TEST] `TU-MOD-49`, `TU-MOD-72`, `tests/browser/liaisons.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -126,8 +126,9 @@ Identifiants retirés : aucun.
 | 3 | Écrire la synthèse des données, « Garder ». | « Synthèse gardée. La tension est levée. » |
 | 4 | Revenir au Bilan. | Plus de tension ouverte. |
 | 5 | Sur un fragment, « lier… » → « contredit » → choisir un autre fragment. | « Tension ouverte. Elle attendra sa synthèse. » ; la tension apparaît au Bilan. |
+| 6 | Posée par erreur : « fiche » de l'un des deux fragments, « retirer » sur la ligne « contredit » (ou « contredit par »). | « Lien retiré. », avec « Annuler » ; la tension quitte le Bilan sans synthèse. |
 
-- **État final attendu** : une tension levée, une nouvelle ouverte.
+- **État final attendu** : une tension levée ; celle de l'étape 5, retirée.
 - **Nettoyage** : réimporter le jeu d'essai.
 
 ---
@@ -190,14 +191,15 @@ Identifiants retirés : aucun.
 - **Priorité** : P3 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : fragment « La lisière n'est pas une frontière… ».
-- **Automatisés associés** : `TN-signatures`
-- **Source** : [DOC] README, « Fiche » ; [TEST] `tests/browser/signatures.js`.
+- **Automatisés associés** : `TN-signatures`, `TU-MOD-72`
+- **Source** : [DOC] README, « Fiche » ; [TEST] `tests/browser/signatures.js`, `TU-MOD-72`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Sur le fragment, « fiche ». | Un tiroir « Fiche de l'entrée », sans quitter l'espace : texte, liens entrants (dérive, contredit), motifs présents (« lisière »). |
 | 2 | Changer le statut depuis la fiche (« observé »). | La fiche se redessine ; l'histoire du statut montre le changement daté. |
-| 3 | « Voir dans Écriture ». | La fiche se ferme ; le fragment est surligné dans Écriture. |
+| 3 | Sur une ligne de lien de la fiche, « retirer », puis « Annuler » dans la bulle. | « Lien retiré. » ; la ligne disparaît de la fiche, puis revient, à sa place. |
+| 4 | « Voir dans Écriture ». | La fiche se ferme ; le fragment est surligné dans Écriture. |
 
 - **État final attendu** : statut « observé ».
 - **Nettoyage** : remettre le statut vide.

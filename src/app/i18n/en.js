@@ -359,6 +359,7 @@ export default {
   "Chaque entrée porte sa date, son module et, s'il est indiqué, son statut épistémique : *observé* (ce qui s'est présenté), *hypothèse* (une conjecture à tester), *interprétation* (une lecture, un cadre appliqué), *inexpliqué* (laissé ouvert à dessein). Ne pas traiter une hypothèse comme un fait, ni combler un inexpliqué. Les renvois [n] désignent les entrées de ce dossier.": "Each entry carries its date, its module and, when given, its epistemic status: *observed* (what presented itself), *hypothesis* (a conjecture to test), *interpretation* (a reading, an applied frame), *unexplained* (left open on purpose). Do not treat a hypothesis as a fact, nor fill in an unexplained. References [n] point to the entries of this dossier.",
   "Références": "References",
   // features/links.js
+  "Lien retiré.": "Link removed.",
   "a donné": "gave rise to",
   "contredit par": "contradicted by",
   "écho de": "echo of",
@@ -509,6 +510,7 @@ export default {
   "Exporter en CSL-JSON": "Export as CSL-JSON",
   "Toutes les sources de cet espace, pour Zotero, Zettlr ou Pandoc": "All the sources in this space, for Zotero, Zettlr or Pandoc",
   // features/specimen.js
+  "retirer": "remove",
   "Cette entrée n'existe plus.": "This entry no longer exists.",
   "{0} : ": "{0}: ",
   "{0}, le {1}": "{0}, on {1}",
@@ -665,7 +667,6 @@ export default {
   "Ce module a été supprimé entre-temps.": "This module was deleted in the meantime.",
   "Déjà à cette étape.": "Already at this stage.",
   "(supprimé)": "(deleted)",
-  "retirer": "remove",
   "Placer un élément": "Place an item",
   "Vide.": "Empty.",
   "Aucune étape pour l'instant. Ajoute-en dans {0}.": "No stages yet. Add some in {0}.",

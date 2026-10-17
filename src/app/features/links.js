@@ -2,7 +2,7 @@
    dérivation, tensions à résoudre, statut épistémique. */
 import { EP_STATUS, LINK_TYPES, addLink, setEpStatus } from "../../core/domain.js";
 import { CHANGE, CLICK, TYPE_UI } from "../registry.js";
-import { $, esc, toast } from "../lib/dom.js";
+import { $, esc, toast, toastUndo } from "../lib/dom.js";
 import { ago, fmt, todayISO, uid } from "../lib/format.js";
 import { N_, tr } from "../i18n/index.js";
 import { epLabel, linkLabel } from "../lib/labels.js";
@@ -116,6 +116,19 @@ CLICK["derive-start"] = el => {
 };
 CLICK["derive-cancel"] = el => { delete deriveFrom[el.dataset.mod]; render(); };
 CLICK["link-form"] = el => linkForm(el.dataset.mod, idOf(el));
+/* Retirer un lien (depuis la fiche) : posé par erreur, un « contredit » ouvrait une tension que seule une synthèse
+   refermait. « Annuler » le remet à sa place (relu au moment d'annuler). */
+CLICK["link-del"] = el => {
+  const { from, to, type } = el.dataset, hit = refFind(from); if (!hit) return;
+  const links = hit.e.links || [], i = links.findIndex(l => l.to === to && l.type === type); if (i < 0) return;
+  const link = links[i];
+  hit.e.links = links.filter(l => l !== link); site.save(); render();
+  toastUndo(tr`Lien retiré.`, () => {
+    const cur = refFind(from); if (!cur || (cur.e.links || []).some(l => l.to === to && l.type === type)) return;
+    const ls = [...(cur.e.links || [])]; ls.splice(Math.min(i, ls.length), 0, link); cur.e.links = ls;
+    site.save(); render(); toast(tr`Rétabli. Rien ne s'est passé.`);
+  });
+};
 /* Résoudre une tension : écrire, dans le module de la première entrée, une synthèse qui dérive des deux. */
 CLICK["tension-resolve"] = el => {
   const a = el.dataset.a, b = el.dataset.b, hit = refFind(a); if (!hit) return;
