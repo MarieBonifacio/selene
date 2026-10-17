@@ -1485,3 +1485,19 @@ test('un lien se retire depuis la fiche, des deux côtés ; une tension posée p
   app.CLICK.undo();
   assert.deepEqual([...box.entries.find(e => e.id === 'n1').links.map(l => l.id)], ['l1'], '« Annuler » le rend tel quel');
 });
+
+test('les sessions d’un compteur se lisent et se corrigent : une faute de frappe se supprime, « Annuler » la rend', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const e = app.S().modules.ecriture; e.entries = []; e.config.entryMode = 'delta';
+  app.addJournalEntry(e, { date: '2026-09-10', value: 500 }, 's1', '2026-09-10');
+  app.addJournalEntry(e, { date: '2026-09-11', value: 50000 }, 's2', '2026-09-11'); // un zéro de trop
+  const view = app.TYPE_UI.cumul.view('ecriture');
+  assert.match(view, /<details class="sessions"><summary>Sessions \(2\)<\/summary>/, 'les sessions, repliées, comptées');
+  assert.ok(view.indexOf('data-id="s2"') < view.indexOf('data-id="s1"'), 'la plus récente d’abord');
+  assert.match(view, /data-id="s2"[^]*?data-act="entry-del" data-mod="ecriture"/, 'chacune se supprime');
+  app.removeWithUndo('ecriture', 'entries', 's2');
+  assert.equal(app.totalOf(e), 500, 'le total redevient juste');
+  assert.match(app.nodes.get('#toast').innerHTML, /Supprimé : « 11 sept\., \+50[\s ]000 mots »/, 'la bulle nomme la session');
+  app.CLICK.undo();
+  assert.equal(app.totalOf(e), 50500, '« Annuler » la rend');
+});

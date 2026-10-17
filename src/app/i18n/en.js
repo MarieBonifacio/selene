@@ -786,6 +786,7 @@ export default {
   "{0} publication importée dans {1}.": { one: "{0} post imported into {1}.", other: "{0} posts imported into {1}." },
   "« {0} » existe déjà.": "“{0}” already exists.",
   // modules/cumul.js
+  "Sessions ({0})": "Sessions ({0})",
   "Objectif atteint. Le reste relève de l'orgueil, ou de la réécriture.": "Goal reached. Anything more is vanity, or rewriting.",
   "Pas assez d'élan ces 30 derniers jours pour prédire une fin. La prophétie attendra.": "Not enough momentum these last 30 days to predict an end. The prophecy will wait.",
   "Au rythme des 30 derniers jours ({0} {1} par jour), objectif atteint vers le {2}.": "At the pace of the last 30 days ({0} {1} a day), goal reached around {2}.",

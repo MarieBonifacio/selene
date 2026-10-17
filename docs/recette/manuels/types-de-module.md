@@ -250,8 +250,8 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob, ART
 - **Préconditions** : jeu d'essai (total actuel 5 300 mots).
 - **Données** : totaux `6000`, puis `5800`, puis `5800`.
-- **Automatisés associés** : `TU-MOD-28`, `TN-quotidien`
-- **Source** : [DOC] README, « Écriture » ; [TEST] `TU-MOD-28`.
+- **Automatisés associés** : `TU-MOD-28`, `TU-MOD-73`, `TN-quotidien`
+- **Source** : [DOC] README, « Écriture » ; [TEST] `TU-MOD-28`, `TU-MOD-73`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -259,9 +259,10 @@ Identifiants retirés : aucun.
 | 2 | Saisir `6000`, « Ajouter ». | « +700 mots. Ça avance, que tu y croies ou non. » ; total 6 000. |
 | 3 | Saisir `5800`. | « -200 mots. Couper, c'est aussi écrire. » ; total 5 800. |
 | 4 | Saisir `5800`. | « Même total qu'avant. Rien de neuf, ou alors en silence. » ; aucune entrée ajoutée. |
+| 5 | Déplier « Sessions », supprimer la session « −200 mots », puis « Annuler ». | Les sessions, la plus récente d'abord ; supprimée, le total remonte à 6 000 et la bulle la nomme ; annulée, il redescend à 5 800. |
 
 - **État final attendu** : deux entrées (+700, −200).
-- **Nettoyage** : les supprimer.
+- **Nettoyage** : les supprimer, depuis « Sessions ».
 
 ---
 
