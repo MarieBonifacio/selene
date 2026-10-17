@@ -1,5 +1,5 @@
 /* Le radar culturel : les sorties près de chez toi (OpenAgenda, par le portail public d'Opendatasoft), triées par tes mots. */
-import { platform } from "../../platform.js";
+import { hosted, platform } from "../../platform.js";
 import { inboxId } from "../../core/domain.js";
 import { radarEvents, radarFold, radarMatch, radarUrl, radarWords } from "../../core/radar.js";
 import { CLICK, SHEETS } from "../registry.js";
@@ -8,7 +8,8 @@ import { fmt, todayISO } from "../lib/format.js";
 import { tr, trn } from "../i18n/index.js";
 import { addNote } from "../modules/notes.js";
 import { skyConf } from "../scene/sky.js";
-import { passeurFetch, passeurPret } from "../services/passeur.js";
+import { authSession } from "../services/auth.js";
+import { passeurAcces, passeurFetch, passeurPret } from "../services/passeur.js";
 import { render } from "../shell/render.js";
 import { openSheet, sheetKind } from "../shell/sheets.js";
 import { S, label, site } from "../state/site.js";
@@ -20,9 +21,16 @@ export const radarConf = () => { const r = S().config.radar; return { words: r &
 // Le lieu réglé dans Ciel, où qu'il soit : OpenAgenda couvre la France entière (et un peu au-delà, peu).
 export const radarPlace = () => skyConf();
 let radarState = null; // { busy, err, items, total, words, kept } : la feuille en cours
-/* Une lecture de l'agenda : directe (le portail envoie l'en-tête CORS) ; si le navigateur n'a pas le droit d'en lire la
-   réponse (l'ancien portail de la MEL ne l'envoyait pas), par le passeur, qui lit du JSON pour toi. L'échec direct est
-   retenu pour la session : on ne refrappe pas à une porte qu'on sait fermée. */
+/* Une lecture de l'agenda : directe d'abord (si un jour le portail envoie l'en-tête CORS ; il ne l'envoyait pas le
+   29 septembre 2026) ; si le navigateur n'a pas le droit d'en lire la réponse, par le passeur, qui lit du JSON pour toi.
+   L'échec direct est retenu pour la session : on ne refrappe pas à une porte qu'on sait fermée. Sans passeur, la raison
+   dite est la vraie : pas de compte, ou un passeur fermé à ce compte, ou absent du serveur (A72). */
+function sansPasseur() {
+  const pourquoi = !hosted() || !authSession ? "" : passeurAcces();
+  return pourquoi === "refuse" ? tr`L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas ouvert à ce compte.`
+    : pourquoi === "absent" ? tr`L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas installé sur ce serveur.`
+    : tr`L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).`;
+}
 let radarDirect = true;
 async function radarGet(url) {
   if (radarDirect) {
@@ -30,7 +38,7 @@ async function radarGet(url) {
     try { const r = await fetch(url, { signal: ac.signal }); return { status: r.status, json: r.ok ? await r.json() : null }; }
     catch { radarDirect = false; } finally { clearTimeout(t); }
   }
-  if (!passeurPret()) throw new Error(tr`L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).`);
+  if (!passeurPret()) throw new Error(sansPasseur());
   const q = await passeurFetch(url, "json");
   return { status: q.status || 0, json: q.status === 200 && typeof q.texte === "string" ? JSON.parse(q.texte) : null };
 }

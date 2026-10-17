@@ -76,6 +76,12 @@ const RESULTS = [
   const a = await open(LILLE, 'jazz', 'cors');
   await a.click('[data-act="radar-open"]'); await a.waitForTimeout(400);
   ok((await sheet(a)).includes('il faut ton passeur'), 'sans passeur (artefact claude.ai) : dit ce qui manque');
+  // Connectée, mais le passeur n'est pas ouvert à ce compte (refus retenu) : ne pas lui dire de se connecter (A72).
+  const f = await open(LILLE, 'jazz', 'cors', '', true);
+  await storeSet(f, 'selene-passeur-acces', JSON.stringify({ uid: '0b8f0c2e-1111-2222-3333-444455556666', etat: 'refuse', at: Date.now() }));
+  await f.click('[data-act="radar-open"]'); await f.waitForFunction(() => (document.querySelector('#sheetBody') || {}).textContent.includes('passeur'), null, { timeout: 5000 }).catch(() => {});
+  const dit = await sheet(f);
+  ok(dit.includes("n'est pas ouvert à ce compte") && !dit.includes('version hébergée, connectée') && !f.passeur.length, `connectée, passeur fermé à ce compte : le dit, sans renvoyer à une connexion déjà faite (A72) (« ${dit.slice(0, 160)} »)`);
 
   console.log('réglages');
   const n = await open(LILLE, '', 'ok', '#reglages');

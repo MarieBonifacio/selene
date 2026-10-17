@@ -413,6 +413,8 @@ export default {
   "Rien de neuf. Le silence est aussi une nouvelle.": "Nothing new. Silence is news too.",
   "{0} artiste sans réponse : réessaie plus tard.": { one: "{0} artist didn't answer: try again later.", other: "{0} artists didn't answer: try again later." },
   // features/radar.js
+  "L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas ouvert à ce compte.": "The events calendar can't be read directly by the browser, and the relay, which would read it for you, isn't open to this account.",
+  "L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas installé sur ce serveur.": "The events calendar can't be read directly by the browser, and the relay, which would read it for you, isn't installed on this server.",
   "L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).": "The events calendar can't be read directly by the browser: you need your relay (hosted version, signed in).",
   "L'agenda répond {0} (le portail a peut-être changé). Réessaie plus tard.": "The events calendar answers {0} (the portal may have changed). Try again later.",
   "L'agenda répond par une erreur (le portail a peut-être changé). Réessaie plus tard.": "The events calendar answers with an error (the portal may have changed). Try again later.",

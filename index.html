@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5QvdWdGUJUbCHBpfgynK6q8+/a5rzbmDJo3e7IPdV3g=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bN4IOUq7iMSTXWh4eFihmiX3usqkj5VenPVCP5O2kbA=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -764,7 +764,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "0b7e96884f";
+const SELENE_BUILD = "0e7e5ca652";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -2114,6 +2114,8 @@ var __selene = (() => {
     "Rien de neuf. Le silence est aussi une nouvelle.": "Nothing new. Silence is news too.",
     "{0} artiste sans réponse : réessaie plus tard.": { one: "{0} artist didn't answer: try again later.", other: "{0} artists didn't answer: try again later." },
     // features/radar.js
+    "L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas ouvert à ce compte.": "The events calendar can't be read directly by the browser, and the relay, which would read it for you, isn't open to this account.",
+    "L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas installé sur ce serveur.": "The events calendar can't be read directly by the browser, and the relay, which would read it for you, isn't installed on this server.",
     "L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).": "The events calendar can't be read directly by the browser: you need your relay (hosted version, signed in).",
     "L'agenda répond {0} (le portail a peut-être changé). Réessaie plus tard.": "The events calendar answers {0} (the portal may have changed). Try again later.",
     "L'agenda répond par une erreur (le portail a peut-être changé). Réessaie plus tard.": "The events calendar answers with an error (the portal may have changed). Try again later.",
@@ -8507,6 +8509,10 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
   };
   var radarPlace = () => skyConf();
   var radarState = null;
+  function sansPasseur() {
+    const pourquoi = !hosted() || !authSession ? "" : passeurAcces();
+    return pourquoi === "refuse" ? tr`L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas ouvert à ce compte.` : pourquoi === "absent" ? tr`L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas installé sur ce serveur.` : tr`L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).`;
+  }
   var radarDirect = true;
   async function radarGet(url) {
     if (radarDirect) {
@@ -8520,7 +8526,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
         clearTimeout(t);
       }
     }
-    if (!passeurPret()) throw new Error(tr`L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).`);
+    if (!passeurPret()) throw new Error(sansPasseur());
     const q = await passeurFetch(url, "json");
     return { status: q.status || 0, json: q.status === 200 && typeof q.texte === "string" ? JSON.parse(q.texte) : null };
   }

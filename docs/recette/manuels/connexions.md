@@ -278,6 +278,7 @@ Identifiants retirés : aucun.
 | 3 | Cliquer le bouton. | « Recherche… » puis cinq événements au plus, du plus tôt au plus tard, avec date et lieu ; le reste compté (« N autres correspondent aussi… ») ; la requête (à `opendatasoft.com` ou au passeur) ne contient pas `concert`, `poésie` ni `exposition`. |
 | 4 | « garder » sur un événement. | « Gardé dans Boîte. » ; une note avec titre, date, lieu et lien. |
 | 5 | Rouvrir le radar dans l'heure. | Servi sans nouvelle requête (cache de l'appareil). |
+| 6 | Avec un compte que le passeur ne sert pas (absent de `PASSEUR_USERS`), le cache effacé, rouvrir le radar. | Si la lecture directe est refusée : « … et le passeur, qui le lirait à ta place, n'est pas ouvert à ce compte. » ; jamais « il faut ton passeur (version hébergée, connectée) » à une personne connectée (A72). |
 
 - **État final attendu** : une note de plus.
 - **Nettoyage** : la supprimer ; effacer les mots.

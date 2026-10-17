@@ -1318,7 +1318,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/radar.js`](../../tests/browser/radar.js) · **mode** H puis A · **écran** O
 - **Conditions** : Portail OpenAgenda simulé ; horloge fixée.
-- **Vérifie** : rien à l'ouverture ; un appel au clic ; le portail reçoit la zone et les dates, jamais les mots ; cinq au plus, filtrés ; le reste compté ; titre piégé inerte ; garder dans la boîte ; cache d'une heure ; 400 : second essai sans sélection ; panne dite ; lecture directe refusée : le passeur, retenu ; artefact : dit ce qui manque ; sans mots ou sans lieu : pas de bouton ; mots synchronisés.
+- **Vérifie** : rien à l'ouverture ; un appel au clic ; le portail reçoit la zone et les dates, jamais les mots ; cinq au plus, filtrés ; le reste compté ; titre piégé inerte ; garder dans la boîte ; cache d'une heure ; 400 : second essai sans sélection ; panne dite ; lecture directe refusée : le passeur, retenu ; artefact : dit ce qui manque ; sans mots ou sans lieu : pas de bouton ; mots synchronisés. Connectée, le passeur fermé à ce compte (refus retenu) : le radar le dit, sans renvoyer à une connexion déjà faite, et n'appelle pas le passeur (A72).
 - **Cas manuels** : [EXT-010](manuels/connexions.md#ext-010), [EXT-019](manuels/connexions.md#ext-019)
 
 <a id="tn-instagram"></a>
