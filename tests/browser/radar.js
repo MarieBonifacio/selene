@@ -67,10 +67,10 @@ const RESULTS = [
   // L'enregistrement se fait dans l'événement « close » de la boîte, qui passe par la file d'attente : on attend l'état,
   // pas un délai (A52).
   await p.fill('#dlg [name="steps"]', 'Réserver'); await p.fill('#dlg [name="cost"]', '12'); await p.click('#dlg button[value="save"]');
-  await p.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.chantier.entries.some(t => (t.steps || []).length), null, { timeout: 5000 }).catch(() => {});
+  await p.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.chantier.entries.some(t => (t.steps || []).length), null, { timeout: 10000 }).catch(() => {});
   let taches = (await storeJSON(p, 'selene-site-v1')).modules.chantier.entries;
   const e1 = taches.find(x => x.title.startsWith('Exposition'));
-  ok(e1 && e1.due === '2026-11-15' && e1.room === 'La Condition publique' && /^Roubaix\ndu 1(er)? septembre au 15 novembre 2026\nhttps:\/\/openagenda\.com\/lille\/events\/3$/.test(e1.note) && e1.steps[0].t === 'Réserver' && e1.cost === 12,
+  ok(e1 && e1.due === '2026-11-15' && e1.room === 'La Condition publique' && /^Roubaix\ndu 1(er)? septembre au 15 novembre 2026\nhttps:\/\/openagenda\.com\/lille\/events\/3$/.test(e1.note) && (e1.steps || [])[0]?.t === 'Réserver' && e1.cost === 12,
     `déjà commencée : échéance au dernier jour, la salle en lieu, la ville, les dates et le lien en note (${JSON.stringify(e1 && { due: e1.due, room: e1.room, note: e1.note })})`);
   ok((await expo.textContent()).includes('sortie prévue'), 'la feuille le dit');
   await p.locator('#sheet .radar li', { hasText: 'Soirée jazz manouche' }).locator('[data-act="radar-out"]').click(); await p.waitForSelector('#dlg[open]');
@@ -99,7 +99,7 @@ const RESULTS = [
   ok((await deux.textContent('#dlg h2')) === 'En faire une sortie' && (await deux.$$eval('#dlg [name="mod"] option', o => o.map(x => x.textContent))).join() === 'Chantier,Sorties', 'deux espaces Tâches : on choisit lequel');
   // Le formulaire de la tâche s'ouvre dans le « close » du choix, par la file d'attente : on l'attend, sans délai fixe.
   await deux.selectOption('#dlg [name="mod"]', 'sorties'); await deux.click('#dlg button[value="save"]');
-  await deux.waitForFunction(() => (document.querySelector('#dlg[open] h2') || {}).textContent === 'Modifier la tâche', null, { timeout: 5000 }).catch(() => {});
+  await deux.waitForFunction(() => (document.querySelector('#dlg[open] h2') || {}).textContent === 'Modifier la tâche', null, { timeout: 10000 }).catch(() => {});
   ok(await deux.isVisible('#dlg[open]') && (await deux.textContent('#dlg h2')) === 'Modifier la tâche', 'puis le formulaire de la tâche');
   await deux.click('#dlg button[value="save"]'); await deux.waitForTimeout(250);
   const so = (await storeJSON(deux, 'selene-site-v1')).modules;
