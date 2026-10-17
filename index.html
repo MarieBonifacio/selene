@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-vETm6IvcP/Y1EGnaNp7vu7oNJv6JDov7XB3nPV8ksN8=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-T80L2ztACioM0Zfp/6uepxHD+wr9nEbqEYeiRC9SsOE=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -752,7 +752,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "27a506e641";
+const SELENE_BUILD = "a61a384df8";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -2613,6 +2613,7 @@ var __selene = (() => {
     "Palier « {0} » atteint ({1})": "Tier “{0}” reached ({1})",
     "Noter la décision : « {0} »": "Write down the decision: “{0}”",
     // modules/rappels.js
+    "Geste supprimé": "Deleted type",
     "tous les {0} j": "every {0} d",
     "Fait aujourd'hui": "Done today",
     "Observation…": "Observation…",
@@ -6214,7 +6215,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   function removeWithUndo(id, list, itemId) {
     const inst = S().modules[id], i = inst[list].findIndex((x) => x.id === itemId);
     if (i < 0) return;
-    const item = inst[list][i], name = String(item.title || item.text || item.note || item.type || tr`l'élément`);
+    const item = inst[list][i], name = String(item.title || item.text || item.note || (TYPE_UI[inst.type].entryName || (() => item.type))(inst, item) || tr`l'élément`);
     inst[list] = inst[list].filter((x) => x.id !== itemId);
     site.save();
     render();
@@ -14143,6 +14144,7 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
   });
 
   // src/app/modules/rappels.js
+  var typeLabel2 = (inst, t) => t === "note" ? tr`Observation` : (inst.config.types.find((y) => y.id === t) || {}).label || tr`Geste supprimé`;
   registerType("rappels", {
     view(id) {
       const inst = S().modules[id], c = inst.config, now = todayISO();
@@ -14156,7 +14158,7 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
     ${c.types.map(line).join("")}
     <div class="row" style="margin-top:14px"><input id="rapNote" data-draft placeholder="${tr`Observation…`}" aria-label="${tr`Observation`}"><button class="btn" data-act="entry-note" data-mod="${esc(id)}">${tr`Noter`}</button></div>
     <p class="hint" style="margin-top:10px">${tr`Réglable dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`}.`}</p>
-  </section><section><h3>${tr`Journal`}</h3><ul class="plain">${recent.map((l) => `<li class="item" data-id="${esc(l.id)}"><span class="jdate">${fmt(l.date)}</span><div><span class="tag">${esc(l.type)}</span>${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}${l.origin ? `<div class="meta">${originHTML(l, l.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">${tr`suppr.`}</button></li>`).join("") || `<li class="empty">${tr`Aucune entrée.`}</li>`}</ul></section></div>`;
+  </section><section><h3>${tr`Journal`}</h3><ul class="plain">${recent.map((l) => `<li class="item" data-id="${esc(l.id)}"><span class="jdate">${fmt(l.date)}</span><div><span class="tag">${esc(typeLabel2(inst, l.type))}</span>${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}${l.origin ? `<div class="meta">${originHTML(l, l.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">${tr`suppr.`}</button></li>`).join("") || `<li class="empty">${tr`Aucune entrée.`}</li>`}</ul></section></div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>${tr`Sous-titre (ex. nom propre)`}<input data-set-mod="${esc(id)}.subtitle" value="${esc(c.subtitle || "")}"></label><span></span></div>
     <div style="margin-top:10px"><span class="hint" style="margin:0">${tr`Types et rappels`}</span>${c.types.map((t, i) => `<div class="set" data-ti="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="typ-name" data-mod="${esc(id)}" value="${esc(t.label)}" aria-label="${tr`Nom`}"><input type="number" min="0" data-act="typ-every" data-mod="${esc(id)}" value="${esc(t.every || "")}" placeholder="${tr`tous les X j`}" aria-label="${tr`Fréquence`}"><button class="btn ghost sm" data-act="typ-del" data-mod="${esc(id)}">${tr`suppr.`}</button></div>`).join("")}<button class="btn sm" data-act="typ-add" data-mod="${esc(id)}" style="margin-top:8px">${tr`Ajouter un type`}</button></div>`,
@@ -14180,11 +14182,12 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
     accept: (id, inst, note) => {
       addJournalEntry(inst, { date: note.date, type: "note", note: note.text }, uid(), todayISO());
     },
-    recent: (inst) => recentBy(inst.entries).map((x) => `${fmt(x.date)} · ${(inst.config.types.find((t) => t.id === x.type) || {}).label || x.type}${x.note ? " · " + x.note : ""}`),
+    entryName: (inst, e) => typeLabel2(inst, e.type),
+    recent: (inst) => recentBy(inst.entries).map((x) => `${fmt(x.date)} · ${typeLabel2(inst, x.type)}${x.note ? " · " + x.note : ""}`),
     review: (inst, from, to) => {
       const es = within(inst.entries, from, to);
       if (!es.length) return tr`Rien de noté`;
-      const by = [...new Set(es.map((x) => x.type))].map((t) => `${((inst.config.types.find((y) => y.id === t) || {}).label || t).toLowerCase()} ×${es.filter((x) => x.type === t).length}`);
+      const by = [...new Set(es.map((x) => x.type))].map((t) => `${typeLabel2(inst, t).toLowerCase()} ×${es.filter((x) => x.type === t).length}`);
       return by.join(", ");
     },
     texts: (inst) => inst.entries.filter((x) => x.note).map((x) => ({ text: x.note, date: x.date, eid: x.id })),

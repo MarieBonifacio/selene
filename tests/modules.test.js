@@ -1382,3 +1382,19 @@ test('une synchro pendant une frappe dans un champ sans identifiant ne redessine
     app.document.activeElement = null;
   }
 });
+
+test('le journal des Rappels nomme chaque geste par son libellé, jamais par son identifiant (A68)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), id = app.slugId('Soins', d.config.modules.map(m => m.id));
+  app.createModuleInstance(d.modules, 'rappels', 'Soins', id);
+  const inst = d.modules[id];
+  // Un geste ajouté dans les Réglages reçoit un identifiant tiré au hasard (« typ-add ») : c'est le cas courant.
+  inst.config.types = [{ id: 'm40pghqd', label: 'Arroser le figuier', every: 3 }];
+  app.addJournalEntry(inst, { date: '2026-10-10', type: 'm40pghqd', note: '' }, 'j1', '2026-10-10');
+  app.addJournalEntry(inst, { date: '2026-10-11', type: 'note', note: 'Feuilles jaunes' }, 'j2', '2026-10-11');
+  app.addJournalEntry(inst, { date: '2026-10-09', type: 'k3j2h1x9', note: '' }, 'j3', '2026-10-09'); // geste supprimé depuis
+  const tags = [...app.TYPE_UI.rappels.view(id).matchAll(/<span class="tag">([^<]*)<\/span>/g)].map(m => m[1]);
+  assert.deepEqual(tags, ['Observation', 'Arroser le figuier', 'Geste supprimé']);
+  app.removeWithUndo(id, 'entries', 'j1');
+  assert.match(app.nodes.get('#toast').innerHTML, /Supprimé : « Arroser le figuier »/, 'la bulle « Annuler » le nomme aussi');
+});

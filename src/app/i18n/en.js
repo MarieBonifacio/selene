@@ -929,6 +929,7 @@ export default {
   "Palier « {0} » atteint ({1})": "Tier “{0}” reached ({1})",
   "Noter la décision : « {0} »": "Write down the decision: “{0}”",
   // modules/rappels.js
+  "Geste supprimé": "Deleted type",
   "tous les {0} j": "every {0} d",
   "Fait aujourd'hui": "Done today",
   "Observation…": "Observation…",

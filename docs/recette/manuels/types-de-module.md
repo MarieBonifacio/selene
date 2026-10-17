@@ -340,19 +340,20 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai (Arrosage tous les 3 jours, dernier le 1er septembre 2026).
 - **Données** : observation `Nouvelle pousse sur le ficus`.
-- **Automatisés associés** : `TN-types`, `TN-quotidien`, `TN-interface`, `TU-MOD-30`
-- **Source** : [DOC] README, « Accueil » ; [TEST] `tests/browser/types.js`, `TU-MOD-30`.
+- **Automatisés associés** : `TN-types`, `TN-quotidien`, `TN-interface`, `TU-MOD-30`, `TU-MOD-67`
+- **Source** : [DOC] README, « Accueil » ; [TEST] `tests/browser/types.js`, `TU-MOD-30`, `TU-MOD-67`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Ouvrir l'accueil. | Dans « Aujourd'hui », une ligne pour Plantes (Arrosage en retard) avec « fait ». |
 | 2 | Cliquer « fait ». | La ligne disparaît ; dans Plantes, « Arrosage » et « aujourd'hui, tous les 3 j ». |
-| 3 | Dans Plantes, noter l'observation des données. | Elle apparaît au journal, datée d'aujourd'hui. |
+| 3 | Dans Plantes, noter l'observation des données. | Elle apparaît au journal, datée d'aujourd'hui, sous l'étiquette « Observation ». |
 | 4 | Réglages → « régler » sous Plantes : fréquence d'Arrosage à `1`. | Le lendemain (ou en avançant la date de l'appareil d'un jour), le rappel revient sur l'accueil. |
 | 5 | Rempotage (fréquence 0) : vérifier l'accueil. | Jamais de rappel pour Rempotage. |
+| 6 | Réglages → « régler » sous Plantes → « Ajouter un type », le nommer `Tailler`, fréquence `1` ; le lendemain, « fait » depuis l'accueil, puis supprimer cette ligne du journal. | Au journal, l'étiquette dit « Tailler », jamais un code de huit caractères ; la bulle dit « Supprimé : « Tailler » » (A68). |
 
 - **État final attendu** : Arrosage fait aujourd'hui.
-- **Nettoyage** : remettre la fréquence à 3.
+- **Nettoyage** : remettre la fréquence à 3 ; supprimer le type `Tailler`.
 
 ---
 
