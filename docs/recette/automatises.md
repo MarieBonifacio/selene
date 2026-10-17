@@ -10,7 +10,7 @@ Identifiants retirés : aucun.
 
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
-| Tests unitaires et d'intégration Node | `npm test` | 335 tests, 32 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
+| Tests unitaires et d'intégration Node | `npm test` | 340 tests, 33 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
 | Scénarios de navigateur | `npm run test:browser` | 84 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent et au processeur ralenti | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
@@ -735,6 +735,20 @@ sans navigateur.
 | <a id="tu-zot-02"></a>`TU-ZOT-02` | fiche : titre, auteurs, revue, date normalisée, DOI, lien vers la fiche ; pièces jointes écartées | Une fiche Zotero devient une source (titre, auteurs, revue, date, DOI, lien vers la fiche) ; pièces jointes et fiches invalides écartées. | [EXT-016](manuels/connexions.md#ext-016) |
 | <a id="tu-zot-03"></a>`TU-ZOT-03` | validation : une clé Zotero de huit caractères, un lien vers zotero.org seulement | Validation : clé de huit caractères majuscules, lien vers zotero.org seulement. | [EXT-016](manuels/connexions.md#ext-016) |
 
+### Couleur d'accent — `tests/palette.test.js`
+
+- **Niveau** : Unitaire pur (U). **Sujet** : les palettes de `src/shell.html` (A67).
+- **Simulé** : Rien : les valeurs sont lues dans la feuille de style ; contraste et ΔE2000 calculés par le test.
+- **Limites** : Des couleurs déclarées, pas des pixels : ce que montrent l'aperçu et les pastilles, c'est `TN-fenetre`.
+
+| Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
+|---|---|---|---|
+| <a id="tu-pal-01"></a>`TU-PAL-01` | chaque palette se déclare par sa propre règle, Nigredo comprise (TU-PAL-01) | Les quatre palettes (Nigredo comprise, implicite jusqu'ici) ont chacune leur règle `[data-palette="…"]` dans `src/shell.html`, avec leurs valeurs claire et sombre ; les pastilles des Réglages les lisent. Échoue sans le correctif d'A67. | [NAV-010](manuels/navigation-reglages.md#nav-010) |
+| <a id="tu-pal-02"></a>`TU-PAL-02` | le texte posé sur l’accent atteint 4,5:1, dans chaque palette et chaque mode (WCAG 1.4.3 ; TU-PAL-02) | Pour chaque palette, en clair et en sombre, le texte posé sur l'accent (`.btn.acc`, `mark`) atteint 4,5:1 (WCAG 1.4.3). Échouait sur Citrinitas en clair (4,41:1) avant A67. | [NAV-010](manuels/navigation-reglages.md#nav-010) |
+| <a id="tu-pal-03"></a>`TU-PAL-03` | l’accent se distingue du gris des textes secondaires (ΔE2000 ≥ 10 ; TU-PAL-03) | Chaque accent est à ΔE2000 ≥ 10 du gris des textes secondaires (`--muted`), en clair et en sombre : un repère ne se lit pas comme un texte atténué. Échouait sur Albedo en clair (ΔE 1,4) avant A67. | [NAV-010](manuels/navigation-reglages.md#nav-010) |
+| <a id="tu-pal-04"></a>`TU-PAL-04` | deux palettes ne se confondent jamais (ΔE2000 ≥ 15 ; TU-PAL-04) | Deux palettes sont à ΔE2000 ≥ 15 l'une de l'autre, dans chaque mode : en choisir une autre se voit. Nigredo et Albedo n'étaient qu'à 10,8 en clair avant A67. | [NAV-010](manuels/navigation-reglages.md#nav-010) |
+| <a id="tu-pal-05"></a>`TU-PAL-05` | l’outil de mesure : deux couleurs identiques à 0, noir et blanc vers 100, noir sur blanc à 21:1 (TU-PAL-05) | L'outil de mesure lui-même : deux couleurs identiques à ΔE 0, noir et blanc vers 100, noir sur blanc à 21:1. | — |
+
 ## Scénarios de navigateur
 
 Commande : `npm run test:browser` (tous, après `build:dist`) ou `npm run test:browser -- <nom>` ; `SELENE_BROWSER=webkit`
@@ -1335,7 +1349,7 @@ publique) ; écran : T téléphone, O ordinateur.
 
 - **Fichier** : [`tests/browser/fenetre.js`](../../tests/browser/fenetre.js) · **mode** A · **écran** O
 - **Conditions** : Horloge de Paris simulée ; Open-Meteo simulé ; pour NAV-010, le jeu d'essai du cahier, un appareil réglé en clair.
-- **Vérifie** : midi sans étoiles, minuit étoilé ; sans lieu, ni heure ni météo ; recherche de lieux ; lieu arrondi au dixième ; météo demandée une fois ; pluie dessinée ; lune placée et texte opposé ; météo de plus de trois heures ignorée ; « Suivre le soleil » clair l'après-midi, sombre le soir. Puis, sur le jeu d'essai (NAV-010) : « Rubedo, amanite » change l'accent dans la navigation et le contenu, sans recharger ; « Toujours clair » puis « Toujours sombre » : le fond bascule, titre et aide à 4,5:1 au moins, l'amanite éclaircie ; `Herbier` dans l'en-tête et l'onglet (« Réglages — Herbier »). Mutation vérifiée : la palette sans nouveau rendu, « Toujours sombre » laissé à l'appareil, l'onglet qui garde « Selene », et ces contrôles échouent. EXT-007 : « Lieu gardé… » et les coordonnées arrondies ; « Utiliser ma position » refusée (la géolocalisation répond « refusée », sur chaque moteur) : « Position refusée ou indisponible… », le lieu gardé ; « retirer » : « Lieu retiré… », plus de lieu (mutation vérifiée : le lieu non retiré, le refus muet, et ces contrôles échouent).
+- **Vérifie** : midi sans étoiles, minuit étoilé ; sans lieu, ni heure ni météo ; recherche de lieux ; lieu arrondi au dixième ; météo demandée une fois ; pluie dessinée ; lune placée et texte opposé ; météo de plus de trois heures ignorée ; « Suivre le soleil » clair l'après-midi, sombre le soir. Puis, sur le jeu d'essai (NAV-010) : « Rubedo, amanite » change l'accent dans la navigation et le contenu, sans recharger ; « Toujours clair » puis « Toujours sombre » : le fond bascule, titre et aide à 4,5:1 au moins, l'amanite éclaircie ; `Herbier` dans l'en-tête et l'onglet (« Réglages — Herbier »). Mutation vérifiée : la palette sans nouveau rendu, « Toujours sombre » laissé à l'appareil, l'onglet qui garde « Selene », et ces contrôles échouent. EXT-007 : « Lieu gardé… » et les coordonnées arrondies ; « Utiliser ma position » refusée (la géolocalisation répond « refusée », sur chaque moteur) : « Position refusée ou indisponible… », le lieu gardé ; « retirer » : « Lieu retiré… », plus de lieu (mutation vérifiée : le lieu non retiré, le refus muet, et ces contrôles échouent). NAV-010 (A67) : l'accent sur les vrais composants (bouton principal et jauge de l'aperçu, onglet actif, bouton choisi) ; chaque pastille égale la couleur appliquée, en clair puis en sombre ; rechargée puis rouverte dans un autre onglet, la palette tient.
 - **Cas manuels** : [NAV-010](manuels/navigation-reglages.md#nav-010), [EXT-007](manuels/connexions.md#ext-007)
 
 <a id="tn-saisons"></a>

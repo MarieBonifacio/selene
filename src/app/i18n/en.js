@@ -1776,7 +1776,7 @@ export default {
   "Zone sensible": "Danger zone",
 
   // views/reglages.js
-  "Palette": "Palette",
+  "Couleur d'accent": "Accent colour",
   "Ouvrir sur": "Open on",
   "Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.": "On claude.ai, it goes through your account. In the hosted version, you need your own API key: checked with Anthropic, it is kept encrypted on Selene's server, tied to your account, and never comes back into the page.",
   "Autoriser Claude à modifier le tableau de bord": "Allow Claude to change the dashboard",
@@ -1789,7 +1789,9 @@ export default {
   "Citrinitas, résine": "Citrinitas, resin",
   "Rubedo, amanite": "Rubedo, fly agaric",
   "Tout ici s'applique immédiatement.": "Everything here applies immediately.",
-  "Quatre étapes de l'Œuvre, prises dans le sous-bois.": "Four stages of the Great Work, taken from the undergrowth.",
+  "Elle colore les repères : bouton principal, espace ouvert, jauges, cases cochées. Le fond, le texte et les couleurs d'alerte ne changent pas ; clair ou sombre se règle dans Mode.": "It colours the markers: main button, open space, gauges, ticked boxes. The background, the text and the warning colours stay as they are; light or dark is set in Mode.",
+  "Bouton principal": "Main button",
+  "Espace ouvert": "Open space",
   "Mode": "Mode",
   "Suivre l'appareil": "Follow the device",
   "Toujours sombre": "Always dark",

@@ -24,9 +24,14 @@
   box-sizing:border-box; accent-color:var(--accent);
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
-:root[data-palette="albedo"]{--acc-l:#5a6a5c;--acc-d:#bccab8}
-:root[data-palette="citrinitas"]{--acc-l:#83631a;--acc-d:#d4a94c}
-:root[data-palette="rubedo"]{--acc-l:#973a30;--acc-d:#d56455}
+/* Les palettes (la couleur d'accent) : posées sur la racine, et sur chaque pastille des Réglages, qui montre ainsi la
+   couleur que sa palette donnera dans le mode en cours (A67). Chacune lisible sous du texte (4,5:1), loin du gris des
+   textes secondaires et des autres palettes : tests/palette.test.js. */
+[data-palette="nigredo"]{--acc-l:#3d6a45;--acc-d:#8fbf86}
+[data-palette="albedo"]{--acc-l:#3f5554;--acc-d:#d3dfcc}
+[data-palette="citrinitas"]{--acc-l:#806017;--acc-d:#d4a94c}
+[data-palette="rubedo"]{--acc-l:#973a30;--acc-d:#d56455}
+.swatch[data-palette]{--sw:var(--acc-l)}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]):not([data-mode="light"]){
     --bg:#0e1310; --surface:#151c17; --surface-2:#1a231d; --glass:rgba(14,19,16,.78); --ink:#dde2d6; --ink-2:#b4bdb0; --muted:#8c998a;
@@ -36,7 +41,9 @@
     --sky-top:#070b10; --sky-bot:#132019; --tree-far:#1d2b23; --tree-near:#0a0f0c; --mist:rgba(40,58,48,.55); --star:.8;
     --accent:var(--acc-d);
   }
+  :root:not([data-theme="light"]):not([data-mode="light"]) .swatch[data-palette]{--sw:var(--acc-d)}
 }
+:root[data-theme="dark"]:not([data-mode="light"]) .swatch[data-palette],:root[data-mode="dark"] .swatch[data-palette]{--sw:var(--acc-d)}
 :root[data-theme="dark"]:not([data-mode="light"]),:root[data-mode="dark"]{
   --bg:#0e1310; --surface:#151c17; --surface-2:#1a231d; --glass:rgba(14,19,16,.78); --ink:#dde2d6; --ink-2:#b4bdb0; --muted:#8c998a;
   --rule:#243029; --rule-strong:#56665a; --alarm:#e5785a; --ok:#6fb3a2; --warn:#d2a24c; --info:#8fa9c0;
@@ -413,9 +420,9 @@ ul.plain>.item:last-child{border-bottom:1px solid var(--rule)}
 .item.motif{grid-template-columns:auto 1fr}.item.motif>.row{grid-column:2}.item.motif select{width:auto}
 .item>.row>select{width:auto;max-width:11em} /* un menu de statut ne doit pas écraser le titre de la ligne */
 .col-list>.item>.row{flex-wrap:wrap;justify-content:flex-end;max-width:15em} /* les actions cachées passent à la ligne plutôt que d'élargir la colonne */
-.check{appearance:none;width:21px;height:21px;border:1.5px solid var(--ink);border-radius:50%;margin:3px 0 0;display:grid;place-content:center;cursor:pointer;background:transparent}
-.check:checked{background:var(--accent);border-color:var(--accent)}
-.check:checked::after{content:"";width:9px;height:5px;border:2px solid var(--bg);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.check{appearance:none;width:21px;height:21px;padding:0;border:1.5px solid var(--ink);border-radius:50%;margin:3px 0 0;display:grid;place-content:center;cursor:pointer;background:transparent}
+.check:checked,.pv-check{background:var(--accent);border-color:var(--accent)}
+.check:checked::after,.pv-check::after{content:"";width:9px;height:5px;border:2px solid var(--bg);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
 .t-title{font-weight:500;background:none;border:0;padding:0;text-align:left;cursor:pointer}
 .done .t-title{text-decoration:line-through;color:var(--muted)}
 .meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:2px;font-size:.85rem;color:var(--muted)}
@@ -591,7 +598,7 @@ dialog::backdrop{background:rgba(6,10,8,.55);-webkit-backdrop-filter:blur(4px);b
 dialog form{padding:22px;display:grid;gap:12px}
 label{display:grid;gap:4px;font-size:.88rem;font-weight:500}
 input,select,textarea{background:var(--bg);border:1px solid var(--rule-strong);padding:8px;border-radius:2px;width:100%}
-input[type=checkbox],input[type=radio]{width:auto}
+input[type=checkbox]:not(.check),input[type=radio]{width:auto}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:480px){.field-row{grid-template-columns:1fr}}
 .set{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--rule)}
@@ -621,7 +628,11 @@ input[type=checkbox],input[type=radio]{width:auto}
 .swatches{display:flex;gap:10px;flex-wrap:wrap}
 .swatch{display:flex;align-items:center;gap:8px;border:1px solid var(--rule);padding:8px 12px;cursor:pointer;background:var(--surface)}
 .swatch.on{border-color:var(--accent);outline:1px solid var(--accent)}
-.swatch i{width:14px;height:14px;border-radius:50%;display:block}
+.swatch i{width:14px;height:14px;border-radius:50%;display:block;background:var(--sw)}
+/* L'aperçu : les vrais composants que colore l'accent, inertes. */
+.pal-preview{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-top:12px;padding:10px 12px;border:1px dashed var(--rule);font-size:.9rem}
+.pal-preview .pv-on{padding:4px 10px;border-left:2px solid var(--accent);background:var(--surface)}
+.pal-preview .bar{width:90px;margin:0}
 .capture{display:flex;gap:8px}
 .capture input{flex:1}
 .toast{position:fixed;z-index:10;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:2px;font-size:.92rem;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center}
@@ -720,7 +731,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "c28fc5ab6c";
+const SELENE_BUILD = "00383fdf1b";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -3418,7 +3429,7 @@ var __selene = (() => {
     "Les connexions (Envoyer à Selene, Zotero, le passeur, le calendrier) vivent dans la version web ou l'app installée. L'artefact claude.ai s'en passe.": "Connections (Send to Selene, Zotero, the relay, the calendar) live in the web version or the installed app. The claude.ai artifact does without them.",
     "Zone sensible": "Danger zone",
     // views/reglages.js
-    "Palette": "Palette",
+    "Couleur d'accent": "Accent colour",
     "Ouvrir sur": "Open on",
     "Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.": "On claude.ai, it goes through your account. In the hosted version, you need your own API key: checked with Anthropic, it is kept encrypted on Selene's server, tied to your account, and never comes back into the page.",
     "Autoriser Claude à modifier le tableau de bord": "Allow Claude to change the dashboard",
@@ -3431,7 +3442,9 @@ var __selene = (() => {
     "Citrinitas, résine": "Citrinitas, resin",
     "Rubedo, amanite": "Rubedo, fly agaric",
     "Tout ici s'applique immédiatement.": "Everything here applies immediately.",
-    "Quatre étapes de l'Œuvre, prises dans le sous-bois.": "Four stages of the Great Work, taken from the undergrowth.",
+    "Elle colore les repères : bouton principal, espace ouvert, jauges, cases cochées. Le fond, le texte et les couleurs d'alerte ne changent pas ; clair ou sombre se règle dans Mode.": "It colours the markers: main button, open space, gauges, ticked boxes. The background, the text and the warning colours stay as they are; light or dark is set in Mode.",
+    "Bouton principal": "Main button",
+    "Espace ouvert": "Open space",
     "Mode": "Mode",
     "Suivre l'appareil": "Follow the device",
     "Toujours sombre": "Always dark",
@@ -9630,7 +9643,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   };
 
   // src/app/views/reglages.js
-  var PALETTES = [["nigredo", N_("Nigredo, mousse"), "#6f9a68"], ["albedo", N_("Albedo, lichen"), "#aab7a6"], ["citrinitas", N_("Citrinitas, résine"), "#c99a3c"], ["rubedo", N_("Rubedo, amanite"), "#c0554a"]];
+  var PALETTES = [["nigredo", N_("Nigredo, mousse")], ["albedo", N_("Albedo, lichen")], ["citrinitas", N_("Citrinitas, résine")], ["rubedo", N_("Rubedo, amanite")]];
   var privacyUrl = () => `https://mariebonifacio.github.io/selene/${uiLang() === "en" ? "privacy" : "confidentialite"}.html`;
   var signedIn = () => hosted() && authReady() && authSession;
   var about = (subject) => TEXTS.tipAbout(subject);
@@ -9666,8 +9679,9 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   }
   var langField = (c) => langChoices().length < 2 ? "<span></span>" : field(tr`Langue`, (id) => `<select aria-labelledby="${id}" data-set="config.lang">${opt("", tr`Langue de l'appareil`, c.lang || "")}${langChoices().map(([k, n]) => `<option value="${k}" lang="${k}" ${c.lang === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>`, { tip: TIPS.langue });
   function apparenceHTML(c) {
-    return `${sub(tr`Palette`, TIPS.palette)}<p class="hint">${tr`Quatre étapes de l'Œuvre, prises dans le sous-bois.`}</p>
-    <div class="swatches">${PALETTES.map(([id, n, col]) => `<button class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}"><i style="background:${col}"></i>${tr(n)}</button>`).join("")}</div>
+    return `${sub(tr`Couleur d'accent`, TIPS.palette)}<p class="hint">${tr`Elle colore les repères : bouton principal, espace ouvert, jauges, cases cochées. Le fond, le texte et les couleurs d'alerte ne changent pas ; clair ou sombre se règle dans Mode.`}</p>
+    <div class="swatches">${PALETTES.map(([id, n]) => `<button type="button" class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}" data-palette="${id}" aria-pressed="${c.palette === id}"><i></i>${tr(n)}</button>`).join("")}</div>
+    <div class="pal-preview" aria-hidden="true" inert><span class="btn acc sm">${tr`Bouton principal`}</span><span class="pv-on">${tr`Espace ouvert`}</span><span class="bar"><i style="width:60%"></i></span><span class="check pv-check"></span></div>
     <div class="field-row" style="margin-top:18px">${field(tr`Mode`, (id) => `<select aria-labelledby="${id}" data-set="config.mode">${opt("auto", tr`Suivre l'appareil`, c.mode)}${opt("dark", tr`Toujours sombre`, c.mode)}${opt("light", tr`Toujours clair`, c.mode)}${opt("sun", tr`Suivre le soleil`, c.mode)}</select>`, { tip: TIPS.mode })}
     ${field(tr`Nom affiché`, (id) => `<input aria-labelledby="${id}" data-set="config.name" value="${esc(c.name)}">`, { tip: TIPS.name })}</div>
     <div class="field-row" style="margin-top:12px">${field(tr`Ouvrir sur`, (id) => `<select aria-labelledby="${id}" data-act="open-on">${opt("accueil", tr`L'accueil`, openOn())}${opt("last", tr`Là où j'en étais`, openOn())}</select>`, { tip: TIPS.openOn, local: true })}${langField(c)}</div>
