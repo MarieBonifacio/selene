@@ -464,7 +464,7 @@ ul.dehors+ul.dehors,h3+ul.dehors{margin-top:0}
 .capture select{flex:0 1 auto;width:auto;max-width:11em}
 .agenda-ev{padding:3px 0}.agenda-ev .when{display:inline-block;min-width:7.5em;font-variant-numeric:tabular-nums;color:var(--muted)}
 .dehors .why{margin:4px 0 0;font-size:.85rem;color:var(--accent)}.cite-bar h4{margin:16px 0 4px;font-size:1rem}.cite-bar>.row{align-items:baseline;flex-wrap:wrap}ul.cite-pairs li,ul.cite-authors li{padding:3px 0}
-@media (max-width:640px){ul.dehors>.item,ul.dehors-cfg>.item,ul.zot-list>.item,ul.cite-list>.item,.col-list>.item{grid-template-columns:auto minmax(0,1fr)}ul.dehors>.item>.row,ul.dehors-cfg>.item>.row,ul.zot-list>.item>.row,ul.cite-list>.item>.row,.col-list>.item>.row{grid-column:2;justify-content:flex-start;max-width:none}
+@media (max-width:640px){ul.dehors>.item,ul.dehors-cfg>.item,ul.zot-list>.item,ul.cite-list>.item,.col-list>.item,ul.radar>.item{grid-template-columns:auto minmax(0,1fr)}ul.dehors>.item>.row,ul.dehors-cfg>.item>.row,ul.zot-list>.item>.row,ul.cite-list>.item>.row,.col-list>.item>.row,ul.radar>.item>.row{grid-column:2;justify-content:flex-start;max-width:none}
   .capture.capture-wrap{flex-wrap:wrap}.capture.capture-wrap input{flex:1 1 100%}}
 .meta .acts{margin-left:auto;display:inline-flex;gap:2px}.meta .acts .btn{padding:0 6px;font-size:.8rem}
 .marg .links{display:flex;flex-direction:column;gap:2px}
@@ -689,7 +689,9 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
   .btn{min-width:44px}a.btn{display:inline-block} /* un lien-bouton ne se coupe pas en deux lignes de cible */
   .btn,.star,.check{position:relative}
   .btn::after,.star::after{content:"";position:absolute;inset:min(-3px,calc(50% - 23px)) -3px}
-  .check::before{content:"";position:absolute;inset:-11px}
+  .star::after{inset:min(-3px,calc(50% - 23px))} /* l'étoile d'une tâche, étroite : sa zone s'élargit aussi */
+  .check::before{content:"";position:absolute;inset:-14px -12px -14px -16px} /* comptée depuis l'intérieur de la bordure : 18 px sous Firefox, qui garde 1,5 px de bordure (19 sous Chromium, qui l'arrondit) ; à droite, le titre à 10 px ; à gauche, la marge de la page */
+  .t-title{position:relative}.t-title::after{content:"";position:absolute;inset:min(-3px,calc(50% - 23px)) 0} /* le titre d'une tâche, qui la déplie */
   details.mreg>summary{min-height:44px;align-items:center}
   .reg-guide summary,.danger summary,details.rlm-privacy>summary,details.rlm-info>summary{padding-block:11px}
   .tap{display:grid;place-items:center;min-width:44px;min-height:44px}

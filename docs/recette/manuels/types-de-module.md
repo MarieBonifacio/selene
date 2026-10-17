@@ -38,6 +38,7 @@ Arc, Carnet, et une Boîte de six notes. Les opérations du Budget sont en septe
 | [MOD-024](#mod-024) | Minuteur de quinze minutes et la suite proposée | P3 | Web, Mob |
 | [MOD-025](#mod-025) | Longues listes : cent, puis « Voir les suivants » | P3 | Web, Mob |
 | [MOD-026](#mod-026) | Importer des notes Markdown (Obsidian, Zettlr) | P2 | Web, Mob, ART |
+| [MOD-027](#mod-027) | Tâches : « J'attends une réponse », la relance, la réponse reçue | P2 | Web, Mob |
 
 Identifiants retirés : aucun.
 
@@ -701,3 +702,35 @@ Identifiants retirés : aucun.
 - **Un fichier illisible** (déplacé ou supprimé après son choix, resté dans un nuage hors ligne) est ignoré et compté : « … 1 fichier illisible, ignoré. » à la confirmation et après l'import ; si aucun fichier n'est lisible : « Aucun de ces fichiers n'a pu être lu : ils ont peut-être été déplacés ou supprimés depuis leur choix. ». Pas reproductible à la main de façon fiable : couvert par `TN-import-markdown` et `TU-MKD-05` (anomalie A8, corrigée).
 - **État final attendu** : le Carnet a quatre notes.
 - **Nettoyage** : réimporter le jeu d'essai.
+
+---
+
+<a id="mod-027"></a>
+### MOD-027 — Tâches : « J'attends une réponse », la relance, la réponse reçue
+
+- **Fonctionnalité et règle** : une tâche dont la suite dépend de quelqu'un d'autre (un devis, un dossier, un rendez-vous
+  à confirmer) se met en attente : qui doit répondre et quand relancer (dans quatorze jours, par défaut), deux champs
+  facultatifs. Elle quitte « Aujourd'hui », les échéances et le tirage au sort pour une section « En attente » ; la ligne
+  de l'accueil la compte. Le jour de la relance, l'accueil la ramène, avec « relancé » (la relance consignée, la suivante
+  quatorze jours plus tard) et « réponse reçue » (la tâche revient dans les échéances). Chaque geste se défait par
+  « Annuler ». Une tâche faite n'attend plus rien. Idée E1 de l'[audit du 12 octobre](../../audit-fonctionnel-2026-10-12.md).
+- **Objectif, risque vérifié** : une attente noyée parmi les retards (une culpabilité qui n'est pas la sienne, puis
+  l'oubli) ; une relance qui ne revient jamais ; un geste sans retour.
+- **Priorité** : P2 · **Plateformes** : Web, Mob
+- **Préconditions** : jeu d'essai ; J désigne la date du jour (le scénario la fige au 17 octobre 2026).
+- **Données** : « Repeindre la rambarde du balcon » (Chantier, en retard).
+- **Automatisés associés** : `TN-attente`, `TU-MOD-79`, `TU-DOM-03`, `TN-cibles`
+- **Source** : [DOC] [audit-fonctionnel-2026-10-12.md](../../audit-fonctionnel-2026-10-12.md), E1 ; [TEST] `tests/browser/attente.js`,
+  `tests/modules.test.js`, `tests/domain.test.js`.
+
+| Étape | Action précise | Résultat attendu observable |
+|---|---|---|
+| 1 | Chantier → toucher le titre « Repeindre la rambarde du balcon » → « J'attends une réponse ». | Le formulaire « J'attends une réponse » : « La tâche sort des échéances et revient sur l'accueil le jour de la relance. » ; « Qui doit répondre » vide ; « Relancer le » à J + 14. |
+| 2 | « le syndic », relance à J + 3, « Enregistrer ». | « « Repeindre la rambarde du balcon » attend une réponse. Elle revient le jour de la relance. » avec « Annuler » ; une section « En attente » : « depuis le J · chez le syndic · relancer le J + 3 » ; la tâche n'est plus sous « En retard ». |
+| 3 | Accueil. | La ligne de Chantier dit « 1 en attente » ; aucune ligne « à relancer ». |
+| 4 | Le jour J + 3 (horloge de l'appareil avancée), accueil, puis « relancé ». | Avant le geste : « « Repeindre la rambarde du balcon » : à relancer (Chantier) · depuis le J · chez le syndic » ; après : « Relancé. Prochaine relance le J + 17. », et la ligne disparaît. |
+| 5 | Chantier, puis « réponse reçue ». | Avant le geste, la section dit « relancé 1 fois ». Après : « Réponse reçue : « Repeindre la rambarde du balcon » revient dans les échéances. » ; la tâche est de nouveau sous « En retard », la section « En attente » a disparu. |
+| 6 | « Annuler » dans la bulle. | La tâche revient en attente, chez le syndic, sa relance consignée. |
+
+- **État final attendu** : la tâche en attente, relancée une fois.
+- **Nettoyage** : réimporter le jeu d'essai ; remettre l'horloge de l'appareil à l'heure.

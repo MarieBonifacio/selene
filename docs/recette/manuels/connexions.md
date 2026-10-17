@@ -263,13 +263,17 @@ Identifiants retirés : aucun.
 
 - **Fonctionnalité et règle** : Réglages → Radar culturel, quelques mots ; sur l'accueil, à la demande, cinq événements au plus
   autour du lieu du ciel (OpenAgenda) dans les deux semaines ; le portail voit la zone et les dates, jamais les mots (le tri
-  se fait sur l'appareil) ; « garder » dépose un événement dans la boîte.
-- **Objectif, risque vérifié** : mots de la personne envoyés au portail ; requêtes non demandées.
+  se fait sur l'appareil) ; « garder » dépose un événement dans la boîte ; « en faire une sortie » (s'il existe un espace
+  Tâches) en fait une tâche datée : titre, échéance au premier jour (au dernier, pour ce qui a déjà commencé), la salle
+  en lieu, la ville, les dates et le lien en note, puis son formulaire ; une tâche datée s'ajoute au calendrier par un
+  fichier `.ics` d'une journée (RFC 5545), sans compte ni API (E2 de l'[audit du 12 octobre](../../audit-fonctionnel-2026-10-12.md)).
+- **Objectif, risque vérifié** : mots de la personne envoyés au portail ; requêtes non demandées ; une sortie mal datée
+  (née en retard) ; un fichier de calendrier qu'aucun agenda n'accepte.
 - **Priorité** : P3 · **Plateformes** : Web, Mob
 - **Préconditions** : lieu réglé (Lille) ; connectée si la lecture directe est refusée (le passeur relaie).
 - **Données** : mots `concert, poésie, exposition`.
-- **Automatisés associés** : `TN-radar`, `TU-RAD-01`, `TU-RAD-02`, `TU-RAD-03`
-- **Source** : [DOC] README, « Radar culturel » ; [DOC] [connexions.md](../../connexions.md), 5d ; [TEST] `tests/browser/radar.js`.
+- **Automatisés associés** : `TN-radar`, `TU-RAD-01`, `TU-RAD-02`, `TU-RAD-03`, `TU-AGD-03`, `TU-MOD-80`
+- **Source** : [DOC] README, « Radar culturel » ; [DOC] [connexions.md](../../connexions.md), 5d ; [DOC] RFC 5545 (iCalendar) ; [TEST] `tests/browser/radar.js`, `tests/agenda.test.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -279,9 +283,13 @@ Identifiants retirés : aucun.
 | 4 | « garder » sur un événement. | « Gardé dans Boîte. » ; une note avec titre, date, lieu et lien. |
 | 5 | Rouvrir le radar dans l'heure. | Servi sans nouvelle requête (cache de l'appareil). |
 | 6 | Avec un compte que le passeur ne sert pas (absent de `PASSEUR_USERS`), le cache effacé, rouvrir le radar. | Si la lecture directe est refusée : « … et le passeur, qui le lirait à ta place, n'est pas ouvert à ce compte. » ; jamais « il faut ton passeur (version hébergée, connectée) » à une personne connectée (A72). |
+| 7 | Le radar ouvert, « en faire une sortie » sur un événement à venir. | « Modifier la tâche » s'ouvre, titre prérempli ; enregistré : une tâche dans Chantier, échéance au jour de l'événement, la salle en lieu, la note « ville / le … / lien » ; la feuille dit « sortie prévue ». Sur un événement déjà commencé : l'échéance est son dernier jour. Avec deux espaces Tâches, « Dans quel espace » est demandé d'abord. |
+| 8 | Chantier : déplier cette tâche, toucher son lien, puis « Ajouter à mon calendrier ». | Le lien ouvre la page de l'événement à part ; un fichier `<titre>-<date>.ics` est donné (téléchargé, ou la feuille de partage sur téléphone et dans l'app). |
+| 9 | Ouvrir ce fichier dans l'agenda de l'appareil (Google Agenda, Calendrier d'Apple, Outlook). | Un événement d'une journée entière, au bon jour, avec le titre, le lieu et le lien ; l'importer deux fois ne le double pas dans un agenda qui respecte l'UID. |
+| 10 | Désactiver tous les espaces Tâches, rouvrir le radar. | Pas de « en faire une sortie » ; « garder » reste. |
 
-- **État final attendu** : une note de plus.
-- **Nettoyage** : la supprimer ; effacer les mots.
+- **État final attendu** : une note de plus, une tâche de plus dans Chantier, un événement dans l'agenda de l'appareil.
+- **Nettoyage** : supprimer la note, la tâche et l'événement de l'agenda ; effacer les mots.
 
 ---
 

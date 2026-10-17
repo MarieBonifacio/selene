@@ -1592,3 +1592,67 @@ test('le mode Sources et les fragments d’un compteur s’activent aussi dans �
   assert.match(app.TYPE_UI.cumul.settings(cumId, d.modules[cumId]), /data-set-mod="[^"]+\.scrapsLabel"/, 'et leur nom se règle');
   assert.ok(app.noteTargets('inbox').includes(cumId), 'il reçoit désormais des notes');
 });
+
+test('E1, j’attends une réponse : une tâche en attente sort des échéances, revient le jour de la relance, se relance ou se lève', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), ch = d.modules.chantier, T = app.TYPE_UI.taches;
+  ch.entries = [];
+  app.addTask(ch.entries, { title: 'Dossier CAF', due: '2026-10-05', steps: [{ t: 'RIB', d: true }] }, 't1', '2026-10-01');
+  const el = { dataset: { mod: 'chantier', task: 't1' }, closest(sel) { return sel === '[data-task]' || sel === '[data-mod]' ? this : null; } };
+  assert.match(app.taskHTML('chantier', ch.entries[0]), /data-act="task-wait"/, 'la tâche propose « J’attends une réponse »');
+  app.CLICK['task-wait'](el);
+  app.submitModuleForm({ who: 'CAF', next: '2026-10-15' });
+  const t = ch.entries[0];
+  assert.equal(t.wait.who, 'CAF'); assert.equal(t.wait.next, '2026-10-15');
+  assert.match(app.nodes.get('#toast').innerHTML, /data-act="undo"/, 'mettre en attente se défait');
+  let view = T.view('chantier');
+  const enAttente = view.slice(view.indexOf('En attente'));
+  assert.ok(view.indexOf('En attente') > 0 && enAttente.includes('Dossier CAF'), 'une section « En attente »');
+  assert.ok(!view.slice(0, view.indexOf('En attente')).includes('Dossier CAF'), 'et plus dans les échéances');
+  assert.match(enAttente, /chez CAF · relancer le 15 oct\./);
+  assert.match(T.summary('chantier', ch), /1 en attente/, 'la ligne de l’accueil le compte');
+  assert.equal(T.alerts('chantier', ch, '2026-10-14').length, 0, 'rien avant la date de relance');
+  const [alerte] = T.alerts('chantier', ch, '2026-10-15');
+  assert.match(alerte.text, /« Dossier CAF » : à relancer/);
+  assert.match(alerte.actions, /data-act="task-relaunch" data-mod="chantier" data-task="t1"/);
+  assert.match(alerte.actions, /data-act="task-answer" data-mod="chantier" data-task="t1"/);
+  app.CLICK['task-relaunch'](el);
+  assert.equal(t.wait.log.length, 1, 'la relance est consignée');
+  assert.ok(t.wait.next > '2026-10-15', 'et reportée');
+  app.CLICK.undo();
+  assert.equal(t.wait.log.length, 0, '« Annuler » la défait');
+  app.CLICK['task-answer'](el);
+  assert.equal(t.wait, undefined, 'réponse reçue : l’attente est levée');
+  view = T.view('chantier');
+  assert.ok(!view.includes('En attente'), 'plus de section');
+  app.CLICK.undo();
+  assert.equal(t.wait.who, 'CAF', '« Annuler » la rend');
+  // Le tirage au sort ne tire pas une attente.
+  d.modules.chantier.entries = [t];
+  app.pickTask('chantier');
+  assert.match(app.nodes.get('#toast').textContent + app.nodes.get('#toast').innerHTML, /Rien à tirer/);
+});
+
+test('E2, une tâche datée s’ajoute au calendrier (.ics d’une journée) ; une adresse de sa note devient un lien (TU-MOD-80)', async () => {
+  const saved = [];
+  const app = launch(new Map(), { claude: { use: async ns => ns === 'downloads' ? { save: async f => { saved.push(f); } } : null } });
+  await new Promise(r => setTimeout(r, 0)); // l'artefact prête ses espaces de noms après le démarrage
+  const ch = app.S().modules.chantier;
+  ch.entries = [];
+  app.addTask(ch.entries, { title: 'Nuit de la poésie', due: '2026-10-02', room: 'La Condition publique', note: 'Roubaix\nle vendredi 2 octobre 2026\nhttps://openagenda.com/lille/events/2.' }, 't1', '2026-09-28');
+  app.addTask(ch.entries, { title: 'Sans date', note: 'voir <b>ici</b> : javascript:alert(1) et http://exemple.fr' }, 't2', '2026-09-28');
+  const html = app.taskHTML('chantier', ch.entries[0]);
+  assert.match(html, /data-act="task-ics"/, 'une tâche datée propose « Ajouter à mon calendrier »');
+  assert.doesNotMatch(app.taskHTML('chantier', ch.entries[1]), /data-act="task-ics"/, 'sans date, rien à ajouter');
+  assert.match(html, /<a href="https:\/\/openagenda\.com\/lille\/events\/2" target="_blank" rel="noopener noreferrer">https:\/\/openagenda\.com\/lille\/events\/2<\/a>\./, 'l’adresse devient un lien, sans le point qui la suit');
+  const other = app.taskHTML('chantier', ch.entries[1]);
+  assert.ok(!/<a /.test(other) && other.includes('&lt;b&gt;ici&lt;/b&gt;'), 'ni javascript:, ni http, ni balise : du texte');
+  const el = { dataset: { mod: 'chantier', task: 't1' }, closest(sel) { return sel === '[data-task]' || sel === '[data-mod]' ? this : null; } };
+  app.CLICK['task-ics'](el); await new Promise(r => setTimeout(r, 0));
+  assert.equal(saved.length, 1, 'un fichier est donné');
+  assert.equal(saved[0].filename, 'nuit-de-la-poesie-2026-10-02.ics');
+  const ics = saved[0].data;
+  for (const l of ['UID:t1.chantier@selene', 'DTSTART;VALUE=DATE:20261002', 'DTEND;VALUE=DATE:20261003', 'SUMMARY:Nuit de la poésie', 'LOCATION:La Condition publique', 'URL:https://openagenda.com/lille/events/2'])
+    assert.ok(ics.split('\r\n').includes(l), `ligne attendue : ${l}`);
+  assert.match(ics, /DESCRIPTION:Roubaix\\nle vendredi 2 octobre 2026\\nhttps:/);
+});

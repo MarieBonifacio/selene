@@ -63,6 +63,37 @@ avant lui :
 | État vide muet ou trompeur | « Rien encore : « … », en haut, pour commencer. » | `TU-MOD-77` |
 | Sources et fragments réservés aux modèles | Deux cases dans « régler » | `TU-MOD-78` |
 
+Le lot 2 est fusionné : [PR #162](https://github.com/MarieBonifacio/selene/pull/162).
+
+Le lot 3 suit l'ordre de travail : les deux premières propositions construites, la troisième mise à l'épreuve avant
+tout code.
+
+| Proposition | Ce qui est livré | Tests |
+|---|---|---|
+| E1, « J'attends une réponse » | Une tâche en attente (qui, quand relancer) quitte les échéances pour « En attente » ; l'accueil la ramène le jour de la relance, avec « relancé » et « réponse reçue » ; chaque geste se défait. Cas [MOD-027](recette/manuels/types-de-module.md#mod-027) | `TU-DOM-03`, `TU-MOD-79`, `TN-attente` |
+| E2, du radar à une sortie | « En faire une sortie » crée une tâche datée et ouvre son formulaire ; toute tâche datée s'exporte en `.ics` d'une journée ; le lien d'une note de tâche se clique. Cas [EXT-010](recette/manuels/connexions.md#ext-010), étapes 7 à 10 | `TU-AGD-03`, `TU-MOD-80`, `TN-radar` |
+| E3, reprendre selon le temps | Aucun code : le protocole en magicien d'Oz, ses seuils fixés d'avance et sa condition d'abandon sont l'expérience [E6](validation.md#e6--reprendre-selon-le-temps-en-magicien-doz) | — |
+
+Écarts avec les propositions :
+- **E2, l'échéance** : « le premier jour » ferait naître en retard une exposition déjà commencée ; elle prend alors le
+  dernier jour.
+- **E2, le fichier** : il couvre la journée de l'échéance, pas toute la durée de l'événement, puisque la tâche ne garde
+  qu'une date (« aucune donnée nouvelle »).
+- **E3, le protocole** : l'audit l'imaginait sur les données des testeurs ; or la sauvegarde exportée contient le suivi
+  « Reprendre la main », sensible. Le magicien travaille donc sur une carte d'état dictée par la personne, et le test
+  dure trois semaines au lieu de deux.
+- **A73**, trouvé en chemin : la case, le titre et l'étoile d'une tâche restaient sous 44 px au doigt, faute de tâche dans
+  le jeu du test des cibles tactiles depuis toujours ([perimetre.md](recette/perimetre.md#anomalies-et-observations)).
+
+Non vérifié pour ce lot :
+- le fichier `.ics` ouvert dans un vrai agenda (Google, Apple, Outlook) ; il est relu par Selene et par la bibliothèque
+  `icalendar` 7.3.0, mais ce n'est pas un agenda ;
+- WebKit et Firefox, laissés à la CI ;
+- un vrai téléphone ;
+- l'utilité réelle de E1 et E2 : la condition « vérifier l'utilité avant de développer » de E2 (le devenir des notes
+  gardées du radar) n'a pas été mesurée, faute de données d'usage. Sa condition d'abandon tient toujours : revoir le
+  radar si moins d'un événement par mois et par personne est gardé.
+
 ---
 
 ## A. Diagnostic des couleurs
@@ -563,8 +594,10 @@ extensions et des fonctions transverses.
 - **Effort** : 3 à 4 jours (1 pour la fonction pure et ses tests, 1 pour l'interface, 0,5 à 1 pour le fil des reprises,
   0,5 pour le cahier et la traduction).
 - **Vérifier l'utilité avant de développer** : un test en « magicien d'Oz » (un humain joue la fonction à la main).
-  Pendant deux semaines, à chaque ouverture, cinq testeurs notent « temps et élan », reçoivent les trois propositions
-  calculées à la main, et disent si elles servaient. Le fil des reprises, lui, peut se livrer seul (0,5 à 1 jour) :
+  Pendant trois semaines (la première de rodage ; « deux semaines » ici d'abord, incohérent avec la condition
+  d'abandon), à chaque ouverture, cinq testeurs notent « temps et élan », reçoivent les trois propositions calculées à
+  la main, et disent si elles servaient. Le protocole complet est l'expérience
+  [E6 de validation.md](validation.md#e6--reprendre-selon-le-temps-en-magicien-doz) (17 octobre 2026). Le fil des reprises, lui, peut se livrer seul (0,5 à 1 jour) :
   il ne coûte presque rien.
 - **Condition d'abandon** : moins d'un usage par semaine et par testeur après trois semaines, ou moins d'une proposition
   sur trois acceptée. Retirer le sélecteur et garder le fil.

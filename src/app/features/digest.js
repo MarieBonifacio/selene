@@ -22,7 +22,7 @@ const plainText = html => String(html).replace(/<[^>]*>/g, "").replace(/&(amp|lt
 export function dayDigest(day) {
   const s = S(), out = [];
   for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) for (const a of TYPE_UI[inst.type].alerts(id, inst, day)) if (a.actions) out.push(plainText(a.text));
-  for (const [id, t] of allTasks()) if (enabled(id) && !t.done && t.due === day) out.push(tr`Échéance : ${t.title}`);
+  for (const [id, t] of allTasks()) if (enabled(id) && !t.done && !t.wait && t.due === day) out.push(tr`Échéance : ${t.title}`);
   return out;
 }
 export function digestPlan(nowMs = Date.now(), days = 7) {

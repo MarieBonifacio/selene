@@ -8,6 +8,8 @@ const { execFileSync } = require('node:child_process');
 const { engine, BASE, launchOptions, check } = require('./helpers');
 const RACINE = path.join(__dirname, '..', '..');
 const PAGE = BASE + '/dist/recette/campagne.html';
+// Le nombre de cas attendu : celui que la matrice annonce (et que `npm run recette` vérifie), pas un nombre recopié ici.
+const CAS = +require('node:fs').readFileSync(path.join(RACINE, 'docs', 'recette', 'matrice.md'), 'utf8').match(/Décompte des (\d+) cas manuels/)[1];
 
 /* La fausse base et le faux « user », posés avant le script de la page. `ecriture` : false pour un accès en lecture. */
 const fausseBase = ({ ecriture = true } = {}) => {
@@ -69,7 +71,7 @@ const fausseBase = ({ ecriture = true } = {}) => {
     console.log('sans base : le cahier se lit, rien ne s’enregistre');
     const L = await ouvrir(false), l = L.p;
     const lu = await l.evaluate(() => ({ cas: document.querySelectorAll('details.case').length, banniere: document.getElementById('banner').textContent, nouvelle: document.getElementById('newBtn').disabled, D: JSON.parse(document.getElementById('data').textContent) }));
-    check(lu.cas === 192 && lu.cas === lu.D.cas.length && lu.banniere.includes('Les coches ne s\'enregistrent pas ici') && lu.nouvelle,
+    check(lu.cas === CAS && lu.cas === lu.D.cas.length && lu.banniere.includes('Les coches ne s\'enregistrent pas ici') && lu.nouvelle,
       `${lu.cas} cas, « Les coches ne s’enregistrent pas ici… », « Nouvelle campagne » désactivée`);
     await L.ctx.close();
 

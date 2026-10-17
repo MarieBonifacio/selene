@@ -1,4 +1,4 @@
-# Valider Selene : le kit des expériences (E1 à E5)
+# Valider Selene : le kit des expériences (E1 à E6)
 
 Le plan de l'audit (section 8) teste cinq hypothèses en 90 jours, chacune avec un seuil **fixé avant** de regarder les
 résultats. Ce document donne de quoi les mener : qui recruter, quoi dire, quoi noter, comment décider. Les outils
@@ -7,8 +7,10 @@ techniques sont ailleurs : la page publique de test dans [essai.md](essai.md), l
 
 L'ordre compte. E1 (le problème existe-t-il ?) et E3 (la promesse attire-t-elle ?) se mènent ensemble, dans les deux
 premières semaines. E2 (le parcours tient-il ?) suit, avant d'inviter qui que ce soit. E4 (s'en sert-on encore au bout
-d'un mois ?) puis E5 (paie-t-on ?) viennent ensuite. Une expérience sous son seuil n'est pas un échec : c'est une
-information qui coûte moins cher maintenant qu'après six mois de développement.
+d'un mois ?) puis E5 (paie-t-on ?) viennent ensuite. E6 (une fonction proposée vaut-elle d'être construite ?) vient
+de l'[audit fonctionnel du 12 octobre 2026](audit-fonctionnel-2026-10-12.md) et se mène pendant E4, avec cinq de ses
+participants. Une expérience sous son seuil n'est pas un échec : c'est une information qui coûte moins cher maintenant
+qu'après six mois de développement.
 
 **Le principe qui vaut pour toutes : parler de la vie des gens, pas de Selene.** On demande ce qui s'est passé, pas
 ce qui se passerait. « Utiliseriez-vous… ? » obtient un oui poli et ne prédit rien. « La dernière fois que… » obtient
@@ -182,6 +184,122 @@ médiateur de la consommation) et les mentions légales (nom, SIREN, adresse) ; 
 de paiement. Une relecture par un juriste est recommandée avant la première vente. Ensuite, je peux ajouter l'offre à la
 page publique et l'annoncer aux bêta-testeurs et à la liste d'attente.
 
+## E6 : reprendre selon le temps, en magicien d'Oz
+
+Une fonction proposée par l'audit du 12 octobre 2026 (sa **proposition E3**, à ne pas confondre avec l'expérience E3
+ci-dessus) : sur l'accueil, la personne déclare son temps (10 min, 30 min, 1 h ou plus) et son élan (peu, de l'élan) ;
+Selene répond par trois propositions au plus, chacune avec son geste. Trois à quatre jours de développement. Avant de
+les dépenser, un **magicien d'Oz** : un humain joue la fonction à la main, la personne s'en sert comme si elle existait,
+et l'on mesure si elle s'en sert. Le fil des reprises, l'autre moitié de la proposition, est déjà livré (lot 2 de
+l'audit) : il n'est pas en jeu ici.
+
+**Les hypothèses et leurs seuils**, fixés avant le début :
+
+- **Usage** : la personne déclare son temps et son élan au moins **une fois par semaine** en semaine 3 (médiane des
+  cinq testeurs). La semaine 1, rodage et nouveauté, ne compte pas.
+- **Acceptation** : au moins **une déclaration sur trois** se conclut par une proposition choisie **et commencée**.
+  C'est la lecture opérationnelle de « une proposition sur trois acceptée » dans l'audit : on n'en choisit qu'une à la
+  fois, compter les propositions refusées ne voudrait rien dire.
+- **Condition d'abandon** : l'un des deux seuils manqué. On ne construit pas le sélecteur ; le fil des reprises reste.
+
+L'audit disait « deux semaines » de test, et une condition d'abandon lue « après trois semaines » : incohérent. Le test
+dure **trois semaines** ; la première sert de rodage.
+
+**Qui.** Cinq participants actifs de la bêta (E4), volontaires, qui ont déjà au moins un pont de reprise ouvert et une
+dizaine de tâches. Personne qui découvre Selene : on testerait la découverte, pas la reprise. Aucun proche.
+
+**Pourquoi pas une sauvegarde exportée.** Pour calculer, le magicien doit connaître les ponts, les tâches, la boîte et
+les décisions de la personne. L'export de Selene contient tout, y compris le suivi « Reprendre la main », sensible, que
+`withLocal` y ajoute (`src/app/state/local.js`). Il ne doit jamais circuler pour ce test.
+
+**Le dispositif.**
+
+1. **La carte d'état (J0, visio de 30 minutes).** La personne partage son écran et dicte, espace par espace, ce qui
+   servira au calcul, et rien d'autre :
+   - les ponts de reprise ouverts (espace, première ligne, date) ;
+   - les tâches ouvertes (titre, effort, échéance, en attente ou non) ;
+   - le nombre de notes de la boîte ;
+   - les décisions dont la révision est échue.
+
+   Elle peut remplacer un titre par une étiquette neutre (« tâche A »). Les espaces sensibles n'y figurent jamais. La
+   carte vit chez le magicien seul, sous le code de la personne (P1 à P5).
+2. **Déclarer.** Quand elle ouvre Selene pour travailler, la personne envoie un message (Signal, chiffré de bout en
+   bout) : « 10 / peu », « 30 / élan », « 60 / élan ». Si quelque chose a changé depuis le dernier message, une ligne de
+   plus : « fait : tâche A ; nouveau pont dans Écriture ».
+3. **Répondre en moins de trois minutes**, avec la carte des règles ci-dessous, jamais au jugement. Pour tenir ce délai,
+   on convient de deux créneaux de garde par jour (par exemple 9 h-11 h et 18 h-21 h). Une déclaration hors créneau
+   reçoit « hors créneau » et n'est pas comptée : c'est un biais connu du test, noté dans le journal.
+4. **La personne répond** « 1 », « 2 », « 3 » ou « rien », puis « commencé » quand elle s'y met. « Rien » est une
+   réponse valable, et on le lui dit au départ.
+5. **Chaque semaine**, un point de dix minutes : mettre la carte d'état à jour, écran partagé, puis trois questions
+   (plus bas).
+
+**La carte des règles** (déterministe : aucun hasard, aucun apprentissage, rien de deviné d'après l'heure). On garde les
+trois premières propositions qui s'appliquent, dans cet ordre :
+
+1. un pont ouvert depuis plus de 14 jours, le plus ancien : « Tu t'étais arrêtée à… », puis ouvrir l'espace ;
+2. une tâche ouverte, ni en attente, ni d'un espace sensible :
+   - d'effort 1 si 10 minutes ou peu d'élan ;
+   - d'effort 2 au plus si 30 minutes ;
+   - de tout effort si une heure ou plus, avec de l'élan.
+
+   On prend la plus proche échéance, puis les tâches sans date, de la plus ancienne à la plus récente. Le geste :
+   l'étoiler, ou quinze minutes de minuteur ;
+3. un pont plus récent, le plus ancien d'entre eux ;
+4. trier la boîte une note à la fois, si elle compte dix notes ou plus et qu'on a 10 ou 30 minutes ;
+5. une décision à réexaminer, échue, si l'élan est faible.
+
+Si la carte ne tranche pas (deux tâches à la même échéance), on prend l'ordre de la liste de la personne et on note le
+cas : c'est un défaut de la carte à corriger avant tout développement, pas une occasion d'improviser.
+
+**Le message du magicien**, toujours sur ce modèle :
+
+> Selene (test) — 10 min, peu d'élan :
+> 1. Écriture : « Je m'étais arrêtée à la scène du quai » (pont du 2 oct.) → ouvrir Écriture.
+> 2. Chantier : « Racheter des joints » (petit effort) → l'étoiler, ou quinze minutes de minuteur.
+> 3. Boîte : 14 notes à trier → une à la fois.
+> Réponds 1, 2, 3 ou « rien ».
+
+**La grille**, une ligne par déclaration : date et heure ; code ; temps ; élan ; délai de réponse ; les propositions
+faites (types et rangs) ; le choix ; « commencé » ou non ; une erreur du magicien (une tâche déjà faite, un pont déjà
+fermé) ; un mot de la personne s'il y en a un. Une proposition fausse par erreur du magicien n'est pas un refus : elle
+sort du calcul de l'acceptation.
+
+**Les trois questions de la semaine** :
+
+1. « La dernière fois que tu as ouvert Selene sans rien déclarer, qu'est-ce que tu y as fait ? »
+2. « Une proposition t'a-t-elle évité de choisir ? Laquelle, quel jour ? »
+3. « Laquelle aurais-tu voulu voir, et qui n'est pas venue ? »
+
+La première mesure ce que la déclaration remplace ; la troisième, ce que la carte oublie.
+
+**Lire.** À la fin de la semaine 3 :
+
+- les déclarations par testeur et par semaine, semaines 2 et 3 ;
+- la part des déclarations conclues par une proposition commencée ;
+- le rang choisi : si l'on prend surtout la troisième, l'ordre de la carte est faux, même si le seuil est atteint.
+
+Cinq personnes, trois semaines : quelques dizaines de déclarations. Une personne pèse 20 points : lire les nombres, pas
+seulement les pourcentages, et une par une.
+
+**Les biais du dispositif**, à écrire dans le journal avec le résultat :
+
+- l'obligeance : on déclare pour faire plaisir. D'où le « rien » valorisé, et la semaine 1 écartée ;
+- le délai humain : quelques minutes, qu'une fonction réelle n'aurait pas. L'usage mesuré est donc plutôt sous-estimé ;
+- les créneaux : seules les déclarations en créneau comptent ;
+- la carte d'état, en retard sur la réalité entre deux mises à jour.
+
+**Décider**, et l'écrire au journal avant d'en parler :
+
+- les deux seuils atteints : construire le sélecteur, dans le périmètre de l'audit (trois sources, trois propositions,
+  le dernier choix gardé sur l'appareil seul) ;
+- l'usage atteint, l'acceptation non : la carte des règles est fausse. La corriger une fois, d'après la question 3, et
+  refaire deux semaines. Un second échec vaut abandon ;
+- l'usage manqué : abandon. Le fil des reprises reste ; le sélecteur ne se construit pas.
+
+**Les données.** Accord écrit avant la carte d'état ; codes P1 à P5 ; la carte, la grille et les messages effacés à la
+fin du test, sauf la grille anonymisée ; le magicien ne voit jamais un espace sensible ni une sauvegarde.
+
 ## Le journal des décisions
 
 Une ligne par expérience terminée, écrite **avant** de passer à la suivante, avec le seuil fixé au départ. C'est ce
@@ -195,3 +313,4 @@ journal qui servira au jour 90 ([a-faire.md](a-faire.md), critères de décision
 | | E2 (2) | | | |
 | | E4 | … actifs au jour 1, … en semaine 4, sur … invités | ≥ 40 % ; ≥ 25 % | |
 | | E5 | … préventes payées, dont … par des inconnus | ≥ 10, la moitié d'inconnus | |
+| | E6 | … déclarations par testeur en semaine 3 (médiane) ; … sur … conclues par une proposition commencée ; rang le plus choisi : … | ≥ 1 par semaine ; ≥ 1 sur 3 | |

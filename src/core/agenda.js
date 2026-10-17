@@ -56,6 +56,31 @@ export function icsParse(text) {
   }
   return out;
 }
+/* Écrire : un fichier d'un seul événement, en journées entières, pour « Ajouter à mon calendrier » (E2). RFC 5545 :
+   VERSION et PRODID au calendrier ; UID, DTSTAMP (en UTC) et DTSTART à l'événement (DTSTART est obligatoire faute de
+   METHOD, 3.6.1) ; une journée entière en VALUE=DATE, sa fin exclue (DTEND le lendemain du dernier jour) ; le texte
+   échappé (3.3.11 : \\, \;, \, et \n) ; l'adresse (URL, type URI) telle quelle, en https seulement ; des lignes CRLF
+   repliées à 75 octets, sans couper un caractère (3.1). Le même UID, réimporté, met l'événement à jour au lieu de le
+   doubler, dans les agendas qui le respectent. */
+const icsEscape = s => String(s ?? "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+const utf8Len = ch => { const c = ch.codePointAt(0); return c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4; };
+function icsFold(line) {
+  const out = []; let cur = "", n = 0;
+  for (const ch of line) { const b = utf8Len(ch); if (n + b > 75) { out.push(cur); cur = " "; n = 1; } cur += ch; n += b; }
+  out.push(cur); return out.join("\r\n");
+}
+// Une date réelle seulement : le 30 février passerait Date.parse (il glisse au 2 mars), pas l'aller-retour.
+const icsDay = d => { const t = Date.parse(d + "T12:00:00Z"); if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d)) || Number.isNaN(t) || new Date(t).toISOString().slice(0, 10) !== d) throw new Error("Date invalide"); return d.replace(/-/g, ""); };
+const dayAfter = d => new Date(Date.parse(d + "T12:00:00Z") + 86400000).toISOString().slice(0, 10);
+export function icsEvent({ uid, stamp, start, end, summary, location, url, description }) {
+  const last = end && end >= start ? end : start;
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Selene//Selene//FR", "CALSCALE:GREGORIAN", "BEGIN:VEVENT",
+    `UID:${String(uid).replace(/[\r\n]/g, "")}`, `DTSTAMP:${new Date(stamp).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")}`,
+    `DTSTART;VALUE=DATE:${icsDay(start)}`, `DTEND;VALUE=DATE:${icsDay(dayAfter(last))}`, `SUMMARY:${icsEscape(summary)}`,
+    location ? `LOCATION:${icsEscape(location)}` : "", /^https:\/\/[^\s]+$/.test(url || "") ? `URL:${url}` : "",
+    description ? `DESCRIPTION:${icsEscape(description)}` : "", "END:VEVENT", "END:VCALENDAR"].filter(Boolean);
+  return lines.map(icsFold).join("\r\n") + "\r\n";
+}
 /* Les occurrences d'un événement dans [from, to[ (millisecondes). Une récurrence est dépliée jour après jour, en heure
    murale (un rendez-vous de 14 h reste à 14 h après le changement d'heure). 800 pas au plus : un garde-fou. */
 function icsExpand(e, from, to) {
