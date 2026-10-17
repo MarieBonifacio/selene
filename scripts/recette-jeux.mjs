@@ -45,7 +45,8 @@ const baseConfig = mods => ({ name: "Selene", palette: "nigredo", mode: "auto", 
     { id: "t5", title: "Nettoyer les gouttières du jardin", room: "Jardin", cat: "Bricolage", due: null, effort: 3, cost: null, note: "", today: false, done: false, doneAt: null, created: "2026-09-04", steps: [] }
   ];
   const yoga = createModuleInstance(modules, "programme", "Yoga", "yoga");
-  Object.assign(yoga.config, { unitLabel: "min", start: "2026-08-03", weeks: 12, perWeek: 3,
+  // Un an : le programme doit rester en cours pendant la recette (fini, il ne relance plus chaque jour : A71).
+  Object.assign(yoga.config, { unitLabel: "min", start: "2026-08-03", weeks: 52, perWeek: 3,
     tiers: [{ id: "p1", name: "Souffle", criteria: [{ id: "c1", text: "12 séances à 20 min", done: false }, { id: "c2", text: "Tenir la posture de l'arbre une minute", done: false }] }] });
   yoga.entries = [
     { id: "y1", date: "2026-08-03", value: 20, note: "Première séance" },

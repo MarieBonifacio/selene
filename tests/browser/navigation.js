@@ -121,6 +121,12 @@ demo.modules.ecriture.scraps = Array.from({ length: 150 }, (_, i) => ({ id: 'f' 
   await m.tap('#sheet .srow[href="#budget"]'); await m.waitForTimeout(300);
   ok(await hash(m) === '#budget' && !(await m.isVisible('#sheet')), 'un espace touché : on y est, la feuille se ferme');
   ok(await m.$eval('#bar [data-act="sheet-espaces"]', el => el.classList.contains('on')), 'Espaces marqué actif dans la barre');
+  // Sans clavier, la palette n'avait aucun bouton sous 900 px (A70) : « Aller à… » est dans la feuille Espaces.
+  await m.tap('[data-act="sheet-espaces"]'); const aller = await m.waitForSelector('#sheet [data-act="palette-open"]', { timeout: 3000 }).then(() => true, () => false);
+  if (aller) await m.tap('#sheet [data-act="palette-open"]');
+  const palOuverte = aller && await m.waitForFunction(() => { const d = document.querySelector('#palette'); return d && d.open; }, null, { timeout: 3000 }).then(() => true, () => false);
+  ok(palOuverte && !(await m.isVisible('#sheet')), 'téléphone : « Aller à… » dans la feuille Espaces ouvre la palette, et ferme la feuille (A70)');
+  if (palOuverte) { await m.keyboard.press('Escape'); await m.waitForFunction(() => !document.querySelector('#palette').open); }
   const before = await m.evaluate(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.inbox.entries.length);
   await m.tap('[data-act="sheet-capture"]'); await m.waitForTimeout(300);
   await m.fill('#capSheetIn', 'une idée au vol'); await m.press('#capSheetIn', 'Enter'); await m.waitForTimeout(300);

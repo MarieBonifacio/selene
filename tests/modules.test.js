@@ -505,7 +505,7 @@ test('writing: a projected end date from the last 30 days, and honest when there
 test('home: a due reminder can be done, a session logged with the last duration, due items surface', () => {
   const app = launch(new Map(), { claude: { use: async () => null } });
   const d = app.S();
-  d.modules.kundalini.config.start = '2026-01-05';
+  Object.assign(d.modules.kundalini.config, { start: '2026-01-05', weeks: 520 }); // en cours : fini, il ne relancerait plus (A71)
   app.addJournalEntry(d.modules.kundalini, { date: '2026-01-05', value: 25 }, 'k1', '2026-01-05');
   app.saveCollectionItem(d.modules.moth, { title: 'Le lichen', due: '2020-01-01', status: 'Prêt' }, 'p1');
   app.location.hash = '#accueil'; app.render();
@@ -1381,4 +1381,51 @@ test('une synchro pendant une frappe dans un champ sans identifiant ne redessine
     if (vue !== '#reglages') assert.notEqual(main.innerHTML, 'SAISIE_EN_COURS', `${vue} : un champ à identifiant est restauré, la vue se redessine`);
     app.document.activeElement = null;
   }
+});
+
+test('le journal des Rappels nomme chaque geste par son libellé, jamais par son identifiant (A68)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), id = app.slugId('Soins', d.config.modules.map(m => m.id));
+  app.createModuleInstance(d.modules, 'rappels', 'Soins', id);
+  const inst = d.modules[id];
+  // Un geste ajouté dans les Réglages reçoit un identifiant tiré au hasard (« typ-add ») : c'est le cas courant.
+  inst.config.types = [{ id: 'm40pghqd', label: 'Arroser le figuier', every: 3 }];
+  app.addJournalEntry(inst, { date: '2026-10-10', type: 'm40pghqd', note: '' }, 'j1', '2026-10-10');
+  app.addJournalEntry(inst, { date: '2026-10-11', type: 'note', note: 'Feuilles jaunes' }, 'j2', '2026-10-11');
+  app.addJournalEntry(inst, { date: '2026-10-09', type: 'k3j2h1x9', note: '' }, 'j3', '2026-10-09'); // geste supprimé depuis
+  const tags = [...app.TYPE_UI.rappels.view(id).matchAll(/<span class="tag">([^<]*)<\/span>/g)].map(m => m[1]);
+  assert.deepEqual(tags, ['Observation', 'Arroser le figuier', 'Geste supprimé']);
+  app.removeWithUndo(id, 'entries', 'j1');
+  assert.match(app.nodes.get('#toast').innerHTML, /Supprimé : « Arroser le figuier »/, 'la bulle « Annuler » le nomme aussi');
+});
+
+test('chercher ne mène pas dans un espace désactivé : il le dit, et dit où le rouvrir (A69)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  app.addCapture(d.modules.inbox.entries, 'Le héron revient à la même pierre', 'n1', '2026-09-02');
+  d.modules.ecriture.scraps.push({ id: 'f1', text: 'Un héron dans le chapitre deux', date: '2026-09-01' });
+  d.config.modules.find(m => m.id === 'ecriture').on = false; // Réglages → Espaces, la case décochée
+  assert.deepEqual([...app.searchAll('heron').map(h => h.id)], ['inbox'], 'la palette et Chercher ne proposent que ce qui s\'ouvre');
+  app.searchFresh('heron'); app.location.hash = '#recherche'; app.render();
+  const html = app.nodes.get('#main').innerHTML;
+  assert.doesNotMatch(html, /href="#ecriture/, 'aucun lien vers l\'espace fermé');
+  assert.match(html, /Aussi 1 résultat dans « Écriture », désactivé/, 'le résultat caché est compté et nommé');
+  assert.match(html, /href="#reglages"/, 'avec le chemin pour le rouvrir');
+});
+
+test('un programme dont la durée est écoulée ne relance plus chaque jour : il dit qu’il est terminé (A71)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), id = app.slugId('Course', d.config.modules.map(m => m.id));
+  app.createModuleInstance(d.modules, 'programme', 'Course', id);
+  const inst = d.modules[id];
+  Object.assign(inst.config, { start: '2020-01-06', weeks: 4, perWeek: 3, unitLabel: 'min' }); // fini le 2 février 2020
+  app.addJournalEntry(inst, { date: '2020-01-07', value: 20 }, 's1', '2020-01-07');
+  const T = app.TYPE_UI.programme;
+  assert.deepEqual([...T.alerts(id, inst, today())], [], 'plus de « Pas encore de séance » une fois la durée passée');
+  assert.match(T.summary(id, inst), /^Terminé le 2 févr\. 2020, 1 séance/, 'la ligne de l’accueil le dit, avec sa date');
+  const view = T.view(id);
+  assert.match(view, /Terminé le 2 févr\. 2020/, 'l’espace le dit');
+  assert.match(view, /data-act="goto-groups"/, 'et dit où le prolonger');
+  inst.config.weeks = 400; // prolongé : il reprend
+  assert.equal(T.alerts(id, inst, today()).length, 1, 'prolongé, l’alerte du jour revient');
 });

@@ -18,6 +18,11 @@ function programmeGroupPanel(id) {
   return `<section><h3 style="margin:0 0 4px">${tr`Par semaine`}</h3><p class="hint">${tr`Objectif : ${esc(c.perWeek)} séances par semaine, réglable dans Réglages.`}</p>
     <div class="rooms">${out.map(g => `<div class="room ${g.pct > 100 ? "over" : ""}"><div class="fill" style="width:${Math.min(100, g.pct)}%"></div><small>${esc(g.name)}</small><b>${tr`${g.pct} %`}</b><small>${esc(g.sub)}</small></div>`).join("") || `<p class="empty">${tr`Rien à regrouper pour l'instant.`}</p>`}</div></section>`;
 }
+/* La fin d'un programme : le dernier jour de sa durée, ou null s'il n'a pas commencé. Passé ce jour, il ne relance plus
+   chaque matin (A71) : il dit qu'il est terminé, et où le prolonger. */
+const lastDayOf = c => c.start ? addDaysTo(c.start, Math.max(1, Math.round(+c.weeks) || 12) * 7 - 1) : null;
+const endedOn = (c, now = todayISO()) => { const last = lastDayOf(c); return last && now > last ? last : null; };
+const endedText = last => tr`Terminé le ${fmt(last, { day: "numeric", month: "short", year: "numeric" })}`;
 /* ---- paliers d'un programme : des critères rédigés et cochés à la main, jamais un passage automatique ---- */
 export const tierCurrent = c => (c.tiers || []).find(t => !t.advancedAt) || null;
 /* Premier module Décisions (une collection réglée en mode révision) actif, ou aucun. */
@@ -45,10 +50,11 @@ registerType("programme", {
     const pct = Math.min(100, Math.round(100 * (diffDays(now, c.start) + 1) / (W * 7)));
     let cal = "";
     for (let w = 0; w < W; w++) { cal += `<span>${tr`S${w + 1}`}</span>`; for (let d = 0; d < 7; d++) { const day = addDaysTo(c.start, w * 7 + d); cal += `<i class="${days.has(day) ? "on" : ""} ${day === now ? "today" : ""} ${day > now ? "future" : ""}" title="${fmt(day)}"></i>`; } }
-    const recent = [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12);
+    const recent = [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12), ended = endedOn(c, now);
     return `<div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">${tr`Noter une séance`}</button></div>
   <div class="two"><section>
-    <div class="big">${tr`Semaine ${week}`} <span class="hint" style="font-size:1.1rem">${tr`sur ${W}`}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
+    ${ended ? `<div class="big">${endedText(ended)}</div><p class="hint">${tr`Pour continuer, allonge sa durée dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`}.`}</p>`
+      : `<div class="big">${tr`Semaine ${week}`} <span class="hint" style="font-size:1.1rem">${tr`sur ${W}`}</span></div><div class="bar"><i style="width:${pct}%"></i></div>`}
     <p class="hint">${trn(inst.entries.length, "{0} séance, {1} {2} au total, série actuelle de {3}.", "{0} séances, {1} {2} au total, série actuelle de {3}.", totalOf(inst), esc(c.unitLabel), trn(streakOf([...days]), "{0} jour", "{0} jours"))}</p>
     <div class="cal">${cal}</div>
     <div style="margin-top:28px">${programmeGroupPanel(id)}</div>
@@ -68,11 +74,13 @@ registerType("programme", {
   summary(id, inst) {
     const c = inst.config;
     if (!c.start) return tr`Pas encore commencé`;
+    const ended = endedOn(c);
+    if (ended) return [endedText(ended), trn(inst.entries.length, "{0} séance", "{0} séances")].join(", ");
     const w = Math.min(c.weeks, Math.floor(diffDays(todayISO(), c.start) / 7) + 1), cur = tierCurrent(c);
     return [tr`Semaine ${w} sur ${esc(c.weeks)}`, trn(inst.entries.length, "{0} séance", "{0} séances"), tr`série de ${streakOf(inst.entries.map(x => x.date))} j`, ...(cur ? [tr`palier « ${esc(cur.name)} »`] : [])].join(", ");
   },
   alerts(id, inst, now) {
-    if (!inst.config.start) return [];
+    if (!inst.config.start || endedOn(inst.config, now)) return [];
     const done = inst.entries.some(x => x.date === now), name = esc(label(id)).toLowerCase(), last = lastValue(inst), m = esc(id);
     const actions = done ? "" : last != null
       ? `<button class="btn sm" data-act="prog-quick" data-mod="${m}">${tr`Noter ${esc(last)} ${esc(inst.config.unitLabel)}`}</button><button class="btn ghost sm" data-act="entry-add" data-mod="${m}">${tr`autre…`}</button>`

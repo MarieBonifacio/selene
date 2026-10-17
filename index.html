@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-vETm6IvcP/Y1EGnaNp7vu7oNJv6JDov7XB3nPV8ksN8=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bN4IOUq7iMSTXWh4eFihmiX3usqkj5VenPVCP5O2kbA=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -57,9 +57,14 @@
   box-sizing:border-box; accent-color:var(--accent);
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
-:root[data-palette="albedo"]{--acc-l:#5a6a5c;--acc-d:#bccab8}
-:root[data-palette="citrinitas"]{--acc-l:#83631a;--acc-d:#d4a94c}
-:root[data-palette="rubedo"]{--acc-l:#973a30;--acc-d:#d56455}
+/* Les palettes (la couleur d'accent) : posées sur la racine, et sur chaque pastille des Réglages, qui montre ainsi la
+   couleur que sa palette donnera dans le mode en cours (A67). Chacune lisible sous du texte (4,5:1), loin du gris des
+   textes secondaires et des autres palettes : tests/palette.test.js. */
+[data-palette="nigredo"]{--acc-l:#3d6a45;--acc-d:#8fbf86}
+[data-palette="albedo"]{--acc-l:#3f5554;--acc-d:#d3dfcc}
+[data-palette="citrinitas"]{--acc-l:#806017;--acc-d:#d4a94c}
+[data-palette="rubedo"]{--acc-l:#973a30;--acc-d:#d56455}
+.swatch[data-palette]{--sw:var(--acc-l)}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]):not([data-mode="light"]){
     --bg:#0e1310; --surface:#151c17; --surface-2:#1a231d; --glass:rgba(14,19,16,.78); --ink:#dde2d6; --ink-2:#b4bdb0; --muted:#8c998a;
@@ -69,7 +74,9 @@
     --sky-top:#070b10; --sky-bot:#132019; --tree-far:#1d2b23; --tree-near:#0a0f0c; --mist:rgba(40,58,48,.55); --star:.8;
     --accent:var(--acc-d);
   }
+  :root:not([data-theme="light"]):not([data-mode="light"]) .swatch[data-palette]{--sw:var(--acc-d)}
 }
+:root[data-theme="dark"]:not([data-mode="light"]) .swatch[data-palette],:root[data-mode="dark"] .swatch[data-palette]{--sw:var(--acc-d)}
 :root[data-theme="dark"]:not([data-mode="light"]),:root[data-mode="dark"]{
   --bg:#0e1310; --surface:#151c17; --surface-2:#1a231d; --glass:rgba(14,19,16,.78); --ink:#dde2d6; --ink-2:#b4bdb0; --muted:#8c998a;
   --rule:#243029; --rule-strong:#56665a; --alarm:#e5785a; --ok:#6fb3a2; --warn:#d2a24c; --info:#8fa9c0;
@@ -230,6 +237,7 @@ dialog.sheet[open]{animation:sheet-in var(--t-3) var(--ease)}
 @media (max-width:640px){.carte-toggle{display:inline-flex;margin:6px 0}.carte:not(.show-sky) .carte-sky,.carte:not(.show-sky) .carte-legend{display:none}}
 .srow{display:flex;align-items:baseline;gap:12px;min-height:48px;padding:11px 2px;border-top:1px solid var(--rule);text-decoration:none}
 .srow b{font-family:"Cormorant Garamond",serif;font-size:1.3rem;font-weight:600}
+button.srow{width:100%;background:none;border:0;border-top:1px solid var(--rule);border-radius:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .srow .sub{color:var(--muted);font-size:.85rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .recents{display:flex;gap:8px;flex-wrap:wrap}.recents .btn{text-decoration:none}
 /* Palette de commandes (⌘K) : aller, agir, chercher. */
@@ -445,9 +453,9 @@ ul.plain>.item:last-child{border-bottom:1px solid var(--rule)}
 .item.motif{grid-template-columns:auto 1fr}.item.motif>.row{grid-column:2}.item.motif select{width:auto}
 .item>.row>select{width:auto;max-width:11em} /* un menu de statut ne doit pas écraser le titre de la ligne */
 .col-list>.item>.row{flex-wrap:wrap;justify-content:flex-end;max-width:15em} /* les actions cachées passent à la ligne plutôt que d'élargir la colonne */
-.check{appearance:none;width:21px;height:21px;border:1.5px solid var(--ink);border-radius:50%;margin:3px 0 0;display:grid;place-content:center;cursor:pointer;background:transparent}
-.check:checked{background:var(--accent);border-color:var(--accent)}
-.check:checked::after{content:"";width:9px;height:5px;border:2px solid var(--bg);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.check{appearance:none;width:21px;height:21px;padding:0;border:1.5px solid var(--ink);border-radius:50%;margin:3px 0 0;display:grid;place-content:center;cursor:pointer;background:transparent}
+.check:checked,.pv-check{background:var(--accent);border-color:var(--accent)}
+.check:checked::after,.pv-check::after{content:"";width:9px;height:5px;border:2px solid var(--bg);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
 .t-title{font-weight:500;background:none;border:0;padding:0;text-align:left;cursor:pointer}
 .done .t-title{text-decoration:line-through;color:var(--muted)}
 .meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:2px;font-size:.85rem;color:var(--muted)}
@@ -623,7 +631,7 @@ dialog::backdrop{background:rgba(6,10,8,.55);-webkit-backdrop-filter:blur(4px);b
 dialog form{padding:22px;display:grid;gap:12px}
 label{display:grid;gap:4px;font-size:.88rem;font-weight:500}
 input,select,textarea{background:var(--bg);border:1px solid var(--rule-strong);padding:8px;border-radius:2px;width:100%}
-input[type=checkbox],input[type=radio]{width:auto}
+input[type=checkbox]:not(.check),input[type=radio]{width:auto}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:480px){.field-row{grid-template-columns:1fr}}
 .set{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--rule)}
@@ -653,7 +661,11 @@ input[type=checkbox],input[type=radio]{width:auto}
 .swatches{display:flex;gap:10px;flex-wrap:wrap}
 .swatch{display:flex;align-items:center;gap:8px;border:1px solid var(--rule);padding:8px 12px;cursor:pointer;background:var(--surface)}
 .swatch.on{border-color:var(--accent);outline:1px solid var(--accent)}
-.swatch i{width:14px;height:14px;border-radius:50%;display:block}
+.swatch i{width:14px;height:14px;border-radius:50%;display:block;background:var(--sw)}
+/* L'aperçu : les vrais composants que colore l'accent, inertes. */
+.pal-preview{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-top:12px;padding:10px 12px;border:1px dashed var(--rule);font-size:.9rem}
+.pal-preview .pv-on{padding:4px 10px;border-left:2px solid var(--accent);background:var(--surface)}
+.pal-preview .bar{width:90px;margin:0}
 .capture{display:flex;gap:8px}
 .capture input{flex:1}
 .toast{position:fixed;z-index:10;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:2px;font-size:.92rem;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center}
@@ -752,7 +764,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "27a506e641";
+const SELENE_BUILD = "0e7e5ca652";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1580,6 +1592,7 @@ var __selene = (() => {
     scrapsMarkdown: () => scrapsMarkdown,
     searchAll: () => searchAll,
     searchFresh: () => searchFresh,
+    searchHidden: () => searchHidden,
     searchQuery: () => searchQuery,
     seasonAt: () => seasonAt,
     sendChat: () => sendChat,
@@ -2101,6 +2114,8 @@ var __selene = (() => {
     "Rien de neuf. Le silence est aussi une nouvelle.": "Nothing new. Silence is news too.",
     "{0} artiste sans réponse : réessaie plus tard.": { one: "{0} artist didn't answer: try again later.", other: "{0} artists didn't answer: try again later." },
     // features/radar.js
+    "L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas ouvert à ce compte.": "The events calendar can't be read directly by the browser, and the relay, which would read it for you, isn't open to this account.",
+    "L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas installé sur ce serveur.": "The events calendar can't be read directly by the browser, and the relay, which would read it for you, isn't installed on this server.",
     "L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).": "The events calendar can't be read directly by the browser: you need your relay (hosted version, signed in).",
     "L'agenda répond {0} (le portail a peut-être changé). Réessaie plus tard.": "The events calendar answers {0} (the portal may have changed). Try again later.",
     "L'agenda répond par une erreur (le portail a peut-être changé). Réessaie plus tard.": "The events calendar answers with an error (the portal may have changed). Try again later.",
@@ -2560,6 +2575,8 @@ var __selene = (() => {
     "{0} note": { one: "{0} note", other: "{0} notes" },
     "Rangé dans {0}.": "Filed in {0}.",
     // modules/programme.js
+    "Terminé le {0}": "Finished on {0}",
+    "Pour continuer, allonge sa durée dans {0}.": "To keep going, extend its length in {0}.",
     "Semaine {0}": "Week {0}",
     "{0} sur {1} séances": "{0} of {1} sessions",
     "Par semaine": "By week",
@@ -2613,6 +2630,7 @@ var __selene = (() => {
     "Palier « {0} » atteint ({1})": "Tier “{0}” reached ({1})",
     "Noter la décision : « {0} »": "Write down the decision: “{0}”",
     // modules/rappels.js
+    "Geste supprimé": "Deleted type",
     "tous les {0} j": "every {0} d",
     "Fait aujourd'hui": "Done today",
     "Observation…": "Observation…",
@@ -3232,6 +3250,7 @@ var __selene = (() => {
     "Confirmer": "Confirm",
     "Je m'arrête ici…": "I'm stopping here…",
     // shell/sheets.js
+    "un espace, une action, un texte": "a space, an action, a text",
     "Récents": "Recent",
     "Système": "System",
     "Ce module n'existe plus.": "This module no longer exists.",
@@ -3363,6 +3382,7 @@ var __selene = (() => {
     "Un fichier .html autonome, si l'impression est bloquée": "A standalone .html file, if printing is blocked",
     "Télécharger": "Download",
     // views/recherche.js
+    "Aussi {0} résultat dans « {1} », désactivé : {2} → Espaces pour le rouvrir.": { one: "Also {0} result in “{1}”, turned off: {2} → Spaces to turn it back on.", other: "Also {0} results in “{1}”, turned off: {2} → Spaces to turn it back on." },
     "Tous les espaces": "All spaces",
     "Toute date": "Any date",
     "Depuis la nouvelle lune": "Since the new moon",
@@ -3446,7 +3466,7 @@ var __selene = (() => {
     "Les connexions (Envoyer à Selene, Zotero, le passeur, le calendrier) vivent dans la version web ou l'app installée. L'artefact claude.ai s'en passe.": "Connections (Send to Selene, Zotero, the relay, the calendar) live in the web version or the installed app. The claude.ai artifact does without them.",
     "Zone sensible": "Danger zone",
     // views/reglages.js
-    "Palette": "Palette",
+    "Couleur d'accent": "Accent colour",
     "Ouvrir sur": "Open on",
     "Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.": "On claude.ai, it goes through your account. In the hosted version, you need your own API key: checked with Anthropic, it is kept encrypted on Selene's server, tied to your account, and never comes back into the page.",
     "Autoriser Claude à modifier le tableau de bord": "Allow Claude to change the dashboard",
@@ -3459,7 +3479,9 @@ var __selene = (() => {
     "Citrinitas, résine": "Citrinitas, resin",
     "Rubedo, amanite": "Rubedo, fly agaric",
     "Tout ici s'applique immédiatement.": "Everything here applies immediately.",
-    "Quatre étapes de l'Œuvre, prises dans le sous-bois.": "Four stages of the Great Work, taken from the undergrowth.",
+    "Elle colore les repères : bouton principal, espace ouvert, jauges, cases cochées. Le fond, le texte et les couleurs d'alerte ne changent pas ; clair ou sombre se règle dans Mode.": "It colours the markers: main button, open space, gauges, ticked boxes. The background, the text and the warning colours stay as they are; light or dark is set in Mode.",
+    "Bouton principal": "Main button",
+    "Espace ouvert": "Open space",
     "Mode": "Mode",
     "Suivre l'appareil": "Follow the device",
     "Toujours sombre": "Always dark",
@@ -6214,7 +6236,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   function removeWithUndo(id, list, itemId) {
     const inst = S().modules[id], i = inst[list].findIndex((x) => x.id === itemId);
     if (i < 0) return;
-    const item = inst[list][i], name = String(item.title || item.text || item.note || item.type || tr`l'élément`);
+    const item = inst[list][i], name = String(item.title || item.text || item.note || (TYPE_UI[inst.type].entryName || (() => item.type))(inst, item) || tr`l'élément`);
     inst[list] = inst[list].filter((x) => x.id !== itemId);
     site.save();
     render();
@@ -8487,6 +8509,10 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
   };
   var radarPlace = () => skyConf();
   var radarState = null;
+  function sansPasseur() {
+    const pourquoi = !hosted() || !authSession ? "" : passeurAcces();
+    return pourquoi === "refuse" ? tr`L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas ouvert à ce compte.` : pourquoi === "absent" ? tr`L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas installé sur ce serveur.` : tr`L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).`;
+  }
   var radarDirect = true;
   async function radarGet(url) {
     if (radarDirect) {
@@ -8500,7 +8526,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
         clearTimeout(t);
       }
     }
-    if (!passeurPret()) throw new Error(tr`L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).`);
+    if (!passeurPret()) throw new Error(sansPasseur());
     const q = await passeurFetch(url, "json");
     return { status: q.status || 0, json: q.status === 200 && typeof q.texte === "string" ? JSON.parse(q.texte) : null };
   }
@@ -9658,7 +9684,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   };
 
   // src/app/views/reglages.js
-  var PALETTES = [["nigredo", N_("Nigredo, mousse"), "#6f9a68"], ["albedo", N_("Albedo, lichen"), "#aab7a6"], ["citrinitas", N_("Citrinitas, résine"), "#c99a3c"], ["rubedo", N_("Rubedo, amanite"), "#c0554a"]];
+  var PALETTES = [["nigredo", N_("Nigredo, mousse")], ["albedo", N_("Albedo, lichen")], ["citrinitas", N_("Citrinitas, résine")], ["rubedo", N_("Rubedo, amanite")]];
   var privacyUrl = () => `https://mariebonifacio.github.io/selene/${uiLang() === "en" ? "privacy" : "confidentialite"}.html`;
   var signedIn = () => hosted() && authReady() && authSession;
   var about = (subject) => TEXTS.tipAbout(subject);
@@ -9694,8 +9720,9 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   }
   var langField = (c) => langChoices().length < 2 ? "<span></span>" : field(tr`Langue`, (id) => `<select aria-labelledby="${id}" data-set="config.lang">${opt("", tr`Langue de l'appareil`, c.lang || "")}${langChoices().map(([k, n]) => `<option value="${k}" lang="${k}" ${c.lang === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>`, { tip: TIPS.langue });
   function apparenceHTML(c) {
-    return `${sub(tr`Palette`, TIPS.palette)}<p class="hint">${tr`Quatre étapes de l'Œuvre, prises dans le sous-bois.`}</p>
-    <div class="swatches">${PALETTES.map(([id, n, col]) => `<button class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}"><i style="background:${col}"></i>${tr(n)}</button>`).join("")}</div>
+    return `${sub(tr`Couleur d'accent`, TIPS.palette)}<p class="hint">${tr`Elle colore les repères : bouton principal, espace ouvert, jauges, cases cochées. Le fond, le texte et les couleurs d'alerte ne changent pas ; clair ou sombre se règle dans Mode.`}</p>
+    <div class="swatches">${PALETTES.map(([id, n]) => `<button type="button" class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}" data-palette="${id}" aria-pressed="${c.palette === id}"><i></i>${tr(n)}</button>`).join("")}</div>
+    <div class="pal-preview" aria-hidden="true" inert><span class="btn acc sm">${tr`Bouton principal`}</span><span class="pv-on">${tr`Espace ouvert`}</span><span class="bar"><i style="width:60%"></i></span><span class="check pv-check"></span></div>
     <div class="field-row" style="margin-top:18px">${field(tr`Mode`, (id) => `<select aria-labelledby="${id}" data-set="config.mode">${opt("auto", tr`Suivre l'appareil`, c.mode)}${opt("dark", tr`Toujours sombre`, c.mode)}${opt("light", tr`Toujours clair`, c.mode)}${opt("sun", tr`Suivre le soleil`, c.mode)}</select>`, { tip: TIPS.mode })}
     ${field(tr`Nom affiché`, (id) => `<input aria-labelledby="${id}" data-set="config.name" value="${esc(c.name)}">`, { tip: TIPS.name })}</div>
     <div class="field-row" style="margin-top:12px">${field(tr`Ouvrir sur`, (id) => `<select aria-labelledby="${id}" data-act="open-on">${opt("accueil", tr`L'accueil`, openOn())}${opt("last", tr`Là où j'en étais`, openOn())}</select>`, { tip: TIPS.openOn, local: true })}${langField(c)}</div>
@@ -9974,7 +10001,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       return `<h2 id="sheetTitle">${tr`Espaces`}</h2>
       ${rec.length ? `<p class="grp">${tr`Récents`}</p><div class="recents">${rec.map((r) => `<a class="btn" href="#${esc(r.id)}">${esc(label(r.id))}</a>`).join("")}</div>` : ""}
       ${domains().map((d) => `<p class="grp">${esc(d.name || tr`Espaces`)}</p>${d.ids.map(row).join("")}`).join("")}
-      <p class="grp">${tr`Système`}</p>${enabled("assistant") ? `<a class="srow" href="#assistant"><b>${esc(label("assistant"))}</b></a>` : ""}<a class="srow" href="#reglages"><b>${tr`Réglages`}</b></a>`;
+      <p class="grp">${tr`Système`}</p>${dehorsOn() ? `<a class="srow" href="#dehors"><b>${tr`Nouveautés`}</b><span class="sub">${tr`Dehors`}</span></a>` : ""}${enabled("assistant") ? `<a class="srow" href="#assistant"><b>${esc(label("assistant"))}</b></a>` : ""}
+      <button type="button" class="srow" data-act="palette-open"><b>${tr`Aller à…`}</b><span class="sub">${tr`un espace, une action, un texte`}</span></button><a class="srow" href="#reglages"><b>${tr`Réglages`}</b></a>`;
     },
     module(mod) {
       if (!Object.hasOwn(S().modules, mod)) return `<p class="empty">${tr`Ce module n'existe plus.`}</p>`;
@@ -12519,11 +12547,18 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     const q = w.slice(w.indexOf(":") + 1);
     return q && Object.keys(EP_STATUS).find((k) => fold(EP_STATUS[k]).startsWith(q) || fold(epLabel(k)).startsWith(q)) || null;
   };
-  function searchAll(q) {
+  var searchAll = (q) => searchIn(q, (m) => enabled(m.id));
+  var searchHidden = (q) => {
+    const n = {};
+    for (const h of searchIn(q, (m) => !m.on && !absentModule(m.id))) n[h.id] = (n[h.id] || 0) + 1;
+    return Object.entries(n).map(([id, count]) => ({ id, count }));
+  };
+  function searchIn(q, keep) {
     const words2 = fold(q).split(/\s+/).filter(Boolean), st = words2.find(isEpWord), want = st ? epQuery(st) : null;
     const terms = words2.filter((w) => !isEpWord(w)), out = [];
     if (st && !want || !terms.length && !want) return out;
     for (const m of S().config.modules) {
+      if (!keep(m)) continue;
       const inst = Object.hasOwn(S().modules, m.id) ? S().modules[m.id] : null, ui = inst && TYPE_UI[inst.type];
       if (!ui || !ui.texts) continue;
       for (const t of ui.texts(inst)) {
@@ -12576,10 +12611,11 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       return shown.length ? `<p class="grp search-grp ${tintOf(id)}">${sigil(id)}${esc(label(id))} <span>${l.length}</span></p><ul class="plain">${shown.map((h) => `<li class="item"><span class="jdate">${h.date ? fmt(h.date) : ""}</span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}${h.ep ? `<div class="meta"><span>${epGlyph(h.ep)}${esc(epLabel(h.ep))}</span></div>` : ""}</div><a class="btn ghost sm" href="#${esc(h.id)}${h.eid ? "/" + esc(h.eid) : ""}">${tr`ouvrir`}</a></li>`).join("")}</ul>` : "";
     }).join("");
     const filtered = hits.length !== all.length;
+    const hidden = searchHidden(searchQuery).map((h) => `<p class="hint">${trn(h.count, "Aussi {0} résultat dans « {1} », désactivé : {2} → Espaces pour le rouvrir.", "Aussi {0} résultats dans « {1} », désactivé : {2} → Espaces pour le rouvrir.", esc(label(h.id)), `<a href="#reglages">${tr`Réglages`}</a>`)}</p>`).join("");
     return `<h2>${tr`Chercher`}</h2><p class="hint">${tr`Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « ${`${trp("recherche", "statut")}:${epLabel("hyp")}`} » ne garde que les hypothèses (de même pour ${["obs", "int", "inx"].map(epLabel).join(", ")}). Touche « / » pour venir ici.`}</p>
   <input id="searchIn" type="search" value="${esc(searchQuery)}" placeholder="${tr`Un mot, un bout de phrase…`}" aria-label="${tr`Chercher`}" autocomplete="off" style="max-width:520px">
   ${searchQuery.trim() ? `<div class="row" style="margin-top:12px"><p class="hint" style="margin:0">${hits.length ? filtered ? trn(hits.length, "{0} résultat sur {1}", "{0} résultats sur {1}", all.length) : trn(hits.length, "{0} résultat", "{0} résultats") : all.length ? tr`Rien avec ces filtres.` : tr`Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire.`}</p>${hits.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="search-dossier" title="${tr`Les résultats affichés, avec dates, statuts, provenance et liens, pour une lecture assistée`}">${tr`Exporter en dossier`}</button>` : ""}</div>
-  ${facets}${groups}` : ""}`;
+  ${hidden}${facets}${groups}` : ""}`;
   };
   CLICK["search-dossier"] = () => {
     const q = searchQuery.trim(), thoughts = thoughtItems();
@@ -13960,6 +13996,12 @@ ${nm} : arc de ${c.stations.length} étapes (${c.stations.map((s) => s.name).joi
     return `<section><h3 style="margin:0 0 4px">${tr`Par semaine`}</h3><p class="hint">${tr`Objectif : ${esc(c.perWeek)} séances par semaine, réglable dans Réglages.`}</p>
     <div class="rooms">${out.map((g) => `<div class="room ${g.pct > 100 ? "over" : ""}"><div class="fill" style="width:${Math.min(100, g.pct)}%"></div><small>${esc(g.name)}</small><b>${tr`${g.pct} %`}</b><small>${esc(g.sub)}</small></div>`).join("") || `<p class="empty">${tr`Rien à regrouper pour l'instant.`}</p>`}</div></section>`;
   }
+  var lastDayOf = (c) => c.start ? addDaysTo(c.start, Math.max(1, Math.round(+c.weeks) || 12) * 7 - 1) : null;
+  var endedOn = (c, now = todayISO()) => {
+    const last = lastDayOf(c);
+    return last && now > last ? last : null;
+  };
+  var endedText = (last) => tr`Terminé le ${fmt(last, { day: "numeric", month: "short", year: "numeric" })}`;
   var tierCurrent = (c) => (c.tiers || []).find((t) => !t.advancedAt) || null;
   var firstDecisions = () => (S().config.modules.find((m) => shownModule(m) && S().modules[m.id].type === "collection" && S().modules[m.id].config.review) || {}).id || null;
   function tiersPanel(id) {
@@ -13990,10 +14032,10 @@ ${nm} : arc de ${c.stations.length} étapes (${c.stations.map((s) => s.name).joi
           cal += `<i class="${days.has(day) ? "on" : ""} ${day === now ? "today" : ""} ${day > now ? "future" : ""}" title="${fmt(day)}"></i>`;
         }
       }
-      const recent = [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12);
+      const recent = [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12), ended = endedOn(c, now);
       return `<div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">${tr`Noter une séance`}</button></div>
   <div class="two"><section>
-    <div class="big">${tr`Semaine ${week}`} <span class="hint" style="font-size:1.1rem">${tr`sur ${W}`}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
+    ${ended ? `<div class="big">${endedText(ended)}</div><p class="hint">${tr`Pour continuer, allonge sa durée dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`}.`}</p>` : `<div class="big">${tr`Semaine ${week}`} <span class="hint" style="font-size:1.1rem">${tr`sur ${W}`}</span></div><div class="bar"><i style="width:${pct}%"></i></div>`}
     <p class="hint">${trn(inst.entries.length, "{0} séance, {1} {2} au total, série actuelle de {3}.", "{0} séances, {1} {2} au total, série actuelle de {3}.", totalOf(inst), esc(c.unitLabel), trn(streakOf([...days]), "{0} jour", "{0} jours"))}</p>
     <div class="cal">${cal}</div>
     <div style="margin-top:28px">${programmeGroupPanel(id)}</div>
@@ -14013,11 +14055,13 @@ ${nm} : arc de ${c.stations.length} étapes (${c.stations.map((s) => s.name).joi
     summary(id, inst) {
       const c = inst.config;
       if (!c.start) return tr`Pas encore commencé`;
+      const ended = endedOn(c);
+      if (ended) return [endedText(ended), trn(inst.entries.length, "{0} séance", "{0} séances")].join(", ");
       const w = Math.min(c.weeks, Math.floor(diffDays(todayISO(), c.start) / 7) + 1), cur = tierCurrent(c);
       return [tr`Semaine ${w} sur ${esc(c.weeks)}`, trn(inst.entries.length, "{0} séance", "{0} séances"), tr`série de ${streakOf(inst.entries.map((x) => x.date))} j`, ...cur ? [tr`palier « ${esc(cur.name)} »`] : []].join(", ");
     },
     alerts(id, inst, now) {
-      if (!inst.config.start) return [];
+      if (!inst.config.start || endedOn(inst.config, now)) return [];
       const done = inst.entries.some((x) => x.date === now), name = esc(label(id)).toLowerCase(), last = lastValue(inst), m = esc(id);
       const actions = done ? "" : last != null ? `<button class="btn sm" data-act="prog-quick" data-mod="${m}">${tr`Noter ${esc(last)} ${esc(inst.config.unitLabel)}`}</button><button class="btn ghost sm" data-act="entry-add" data-mod="${m}">${tr`autre…`}</button>` : `<button class="btn ghost sm" data-act="entry-add" data-mod="${m}">${tr`noter`}</button>`;
       return [{ text: done ? tr`Séance de ${name} faite.` : tr`Pas encore de séance de ${name} aujourd'hui.`, actions }];
@@ -14143,6 +14187,7 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
   });
 
   // src/app/modules/rappels.js
+  var typeLabel2 = (inst, t) => t === "note" ? tr`Observation` : (inst.config.types.find((y) => y.id === t) || {}).label || tr`Geste supprimé`;
   registerType("rappels", {
     view(id) {
       const inst = S().modules[id], c = inst.config, now = todayISO();
@@ -14156,7 +14201,7 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
     ${c.types.map(line).join("")}
     <div class="row" style="margin-top:14px"><input id="rapNote" data-draft placeholder="${tr`Observation…`}" aria-label="${tr`Observation`}"><button class="btn" data-act="entry-note" data-mod="${esc(id)}">${tr`Noter`}</button></div>
     <p class="hint" style="margin-top:10px">${tr`Réglable dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`}.`}</p>
-  </section><section><h3>${tr`Journal`}</h3><ul class="plain">${recent.map((l) => `<li class="item" data-id="${esc(l.id)}"><span class="jdate">${fmt(l.date)}</span><div><span class="tag">${esc(l.type)}</span>${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}${l.origin ? `<div class="meta">${originHTML(l, l.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">${tr`suppr.`}</button></li>`).join("") || `<li class="empty">${tr`Aucune entrée.`}</li>`}</ul></section></div>`;
+  </section><section><h3>${tr`Journal`}</h3><ul class="plain">${recent.map((l) => `<li class="item" data-id="${esc(l.id)}"><span class="jdate">${fmt(l.date)}</span><div><span class="tag">${esc(typeLabel2(inst, l.type))}</span>${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}${l.origin ? `<div class="meta">${originHTML(l, l.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">${tr`suppr.`}</button></li>`).join("") || `<li class="empty">${tr`Aucune entrée.`}</li>`}</ul></section></div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>${tr`Sous-titre (ex. nom propre)`}<input data-set-mod="${esc(id)}.subtitle" value="${esc(c.subtitle || "")}"></label><span></span></div>
     <div style="margin-top:10px"><span class="hint" style="margin:0">${tr`Types et rappels`}</span>${c.types.map((t, i) => `<div class="set" data-ti="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="typ-name" data-mod="${esc(id)}" value="${esc(t.label)}" aria-label="${tr`Nom`}"><input type="number" min="0" data-act="typ-every" data-mod="${esc(id)}" value="${esc(t.every || "")}" placeholder="${tr`tous les X j`}" aria-label="${tr`Fréquence`}"><button class="btn ghost sm" data-act="typ-del" data-mod="${esc(id)}">${tr`suppr.`}</button></div>`).join("")}<button class="btn sm" data-act="typ-add" data-mod="${esc(id)}" style="margin-top:8px">${tr`Ajouter un type`}</button></div>`,
@@ -14180,11 +14225,12 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
     accept: (id, inst, note) => {
       addJournalEntry(inst, { date: note.date, type: "note", note: note.text }, uid(), todayISO());
     },
-    recent: (inst) => recentBy(inst.entries).map((x) => `${fmt(x.date)} · ${(inst.config.types.find((t) => t.id === x.type) || {}).label || x.type}${x.note ? " · " + x.note : ""}`),
+    entryName: (inst, e) => typeLabel2(inst, e.type),
+    recent: (inst) => recentBy(inst.entries).map((x) => `${fmt(x.date)} · ${typeLabel2(inst, x.type)}${x.note ? " · " + x.note : ""}`),
     review: (inst, from, to) => {
       const es = within(inst.entries, from, to);
       if (!es.length) return tr`Rien de noté`;
-      const by = [...new Set(es.map((x) => x.type))].map((t) => `${((inst.config.types.find((y) => y.id === t) || {}).label || t).toLowerCase()} ×${es.filter((x) => x.type === t).length}`);
+      const by = [...new Set(es.map((x) => x.type))].map((t) => `${typeLabel2(inst, t).toLowerCase()} ×${es.filter((x) => x.type === t).length}`);
       return by.join(", ");
     },
     texts: (inst) => inst.entries.filter((x) => x.note).map((x) => ({ text: x.note, date: x.date, eid: x.id })),

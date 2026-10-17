@@ -191,13 +191,13 @@ Identifiants retirés : aucun.
 ### MOD-007 — Programme : séance notée, calendrier, « Noter N min » depuis l'accueil
 
 - **Fonctionnalité et règle** : un protocole de N semaines, un calendrier, un objectif de séances par semaine ; l'accueil
-  propose « Noter N min » avec la dernière durée.
-- **Objectif, risque vérifié** : séance non enregistrée, ou à la mauvaise date.
+  propose « Noter N min » avec la dernière durée. Sa durée passée, il est terminé : il le dit, et ne relance plus (A71).
+- **Objectif, risque vérifié** : séance non enregistrée, ou à la mauvaise date ; un programme fini qui relance chaque jour.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai ; aucune séance de Yoga aujourd'hui.
 - **Données** : séance de `30` min, hier.
-- **Automatisés associés** : `TN-quotidien`, `TN-types`, `TU-MOD-30`
-- **Source** : [DOC] README, « Accueil » ; [TEST] `TU-MOD-30`, `tests/browser/quotidien.js`.
+- **Automatisés associés** : `TN-quotidien`, `TN-types`, `TU-MOD-30`, `TU-MOD-69`
+- **Source** : [DOC] README, « Accueil » ; [TEST] `TU-MOD-30`, `TU-MOD-69`, `tests/browser/quotidien.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -205,9 +205,11 @@ Identifiants retirés : aucun.
 | 2 | Cliquer « Noter 25 min ». | « Séance de yoga faite. » (l'app écrit le nom de l'espace en minuscules) ; dans Yoga, une séance de 25 min datée d'aujourd'hui. |
 | 3 | Dans Yoga, « Noter une séance » : 30 min, date d'hier. | La séance apparaît à la date d'hier dans le journal et le calendrier. |
 | 4 | Recharger. | Les deux séances sont là. |
+| 5 | Réglages → « régler » sous Yoga : début `2026-01-05`, durée `4` semaines ; ouvrir l'accueil, puis Yoga. | L'accueil ne propose plus de séance pour Yoga ; « Où en sont les choses » et Yoga disent « Terminé le 1 févr. 2026 », Yoga avec « Pour continuer, allonge sa durée dans Réglages. » (A71). |
+| 6 | Remettre la durée à `52`, puis le début à `2026-08-03`. | L'accueil propose de nouveau « Noter … min » pour Yoga. |
 
-- **État final attendu** : deux séances de plus.
-- **Nettoyage** : les supprimer.
+- **État final attendu** : deux séances de plus ; Yoga en cours.
+- **Nettoyage** : supprimer les deux séances.
 
 ---
 
@@ -340,19 +342,20 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai (Arrosage tous les 3 jours, dernier le 1er septembre 2026).
 - **Données** : observation `Nouvelle pousse sur le ficus`.
-- **Automatisés associés** : `TN-types`, `TN-quotidien`, `TN-interface`, `TU-MOD-30`
-- **Source** : [DOC] README, « Accueil » ; [TEST] `tests/browser/types.js`, `TU-MOD-30`.
+- **Automatisés associés** : `TN-types`, `TN-quotidien`, `TN-interface`, `TU-MOD-30`, `TU-MOD-67`
+- **Source** : [DOC] README, « Accueil » ; [TEST] `tests/browser/types.js`, `TU-MOD-30`, `TU-MOD-67`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Ouvrir l'accueil. | Dans « Aujourd'hui », une ligne pour Plantes (Arrosage en retard) avec « fait ». |
 | 2 | Cliquer « fait ». | La ligne disparaît ; dans Plantes, « Arrosage » et « aujourd'hui, tous les 3 j ». |
-| 3 | Dans Plantes, noter l'observation des données. | Elle apparaît au journal, datée d'aujourd'hui. |
+| 3 | Dans Plantes, noter l'observation des données. | Elle apparaît au journal, datée d'aujourd'hui, sous l'étiquette « Observation ». |
 | 4 | Réglages → « régler » sous Plantes : fréquence d'Arrosage à `1`. | Le lendemain (ou en avançant la date de l'appareil d'un jour), le rappel revient sur l'accueil. |
 | 5 | Rempotage (fréquence 0) : vérifier l'accueil. | Jamais de rappel pour Rempotage. |
+| 6 | Réglages → « régler » sous Plantes → « Ajouter un type », le nommer `Tailler`, fréquence `1` ; le lendemain, « fait » depuis l'accueil, puis supprimer cette ligne du journal. | Au journal, l'étiquette dit « Tailler », jamais un code de huit caractères ; la bulle dit « Supprimé : « Tailler » » (A68). |
 
 - **État final attendu** : Arrosage fait aujourd'hui.
-- **Nettoyage** : remettre la fréquence à 3.
+- **Nettoyage** : remettre la fréquence à 3 ; supprimer le type `Tailler`.
 
 ---
 

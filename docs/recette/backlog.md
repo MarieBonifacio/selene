@@ -85,7 +85,12 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 ### À décider
 
-Rien d'ouvert au 8 octobre 2026.
+- **Citrinitas et Rubedo, voisines des couleurs d'état** (A67, 17 octobre 2026). Citrinitas est à ΔE2000 2,3 de `--warn`
+  en clair (2,7 en sombre), Rubedo à 8,5 de `--alarm` (7,1) : la règle de tête de `src/shell.html` (« ils ne se prêtent
+  jamais leurs teintes ») n'est pas tenue. Les éloigner coûte leur identité (une Citrinitas olive, voir
+  [l'audit, A.6](../audit-fonctionnel-2026-10-12.md#a6-correctif-minimal-proposé-plan-non-appliqué)) ; les garder demande
+  d'assouplir la règle pour les usages décoratifs. À trancher à l'œil, sur un vrai téléphone. `TU-PAL-03` pourrait alors
+  s'étendre aux couleurs d'état.
 
 ### Décidé le 7 octobre 2026
 

@@ -155,6 +155,17 @@ const PAGES = {
   await calme(p); await ouvrir(p, null, entree); await until(() => calls.length >= 3);
   ok(calls.length === 3, 'rouvert plus tard : les flux sont relus, un par un');
 
+  console.log('téléphone : Dehors depuis la feuille Espaces (A70)');
+  {
+    await p.setViewportSize({ width: 390, height: 844 }); await p.evaluate(() => { location.hash = 'accueil'; });
+    await p.waitForSelector('#bar [data-act="sheet-espaces"]'); await p.click('#bar [data-act="sheet-espaces"]');
+    const lien = await p.waitForSelector('#sheet a[href="#dehors"]', { timeout: 3000 }).then(() => true, () => false);
+    if (lien) await p.click('#sheet a[href="#dehors"]');
+    const arrive = lien && await p.waitForFunction(() => location.hash === '#dehors' && !!document.querySelector('#main [data-act="dehors-refresh"], #main #dehorsIn'), null, { timeout: 5000 }).then(() => true, () => false);
+    ok(arrive && !(await p.isVisible('#sheet')), 'téléphone, connectée : « Nouveautés » dans la feuille Espaces mène à Dehors (A70)');
+    await p.setViewportSize({ width: 1280, height: 900 });
+  }
+
   console.log('passeur fermé à ce compte');
   {
     mode = 'refus'; probes.n = 0;

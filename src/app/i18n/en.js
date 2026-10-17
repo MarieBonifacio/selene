@@ -413,6 +413,8 @@ export default {
   "Rien de neuf. Le silence est aussi une nouvelle.": "Nothing new. Silence is news too.",
   "{0} artiste sans réponse : réessaie plus tard.": { one: "{0} artist didn't answer: try again later.", other: "{0} artists didn't answer: try again later." },
   // features/radar.js
+  "L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas ouvert à ce compte.": "The events calendar can't be read directly by the browser, and the relay, which would read it for you, isn't open to this account.",
+  "L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas installé sur ce serveur.": "The events calendar can't be read directly by the browser, and the relay, which would read it for you, isn't installed on this server.",
   "L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).": "The events calendar can't be read directly by the browser: you need your relay (hosted version, signed in).",
   "L'agenda répond {0} (le portail a peut-être changé). Réessaie plus tard.": "The events calendar answers {0} (the portal may have changed). Try again later.",
   "L'agenda répond par une erreur (le portail a peut-être changé). Réessaie plus tard.": "The events calendar answers with an error (the portal may have changed). Try again later.",
@@ -876,6 +878,8 @@ export default {
   "{0} note": { one: "{0} note", other: "{0} notes" },
   "Rangé dans {0}.": "Filed in {0}.",
   // modules/programme.js
+  "Terminé le {0}": "Finished on {0}",
+  "Pour continuer, allonge sa durée dans {0}.": "To keep going, extend its length in {0}.",
   "Semaine {0}": "Week {0}",
   "{0} sur {1} séances": "{0} of {1} sessions",
   "Par semaine": "By week",
@@ -929,6 +933,7 @@ export default {
   "Palier « {0} » atteint ({1})": "Tier “{0}” reached ({1})",
   "Noter la décision : « {0} »": "Write down the decision: “{0}”",
   // modules/rappels.js
+  "Geste supprimé": "Deleted type",
   "tous les {0} j": "every {0} d",
   "Fait aujourd'hui": "Done today",
   "Observation…": "Observation…",
@@ -1554,6 +1559,7 @@ export default {
   "Confirmer": "Confirm",
   "Je m'arrête ici…": "I'm stopping here…",
   // shell/sheets.js
+  "un espace, une action, un texte": "a space, an action, a text",
   "Récents": "Recent",
   "Système": "System",
   "Ce module n'existe plus.": "This module no longer exists.",
@@ -1688,6 +1694,7 @@ export default {
   "Télécharger": "Download",
 
   // views/recherche.js
+  "Aussi {0} résultat dans « {1} », désactivé : {2} → Espaces pour le rouvrir.": { one: "Also {0} result in “{1}”, turned off: {2} → Spaces to turn it back on.", other: "Also {0} results in “{1}”, turned off: {2} → Spaces to turn it back on." },
   "Tous les espaces": "All spaces",
   "Toute date": "Any date",
   "Depuis la nouvelle lune": "Since the new moon",
@@ -1773,7 +1780,7 @@ export default {
   "Zone sensible": "Danger zone",
 
   // views/reglages.js
-  "Palette": "Palette",
+  "Couleur d'accent": "Accent colour",
   "Ouvrir sur": "Open on",
   "Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.": "On claude.ai, it goes through your account. In the hosted version, you need your own API key: checked with Anthropic, it is kept encrypted on Selene's server, tied to your account, and never comes back into the page.",
   "Autoriser Claude à modifier le tableau de bord": "Allow Claude to change the dashboard",
@@ -1786,7 +1793,9 @@ export default {
   "Citrinitas, résine": "Citrinitas, resin",
   "Rubedo, amanite": "Rubedo, fly agaric",
   "Tout ici s'applique immédiatement.": "Everything here applies immediately.",
-  "Quatre étapes de l'Œuvre, prises dans le sous-bois.": "Four stages of the Great Work, taken from the undergrowth.",
+  "Elle colore les repères : bouton principal, espace ouvert, jauges, cases cochées. Le fond, le texte et les couleurs d'alerte ne changent pas ; clair ou sombre se règle dans Mode.": "It colours the markers: main button, open space, gauges, ticked boxes. The background, the text and the warning colours stay as they are; light or dark is set in Mode.",
+  "Bouton principal": "Main button",
+  "Espace ouvert": "Open space",
   "Mode": "Mode",
   "Suivre l'appareil": "Follow the device",
   "Toujours sombre": "Always dark",

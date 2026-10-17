@@ -11,6 +11,7 @@ import { S, enabled, label } from "../state/site.js";
 import { summaryFor } from "../views/accueil.js";
 import { moduleSettingsHTML } from "../views/reglages.js";
 import { tick } from "../features/timer.js";
+import { dehorsOn } from "../features/dehors.js";
 
 /* ---- feuilles (sheets) : Espaces et Capturer, depuis la barre basse ---- */
 Object.assign(SHEETS, {
@@ -20,7 +21,8 @@ Object.assign(SHEETS, {
     return `<h2 id="sheetTitle">${tr`Espaces`}</h2>
       ${rec.length ? `<p class="grp">${tr`Récents`}</p><div class="recents">${rec.map(r => `<a class="btn" href="#${esc(r.id)}">${esc(label(r.id))}</a>`).join("")}</div>` : ""}
       ${domains().map(d => `<p class="grp">${esc(d.name || tr`Espaces`)}</p>${d.ids.map(row).join("")}`).join("")}
-      <p class="grp">${tr`Système`}</p>${enabled("assistant") ? `<a class="srow" href="#assistant"><b>${esc(label("assistant"))}</b></a>` : ""}<a class="srow" href="#reglages"><b>${tr`Réglages`}</b></a>`;
+      <p class="grp">${tr`Système`}</p>${dehorsOn() ? `<a class="srow" href="#dehors"><b>${tr`Nouveautés`}</b><span class="sub">${tr`Dehors`}</span></a>` : ""}${enabled("assistant") ? `<a class="srow" href="#assistant"><b>${esc(label("assistant"))}</b></a>` : ""}
+      <button type="button" class="srow" data-act="palette-open"><b>${tr`Aller à…`}</b><span class="sub">${tr`un espace, une action, un texte`}</span></button><a class="srow" href="#reglages"><b>${tr`Réglages`}</b></a>`;
   },
   module(mod) {
     if (!Object.hasOwn(S().modules, mod)) return `<p class="empty">${tr`Ce module n'existe plus.`}</p>`;
