@@ -33,12 +33,22 @@ function sansPasseur() {
     : pourquoi === "absent" ? tr`L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas installé sur ce serveur.`
     : tr`L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).`;
 }
+/* La porte fermée est aussi retenue sur l'appareil, sept jours : sans passeur, le radar ne peut alors rien lire, et
+   l'accueil cesse de le proposer (les Réglages disent pourquoi). Au bout d'une semaine, on refrappe : le portail aura
+   peut-être changé. */
+const DIRECT_KEY = "selene-radar-direct", DIRECT_TTL = 7 * 86400000;
 let radarDirect = true;
+const directOuvert = () => {
+  if (!radarDirect) return false;
+  try { const x = JSON.parse(platform.storage.get(DIRECT_KEY) || "null"), age = x ? Date.now() - x.at : NaN; return !(age > -300000 && age < DIRECT_TTL); } catch { return true; }
+};
+// Le radar peut-il lire quelque chose ? Tant qu'on ne sait pas la porte directe fermée, oui ; ensuite, par le passeur seul.
+export const radarPossible = () => directOuvert() || passeurPret();
 async function radarGet(url) {
-  if (radarDirect) {
+  if (directOuvert()) {
     const ac = new AbortController(), t = setTimeout(() => ac.abort(), 10000);
     try { const r = await fetch(url, { signal: ac.signal }); return { status: r.status, json: r.ok ? await r.json() : null }; }
-    catch { radarDirect = false; } finally { clearTimeout(t); }
+    catch { radarDirect = false; try { platform.storage.set(DIRECT_KEY, JSON.stringify({ at: Date.now() })); } catch {} } finally { clearTimeout(t); }
   }
   if (!passeurPret()) throw new Error(sansPasseur());
   const q = await passeurFetch(url, "json");
@@ -121,5 +131,6 @@ export function radarSettingsHTML() {
   const c = radarPlace();
   return `<section id="radar"><h4>${tr`Radar culturel`}</h4><p class="hint">${tr`Sur demande, depuis l'accueil : les événements à 20 km du lieu réglé dans Ciel (OpenAgenda, partout en France) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification. Changer de lieu, c'est changer de radar.`}</p>
     <label>${tr`Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)`}<input data-act="radar-words" value="${esc(radarConf().words)}" placeholder="${tr`poésie, jazz, photographie, lecture…`}" maxlength="300" autocomplete="off"></label>
-    ${c ? `<p class="hint" style="margin-top:6px">${tr`Autour de ${esc(c.name)}.`}</p>` : `<p class="hint" style="margin-top:6px">${tr`Il lui faut un lieu : règle-le dans Ciel, ci-dessus.`}</p>`}</section>`;
+    ${c ? `<p class="hint" style="margin-top:6px">${tr`Autour de ${esc(c.name)}.`}</p>` : `<p class="hint" style="margin-top:6px">${tr`Il lui faut un lieu : règle-le dans Ciel, ci-dessus.`}</p>`}
+    ${c && radarWords(radarConf().words).length && !radarPossible() ? `<p class="hint" style="margin-top:6px">${esc(sansPasseur())} ${tr`L'accueil ne le propose donc plus ; il réessaiera de lui-même dans une semaine.`}</p>` : ""}</section>`;
 }

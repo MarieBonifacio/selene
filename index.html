@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gOJv88CLzlvH/1o77KxPQ2sTdO5UIURFfWB/vNNGlAc=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-JBIy1iMzYf9voQuFJobszwPOTHRpeM5p5aqjc7HBEWs=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -767,7 +767,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "8c7c192736";
+const SELENE_BUILD = "df6b675050";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1370,6 +1370,7 @@ var __selene = (() => {
     downloadsNS: () => downloadsNS,
     driftSection: () => driftSection,
     driftWords: () => driftWords,
+    dropTask: () => dropTask,
     eclipseText: () => eclipseText,
     editFragmentText: () => editFragmentText,
     enabled: () => enabled,
@@ -1547,6 +1548,7 @@ var __selene = (() => {
     radarFold: () => radarFold,
     radarMatch: () => radarMatch,
     radarPlace: () => radarPlace,
+    radarPossible: () => radarPossible,
     radarSettingsHTML: () => radarSettingsHTML,
     radarUrl: () => radarUrl,
     radarWords: () => radarWords,
@@ -1586,6 +1588,7 @@ var __selene = (() => {
     reportError: () => reportError,
     requireText: () => requireText,
     reservedId: () => reservedId,
+    resumeTask: () => resumeTask,
     retargetLinks: () => retargetLinks,
     roman: () => roman,
     routeOf: () => routeOf,
@@ -1664,6 +1667,7 @@ var __selene = (() => {
     taskForm: () => taskForm,
     taskHTML: () => taskHTML,
     taskModules: () => taskModules,
+    taskOpen: () => taskOpen,
     tensionSection: () => tensionSection,
     texEscape: () => texEscape,
     textLang: () => textLang,
@@ -2053,6 +2057,7 @@ var __selene = (() => {
     "Absent cette fois, fréquent avant": "Absent this time, frequent before",
     "{0} avant": "{0} before",
     // features/digest.js
+    "{0} tâche en retard": { one: "{0} task overdue", other: "{0} tasks overdue" },
     "Échéance : {0}": "Deadline: {0}",
     "Selene : {0} chose ce jour": { one: "Selene: {0} thing that day", other: "Selene: {0} things that day" },
     "Selene : {0} chose aujourd'hui": { one: "Selene: {0} thing today", other: "Selene: {0} things today" },
@@ -2146,6 +2151,7 @@ var __selene = (() => {
     "Rien qui te ressemble, cette fois. La ville continuera sans toi, elle a l'habitude.": "Nothing that looks like you, this time. The city will carry on without you; it's used to it.",
     "gardé": "kept",
     "le {0}": "on {0}",
+    "L'accueil ne le propose donc plus ; il réessaiera de lui-même dans une semaine.": "So the home page no longer offers it; it will try again on its own in a week.",
     "sortie prévue": "outing planned",
     "en faire une sortie": "plan an outing",
     "En faire une sortie": "Plan an outing",
@@ -2345,6 +2351,9 @@ var __selene = (() => {
     "Tâche introuvable": "Task not found",
     "Une tâche faite n'attend plus rien": "A finished task isn't waiting for anything",
     "Cette tâche n'est pas en attente": "This task isn't waiting for a reply",
+    "Une tâche abandonnée n'attend plus rien": "A dropped task isn't waiting for anything",
+    "Une tâche abandonnée ne se fait pas aujourd'hui : reprends-la d'abord": "A dropped task can't be done today: pick it up again first",
+    "Une tâche faite ne s'abandonne pas": "A finished task can't be dropped",
     "Trois tâches du jour maximum": "Three tasks for today at most",
     "Montant invalide": "Invalid amount",
     "Date invalide": "Invalid date",
@@ -2595,6 +2604,7 @@ var __selene = (() => {
     "Ranger : {0}": "File: {0}",
     "Garder comme source": "Keep as a source",
     "Vide. Le silence d'une clairière, ou celui d'un cerveau.": "Empty. The silence of a clearing, or of a brain.",
+    "Rien pour l'instant. Une note ne se corrige pas : elle se garde ou s’efface. Pour un texte qui change, les fragments d’un espace d’écriture gardent leurs versions.": "Nothing yet. A note can't be edited: you keep it or delete it. For a text that changes, the fragments of a writing space keep their versions.",
     "Boîte de réception : reçoit la capture rapide de l'accueil": "Inbox: receives the quick capture from Today",
     "Description": "Description",
     "Une phrase sous le titre": "A sentence under the title",
@@ -2962,6 +2972,15 @@ var __selene = (() => {
     "relancé": "chased",
     "réponse reçue": "reply received",
     "Ajouter à mon calendrier": "Add to my calendar",
+    "Abandonner": "Drop",
+    "Abandonner la tâche": "Drop the task",
+    "Pourquoi (facultatif)": "Why (optional)",
+    "« {0} » abandonnée. Elle reste sous « Abandonnées ».": "“{0}” dropped. It stays under “Dropped”.",
+    "Elle quitte les listes sans compter comme faite, et reste sous « Abandonnées », d'où l'on peut la reprendre.": "It leaves the lists without counting as done, and stays under “Dropped”, where you can pick it up again.",
+    "Abandonnées": "Dropped",
+    "Renoncer n'est pas échouer : c'est trier, avec un peu de retard.": "Giving up isn't failing: it's sorting, a little late.",
+    "{0} abandonnée": { one: "{0} dropped", other: "{0} dropped" },
+    "« {0} » reprend du service.": "“{0}” is back on duty.",
     "{0} en attente": "{0} waiting",
     "« {0} » : à relancer ({1})": "“{0}”: chase it ({1})",
     "Relancé. Prochaine relance le {0}.": "Chased. Next chase on {0}.",
@@ -4195,7 +4214,23 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     if (done) {
       t.today = false;
       delete t.wait;
+      delete t.dropped;
     }
+    return t;
+  }
+  var taskOpen = (t) => !t.done && !t.dropped;
+  function dropTask(tasks, id, why, date) {
+    const t = tasks.find((x) => x.id === id);
+    if (!t) throw coreError("task-missing", "Tâche introuvable");
+    if (t.done) throw coreError("task-done-drop", "Une tâche faite ne s'abandonne pas");
+    t.dropped = { at: date, why: String(why || "").trim().slice(0, 200) };
+    t.today = false;
+    delete t.wait;
+    return t;
+  }
+  function resumeTask(tasks, id) {
+    const t = tasks.find((x) => x.id === id);
+    if (t) delete t.dropped;
     return t;
   }
   var isoPlus = (d, n) => new Date(Date.parse(d + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10);
@@ -4204,6 +4239,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     const t = tasks.find((x) => x.id === id);
     if (!t) throw coreError("task-missing", "Tâche introuvable");
     if (t.done) throw coreError("task-done", "Une tâche faite n'attend plus rien");
+    if (t.dropped) throw coreError("task-dropped", "Une tâche abandonnée n'attend plus rien");
     const who = String(input.who || "").trim().slice(0, 80), next = input.next && validDate(input.next) ? input.next : null;
     t.wait = { since: t.wait ? t.wait.since : date, who, next, log: t.wait ? t.wait.log : [] };
     t.today = false;
@@ -4223,7 +4259,8 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   function setTaskToday(tasks, id, value, elsewhere = 0) {
     const t = tasks.find((x) => x.id === id);
     if (!t) throw coreError("task-missing", "Tâche introuvable");
-    if (value && !t.today && tasks.filter((x) => !x.done && x.today).length + elsewhere >= 3) throw coreError("today-limit", "Trois tâches du jour maximum");
+    if (value && t.dropped) throw coreError("task-dropped-today", "Une tâche abandonnée ne se fait pas aujourd'hui : reprends-la d'abord");
+    if (value && !t.today && tasks.filter((x) => taskOpen(x) && x.today).length + elsewhere >= 3) throw coreError("today-limit", "Trois tâches du jour maximum");
     t.today = !!value;
     return t;
   }
@@ -4456,6 +4493,8 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
           v.num(t.cost, "coût", 0);
           const w = t.wait;
           if (w != null && (typeof w !== "object" || Array.isArray(w) || !validDate(w.since) || w.next != null && !validDate(w.next) || w.who != null && (typeof w.who !== "string" || w.who.length > 80) || w.log != null && (!Array.isArray(w.log) || w.log.some((x) => !x || !validDate(x.date) || typeof x.kind !== "string")))) v.fail("attente");
+          const d = t.dropped;
+          if (d != null && (typeof d !== "object" || Array.isArray(d) || !validDate(d.at) || typeof d.why !== "string" || d.why.length > 200)) v.fail("abandon");
         }
       }
     },
@@ -5178,6 +5217,9 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     "task-missing": () => tr`Tâche introuvable`,
     "task-done": () => tr`Une tâche faite n'attend plus rien`,
     "task-not-waiting": () => tr`Cette tâche n'est pas en attente`,
+    "task-dropped": () => tr`Une tâche abandonnée n'attend plus rien`,
+    "task-dropped-today": () => tr`Une tâche abandonnée ne se fait pas aujourd'hui : reprends-la d'abord`,
+    "task-done-drop": () => tr`Une tâche faite ne s'abandonne pas`,
     "today-limit": () => tr`Trois tâches du jour maximum`,
     "amount": () => tr`Montant invalide`,
     "date": () => tr`Date invalide`,
@@ -8595,7 +8637,7 @@ ${body}` : title, cut = false;
     ${sourcesModule() && (findDoi(x.text) || findUrl(x.text)) ? `<div class="row" style="margin-top:6px"><button class="btn sm" data-act="note-source">${tr`Garder comme source`}</button></div>` : ""}
     ${targets.length ? `<div class="row${c.inbox ? "" : " ra"}" style="margin-top:6px">${targets.map((k) => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
     ${margHTML(id, x, x.text)}<button class="btn ghost sm ra" data-act="note-del">${tr`suppr.`}</button></li>`;
-      }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? tr`Vide. Le silence d'une clairière, ou celui d'un cerveau.` : tr`Rien pour l'instant.`}</li>`}</ul></div>`;
+      }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? tr`Vide. Le silence d'une clairière, ou celui d'un cerveau.` : tr`Rien pour l'instant. Une note ne se corrige pas : elle se garde ou s’efface. Pour un texte qui change, les fragments d’un espace d’écriture gardent leurs versions.`}</li>`}</ul></div>`;
     },
     settings: (id, { config: c }) => `<label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="notes-inbox" data-mod="${esc(id)}" ${c.inbox ? "checked" : ""}>${tr`Boîte de réception : reçoit la capture rapide de l'accueil`}</label>
     <div class="field-row" style="margin-top:8px"><label>${tr`Description`}<input data-set-mod="${esc(id)}.description" value="${esc(c.description)}" placeholder="${tr`Une phrase sous le titre`}"></label><label>${tr`Texte d'invite`}<input data-set-mod="${esc(id)}.placeholder" value="${esc(c.placeholder)}" required></label></div>
@@ -8659,15 +8701,31 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     const pourquoi = !hosted() || !authSession ? "" : passeurAcces();
     return pourquoi === "refuse" ? tr`L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas ouvert à ce compte.` : pourquoi === "absent" ? tr`L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas installé sur ce serveur.` : tr`L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).`;
   }
+  var DIRECT_KEY = "selene-radar-direct";
+  var DIRECT_TTL = 7 * 864e5;
   var radarDirect = true;
+  var directOuvert = () => {
+    if (!radarDirect) return false;
+    try {
+      const x = JSON.parse(platform.storage.get(DIRECT_KEY) || "null"), age = x ? Date.now() - x.at : NaN;
+      return !(age > -3e5 && age < DIRECT_TTL);
+    } catch {
+      return true;
+    }
+  };
+  var radarPossible = () => directOuvert() || passeurPret();
   async function radarGet(url) {
-    if (radarDirect) {
+    if (directOuvert()) {
       const ac = new AbortController(), t = setTimeout(() => ac.abort(), 1e4);
       try {
         const r = await fetch(url, { signal: ac.signal });
         return { status: r.status, json: r.ok ? await r.json() : null };
       } catch {
         radarDirect = false;
+        try {
+          platform.storage.set(DIRECT_KEY, JSON.stringify({ at: Date.now() }));
+        } catch {
+        }
       } finally {
         clearTimeout(t);
       }
@@ -8775,7 +8833,8 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     const c = radarPlace();
     return `<section id="radar"><h4>${tr`Radar culturel`}</h4><p class="hint">${tr`Sur demande, depuis l'accueil : les événements à 20 km du lieu réglé dans Ciel (OpenAgenda, partout en France) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification. Changer de lieu, c'est changer de radar.`}</p>
     <label>${tr`Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)`}<input data-act="radar-words" value="${esc(radarConf().words)}" placeholder="${tr`poésie, jazz, photographie, lecture…`}" maxlength="300" autocomplete="off"></label>
-    ${c ? `<p class="hint" style="margin-top:6px">${tr`Autour de ${esc(c.name)}.`}</p>` : `<p class="hint" style="margin-top:6px">${tr`Il lui faut un lieu : règle-le dans Ciel, ci-dessus.`}</p>`}</section>`;
+    ${c ? `<p class="hint" style="margin-top:6px">${tr`Autour de ${esc(c.name)}.`}</p>` : `<p class="hint" style="margin-top:6px">${tr`Il lui faut un lieu : règle-le dans Ciel, ci-dessus.`}</p>`}
+    ${c && radarWords(radarConf().words).length && !radarPossible() ? `<p class="hint" style="margin-top:6px">${esc(sansPasseur())} ${tr`L'accueil ne le propose donc plus ; il réessaiera de lui-même dans une semaine.`}</p>` : ""}</section>`;
   }
 
   // src/app/features/relecture.js
@@ -9325,7 +9384,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       ${!tod.length ? taskModules().length ? `<p class="empty">${tr`Aucune tâche choisie.`} <button class="btn ghost sm" data-act="task-pick">${tr`Tirer une petite tâche au sort`}</button></p>` : `<p class="empty">${tr`Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.`}</p>` : ""}
       ${agendaHTML()}
       ${dehorsLine()}
-      ${radarPlace() && radarWords(radarConf().words).length ? `<p class="hint radar-go">${tr`${`<button class="btn ghost sm" data-act="radar-open">${tr`Radar culturel`}</button>`} ce qui, près d'ici, parle de tes mots`}</p>` : ""}
+      ${radarPlace() && radarWords(radarConf().words).length && radarPossible() ? `<p class="hint radar-go">${tr`${`<button class="btn ghost sm" data-act="radar-open">${tr`Radar culturel`}</button>`} ce qui, près d'ici, parle de tes mots`}</p>` : ""}
     </section>
     <section class="capsec"><h2>${tr`Capturer`}</h2><p class="hint">${tr`Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.`}</p>
       ${inbox ? `<div class="capture"><input id="capIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="${tr`Capture rapide`}"><button class="btn acc" data-act="cap-add">${tr`Garder`}</button></div>
@@ -9404,9 +9463,10 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) {
       for (const a of TYPE_UI[inst.type].alerts(id, inst, day)) if (a.actions) out.push(plainText(a.text));
     }
-    for (const [id, t] of allTasks()) if (enabled(id) && !t.done && !t.wait && t.due === day) out.push(tr`Échéance : ${t.title}`);
+    for (const [id, t] of allTasks()) if (enabled(id) && taskOpen(t) && !t.wait && t.due === day) out.push(tr`Échéance : ${t.title}`);
     return out;
   }
+  var lateOn = (day) => allTasks().filter(([id, t]) => enabled(id) && taskOpen(t) && !t.wait && t.due && t.due < day).length;
   function digestPlan(nowMs = Date.now(), days = 7) {
     const { on, at } = notifyConf();
     if (!on) return [];
@@ -9418,11 +9478,12 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       if (d.getTime() <= nowMs) continue;
       const items = dayDigest(iso(d));
       if (!items.length) continue;
+      const late = lateOn(iso(d));
       plan.push({
         id: 100 + i,
         at: d.toISOString(),
         title: i ? trn(items.length, "Selene : {0} chose ce jour", "Selene : {0} choses ce jour") : trn(items.length, "Selene : {0} chose aujourd'hui", "Selene : {0} choses aujourd'hui"),
-        body: items.slice(0, 3).join(" · ") + (items.length > 3 ? " · " + tr`et ${items.length - 3} de plus` : "")
+        body: items.slice(0, 3).join(" · ") + (items.length > 3 ? " · " + tr`et ${items.length - 3} de plus` : "") + (late ? " · " + trn(late, "{0} tâche en retard", "{0} tâches en retard") : "")
       });
     }
     return plan;
@@ -10289,7 +10350,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   // src/app/modules/taches.js
   var taskModules = () => Object.keys(S().modules).filter((k) => S().modules[k].type === "taches" && enabled(k));
   var allTasks = () => taskModules().flatMap((id) => S().modules[id].entries.map((t) => [id, t]));
-  var todayTasks = () => allTasks().filter(([, t]) => !t.done && t.today);
+  var todayTasks = () => allTasks().filter(([, t]) => taskOpen(t) && t.today);
   var todayElsewhere = (id) => todayTasks().filter(([m]) => m !== id).length;
   var byDue = (a, b) => (a.due || "9999").localeCompare(b.due || "9999");
   var taskFilters = {};
@@ -10344,7 +10405,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     <div class="details">
       ${(t.steps || []).length ? `<ul class="steps">${t.steps.map((x, i) => `<li><input type="checkbox" data-act="task-step" data-i="${i}" ${x.d ? "checked" : ""} id="s${esc(t.id)}-${i}"><label for="s${esc(t.id)}-${i}" style="font-weight:400;display:inline">${esc(x.t)}</label></li>`).join("")}</ul>` : ""}
       ${t.note ? `<p class="note">${noteHTML(t.note)}</p>` : ""}${t.origin ? `<p class="meta">${originHTML(t, t.title)}</p>` : ""}
-      <div class="row"><button class="btn ghost sm" data-act="task-edit">${tr`Modifier`}</button>${t.done || t.wait ? "" : `<button class="btn ghost sm" data-act="task-wait">${tr`J'attends une réponse`}</button>`}${t.due && !t.done ? `<button class="btn ghost sm" data-act="task-ics">${tr`Ajouter à mon calendrier`}</button>` : ""}<button class="btn ghost sm" data-act="task-del">${tr`Supprimer`}</button></div>
+      <div class="row"><button class="btn ghost sm" data-act="task-edit">${tr`Modifier`}</button>${t.done || t.wait ? "" : `<button class="btn ghost sm" data-act="task-wait">${tr`J'attends une réponse`}</button>`}${t.due && !t.done ? `<button class="btn ghost sm" data-act="task-ics">${tr`Ajouter à mon calendrier`}</button>` : ""}${taskOpen(t) ? `<button class="btn ghost sm" data-act="task-drop">${tr`Abandonner`}</button>` : ""}<button class="btn ghost sm" data-act="task-del">${tr`Supprimer`}</button></div>
     </div></li>`;
   }
   function taskForm(id, t) {
@@ -10399,6 +10460,23 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       tr`La tâche sort des échéances et revient sur l'accueil le jour de la relance.`
     );
   }
+  function dropForm(id, t) {
+    openForm(tr`Abandonner la tâche`, [{ n: "why", l: tr`Pourquoi (facultatif)`, t: "textarea", rows: 2 }], { why: "" }, (v) => {
+      const inst = S().modules[id], cur = inst && inst.entries.find((x) => x.id === t.id);
+      if (!cur) return toast(tr`Cette tâche a été supprimée entre-temps.`);
+      const before = { today: cur.today, wait: keepWait(cur) };
+      dropTask(inst.entries, cur.id, v.why, todayISO());
+      site.save();
+      render();
+      toastUndo(tr`« ${cur.title} » abandonnée. Elle reste sous « Abandonnées ».`, () => {
+        delete cur.dropped;
+        cur.today = before.today;
+        putWait(cur, before.wait);
+        site.save();
+        render();
+      });
+    }, tr`Elle quitte les listes sans compter comme faite, et reste sous « Abandonnées », d'où l'on peut la reprendre.`);
+  }
   var WORKS = /\b(?:travaux|renovation|repairs?|home improvement)\b/;
   function costEnvelope(id, bud) {
     const c = S().modules[id].config, envs = bud ? S().modules[bud].config.envelopes : [];
@@ -10406,7 +10484,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   }
   function pickTask(only) {
     if (todayTasks().length >= 3) return toast(tr`Aujourd'hui est plein. Le hasard respecte les plafonds.`);
-    const o = allTasks().filter(([m, t2]) => !t2.done && !t2.today && !t2.wait && (!only || m === only));
+    const o = allTasks().filter(([m, t2]) => taskOpen(t2) && !t2.today && !t2.wait && (!only || m === only));
     if (!o.length) return toast(tr`Rien à tirer.`);
     const small = o.filter(([, t2]) => t2.effort === 1), pool = (small.length ? small : o).sort(([, a], [, b]) => byDue(a, b)).slice(0, 5);
     const [id, t] = pool[Math.floor(Math.random() * pool.length)];
@@ -10417,8 +10495,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   }
   registerType("taches", {
     view(id) {
-      const inst = S().modules[id], c = inst.config, now = todayISO(), o = inst.entries.filter((t) => !t.done && !t.wait), f = tf(id);
-      const waiting = inst.entries.filter((t) => !t.done && t.wait).sort((a, b) => (a.wait.next || "9999").localeCompare(b.wait.next || "9999"));
+      const inst = S().modules[id], c = inst.config, now = todayISO(), o = inst.entries.filter((t) => taskOpen(t) && !t.wait), f = tf(id);
+      const waiting = inst.entries.filter((t) => taskOpen(t) && t.wait).sort((a, b) => (a.wait.next || "9999").localeCompare(b.wait.next || "9999"));
       const tod = o.filter((t) => t.today);
       const cats = [...new Set(inst.entries.map((t) => t.cat))];
       const filtered = o.filter((t) => !t.today && (!f.room || t.room === f.room) && (!f.cat || t.cat === f.cat) && gMatch(id, t)).sort(byDue);
@@ -10432,8 +10510,9 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
         const it = filtered.filter(fn);
         return it.length ? `<div style="margin-bottom:22px"><h3 class="${late ? "late" : ""}">${n} <span class="hint" style="font-size:1rem">${it.length}</span></h3><p class="hint">${h}</p><ul class="plain">${it.map((t) => taskHTML(id, t)).join("")}</ul></div>` : "";
       }).join("");
-      const spent = inst.entries.filter((t) => t.done && t.cost).reduce((a, t) => a + +t.cost, 0), left2 = inst.entries.filter((t) => !t.done && t.cost).reduce((a, t) => a + +t.cost, 0);
+      const spent = inst.entries.filter((t) => t.done && t.cost).reduce((a, t) => a + +t.cost, 0), left2 = inst.entries.filter((t) => taskOpen(t) && t.cost).reduce((a, t) => a + +t.cost, 0);
       const done = paged(`done:${id}`, inst.entries.filter((t) => t.done).sort((a, b) => (b.doneAt || "").localeCompare(a.doneAt || "")), 8);
+      const dropped = paged(`drop:${id}`, inst.entries.filter((t) => t.dropped && !t.done).sort((a, b) => b.dropped.at.localeCompare(a.dropped.at)), 8);
       return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:24px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn solid" data-act="task-new">${tr`Ajouter une tâche`}</button><button class="btn" data-act="task-pick">${tr`Tirer au sort`}</button></div>
   <div class="two"><div>
     <section><h3>${tr`Aujourd'hui`}</h3><p class="hint">${tr`Trois tâches maximum, tous modules confondus. Au-delà, c'est une liste de reproches.`}</p><ul class="plain">${tod.map((t) => taskHTML(id, t)).join("") || `<li class="empty">${tr`Coche l'étoile d'une tâche.`}</li>`}</ul></section>
@@ -10446,6 +10525,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     ${groupPanel(id, tr`La mousse gagne à mesure que tu finis. Clique pour filtrer.`)}
     ${c.costs && (spent || left2) ? `<p class="hint">${tr`Budget estimé : ${spent} € engagés, ${left2} € encore à prévoir.`}</p>` : ""}
     <section><h3>${tr`Fait récemment`}</h3><ul class="plain">${done.items.map((t) => `<li class="item" data-task="${esc(t.id)}" data-mod="${esc(id)}"><span></span><div>${esc(t.title)}<div class="meta">${fmt(t.doneAt)}</div></div><button class="btn ghost sm" data-act="task-undo">${tr`annuler`}</button></li>`).join("") + done.more || `<li class="empty">${tr`Rien pour l'instant. L'histoire ne retiendra rien.`}</li>`}</ul></section>
+    ${dropped.items.length ? `<section><h3>${tr`Abandonnées`}</h3><p class="hint">${tr`Renoncer n'est pas échouer : c'est trier, avec un peu de retard.`}</p><ul class="plain">${dropped.items.map((t) => `<li class="item" data-task="${esc(t.id)}" data-mod="${esc(id)}"><span></span><div>${esc(t.title)}<div class="meta">${tr`le ${fmt(t.dropped.at)}`}${t.dropped.why ? ` · ${esc(t.dropped.why)}` : ""}</div></div><button class="btn ghost sm" data-act="task-resume">${tr`reprendre`}</button></li>`).join("") + dropped.more}</ul></section>` : ""}
   </aside></div></div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>${tr`Nom du regroupement`}<input data-set-mod="${esc(id)}.groupLabel" value="${esc(c.groupLabel)}" placeholder="${tr`Pièce, lieu, client…`}" required></label><label>${tr`Nom des types`}<input data-set-mod="${esc(id)}.catLabel" value="${esc(c.catLabel)}" required></label></div>
@@ -10455,19 +10535,19 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     <label style="display:flex;gap:8px;align-items:center;align-self:start;margin-top:26px"><input type="checkbox" data-act="task-costs" data-mod="${esc(id)}" ${c.costs ? "checked" : ""}>${tr`Suivre les coûts estimés`}</label></div>
     ${c.costs && firstOfType("budget") ? `<div class="field-row" style="margin-top:8px"><label>${tr`Enveloppe du budget pour les coûts`}<input data-set-mod="${esc(id)}.costEnvelope" value="${esc(costEnvelope(id, firstOfType("budget")))}" list="env-${esc(id)}" placeholder="${tr`aucune`}"><datalist id="env-${esc(id)}">${S().modules[firstOfType("budget")].config.envelopes.map((v) => `<option value="${esc(v.name)}">`).join("")}</datalist></label><span></span></div>` : ""}`,
     summary(id, inst) {
-      const now = todayISO(), open = inst.entries.filter((t) => !t.done), o = open.filter((t) => !t.wait), late = o.filter((t) => t.due && t.due < now).length, all = inst.entries.length;
-      const w = open.length - o.length;
-      return `${late ? `<span class="late">${tr`${late} en retard`}</span>, ` : ""}${tr`${o.length} à faire, ${all ? Math.round(100 * (all - open.length) / all) : 0} % fait`}${w ? ", " + tr`${w} en attente` : ""}`;
+      const now = todayISO(), open = inst.entries.filter(taskOpen), o = open.filter((t) => !t.wait), late = o.filter((t) => t.due && t.due < now).length;
+      const done = inst.entries.filter((t) => t.done).length, counted = done + open.length, w = open.length - o.length;
+      return `${late ? `<span class="late">${tr`${late} en retard`}</span>, ` : ""}${tr`${o.length} à faire, ${counted ? Math.round(100 * done / counted) : 0} % fait`}${w ? ", " + tr`${w} en attente` : ""}`;
     },
     // Une ligne par tâche dont la relance est due : elle ne dépend pas de soi, mais la relancer, si.
     alerts(id, inst, now) {
-      return inst.entries.filter((t) => !t.done && t.wait && t.wait.next && t.wait.next <= now).map((t) => ({
+      return inst.entries.filter((t) => taskOpen(t) && t.wait && t.wait.next && t.wait.next <= now).map((t) => ({
         text: `${tr`« ${esc(t.title)} » : à relancer (${esc(label(id))})`} · ${waitMeta(t, false)}`,
         actions: `<button class="btn sm" data-act="task-relaunch" data-mod="${esc(id)}" data-task="${esc(t.id)}">${tr`relancé`}</button><button class="btn ghost sm" data-act="task-answer" data-mod="${esc(id)}" data-task="${esc(t.id)}">${tr`réponse reçue`}</button>`
       }));
     },
     context(inst, nm) {
-      const o = inst.entries.filter((t) => !t.done).sort(byDue), c = inst.config;
+      const o = inst.entries.filter(taskOpen).sort(byDue), c = inst.config;
       return `
 ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 40).map((t) => `
 - [${t.id}] ${t.title} | ${t.room || "?"} | ${t.due ? "échéance " + t.due : "sans date"}${t.today ? " | choisie pour aujourd'hui" : ""}${t.wait ? " | en attente d'une réponse" + (t.wait.who ? " de " + t.wait.who : "") + (t.wait.next ? ", relance le " + t.wait.next : "") : ""}${c.costs && t.cost ? " | " + t.cost + " €" : ""}`).join("");
@@ -10482,13 +10562,13 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
         items: () => inst.entries,
         key,
         store: () => site,
-        groups: (f) => itemGroups(inst.entries, (t) => key(t, f), (t) => t.done)
+        groups: (f) => itemGroups(inst.entries, (t) => key(t, f), (t) => !taskOpen(t))
       };
     },
-    recent: (inst) => inst.entries.filter((t) => !t.done && !t.wait).sort(byDue).slice(0, 3).map((t) => `${t.title} · ${dueLabel(t).txt}`),
+    recent: (inst) => inst.entries.filter((t) => taskOpen(t) && !t.wait).sort(byDue).slice(0, 3).map((t) => `${t.title} · ${dueLabel(t).txt}`),
     review: (inst, from, to) => {
-      const done = within(inst.entries, from, to, "doneAt"), cost = done.reduce((a, t) => a + (+t.cost || 0), 0);
-      return trn(done.length, "{0} tâche terminée", "{0} tâches terminées") + (inst.config.costs && cost ? ", " + tr`${money(cost)} de coûts estimés` : "");
+      const done = within(inst.entries, from, to, "doneAt"), cost = done.reduce((a, t) => a + (+t.cost || 0), 0), dropped = inst.entries.filter((t) => t.dropped && t.dropped.at >= from && t.dropped.at < to).length;
+      return trn(done.length, "{0} tâche terminée", "{0} tâches terminées") + (inst.config.costs && cost ? ", " + tr`${money(cost)} de coûts estimés` : "") + (dropped ? ", " + trn(dropped, "{0} abandonnée", "{0} abandonnées") : "");
     },
     texts: (inst) => inst.entries.map((t) => ({ text: [t.title, t.room, t.note, ...(t.steps || []).map((x) => x.t)].filter(Boolean).join(" · "), date: t.due || t.created, eid: t.id })),
     accept(id, inst, note) {
@@ -10520,6 +10600,15 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
       },
       "task-new": (el) => taskForm(modOf(el), null),
       "task-wait": (el) => waitForm(taskMod(el), taskOf(el)),
+      "task-drop": (el) => dropForm(taskMod(el), taskOf(el)),
+      "task-resume": (el) => {
+        const t = taskOf(el);
+        if (!t) return;
+        resumeTask(S().modules[taskMod(el)].entries, t.id);
+        site.save();
+        render();
+        toast(tr`« ${t.title} » reprend du service.`);
+      },
       // Un fichier .ics d'une journée, que la personne ouvre dans son agenda : aucun compte, aucune API (E2).
       "task-ics": (el) => {
         const id = taskMod(el), t = taskOf(el);
@@ -12275,7 +12364,7 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
       const inst = S().modules[id], m = monthOf(id), es = inMonth(inst, m), out = sumOf2(es, "dépense"), inn = sumOf2(es, "revenu");
       const shown = es.filter((e) => gMatch(id, e)).sort((a, x) => x.date.localeCompare(a.date));
       const mLabel = (/* @__PURE__ */ new Date(m + "-15")).toLocaleDateString(uiLocale(), { month: "long", year: "numeric" });
-      const tasksLeft = allTasks().filter(([m2, t]) => !t.done && t.cost && S().modules[m2].config.costs).reduce((a, [, t]) => a + +t.cost, 0);
+      const tasksLeft = allTasks().filter(([m2, t]) => taskOpen(t) && t.cost && S().modules[m2].config.costs).reduce((a, [, t]) => a + +t.cost, 0);
       const defDate = m === todayISO().slice(0, 7) ? todayISO() : m + "-01";
       return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span>
     <button class="btn ghost" data-act="bud-month" data-d="-1" aria-label="${tr`Mois précédent`}">‹</button><b style="min-width:9ch;text-align:center;text-transform:capitalize">${mLabel}</b><button class="btn ghost" data-act="bud-month" data-d="1" aria-label="${tr`Mois suivant`}">›</button></div>

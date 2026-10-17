@@ -60,3 +60,33 @@ test('attendre une réponse : depuis quand, de qui, quand relancer ; relancer re
   assert.equal(refused({ since: '2026-10-01', who: 'CAF', next: null, log: [{ date: '2026-10-02', kind: 'relance' }] }), false, 'une attente bien formée passe');
   for (const w of [[], 'oui', { since: 'hier' }, { since: '2026-10-01', next: '2026-13-01' }, { since: '2026-10-01', who: 'x'.repeat(81) }, { since: '2026-10-01', log: [{ date: 'x', kind: 'relance' }] }]) assert.ok(refused(w), `refusée : ${JSON.stringify(w)}`);
 });
+
+test('abandonner une tâche : gardée, datée, motif facultatif ; ni ouverte ni faite ; reprise ou faite, l’abandon tombe (TU-DOM-04)', () => {
+  const { dropTask, resumeTask, taskOpen, setTaskWaiting, MODULE_TYPES } = require('../src/core/domain.js');
+  const tasks = [];
+  addTask(tasks, { title: 'Repeindre la rambarde' }, 't1', '2026-09-01');
+  addTask(tasks, { title: 'Ranger la cave' }, 't2', '2026-09-01');
+  setTaskToday(tasks, 't1', true);
+  setTaskWaiting(tasks, 't2', { who: 'syndic' }, '2026-09-02');
+  const t = dropTask(tasks, 't1', '  Le syndic repeint tout le balcon au printemps.  ', '2026-10-17');
+  assert.deepEqual({ ...t.dropped }, { at: '2026-10-17', why: 'Le syndic repeint tout le balcon au printemps.' });
+  assert.equal(t.today, false, 'abandonnée, elle quitte « Aujourd’hui »');
+  assert.equal(t.done, false, 'abandonner n’est pas faire');
+  assert.equal(taskOpen(t), false, 'ni ouverte…');
+  assert.equal(dropTask(tasks, 't2', '', '2026-10-17').wait, undefined, 'une attente abandonnée cesse d’attendre');
+  assert.equal(tasks[1].dropped.why, '', 'le motif est facultatif');
+  assert.equal(dropTask(tasks, 't2', 'x'.repeat(300), '2026-10-18').dropped.why.length, 200, 'motif : 200 caractères au plus ; redire l’abandon le met à jour');
+  assert.throws(() => setTaskToday(tasks, 't1', true), /abandonnée/, 'une tâche abandonnée ne revient pas par l’étoile');
+  assert.throws(() => setTaskWaiting(tasks, 't1', {}, '2026-10-18'), /abandonnée/, 'ni par une attente');
+  resumeTask(tasks, 't1');
+  assert.ok(taskOpen(t) && t.dropped === undefined, 'reprise : de nouveau ouverte');
+  dropTask(tasks, 't1', '', '2026-10-19');
+  setTaskDone(tasks, 't1', true, '2026-10-20');
+  assert.ok(t.done && t.dropped === undefined, 'faite quand même : l’abandon tombe');
+  assert.throws(() => dropTask(tasks, 't1', '', '2026-10-21'), /faite/, 'une tâche faite ne s’abandonne pas');
+  assert.throws(() => dropTask(tasks, 'nope', '', '2026-10-21'), /introuvable/i);
+  // À l'import : un abandon mal formé est refusé, comme le reste d'une tâche.
+  const refused = d => { const out = []; MODULE_TYPES.taches.validate({ config: {}, entries: [{ title: 'x', dropped: d }] }, { fail: m => out.push(m), num: () => {} }); return out.includes('abandon'); };
+  assert.equal(refused({ at: '2026-10-17', why: '' }), false, 'un abandon bien formé passe');
+  for (const d of [[], 'oui', { at: 'hier', why: '' }, { at: '2026-10-17', why: 3 }, { at: '2026-10-17', why: 'x'.repeat(201) }]) assert.ok(refused(d), `refusé : ${JSON.stringify(d)}`);
+});

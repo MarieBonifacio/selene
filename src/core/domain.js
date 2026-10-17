@@ -29,7 +29,24 @@ export function setTaskDone(tasks, id, done, date) {
   if (!t) throw coreError("task-missing", "Tâche introuvable");
   t.done = !!done;
   t.doneAt = done ? date : null;
-  if (done) { t.today = false; delete t.wait; } // faite, elle n'attend plus rien
+  if (done) { t.today = false; delete t.wait; delete t.dropped; } // faite, elle n'attend plus rien, et n'est plus abandonnée
+  return t;
+}
+/* ---- abandonner une tâche : la garder, datée, avec son motif si l'on veut, au lieu de la supprimer ----
+   `dropped` : { at, why }. Une tâche abandonnée n'est ni ouverte ni faite : elle quitte les listes, le tirage et le
+   compte des tâches à faire, sans entrer dans celui des tâches faites. Reprise, ou faite malgré tout, l'abandon tombe. */
+export const taskOpen = t => !t.done && !t.dropped;
+export function dropTask(tasks, id, why, date) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) throw coreError("task-missing", "Tâche introuvable");
+  if (t.done) throw coreError("task-done-drop", "Une tâche faite ne s'abandonne pas");
+  t.dropped = { at: date, why: String(why || "").trim().slice(0, 200) };
+  t.today = false; delete t.wait;
+  return t;
+}
+export function resumeTask(tasks, id) {
+  const t = tasks.find(x => x.id === id);
+  if (t) delete t.dropped;
   return t;
 }
 /* ---- attendre une réponse : une tâche dont on a fait sa part, et dont la suite dépend de quelqu'un d'autre ----
@@ -41,6 +58,7 @@ export function setTaskWaiting(tasks, id, input, date) {
   const t = tasks.find(x => x.id === id);
   if (!t) throw coreError("task-missing", "Tâche introuvable");
   if (t.done) throw coreError("task-done", "Une tâche faite n'attend plus rien");
+  if (t.dropped) throw coreError("task-dropped", "Une tâche abandonnée n'attend plus rien");
   const who = String(input.who || "").trim().slice(0, 80), next = input.next && validDate(input.next) ? input.next : null;
   t.wait = { since: t.wait ? t.wait.since : date, who, next, log: t.wait ? t.wait.log : [] };
   t.today = false;
@@ -61,7 +79,8 @@ export function clearTaskWaiting(tasks, id) {
 export function setTaskToday(tasks, id, value, elsewhere = 0) {
   const t = tasks.find(x => x.id === id);
   if (!t) throw coreError("task-missing", "Tâche introuvable");
-  if (value && !t.today && tasks.filter(x => !x.done && x.today).length + elsewhere >= 3) throw coreError("today-limit", "Trois tâches du jour maximum");
+  if (value && t.dropped) throw coreError("task-dropped-today", "Une tâche abandonnée ne se fait pas aujourd'hui : reprends-la d'abord");
+  if (value && !t.today && tasks.filter(x => taskOpen(x) && x.today).length + elsewhere >= 3) throw coreError("today-limit", "Trois tâches du jour maximum");
   t.today = !!value;
   return t;
 }
@@ -255,6 +274,8 @@ export const MODULE_TYPES = {
         if (w != null && (typeof w !== "object" || Array.isArray(w) || !validDate(w.since) || (w.next != null && !validDate(w.next)) ||
             (w.who != null && (typeof w.who !== "string" || w.who.length > 80)) ||
             (w.log != null && (!Array.isArray(w.log) || w.log.some(x => !x || !validDate(x.date) || typeof x.kind !== "string"))))) v.fail("attente");
+        const d = t.dropped;
+        if (d != null && (typeof d !== "object" || Array.isArray(d) || !validDate(d.at) || typeof d.why !== "string" || d.why.length > 200)) v.fail("abandon");
       }
     }
   },

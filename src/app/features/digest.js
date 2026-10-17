@@ -1,5 +1,6 @@
 /* Le résumé du matin (ADR 19) : notifications locales programmées dans les coquilles mobiles. */
 import { platform } from "../../platform.js";
+import { taskOpen } from "../../core/domain.js";
 import { TYPE_UI } from "../registry.js";
 import { esc } from "../lib/dom.js";
 import { iso } from "../lib/format.js";
@@ -10,7 +11,9 @@ import { S, enabled } from "../state/site.js";
 /* Le résumé du matin (ADR 19).
    Dans une coquille native seulement : une notification par jour, à l'heure choisie (réglage propre à l'appareil),
    pour les sept jours qui viennent. Elle dit ce qui demande un geste ce jour-là : les rappels de l'accueil qui
-   proposent une action (un rappel déjà honoré n'en propose plus), et les tâches qui arrivent à échéance. Le système
+   proposent une action (un rappel déjà honoré n'en propose plus), et les tâches qui arrivent à échéance ; les tâches en
+   retard y sont comptées, en fin de message, sans jamais faire sonner un jour à elles seules (un reproche quotidien
+   pour la même corvée n'aide personne ; audit du 12 octobre 2026, section C). Le système
    garde la liste et la sonne app fermée ; chaque rendu la recalcule et ne la renvoie que si elle a changé. Ouvrir
    Selene au moins une fois par semaine suffit à la tenir à jour : l'oubli prolongé a, lui, sa propre sanction. */
 export const NOTIFY_KEY = "selene-notify", NOTIFY_AT = "08:30";
@@ -22,9 +25,11 @@ const plainText = html => String(html).replace(/<[^>]*>/g, "").replace(/&(amp|lt
 export function dayDigest(day) {
   const s = S(), out = [];
   for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) for (const a of TYPE_UI[inst.type].alerts(id, inst, day)) if (a.actions) out.push(plainText(a.text));
-  for (const [id, t] of allTasks()) if (enabled(id) && !t.done && !t.wait && t.due === day) out.push(tr`Échéance : ${t.title}`);
+  for (const [id, t] of allTasks()) if (enabled(id) && taskOpen(t) && !t.wait && t.due === day) out.push(tr`Échéance : ${t.title}`);
   return out;
 }
+// Les tâches en retard ce jour-là : ouvertes, sans attente (une attente n'est pas un retard), l'échéance passée.
+const lateOn = day => allTasks().filter(([id, t]) => enabled(id) && taskOpen(t) && !t.wait && t.due && t.due < day).length;
 export function digestPlan(nowMs = Date.now(), days = 7) {
   const { on, at } = notifyConf(); if (!on) return [];
   const [h, m] = at.split(":").map(Number), plan = [];
@@ -32,8 +37,9 @@ export function digestPlan(nowMs = Date.now(), days = 7) {
     const d = new Date(nowMs); d.setDate(d.getDate() + i); d.setHours(h, m, 0, 0);
     if (d.getTime() <= nowMs) continue; // l'heure est passée : ce jour-là, l'app est déjà ouverte
     const items = dayDigest(iso(d)); if (!items.length) continue; // un jour sans rien ne mérite pas qu'on sonne
+    const late = lateOn(iso(d));
     plan.push({ id: 100 + i, at: d.toISOString(), title: i ? trn(items.length, "Selene : {0} chose ce jour", "Selene : {0} choses ce jour") : trn(items.length, "Selene : {0} chose aujourd'hui", "Selene : {0} choses aujourd'hui"),
-      body: items.slice(0, 3).join(" · ") + (items.length > 3 ? " · " + tr`et ${items.length - 3} de plus` : "") });
+      body: items.slice(0, 3).join(" · ") + (items.length > 3 ? " · " + tr`et ${items.length - 3} de plus` : "") + (late ? " · " + trn(late, "{0} tâche en retard", "{0} tâches en retard") : "") });
   }
   return plan;
 }

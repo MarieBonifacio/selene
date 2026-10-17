@@ -94,6 +94,27 @@ Non vérifié pour ce lot :
   gardées du radar) n'a pas été mesurée, faute de données d'usage. Sa condition d'abandon tient toujours : revoir le
   radar si moins d'un événement par mois et par personne est gardé.
 
+Le lot 3 est fusionné : [PR #163](https://github.com/MarieBonifacio/selene/pull/163). Sa CI a trouvé deux défauts de plus,
+corrigés avant la fusion : la case d'une tâche à 44 × 43 px sous Firefox (A73, second temps : la bordure, arrondie par
+Chromium, pas par Firefox) et une course dans le scénario du radar (A74, le même piège qu'A52).
+
+Le lot 4 reprend ce que le tableau des manques (C) laissait encore ouvert, sans nouveau module :
+
+| Ligne de C | Ce qui change | Tests |
+|---|---|---|
+| Actif, pause, abandon (P2) | « Abandonner » une tâche : gardée, datée, motif facultatif, sous « Abandonnées », d'où « reprendre » ; ni à faire ni faite (hors des listes, du tirage, du résumé du matin, du budget à venir et du pourcentage) ; le Bilan compte les abandons. Un seul prédicat au noyau, `taskOpen`, au lieu de « non faite » à quinze endroits. Cas [MOD-028](recette/manuels/types-de-module.md#mod-028) | `TU-DOM-04`, `TU-MOD-81`, `TN-abandon` |
+| Radar, passeur (P2) | Le radar ne se propose plus sur l'accueil quand il ne peut rien lire : la lecture directe refusée est retenue sur l'appareil sept jours, et les Réglages disent pourquoi ; il réessaie au bout d'une semaine | `TN-radar` |
+| Tâches → Aujourd'hui (P3) | Le résumé du matin compte les retards en fin de message, sans jamais faire sonner un jour à eux seuls | `TU-APP-07` |
+| Notes (limite assumée) | Un Carnet vide dit qu'une note ne se corrige pas, et où écrire un texte qui change | `TU-MOD-82` |
+| Documentation (P3) | Le README décrit `src/app/` et les quatorze modèles | — |
+
+Reste ouvert après le lot 4, à décider ou à valider plutôt qu'à coder :
+- **Citrinitas et Rubedo** voisines des couleurs d'état : une décision de design, au [backlog](recette/backlog.md#à-décider) ;
+- **Dehors → Sources** (choisir l'espace cible), **« Annuler le dernier import Markdown »**, **références régionales**
+  (éclipses « visibles depuis Lille ») : P3, sans signal d'usage ;
+- **Arc, liens et sources entre tous les types** : à valider (section G, page de projet) ;
+- **l'utilité de E1, E2 et de l'abandon** : aucune donnée d'usage ; la bêta (E4 de [validation.md](validation.md)) le dira.
+
 ---
 
 ## A. Diagnostic des couleurs

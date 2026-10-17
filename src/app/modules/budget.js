@@ -1,5 +1,5 @@
 /* Type « budget » : opérations et enveloppes à plafond mensuel. */
-import { addBudgetEntry } from "../../core/domain.js";
+import { addBudgetEntry, taskOpen } from "../../core/domain.js";
 import { TYPE_UI, registerType } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { fmt, iso, money, todayISO, uid } from "../lib/format.js";
@@ -27,7 +27,7 @@ registerType("budget", {
     const inst = S().modules[id], m = monthOf(id), es = inMonth(inst, m), out = sumOf(es, "dépense"), inn = sumOf(es, "revenu");
     const shown = es.filter(e => gMatch(id, e)).sort((a, x) => x.date.localeCompare(a.date));
     const mLabel = new Date(m + "-15").toLocaleDateString(uiLocale(), { month: "long", year: "numeric" });
-    const tasksLeft = allTasks().filter(([m, t]) => !t.done && t.cost && S().modules[m].config.costs).reduce((a, [, t]) => a + +t.cost, 0);
+    const tasksLeft = allTasks().filter(([m, t]) => taskOpen(t) && t.cost && S().modules[m].config.costs).reduce((a, [, t]) => a + +t.cost, 0);
     const defDate = m === todayISO().slice(0, 7) ? todayISO() : m + "-01";
     return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span>
     <button class="btn ghost" data-act="bud-month" data-d="-1" aria-label="${tr`Mois précédent`}">‹</button><b style="min-width:9ch;text-align:center;text-transform:capitalize">${mLabel}</b><button class="btn ghost" data-act="bud-month" data-d="1" aria-label="${tr`Mois suivant`}">›</button></div>
