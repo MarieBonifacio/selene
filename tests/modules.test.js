@@ -1559,3 +1559,16 @@ test('un changement de statut se date : « depuis le … », et le Bilan d’une
   const bad = JSON.parse(app.createBackup(app.board.data, d)); bad.site.modules.musique.entries[0].statusAt = 'hier';
   assert.throws(() => app.parseBackup(JSON.stringify(bad)));
 });
+
+test('une collection vide dit par où commencer, en liste comme en colonnes ; un filtre vide reste un filtre vide', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const m = app.S().modules.musique, T = app.TYPE_UI.collection;
+  m.entries = [];
+  assert.match(T.view('musique'), /<li class="empty">Rien encore : « Ajouter un album », en haut, pour commencer\.<\/li>/, 'en liste : vide, pas « filtré »');
+  m.config.display = 'colonnes';
+  assert.match(T.view('musique'), /<p class="empty">Rien encore : « Ajouter un album », en haut, pour commencer\.<\/p>/, 'en colonnes : visible, pas seulement pour un lecteur d’écran');
+  m.config.display = 'liste';
+  app.saveCollectionItem(m, { title: 'Dead Can Dance' }, 'a1', '2026-09-01');
+  app.CHANGE['col-f'](on({ mod: 'musique' }, { value: 'Retenu' }));
+  assert.match(T.view('musique'), /Rien dans ce filtre\./, 'des éléments, mais aucun dans ce filtre');
+});

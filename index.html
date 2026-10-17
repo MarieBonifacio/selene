@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-b29NI+JSu325aHTybOyhMEefjkTDzAmjRMjvMntqUCA=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-x6JXH3DF0AOuPgjp3h6USPg3drXJHpZOgeg+QnEt1Zk=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -765,7 +765,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "5296e7c294";
+const SELENE_BUILD = "a1b10f315d";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -2418,6 +2418,7 @@ var __selene = (() => {
     "Nouvelle enveloppe": "New envelope",
     "Supprimer l'enveloppe « {0} » ? Les opérations restent.": "Delete the envelope “{0}”? The transactions stay.",
     // modules/collection.js
+    "Rien encore : « {0} », en haut, pour commencer.": "Nothing yet: “{0}”, at the top, to begin.",
     "depuis le {0}": "since {0}",
     "« {0} » est passé à « {1} ». Le monde n'a rien remarqué, comme prévu.": "“{0}” moved to “{1}”. The world didn't notice, as planned.",
     "« {0} » : {1}. Une chose de moins qui attend ton attention.": "“{0}”: {1}. One less thing waiting for your attention.",
@@ -11754,11 +11755,12 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
       const head = `<div class="row" style="margin-bottom:${c.display === "colonnes" ? 20 : 8}px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="col-new">${esc(c.addLabel)}</button></div>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}${c.sources ? sourceBar(id) : ""}${c.music && inst.entries.some((e) => e.mb && e.mb.a) ? `<div class="row" style="margin:-2px 0 12px"><button class="btn ghost sm" data-act="mb-new" title="${tr`Demande à MusicBrainz ce qu'ont publié tes artistes reliés depuis ta dernière vérification`}">${tr`Nouvelles sorties`}</button></div>` : ""}`;
       if (c.concordance) return concordanceView(id, inst, head);
       const panel = groupPanel(id, tr`Part arrivée à « ${esc(c.statuses[c.doneFrom])} » dans chaque groupe. Clique pour filtrer.`);
+      const empty = inst.entries.length ? "" : tr`Rien encore : « ${esc(c.addLabel)} », en haut, pour commencer.`;
       if (c.display === "colonnes") {
         const byDue2 = (a, b) => (a.due || "9999").localeCompare(b.due || "9999");
         const tab = Math.min(c.statuses.length - 1, colTab[id] || 0);
         const seg = `<div class="seg" role="tablist" aria-label="${esc(c.statusLabel)}">${c.statuses.map((st, ci) => `<button type="button" role="tab" aria-selected="${ci === tab}" class="${ci === tab ? "on" : ""}" data-act="col-tab" data-i="${ci}">${esc(st)} <span>${items.filter((e) => e.status === st).length}</span></button>`).join("")}</div>`;
-        return `<div data-mod="${esc(id)}">${head}${seg}<div class="board" style="margin-bottom:34px">${c.statuses.map((st, ci) => {
+        return `<div data-mod="${esc(id)}">${head}${seg}${empty ? `<p class="empty">${empty}</p>` : ""}<div class="board" style="margin-bottom:34px">${c.statuses.map((st, ci) => {
           const col = items.filter((e) => e.status === st).sort(byDue2);
           return `<div class="col ${ci === tab ? "on" : ""}" data-ci="${ci}"><h3>${esc(st)} <span class="hint" style="font-size:.95rem">${col.length}</span></h3>${col.map((e) => collectionCard(id, e, ci, c.statuses.length - 1)).join("") || `<p class="col-empty"><span class="sr">${tr`Aucun élément.`}</span></p>`}</div>`;
         }).join("")}</div>${panel}</div>`;
@@ -11767,7 +11769,7 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
       return `<div data-mod="${esc(id)}">${head}
   <div class="row" style="margin-bottom:10px"><select data-act="col-f" aria-label="${tr`Filtrer`}"><option value="">${tr`Tous`}</option>${c.statuses.map((st) => `<option ${st === filter ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${c.sources && inst.entries.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="src-bib" title="${tr`Toutes les sources de cet espace, pour LaTeX (BibTeX, biblatex)`}">${tr`Exporter en BibTeX`}</button><button class="btn ghost sm" data-act="src-csl" aria-label="${tr`Exporter en CSL-JSON`}" title="${tr`Toutes les sources de cet espace, pour Zotero, Zettlr ou Pandoc`}">CSL-JSON</button>` : ""}</div>
   <div class="two"><div><ul class="plain col-list">${((pg) => pg.items.map((e) => `<li class="item" data-id="${esc(e.id)}"><span>${c.music && e.mb && e.mb.rg ? coverImg(e.mb.rg) : ""}</span><div><b>${esc(e.title)}</b>${f.subtitle ? e.subtitle ? `, <i>${esc(e.subtitle)}</i>${c.music && e.mb && e.mb.y ? ` <span class="hint">(${esc(e.mb.y)})</span>` : ""}` : c.music ? ` <button class="btn ghost sm" data-act="mb-open">${tr`préciser ${esc(f.subtitle.toLowerCase())}`}</button>` : ` <span class="hint">${tr`${esc(f.subtitle.toLowerCase())} à préciser`}</span>` : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${c.review ? tr`à réexaminer le ${fmt(e.due)}` : fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}${reviewedHTML(e) || e.origin || e.src ? `<div class="meta">${srcMeta(e)}${reviewedHTML(e)}${originHTML(e, e.title)}</div>` : ""}${c.sources && (e.links || []).length ? `<div class="meta src-docs">${e.links.map((l) => `<span>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</span>`).join("")}</div>` : ""}</div>
-    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map((st) => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${e.statusAt ? `<span class="hint" style="margin:0">${tr`depuis le ${fmt(e.statusAt)}`}</span>` : ""}<button class="btn ghost sm ra" data-act="specimen">${tr`fiche`}</button>${c.music ? `<button class="btn ghost sm ra" data-act="mb-open">${tr`discographie`}</button>` : ""}${c.sources ? `<button class="btn ghost sm ra" data-act="src-link">${tr`documente…`}</button>` : ""}<button class="btn ghost sm ra" data-act="col-edit">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="col-del">${tr`suppr.`}</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">${tr`Rien dans ce filtre.`}</li>`}</ul></div><div>${panel}</div></div></div>`;
+    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map((st) => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${e.statusAt ? `<span class="hint" style="margin:0">${tr`depuis le ${fmt(e.statusAt)}`}</span>` : ""}<button class="btn ghost sm ra" data-act="specimen">${tr`fiche`}</button>${c.music ? `<button class="btn ghost sm ra" data-act="mb-open">${tr`discographie`}</button>` : ""}${c.sources ? `<button class="btn ghost sm ra" data-act="src-link">${tr`documente…`}</button>` : ""}<button class="btn ghost sm ra" data-act="col-edit">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="col-del">${tr`suppr.`}</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">${empty || tr`Rien dans ce filtre.`}</li>`}</ul></div><div>${panel}</div></div></div>`;
     },
     settings: (id, { config: c }) => {
       const f = c.fields, fid = esc(id);
