@@ -85,12 +85,18 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 ### À décider
 
-- **Citrinitas et Rubedo, voisines des couleurs d'état** (A67, 17 octobre 2026). Citrinitas est à ΔE2000 2,3 de `--warn`
-  en clair (2,7 en sombre), Rubedo à 8,5 de `--alarm` (7,1) : la règle de tête de `src/shell.html` (« ils ne se prêtent
-  jamais leurs teintes ») n'est pas tenue. Les éloigner coûte leur identité (une Citrinitas olive, voir
-  [l'audit, A.6](../audit-fonctionnel-2026-10-12.md#a6-correctif-minimal-proposé-plan-non-appliqué)) ; les garder demande
-  d'assouplir la règle pour les usages décoratifs. À trancher à l'œil, sur un vrai téléphone. `TU-PAL-03` pourrait alors
-  s'étendre aux couleurs d'état.
+Rien pour l'instant.
+
+### Décidé le 17 octobre 2026
+
+- **Citrinitas et Rubedo, voisines des couleurs d'état** (A67) : **réadaptées**, sur décision de la responsable. Citrinitas
+  était l'ambre de `--warn` (ΔE2000 2,3 en clair, 2,7 en sombre), Rubedo un cousin du cinabre de `--alarm` (8,5 et 7,1).
+  Nouvelles valeurs, cherchées dans l'espace LCh sous toutes les contraintes (texte sur accent ≥ 4,5:1, gris ≥ 10, autres
+  palettes ≥ 15, couleurs d'état ≥ 12 pour la marge) puis jugées à l'œil, ancien et nouveau côte à côte : Citrinitas
+  `#636301` / `#d9c84d` (« pollen », citron tirant au vert : en clair, un jaune assez sombre pour 4,5:1 devient olive),
+  Rubedo `#a42b4a` / `#df627b` (« framboise », rubis tirant au pourpre, l'*iosis* des alchimistes grecs). Nigredo clair
+  passe de `#3d6a45` à `#416a43` (ΔE 1,1, invisible) pour quitter le vert de `--ok` (9,7 → 10,6). `TU-PAL-06` étend
+  `TU-PAL-03` aux quatre couleurs d'état, en clair et en sombre. Reste à voir sur un vrai téléphone.
 
 ### Décidé le 7 octobre 2026
 

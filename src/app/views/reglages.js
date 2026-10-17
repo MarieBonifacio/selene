@@ -34,7 +34,7 @@ import { tip } from "../ui/tips.js";
 import { CHAPTERS, GUIDE, TEXTS, TIPS, glossary } from "./reglages-aide.js";
 
 // Leurs couleurs sont dans src/shell.html seulement : la pastille de chaque bouton les y lit (data-palette, A67).
-const PALETTES = [["nigredo", N_("Nigredo, mousse")], ["albedo", N_("Albedo, lichen")], ["citrinitas", N_("Citrinitas, résine")], ["rubedo", N_("Rubedo, amanite")]];
+const PALETTES = [["nigredo", N_("Nigredo, mousse")], ["albedo", N_("Albedo, lichen")], ["citrinitas", N_("Citrinitas, pollen")], ["rubedo", N_("Rubedo, framboise")]];
 // La politique de confidentialité, dans la langue de l'interface quand elle existe (confidentialite.html, privacy.html).
 const privacyUrl = () => `https://mariebonifacio.github.io/selene/${uiLang() === "en" ? "privacy" : "confidentialite"}.html`;
 const signedIn = () => hosted() && authReady() && authSession;

@@ -2,7 +2,8 @@
    lisible. Les valeurs sont lues dans src/shell.html ; les seuils viennent de WCAG (contraste) et de la distance
    perceptuelle ΔE2000 (sous 2, l'œil ne voit pas la différence ; 10, deux couleurs nettement distinctes).
    Ce qu'on vérifie : le texte posé sur l'accent (bouton principal, surbrillance de recherche) ; l'accent loin du gris des
-   textes secondaires (sinon un repère se lit comme un texte atténué) ; deux palettes jamais confondues. */
+   textes secondaires (sinon un repère se lit comme un texte atténué) ; deux palettes jamais confondues ; l'accent loin
+   des couleurs d'état (sinon un bouton se lit comme une alerte, A67 et backlog, tranché le 17 octobre 2026). */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -64,6 +65,17 @@ test('deux palettes ne se confondent jamais (ΔE2000 ≥ 15 ; TU-PAL-04)', () =>
   for (const [mode] of modes) for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
     const d = deltaE(palettes[ids[i]][mode], palettes[ids[j]][mode]);
     assert.ok(d >= 15, `${mode} : ${ids[i]} et ${ids[j]}, ΔE ${d.toFixed(1)}`);
+  }
+});
+
+// Les couleurs d'état, en clair et en sombre : un accent ne leur emprunte jamais leur teinte (la règle de tête de shell.html).
+const etats = Object.fromEntries(['alarm', 'warn', 'ok', 'info'].map(n => [n, tokens(n)]));
+
+test('l’accent ne se confond avec aucune couleur d’état : alarme, avertissement, succès, info (ΔE2000 ≥ 10 ; TU-PAL-06)', () => {
+  for (const [n, v] of Object.entries(etats)) assert.equal(v.length >= 2, true, `--${n} lu en clair et en sombre`);
+  for (const [p, v] of Object.entries(palettes)) for (const [mode, i] of [['clair', 0], ['sombre', 1]]) for (const [n, e] of Object.entries(etats)) {
+    const d = deltaE(v[mode], e[i]);
+    assert.ok(d >= 10, `${p}, ${mode} : ${v[mode]} contre --${n} ${e[i]}, ΔE ${d.toFixed(1)}`);
   }
 });
 
