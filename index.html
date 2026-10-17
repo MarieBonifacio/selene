@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-fWM/CR7yEOTK0noW3QOPbz80Z470XMT5eUdwqMODxJ8=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-2gsITkVoHwqP8tWgjPDqHEq6SEJKn4Nz7V3TQILN+yY=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -724,7 +724,9 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
   .btn{min-width:44px}a.btn{display:inline-block} /* un lien-bouton ne se coupe pas en deux lignes de cible */
   .btn,.star,.check{position:relative}
   .btn::after,.star::after{content:"";position:absolute;inset:min(-3px,calc(50% - 23px)) -3px}
-  .check::before{content:"";position:absolute;inset:-11px}
+  .star::after{inset:min(-3px,calc(50% - 23px))} /* l'étoile d'une tâche, étroite : sa zone s'élargit aussi */
+  .check::before{content:"";position:absolute;inset:-12px -12px -12px -14px} /* à gauche, la marge de la page : la case touche le titre à 10 px à sa droite */
+  .t-title{position:relative}.t-title::after{content:"";position:absolute;inset:min(-3px,calc(50% - 23px)) 0} /* le titre d'une tâche, qui la déplie */
   details.mreg>summary{min-height:44px;align-items:center}
   .reg-guide summary,.danger summary,details.rlm-privacy>summary,details.rlm-info>summary{padding-block:11px}
   .tap{display:grid;place-items:center;min-width:44px;min-height:44px}
@@ -765,7 +767,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "e9ddb28b30";
+const SELENE_BUILD = "22501d4e9d";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1229,6 +1231,7 @@ var __selene = (() => {
     REGULATION_PAUSE_MS: () => REGULATION_PAUSE_MS,
     REGULATION_STORAGES: () => REGULATION_STORAGES,
     REGULATION_SUBJECTS: () => REGULATION_SUBJECTS,
+    RELAUNCH_DAYS: () => RELAUNCH_DAYS,
     S: () => S,
     SAVED: () => SAVED,
     SCHEMA_VERSION: () => SCHEMA_VERSION,
@@ -1316,6 +1319,7 @@ var __selene = (() => {
     citeBar: () => citeBar,
     citeOwn: () => citeOwn,
     citeSources: () => citeSources,
+    clearTaskWaiting: () => clearTaskWaiting,
     clip: () => clip,
     clone: () => clone,
     closeOverlays: () => closeOverlays,
@@ -1573,6 +1577,7 @@ var __selene = (() => {
     regulationSubjectConflict: () => regulationSubjectConflict,
     regulationSummary: () => regulationSummary,
     regulationSupports: () => regulationSupports,
+    relaunchTask: () => relaunchTask,
     rememberScroll: () => rememberScroll,
     removeWithUndo: () => removeWithUndo,
     render: () => render,
@@ -1610,6 +1615,7 @@ var __selene = (() => {
     setSaving: () => setSaving,
     setTaskDone: () => setTaskDone,
     setTaskToday: () => setTaskToday,
+    setTaskWaiting: () => setTaskWaiting,
     setupRegulation: () => setupRegulation,
     sharePending: () => sharePending,
     shareSettingsHTML: () => shareSettingsHTML,
@@ -2330,6 +2336,8 @@ var __selene = (() => {
     "vent du nord-ouest {0} km/h": "north-west wind {0} km/h",
     "{0} : à remplir": "{0}: required",
     "Tâche introuvable": "Task not found",
+    "Une tâche faite n'attend plus rien": "A finished task isn't waiting for anything",
+    "Cette tâche n'est pas en attente": "This task isn't waiting for a reply",
     "Trois tâches du jour maximum": "Three tasks for today at most",
     "Montant invalide": "Invalid amount",
     "Date invalide": "Invalid date",
@@ -2932,6 +2940,24 @@ var __selene = (() => {
     "Demain": "Tomorrow",
     "Dans {0} j": "In {0} d",
     "Prévision Open-Meteo pour {0}, cinq jours": "Open-Meteo forecast for {0}, five days",
+    "relancer le {0}": "chase on {0}",
+    "sans date de relance": "no chase date",
+    "relancé {0} fois": { one: "chased once", other: "chased {0} times" },
+    "J'attends une réponse": "Waiting for a reply",
+    "Qui doit répondre": "Who owes the reply",
+    "chez {0}": "with {0}",
+    "Relancer le": "Chase on",
+    "Cette tâche a été supprimée entre-temps.": "This task was deleted in the meantime.",
+    "« {0} » attend une réponse. Elle revient le jour de la relance.": "“{0}” is waiting for a reply. It comes back on the chase date.",
+    "La tâche sort des échéances et revient sur l'accueil le jour de la relance.": "The task leaves the deadlines and comes back on the home page on the chase date.",
+    "En attente": "Waiting",
+    "La balle est dans un autre camp. Elles reviennent sur l'accueil le jour de la relance.": "The ball is in someone else's court. They come back on the home page on the chase date.",
+    "relancé": "chased",
+    "réponse reçue": "reply received",
+    "{0} en attente": "{0} waiting",
+    "« {0} » : à relancer ({1})": "“{0}”: chase it ({1})",
+    "Relancé. Prochaine relance le {0}.": "Chased. Next chase on {0}.",
+    "Réponse reçue : « {0} » revient dans les échéances.": "Reply received: “{0}” is back in the deadlines.",
     "sec jusqu'à {0}": "dry until {0}",
     "pluie prévue {0}, le jour prévu": "rain forecast {0}, on the planned day",
     "pluie prévue {0}": "rain forecast {0}",
@@ -4158,7 +4184,32 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     if (!t) throw coreError("task-missing", "Tâche introuvable");
     t.done = !!done;
     t.doneAt = done ? date : null;
-    if (done) t.today = false;
+    if (done) {
+      t.today = false;
+      delete t.wait;
+    }
+    return t;
+  }
+  var isoPlus = (d, n) => new Date(Date.parse(d + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+  var RELAUNCH_DAYS = 14;
+  function setTaskWaiting(tasks, id, input, date) {
+    const t = tasks.find((x) => x.id === id);
+    if (!t) throw coreError("task-missing", "Tâche introuvable");
+    if (t.done) throw coreError("task-done", "Une tâche faite n'attend plus rien");
+    const who = String(input.who || "").trim().slice(0, 80), next = input.next && validDate(input.next) ? input.next : null;
+    t.wait = { since: t.wait ? t.wait.since : date, who, next, log: t.wait ? t.wait.log : [] };
+    t.today = false;
+    return t;
+  }
+  function relaunchTask(tasks, id, date, days = RELAUNCH_DAYS) {
+    const t = tasks.find((x) => x.id === id);
+    if (!t || !t.wait) throw coreError("task-not-waiting", "Cette tâche n'est pas en attente");
+    t.wait = { ...t.wait, next: isoPlus(date, days), log: [...t.wait.log || [], { date, kind: "relance" }].slice(-50) };
+    return t;
+  }
+  function clearTaskWaiting(tasks, id) {
+    const t = tasks.find((x) => x.id === id);
+    if (t) delete t.wait;
     return t;
   }
   function setTaskToday(tasks, id, value, elsewhere = 0) {
@@ -4395,6 +4446,8 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
           if (t.due && !(typeof t.due === "string" && validDate(t.due))) v.fail("échéance");
           v.num(t.effort, "effort", 1, 3);
           v.num(t.cost, "coût", 0);
+          const w = t.wait;
+          if (w != null && (typeof w !== "object" || Array.isArray(w) || !validDate(w.since) || w.next != null && !validDate(w.next) || w.who != null && (typeof w.who !== "string" || w.who.length > 80) || w.log != null && (!Array.isArray(w.log) || w.log.some((x) => !x || !validDate(x.date) || typeof x.kind !== "string")))) v.fail("attente");
         }
       }
     },
@@ -5115,6 +5168,8 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   var CORE_ERRORS = {
     "required": (a) => tr`${tr(String(a.label))} : à remplir`,
     "task-missing": () => tr`Tâche introuvable`,
+    "task-done": () => tr`Une tâche faite n'attend plus rien`,
+    "task-not-waiting": () => tr`Cette tâche n'est pas en attente`,
     "today-limit": () => tr`Trois tâches du jour maximum`,
     "amount": () => tr`Montant invalide`,
     "date": () => tr`Date invalide`,
@@ -9270,7 +9325,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) {
       for (const a of TYPE_UI[inst.type].alerts(id, inst, day)) if (a.actions) out.push(plainText(a.text));
     }
-    for (const [id, t] of allTasks()) if (enabled(id) && !t.done && t.due === day) out.push(tr`Échéance : ${t.title}`);
+    for (const [id, t] of allTasks()) if (enabled(id) && !t.done && !t.wait && t.due === day) out.push(tr`Échéance : ${t.title}`);
     return out;
   }
   function digestPlan(nowMs = Date.now(), days = 7) {
@@ -10180,6 +10235,12 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     if (n <= 7) return { txt: tr`Dans ${n} j`, cls: "soon" };
     return { txt: fmt(t.due), cls: "" };
   }
+  var waitMeta = (t, withNext = true) => [
+    tr`depuis le ${fmt(t.wait.since)}`,
+    t.wait.who && tr`chez ${esc(t.wait.who)}`,
+    withNext && (t.wait.next ? tr`relancer le ${fmt(t.wait.next)}` : tr`sans date de relance`),
+    (t.wait.log || []).length && trn(t.wait.log.length, "relancé {0} fois", "relancé {0} fois")
+  ].filter(Boolean).join(" · ");
   function outdoorRain(c, t) {
     if (t.done) return "";
     const words2 = String(c.outdoor || "").split(",").map((w2) => fold(w2.trim())).filter((w2) => w2.length > 1), f = fold(`${t.title} ${t.room || ""}`);
@@ -10202,7 +10263,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     <div class="details">
       ${(t.steps || []).length ? `<ul class="steps">${t.steps.map((x, i) => `<li><input type="checkbox" data-act="task-step" data-i="${i}" ${x.d ? "checked" : ""} id="s${esc(t.id)}-${i}"><label for="s${esc(t.id)}-${i}" style="font-weight:400;display:inline">${esc(x.t)}</label></li>`).join("")}</ul>` : ""}
       ${t.note ? `<p class="note">${esc(t.note)}</p>` : ""}${t.origin ? `<p class="meta">${originHTML(t, t.title)}</p>` : ""}
-      <div class="row"><button class="btn ghost sm" data-act="task-edit">${tr`Modifier`}</button><button class="btn ghost sm" data-act="task-del">${tr`Supprimer`}</button></div>
+      <div class="row"><button class="btn ghost sm" data-act="task-edit">${tr`Modifier`}</button>${t.done || t.wait ? "" : `<button class="btn ghost sm" data-act="task-wait">${tr`J'attends une réponse`}</button>`}<button class="btn ghost sm" data-act="task-del">${tr`Supprimer`}</button></div>
     </div></li>`;
   }
   function taskForm(id, t) {
@@ -10230,6 +10291,33 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       render();
     });
   }
+  var keepWait = (t) => t.wait ? { ...t.wait, log: [...t.wait.log || []] } : null;
+  var putWait = (t, w) => {
+    if (w) t.wait = w;
+    else delete t.wait;
+  };
+  function waitForm(id, t) {
+    openForm(
+      tr`J'attends une réponse`,
+      [{ row: [{ n: "who", l: tr`Qui doit répondre` }, { n: "next", l: tr`Relancer le`, t: "date" }] }],
+      { who: t.wait ? t.wait.who : "", next: t.wait ? t.wait.next || "" : addDaysTo(todayISO(), RELAUNCH_DAYS) },
+      (v) => {
+        const inst = S().modules[id], cur = inst && inst.entries.find((x) => x.id === t.id);
+        if (!cur) return toast(tr`Cette tâche a été supprimée entre-temps.`);
+        const before = keepWait(cur), today = cur.today;
+        setTaskWaiting(inst.entries, cur.id, v, todayISO());
+        site.save();
+        render();
+        toastUndo(tr`« ${cur.title} » attend une réponse. Elle revient le jour de la relance.`, () => {
+          putWait(cur, before);
+          cur.today = today;
+          site.save();
+          render();
+        });
+      },
+      tr`La tâche sort des échéances et revient sur l'accueil le jour de la relance.`
+    );
+  }
   var WORKS = /\b(?:travaux|renovation|repairs?|home improvement)\b/;
   function costEnvelope(id, bud) {
     const c = S().modules[id].config, envs = bud ? S().modules[bud].config.envelopes : [];
@@ -10237,7 +10325,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   }
   function pickTask(only) {
     if (todayTasks().length >= 3) return toast(tr`Aujourd'hui est plein. Le hasard respecte les plafonds.`);
-    const o = allTasks().filter(([m, t2]) => !t2.done && !t2.today && (!only || m === only));
+    const o = allTasks().filter(([m, t2]) => !t2.done && !t2.today && !t2.wait && (!only || m === only));
     if (!o.length) return toast(tr`Rien à tirer.`);
     const small = o.filter(([, t2]) => t2.effort === 1), pool = (small.length ? small : o).sort(([, a], [, b]) => byDue(a, b)).slice(0, 5);
     const [id, t] = pool[Math.floor(Math.random() * pool.length)];
@@ -10248,7 +10336,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   }
   registerType("taches", {
     view(id) {
-      const inst = S().modules[id], c = inst.config, now = todayISO(), o = inst.entries.filter((t) => !t.done), f = tf(id);
+      const inst = S().modules[id], c = inst.config, now = todayISO(), o = inst.entries.filter((t) => !t.done && !t.wait), f = tf(id);
+      const waiting = inst.entries.filter((t) => !t.done && t.wait).sort((a, b) => (a.wait.next || "9999").localeCompare(b.wait.next || "9999"));
       const tod = o.filter((t) => t.today);
       const cats = [...new Set(inst.entries.map((t) => t.cat))];
       const filtered = o.filter((t) => !t.today && (!f.room || t.room === f.room) && (!f.cat || t.cat === f.cat) && gMatch(id, t)).sort(byDue);
@@ -10262,7 +10351,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
         const it = filtered.filter(fn);
         return it.length ? `<div style="margin-bottom:22px"><h3 class="${late ? "late" : ""}">${n} <span class="hint" style="font-size:1rem">${it.length}</span></h3><p class="hint">${h}</p><ul class="plain">${it.map((t) => taskHTML(id, t)).join("")}</ul></div>` : "";
       }).join("");
-      const spent = inst.entries.filter((t) => t.done && t.cost).reduce((a, t) => a + +t.cost, 0), left2 = o.filter((t) => t.cost).reduce((a, t) => a + +t.cost, 0);
+      const spent = inst.entries.filter((t) => t.done && t.cost).reduce((a, t) => a + +t.cost, 0), left2 = inst.entries.filter((t) => !t.done && t.cost).reduce((a, t) => a + +t.cost, 0);
       const done = paged(`done:${id}`, inst.entries.filter((t) => t.done).sort((a, b) => (b.doneAt || "").localeCompare(a.doneAt || "")), 8);
       return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:24px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn solid" data-act="task-new">${tr`Ajouter une tâche`}</button><button class="btn" data-act="task-pick">${tr`Tirer au sort`}</button></div>
   <div class="two"><div>
@@ -10271,6 +10360,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       <select data-act="f-room" aria-label="${esc(c.groupLabel)}"><option value="">${tr`${esc(c.groupLabel)} : tout`}</option>${roomsOf(id).map((r) => `<option ${r === f.room ? "selected" : ""}>${esc(r)}</option>`).join("")}</select>
       <select data-act="f-cat" aria-label="${esc(c.catLabel)}"><option value="">${tr`${esc(c.catLabel)} : tout`}</option>${cats.map((x) => `<option ${x === f.cat ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div>
       ${groups || `<p class="empty">${tr`Plus rien ici. Soit c'est fini, soit tu as filtré trop fort.`}</p>`}</section>
+    ${waiting.length ? `<section><h3>${tr`En attente`} <span class="hint" style="font-size:1rem">${waiting.length}</span></h3><p class="hint">${tr`La balle est dans un autre camp. Elles reviennent sur l'accueil le jour de la relance.`}</p><ul class="plain">${waiting.map((t) => `<li class="item" data-task="${esc(t.id)}" data-mod="${esc(id)}"><span></span><div>${esc(t.title)}<div class="meta"><span class="${t.wait.next && t.wait.next <= now ? "late" : ""}">${waitMeta(t)}</span></div></div><div class="row"><button class="btn ghost sm" data-act="task-relaunch">${tr`relancé`}</button><button class="btn ghost sm" data-act="task-answer">${tr`réponse reçue`}</button></div></li>`).join("")}</ul></section>` : ""}
   </div><aside>
     ${groupPanel(id, tr`La mousse gagne à mesure que tu finis. Clique pour filtrer.`)}
     ${c.costs && (spent || left2) ? `<p class="hint">${tr`Budget estimé : ${spent} € engagés, ${left2} € encore à prévoir.`}</p>` : ""}
@@ -10284,14 +10374,22 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     <label style="display:flex;gap:8px;align-items:center;align-self:start;margin-top:26px"><input type="checkbox" data-act="task-costs" data-mod="${esc(id)}" ${c.costs ? "checked" : ""}>${tr`Suivre les coûts estimés`}</label></div>
     ${c.costs && firstOfType("budget") ? `<div class="field-row" style="margin-top:8px"><label>${tr`Enveloppe du budget pour les coûts`}<input data-set-mod="${esc(id)}.costEnvelope" value="${esc(costEnvelope(id, firstOfType("budget")))}" list="env-${esc(id)}" placeholder="${tr`aucune`}"><datalist id="env-${esc(id)}">${S().modules[firstOfType("budget")].config.envelopes.map((v) => `<option value="${esc(v.name)}">`).join("")}</datalist></label><span></span></div>` : ""}`,
     summary(id, inst) {
-      const now = todayISO(), o = inst.entries.filter((t) => !t.done), late = o.filter((t) => t.due && t.due < now).length, all = inst.entries.length;
-      return `${late ? `<span class="late">${tr`${late} en retard`}</span>, ` : ""}${tr`${o.length} à faire, ${all ? Math.round(100 * (all - o.length) / all) : 0} % fait`}`;
+      const now = todayISO(), open = inst.entries.filter((t) => !t.done), o = open.filter((t) => !t.wait), late = o.filter((t) => t.due && t.due < now).length, all = inst.entries.length;
+      const w = open.length - o.length;
+      return `${late ? `<span class="late">${tr`${late} en retard`}</span>, ` : ""}${tr`${o.length} à faire, ${all ? Math.round(100 * (all - open.length) / all) : 0} % fait`}${w ? ", " + tr`${w} en attente` : ""}`;
+    },
+    // Une ligne par tâche dont la relance est due : elle ne dépend pas de soi, mais la relancer, si.
+    alerts(id, inst, now) {
+      return inst.entries.filter((t) => !t.done && t.wait && t.wait.next && t.wait.next <= now).map((t) => ({
+        text: `${tr`« ${esc(t.title)} » : à relancer (${esc(label(id))})`} · ${waitMeta(t, false)}`,
+        actions: `<button class="btn sm" data-act="task-relaunch" data-mod="${esc(id)}" data-task="${esc(t.id)}">${tr`relancé`}</button><button class="btn ghost sm" data-act="task-answer" data-mod="${esc(id)}" data-task="${esc(t.id)}">${tr`réponse reçue`}</button>`
+      }));
     },
     context(inst, nm) {
       const o = inst.entries.filter((t) => !t.done).sort(byDue), c = inst.config;
       return `
 ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 40).map((t) => `
-- [${t.id}] ${t.title} | ${t.room || "?"} | ${t.due ? "échéance " + t.due : "sans date"}${t.today ? " | choisie pour aujourd'hui" : ""}${c.costs && t.cost ? " | " + t.cost + " €" : ""}`).join("");
+- [${t.id}] ${t.title} | ${t.room || "?"} | ${t.due ? "échéance " + t.due : "sans date"}${t.today ? " | choisie pour aujourd'hui" : ""}${t.wait ? " | en attente d'une réponse" + (t.wait.who ? " de " + t.wait.who : "") + (t.wait.next ? ", relance le " + t.wait.next : "") : ""}${c.costs && t.cost ? " | " + t.cost + " €" : ""}`).join("");
     },
     grouper: (inst, id) => {
       const c = inst.config, fields = { room: c.groupLabel, cat: c.catLabel, effort: tr`Effort` };
@@ -10306,7 +10404,7 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
         groups: (f) => itemGroups(inst.entries, (t) => key(t, f), (t) => t.done)
       };
     },
-    recent: (inst) => inst.entries.filter((t) => !t.done).sort(byDue).slice(0, 3).map((t) => `${t.title} · ${dueLabel(t).txt}`),
+    recent: (inst) => inst.entries.filter((t) => !t.done && !t.wait).sort(byDue).slice(0, 3).map((t) => `${t.title} · ${dueLabel(t).txt}`),
     review: (inst, from, to) => {
       const done = within(inst.entries, from, to, "doneAt"), cost = done.reduce((a, t) => a + (+t.cost || 0), 0);
       return trn(done.length, "{0} tâche terminée", "{0} tâches terminées") + (inst.config.costs && cost ? ", " + tr`${money(cost)} de coûts estimés` : "");
@@ -10340,6 +10438,33 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
         render();
       },
       "task-new": (el) => taskForm(modOf(el), null),
+      "task-wait": (el) => waitForm(taskMod(el), taskOf(el)),
+      "task-relaunch": (el) => {
+        const t = taskOf(el);
+        if (!t || !t.wait) return;
+        const before = keepWait(t);
+        relaunchTask(S().modules[taskMod(el)].entries, t.id, todayISO());
+        site.save();
+        render();
+        toastUndo(tr`Relancé. Prochaine relance le ${fmt(t.wait.next)}.`, () => {
+          putWait(t, before);
+          site.save();
+          render();
+        });
+      },
+      "task-answer": (el) => {
+        const t = taskOf(el);
+        if (!t || !t.wait) return;
+        const before = keepWait(t);
+        clearTaskWaiting(S().modules[taskMod(el)].entries, t.id);
+        site.save();
+        render();
+        toastUndo(tr`Réponse reçue : « ${t.title} » revient dans les échéances.`, () => {
+          putWait(t, before);
+          site.save();
+          render();
+        });
+      },
       "task-pick": (el) => pickTask(el.closest("[data-mod]") ? modOf(el) : null)
     },
     change: {

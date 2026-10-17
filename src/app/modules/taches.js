@@ -1,9 +1,9 @@
 /* Type « tâches » : échéances, lieux, étapes, coûts ; « Aujourd'hui » plafonné à trois, tous modules confondus ;
-   tirage au sort. */
-import { addBudgetEntry, addTask, setTaskDone, setTaskToday } from "../../core/domain.js";
+   tirage au sort ; « j'attends une réponse » (une tâche dont la suite dépend de quelqu'un d'autre). */
+import { RELAUNCH_DAYS, addBudgetEntry, addTask, clearTaskWaiting, relaunchTask, setTaskDone, setTaskToday, setTaskWaiting } from "../../core/domain.js";
 import { rainDays } from "../../core/sky.js";
 import { registerType } from "../registry.js";
-import { $, esc, paged, toast, toastAction } from "../lib/dom.js";
+import { $, esc, paged, toast, toastAction, toastUndo } from "../lib/dom.js";
 import { addDaysTo, diffDays, fmt, money, todayISO, uid } from "../lib/format.js";
 import { N_, collate, tr, trn } from "../i18n/index.js";
 import { firstOfType } from "../features/assistant.js";
@@ -41,6 +41,10 @@ function dueLabel(t) {
   if (n <= 7) return { txt: tr`Dans ${n} j`, cls: "soon" };
   return { txt: fmt(t.due), cls: "" };
 }
+/* Une tâche en attente : depuis quand, de qui, quand relancer, combien de relances déjà (E1). */
+const waitMeta = (t, withNext = true) => [tr`depuis le ${fmt(t.wait.since)}`, t.wait.who && tr`chez ${esc(t.wait.who)}`,
+  withNext && (t.wait.next ? tr`relancer le ${fmt(t.wait.next)}` : tr`sans date de relance`),
+  (t.wait.log || []).length && trn(t.wait.log.length, "relancé {0} fois", "relancé {0} fois")].filter(Boolean).join(" · ");
 /* Une tâche à ciel ouvert (un des mots réglés dans son titre ou son lieu) : la pluie des cinq prochains jours, lue dans
    la prévision déjà gardée par la Fenêtre (aucun appel de plus). Sans lieu réglé ou sans météo : rien. */
 function outdoorRain(c, t) {
@@ -65,7 +69,7 @@ export function taskHTML(id, t) {
     <div class="details">
       ${(t.steps || []).length ? `<ul class="steps">${t.steps.map((x, i) => `<li><input type="checkbox" data-act="task-step" data-i="${i}" ${x.d ? "checked" : ""} id="s${esc(t.id)}-${i}"><label for="s${esc(t.id)}-${i}" style="font-weight:400;display:inline">${esc(x.t)}</label></li>`).join("")}</ul>` : ""}
       ${t.note ? `<p class="note">${esc(t.note)}</p>` : ""}${t.origin ? `<p class="meta">${originHTML(t, t.title)}</p>` : ""}
-      <div class="row"><button class="btn ghost sm" data-act="task-edit">${tr`Modifier`}</button><button class="btn ghost sm" data-act="task-del">${tr`Supprimer`}</button></div>
+      <div class="row"><button class="btn ghost sm" data-act="task-edit">${tr`Modifier`}</button>${t.done || t.wait ? "" : `<button class="btn ghost sm" data-act="task-wait">${tr`J'attends une réponse`}</button>`}<button class="btn ghost sm" data-act="task-del">${tr`Supprimer`}</button></div>
     </div></li>`;
 }
 function taskForm(id, t) {
@@ -89,6 +93,20 @@ function taskForm(id, t) {
     site.save(); render();
   });
 }
+/* « J'attends une réponse » : la tâche quitte les échéances (elle ne dépend plus de soi) et revient sur l'accueil le jour
+   de la relance. Qui doit répondre et quand relancer : deux champs, tous deux facultatifs. */
+const keepWait = t => t.wait ? { ...t.wait, log: [...(t.wait.log || [])] } : null;
+const putWait = (t, w) => { if (w) t.wait = w; else delete t.wait; };
+function waitForm(id, t) {
+  openForm(tr`J'attends une réponse`, [{ row: [{ n: "who", l: tr`Qui doit répondre` }, { n: "next", l: tr`Relancer le`, t: "date" }] }],
+    { who: t.wait ? t.wait.who : "", next: t.wait ? t.wait.next || "" : addDaysTo(todayISO(), RELAUNCH_DAYS) }, v => {
+      const inst = S().modules[id], cur = inst && inst.entries.find(x => x.id === t.id);
+      if (!cur) return toast(tr`Cette tâche a été supprimée entre-temps.`);
+      const before = keepWait(cur), today = cur.today;
+      setTaskWaiting(inst.entries, cur.id, v, todayISO()); site.save(); render();
+      toastUndo(tr`« ${cur.title} » attend une réponse. Elle revient le jour de la relance.`, () => { putWait(cur, before); cur.today = today; site.save(); render(); });
+    }, tr`La tâche sort des échéances et revient sur l'accueil le jour de la relance.`);
+}
 /* Enveloppe où vont les coûts d'un module de tâches : celle réglée, sinon une enveloppe « Travaux » (ou « Rénovation »,
    « Repairs », « Renovation », « Home improvement » : le nom choisi par la personne, dans sa langue), sinon aucune. */
 const WORKS = /\b(?:travaux|renovation|repairs?|home improvement)\b/;
@@ -99,7 +117,7 @@ function costEnvelope(id, bud) {
 /* Tirage au sort : dans un module (sa page) ou parmi tous (accueil), plafond de trois respecté. */
 export function pickTask(only) {
   if (todayTasks().length >= 3) return toast(tr`Aujourd'hui est plein. Le hasard respecte les plafonds.`);
-  const o = allTasks().filter(([m, t]) => !t.done && !t.today && (!only || m === only));
+  const o = allTasks().filter(([m, t]) => !t.done && !t.today && !t.wait && (!only || m === only));
   if (!o.length) return toast(tr`Rien à tirer.`);
   const small = o.filter(([, t]) => t.effort === 1), pool = (small.length ? small : o).sort(([, a], [, b]) => byDue(a, b)).slice(0, 5);
   const [id, t] = pool[Math.floor(Math.random() * pool.length)];
@@ -108,7 +126,8 @@ export function pickTask(only) {
 }
 registerType("taches", {
   view(id) {
-    const inst = S().modules[id], c = inst.config, now = todayISO(), o = inst.entries.filter(t => !t.done), f = tf(id);
+    const inst = S().modules[id], c = inst.config, now = todayISO(), o = inst.entries.filter(t => !t.done && !t.wait), f = tf(id);
+    const waiting = inst.entries.filter(t => !t.done && t.wait).sort((a, b) => (a.wait.next || "9999").localeCompare(b.wait.next || "9999"));
     const tod = o.filter(t => t.today);
     const cats = [...new Set(inst.entries.map(t => t.cat))];
     // Une tâche du jour vit dans « Aujourd'hui », pas une seconde fois dans les échéances.
@@ -120,7 +139,7 @@ registerType("taches", {
       [tr`Plus tard`, tr`Hors de vue. Pas hors de ta vie.`, t => t.due && diffDays(t.due, now) > 31],
       [tr`Sans date`, tr`Les tâches sans date ne meurent jamais. Elles hantent.`, t => !t.due]
     ].map(([n, h, fn, late]) => { const it = filtered.filter(fn); return it.length ? `<div style="margin-bottom:22px"><h3 class="${late ? "late" : ""}">${n} <span class="hint" style="font-size:1rem">${it.length}</span></h3><p class="hint">${h}</p><ul class="plain">${it.map(t => taskHTML(id, t)).join("")}</ul></div>` : ""; }).join("");
-    const spent = inst.entries.filter(t => t.done && t.cost).reduce((a, t) => a + +t.cost, 0), left = o.filter(t => t.cost).reduce((a, t) => a + +t.cost, 0);
+    const spent = inst.entries.filter(t => t.done && t.cost).reduce((a, t) => a + +t.cost, 0), left = inst.entries.filter(t => !t.done && t.cost).reduce((a, t) => a + +t.cost, 0);
     const done = paged(`done:${id}`, inst.entries.filter(t => t.done).sort((a, b) => (b.doneAt || "").localeCompare(a.doneAt || "")), 8); // les huit dernières, puis « Voir les suivants »
     return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:24px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn solid" data-act="task-new">${tr`Ajouter une tâche`}</button><button class="btn" data-act="task-pick">${tr`Tirer au sort`}</button></div>
   <div class="two"><div>
@@ -129,6 +148,7 @@ registerType("taches", {
       <select data-act="f-room" aria-label="${esc(c.groupLabel)}"><option value="">${tr`${esc(c.groupLabel)} : tout`}</option>${roomsOf(id).map(r => `<option ${r === f.room ? "selected" : ""}>${esc(r)}</option>`).join("")}</select>
       <select data-act="f-cat" aria-label="${esc(c.catLabel)}"><option value="">${tr`${esc(c.catLabel)} : tout`}</option>${cats.map(x => `<option ${x === f.cat ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div>
       ${groups || `<p class="empty">${tr`Plus rien ici. Soit c'est fini, soit tu as filtré trop fort.`}</p>`}</section>
+    ${waiting.length ? `<section><h3>${tr`En attente`} <span class="hint" style="font-size:1rem">${waiting.length}</span></h3><p class="hint">${tr`La balle est dans un autre camp. Elles reviennent sur l'accueil le jour de la relance.`}</p><ul class="plain">${waiting.map(t => `<li class="item" data-task="${esc(t.id)}" data-mod="${esc(id)}"><span></span><div>${esc(t.title)}<div class="meta"><span class="${t.wait.next && t.wait.next <= now ? "late" : ""}">${waitMeta(t)}</span></div></div><div class="row"><button class="btn ghost sm" data-act="task-relaunch">${tr`relancé`}</button><button class="btn ghost sm" data-act="task-answer">${tr`réponse reçue`}</button></div></li>`).join("")}</ul></section>` : ""}
   </div><aside>
     ${groupPanel(id, tr`La mousse gagne à mesure que tu finis. Clique pour filtrer.`)}
     ${c.costs && (spent || left) ? `<p class="hint">${tr`Budget estimé : ${spent} € engagés, ${left} € encore à prévoir.`}</p>` : ""}
@@ -142,12 +162,19 @@ registerType("taches", {
     <label style="display:flex;gap:8px;align-items:center;align-self:start;margin-top:26px"><input type="checkbox" data-act="task-costs" data-mod="${esc(id)}" ${c.costs ? "checked" : ""}>${tr`Suivre les coûts estimés`}</label></div>
     ${c.costs && firstOfType("budget") ? `<div class="field-row" style="margin-top:8px"><label>${tr`Enveloppe du budget pour les coûts`}<input data-set-mod="${esc(id)}.costEnvelope" value="${esc(costEnvelope(id, firstOfType("budget")))}" list="env-${esc(id)}" placeholder="${tr`aucune`}"><datalist id="env-${esc(id)}">${S().modules[firstOfType("budget")].config.envelopes.map(v => `<option value="${esc(v.name)}">`).join("")}</datalist></label><span></span></div>` : ""}`,
   summary(id, inst) {
-    const now = todayISO(), o = inst.entries.filter(t => !t.done), late = o.filter(t => t.due && t.due < now).length, all = inst.entries.length;
-    return `${late ? `<span class="late">${tr`${late} en retard`}</span>, ` : ""}${tr`${o.length} à faire, ${all ? Math.round(100 * (all - o.length) / all) : 0} % fait`}`;
+    const now = todayISO(), open = inst.entries.filter(t => !t.done), o = open.filter(t => !t.wait), late = o.filter(t => t.due && t.due < now).length, all = inst.entries.length;
+    const w = open.length - o.length;
+    return `${late ? `<span class="late">${tr`${late} en retard`}</span>, ` : ""}${tr`${o.length} à faire, ${all ? Math.round(100 * (all - open.length) / all) : 0} % fait`}${w ? ", " + tr`${w} en attente` : ""}`;
+  },
+  // Une ligne par tâche dont la relance est due : elle ne dépend pas de soi, mais la relancer, si.
+  alerts(id, inst, now) {
+    return inst.entries.filter(t => !t.done && t.wait && t.wait.next && t.wait.next <= now).map(t => ({
+      text: `${tr`« ${esc(t.title)} » : à relancer (${esc(label(id))})`} · ${waitMeta(t, false)}`,
+      actions: `<button class="btn sm" data-act="task-relaunch" data-mod="${esc(id)}" data-task="${esc(t.id)}">${tr`relancé`}</button><button class="btn ghost sm" data-act="task-answer" data-mod="${esc(id)}" data-task="${esc(t.id)}">${tr`réponse reçue`}</button>` }));
   },
   context(inst, nm) {
     const o = inst.entries.filter(t => !t.done).sort(byDue), c = inst.config;
-    return `\n${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 40).map(t => `\n- [${t.id}] ${t.title} | ${t.room || "?"} | ${t.due ? "échéance " + t.due : "sans date"}${t.today ? " | choisie pour aujourd'hui" : ""}${c.costs && t.cost ? " | " + t.cost + " €" : ""}`).join("");
+    return `\n${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 40).map(t => `\n- [${t.id}] ${t.title} | ${t.room || "?"} | ${t.due ? "échéance " + t.due : "sans date"}${t.today ? " | choisie pour aujourd'hui" : ""}${t.wait ? " | en attente d'une réponse" + (t.wait.who ? " de " + t.wait.who : "") + (t.wait.next ? ", relance le " + t.wait.next : "") : ""}${c.costs && t.cost ? " | " + t.cost + " €" : ""}`).join("");
   },
   grouper: (inst, id) => {
     const c = inst.config, fields = { room: c.groupLabel, cat: c.catLabel, effort: tr`Effort` };
@@ -155,7 +182,7 @@ registerType("taches", {
     return { fields, renamable: ["room", "cat"], filterable: true, items: () => inst.entries, key, store: () => site,
       groups: f => itemGroups(inst.entries, t => key(t, f), t => t.done) };
   },
-  recent: inst => inst.entries.filter(t => !t.done).sort(byDue).slice(0, 3).map(t => `${t.title} · ${dueLabel(t).txt}`),
+  recent: inst => inst.entries.filter(t => !t.done && !t.wait).sort(byDue).slice(0, 3).map(t => `${t.title} · ${dueLabel(t).txt}`),
   review: (inst, from, to) => { const done = within(inst.entries, from, to, "doneAt"), cost = done.reduce((a, t) => a + (+t.cost || 0), 0); return trn(done.length, "{0} tâche terminée", "{0} tâches terminées") + (inst.config.costs && cost ? ", " + tr`${money(cost)} de coûts estimés` : ""); },
   texts: inst => inst.entries.map(t => ({ text: [t.title, t.room, t.note, ...(t.steps || []).map(x => x.t)].filter(Boolean).join(" · "), date: t.due || t.created, eid: t.id })),
   accept(id, inst, note) { const t = addTask(inst.entries, { title: note.text, cat: inst.config.cats[0] }, uid(), todayISO()); return () => taskForm(id, t); },
@@ -166,6 +193,17 @@ registerType("taches", {
     "task-del": el => removeWithUndo(taskMod(el), "entries", taskOf(el).id),
     "task-undo": el => { setTaskDone(S().modules[taskMod(el)].entries, taskOf(el).id, false, todayISO()); site.save(); render(); },
     "task-new": el => taskForm(modOf(el), null),
+    "task-wait": el => waitForm(taskMod(el), taskOf(el)),
+    "task-relaunch": el => {
+      const t = taskOf(el); if (!t || !t.wait) return;
+      const before = keepWait(t); relaunchTask(S().modules[taskMod(el)].entries, t.id, todayISO()); site.save(); render();
+      toastUndo(tr`Relancé. Prochaine relance le ${fmt(t.wait.next)}.`, () => { putWait(t, before); site.save(); render(); });
+    },
+    "task-answer": el => {
+      const t = taskOf(el); if (!t || !t.wait) return;
+      const before = keepWait(t); clearTaskWaiting(S().modules[taskMod(el)].entries, t.id); site.save(); render();
+      toastUndo(tr`Réponse reçue : « ${t.title} » revient dans les échéances.`, () => { putWait(t, before); site.save(); render(); });
+    },
     "task-pick": el => pickTask(el.closest("[data-mod]") ? modOf(el) : null)
   },
   change: {

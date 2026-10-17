@@ -1592,3 +1592,43 @@ test('le mode Sources et les fragments d’un compteur s’activent aussi dans �
   assert.match(app.TYPE_UI.cumul.settings(cumId, d.modules[cumId]), /data-set-mod="[^"]+\.scrapsLabel"/, 'et leur nom se règle');
   assert.ok(app.noteTargets('inbox').includes(cumId), 'il reçoit désormais des notes');
 });
+
+test('E1, j’attends une réponse : une tâche en attente sort des échéances, revient le jour de la relance, se relance ou se lève', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), ch = d.modules.chantier, T = app.TYPE_UI.taches;
+  ch.entries = [];
+  app.addTask(ch.entries, { title: 'Dossier CAF', due: '2026-10-05', steps: [{ t: 'RIB', d: true }] }, 't1', '2026-10-01');
+  const el = { dataset: { mod: 'chantier', task: 't1' }, closest(sel) { return sel === '[data-task]' || sel === '[data-mod]' ? this : null; } };
+  assert.match(app.taskHTML('chantier', ch.entries[0]), /data-act="task-wait"/, 'la tâche propose « J’attends une réponse »');
+  app.CLICK['task-wait'](el);
+  app.submitModuleForm({ who: 'CAF', next: '2026-10-15' });
+  const t = ch.entries[0];
+  assert.equal(t.wait.who, 'CAF'); assert.equal(t.wait.next, '2026-10-15');
+  assert.match(app.nodes.get('#toast').innerHTML, /data-act="undo"/, 'mettre en attente se défait');
+  let view = T.view('chantier');
+  const enAttente = view.slice(view.indexOf('En attente'));
+  assert.ok(view.indexOf('En attente') > 0 && enAttente.includes('Dossier CAF'), 'une section « En attente »');
+  assert.ok(!view.slice(0, view.indexOf('En attente')).includes('Dossier CAF'), 'et plus dans les échéances');
+  assert.match(enAttente, /chez CAF · relancer le 15 oct\./);
+  assert.match(T.summary('chantier', ch), /1 en attente/, 'la ligne de l’accueil le compte');
+  assert.equal(T.alerts('chantier', ch, '2026-10-14').length, 0, 'rien avant la date de relance');
+  const [alerte] = T.alerts('chantier', ch, '2026-10-15');
+  assert.match(alerte.text, /« Dossier CAF » : à relancer/);
+  assert.match(alerte.actions, /data-act="task-relaunch" data-mod="chantier" data-task="t1"/);
+  assert.match(alerte.actions, /data-act="task-answer" data-mod="chantier" data-task="t1"/);
+  app.CLICK['task-relaunch'](el);
+  assert.equal(t.wait.log.length, 1, 'la relance est consignée');
+  assert.ok(t.wait.next > '2026-10-15', 'et reportée');
+  app.CLICK.undo();
+  assert.equal(t.wait.log.length, 0, '« Annuler » la défait');
+  app.CLICK['task-answer'](el);
+  assert.equal(t.wait, undefined, 'réponse reçue : l’attente est levée');
+  view = T.view('chantier');
+  assert.ok(!view.includes('En attente'), 'plus de section');
+  app.CLICK.undo();
+  assert.equal(t.wait.who, 'CAF', '« Annuler » la rend');
+  // Le tirage au sort ne tire pas une attente.
+  d.modules.chantier.entries = [t];
+  app.pickTask('chantier');
+  assert.match(app.nodes.get('#toast').textContent + app.nodes.get('#toast').innerHTML, /Rien à tirer/);
+});

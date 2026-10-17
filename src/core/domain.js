@@ -29,7 +29,32 @@ export function setTaskDone(tasks, id, done, date) {
   if (!t) throw coreError("task-missing", "Tâche introuvable");
   t.done = !!done;
   t.doneAt = done ? date : null;
-  if (done) t.today = false;
+  if (done) { t.today = false; delete t.wait; } // faite, elle n'attend plus rien
+  return t;
+}
+/* ---- attendre une réponse : une tâche dont on a fait sa part, et dont la suite dépend de quelqu'un d'autre ----
+   `wait` : depuis quand (since), de qui (who, facultatif), quand relancer (next, facultatif), et les relances faites
+   (log). Une attente n'est ni une échéance ni une tâche du jour ; la réponse reçue la lève, la tâche reprend son cours. */
+const isoPlus = (d, n) => new Date(Date.parse(d + "T12:00:00Z") + n * 86400000).toISOString().slice(0, 10);
+export const RELAUNCH_DAYS = 14;
+export function setTaskWaiting(tasks, id, input, date) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) throw coreError("task-missing", "Tâche introuvable");
+  if (t.done) throw coreError("task-done", "Une tâche faite n'attend plus rien");
+  const who = String(input.who || "").trim().slice(0, 80), next = input.next && validDate(input.next) ? input.next : null;
+  t.wait = { since: t.wait ? t.wait.since : date, who, next, log: t.wait ? t.wait.log : [] };
+  t.today = false;
+  return t;
+}
+export function relaunchTask(tasks, id, date, days = RELAUNCH_DAYS) {
+  const t = tasks.find(x => x.id === id);
+  if (!t || !t.wait) throw coreError("task-not-waiting", "Cette tâche n'est pas en attente");
+  t.wait = { ...t.wait, next: isoPlus(date, days), log: [...(t.wait.log || []), { date, kind: "relance" }].slice(-50) };
+  return t;
+}
+export function clearTaskWaiting(tasks, id) {
+  const t = tasks.find(x => x.id === id);
+  if (t) delete t.wait;
   return t;
 }
 /* `elsewhere` : tâches du jour déjà choisies dans les autres modules de tâches (le plafond de trois est global). */
@@ -226,6 +251,10 @@ export const MODULE_TYPES = {
         if (t.steps != null && (!Array.isArray(t.steps) || t.steps.some(x => !x || typeof x.t !== "string"))) v.fail("étapes");
         if (t.due && !(typeof t.due === "string" && validDate(t.due))) v.fail("échéance");
         v.num(t.effort, "effort", 1, 3); v.num(t.cost, "coût", 0);
+        const w = t.wait;
+        if (w != null && (typeof w !== "object" || Array.isArray(w) || !validDate(w.since) || (w.next != null && !validDate(w.next)) ||
+            (w.who != null && (typeof w.who !== "string" || w.who.length > 80)) ||
+            (w.log != null && (!Array.isArray(w.log) || w.log.some(x => !x || !validDate(x.date) || typeof x.kind !== "string"))))) v.fail("attente");
       }
     }
   },
