@@ -64,7 +64,10 @@ const RESULTS = [
   ok(await expo.locator('[data-act="radar-out"]').count() === 1 && await expo.locator('[data-act="radar-keep"]').count() === 1, '« en faire une sortie » à côté de « garder »');
   await expo.locator('[data-act="radar-out"]').click(); await p.waitForSelector('#dlg[open]');
   ok((await p.textContent('#dlg h2')) === 'Modifier la tâche' && await p.inputValue('#dlg [name="title"]') === 'Exposition « Lumières du Nord »', 'le formulaire s’ouvre, prérempli');
-  await p.fill('#dlg [name="steps"]', 'Réserver'); await p.fill('#dlg [name="cost"]', '12'); await p.click('#dlg button[value="save"]'); await p.waitForTimeout(250);
+  // L'enregistrement se fait dans l'événement « close » de la boîte, qui passe par la file d'attente : on attend l'état,
+  // pas un délai (A52).
+  await p.fill('#dlg [name="steps"]', 'Réserver'); await p.fill('#dlg [name="cost"]', '12'); await p.click('#dlg button[value="save"]');
+  await p.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.chantier.entries.some(t => (t.steps || []).length), null, { timeout: 5000 }).catch(() => {});
   let taches = (await storeJSON(p, 'selene-site-v1')).modules.chantier.entries;
   const e1 = taches.find(x => x.title.startsWith('Exposition'));
   ok(e1 && e1.due === '2026-11-15' && e1.room === 'La Condition publique' && /^Roubaix\ndu 1(er)? septembre au 15 novembre 2026\nhttps:\/\/openagenda\.com\/lille\/events\/3$/.test(e1.note) && e1.steps[0].t === 'Réserver' && e1.cost === 12,
@@ -94,7 +97,9 @@ const RESULTS = [
   await deux.goto(BASE + '/index.html'); await deux.waitForTimeout(400); await deux.click('[data-act="radar-open"]'); await deux.waitForTimeout(300);
   await deux.locator('#sheet .radar li', { hasText: 'Soirée jazz manouche' }).locator('[data-act="radar-out"]').click(); await deux.waitForSelector('#dlg[open]');
   ok((await deux.textContent('#dlg h2')) === 'En faire une sortie' && (await deux.$$eval('#dlg [name="mod"] option', o => o.map(x => x.textContent))).join() === 'Chantier,Sorties', 'deux espaces Tâches : on choisit lequel');
-  await deux.selectOption('#dlg [name="mod"]', 'sorties'); await deux.click('#dlg button[value="save"]'); await deux.waitForTimeout(250);
+  // Le formulaire de la tâche s'ouvre dans le « close » du choix, par la file d'attente : on l'attend, sans délai fixe.
+  await deux.selectOption('#dlg [name="mod"]', 'sorties'); await deux.click('#dlg button[value="save"]');
+  await deux.waitForFunction(() => (document.querySelector('#dlg[open] h2') || {}).textContent === 'Modifier la tâche', null, { timeout: 5000 }).catch(() => {});
   ok(await deux.isVisible('#dlg[open]') && (await deux.textContent('#dlg h2')) === 'Modifier la tâche', 'puis le formulaire de la tâche');
   await deux.click('#dlg button[value="save"]'); await deux.waitForTimeout(250);
   const so = (await storeJSON(deux, 'selene-site-v1')).modules;
