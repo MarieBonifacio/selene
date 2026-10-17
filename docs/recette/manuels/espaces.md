@@ -211,17 +211,18 @@ Identifiants retirés : aucun.
 - **Priorité** : P3 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : espace « Tableau » ; champ « Sous-titre » à renommer en `Lieu`.
-- **Automatisés associés** : `TN-identite`
-- **Source** : [DOC] README, « Identité des espaces » ; [TEST] `tests/browser/identite.js`.
+- **Automatisés associés** : `TN-identite`, `TU-MOD-78`
+- **Source** : [DOC] README, « Identité des espaces » ; [TEST] `tests/browser/identite.js`, `TU-MOD-78`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Ouvrir « Tableau », cliquer « régler » en tête. | Un tiroir s'ouvre (pleine largeur, du bas, sur téléphone) avec les réglages de Tableau ; l'espace reste dessous. |
 | 2 | Donner un nom au champ « Sous-titre » (`Lieu`), quitter le champ. | Le formulaire d'ajout d'un élément propose désormais « Lieu ». |
 | 3 | Fermer le tiroir. | Toujours dans Tableau. |
+| 4 | Réglages → Espaces → « + Créer un espace » → Sur mesure : type vide « Objectif cumulatif », nom `Mémoire` ; « régler », cocher « Un carnet de fragments… ». | Le champ « Nom du carnet » apparaît ; dans Mémoire, le carnet de fragments ; la Boîte propose « → Mémoire ». Un type vide « Collection » a de même une case « Sources ». |
 
 - **État final attendu** : champ « Lieu » activé.
-- **Nettoyage** : vider ce nom.
+- **Nettoyage** : vider ce nom ; supprimer Mémoire.
 
 ---
 

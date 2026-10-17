@@ -23,7 +23,9 @@ SHEETS.specimen = ref => {
   const thought = inst.type === "notes" || (inst.type === "cumul" && (inst.scraps || []).includes(e));
   const long = d => fmt(d, { day: "numeric", month: "long", year: "numeric" }), when = e.date || e.due || e.created;
   const chapter = inst.type === "cumul" && e.category ? (c.categories.find(x => x.id === e.category) || {}).name : "";
-  const links = [...(e.links || []).map(l => `<li>${esc(linkLabel(l.type))} ${refHTML(l.to)}</li>`), ...(backlinks().get(`${mod}/${e.id}`) || []).map(b => `<li>${esc(tr(LINK_BACK[b.type]))} ${refHTML(b.from)}</li>`)];
+  // Chaque lien se retire d'ici, de quelque bout qu'on le regarde : il appartient à l'entrée qui l'a posé (from).
+  const self = `${mod}/${e.id}`, del = (from, to, type) => `<button class="btn ghost sm" data-act="link-del" data-from="${esc(from)}" data-to="${esc(to)}" data-type="${esc(type)}">${tr`retirer`}</button>`;
+  const links = [...(e.links || []).map(l => `<li>${esc(linkLabel(l.type))} ${refHTML(l.to)} ${del(self, l.to, l.type)}</li>`), ...(backlinks().get(self) || []).map(b => `<li>${esc(tr(LINK_BACK[b.type]))} ${refHTML(b.from)} ${del(b.from, self, b.type)}</li>`)];
   const motifs = motifsOf([e.title, e.subtitle, text].filter(Boolean).join(" "));
     const log = [...(e.epLog || [])].reverse().map(x => `<li>${x.date ? tr`${long(x.date)} : ` : ""}${esc(epLabel(x.from))} → ${epGlyph(x.to)}${esc(epLabel(x.to))}</li>`);
   const reviews = [...(e.reviews || [])].reverse().map(r => `<li>${tr`${esc(r.verdict === "maintenue" ? tr`maintenue` : r.verdict)}, le ${long(r.date)}`}</li>`);

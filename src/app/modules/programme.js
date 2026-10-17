@@ -1,7 +1,7 @@
 /* Type « programme » : un protocole de séances sur des semaines, ses paliers (critères cochés à la main), son rythme. */
 import { addJournalEntry } from "../../core/domain.js";
 import { registerType } from "../registry.js";
-import { esc, toast, toastAction } from "../lib/dom.js";
+import { esc, paged, toast, toastAction, toastUndo } from "../lib/dom.js";
 import { addDaysTo, diffDays, fmt, streakOf, todayISO, uid } from "../lib/format.js";
 import { tr, trn } from "../i18n/index.js";
 import { collectionForm } from "./collection.js";
@@ -50,7 +50,7 @@ registerType("programme", {
     const pct = Math.min(100, Math.round(100 * (diffDays(now, c.start) + 1) / (W * 7)));
     let cal = "";
     for (let w = 0; w < W; w++) { cal += `<span>${tr`S${w + 1}`}</span>`; for (let d = 0; d < 7; d++) { const day = addDaysTo(c.start, w * 7 + d); cal += `<i class="${days.has(day) ? "on" : ""} ${day === now ? "today" : ""} ${day > now ? "future" : ""}" title="${fmt(day)}"></i>`; } }
-    const recent = [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12), ended = endedOn(c, now);
+    const recent = paged(`prog:${id}`, [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)), 12), ended = endedOn(c, now); // douze, puis « Voir les suivants »
     return `<div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">${tr`Noter une séance`}</button></div>
   <div class="two"><section>
     ${ended ? `<div class="big">${endedText(ended)}</div><p class="hint">${tr`Pour continuer, allonge sa durée dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`}.`}</p>`
@@ -60,7 +60,7 @@ registerType("programme", {
     <div style="margin-top:28px">${programmeGroupPanel(id)}</div>
     ${tiersPanel(id)}
   </section><section><h3>${tr`Journal`}</h3><p class="hint">${tr`Ce que le corps a fait, ce que la tête en a pensé.`}</p>
-    <ul class="plain">${recent.map(x => `<li class="item" data-id="${esc(x.id)}"><span class="jdate">${fmt(x.date, { weekday: "short", day: "numeric", month: "short" })}</span><div>${esc(x.value ?? "?")} ${esc(c.unitLabel)}${x.note ? `<div class="note" style="margin:2px 0 0">${esc(x.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">${tr`suppr.`}</button></li>`).join("") || `<li class="empty">${tr`Aucune séance notée.`}</li>`}</ul>
+    <ul class="plain">${recent.items.map(x => `<li class="item" data-id="${esc(x.id)}"><span class="jdate">${fmt(x.date, { weekday: "short", day: "numeric", month: "short" })}</span><div>${esc(x.value ?? "?")} ${esc(c.unitLabel)}${x.note ? `<div class="note" style="margin:2px 0 0">${esc(x.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">${tr`suppr.`}</button></li>`).join("") + recent.more || `<li class="empty">${tr`Aucune séance notée.`}</li>`}</ul>
   </section></div>`;
   },
   settings: (id, { config: c }) => `<div class="field-row"><label>${tr`Début du protocole`}<input type="date" data-set-mod="${esc(id)}.start" value="${esc(c.start || "")}"></label><label>${tr`Durée (semaines)`}<input type="number" min="1" max="520" data-set-mod="${esc(id)}.weeks" value="${esc(c.weeks)}"></label></div>
@@ -120,11 +120,16 @@ registerType("programme", {
     "crit-add": el => { instOf(el).config.tiers[+el.dataset.tri].criteria.push({ id: uid(), text: "", done: false }); site.save(); render(); },
     "crit-del": el => { const r = el.closest("[data-cri]").dataset; instOf(el).config.tiers[+r.tri].criteria.splice(+r.cri, 1); site.save(); render(); },
     // Le passage est le geste ; la décision reste à rédiger, jamais créée toute seule.
+    /* Un passage voulu, mais pas sans retour : sa bulle propose « Annuler », qui le rend en cours (relu au moment
+       d'annuler). Avec un espace Décisions, le formulaire de la décision s'ouvre seul, sans bulle (C17). */
     "tier-advance": el => {
-      const inst = instOf(el), cur = tierCurrent(inst.config); if (!cur) return;
+      const id = el.dataset.mod, inst = instOf(el), cur = tierCurrent(inst.config); if (!cur) return;
       cur.advancedAt = todayISO(); site.save(); render();
       const dec = firstDecisions();
-      if (!dec) return toast(tr`Palier « ${cur.name} » atteint.`);
+      if (!dec) return toastUndo(tr`Palier « ${cur.name} » atteint.`, () => {
+        const t = ((S().modules[id] || {}).config.tiers || []).find(x => x.id === cur.id); if (!t || !t.advancedAt) return;
+        delete t.advancedAt; site.save(); render(); toast(tr`Rétabli. Rien ne s'est passé.`);
+      });
       const dc = S().modules[dec].config;
       collectionForm(dec, { title: tr`Palier « ${cur.name} » atteint (${label(el.dataset.mod)})`, status: dc.statuses[Math.min(1, dc.statuses.length - 1)] }, tr`Noter la décision : « ${cur.name} »`);
     }

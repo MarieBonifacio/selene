@@ -49,6 +49,20 @@ Le lot 1 de l'[ordre de travail](#f-ordre-de-travail-recommandé), « corriger l
 - **WebKit et Firefox non rejoués ici** : la CI le fera sur la PR ;
 - **vrai iPhone, toujours non vérifié**.
 
+Le lot 2, « compléter les parcours existants », suit sur la même branche. Chaque point a son test, qui échouait
+avant lui :
+
+| Constat (C) | Ce qui change | Tests |
+|---|---|---|
+| Ranger une note et passer un palier : sans retour | « Annuler » : la note revient à sa place, ce qui en est né s'en va, ses liens lui reviennent ; le palier redevient en cours (sans espace Décisions ; avec, le formulaire seul, C17) | `TU-MOD-70`, `TU-MOD-71` |
+| Un lien ne se retirait jamais | « retirer » sur chaque lien de la fiche, des deux bouts, avec « Annuler » ; un « contredit » posé par erreur referme sa tension | `TU-MOD-72` |
+| Sessions d'un compteur invisibles | « Sessions (N) » repliées sous le compteur, la plus récente d'abord, chacune supprimable | `TU-MOD-73` |
+| Historiques coupés à 8, 20, 12 | Même première page, puis « Voir les N suivants » | `TU-MOD-74` |
+| `resumeLog` jamais affiché | « Fil des reprises (N) », même sans pont en cours | `TU-MOD-75` |
+| Pas de date de changement de statut | `statusAt` : « depuis le … » ; le Bilan d'une collection sans date prévue compte ses passages | `TU-MOD-76` |
+| État vide muet ou trompeur | « Rien encore : « … », en haut, pour commencer. » | `TU-MOD-77` |
+| Sources et fragments réservés aux modèles | Deux cases dans « régler » | `TU-MOD-78` |
+
 ---
 
 ## A. Diagnostic des couleurs

@@ -1,7 +1,7 @@
 /* Type « rappels » : des gestes réguliers (arroser, nourrir…), dus quand leur intervalle est passé. */
 import { addJournalEntry } from "../../core/domain.js";
 import { registerType } from "../registry.js";
-import { $, esc } from "../lib/dom.js";
+import { $, esc, paged } from "../lib/dom.js";
 import { ago, diffDays, fmt, todayISO, uid } from "../lib/format.js";
 import { tr, trn } from "../i18n/index.js";
 import { instOf, lastOf, originHTML, recentBy, within } from "./entries.js";
@@ -17,13 +17,13 @@ registerType("rappels", {
   view(id) {
     const inst = S().modules[id], c = inst.config, now = todayISO();
     const line = t => { const l = lastOf(inst, t.id), due = t.every && (!l || diffDays(now, l) >= t.every); return `<div class="set"><span class="${due ? "late" : ""}">${esc(t.label)}</span><span class="hint" style="margin:0">${ago(l)}${t.every ? `, ${tr`tous les ${esc(t.every)} j`}` : ""}</span><button class="btn sm" data-act="entry-log" data-mod="${esc(id)}" data-t="${esc(t.id)}">${tr`Fait aujourd'hui`}</button></div>`; };
-    const recent = [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
+    const recent = paged(`rap:${id}`, [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)), 20); // vingt, puis « Voir les suivants »
     return `<h2>${esc(label(id))}${c.subtitle ? ` <span class="hint" style="font-size:1.2rem">${esc(c.subtitle)}</span>` : ""}</h2>
   <div class="two"><section>
     ${c.types.map(line).join("")}
     <div class="row" style="margin-top:14px"><input id="rapNote" data-draft placeholder="${tr`Observation…`}" aria-label="${tr`Observation`}"><button class="btn" data-act="entry-note" data-mod="${esc(id)}">${tr`Noter`}</button></div>
     <p class="hint" style="margin-top:10px">${tr`Réglable dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`}.`}</p>
-  </section><section><h3>${tr`Journal`}</h3><ul class="plain">${recent.map(l => `<li class="item" data-id="${esc(l.id)}"><span class="jdate">${fmt(l.date)}</span><div><span class="tag">${esc(typeLabel(inst, l.type))}</span>${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}${l.origin ? `<div class="meta">${originHTML(l, l.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">${tr`suppr.`}</button></li>`).join("") || `<li class="empty">${tr`Aucune entrée.`}</li>`}</ul></section></div>`;
+  </section><section><h3>${tr`Journal`}</h3><ul class="plain">${recent.items.map(l => `<li class="item" data-id="${esc(l.id)}"><span class="jdate">${fmt(l.date)}</span><div><span class="tag">${esc(typeLabel(inst, l.type))}</span>${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}${l.origin ? `<div class="meta">${originHTML(l, l.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">${tr`suppr.`}</button></li>`).join("") + recent.more || `<li class="empty">${tr`Aucune entrée.`}</li>`}</ul></section></div>`;
   },
   settings: (id, { config: c }) => `<div class="field-row"><label>${tr`Sous-titre (ex. nom propre)`}<input data-set-mod="${esc(id)}.subtitle" value="${esc(c.subtitle || "")}"></label><span></span></div>
     <div style="margin-top:10px"><span class="hint" style="margin:0">${tr`Types et rappels`}</span>${c.types.map((t, i) => `<div class="set" data-ti="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="typ-name" data-mod="${esc(id)}" value="${esc(t.label)}" aria-label="${tr`Nom`}"><input type="number" min="0" data-act="typ-every" data-mod="${esc(id)}" value="${esc(t.every || "")}" placeholder="${tr`tous les X j`}" aria-label="${tr`Fréquence`}"><button class="btn ghost sm" data-act="typ-del" data-mod="${esc(id)}">${tr`suppr.`}</button></div>`).join("")}<button class="btn sm" data-act="typ-add" data-mod="${esc(id)}" style="margin-top:8px">${tr`Ajouter un type`}</button></div>`,

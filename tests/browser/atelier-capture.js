@@ -97,7 +97,7 @@ demo.modules.ecriture.config.categories = [{ id: 'c1', name: 'Prologue', goal: 0
   ok(await dansBoite('8,40 € courses légumes') && b1.action && b1.texte === '8,40 € en dépense dans Budget (Courses) ? Ranger', `« 8,40 € courses légumes » : dans la boîte ; le bandeau « ${b1.texte} » (MOD-014, étape 1)`);
   await c.click('#toast [data-act="undo"]'); await c.waitForFunction(() => document.querySelector('#toast').textContent.includes('Rangé'), null, { timeout: 5000 }).catch(() => {});
   const b2 = await bulleC(), depense = (await siteC()).modules.budget.entries.find(e => e.amount === 8.4 && e.cat === 'Courses') || {};
-  ok(b2.texte === 'Rangé : 8,40 € en dépense dans Budget (Courses).' && !(await dansBoite('8,40 € courses légumes')) && depense.date === '2026-10-07', `accepté : « ${b2.texte} » ; la note quitte la boîte ; la dépense est au Budget, le ${depense.date} (MOD-014, étape 2)`);
+  ok(b2.texte === 'Rangé : 8,40 € en dépense dans Budget (Courses). Annuler' && b2.action && !(await dansBoite('8,40 € courses légumes')) && depense.date === '2026-10-07', `accepté : « ${b2.texte} » ; la note quitte la boîte ; la dépense est au Budget, le ${depense.date} (MOD-014, étape 2)`);
   const b3 = await capturer('20 min yoga');
   await versC('inbox', '#main li.item');
   const ranger = await c.evaluate(() => { const li = [...document.querySelectorAll('#main li.item')].find(l => (l.querySelector('.ntext') || {}).textContent === '20 min yoga'); const x = li && li.querySelector('[data-act="note-file"]'); return x ? x.textContent.trim() : ''; });

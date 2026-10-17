@@ -432,8 +432,8 @@ Identifiants retirés : aucun.
 - **Priorité** : P3 · **Plateformes** : Web, Mob
 - **Préconditions** : chemin « sans compte » dans un profil neuf, sans import.
 - **Données** : aucune.
-- **Automatisés associés** : `TN-budget`, `TN-notes`, `TN-compte-neuf`, `TN-recherche-minuteur`
-- **Source** : [CODE] les messages `class="empty"` des modules ; [TEST] `tests/browser/budget.js`, `tests/browser/notes.js`.
+- **Automatisés associés** : `TN-budget`, `TN-notes`, `TN-compte-neuf`, `TN-recherche-minuteur`, `TU-MOD-77`
+- **Source** : [CODE] les messages `class="empty"` des modules ; [TEST] `tests/browser/budget.js`, `tests/browser/notes.js`, `TU-MOD-77`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -443,8 +443,9 @@ Identifiants retirés : aucun.
 | 4 | Créer un espace depuis le modèle « Budget » ; l'ouvrir. | « Aucune opération ce mois-ci. Suspect. » |
 | 5 | Créer un espace depuis le modèle « Carnet » ; l'ouvrir. | « Rien pour l'instant. » |
 | 6 | Chercher `zzz-introuvable`. | « Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire. » |
+| 7 | Créer un espace depuis le modèle « Tableau de production » (colonnes) ; l'ouvrir. | Au-dessus des colonnes, visible : « Rien encore : « Nouvelle idée », en haut, pour commencer. » ; en liste, le même message, jamais « Rien dans ce filtre. » sans filtre. |
 
-- **État final attendu** : trois espaces vides de plus.
+- **État final attendu** : quatre espaces vides de plus.
 - **Nettoyage** : les supprimer.
 
 ---

@@ -44,7 +44,7 @@ function entryAdd(id) {
 }
 CLICK["cap-add"] = () => capture();
 CLICK["cap-sheet-add"] = () => capture($("#capSheetIn"));
-CLICK["page-more"] = el => { const k = el.dataset.k; pageSize[k] = (pageSize[k] || PAGE) + PAGE; render(); };
+CLICK["page-more"] = el => { const k = el.dataset.k; pageSize[k] = (+el.dataset.n || pageSize[k] || PAGE) + PAGE; render(); };
 CLICK["entry-add"] = el => entryAdd(el.dataset.mod);
 CLICK["entry-del"] = el => removeWithUndo(el.dataset.mod, "entries", idOf(el));
 CLICK["mod-down"] = el => moveMod(el, 1);

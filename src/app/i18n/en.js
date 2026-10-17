@@ -174,6 +174,9 @@ export default {
   "Clé non effacée : {0}": "Key not erased: {0}",
 
   // features/bridge.js
+  "Fil des reprises ({0})": "Trail of resumptions ({0})",
+  "noté le {0}, repris le {1}": "noted {0}, resumed {1}",
+  "noté le {0}, remplacé le {1}": "noted {0}, replaced {1}",
   "Le prochain geste, pour la prochaine fois…": "The next step, for next time…",
   "Prochain geste": "Next step",
   "plus tard": "later",
@@ -359,6 +362,7 @@ export default {
   "Chaque entrée porte sa date, son module et, s'il est indiqué, son statut épistémique : *observé* (ce qui s'est présenté), *hypothèse* (une conjecture à tester), *interprétation* (une lecture, un cadre appliqué), *inexpliqué* (laissé ouvert à dessein). Ne pas traiter une hypothèse comme un fait, ni combler un inexpliqué. Les renvois [n] désignent les entrées de ce dossier.": "Each entry carries its date, its module and, when given, its epistemic status: *observed* (what presented itself), *hypothesis* (a conjecture to test), *interpretation* (a reading, an applied frame), *unexplained* (left open on purpose). Do not treat a hypothesis as a fact, nor fill in an unexplained. References [n] point to the entries of this dossier.",
   "Références": "References",
   // features/links.js
+  "Lien retiré.": "Link removed.",
   "a donné": "gave rise to",
   "contredit par": "contradicted by",
   "écho de": "echo of",
@@ -509,6 +513,7 @@ export default {
   "Exporter en CSL-JSON": "Export as CSL-JSON",
   "Toutes les sources de cet espace, pour Zotero, Zettlr ou Pandoc": "All the sources in this space, for Zotero, Zettlr or Pandoc",
   // features/specimen.js
+  "retirer": "remove",
   "Cette entrée n'existe plus.": "This entry no longer exists.",
   "{0} : ": "{0}: ",
   "{0}, le {1}": "{0}, on {1}",
@@ -665,7 +670,6 @@ export default {
   "Ce module a été supprimé entre-temps.": "This module was deleted in the meantime.",
   "Déjà à cette étape.": "Already at this stage.",
   "(supprimé)": "(deleted)",
-  "retirer": "remove",
   "Placer un élément": "Place an item",
   "Vide.": "Empty.",
   "Aucune étape pour l'instant. Ajoute-en dans {0}.": "No stages yet. Add some in {0}.",
@@ -714,6 +718,9 @@ export default {
   "Nouvelle enveloppe": "New envelope",
   "Supprimer l'enveloppe « {0} » ? Les opérations restent.": "Delete the envelope “{0}”? The transactions stay.",
   // modules/collection.js
+  "Sources : chaque élément est une source, gardée par un lien ou un DOI qui se complète, exportable en BibTeX et CSL-JSON, et qui documente tes notes et fragments": "Sources: each item is a source, kept from a link or a DOI that fills itself in, exportable as BibTeX and CSL-JSON, and documenting your notes and fragments",
+  "Rien encore : « {0} », en haut, pour commencer.": "Nothing yet: “{0}”, at the top, to begin.",
+  "depuis le {0}": "since {0}",
   "« {0} » est passé à « {1} ». Le monde n'a rien remarqué, comme prévu.": "“{0}” moved to “{1}”. The world didn't notice, as planned.",
   "« {0} » : {1}. Une chose de moins qui attend ton attention.": "“{0}”: {1}. One less thing waiting for your attention.",
   "{1} : « {0} ». L'Œuvre avance, à pas de lichen.": "{1}: “{0}”. The Work advances, at the pace of lichen.",
@@ -785,6 +792,9 @@ export default {
   "{0} publication importée dans {1}.": { one: "{0} post imported into {1}.", other: "{0} posts imported into {1}." },
   "« {0} » existe déjà.": "“{0}” already exists.",
   // modules/cumul.js
+  "Un carnet de fragments : des phrases à garder à côté du compteur, qui reçoivent aussi les notes triées": "A notebook of fragments: sentences kept alongside the counter, which also take sorted notes",
+  "Nom du carnet": "Notebook name",
+  "Sessions ({0})": "Sessions ({0})",
   "Objectif atteint. Le reste relève de l'orgueil, ou de la réécriture.": "Goal reached. Anything more is vanity, or rewriting.",
   "Pas assez d'élan ces 30 derniers jours pour prédire une fin. La prophétie attendra.": "Not enough momentum these last 30 days to predict an end. The prophecy will wait.",
   "Au rythme des 30 derniers jours ({0} {1} par jour), objectif atteint vers le {2}.": "At the pace of the last 30 days ({0} {1} a day), goal reached around {2}.",
