@@ -20,8 +20,8 @@ Conventions :
 
 ## Suites (17 octobre 2026)
 
-Le lot 1 de l'[ordre de travail](#f-ordre-de-travail-recommandé), « corriger les dysfonctionnements », est fait sur la
-branche `claude/lucid-hawking-t99f2a`. Il n'est ni fusionné ni déployé. Chaque correctif a :
+Le lot 1 de l'[ordre de travail](#f-ordre-de-travail-recommandé), « corriger les dysfonctionnements », est fait :
+[PR #161](https://github.com/MarieBonifacio/selene/pull/161). Chaque correctif a :
 - un test qui échouait avant lui ;
 - un cas de recette mis à jour ;
 - une ligne d'anomalie dans [perimetre.md](recette/perimetre.md#anomalies-et-observations).
