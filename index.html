@@ -725,7 +725,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
   .btn,.star,.check{position:relative}
   .btn::after,.star::after{content:"";position:absolute;inset:min(-3px,calc(50% - 23px)) -3px}
   .star::after{inset:min(-3px,calc(50% - 23px))} /* l'étoile d'une tâche, étroite : sa zone s'élargit aussi */
-  .check::before{content:"";position:absolute;inset:-12px -12px -12px -14px} /* à gauche, la marge de la page : la case touche le titre à 10 px à sa droite */
+  .check::before{content:"";position:absolute;inset:-14px -12px -14px -16px} /* comptée depuis l'intérieur de la bordure : 18 px sous Firefox, qui garde 1,5 px de bordure (19 sous Chromium, qui l'arrondit) ; à droite, le titre à 10 px ; à gauche, la marge de la page */
   .t-title{position:relative}.t-title::after{content:"";position:absolute;inset:min(-3px,calc(50% - 23px)) 0} /* le titre d'une tâche, qui la déplie */
   details.mreg>summary{min-height:44px;align-items:center}
   .reg-guide summary,.danger summary,details.rlm-privacy>summary,details.rlm-info>summary{padding-block:11px}
