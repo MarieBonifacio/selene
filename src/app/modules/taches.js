@@ -3,7 +3,7 @@
 import { addBudgetEntry, addTask, setTaskDone, setTaskToday } from "../../core/domain.js";
 import { rainDays } from "../../core/sky.js";
 import { registerType } from "../registry.js";
-import { $, esc, toast, toastAction } from "../lib/dom.js";
+import { $, esc, paged, toast, toastAction } from "../lib/dom.js";
 import { addDaysTo, diffDays, fmt, money, todayISO, uid } from "../lib/format.js";
 import { N_, collate, tr, trn } from "../i18n/index.js";
 import { firstOfType } from "../features/assistant.js";
@@ -121,7 +121,7 @@ registerType("taches", {
       [tr`Sans date`, tr`Les tâches sans date ne meurent jamais. Elles hantent.`, t => !t.due]
     ].map(([n, h, fn, late]) => { const it = filtered.filter(fn); return it.length ? `<div style="margin-bottom:22px"><h3 class="${late ? "late" : ""}">${n} <span class="hint" style="font-size:1rem">${it.length}</span></h3><p class="hint">${h}</p><ul class="plain">${it.map(t => taskHTML(id, t)).join("")}</ul></div>` : ""; }).join("");
     const spent = inst.entries.filter(t => t.done && t.cost).reduce((a, t) => a + +t.cost, 0), left = o.filter(t => t.cost).reduce((a, t) => a + +t.cost, 0);
-    const done = inst.entries.filter(t => t.done).sort((a, b) => (b.doneAt || "").localeCompare(a.doneAt || "")).slice(0, 8);
+    const done = paged(`done:${id}`, inst.entries.filter(t => t.done).sort((a, b) => (b.doneAt || "").localeCompare(a.doneAt || "")), 8); // les huit dernières, puis « Voir les suivants »
     return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:24px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn solid" data-act="task-new">${tr`Ajouter une tâche`}</button><button class="btn" data-act="task-pick">${tr`Tirer au sort`}</button></div>
   <div class="two"><div>
     <section><h3>${tr`Aujourd'hui`}</h3><p class="hint">${tr`Trois tâches maximum, tous modules confondus. Au-delà, c'est une liste de reproches.`}</p><ul class="plain">${tod.map(t => taskHTML(id, t)).join("") || `<li class="empty">${tr`Coche l'étoile d'une tâche.`}</li>`}</ul></section>
@@ -132,7 +132,7 @@ registerType("taches", {
   </div><aside>
     ${groupPanel(id, tr`La mousse gagne à mesure que tu finis. Clique pour filtrer.`)}
     ${c.costs && (spent || left) ? `<p class="hint">${tr`Budget estimé : ${spent} € engagés, ${left} € encore à prévoir.`}</p>` : ""}
-    <section><h3>${tr`Fait récemment`}</h3><ul class="plain">${done.map(t => `<li class="item" data-task="${esc(t.id)}" data-mod="${esc(id)}"><span></span><div>${esc(t.title)}<div class="meta">${fmt(t.doneAt)}</div></div><button class="btn ghost sm" data-act="task-undo">${tr`annuler`}</button></li>`).join("") || `<li class="empty">${tr`Rien pour l'instant. L'histoire ne retiendra rien.`}</li>`}</ul></section>
+    <section><h3>${tr`Fait récemment`}</h3><ul class="plain">${done.items.map(t => `<li class="item" data-task="${esc(t.id)}" data-mod="${esc(id)}"><span></span><div>${esc(t.title)}<div class="meta">${fmt(t.doneAt)}</div></div><button class="btn ghost sm" data-act="task-undo">${tr`annuler`}</button></li>`).join("") + done.more || `<li class="empty">${tr`Rien pour l'instant. L'histoire ne retiendra rien.`}</li>`}</ul></section>
   </aside></div></div>`;
   },
   settings: (id, { config: c }) => `<div class="field-row"><label>${tr`Nom du regroupement`}<input data-set-mod="${esc(id)}.groupLabel" value="${esc(c.groupLabel)}" placeholder="${tr`Pièce, lieu, client…`}" required></label><label>${tr`Nom des types`}<input data-set-mod="${esc(id)}.catLabel" value="${esc(c.catLabel)}" required></label></div>

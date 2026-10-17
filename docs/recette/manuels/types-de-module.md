@@ -218,13 +218,14 @@ Identifiants retirés : aucun.
 
 - **Fonctionnalité et règle** : des critères écrits et cochés par la personne ; rien ne fait franchir un palier
   automatiquement ; « Passer au palier suivant » est le seul geste qui compte ; avec un module Décisions actif, une décision
-  préremplie s'ouvre, jamais enregistrée sans validation.
+  préremplie s'ouvre, jamais enregistrée sans validation. Sans module Décisions, la bulle « Palier « … » atteint. »
+  propose « Annuler », qui rend le palier en cours.
 - **Objectif, risque vérifié** : l'app décide à la place de la personne ; décision enregistrée à son insu.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai (palier « Souffle », deux critères, et un module Décisions).
 - **Données** : aucune.
-- **Automatisés associés** : `TN-paliers`, `TU-MOD-56`
-- **Source** : [DOC] README, « Paliers » ; [TEST] `tests/browser/paliers.js`, `TU-MOD-56`.
+- **Automatisés associés** : `TN-paliers`, `TU-MOD-56`, `TU-MOD-71`
+- **Source** : [DOC] README, « Paliers » ; [TEST] `tests/browser/paliers.js`, `TU-MOD-56`, `TU-MOD-71`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -233,9 +234,10 @@ Identifiants retirés : aucun.
 | 3 | Recharger. | Toujours « Souffle », critères cochés. |
 | 4 | « Passer au palier suivant ». | Un formulaire « Noter la décision : « Souffle » » s'ouvre, titre prérempli « Palier « Souffle » atteint (Yoga) », sans autre message (sans espace Décisions, c'est la bulle « Palier « Souffle » atteint. » qui le dit, C17) ; derrière lui, « « Souffle » atteint le [date du jour] » dans l'historique. |
 | 5 | Annuler le formulaire. | Aucune décision ajoutée dans Décisions. |
+| 6 | Décocher « Activer Décisions » (Réglages → Espaces) ; dans Yoga, « Passer au palier suivant », puis « Annuler » dans la bulle. | La bulle dit « Palier « … » atteint. » avec « Annuler » ; annulé, le palier redevient celui en cours, ses critères tels quels. |
 
 - **État final attendu** : palier franchi, aucune décision nouvelle.
-- **Nettoyage** : réimporter le jeu d'essai.
+- **Nettoyage** : recocher « Activer Décisions » ; réimporter le jeu d'essai.
 
 ---
 
@@ -248,8 +250,8 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob, ART
 - **Préconditions** : jeu d'essai (total actuel 5 300 mots).
 - **Données** : totaux `6000`, puis `5800`, puis `5800`.
-- **Automatisés associés** : `TU-MOD-28`, `TN-quotidien`
-- **Source** : [DOC] README, « Écriture » ; [TEST] `TU-MOD-28`.
+- **Automatisés associés** : `TU-MOD-28`, `TU-MOD-73`, `TN-quotidien`
+- **Source** : [DOC] README, « Écriture » ; [TEST] `TU-MOD-28`, `TU-MOD-73`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -257,9 +259,10 @@ Identifiants retirés : aucun.
 | 2 | Saisir `6000`, « Ajouter ». | « +700 mots. Ça avance, que tu y croies ou non. » ; total 6 000. |
 | 3 | Saisir `5800`. | « -200 mots. Couper, c'est aussi écrire. » ; total 5 800. |
 | 4 | Saisir `5800`. | « Même total qu'avant. Rien de neuf, ou alors en silence. » ; aucune entrée ajoutée. |
+| 5 | Déplier « Sessions », supprimer la session « −200 mots », puis « Annuler ». | Les sessions, la plus récente d'abord ; supprimée, le total remonte à 6 000 et la bulle la nomme ; annulée, il redescend à 5 800. |
 
 - **État final attendu** : deux entrées (+700, −200).
-- **Nettoyage** : les supprimer.
+- **Nettoyage** : les supprimer, depuis « Sessions ».
 
 ---
 
@@ -375,7 +378,7 @@ Identifiants retirés : aucun.
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Capturer `8,40 € courses légumes`. | La note est dans la boîte ; un bandeau propose « 8,40 € en dépense dans Budget (Courses) ? ». |
-| 2 | Accepter le bandeau. | « Rangé : 8,40 € en dépense dans Budget (Courses). » ; la note quitte la boîte ; la dépense est dans le Budget du mois. |
+| 2 | Accepter le bandeau. | « Rangé : 8,40 € en dépense dans Budget (Courses). », avec « Annuler » ; la note quitte la boîte ; la dépense est dans le Budget du mois. |
 | 3 | Capturer `20 min yoga`, ignorer le bandeau. | La note reste dans la boîte, avec un bouton « Ranger : 20 min dans Yoga ». |
 | 4 | Dans la boîte, cliquer ce bouton. | Une séance de 20 min dans Yoga, à la date de la note ; la note quitte la boîte. |
 | 5 | Capturer `Plantes : feuilles jaunes`, ranger. | Une observation « feuilles jaunes » dans le journal de Plantes. |
@@ -391,19 +394,21 @@ Identifiants retirés : aucun.
 
 - **Fonctionnalité et règle** : chaque note propose « → module » vers les espaces qui savent la recevoir (tâches, cumul avec
   carnet, collections, rappels, autres notes ; ni un programme, ni la boîte elle-même) ; vers des tâches, le formulaire
-  s'ouvre pour compléter.
-- **Objectif, risque vérifié** : note perdue au rangement ; destination absurde.
+  s'ouvre pour compléter. Ranger se défait : « Annuler » (six secondes, ou ⌘Z / Ctrl+Z) remet la note à sa place et
+  retire ce qui en est né.
+- **Objectif, risque vérifié** : note perdue au rangement ; destination absurde ; rangement irréversible.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : note « Penser à rappeler la quincaillerie ».
-- **Automatisés associés** : `TU-MOD-19`, `TN-notes`
-- **Source** : [DOC] [architecture.md](../../architecture.md#modules) ; [TEST] `TU-MOD-19`, `tests/browser/notes.js`.
+- **Automatisés associés** : `TU-MOD-19`, `TU-MOD-70`, `TN-notes`
+- **Source** : [DOC] [architecture.md](../../architecture.md#modules) ; [TEST] `TU-MOD-19`, `TU-MOD-70`, `tests/browser/notes.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Ouvrir la boîte, regarder les boutons sous la note. | « → Chantier », « → Écriture », « → Tableau », « → Plantes », « → Carnet »… ; ni « → Yoga », ni « → Boîte ». |
 | 2 | « → Chantier ». | La tâche est créée et la note quitte la boîte ; le formulaire « Modifier la tâche » s'ouvre pour la compléter, titre prérempli. |
 | 3 | « Enregistrer ». | La tâche est dans Chantier ; la note a quitté la boîte. |
+| 4 | Une autre note : « → Tableau », puis « Annuler » dans la bulle « Rangé dans Tableau. ». | La note revient à sa place dans la boîte ; Tableau n'a pas d'élément de plus. |
 
 - **État final attendu** : une tâche de plus, une note de moins.
 - **Nettoyage** : réimporter le jeu d'essai.
@@ -470,8 +475,8 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : collection Musique ; nouveau statut `À réécouter`.
-- **Automatisés associés** : `TN-collections`, `TU-MOD-14`, `TU-MOD-15`
-- **Source** : [DOC] README, « Collection » ; [TEST] `tests/browser/collections.js`, `TU-MOD-14`.
+- **Automatisés associés** : `TN-collections`, `TU-MOD-14`, `TU-MOD-15`, `TU-MOD-76`
+- **Source** : [DOC] README, « Collection » ; [TEST] `tests/browser/collections.js`, `TU-MOD-14`, `TU-MOD-76`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -479,7 +484,8 @@ Identifiants retirés : aucun.
 | 2 | « Ajouter un statut », le nommer `À réécouter`. | Le statut apparaît dans les filtres et le formulaire. |
 | 3 | Mettre « Dead Can Dance » à « À réécouter », puis supprimer ce statut. | Confirmation « Supprimer le statut « À réécouter » ? » avec « 1 élément passera à « … ». » ; après accord, Dead Can Dance a un statut existant. |
 | 4 | Modifier « Kate Bush », vider le titre, « Enregistrer ». | Refus : « Artiste : à remplir » ; le titre reste. |
-| 5 | Supprimer des statuts jusqu'à n'en garder qu'un. | Refus : « Deux statuts minimum : sinon rien ne peut avancer. » |
+| 5 | Remettre « Kate Bush » ; passer « Dead Can Dance » à « Écouté » par son menu. | Sous l'élément : « depuis le » et la date du jour. Renommer ensuite un statut dans « régler » ne change pas cette date. |
+| 6 | Supprimer des statuts jusqu'à n'en garder qu'un. | Refus : « Deux statuts minimum : sinon rien ne peut avancer. » |
 
 - **État final attendu** : Musique avec ses statuts d'origine, champ « Note » masqué.
 - **Nettoyage** : réimporter le jeu d'essai.
@@ -642,20 +648,22 @@ Identifiants retirés : aucun.
 <a id="mod-025"></a>
 ### MOD-025 — Longues listes : cent, puis « Voir les suivants »
 
-- **Fonctionnalité et règle** : fragments, notes, collections : cent éléments, du plus récent, puis « Voir les 100 suivants
-  (N de plus) ».
+- **Fonctionnalité et règle** : fragments, notes, collections, sessions : cent éléments, du plus récent, puis « Voir les 100 suivants
+  (N de plus) » ; les historiques courts (tâches faites, journal des Rappels, séances d'un Programme) : 8, 20 ou 12, puis
+  la suite de même.
 - **Objectif, risque vérifié** : liste interminable qui fige le téléphone ; éléments anciens inaccessibles.
 - **Priorité** : P3 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu de volume importé ([donnees/README.md](../donnees/README.md#volume)).
 - **Données** : la boîte (1 506 notes : les 1 500 du jeu de volume et les 6 du jeu d'essai) ou Écriture (4 006 fragments).
-- **Automatisés associés** : `TU-MOD-54`, `TN-navigation`, `TN-notes`
-- **Source** : [DOC] README, « Longues listes » ; [TEST] `TU-MOD-54`.
+- **Automatisés associés** : `TU-MOD-54`, `TU-MOD-74`, `TN-navigation`, `TN-notes`
+- **Source** : [DOC] README, « Longues listes » ; [TEST] `TU-MOD-54`, `TU-MOD-74`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Ouvrir la boîte. | Cent notes, puis « Voir les 100 suivants (1 406 de plus) ». |
 | 2 | Cliquer le bouton. | Deux cents notes ; le bouton se met à jour. |
-| 3 | Mesurer à l'œil le temps d'ouverture de la boîte sur téléphone. | Moins de deux secondes (repère indicatif, voir TRV-007). |
+| 3 | Ouvrir Chantier (« Fait récemment »), Plantes (« Journal ») et Yoga (« Journal ») après plus de 8, 20 et 12 entrées. | Huit tâches faites, vingt lignes, douze séances, puis « Voir les N suivants » ; tout se déroule, rien ne reste hors d'atteinte. |
+| 4 | Mesurer à l'œil le temps d'ouverture de la boîte sur téléphone. | Moins de deux secondes (repère indicatif, voir TRV-007). |
 
 - **État final attendu** : inchangé.
 - **Nettoyage** : réimporter le jeu d'essai.

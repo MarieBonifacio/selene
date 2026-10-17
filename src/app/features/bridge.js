@@ -2,7 +2,7 @@
 import { setResume } from "../../core/domain.js";
 import { CLICK } from "../registry.js";
 import { $, esc, toast, toastUndo } from "../lib/dom.js";
-import { ago, diffDays, todayISO } from "../lib/format.js";
+import { ago, diffDays, fmt, todayISO } from "../lib/format.js";
 import { tr } from "../i18n/index.js";
 import { render } from "../shell/render.js";
 import { S, site } from "../state/site.js";
@@ -20,6 +20,13 @@ export function bridgeBar(id, inst) {
   if (bridgeOpen === id) return `<div class="bridge"><input id="bridgeIn" data-mod="${m}" maxlength="200" value="${esc(r ? r.text : "")}" placeholder="${tr`Le prochain geste, pour la prochaine fois…`}" aria-label="${tr`Prochain geste`}"><button class="btn sm acc" data-act="bridge-save" data-mod="${m}">${tr`Garder`}</button><button class="btn ghost sm" data-act="bridge-close">${tr`plus tard`}</button></div>`;
   if (r) return `<div class="bridge on ${bridgeStale(r) ? "stale" : ""}"><span>↳ <b>${tr`Reprendre :`}</b> ${esc(r.text)} <span class="hint">· ${tr`noté ${ago(r.at)}`}</span></span><span class="acts"><button class="btn ghost sm" data-act="bridge-done" data-mod="${m}">${tr`fait`}</button><button class="btn ghost sm" data-act="bridge-edit" data-mod="${m}">${tr`modifier`}</button></span></div>`;
   return `<div class="bridge off"><button class="btn ghost sm" data-act="bridge-edit" data-mod="${m}">${tr`Je m'arrête ici…`}</button></div>`;
+}
+/* Le fil des reprises : les ponts d'avant, le plus récent d'abord, et ce qu'il en est advenu (repris, ou remplacé par
+   un autre). Revenir à un projet après des semaines, c'est aussi relire ce qu'on comptait y faire. Replié ; même sans
+   pont en cours. */
+export function bridgeLog(inst) {
+  const log = [...(inst.resumeLog || [])].reverse(); if (!log.length) return "";
+  return `<details class="bridge-log"><summary>${tr`Fil des reprises (${log.length})`}</summary><ol class="plain">${log.map(x => `<li>${tr`« ${esc(x.text)} »`} <span class="hint">${x.how === "repris" ? tr`noté le ${fmt(x.at)}, repris le ${fmt(x.end)}` : tr`noté le ${fmt(x.at)}, remplacé le ${fmt(x.end)}`}</span></li>`).join("")}</ol></details>`;
 }
 export function bridgeSave(id) {
   const inst = S().modules[id], inp = $("#bridgeIn"); if (!inst || !inp) return;
