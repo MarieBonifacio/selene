@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-+Pq/WcT4xsfTTnnP2jbJAo06ZNrm3J06jA+4HrGKazs=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-b29NI+JSu325aHTybOyhMEefjkTDzAmjRMjvMntqUCA=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -765,7 +765,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "fe3d7e746c";
+const SELENE_BUILD = "5296e7c294";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1601,6 +1601,7 @@ var __selene = (() => {
     setActivity: () => setActivity,
     setBilanOffset: () => setBilanOffset,
     setBridgeOpen: () => setBridgeOpen,
+    setCollectionStatus: () => setCollectionStatus,
     setEpStatus: () => setEpStatus,
     setErrorReports: () => setErrorReports,
     setOpenId: () => setOpenId,
@@ -2417,6 +2418,7 @@ var __selene = (() => {
     "Nouvelle enveloppe": "New envelope",
     "Supprimer l'enveloppe « {0} » ? Les opérations restent.": "Delete the envelope “{0}”? The transactions stay.",
     // modules/collection.js
+    "depuis le {0}": "since {0}",
     "« {0} » est passé à « {1} ». Le monde n'a rien remarqué, comme prévu.": "“{0}” moved to “{1}”. The world didn't notice, as planned.",
     "« {0} » : {1}. Une chose de moins qui attend ton attention.": "“{0}”: {1}. One less thing waiting for your attention.",
     "{1} : « {0} ». L'Œuvre avance, à pas de lichen.": "{1}: “{0}”. The Work advances, at the pace of lichen.",
@@ -4466,6 +4468,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
           if (e.ig != null && !igValid(e.ig)) v.fail("Instagram");
           if (e.zot != null && !zotValid(e.zot)) v.fail("Zotero");
           if (e.kept != null && !(typeof e.kept === "string" && validDate(e.kept))) v.fail("date");
+          if (e.statusAt != null && !(typeof e.statusAt === "string" && validDate(e.statusAt))) v.fail("date");
         }
       }
     },
@@ -4511,14 +4514,21 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       status: c.statuses.includes(input.status) ? input.status : item ? item.status : c.statuses[0]
     };
     if (item) {
-      const was = item.due;
+      const was = item.due, wasStatus = item.status;
       Object.assign(item, v);
       if (date && c.review && was && was <= date && item.due !== was) item.reviews = [...item.reviews || [], { date, verdict: "revue" }];
+      if (date && item.status !== wasStatus) item.statusAt = date;
       return item;
     }
-    const e = { id, ...v };
+    const e = { id, ...v, ...date ? { statusAt: date } : {} };
     inst.entries.push(e);
     return e;
+  }
+  function setCollectionStatus(item, status, date) {
+    if (item.status === status) return false;
+    item.status = status;
+    if (date) item.statusAt = date;
+    return true;
   }
   function srcValid(x) {
     const str = (v, n) => v == null || v === "" || typeof v === "string" && v.length <= n;
@@ -11706,8 +11716,7 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
     const inst = S().modules[mod], e = inst && inst.type === "collection" && inst.entries.find((x) => x.id === id);
     if (!e) return;
     const c = inst.config, i = Math.max(0, Math.min(c.statuses.length - 1, ci));
-    if (c.statuses[i] === e.status) return;
-    e.status = c.statuses[i];
+    if (!setCollectionStatus(e, c.statuses[i], todayISO())) return;
     site.save();
     render();
     if (i === c.statuses.length - 1) toast(tr(collectionDoneLines[Math.floor(Math.random() * collectionDoneLines.length)], e.title, e.status));
@@ -11758,7 +11767,7 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
       return `<div data-mod="${esc(id)}">${head}
   <div class="row" style="margin-bottom:10px"><select data-act="col-f" aria-label="${tr`Filtrer`}"><option value="">${tr`Tous`}</option>${c.statuses.map((st) => `<option ${st === filter ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${c.sources && inst.entries.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="src-bib" title="${tr`Toutes les sources de cet espace, pour LaTeX (BibTeX, biblatex)`}">${tr`Exporter en BibTeX`}</button><button class="btn ghost sm" data-act="src-csl" aria-label="${tr`Exporter en CSL-JSON`}" title="${tr`Toutes les sources de cet espace, pour Zotero, Zettlr ou Pandoc`}">CSL-JSON</button>` : ""}</div>
   <div class="two"><div><ul class="plain col-list">${((pg) => pg.items.map((e) => `<li class="item" data-id="${esc(e.id)}"><span>${c.music && e.mb && e.mb.rg ? coverImg(e.mb.rg) : ""}</span><div><b>${esc(e.title)}</b>${f.subtitle ? e.subtitle ? `, <i>${esc(e.subtitle)}</i>${c.music && e.mb && e.mb.y ? ` <span class="hint">(${esc(e.mb.y)})</span>` : ""}` : c.music ? ` <button class="btn ghost sm" data-act="mb-open">${tr`préciser ${esc(f.subtitle.toLowerCase())}`}</button>` : ` <span class="hint">${tr`${esc(f.subtitle.toLowerCase())} à préciser`}</span>` : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${c.review ? tr`à réexaminer le ${fmt(e.due)}` : fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}${reviewedHTML(e) || e.origin || e.src ? `<div class="meta">${srcMeta(e)}${reviewedHTML(e)}${originHTML(e, e.title)}</div>` : ""}${c.sources && (e.links || []).length ? `<div class="meta src-docs">${e.links.map((l) => `<span>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</span>`).join("")}</div>` : ""}</div>
-    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map((st) => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm ra" data-act="specimen">${tr`fiche`}</button>${c.music ? `<button class="btn ghost sm ra" data-act="mb-open">${tr`discographie`}</button>` : ""}${c.sources ? `<button class="btn ghost sm ra" data-act="src-link">${tr`documente…`}</button>` : ""}<button class="btn ghost sm ra" data-act="col-edit">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="col-del">${tr`suppr.`}</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">${tr`Rien dans ce filtre.`}</li>`}</ul></div><div>${panel}</div></div></div>`;
+    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map((st) => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${e.statusAt ? `<span class="hint" style="margin:0">${tr`depuis le ${fmt(e.statusAt)}`}</span>` : ""}<button class="btn ghost sm ra" data-act="specimen">${tr`fiche`}</button>${c.music ? `<button class="btn ghost sm ra" data-act="mb-open">${tr`discographie`}</button>` : ""}${c.sources ? `<button class="btn ghost sm ra" data-act="src-link">${tr`documente…`}</button>` : ""}<button class="btn ghost sm ra" data-act="col-edit">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="col-del">${tr`suppr.`}</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">${tr`Rien dans ce filtre.`}</li>`}</ul></div><div>${panel}</div></div></div>`;
     },
     settings: (id, { config: c }) => {
       const f = c.fields, fid = esc(id);
@@ -11779,17 +11788,22 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
     <label style="display:flex;gap:8px;align-items:center;margin:10px 0 8px;font-weight:400"><input type="checkbox" data-act="col-review" data-mod="${fid}" ${c.review ? "checked" : ""}>${tr`La date est un rendez-vous de révision : elle revient sur l'accueil quel que soit le ${esc(c.statusLabel.toLowerCase())}, sauf le dernier`}</label>`;
     },
     accept: (id, inst, note) => {
-      saveCollectionItem(inst, { title: note.text }, uid());
+      saveCollectionItem(inst, { title: note.text }, uid(), todayISO());
     },
     recent: (inst) => inst.entries.slice(-3).reverse().map((e) => `${e.title}${e.subtitle ? " – " + e.subtitle : ""} · ${e.status}`),
-    // Sans date de changement de statut, le bilan ne peut compter que ce qui était prévu dans la période.
+    /* Avec une date prévue : ce qui était prévu dans la période. Sans elle (Sources, Musique, À découvrir) : les passages
+       datés de la période (statusAt), par statut atteint ; aucun, pas de ligne. */
     review: (inst, from, to) => {
       const c = inst.config;
       if (c.concordance) {
         const ms = motifsIn(inst, from, to);
         return ms.length ? ms.slice(0, 5).map((x) => `${x.name} ×${x.n}`).join(", ") : tr`Aucun motif rencontré`;
       }
-      if (!c.fields.due) return null;
+      if (!c.fields.due) {
+        const moved = within(inst.entries, from, to, "statusAt");
+        if (!moved.length) return null;
+        return c.statuses.map((st) => [st, moved.filter((e) => e.status === st).length]).filter(([, n]) => n).map(([st, n]) => `${st} ×${n}`).join(", ");
+      }
       if (c.review) {
         const due = within(inst.entries, from, to, "due").filter((e) => e.status !== c.statuses.at(-1)).length, done = inst.entries.flatMap((e) => within(e.reviews || [], from, to)).length;
         return due || done ? tr`${due} à réexaminer, ${trn(done, "{0} réexamen fait", "{0} réexamens faits")}` : tr`Rien à réexaminer`;
@@ -11899,9 +11913,10 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
         render();
       },
       "col-st": (el) => {
-        itemOf(el).status = el.value;
-        site.save();
-        render();
+        if (setCollectionStatus(itemOf(el), el.value, todayISO())) {
+          site.save();
+          render();
+        }
       },
       "col-done": (el) => {
         instOf(el).config.doneFrom = +el.value;

@@ -285,6 +285,7 @@ export const MODULE_TYPES = {
         if (e.ig != null && !igValid(e.ig)) v.fail("Instagram");
         if (e.zot != null && !zotValid(e.zot)) v.fail("Zotero");
         if (e.kept != null && !(typeof e.kept === "string" && validDate(e.kept))) v.fail("date");
+        if (e.statusAt != null && !(typeof e.statusAt === "string" && validDate(e.statusAt))) v.fail("date");
       }
     }
   },
@@ -326,14 +327,22 @@ export function saveCollectionItem(inst, input, id, date = null) {
     status: c.statuses.includes(input.status) ? input.status : item ? item.status : c.statuses[0]
   };
   if (item) {
-    const was = item.due;
+    const was = item.due, wasStatus = item.status;
     Object.assign(item, v);
     if (date && c.review && was && was <= date && item.due !== was) item.reviews = [...(item.reviews || []), { date, verdict: "revue" }];
+    if (date && item.status !== wasStatus) item.statusAt = date;
     return item;
   }
-  const e = { id, ...v };
+  const e = { id, ...v, ...(date ? { statusAt: date } : {}) };
   inst.entries.push(e);
   return e;
+}
+/* Le statut d'un élément change : le passage est daté (statusAt), pour dire « depuis le … » et compter au Bilan ce qui
+   a changé dans la période. Rend vrai s'il a changé. Renommer un statut n'est pas un passage : statusAt ne bouge pas. */
+export function setCollectionStatus(item, status, date) {
+  if (item.status === status) return false;
+  item.status = status; if (date) item.statusAt = date;
+  return true;
 }
 /* Les références d'une source : une adresse http(s) seulement (jamais « javascript: », qui deviendrait un lien
    exécutable), un DOI, un site, une date de publication (année, mois ou jour). Tout est facultatif. */

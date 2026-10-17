@@ -475,8 +475,8 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : collection Musique ; nouveau statut `À réécouter`.
-- **Automatisés associés** : `TN-collections`, `TU-MOD-14`, `TU-MOD-15`
-- **Source** : [DOC] README, « Collection » ; [TEST] `tests/browser/collections.js`, `TU-MOD-14`.
+- **Automatisés associés** : `TN-collections`, `TU-MOD-14`, `TU-MOD-15`, `TU-MOD-76`
+- **Source** : [DOC] README, « Collection » ; [TEST] `tests/browser/collections.js`, `TU-MOD-14`, `TU-MOD-76`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -484,7 +484,8 @@ Identifiants retirés : aucun.
 | 2 | « Ajouter un statut », le nommer `À réécouter`. | Le statut apparaît dans les filtres et le formulaire. |
 | 3 | Mettre « Dead Can Dance » à « À réécouter », puis supprimer ce statut. | Confirmation « Supprimer le statut « À réécouter » ? » avec « 1 élément passera à « … ». » ; après accord, Dead Can Dance a un statut existant. |
 | 4 | Modifier « Kate Bush », vider le titre, « Enregistrer ». | Refus : « Artiste : à remplir » ; le titre reste. |
-| 5 | Supprimer des statuts jusqu'à n'en garder qu'un. | Refus : « Deux statuts minimum : sinon rien ne peut avancer. » |
+| 5 | Remettre « Kate Bush » ; passer « Dead Can Dance » à « Écouté » par son menu. | Sous l'élément : « depuis le » et la date du jour. Renommer ensuite un statut dans « régler » ne change pas cette date. |
+| 6 | Supprimer des statuts jusqu'à n'en garder qu'un. | Refus : « Deux statuts minimum : sinon rien ne peut avancer. » |
 
 - **État final attendu** : Musique avec ses statuts d'origine, champ « Note » masqué.
 - **Nettoyage** : réimporter le jeu d'essai.

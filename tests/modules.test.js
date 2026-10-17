@@ -1536,3 +1536,26 @@ test('le fil des reprises se relit : ce qu’on comptait faire, quand, et ce qu�
   assert.match(html, /« Acheter la sous-couche »[^<]*<span class="hint">[^<]*repris le 20 sept\./, 'repris, et quand');
   assert.match(html, /« Poncer la rambarde »[^<]*<span class="hint">[^<]*remplacé le 5 sept\./, 'remplacé, et quand');
 });
+
+test('un changement de statut se date : « depuis le … », et le Bilan d’une collection sans date compte les passages', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), m = d.modules.musique; // Musique : pas de champ date, donc jusqu'ici pas de ligne de Bilan
+  m.entries = [];
+  const e = app.saveCollectionItem(m, { title: 'Dead Can Dance' }, 'a1', '2026-09-01');
+  assert.equal(e.statusAt, '2026-09-01', 'né avec son statut, daté');
+  assert.equal(app.setCollectionStatus(e, 'Écouté', '2026-09-10'), true);
+  assert.equal(e.statusAt, '2026-09-10', 'le passage est daté');
+  assert.equal(app.setCollectionStatus(e, 'Écouté', '2026-09-12'), false, 'le même statut ne change rien');
+  assert.equal(e.statusAt, '2026-09-10');
+  const f = app.saveCollectionItem(m, { title: 'Arvo Pärt' }, 'a2', '2026-09-02');
+  app.saveCollectionItem(m, { title: 'Arvo Pärt', status: 'Retenu' }, 'a2', '2026-09-15'); // par le formulaire
+  assert.equal(f.statusAt, '2026-09-15');
+  app.location.hash = '#musique'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /depuis le 10 sept\./, 'la liste dit depuis quand');
+  assert.equal(app.TYPE_UI.collection.review(m, '2026-09-08', '2026-10-01'), 'Écouté ×1, Retenu ×1', 'le Bilan compte les passages de la période');
+  assert.equal(app.TYPE_UI.collection.review(m, '2026-10-01', '2026-11-01'), null, 'rien dans la période : pas de ligne');
+  // La sauvegarde garde la date et refuse une date malformée.
+  assert.doesNotThrow(() => app.parseBackup(app.createBackup(app.board.data, d)));
+  const bad = JSON.parse(app.createBackup(app.board.data, d)); bad.site.modules.musique.entries[0].statusAt = 'hier';
+  assert.throws(() => app.parseBackup(JSON.stringify(bad)));
+});

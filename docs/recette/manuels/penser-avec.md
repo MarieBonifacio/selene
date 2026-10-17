@@ -268,8 +268,8 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : mode « Mois », septembre 2026.
-- **Automatisés associés** : `TU-MOD-37`, `TU-MOD-38`, `TN-bilan`
-- **Source** : [DOC] README, « Bilan » ; [TEST] `TU-MOD-37`, `TU-MOD-38`, `tests/browser/bilan.js`.
+- **Automatisés associés** : `TU-MOD-37`, `TU-MOD-38`, `TU-MOD-76`, `TN-bilan`
+- **Source** : [DOC] README, « Bilan » ; [TEST] `TU-MOD-37`, `TU-MOD-38`, `TU-MOD-76`, `tests/browser/bilan.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|

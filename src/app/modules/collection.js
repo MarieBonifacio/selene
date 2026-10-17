@@ -1,6 +1,6 @@
 /* Type « collection » : des éléments à statuts, en colonnes (glisser-déposer, clavier) ou en liste filtrable ; mode
    révision. */
-import { LINK_TYPES, saveCollectionItem } from "../../core/domain.js";
+import { LINK_TYPES, saveCollectionItem, setCollectionStatus } from "../../core/domain.js";
 import { igDay, igEntry, igPosts } from "../../core/instagram.js";
 import { registerType } from "../registry.js";
 import { esc, paged, toast, toastUndo } from "../lib/dom.js";
@@ -27,8 +27,8 @@ function moveCardTo(mod, id, ci) {
   const inst = S().modules[mod], e = inst && inst.type === "collection" && inst.entries.find(x => x.id === id);
   if (!e) return;
   const c = inst.config, i = Math.max(0, Math.min(c.statuses.length - 1, ci));
-  if (c.statuses[i] === e.status) return;
-  e.status = c.statuses[i]; site.save(); render();
+  if (!setCollectionStatus(e, c.statuses[i], todayISO())) return;
+  site.save(); render();
   if (i === c.statuses.length - 1) toast(tr(collectionDoneLines[Math.floor(Math.random() * collectionDoneLines.length)], e.title, e.status));
 }
 export const modOf = el => el.closest("[data-mod]").dataset.mod;
@@ -76,7 +76,7 @@ registerType("collection", {
     return `<div data-mod="${esc(id)}">${head}
   <div class="row" style="margin-bottom:10px"><select data-act="col-f" aria-label="${tr`Filtrer`}"><option value="">${tr`Tous`}</option>${c.statuses.map(st => `<option ${st === filter ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${c.sources && inst.entries.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="src-bib" title="${tr`Toutes les sources de cet espace, pour LaTeX (BibTeX, biblatex)`}">${tr`Exporter en BibTeX`}</button><button class="btn ghost sm" data-act="src-csl" aria-label="${tr`Exporter en CSL-JSON`}" title="${tr`Toutes les sources de cet espace, pour Zotero, Zettlr ou Pandoc`}">CSL-JSON</button>` : ""}</div>
   <div class="two"><div><ul class="plain col-list">${(pg => pg.items.map(e => `<li class="item" data-id="${esc(e.id)}"><span>${c.music && e.mb && e.mb.rg ? coverImg(e.mb.rg) : ""}</span><div><b>${esc(e.title)}</b>${f.subtitle ? (e.subtitle ? `, <i>${esc(e.subtitle)}</i>${c.music && e.mb && e.mb.y ? ` <span class="hint">(${esc(e.mb.y)})</span>` : ""}` : c.music ? ` <button class="btn ghost sm" data-act="mb-open">${tr`préciser ${esc(f.subtitle.toLowerCase())}`}</button>` : ` <span class="hint">${tr`${esc(f.subtitle.toLowerCase())} à préciser`}</span>`) : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${c.review ? tr`à réexaminer le ${fmt(e.due)}` : fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}${reviewedHTML(e) || e.origin || e.src ? `<div class="meta">${srcMeta(e)}${reviewedHTML(e)}${originHTML(e, e.title)}</div>` : ""}${c.sources && (e.links || []).length ? `<div class="meta src-docs">${e.links.map(l => `<span>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</span>`).join("")}</div>` : ""}</div>
-    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm ra" data-act="specimen">${tr`fiche`}</button>${c.music ? `<button class="btn ghost sm ra" data-act="mb-open">${tr`discographie`}</button>` : ""}${c.sources ? `<button class="btn ghost sm ra" data-act="src-link">${tr`documente…`}</button>` : ""}<button class="btn ghost sm ra" data-act="col-edit">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="col-del">${tr`suppr.`}</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">${tr`Rien dans ce filtre.`}</li>`}</ul></div><div>${panel}</div></div></div>`;
+    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map(st => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${e.statusAt ? `<span class="hint" style="margin:0">${tr`depuis le ${fmt(e.statusAt)}`}</span>` : ""}<button class="btn ghost sm ra" data-act="specimen">${tr`fiche`}</button>${c.music ? `<button class="btn ghost sm ra" data-act="mb-open">${tr`discographie`}</button>` : ""}${c.sources ? `<button class="btn ghost sm ra" data-act="src-link">${tr`documente…`}</button>` : ""}<button class="btn ghost sm ra" data-act="col-edit">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="col-del">${tr`suppr.`}</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">${tr`Rien dans ce filtre.`}</li>`}</ul></div><div>${panel}</div></div></div>`;
   },
   settings: (id, { config: c }) => {
     const f = c.fields, fid = esc(id);
@@ -96,13 +96,17 @@ registerType("collection", {
       <p class="hint" style="margin:4px 0 0">${tr`Import manuel de tes publications : aucune connexion à Instagram, aucune synchronisation automatique. Choisis le compte voulu lors de l’export Meta. Pour plusieurs comptes, crée une collection par compte et donne-lui son nom ; les archives ne sont pas vérifiées par compte. Légende et date uniquement (pas de lien, l’export n’en contient pas). Centre de comptes Meta → Tes informations et autorisations → Télécharger tes informations, format JSON ; puis ${"<code>posts_1.json</code>"} et ${"<code>reels.json</code>"} (dossier ${"<code>your_instagram_activity/media</code>"}). Le fichier est lu sur cet appareil ; les publications importées sont ensuite enregistrées dans ton espace et suivent sa synchronisation. Un second import dans la même collection n’ajoute que les nouvelles.`}</p></div>
     <label style="display:flex;gap:8px;align-items:center;margin:10px 0 8px;font-weight:400"><input type="checkbox" data-act="col-review" data-mod="${fid}" ${c.review ? "checked" : ""}>${tr`La date est un rendez-vous de révision : elle revient sur l'accueil quel que soit le ${esc(c.statusLabel.toLowerCase())}, sauf le dernier`}</label>`;
   },
-  accept: (id, inst, note) => { saveCollectionItem(inst, { title: note.text }, uid()); },
+  accept: (id, inst, note) => { saveCollectionItem(inst, { title: note.text }, uid(), todayISO()); },
   recent: inst => inst.entries.slice(-3).reverse().map(e => `${e.title}${e.subtitle ? " – " + e.subtitle : ""} · ${e.status}`),
-  // Sans date de changement de statut, le bilan ne peut compter que ce qui était prévu dans la période.
+  /* Avec une date prévue : ce qui était prévu dans la période. Sans elle (Sources, Musique, À découvrir) : les passages
+     datés de la période (statusAt), par statut atteint ; aucun, pas de ligne. */
   review: (inst, from, to) => {
     const c = inst.config;
     if (c.concordance) { const ms = motifsIn(inst, from, to); return ms.length ? ms.slice(0, 5).map(x => `${x.name} ×${x.n}`).join(", ") : tr`Aucun motif rencontré`; }
-    if (!c.fields.due) return null;
+    if (!c.fields.due) {
+      const moved = within(inst.entries, from, to, "statusAt"); if (!moved.length) return null;
+      return c.statuses.map(st => [st, moved.filter(e => e.status === st).length]).filter(([, n]) => n).map(([st, n]) => `${st} ×${n}`).join(", ");
+    }
     if (c.review) {
       const due = within(inst.entries, from, to, "due").filter(e => e.status !== c.statuses.at(-1)).length, done = inst.entries.flatMap(e => within(e.reviews || [], from, to)).length;
       return due || done ? tr`${due} à réexaminer, ${trn(done, "{0} réexamen fait", "{0} réexamens faits")}` : tr`Rien à réexaminer`;
@@ -166,7 +170,7 @@ registerType("collection", {
   },
   change: {
     "col-f": el => { colFilter[modOf(el)] = el.value; render(); },
-    "col-st": el => { itemOf(el).status = el.value; site.save(); render(); },
+    "col-st": el => { if (setCollectionStatus(itemOf(el), el.value, todayISO())) { site.save(); render(); } },
     "col-done": el => { instOf(el).config.doneFrom = +el.value; site.save(); render(); },
     "col-review": el => { instOf(el).config.review = el.checked; site.save(); render(); },
     "col-concordance": el => { instOf(el).config.concordance = el.checked; site.save(); render(); },
