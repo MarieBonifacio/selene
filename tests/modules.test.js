@@ -1572,3 +1572,23 @@ test('une collection vide dit par où commencer, en liste comme en colonnes ; un
   app.CHANGE['col-f'](on({ mod: 'musique' }, { value: 'Retenu' }));
   assert.match(T.view('musique'), /Rien dans ce filtre\./, 'des éléments, mais aucun dans ce filtre');
 });
+
+test('le mode Sources et les fragments d’un compteur s’activent aussi dans « régler », pas seulement par le modèle', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  const colId = app.slugId('Lectures', d.config.modules.map(m => m.id));
+  app.createModuleInstance(d.modules, 'collection', 'Lectures', colId); // un type vide, pas le modèle « Sources »
+  assert.match(app.TYPE_UI.collection.settings(colId, d.modules[colId]), /data-act="col-sources"/, 'une case « Sources »');
+  app.CHANGE['col-sources'](on({ mod: colId }, { checked: true }));
+  assert.equal(d.modules[colId].config.sources, true);
+  const cumId = app.slugId('Mémoire', d.config.modules.map(m => m.id));
+  app.createModuleInstance(d.modules, 'cumul', 'Mémoire', cumId);
+  d.config.modules.push({ id: colId, on: true }, { id: cumId, on: true }); // affichés, comme depuis les Réglages
+  assert.ok(!app.noteTargets('inbox').includes(cumId), 'sans fragments, un compteur ne reçoit pas de notes');
+  assert.match(app.TYPE_UI.cumul.settings(cumId, d.modules[cumId]), /data-act="cum-scraps"/, 'une case « Fragments »');
+  app.CHANGE['cum-scraps'](on({ mod: cumId }, { checked: true }));
+  assert.equal(d.modules[cumId].config.scraps, true);
+  assert.ok(Array.isArray(d.modules[cumId].scraps), 'avec leur liste');
+  assert.match(app.TYPE_UI.cumul.settings(cumId, d.modules[cumId]), /data-set-mod="[^"]+\.scrapsLabel"/, 'et leur nom se règle');
+  assert.ok(app.noteTargets('inbox').includes(cumId), 'il reçoit désormais des notes');
+});

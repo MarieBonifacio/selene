@@ -732,7 +732,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "a1b10f315d";
+const SELENE_BUILD = "e9ddb28b30";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -2385,6 +2385,7 @@ var __selene = (() => {
     "Nouvelle enveloppe": "New envelope",
     "Supprimer l'enveloppe « {0} » ? Les opérations restent.": "Delete the envelope “{0}”? The transactions stay.",
     // modules/collection.js
+    "Sources : chaque élément est une source, gardée par un lien ou un DOI qui se complète, exportable en BibTeX et CSL-JSON, et qui documente tes notes et fragments": "Sources: each item is a source, kept from a link or a DOI that fills itself in, exportable as BibTeX and CSL-JSON, and documenting your notes and fragments",
     "Rien encore : « {0} », en haut, pour commencer.": "Nothing yet: “{0}”, at the top, to begin.",
     "depuis le {0}": "since {0}",
     "« {0} » est passé à « {1} ». Le monde n'a rien remarqué, comme prévu.": "“{0}” moved to “{1}”. The world didn't notice, as planned.",
@@ -2458,6 +2459,8 @@ var __selene = (() => {
     "{0} publication importée dans {1}.": { one: "{0} post imported into {1}.", other: "{0} posts imported into {1}." },
     "« {0} » existe déjà.": "“{0}” already exists.",
     // modules/cumul.js
+    "Un carnet de fragments : des phrases à garder à côté du compteur, qui reçoivent aussi les notes triées": "A notebook of fragments: sentences kept alongside the counter, which also take sorted notes",
+    "Nom du carnet": "Notebook name",
     "Sessions ({0})": "Sessions ({0})",
     "Objectif atteint. Le reste relève de l'orgueil, ou de la réécriture.": "Goal reached. Anything more is vanity, or rewriting.",
     "Pas assez d'élan ces 30 derniers jours pour prédire une fin. La prophétie attendra.": "Not enough momentum these last 30 days to predict an end. The prophecy will wait.",
@@ -11752,6 +11755,7 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
     <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-concordance" data-mod="${fid}" ${c.concordance ? "checked" : ""}>${tr`Concordance : chaque élément est un motif, compté dans les textes de tous les autres modules (variantes dans le sous-titre)`}</label>
     ${c.concordance ? `<div class="field-row" style="margin-top:8px"><label>${tr`En jachère après (jours d'absence)`}<input type="number" min="1" max="3650" data-set-mod="${fid}.fallowDays" value="${esc(c.fallowDays)}"></label><span></span></div>` : ""}
     <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-music" data-mod="${fid}" ${c.music ? "checked" : ""}>${tr`Musique : le titre est un artiste, le sous-titre un album, précisés par MusicBrainz (discographie, pochettes, nouvelles sorties)`}</label>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-sources" data-mod="${fid}" ${c.sources ? "checked" : ""}>${tr`Sources : chaque élément est une source, gardée par un lien ou un DOI qui se complète, exportable en BibTeX et CSL-JSON, et qui documente tes notes et fragments`}</label>
     <div style="margin-top:12px"><label class="btn sm" style="display:inline-block;font-weight:500">${tr`Importer un export Instagram`}<input type="file" accept="application/json,.json" multiple data-act="col-ig" data-mod="${fid}" style="display:none"></label>
       <p class="hint" style="margin:4px 0 0">${tr`Import manuel de tes publications : aucune connexion à Instagram, aucune synchronisation automatique. Choisis le compte voulu lors de l’export Meta. Pour plusieurs comptes, crée une collection par compte et donne-lui son nom ; les archives ne sont pas vérifiées par compte. Légende et date uniquement (pas de lien, l’export n’en contient pas). Centre de comptes Meta → Tes informations et autorisations → Télécharger tes informations, format JSON ; puis ${"<code>posts_1.json</code>"} et ${"<code>reels.json</code>"} (dossier ${"<code>your_instagram_activity/media</code>"}). Le fichier est lu sur cet appareil ; les publications importées sont ensuite enregistrées dans ton espace et suivent sa synchronisation. Un second import dans la même collection n’ajoute que les nouvelles.`}</p></div>
     <label style="display:flex;gap:8px;align-items:center;margin:10px 0 8px;font-weight:400"><input type="checkbox" data-act="col-review" data-mod="${fid}" ${c.review ? "checked" : ""}>${tr`La date est un rendez-vous de révision : elle revient sur l'accueil quel que soit le ${esc(c.statusLabel.toLowerCase())}, sauf le dernier`}</label>`;
@@ -11904,6 +11908,11 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
       },
       "col-music": (el) => {
         instOf(el).config.music = el.checked;
+        site.save();
+        render();
+      },
+      "col-sources": (el) => {
+        instOf(el).config.sources = el.checked;
         site.save();
         render();
       },
@@ -12211,6 +12220,8 @@ ${nm} (${mo}) : dépenses ${sumOf2(es, "dépense")} €, revenus ${sumOf2(es, "r
     settings: (id, { config: c }) => `<div class="field-row"><label>${tr`Titre / sous-titre`}<input data-set-mod="${esc(id)}.title" value="${esc(c.title || "")}"></label><label>${tr`Objectif`}<input type="number" min="1" data-set-mod="${esc(id)}.goal" value="${esc(c.goal)}"></label></div>
     <div class="field-row" style="margin-top:8px"><label>${tr`Je saisis`}<select data-set-mod="${esc(id)}.entryMode"><option value="delta" ${c.entryMode !== "total" ? "selected" : ""}>${tr`Ce que j'ai fait aujourd'hui`}</option><option value="total" ${c.entryMode === "total" ? "selected" : ""}>${tr`Le total atteint (l'app calcule la différence)`}</option></select></label><span></span></div>
     <div class="field-row" style="margin-top:8px"><label>${tr`Unité`}<input data-set-mod="${esc(id)}.unitLabel" value="${esc(c.unitLabel)}" placeholder="${tr`mots`}"></label><label>${tr`Nom des catégories`}<input data-set-mod="${esc(id)}.categoryLabel" value="${esc(c.categoryLabel)}" placeholder="${tr`Chapitre`}"></label></div>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="cum-scraps" data-mod="${esc(id)}" ${c.scraps ? "checked" : ""}>${tr`Un carnet de fragments : des phrases à garder à côté du compteur, qui reçoivent aussi les notes triées`}</label>
+    ${c.scraps ? `<div class="field-row" style="margin-top:8px"><label>${tr`Nom du carnet`}<input data-set-mod="${esc(id)}.scrapsLabel" value="${esc(c.scrapsLabel)}" placeholder="${tr`Fragments`}"></label><span></span></div>` : ""}
     <div style="margin-top:10px"><span class="hint" style="margin:0">${esc(c.categoryLabel)}s</span>${c.categories.map((cat, i) => `<div class="set" data-ci="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="cat-name" data-mod="${esc(id)}" value="${esc(cat.name)}" aria-label="${tr`Nom`}"><input type="number" min="0" data-act="cat-goal" data-mod="${esc(id)}" value="${esc(cat.goal || "")}" placeholder="${tr`Objectif`}" aria-label="${tr`Objectif`}"><div class="row"><button class="btn ghost sm" data-act="cat-up" data-mod="${esc(id)}" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="cat-del" data-mod="${esc(id)}">${tr`suppr.`}</button></div></div>`).join("")}<button class="btn sm" data-act="cat-add" data-mod="${esc(id)}" style="margin-top:8px">${tr`Ajouter`}</button></div>`,
     summary(id, inst) {
       const c = inst.config;
@@ -12319,6 +12330,14 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       }
     },
     change: {
+      // Un carnet de fragments, aussi pour un compteur créé vide (jusqu'ici, seul le modèle « Écriture » l'avait).
+      "cum-scraps": (el) => {
+        const inst = instOf(el);
+        inst.config.scraps = el.checked;
+        if (!Array.isArray(inst.scraps)) inst.scraps = [];
+        site.save();
+        render();
+      },
       "scrap-cat": (el) => {
         const f = instOf(el).scraps.find((x) => x.id === idOf(el));
         if (f) {

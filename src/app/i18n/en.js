@@ -718,6 +718,7 @@ export default {
   "Nouvelle enveloppe": "New envelope",
   "Supprimer l'enveloppe « {0} » ? Les opérations restent.": "Delete the envelope “{0}”? The transactions stay.",
   // modules/collection.js
+  "Sources : chaque élément est une source, gardée par un lien ou un DOI qui se complète, exportable en BibTeX et CSL-JSON, et qui documente tes notes et fragments": "Sources: each item is a source, kept from a link or a DOI that fills itself in, exportable as BibTeX and CSL-JSON, and documenting your notes and fragments",
   "Rien encore : « {0} », en haut, pour commencer.": "Nothing yet: “{0}”, at the top, to begin.",
   "depuis le {0}": "since {0}",
   "« {0} » est passé à « {1} ». Le monde n'a rien remarqué, comme prévu.": "“{0}” moved to “{1}”. The world didn't notice, as planned.",
@@ -791,6 +792,8 @@ export default {
   "{0} publication importée dans {1}.": { one: "{0} post imported into {1}.", other: "{0} posts imported into {1}." },
   "« {0} » existe déjà.": "“{0}” already exists.",
   // modules/cumul.js
+  "Un carnet de fragments : des phrases à garder à côté du compteur, qui reçoivent aussi les notes triées": "A notebook of fragments: sentences kept alongside the counter, which also take sorted notes",
+  "Nom du carnet": "Notebook name",
   "Sessions ({0})": "Sessions ({0})",
   "Objectif atteint. Le reste relève de l'orgueil, ou de la réécriture.": "Goal reached. Anything more is vanity, or rewriting.",
   "Pas assez d'élan ces 30 derniers jours pour prédire une fin. La prophétie attendra.": "Not enough momentum these last 30 days to predict an end. The prophecy will wait.",
