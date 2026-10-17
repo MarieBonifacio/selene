@@ -193,6 +193,11 @@ dans [essai.md](essai.md).
   semaine 4. À 15 invités, un compte pèse près de 7 points : lire les nombres, pas seulement les pourcentages.
 - [ ] **Chaque opposition ou demande d'effacement** de la mesure : une requête, sous un mois
   ([compte.md](compte.md#mesure-dusage-bêta)).
+- [ ] **Reprendre selon le temps, en magicien d'Oz (E6)**, pendant la bêta, avec cinq participants actifs et volontaires :
+  trois semaines, la carte d'état faite avec chacun, la carte des règles appliquée à la main, la grille remplie. Seuils :
+  une déclaration par semaine en semaine 3 (médiane), une déclaration sur trois conclue par une proposition commencée
+  ([validation.md](validation.md#e6--reprendre-selon-le-temps-en-magicien-doz)). Aucune sauvegarde ne circule : elle contient le
+  suivi sensible.
 
 ## Publier dans les stores
 
