@@ -434,6 +434,7 @@ export default {
   "Rien qui te ressemble, cette fois. La ville continuera sans toi, elle a l'habitude.": "Nothing that looks like you, this time. The city will carry on without you; it's used to it.",
   "gardé": "kept",
   "le {0}": "on {0}",
+  "L'accueil ne le propose donc plus ; il réessaiera de lui-même dans une semaine.": "So the home page no longer offers it; it will try again on its own in a week.",
   "sortie prévue": "outing planned",
   "en faire une sortie": "plan an outing",
   "En faire une sortie": "Plan an outing",

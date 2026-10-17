@@ -120,15 +120,28 @@ const RESULTS = [
   ok(c.asked.length === 1 && c.passeur.length === 1 && c.passeur[0].genre === 'json' && c.passeur[0].url.startsWith('https://public.opendatasoft.com/') && (await c.$$('#sheet .radar li')).length === 5, 'lecture directe refusée : le passeur lit l’agenda (genre json), les événements s’affichent');
   await c.keyboard.press('Escape'); await storeSet(c, 'selene-radar', null); await c.click('[data-act="radar-open"]'); await c.waitForTimeout(500);
   ok(c.asked.length === 1 && c.passeur.length === 2, 'la porte fermée est retenue : ensuite, directement par le passeur');
+  await c.keyboard.press('Escape'); await c.reload(); await c.waitForTimeout(400);
+  ok(await c.isVisible('[data-act="radar-open"]') && c.asked.length === 1, 'rechargé : la porte reste retenue fermée (sur l’appareil), mais le passeur lit : le radar reste proposé');
   const a = await open(LILLE, 'jazz', 'cors');
   await a.click('[data-act="radar-open"]'); await a.waitForTimeout(400);
   ok((await sheet(a)).includes('il faut ton passeur'), 'sans passeur (artefact claude.ai) : dit ce qui manque');
+  // Ni lecture directe, ni passeur : le radar ne peut rien lire ; l'accueil cesse de le proposer, les Réglages disent pourquoi.
+  await a.keyboard.press('Escape'); await a.reload(); await a.waitForTimeout(400);
+  ok(!(await a.$('[data-act="radar-open"]')), 'ensuite, plus de bouton « Radar culturel » sur l’accueil, même rechargé');
+  await a.evaluate(() => { location.hash = 'reglages'; }); await a.waitForSelector('#radar');
+  const reg = (await a.textContent('#radar')).replace(/\s+/g, ' ');
+  ok(reg.includes('il faut ton passeur') && reg.includes('L\'accueil ne le propose donc plus ; il réessaiera de lui-même dans une semaine.'), `les Réglages disent pourquoi (« ${reg.slice(-170)} »)`);
+  await a.evaluate(() => { const x = JSON.parse(localStorage.getItem('selene-radar-direct')); x.at -= 8 * 86400000; localStorage.setItem('selene-radar-direct', JSON.stringify(x)); location.hash = ''; });
+  await a.reload(); await a.waitForTimeout(400);
+  ok(await a.isVisible('[data-act="radar-open"]'), 'une semaine plus tard, il se propose de nouveau : le portail a peut-être changé');
   // Connectée, mais le passeur n'est pas ouvert à ce compte (refus retenu) : ne pas lui dire de se connecter (A72).
   const f = await open(LILLE, 'jazz', 'cors', '', true);
   await storeSet(f, 'selene-passeur-acces', JSON.stringify({ uid: '0b8f0c2e-1111-2222-3333-444455556666', etat: 'refuse', at: Date.now() }));
   await f.click('[data-act="radar-open"]'); await f.waitForFunction(() => (document.querySelector('#sheetBody') || {}).textContent.includes('passeur'), null, { timeout: 5000 }).catch(() => {});
   const dit = await sheet(f);
   ok(dit.includes("n'est pas ouvert à ce compte") && !dit.includes('version hébergée, connectée') && !f.passeur.length, `connectée, passeur fermé à ce compte : le dit, sans renvoyer à une connexion déjà faite (A72) (« ${dit.slice(0, 160)} »)`);
+  await f.keyboard.press('Escape'); await f.reload(); await f.waitForTimeout(400);
+  ok(!(await f.$('[data-act="radar-open"]')), 'passeur fermé à ce compte et lecture directe refusée : l’accueil ne propose plus le radar');
 
   console.log('réglages');
   const n = await open(LILLE, '', 'ok', '#reglages');

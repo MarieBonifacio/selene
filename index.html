@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-oUOaV+ansEUSIfMCU0h9CEvIk5iy3NdaBtMVM9uw90w=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-roVpVOo1rsjsivStTiwvQhRLIaCsqB2PyVPZQrK61Aw=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -767,7 +767,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "b204180967";
+const SELENE_BUILD = "eda32a1fb7";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1548,6 +1548,7 @@ var __selene = (() => {
     radarFold: () => radarFold,
     radarMatch: () => radarMatch,
     radarPlace: () => radarPlace,
+    radarPossible: () => radarPossible,
     radarSettingsHTML: () => radarSettingsHTML,
     radarUrl: () => radarUrl,
     radarWords: () => radarWords,
@@ -2149,6 +2150,7 @@ var __selene = (() => {
     "Rien qui te ressemble, cette fois. La ville continuera sans toi, elle a l'habitude.": "Nothing that looks like you, this time. The city will carry on without you; it's used to it.",
     "gardé": "kept",
     "le {0}": "on {0}",
+    "L'accueil ne le propose donc plus ; il réessaiera de lui-même dans une semaine.": "So the home page no longer offers it; it will try again on its own in a week.",
     "sortie prévue": "outing planned",
     "en faire une sortie": "plan an outing",
     "En faire une sortie": "Plan an outing",
@@ -8697,15 +8699,31 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     const pourquoi = !hosted() || !authSession ? "" : passeurAcces();
     return pourquoi === "refuse" ? tr`L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas ouvert à ce compte.` : pourquoi === "absent" ? tr`L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas installé sur ce serveur.` : tr`L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).`;
   }
+  var DIRECT_KEY = "selene-radar-direct";
+  var DIRECT_TTL = 7 * 864e5;
   var radarDirect = true;
+  var directOuvert = () => {
+    if (!radarDirect) return false;
+    try {
+      const x = JSON.parse(platform.storage.get(DIRECT_KEY) || "null"), age = x ? Date.now() - x.at : NaN;
+      return !(age > -3e5 && age < DIRECT_TTL);
+    } catch {
+      return true;
+    }
+  };
+  var radarPossible = () => directOuvert() || passeurPret();
   async function radarGet(url) {
-    if (radarDirect) {
+    if (directOuvert()) {
       const ac = new AbortController(), t = setTimeout(() => ac.abort(), 1e4);
       try {
         const r = await fetch(url, { signal: ac.signal });
         return { status: r.status, json: r.ok ? await r.json() : null };
       } catch {
         radarDirect = false;
+        try {
+          platform.storage.set(DIRECT_KEY, JSON.stringify({ at: Date.now() }));
+        } catch {
+        }
       } finally {
         clearTimeout(t);
       }
@@ -8813,7 +8831,8 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     const c = radarPlace();
     return `<section id="radar"><h4>${tr`Radar culturel`}</h4><p class="hint">${tr`Sur demande, depuis l'accueil : les événements à 20 km du lieu réglé dans Ciel (OpenAgenda, partout en France) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification. Changer de lieu, c'est changer de radar.`}</p>
     <label>${tr`Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)`}<input data-act="radar-words" value="${esc(radarConf().words)}" placeholder="${tr`poésie, jazz, photographie, lecture…`}" maxlength="300" autocomplete="off"></label>
-    ${c ? `<p class="hint" style="margin-top:6px">${tr`Autour de ${esc(c.name)}.`}</p>` : `<p class="hint" style="margin-top:6px">${tr`Il lui faut un lieu : règle-le dans Ciel, ci-dessus.`}</p>`}</section>`;
+    ${c ? `<p class="hint" style="margin-top:6px">${tr`Autour de ${esc(c.name)}.`}</p>` : `<p class="hint" style="margin-top:6px">${tr`Il lui faut un lieu : règle-le dans Ciel, ci-dessus.`}</p>`}
+    ${c && radarWords(radarConf().words).length && !radarPossible() ? `<p class="hint" style="margin-top:6px">${esc(sansPasseur())} ${tr`L'accueil ne le propose donc plus ; il réessaiera de lui-même dans une semaine.`}</p>` : ""}</section>`;
   }
 
   // src/app/features/relecture.js
@@ -9363,7 +9382,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       ${!tod.length ? taskModules().length ? `<p class="empty">${tr`Aucune tâche choisie.`} <button class="btn ghost sm" data-act="task-pick">${tr`Tirer une petite tâche au sort`}</button></p>` : `<p class="empty">${tr`Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.`}</p>` : ""}
       ${agendaHTML()}
       ${dehorsLine()}
-      ${radarPlace() && radarWords(radarConf().words).length ? `<p class="hint radar-go">${tr`${`<button class="btn ghost sm" data-act="radar-open">${tr`Radar culturel`}</button>`} ce qui, près d'ici, parle de tes mots`}</p>` : ""}
+      ${radarPlace() && radarWords(radarConf().words).length && radarPossible() ? `<p class="hint radar-go">${tr`${`<button class="btn ghost sm" data-act="radar-open">${tr`Radar culturel`}</button>`} ce qui, près d'ici, parle de tes mots`}</p>` : ""}
     </section>
     <section class="capsec"><h2>${tr`Capturer`}</h2><p class="hint">${tr`Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.`}</p>
       ${inbox ? `<div class="capture"><input id="capIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="${tr`Capture rapide`}"><button class="btn acc" data-act="cap-add">${tr`Garder`}</button></div>

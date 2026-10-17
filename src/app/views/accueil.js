@@ -11,7 +11,7 @@ import { agendaHTML } from "../features/agenda.js";
 import { backend } from "../features/assistant.js";
 import { bridgeStale } from "../features/bridge.js";
 import { dehorsLine } from "../features/dehors.js";
-import { radarConf, radarPlace } from "../features/radar.js";
+import { radarConf, radarPlace, radarPossible } from "../features/radar.js";
 import { relectureLine } from "../features/relecture.js";
 import { sortesSection } from "../features/sortes.js";
 import { taskHTML, taskModules, todayTasks } from "../modules/taches.js";
@@ -62,7 +62,7 @@ VIEWS.accueil = () => {
       ${!tod.length ? (taskModules().length ? `<p class="empty">${tr`Aucune tâche choisie.`} <button class="btn ghost sm" data-act="task-pick">${tr`Tirer une petite tâche au sort`}</button></p>` : `<p class="empty">${tr`Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.`}</p>`) : ""}
       ${agendaHTML()}
       ${dehorsLine()}
-      ${radarPlace() && radarWords(radarConf().words).length ? `<p class="hint radar-go">${tr`${`<button class="btn ghost sm" data-act="radar-open">${tr`Radar culturel`}</button>`} ce qui, près d'ici, parle de tes mots`}</p>` : ""}
+      ${radarPlace() && radarWords(radarConf().words).length && radarPossible() ? `<p class="hint radar-go">${tr`${`<button class="btn ghost sm" data-act="radar-open">${tr`Radar culturel`}</button>`} ce qui, près d'ici, parle de tes mots`}</p>` : ""}
     </section>
     <section class="capsec"><h2>${tr`Capturer`}</h2><p class="hint">${tr`Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.`}</p>
       ${inbox ? `<div class="capture"><input id="capIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="${tr`Capture rapide`}"><button class="btn acc" data-act="cap-add">${tr`Garder`}</button></div>
