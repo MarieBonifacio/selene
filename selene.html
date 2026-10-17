@@ -731,7 +731,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "0e7e5ca652";
+const SELENE_BUILD = "ec722b6f15";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -8313,15 +8313,32 @@ ${body}` : title, cut = false;
   function fileIntent(intent, fromId, noteId) {
     const s = S(), src = s.modules[fromId], note = src && src.entries.find((x) => x.id === noteId), target = s.modules[intent.to];
     if (!note || !target || intent.to === fromId) return;
-    let then;
-    if (intent.kind === "budget") addBudgetEntry(target.entries, { amount: intent.amount, type: "dépense", cat: intent.cat, note: intent.note, date: note.date }, uid(), todayISO());
-    else if (intent.kind === "minutes") addJournalEntry(target, { date: note.date, value: intent.value }, uid(), todayISO());
-    else then = acceptNote(intent.to, fromId, note, intent.text);
-    src.entries = src.entries.filter((x) => x.id !== noteId);
+    fileUndoable(fromId, note, intent.to, () => {
+      if (intent.kind === "budget") addBudgetEntry(target.entries, { amount: intent.amount, type: "dépense", cat: intent.cat, note: intent.note, date: note.date }, uid(), todayISO());
+      else if (intent.kind === "minutes") addJournalEntry(target, { date: note.date, value: intent.value }, uid(), todayISO());
+      else return acceptNote(intent.to, fromId, note, intent.text);
+    }, tr`Rangé : ${intent.say}.`);
+  }
+  function fileUndoable(fromId, note, toId, file, say) {
+    const s = S(), src = s.modules[fromId], target = s.modules[toId], at = src.entries.indexOf(note), before = entryIds(target);
+    const then = file();
+    const born = ["entries", "scraps"].flatMap((list) => (target[list] || []).filter((e) => !before.has(e.id)).map((e) => [list, e.id]));
+    src.entries = src.entries.filter((x) => x !== note);
     site.save();
     render();
+    toastUndo(say, () => {
+      const now = S(), from = now.modules[fromId], to = now.modules[toId];
+      if (!from) return;
+      if (to) for (const [list, id] of born) {
+        to[list] = (to[list] || []).filter((x) => x.id !== id);
+        retargetLinks(now.modules, `${toId}/${id}`, `${fromId}/${note.id}`);
+      }
+      if (!from.entries.some((x) => x.id === note.id)) from.entries.splice(Math.min(at, from.entries.length), 0, note);
+      site.save();
+      render();
+      toast(tr`Rétabli. Rien ne s'est passé.`);
+    });
     if (typeof then === "function") then();
-    else toast(tr`Rangé : ${intent.say}.`);
   }
   function acceptNote(toId, fromId, note, text = note.text) {
     const target = S().modules[toId], before = entryIds(target);
@@ -8441,16 +8458,8 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
       },
       "note-del": (el) => removeWithUndo(modOf(el), "entries", idOf(el)),
       "note-to": (el) => {
-        const s = S(), src = s.modules[modOf(el)], note = src.entries.find((x) => x.id === idOf(el)), to = el.dataset.to;
-        const drop = () => {
-          src.entries = src.entries.filter((x) => x !== note);
-          site.save();
-        };
-        const then = acceptNote(to, modOf(el), note);
-        drop();
-        render();
-        if (typeof then === "function") then();
-        else toast(tr`Rangé dans ${label(to)}.`);
+        const from = modOf(el), note = S().modules[from].entries.find((x) => x.id === idOf(el)), to = el.dataset.to;
+        if (note) fileUndoable(from, note, to, () => acceptNote(to, from, note), tr`Rangé dans ${label(to)}.`);
       }
     },
     change: {
@@ -14114,14 +14123,23 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
         render();
       },
       // Le passage est le geste ; la décision reste à rédiger, jamais créée toute seule.
+      /* Un passage voulu, mais pas sans retour : sa bulle propose « Annuler », qui le rend en cours (relu au moment
+         d'annuler). Avec un espace Décisions, le formulaire de la décision s'ouvre seul, sans bulle (C17). */
       "tier-advance": (el) => {
-        const inst = instOf(el), cur = tierCurrent(inst.config);
+        const id = el.dataset.mod, inst = instOf(el), cur = tierCurrent(inst.config);
         if (!cur) return;
         cur.advancedAt = todayISO();
         site.save();
         render();
         const dec = firstDecisions();
-        if (!dec) return toast(tr`Palier « ${cur.name} » atteint.`);
+        if (!dec) return toastUndo(tr`Palier « ${cur.name} » atteint.`, () => {
+          const t = ((S().modules[id] || {}).config.tiers || []).find((x) => x.id === cur.id);
+          if (!t || !t.advancedAt) return;
+          delete t.advancedAt;
+          site.save();
+          render();
+          toast(tr`Rétabli. Rien ne s'est passé.`);
+        });
         const dc = S().modules[dec].config;
         collectionForm(dec, { title: tr`Palier « ${cur.name} » atteint (${label(el.dataset.mod)})`, status: dc.statuses[Math.min(1, dc.statuses.length - 1)] }, tr`Noter la décision : « ${cur.name} »`);
       }

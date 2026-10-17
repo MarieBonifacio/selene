@@ -218,13 +218,14 @@ Identifiants retirés : aucun.
 
 - **Fonctionnalité et règle** : des critères écrits et cochés par la personne ; rien ne fait franchir un palier
   automatiquement ; « Passer au palier suivant » est le seul geste qui compte ; avec un module Décisions actif, une décision
-  préremplie s'ouvre, jamais enregistrée sans validation.
+  préremplie s'ouvre, jamais enregistrée sans validation. Sans module Décisions, la bulle « Palier « … » atteint. »
+  propose « Annuler », qui rend le palier en cours.
 - **Objectif, risque vérifié** : l'app décide à la place de la personne ; décision enregistrée à son insu.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai (palier « Souffle », deux critères, et un module Décisions).
 - **Données** : aucune.
-- **Automatisés associés** : `TN-paliers`, `TU-MOD-56`
-- **Source** : [DOC] README, « Paliers » ; [TEST] `tests/browser/paliers.js`, `TU-MOD-56`.
+- **Automatisés associés** : `TN-paliers`, `TU-MOD-56`, `TU-MOD-71`
+- **Source** : [DOC] README, « Paliers » ; [TEST] `tests/browser/paliers.js`, `TU-MOD-56`, `TU-MOD-71`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -233,9 +234,10 @@ Identifiants retirés : aucun.
 | 3 | Recharger. | Toujours « Souffle », critères cochés. |
 | 4 | « Passer au palier suivant ». | Un formulaire « Noter la décision : « Souffle » » s'ouvre, titre prérempli « Palier « Souffle » atteint (Yoga) », sans autre message (sans espace Décisions, c'est la bulle « Palier « Souffle » atteint. » qui le dit, C17) ; derrière lui, « « Souffle » atteint le [date du jour] » dans l'historique. |
 | 5 | Annuler le formulaire. | Aucune décision ajoutée dans Décisions. |
+| 6 | Décocher « Activer Décisions » (Réglages → Espaces) ; dans Yoga, « Passer au palier suivant », puis « Annuler » dans la bulle. | La bulle dit « Palier « … » atteint. » avec « Annuler » ; annulé, le palier redevient celui en cours, ses critères tels quels. |
 
 - **État final attendu** : palier franchi, aucune décision nouvelle.
-- **Nettoyage** : réimporter le jeu d'essai.
+- **Nettoyage** : recocher « Activer Décisions » ; réimporter le jeu d'essai.
 
 ---
 
@@ -375,7 +377,7 @@ Identifiants retirés : aucun.
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Capturer `8,40 € courses légumes`. | La note est dans la boîte ; un bandeau propose « 8,40 € en dépense dans Budget (Courses) ? ». |
-| 2 | Accepter le bandeau. | « Rangé : 8,40 € en dépense dans Budget (Courses). » ; la note quitte la boîte ; la dépense est dans le Budget du mois. |
+| 2 | Accepter le bandeau. | « Rangé : 8,40 € en dépense dans Budget (Courses). », avec « Annuler » ; la note quitte la boîte ; la dépense est dans le Budget du mois. |
 | 3 | Capturer `20 min yoga`, ignorer le bandeau. | La note reste dans la boîte, avec un bouton « Ranger : 20 min dans Yoga ». |
 | 4 | Dans la boîte, cliquer ce bouton. | Une séance de 20 min dans Yoga, à la date de la note ; la note quitte la boîte. |
 | 5 | Capturer `Plantes : feuilles jaunes`, ranger. | Une observation « feuilles jaunes » dans le journal de Plantes. |
@@ -391,19 +393,21 @@ Identifiants retirés : aucun.
 
 - **Fonctionnalité et règle** : chaque note propose « → module » vers les espaces qui savent la recevoir (tâches, cumul avec
   carnet, collections, rappels, autres notes ; ni un programme, ni la boîte elle-même) ; vers des tâches, le formulaire
-  s'ouvre pour compléter.
-- **Objectif, risque vérifié** : note perdue au rangement ; destination absurde.
+  s'ouvre pour compléter. Ranger se défait : « Annuler » (six secondes, ou ⌘Z / Ctrl+Z) remet la note à sa place et
+  retire ce qui en est né.
+- **Objectif, risque vérifié** : note perdue au rangement ; destination absurde ; rangement irréversible.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : note « Penser à rappeler la quincaillerie ».
-- **Automatisés associés** : `TU-MOD-19`, `TN-notes`
-- **Source** : [DOC] [architecture.md](../../architecture.md#modules) ; [TEST] `TU-MOD-19`, `tests/browser/notes.js`.
+- **Automatisés associés** : `TU-MOD-19`, `TU-MOD-70`, `TN-notes`
+- **Source** : [DOC] [architecture.md](../../architecture.md#modules) ; [TEST] `TU-MOD-19`, `TU-MOD-70`, `tests/browser/notes.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Ouvrir la boîte, regarder les boutons sous la note. | « → Chantier », « → Écriture », « → Tableau », « → Plantes », « → Carnet »… ; ni « → Yoga », ni « → Boîte ». |
 | 2 | « → Chantier ». | La tâche est créée et la note quitte la boîte ; le formulaire « Modifier la tâche » s'ouvre pour la compléter, titre prérempli. |
 | 3 | « Enregistrer ». | La tâche est dans Chantier ; la note a quitté la boîte. |
+| 4 | Une autre note : « → Tableau », puis « Annuler » dans la bulle « Rangé dans Tableau. ». | La note revient à sa place dans la boîte ; Tableau n'a pas d'élément de plus. |
 
 - **État final attendu** : une tâche de plus, une note de moins.
 - **Nettoyage** : réimporter le jeu d'essai.

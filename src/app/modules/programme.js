@@ -1,7 +1,7 @@
 /* Type « programme » : un protocole de séances sur des semaines, ses paliers (critères cochés à la main), son rythme. */
 import { addJournalEntry } from "../../core/domain.js";
 import { registerType } from "../registry.js";
-import { esc, toast, toastAction } from "../lib/dom.js";
+import { esc, toast, toastAction, toastUndo } from "../lib/dom.js";
 import { addDaysTo, diffDays, fmt, streakOf, todayISO, uid } from "../lib/format.js";
 import { tr, trn } from "../i18n/index.js";
 import { collectionForm } from "./collection.js";
@@ -120,11 +120,16 @@ registerType("programme", {
     "crit-add": el => { instOf(el).config.tiers[+el.dataset.tri].criteria.push({ id: uid(), text: "", done: false }); site.save(); render(); },
     "crit-del": el => { const r = el.closest("[data-cri]").dataset; instOf(el).config.tiers[+r.tri].criteria.splice(+r.cri, 1); site.save(); render(); },
     // Le passage est le geste ; la décision reste à rédiger, jamais créée toute seule.
+    /* Un passage voulu, mais pas sans retour : sa bulle propose « Annuler », qui le rend en cours (relu au moment
+       d'annuler). Avec un espace Décisions, le formulaire de la décision s'ouvre seul, sans bulle (C17). */
     "tier-advance": el => {
-      const inst = instOf(el), cur = tierCurrent(inst.config); if (!cur) return;
+      const id = el.dataset.mod, inst = instOf(el), cur = tierCurrent(inst.config); if (!cur) return;
       cur.advancedAt = todayISO(); site.save(); render();
       const dec = firstDecisions();
-      if (!dec) return toast(tr`Palier « ${cur.name} » atteint.`);
+      if (!dec) return toastUndo(tr`Palier « ${cur.name} » atteint.`, () => {
+        const t = ((S().modules[id] || {}).config.tiers || []).find(x => x.id === cur.id); if (!t || !t.advancedAt) return;
+        delete t.advancedAt; site.save(); render(); toast(tr`Rétabli. Rien ne s'est passé.`);
+      });
       const dc = S().modules[dec].config;
       collectionForm(dec, { title: tr`Palier « ${cur.name} » atteint (${label(el.dataset.mod)})`, status: dc.statuses[Math.min(1, dc.statuses.length - 1)] }, tr`Noter la décision : « ${cur.name} »`);
     }

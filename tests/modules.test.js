@@ -1114,7 +1114,7 @@ test('tiers: criteria are self-written and self-checked, the app never advances 
   app.CLICK['tier-advance'](ti);
   assert.equal(k.config.tiers[0].advancedAt, today());
   assert.equal(app.tierCurrent(k.config).name, 'Palier 2', 'moved on to the next tier');
-  assert.match(app.nodes.get('#toast').textContent, /Palier « Souffle » atteint\./);
+  assert.match(app.nodes.get('#toast').innerHTML, /Palier « Souffle » atteint\..*data-act="undo"/, 'un simple message, qui propose « Annuler »');
   app.render();
   assert.match(app.nodes.get('#main').innerHTML, /« Souffle » atteint le/);
 
@@ -1428,4 +1428,43 @@ test('un programme dont la durée est écoulée ne relance plus chaque jour : il
   assert.match(view, /data-act="goto-groups"/, 'et dit où le prolonger');
   inst.config.weeks = 400; // prolongé : il reprend
   assert.equal(T.alerts(id, inst, today()).length, 1, 'prolongé, l’alerte du jour revient');
+});
+
+test('ranger une note se défait : « Annuler » la remet à sa place, retire ce qui en est né et lui rend ses liens', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), box = d.modules.inbox;
+  app.addCapture(box.entries, 'premier', 'n1', '2026-09-01');
+  app.addCapture(box.entries, 'la phalène et la lampe', 'n2', '2026-09-02');
+  app.addCapture(box.entries, 'dernier', 'n3', '2026-09-03');
+  box.entries.find(e => e.id === 'n1').links = [{ type: 'echo', to: 'inbox/n2' }]; // une autre note la cite
+  const avant = d.modules.moth.entries.length, ordre = box.entries.map(e => e.id);
+  app.CLICK['note-to'](on({ mod: 'inbox', id: 'n2', to: 'moth' }));
+  const ne = d.modules.moth.entries.at(-1);
+  assert.equal(box.entries.find(e => e.id === 'n1').links[0].to, `moth/${ne.id}`, 'rangée, ses liens la suivent');
+  assert.match(app.nodes.get('#toast').innerHTML, /Rangé dans october\.moth\..*data-act="undo"/, '« Annuler » est proposé');
+  app.CLICK.undo();
+  assert.deepEqual(box.entries.map(e => e.id), ordre, 'la note revient à sa place dans la boîte');
+  assert.equal(d.modules.moth.entries.length, avant, 'l’élément né du rangement est retiré');
+  assert.equal(box.entries.find(e => e.id === 'n1').links[0].to, 'inbox/n2', 'les liens reviennent à la note');
+  // Un motif reconnu (« 12 € courses ») : la dépense née du rangement s'en va aussi.
+  app.addCapture(box.entries, '12 € courses', 'n4', '2026-09-04');
+  const ops = d.modules.budget.entries.length;
+  app.fileIntent(app.captureIntent('12 € courses'), 'inbox', 'n4');
+  assert.equal(d.modules.budget.entries.length, ops + 1);
+  app.CLICK.undo();
+  assert.equal(d.modules.budget.entries.length, ops, 'la dépense est retirée');
+  assert.ok(box.entries.some(e => e.id === 'n4'), 'la note est revenue');
+});
+
+test('passer un palier se défait : « Annuler » le rend en cours, critères compris', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const k = app.S().modules.kundalini;
+  k.config.tiers = [{ id: 't1', name: 'Souffle', criteria: [{ id: 'c1', text: 'vingt minutes', done: true }] }, { id: 't2', name: 'Posture', criteria: [] }];
+  app.CLICK['tier-advance'](on({ mod: 'kundalini' }));
+  assert.ok(k.config.tiers[0].advancedAt, 'franchi, daté');
+  assert.match(app.nodes.get('#toast').innerHTML, /Palier « Souffle » atteint\..*data-act="undo"/, '« Annuler » est proposé');
+  app.CLICK.undo();
+  assert.equal(k.config.tiers[0].advancedAt, undefined, 'le palier redevient celui en cours');
+  assert.equal(k.config.tiers[0].criteria[0].done, true, 'ses critères cochés le restent');
+  assert.equal(app.tierCurrent(k.config).id, 't1');
 });
