@@ -58,6 +58,48 @@ const RESULTS = [
   await p.click('[data-act="radar-open"]'); await p.waitForTimeout(300);
   ok(p.asked.length === 1 && (await p.$$('#sheet .radar li')).length === 5, 'rouvert dans l’heure : servi par le cache de l’appareil, sans nouvel appel');
 
+  console.log('en faire une sortie, puis l’ajouter au calendrier (E2)');
+  // Le jeu de démo n'a qu'un espace Tâches, Chantier : la sortie y va sans question.
+  const expo = p.locator('#sheet .radar li', { hasText: 'Exposition' });
+  ok(await expo.locator('[data-act="radar-out"]').count() === 1 && await expo.locator('[data-act="radar-keep"]').count() === 1, '« en faire une sortie » à côté de « garder »');
+  await expo.locator('[data-act="radar-out"]').click(); await p.waitForSelector('#dlg[open]');
+  ok((await p.textContent('#dlg h2')) === 'Modifier la tâche' && await p.inputValue('#dlg [name="title"]') === 'Exposition « Lumières du Nord »', 'le formulaire s’ouvre, prérempli');
+  await p.fill('#dlg [name="steps"]', 'Réserver'); await p.fill('#dlg [name="cost"]', '12'); await p.click('#dlg button[value="save"]'); await p.waitForTimeout(250);
+  let taches = (await storeJSON(p, 'selene-site-v1')).modules.chantier.entries;
+  const e1 = taches.find(x => x.title.startsWith('Exposition'));
+  ok(e1 && e1.due === '2026-11-15' && e1.room === 'La Condition publique' && /^Roubaix\ndu 1(er)? septembre au 15 novembre 2026\nhttps:\/\/openagenda\.com\/lille\/events\/3$/.test(e1.note) && e1.steps[0].t === 'Réserver' && e1.cost === 12,
+    `déjà commencée : échéance au dernier jour, la salle en lieu, la ville, les dates et le lien en note (${JSON.stringify(e1 && { due: e1.due, room: e1.room, note: e1.note })})`);
+  ok((await expo.textContent()).includes('sortie prévue'), 'la feuille le dit');
+  await p.locator('#sheet .radar li', { hasText: 'Soirée jazz manouche' }).locator('[data-act="radar-out"]').click(); await p.waitForSelector('#dlg[open]');
+  await p.click('#dlg button[value="cancel"]'); await p.waitForTimeout(250);
+  taches = (await storeJSON(p, 'selene-site-v1')).modules.chantier.entries;
+  const e2 = taches.find(x => x.title === 'Soirée jazz manouche');
+  ok(e2 && e2.due === '2026-10-06' && e2.room === 'Le Biplan' && e2.note.startsWith('Lille\nle mardi 6 octobre 2026'), 'à venir : échéance au premier jour ; « Annuler » dans le formulaire garde la tâche, comme un rangement depuis la boîte');
+  await p.keyboard.press('Escape'); await p.evaluate(() => { location.hash = 'chantier'; }); await p.waitForTimeout(300);
+  const li = p.locator('#main li[data-task]', { hasText: 'Soirée jazz manouche' }).first();
+  await li.locator('[data-act="task-open"]').click();
+  ok(await li.locator('.note a[href="https://openagenda.com/lille/events/4"]').count() === 1, 'dans la tâche, le lien de l’événement se clique');
+  const [dl] = await Promise.all([p.waitForEvent('download'), li.locator('[data-act="task-ics"]').click()]);
+  const ics = require('node:fs').readFileSync(await dl.path(), 'utf8'), [ev] = require('../../src/core/agenda.js').icsParse(ics);
+  ok(dl.suggestedFilename() === 'soiree-jazz-manouche-2026-10-06.ics' && ics.includes('DTSTART;VALUE=DATE:20261006\r\n') && ics.includes('URL:https://openagenda.com/lille/events/4\r\n') && ev && ev.summary === 'Soirée jazz manouche' && ev.location === 'Le Biplan' && ev.allDay,
+    `« Ajouter à mon calendrier » donne un .ics d’une journée, relu tel quel (${dl.suggestedFilename()})`);
+  // Sans espace Tâches : « garder » seul.
+  await p.evaluate(() => { const d = JSON.parse(localStorage.getItem('selene-site-v1')); d.config.modules.find(m => m.id === 'chantier').on = false; localStorage.setItem('selene-site-v1', JSON.stringify(d)); });
+  await p.goto(BASE + '/index.html'); await p.waitForTimeout(400); await p.click('[data-act="radar-open"]'); await p.waitForTimeout(300);
+  ok(!(await p.$('#sheet [data-act="radar-out"]')) && (await p.$$('#sheet [data-act="radar-keep"]')).length > 0, 'sans espace Tâches : pas de « en faire une sortie », « garder » reste');
+
+  // Deux espaces Tâches : on choisit où, puis le formulaire de la tâche suit ; un type « Sortie » est pris s'il existe.
+  const deux = await open(LILLE, 'jazz');
+  await deux.evaluate(() => { const d = JSON.parse(localStorage.getItem('selene-site-v1')); d.modules.sorties = { type: 'taches', label: 'Sorties', config: { ...d.modules.chantier.config, cats: ['Billet', 'Sortie'] }, entries: [] }; d.config.modules.push({ id: 'sorties', on: true }); localStorage.setItem('selene-site-v1', JSON.stringify(d)); });
+  await deux.goto(BASE + '/index.html'); await deux.waitForTimeout(400); await deux.click('[data-act="radar-open"]'); await deux.waitForTimeout(300);
+  await deux.locator('#sheet .radar li', { hasText: 'Soirée jazz manouche' }).locator('[data-act="radar-out"]').click(); await deux.waitForSelector('#dlg[open]');
+  ok((await deux.textContent('#dlg h2')) === 'En faire une sortie' && (await deux.$$eval('#dlg [name="mod"] option', o => o.map(x => x.textContent))).join() === 'Chantier,Sorties', 'deux espaces Tâches : on choisit lequel');
+  await deux.selectOption('#dlg [name="mod"]', 'sorties'); await deux.click('#dlg button[value="save"]'); await deux.waitForTimeout(250);
+  ok(await deux.isVisible('#dlg[open]') && (await deux.textContent('#dlg h2')) === 'Modifier la tâche', 'puis le formulaire de la tâche');
+  await deux.click('#dlg button[value="save"]'); await deux.waitForTimeout(250);
+  const so = (await storeJSON(deux, 'selene-site-v1')).modules;
+  ok(so.sorties.entries.length === 1 && so.sorties.entries[0].cat === 'Sortie' && !so.chantier.entries.length, 'la sortie va dans l’espace choisi, au type « Sortie »');
+
   console.log('portail changé, portail muet');
   const r = await open(LILLE, 'jazz', 'renamed');
   await r.click('[data-act="radar-open"]'); await r.waitForTimeout(400);

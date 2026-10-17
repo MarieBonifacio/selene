@@ -1632,3 +1632,27 @@ test('E1, j’attends une réponse : une tâche en attente sort des échéances,
   app.pickTask('chantier');
   assert.match(app.nodes.get('#toast').textContent + app.nodes.get('#toast').innerHTML, /Rien à tirer/);
 });
+
+test('E2, une tâche datée s’ajoute au calendrier (.ics d’une journée) ; une adresse de sa note devient un lien (TU-MOD-80)', async () => {
+  const saved = [];
+  const app = launch(new Map(), { claude: { use: async ns => ns === 'downloads' ? { save: async f => { saved.push(f); } } : null } });
+  await new Promise(r => setTimeout(r, 0)); // l'artefact prête ses espaces de noms après le démarrage
+  const ch = app.S().modules.chantier;
+  ch.entries = [];
+  app.addTask(ch.entries, { title: 'Nuit de la poésie', due: '2026-10-02', room: 'La Condition publique', note: 'Roubaix\nle vendredi 2 octobre 2026\nhttps://openagenda.com/lille/events/2.' }, 't1', '2026-09-28');
+  app.addTask(ch.entries, { title: 'Sans date', note: 'voir <b>ici</b> : javascript:alert(1) et http://exemple.fr' }, 't2', '2026-09-28');
+  const html = app.taskHTML('chantier', ch.entries[0]);
+  assert.match(html, /data-act="task-ics"/, 'une tâche datée propose « Ajouter à mon calendrier »');
+  assert.doesNotMatch(app.taskHTML('chantier', ch.entries[1]), /data-act="task-ics"/, 'sans date, rien à ajouter');
+  assert.match(html, /<a href="https:\/\/openagenda\.com\/lille\/events\/2" target="_blank" rel="noopener noreferrer">https:\/\/openagenda\.com\/lille\/events\/2<\/a>\./, 'l’adresse devient un lien, sans le point qui la suit');
+  const other = app.taskHTML('chantier', ch.entries[1]);
+  assert.ok(!/<a /.test(other) && other.includes('&lt;b&gt;ici&lt;/b&gt;'), 'ni javascript:, ni http, ni balise : du texte');
+  const el = { dataset: { mod: 'chantier', task: 't1' }, closest(sel) { return sel === '[data-task]' || sel === '[data-mod]' ? this : null; } };
+  app.CLICK['task-ics'](el); await new Promise(r => setTimeout(r, 0));
+  assert.equal(saved.length, 1, 'un fichier est donné');
+  assert.equal(saved[0].filename, 'nuit-de-la-poesie-2026-10-02.ics');
+  const ics = saved[0].data;
+  for (const l of ['UID:t1.chantier@selene', 'DTSTART;VALUE=DATE:20261002', 'DTEND;VALUE=DATE:20261003', 'SUMMARY:Nuit de la poésie', 'LOCATION:La Condition publique', 'URL:https://openagenda.com/lille/events/2'])
+    assert.ok(ics.split('\r\n').includes(l), `ligne attendue : ${l}`);
+  assert.match(ics, /DESCRIPTION:Roubaix\\nle vendredi 2 octobre 2026\\nhttps:/);
+});

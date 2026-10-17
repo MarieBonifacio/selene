@@ -466,7 +466,7 @@ ul.dehors+ul.dehors,h3+ul.dehors{margin-top:0}
 .capture select{flex:0 1 auto;width:auto;max-width:11em}
 .agenda-ev{padding:3px 0}.agenda-ev .when{display:inline-block;min-width:7.5em;font-variant-numeric:tabular-nums;color:var(--muted)}
 .dehors .why{margin:4px 0 0;font-size:.85rem;color:var(--accent)}.cite-bar h4{margin:16px 0 4px;font-size:1rem}.cite-bar>.row{align-items:baseline;flex-wrap:wrap}ul.cite-pairs li,ul.cite-authors li{padding:3px 0}
-@media (max-width:640px){ul.dehors>.item,ul.dehors-cfg>.item,ul.zot-list>.item,ul.cite-list>.item,.col-list>.item{grid-template-columns:auto minmax(0,1fr)}ul.dehors>.item>.row,ul.dehors-cfg>.item>.row,ul.zot-list>.item>.row,ul.cite-list>.item>.row,.col-list>.item>.row{grid-column:2;justify-content:flex-start;max-width:none}
+@media (max-width:640px){ul.dehors>.item,ul.dehors-cfg>.item,ul.zot-list>.item,ul.cite-list>.item,.col-list>.item,ul.radar>.item{grid-template-columns:auto minmax(0,1fr)}ul.dehors>.item>.row,ul.dehors-cfg>.item>.row,ul.zot-list>.item>.row,ul.cite-list>.item>.row,.col-list>.item>.row,ul.radar>.item>.row{grid-column:2;justify-content:flex-start;max-width:none}
   .capture.capture-wrap{flex-wrap:wrap}.capture.capture-wrap input{flex:1 1 100%}}
 .meta .acts{margin-left:auto;display:inline-flex;gap:2px}.meta .acts .btn{padding:0 6px;font-size:.8rem}
 .marg .links{display:flex;flex-direction:column;gap:2px}
@@ -734,7 +734,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "22501d4e9d";
+const SELENE_BUILD = "8c7c192736";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1382,6 +1382,7 @@ var __selene = (() => {
     highlight: () => highlight,
     hm: () => hm,
     icsBetween: () => icsBetween,
+    icsEvent: () => icsEvent,
     icsParse: () => icsParse,
     idOf: () => idOf,
     igDay: () => igDay,
@@ -1627,6 +1628,7 @@ var __selene = (() => {
     summaryFor: () => summaryFor,
     sunPosition: () => sunPosition,
     taskFilters: () => taskFilters,
+    taskForm: () => taskForm,
     taskHTML: () => taskHTML,
     taskModules: () => taskModules,
     tensionSection: () => tensionSection,
@@ -2110,6 +2112,11 @@ var __selene = (() => {
     "du {0} au {1}": "from {0} to {1}",
     "Rien qui te ressemble, cette fois. La ville continuera sans toi, elle a l'habitude.": "Nothing that looks like you, this time. The city will carry on without you; it's used to it.",
     "gardé": "kept",
+    "le {0}": "on {0}",
+    "sortie prévue": "outing planned",
+    "en faire une sortie": "plan an outing",
+    "En faire une sortie": "Plan an outing",
+    "Dans quel espace": "In which space",
     "{0} autre correspond aussi : des mots plus précis choisiraient mieux.": { one: "{0} other also matches: more precise words would choose better.", other: "{0} others also match: more precise words would choose better." },
     "Aucune boîte de réception où le garder. Crée un Carnet et fais-en ta boîte (Réglages).": "No inbox to keep it in. Create a Notebook and make it your inbox (Settings).",
     "Gardé dans {0}.": "Kept in {0}.",
@@ -2921,6 +2928,7 @@ var __selene = (() => {
     "La balle est dans un autre camp. Elles reviennent sur l'accueil le jour de la relance.": "The ball is in someone else's court. They come back on the home page on the chase date.",
     "relancé": "chased",
     "réponse reçue": "reply received",
+    "Ajouter à mon calendrier": "Add to my calendar",
     "{0} en attente": "{0} waiting",
     "« {0} » : à relancer ({1})": "“{0}”: chase it ({1})",
     "Relancé. Prochaine relance le {0}.": "Chased. Next chase on {0}.",
@@ -6280,6 +6288,161 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     return JSON.stringify({ format: "selene-v1", exportedAt, board: boardData, site: siteData }, null, 2);
   }
 
+  // src/core/agenda.js
+  var ICS_DAYS = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
+  function zoned(y, mo, d, h, mi, s, tz) {
+    let t = Date.UTC(y, mo - 1, d, h, mi, s);
+    if (!tz) return t;
+    try {
+      const f = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      for (let i = 0; i < 2; i++) {
+        const p = Object.fromEntries(f.formatToParts(new Date(t)).map((x) => [x.type, +x.value]));
+        t -= Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Date.UTC(y, mo - 1, d, h, mi, s);
+      }
+    } catch {
+    }
+    return t;
+  }
+  function icsTime(v, params) {
+    const m = String(v || "").trim().match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z?))?$/);
+    if (!m) return null;
+    const [, y, mo, d, h, mi, s, z] = m;
+    if (h == null) return { t: new Date(+y, +mo - 1, +d).getTime(), allDay: true };
+    if (z) return { t: Date.UTC(+y, +mo - 1, +d, +h, +mi, +s), allDay: false };
+    const tz = (params.match(/TZID=("?)([^;:"]+)\1/) || [])[2];
+    return { t: tz ? zoned(+y, +mo, +d, +h, +mi, +s, tz) : new Date(+y, +mo - 1, +d, +h, +mi, +s).getTime(), allDay: false };
+  }
+  var icsUnescape = (s) => String(s || "").replace(/\\n/gi, " ").replace(/\\([,;\\])/g, "$1").replace(/\s+/g, " ").trim();
+  function icsParse(text) {
+    const lines = String(text || "").replace(/\r\n?/g, "\n").replace(/\n[ \t]/g, "").split("\n"), out = [];
+    let ev = null;
+    for (const line of lines) {
+      if (line === "BEGIN:VEVENT") {
+        ev = { exdates: [] };
+        continue;
+      }
+      if (line === "END:VEVENT") {
+        if (ev && ev.start && ev.status !== "CANCELLED") {
+          const end = ev.end ? ev.end.t : ev.start.t + (ev.start.allDay ? 864e5 : 36e5);
+          out.push({ uid: ev.uid || "", summary: ev.summary || "(sans titre)", location: ev.location || "", start: ev.start.t, end: Math.max(end, ev.start.t), allDay: ev.start.allDay, rrule: ev.rrule || "", exdates: ev.exdates, recurrenceId: ev.recurrenceId || null });
+        }
+        ev = null;
+        continue;
+      }
+      if (!ev) continue;
+      const i = line.indexOf(":");
+      if (i < 0) continue;
+      const head = line.slice(0, i), val = line.slice(i + 1), name = head.split(";")[0].toUpperCase(), params = head.slice(name.length);
+      if (name === "SUMMARY") ev.summary = icsUnescape(val).slice(0, 200);
+      else if (name === "LOCATION") ev.location = icsUnescape(val).slice(0, 200);
+      else if (name === "UID") ev.uid = val.trim().slice(0, 300);
+      else if (name === "STATUS") ev.status = val.trim().toUpperCase();
+      else if (name === "DTSTART") ev.start = icsTime(val, params);
+      else if (name === "DTEND") ev.end = icsTime(val, params);
+      else if (name === "RRULE") ev.rrule = val.trim();
+      else if (name === "RECURRENCE-ID") {
+        const r = icsTime(val, params);
+        if (r) ev.recurrenceId = r.t;
+      } else if (name === "EXDATE") for (const x of val.split(",")) {
+        const r = icsTime(x, params);
+        if (r) ev.exdates.push(r.t);
+      }
+    }
+    return out;
+  }
+  var icsEscape = (s) => String(s ?? "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+  var utf8Len = (ch) => {
+    const c = ch.codePointAt(0);
+    return c < 128 ? 1 : c < 2048 ? 2 : c < 65536 ? 3 : 4;
+  };
+  function icsFold(line) {
+    const out = [];
+    let cur = "", n = 0;
+    for (const ch of line) {
+      const b = utf8Len(ch);
+      if (n + b > 75) {
+        out.push(cur);
+        cur = " ";
+        n = 1;
+      }
+      cur += ch;
+      n += b;
+    }
+    out.push(cur);
+    return out.join("\r\n");
+  }
+  var icsDay = (d) => {
+    const t = Date.parse(d + "T12:00:00Z");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d)) || Number.isNaN(t) || new Date(t).toISOString().slice(0, 10) !== d) throw new Error("Date invalide");
+    return d.replace(/-/g, "");
+  };
+  var dayAfter = (d) => new Date(Date.parse(d + "T12:00:00Z") + 864e5).toISOString().slice(0, 10);
+  function icsEvent({ uid: uid2, stamp, start, end, summary, location: location2, url, description }) {
+    const last = end && end >= start ? end : start;
+    const lines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Selene//Selene//FR",
+      "CALSCALE:GREGORIAN",
+      "BEGIN:VEVENT",
+      `UID:${String(uid2).replace(/[\r\n]/g, "")}`,
+      `DTSTAMP:${new Date(stamp).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")}`,
+      `DTSTART;VALUE=DATE:${icsDay(start)}`,
+      `DTEND;VALUE=DATE:${icsDay(dayAfter(last))}`,
+      `SUMMARY:${icsEscape(summary)}`,
+      location2 ? `LOCATION:${icsEscape(location2)}` : "",
+      /^https:\/\/[^\s]+$/.test(url || "") ? `URL:${url}` : "",
+      description ? `DESCRIPTION:${icsEscape(description)}` : "",
+      "END:VEVENT",
+      "END:VCALENDAR"
+    ].filter(Boolean);
+    return lines.map(icsFold).join("\r\n") + "\r\n";
+  }
+  function icsExpand(e, from, to) {
+    const len = e.end - e.start, out = [];
+    if (!e.rrule) return e.end > from && e.start < to ? [{ ...e }] : [];
+    const r = Object.fromEntries(e.rrule.split(";").map((x) => x.split("=")).map(([k, v]) => [String(k).toUpperCase(), v || ""]));
+    const freq = r.FREQ, every = Math.max(1, +r.INTERVAL || 1), count = +r.COUNT || 0, until = r.UNTIL ? (icsTime(r.UNTIL, "") || {}).t : null;
+    const byday = (r.BYDAY || "").split(",").map((x) => ICS_DAYS[x.replace(/^[+-]?\d+/, "")]).filter((x) => x != null);
+    if (!["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].includes(freq)) return e.end > from && e.start < to ? [{ ...e }] : [];
+    const s0 = new Date(e.start), wall = (y, m, d) => new Date(y, m, d, s0.getHours(), s0.getMinutes(), s0.getSeconds()).getTime();
+    const ex = new Set(e.exdates);
+    let n = 0;
+    for (let i = 0; i < 800; i++) {
+      let cands;
+      if (freq === "DAILY") cands = [wall(s0.getFullYear(), s0.getMonth(), s0.getDate() + i * every)];
+      else if (freq === "WEEKLY") {
+        const monday = s0.getDate() - (s0.getDay() + 6) % 7 + i * 7 * every, days = byday.length ? byday : [s0.getDay()];
+        cands = days.map((d) => wall(s0.getFullYear(), s0.getMonth(), monday + (d + 6) % 7)).sort((a, b) => a - b);
+      } else if (freq === "MONTHLY") {
+        const t = new Date(s0.getFullYear(), s0.getMonth() + i * every, 1);
+        cands = t.getMonth() === new Date(s0.getFullYear(), s0.getMonth() + i * every, s0.getDate()).getMonth() ? [wall(t.getFullYear(), t.getMonth(), s0.getDate())] : [];
+      } else {
+        const y = s0.getFullYear() + i * every;
+        cands = new Date(y, s0.getMonth(), s0.getDate()).getMonth() === s0.getMonth() ? [wall(y, s0.getMonth(), s0.getDate())] : [];
+      }
+      for (const t of cands) {
+        if (t < e.start) continue;
+        if (until != null && t > until || count && n >= count || t >= to) return out;
+        n++;
+        if (!ex.has(t) && t + len > from) out.push({ ...e, start: t, end: t + len });
+      }
+    }
+    return out;
+  }
+  function icsBetween(events, from, to) {
+    const moved = new Set(events.filter((e) => e.recurrenceId != null).map((e) => `${e.uid}|${e.recurrenceId}`));
+    const all = [];
+    for (const e of events) {
+      if (e.recurrenceId != null) {
+        if (e.end > from && e.start < to) all.push({ ...e });
+        continue;
+      }
+      for (const o of icsExpand(e, from, to)) if (!moved.has(`${e.uid}|${o.start}`)) all.push(o);
+    }
+    return all.sort((a, b) => b.allDay - a.allDay || a.start - b.start);
+  }
+
   // src/app/modules/entries.js
   function removeWithUndo(id, list, itemId) {
     const inst = S().modules[id], i = inst[list].findIndex((x) => x.id === itemId);
@@ -6360,113 +6523,6 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     }
     hits.sort((a, b) => (a.from || "9999").localeCompare(b.from || "9999") || a.title.localeCompare(b.title));
     return { items: hits.slice(0, n), total: hits.length };
-  }
-
-  // src/core/agenda.js
-  var ICS_DAYS = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
-  function zoned(y, mo, d, h, mi, s, tz) {
-    let t = Date.UTC(y, mo - 1, d, h, mi, s);
-    if (!tz) return t;
-    try {
-      const f = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      for (let i = 0; i < 2; i++) {
-        const p = Object.fromEntries(f.formatToParts(new Date(t)).map((x) => [x.type, +x.value]));
-        t -= Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Date.UTC(y, mo - 1, d, h, mi, s);
-      }
-    } catch {
-    }
-    return t;
-  }
-  function icsTime(v, params) {
-    const m = String(v || "").trim().match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z?))?$/);
-    if (!m) return null;
-    const [, y, mo, d, h, mi, s, z] = m;
-    if (h == null) return { t: new Date(+y, +mo - 1, +d).getTime(), allDay: true };
-    if (z) return { t: Date.UTC(+y, +mo - 1, +d, +h, +mi, +s), allDay: false };
-    const tz = (params.match(/TZID=("?)([^;:"]+)\1/) || [])[2];
-    return { t: tz ? zoned(+y, +mo, +d, +h, +mi, +s, tz) : new Date(+y, +mo - 1, +d, +h, +mi, +s).getTime(), allDay: false };
-  }
-  var icsUnescape = (s) => String(s || "").replace(/\\n/gi, " ").replace(/\\([,;\\])/g, "$1").replace(/\s+/g, " ").trim();
-  function icsParse(text) {
-    const lines = String(text || "").replace(/\r\n?/g, "\n").replace(/\n[ \t]/g, "").split("\n"), out = [];
-    let ev = null;
-    for (const line of lines) {
-      if (line === "BEGIN:VEVENT") {
-        ev = { exdates: [] };
-        continue;
-      }
-      if (line === "END:VEVENT") {
-        if (ev && ev.start && ev.status !== "CANCELLED") {
-          const end = ev.end ? ev.end.t : ev.start.t + (ev.start.allDay ? 864e5 : 36e5);
-          out.push({ uid: ev.uid || "", summary: ev.summary || "(sans titre)", location: ev.location || "", start: ev.start.t, end: Math.max(end, ev.start.t), allDay: ev.start.allDay, rrule: ev.rrule || "", exdates: ev.exdates, recurrenceId: ev.recurrenceId || null });
-        }
-        ev = null;
-        continue;
-      }
-      if (!ev) continue;
-      const i = line.indexOf(":");
-      if (i < 0) continue;
-      const head = line.slice(0, i), val = line.slice(i + 1), name = head.split(";")[0].toUpperCase(), params = head.slice(name.length);
-      if (name === "SUMMARY") ev.summary = icsUnescape(val).slice(0, 200);
-      else if (name === "LOCATION") ev.location = icsUnescape(val).slice(0, 200);
-      else if (name === "UID") ev.uid = val.trim().slice(0, 300);
-      else if (name === "STATUS") ev.status = val.trim().toUpperCase();
-      else if (name === "DTSTART") ev.start = icsTime(val, params);
-      else if (name === "DTEND") ev.end = icsTime(val, params);
-      else if (name === "RRULE") ev.rrule = val.trim();
-      else if (name === "RECURRENCE-ID") {
-        const r = icsTime(val, params);
-        if (r) ev.recurrenceId = r.t;
-      } else if (name === "EXDATE") for (const x of val.split(",")) {
-        const r = icsTime(x, params);
-        if (r) ev.exdates.push(r.t);
-      }
-    }
-    return out;
-  }
-  function icsExpand(e, from, to) {
-    const len = e.end - e.start, out = [];
-    if (!e.rrule) return e.end > from && e.start < to ? [{ ...e }] : [];
-    const r = Object.fromEntries(e.rrule.split(";").map((x) => x.split("=")).map(([k, v]) => [String(k).toUpperCase(), v || ""]));
-    const freq = r.FREQ, every = Math.max(1, +r.INTERVAL || 1), count = +r.COUNT || 0, until = r.UNTIL ? (icsTime(r.UNTIL, "") || {}).t : null;
-    const byday = (r.BYDAY || "").split(",").map((x) => ICS_DAYS[x.replace(/^[+-]?\d+/, "")]).filter((x) => x != null);
-    if (!["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].includes(freq)) return e.end > from && e.start < to ? [{ ...e }] : [];
-    const s0 = new Date(e.start), wall = (y, m, d) => new Date(y, m, d, s0.getHours(), s0.getMinutes(), s0.getSeconds()).getTime();
-    const ex = new Set(e.exdates);
-    let n = 0;
-    for (let i = 0; i < 800; i++) {
-      let cands;
-      if (freq === "DAILY") cands = [wall(s0.getFullYear(), s0.getMonth(), s0.getDate() + i * every)];
-      else if (freq === "WEEKLY") {
-        const monday = s0.getDate() - (s0.getDay() + 6) % 7 + i * 7 * every, days = byday.length ? byday : [s0.getDay()];
-        cands = days.map((d) => wall(s0.getFullYear(), s0.getMonth(), monday + (d + 6) % 7)).sort((a, b) => a - b);
-      } else if (freq === "MONTHLY") {
-        const t = new Date(s0.getFullYear(), s0.getMonth() + i * every, 1);
-        cands = t.getMonth() === new Date(s0.getFullYear(), s0.getMonth() + i * every, s0.getDate()).getMonth() ? [wall(t.getFullYear(), t.getMonth(), s0.getDate())] : [];
-      } else {
-        const y = s0.getFullYear() + i * every;
-        cands = new Date(y, s0.getMonth(), s0.getDate()).getMonth() === s0.getMonth() ? [wall(y, s0.getMonth(), s0.getDate())] : [];
-      }
-      for (const t of cands) {
-        if (t < e.start) continue;
-        if (until != null && t > until || count && n >= count || t >= to) return out;
-        n++;
-        if (!ex.has(t) && t + len > from) out.push({ ...e, start: t, end: t + len });
-      }
-    }
-    return out;
-  }
-  function icsBetween(events, from, to) {
-    const moved = new Set(events.filter((e) => e.recurrenceId != null).map((e) => `${e.uid}|${e.recurrenceId}`));
-    const all = [];
-    for (const e of events) {
-      if (e.recurrenceId != null) {
-        if (e.end > from && e.start < to) all.push({ ...e });
-        continue;
-      }
-      for (const o of icsExpand(e, from, to)) if (!moved.has(`${e.uid}|${o.start}`)) all.push(o);
-    }
-    return all.sort((a, b) => b.allDay - a.allDay || a.start - b.start);
   }
 
   // src/app/scene/sky.js
@@ -8611,6 +8667,11 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     if (x.to === x.from) return fmt(x.from, { weekday: "long", day: "numeric", month: "long" });
     return tr`du ${dm(x.from)} au ${dm(x.to)}`;
   }
+  function radarSpan(x) {
+    const full = (d) => fmt(d, { day: "numeric", month: "long", year: "numeric" });
+    if (!x.from) return "";
+    return x.to && x.to !== x.from ? tr`du ${fmt(x.from, { day: "numeric", month: "long" })} au ${full(x.to)}` : tr`le ${fmt(x.from, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`;
+  }
   SHEETS.radar = () => {
     const st = radarState, c = radarPlace();
     if (!st) return "";
@@ -8624,7 +8685,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     return head + `<ul class="plain radar">${st.items.map((x) => `<li class="item" data-rid="${esc(x.id)}"><span></span><div><b>${esc(x.title)}</b>
       <div class="meta"><span>${esc(radarWhen(x, today))}</span>${x.place || x.city ? `<span>${esc([x.place, x.city].filter(Boolean).join(", "))}</span>` : ""}${x.on.map((w) => `<span class="tag">${esc(st.said[w] || w)}</span>`).join("")}</div>
       ${x.text ? `<p class="hint" style="margin:4px 0 0">${esc(x.text)}</p>` : ""}</div>
-      <div class="row">${/^https:\/\//.test(x.url) ? `<a class="btn ghost sm" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${tr`voir`}</a>` : ""}${st.kept.has(x.id) ? `<span class="hint">${tr`gardé`}</span>` : `<button class="btn sm" data-act="radar-keep">${tr`garder`}</button>`}</div></li>`).join("")}</ul>` + (st.total > st.items.length ? `<p class="hint">${trn(st.total - st.items.length, "{0} autre correspond aussi : des mots plus précis choisiraient mieux.", "{0} autres correspondent aussi : des mots plus précis choisiraient mieux.")}</p>` : "") + foot;
+      <div class="row">${/^https:\/\//.test(x.url) ? `<a class="btn ghost sm" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${tr`voir`}</a>` : ""}${!taskModules().length ? "" : st.out.has(x.id) ? `<span class="hint">${tr`sortie prévue`}</span>` : `<button class="btn ghost sm" data-act="radar-out">${tr`en faire une sortie`}</button>`}${st.kept.has(x.id) ? `<span class="hint">${tr`gardé`}</span>` : `<button class="btn sm" data-act="radar-keep">${tr`garder`}</button>`}</div></li>`).join("")}</ul>` + (st.total > st.items.length ? `<p class="hint">${trn(st.total - st.items.length, "{0} autre correspond aussi : des mots plus précis choisiraient mieux.", "{0} autres correspondent aussi : des mots plus précis choisiraient mieux.")}</p>` : "") + foot;
   };
   CLICK["radar-open"] = async () => {
     const c = radarPlace(), words2 = radarWords(radarConf().words);
@@ -8634,7 +8695,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
       const t = w.trim();
       if (t.length > 1 && !said2[radarFold(t)]) said2[radarFold(t)] = t;
     }
-    radarState = { busy: true, err: "", items: [], total: 0, words: words2, said: said2, kept: /* @__PURE__ */ new Set() };
+    radarState = { busy: true, err: "", items: [], total: 0, words: words2, said: said2, kept: /* @__PURE__ */ new Set(), out: /* @__PURE__ */ new Set() };
     if ($("#sheet").open && sheetKind === "radar") $("#sheetBody").innerHTML = SHEETS.radar();
     else openSheet("radar");
     let events = null, err = "";
@@ -8658,6 +8719,24 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     render();
     $("#sheetBody").innerHTML = SHEETS.radar();
     toast(tr`Gardé dans ${label(box)}.`);
+  };
+  CLICK["radar-out"] = (el) => {
+    const st = radarState, x = st && st.items.find((i) => i.id === el.closest("[data-rid]").dataset.rid), mods = taskModules();
+    if (!x || !mods.length) return;
+    const make = (id) => {
+      const inst = S().modules[id];
+      if (!inst || inst.type !== "taches") return;
+      const today = todayISO(), due = x.from && x.from >= today ? x.from : x.to && x.to >= today ? x.to : x.from || null;
+      const cat = inst.config.cats.find((k) => /sortie|culture|loisir/.test(radarFold(k))) || inst.config.cats[0];
+      const t = addTask(inst.entries, { title: x.title.slice(0, 140), due, room: x.place, cat, note: [x.city, radarSpan(x), x.url].filter(Boolean).join("\n") }, uid(), today);
+      st.out.add(x.id);
+      site.save();
+      render();
+      if ($("#sheet").open && sheetKind === "radar") $("#sheetBody").innerHTML = SHEETS.radar();
+      taskForm(id, t);
+    };
+    if (mods.length === 1) return make(mods[0]);
+    openForm(tr`En faire une sortie`, [{ n: "mod", l: tr`Dans quel espace`, t: "select", o: mods.map((m) => [m, label(m)]) }], { mod: mods[0] }, (v) => make(v.mod));
   };
   function radarSettingsHTML() {
     const c = radarPlace();
@@ -10220,6 +10299,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     const when = esc(rain.map(day).join(", "));
     return `<span class="wx rain" ${tip2}>${t.due && rain.includes(t.due) ? tr`pluie prévue ${when}, le jour prévu` : tr`pluie prévue ${when}`}</span>`;
   }
+  var URL_RE = /(https:\/\/[^\s<>"']*[^\s<>"'.,;:!?)])/;
+  var noteHTML = (s) => String(s).split(URL_RE).map((x, i) => i % 2 ? `<a href="${esc(x)}" target="_blank" rel="noopener noreferrer">${esc(x)}</a>` : esc(x)).join("");
   function taskHTML(id, t) {
     const c = S().modules[id].config, d = dueLabel(t), sd = (t.steps || []).filter((x) => x.d).length, ef = Math.min(3, Math.max(1, Math.round(+t.effort) || 1));
     return `<li class="item ${t.done ? "done" : ""} ${openId === t.id ? "open" : ""}" data-task="${esc(t.id)}" data-mod="${esc(id)}">
@@ -10229,8 +10310,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     <button class="star ${t.today ? "on" : ""}" data-act="task-today" title="${tr`Faire aujourd'hui`}" aria-label="${tr`Faire aujourd'hui`}" aria-pressed="${t.today ? "true" : "false"}">★</button>
     <div class="details">
       ${(t.steps || []).length ? `<ul class="steps">${t.steps.map((x, i) => `<li><input type="checkbox" data-act="task-step" data-i="${i}" ${x.d ? "checked" : ""} id="s${esc(t.id)}-${i}"><label for="s${esc(t.id)}-${i}" style="font-weight:400;display:inline">${esc(x.t)}</label></li>`).join("")}</ul>` : ""}
-      ${t.note ? `<p class="note">${esc(t.note)}</p>` : ""}${t.origin ? `<p class="meta">${originHTML(t, t.title)}</p>` : ""}
-      <div class="row"><button class="btn ghost sm" data-act="task-edit">${tr`Modifier`}</button>${t.done || t.wait ? "" : `<button class="btn ghost sm" data-act="task-wait">${tr`J'attends une réponse`}</button>`}<button class="btn ghost sm" data-act="task-del">${tr`Supprimer`}</button></div>
+      ${t.note ? `<p class="note">${noteHTML(t.note)}</p>` : ""}${t.origin ? `<p class="meta">${originHTML(t, t.title)}</p>` : ""}
+      <div class="row"><button class="btn ghost sm" data-act="task-edit">${tr`Modifier`}</button>${t.done || t.wait ? "" : `<button class="btn ghost sm" data-act="task-wait">${tr`J'attends une réponse`}</button>`}${t.due && !t.done ? `<button class="btn ghost sm" data-act="task-ics">${tr`Ajouter à mon calendrier`}</button>` : ""}<button class="btn ghost sm" data-act="task-del">${tr`Supprimer`}</button></div>
     </div></li>`;
   }
   function taskForm(id, t) {
@@ -10406,6 +10487,21 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
       },
       "task-new": (el) => taskForm(modOf(el), null),
       "task-wait": (el) => waitForm(taskMod(el), taskOf(el)),
+      // Un fichier .ics d'une journée, que la personne ouvre dans son agenda : aucun compte, aucune API (E2).
+      "task-ics": (el) => {
+        const id = taskMod(el), t = taskOf(el);
+        if (!t || !t.due) return;
+        const name = fold(t.title).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "selene";
+        downloadFile(`${name}-${t.due}.ics`, icsEvent({
+          uid: `${t.id}.${id}@selene`,
+          stamp: Date.now(),
+          start: t.due,
+          summary: t.title,
+          location: t.room,
+          url: (String(t.note || "").match(URL_RE) || [])[1] || "",
+          description: t.note
+        }), "text/calendar", t.title);
+      },
       "task-relaunch": (el) => {
         const t = taskOf(el);
         if (!t || !t.wait) return;

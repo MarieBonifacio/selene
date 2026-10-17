@@ -1,9 +1,11 @@
 /* Type « tâches » : échéances, lieux, étapes, coûts ; « Aujourd'hui » plafonné à trois, tous modules confondus ;
    tirage au sort ; « j'attends une réponse » (une tâche dont la suite dépend de quelqu'un d'autre). */
 import { RELAUNCH_DAYS, addBudgetEntry, addTask, clearTaskWaiting, relaunchTask, setTaskDone, setTaskToday, setTaskWaiting } from "../../core/domain.js";
+import { icsEvent } from "../../core/agenda.js";
 import { rainDays } from "../../core/sky.js";
 import { registerType } from "../registry.js";
 import { $, esc, paged, toast, toastAction, toastUndo } from "../lib/dom.js";
+import { downloadFile } from "../lib/download.js";
 import { addDaysTo, diffDays, fmt, money, todayISO, uid } from "../lib/format.js";
 import { N_, collate, tr, trn } from "../i18n/index.js";
 import { firstOfType } from "../features/assistant.js";
@@ -59,6 +61,9 @@ function outdoorRain(c, t) {
   const when = esc(rain.map(day).join(", "));
   return `<span class="wx rain" ${tip}>${t.due && rain.includes(t.due) ? tr`pluie prévue ${when}, le jour prévu` : tr`pluie prévue ${when}`}</span>`;
 }
+/* Une note de tâche : ses adresses https deviennent des liens (une sortie venue du radar garde celui de l'événement). */
+const URL_RE = /(https:\/\/[^\s<>"']*[^\s<>"'.,;:!?)])/;
+const noteHTML = s => String(s).split(URL_RE).map((x, i) => i % 2 ? `<a href="${esc(x)}" target="_blank" rel="noopener noreferrer">${esc(x)}</a>` : esc(x)).join("");
 export function taskHTML(id, t) {
   const c = S().modules[id].config, d = dueLabel(t), sd = (t.steps || []).filter(x => x.d).length, ef = Math.min(3, Math.max(1, Math.round(+t.effort) || 1));
   return `<li class="item ${t.done ? "done" : ""} ${openId === t.id ? "open" : ""}" data-task="${esc(t.id)}" data-mod="${esc(id)}">
@@ -68,11 +73,11 @@ export function taskHTML(id, t) {
     <button class="star ${t.today ? "on" : ""}" data-act="task-today" title="${tr`Faire aujourd'hui`}" aria-label="${tr`Faire aujourd'hui`}" aria-pressed="${t.today ? "true" : "false"}">★</button>
     <div class="details">
       ${(t.steps || []).length ? `<ul class="steps">${t.steps.map((x, i) => `<li><input type="checkbox" data-act="task-step" data-i="${i}" ${x.d ? "checked" : ""} id="s${esc(t.id)}-${i}"><label for="s${esc(t.id)}-${i}" style="font-weight:400;display:inline">${esc(x.t)}</label></li>`).join("")}</ul>` : ""}
-      ${t.note ? `<p class="note">${esc(t.note)}</p>` : ""}${t.origin ? `<p class="meta">${originHTML(t, t.title)}</p>` : ""}
-      <div class="row"><button class="btn ghost sm" data-act="task-edit">${tr`Modifier`}</button>${t.done || t.wait ? "" : `<button class="btn ghost sm" data-act="task-wait">${tr`J'attends une réponse`}</button>`}<button class="btn ghost sm" data-act="task-del">${tr`Supprimer`}</button></div>
+      ${t.note ? `<p class="note">${noteHTML(t.note)}</p>` : ""}${t.origin ? `<p class="meta">${originHTML(t, t.title)}</p>` : ""}
+      <div class="row"><button class="btn ghost sm" data-act="task-edit">${tr`Modifier`}</button>${t.done || t.wait ? "" : `<button class="btn ghost sm" data-act="task-wait">${tr`J'attends une réponse`}</button>`}${t.due && !t.done ? `<button class="btn ghost sm" data-act="task-ics">${tr`Ajouter à mon calendrier`}</button>` : ""}<button class="btn ghost sm" data-act="task-del">${tr`Supprimer`}</button></div>
     </div></li>`;
 }
-function taskForm(id, t) {
+export function taskForm(id, t) {
   const c = S().modules[id].config;
   $("#roomList").innerHTML = roomsOf(id).map(r => `<option value="${esc(r)}">`).join("");
   openForm(t ? tr`Modifier la tâche` : tr`Nouvelle tâche`, [
@@ -194,6 +199,13 @@ registerType("taches", {
     "task-undo": el => { setTaskDone(S().modules[taskMod(el)].entries, taskOf(el).id, false, todayISO()); site.save(); render(); },
     "task-new": el => taskForm(modOf(el), null),
     "task-wait": el => waitForm(taskMod(el), taskOf(el)),
+    // Un fichier .ics d'une journée, que la personne ouvre dans son agenda : aucun compte, aucune API (E2).
+    "task-ics": el => {
+      const id = taskMod(el), t = taskOf(el); if (!t || !t.due) return;
+      const name = fold(t.title).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "selene";
+      downloadFile(`${name}-${t.due}.ics`, icsEvent({ uid: `${t.id}.${id}@selene`, stamp: Date.now(), start: t.due, summary: t.title, location: t.room,
+        url: (String(t.note || "").match(URL_RE) || [])[1] || "", description: t.note }), "text/calendar", t.title);
+    },
     "task-relaunch": el => {
       const t = taskOf(el); if (!t || !t.wait) return;
       const before = keepWait(t); relaunchTask(S().modules[taskMod(el)].entries, t.id, todayISO()); site.save(); render();

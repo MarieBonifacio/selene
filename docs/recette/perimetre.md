@@ -92,7 +92,8 @@ pendant un mois, à juger fin octobre 2026, [evolution-ui.md](../evolution-ui.md
 Toutes **disponibles** dans les cibles hébergées et absentes de l'artefact, sauf mention : Sources (Crossref, Microlink, ou
 le passeur), Musique (MusicBrainz, Cover Art Archive), ciel et météo (Open-Meteo ; étoiles filantes et éclipses en table
 fixe jusqu'en 2030, sans réseau), pluie sur les tâches, radar culturel (OpenAgenda, par le passeur quand la lecture directe
-est refusée), import Instagram (sur l'appareil, aussi dans l'artefact), passeur, Dehors, Artist Watch, veille de recherche
+est refusée ; « en faire une sortie » vers une tâche datée, et toute tâche datée en fichier `.ics`, sur l'appareil, depuis le
+17 octobre 2026), import Instagram (sur l'appareil, aussi dans l'artefact), passeur, Dehors, Artist Watch, veille de recherche
 (OpenAlex), « ce que tes sources ont en commun », calendrier iCal, Zotero en lecture seule, « Envoyer à Selene » (partage
 Android, favori, Raccourci iOS, liens `selene://`). Depuis `89d1ba0` : l'**export des sources en BibTeX et en CSL-JSON** (sur l'appareil, sans service). Depuis
 `14e1961` : dans les apps, « Ma position » ne demande que la **position approximative**. Depuis `a5929fc` : dans les apps,
