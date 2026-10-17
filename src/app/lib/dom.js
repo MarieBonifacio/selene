@@ -52,9 +52,10 @@ try {
    quand on change de vue : une liste de milliers de fragments se calcule vite mais se parcourt mal au pouce. Le reste
    s'écrit comme les autres nombres de l'app, à la façon de la langue : « 1 406 de plus », pas « 1406 » (A54). */
 export const PAGE = 100, pageSize = {};
-export function paged(key, list) {
-  const n = pageSize[key] || PAGE, rest = list.length - n;
-  return { items: list.slice(0, n), more: rest > 0 ? `<li class="more-row"><button class="btn ghost sm" data-act="page-more" data-k="${esc(key)}">${tr`Voir les ${Math.min(PAGE, rest)} suivants (${rest.toLocaleString(uiLocale())} de plus)`}</button></li>` : "" };
+// `first` : une première page plus courte, pour un historique qu'on ne veut pas voir en entier d'un coup.
+export function paged(key, list, first = PAGE) {
+  const n = pageSize[key] || first, rest = list.length - n;
+  return { items: list.slice(0, n), more: rest > 0 ? `<li class="more-row"><button class="btn ghost sm" data-act="page-more" data-k="${esc(key)}" data-n="${n}">${tr`Voir les ${Math.min(PAGE, rest)} suivants (${rest.toLocaleString(uiLocale())} de plus)`}</button></li>` : "" };
 }
 export function setSaving(t) { $("#saving").textContent = t; }
 CLICK["undo"] = () => { const f = undoFn; undoFn = null; $("#toast").classList.remove("show", "act"); if (f) f(); };

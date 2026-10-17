@@ -647,20 +647,22 @@ Identifiants retirés : aucun.
 <a id="mod-025"></a>
 ### MOD-025 — Longues listes : cent, puis « Voir les suivants »
 
-- **Fonctionnalité et règle** : fragments, notes, collections : cent éléments, du plus récent, puis « Voir les 100 suivants
-  (N de plus) ».
+- **Fonctionnalité et règle** : fragments, notes, collections, sessions : cent éléments, du plus récent, puis « Voir les 100 suivants
+  (N de plus) » ; les historiques courts (tâches faites, journal des Rappels, séances d'un Programme) : 8, 20 ou 12, puis
+  la suite de même.
 - **Objectif, risque vérifié** : liste interminable qui fige le téléphone ; éléments anciens inaccessibles.
 - **Priorité** : P3 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu de volume importé ([donnees/README.md](../donnees/README.md#volume)).
 - **Données** : la boîte (1 506 notes : les 1 500 du jeu de volume et les 6 du jeu d'essai) ou Écriture (4 006 fragments).
-- **Automatisés associés** : `TU-MOD-54`, `TN-navigation`, `TN-notes`
-- **Source** : [DOC] README, « Longues listes » ; [TEST] `TU-MOD-54`.
+- **Automatisés associés** : `TU-MOD-54`, `TU-MOD-74`, `TN-navigation`, `TN-notes`
+- **Source** : [DOC] README, « Longues listes » ; [TEST] `TU-MOD-54`, `TU-MOD-74`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Ouvrir la boîte. | Cent notes, puis « Voir les 100 suivants (1 406 de plus) ». |
 | 2 | Cliquer le bouton. | Deux cents notes ; le bouton se met à jour. |
-| 3 | Mesurer à l'œil le temps d'ouverture de la boîte sur téléphone. | Moins de deux secondes (repère indicatif, voir TRV-007). |
+| 3 | Ouvrir Chantier (« Fait récemment »), Plantes (« Journal ») et Yoga (« Journal ») après plus de 8, 20 et 12 entrées. | Huit tâches faites, vingt lignes, douze séances, puis « Voir les N suivants » ; tout se déroule, rien ne reste hors d'atteinte. |
+| 4 | Mesurer à l'œil le temps d'ouverture de la boîte sur téléphone. | Moins de deux secondes (repère indicatif, voir TRV-007). |
 
 - **État final attendu** : inchangé.
 - **Nettoyage** : réimporter le jeu d'essai.

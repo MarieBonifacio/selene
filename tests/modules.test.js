@@ -1501,3 +1501,23 @@ test('les sessions d’un compteur se lisent et se corrigent : une faute de frap
   app.CLICK.undo();
   assert.equal(app.totalOf(e), 50500, '« Annuler » la rend');
 });
+
+test('les historiques ne s’arrêtent plus : tâches faites, journal des Rappels et séances d’un Programme se déroulent', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), T = app.TYPE_UI, day = i => `2026-0${1 + Math.floor(i / 28)}-${String(1 + (i % 28)).padStart(2, '0')}`;
+  d.modules.chantier.entries = Array.from({ length: 12 }, (_, i) => ({ id: `t${i}`, title: `Tâche ${i}`, room: '', cat: 'Général', due: null, effort: 1, cost: 0, note: '', today: false, done: true, doneAt: day(i), created: day(i), steps: [] }));
+  d.modules.phidippus.entries = Array.from({ length: 25 }, (_, i) => ({ id: `r${i}`, date: day(i), type: 'note', note: `obs ${i}` }));
+  d.modules.kundalini.config.start = '2026-01-05';
+  d.modules.kundalini.entries = Array.from({ length: 15 }, (_, i) => ({ id: `k${i}`, date: day(i), value: 20 }));
+  const count = (html, re) => (html.match(re) || []).length;
+  for (const [mod, re, first, rest] of [['chantier', /data-task="t\d+"/g, 8, 4], ['phidippus', /data-id="r\d+"/g, 20, 5], ['kundalini', /data-id="k\d+"/g, 12, 3]]) {
+    const ui = T[d.modules[mod].type];
+    let html = ui.view(mod);
+    assert.equal(count(html, re), first, `${mod} : la première page reste courte`);
+    const more = html.match(/data-act="page-more" data-k="([^"]+)" data-n="(\d+)"/);
+    assert.ok(more && html.includes(`Voir les ${rest} suivants`), `${mod} : « Voir les ${rest} suivants »`);
+    app.CLICK['page-more']({ dataset: { k: more[1], n: more[2] } });
+    html = ui.view(mod);
+    assert.equal(count(html, re), first + rest, `${mod} : tout se déroule`);
+  }
+});
