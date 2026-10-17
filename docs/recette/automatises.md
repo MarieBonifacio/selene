@@ -10,8 +10,8 @@ Identifiants retirés : aucun.
 
 | Suite | Commande | Contenu | En CI | Exécution du 4 octobre 2026 (conteneur Linux, Node 22, Playwright 1.56.1) |
 |---|---|---|---|---|
-| Tests unitaires et d'intégration Node | `npm test` | 354 tests, 33 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
-| Scénarios de navigateur | `npm run test:browser` | 85 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent et au processeur ralenti | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
+| Tests unitaires et d'intégration Node | `npm test` | 356 tests, 33 fichiers `tests/*.test.js` | oui : *Check › build-and-test*, à chaque PR et avant chaque déploiement | **268 réussis** sur `768eb34` (12,4 s) ; **277 réussis** sur `1ca8c4f` fusionné ; 0 échec, 0 ignoré |
+| Scénarios de navigateur | `npm run test:browser` | 86 scénarios `tests/browser/*.js` (73 au commit `768eb34`, environ 1 034 appels de vérification dans le code à cette date) | oui : *Check › browser*, Chromium, WebKit et Firefox (non bloquant jusqu'au 20 octobre 2026), plus Chromium au démarrage lent et au processeur ralenti | Chromium : **73 verts, 1 067 vérifications** sur `768eb34`, **1 071** sur `1ca8c4f` fusionné ; WebKit : non exécuté (navigateur absent) |
 | Fonctions serveur (Deno) | `npm run test:functions` | 16 tests, 4 fichiers, plus le typage | oui : *Check › passeur* ; et avant chaque déploiement de fonction | **16 réussis**, typage vert |
 | Cœur Rust de l'app Windows | `cargo test --locked` dans `native/tauri` | 3 tests | oui : *Desktop* (Windows), si la PR touche `src/` ou `native/tauri/` | **non exécuté** (`webkit2gtk-4.1` absent) ; vert en CI sur `768eb34` |
 | Contrôles statiques | `build:check`, `test:syntax`, `lint`, `i18n` | voir `TS-*` | oui : *Check › build-and-test* | **tous verts** ; 1 696 textes traduits sur 1 696 |
@@ -292,13 +292,14 @@ sans navigateur.
 
 - **Niveau** : Unitaire pur (U). **Sujet** : `src/core/domain.js`.
 - **Simulé** : Rien.
-- **Limites** : Trois règles seulement (tâches, attente d'une réponse, budget et capture) ; le reste du domaine est couvert par `modules.test.js`.
+- **Limites** : Quatre règles seulement (tâches, attente d'une réponse, abandon, budget et capture) ; le reste du domaine est couvert par `modules.test.js`.
 
 | Identifiant | Nom exact du test | Ce qui est vérifié | Cas manuels |
 |---|---|---|---|
 | <a id="tu-dom-01"></a>`TU-DOM-01` | task rules are shared by the UI and assistant | Titre vide refusé, titre nettoyé ; quatrième tâche du jour refusée ; une tâche faite quitte l'étoile et porte sa date ; la défaire efface la date ; tâche inconnue refusée. | [MOD-002](manuels/types-de-module.md#mod-002) |
 | <a id="tu-dom-02"></a>`TU-DOM-02` | budget and capture reject invalid input without changing collections | Montants 0, −1, Infinity, « hello » et date du 30 février refusés sans rien ajouter ; capture vide refusée ; valeurs valides gardées, texte nettoyé. | [MOD-005](manuels/types-de-module.md#mod-005) |
 | <a id="tu-dom-03"></a>`TU-DOM-03` | attendre une réponse : depuis quand, de qui, quand relancer ; relancer reporte et se consigne ; la réponse lève l’attente (TU-DOM-03) | Mise en attente : depuis quand, qui (nettoyé, 80 caractères au plus), date de relance (invalide : laissée vide) ; la tâche quitte l'étoile du jour ; redire l'attente ne change pas « depuis » ; relancer reporte de quatorze jours et consigne la relance ; la réponse lève l'attente sans finir la tâche ; faite, l'attente tombe ; une tâche faite ne se met pas en attente, une tâche qui n'attend pas ne se relance pas ; une attente mal formée (tableau, texte, dates impossibles, qui trop long, relance sans date) refusée à l'import. | [MOD-027](manuels/types-de-module.md#mod-027) |
+| <a id="tu-dom-04"></a>`TU-DOM-04` | abandonner une tâche : gardée, datée, motif facultatif ; ni ouverte ni faite ; reprise ou faite, l’abandon tombe (TU-DOM-04) | Abandonner date la tâche, garde le motif (nettoyé, 200 caractères au plus, facultatif), la retire de l'étoile du jour et d'une attente ; elle n'est ni ouverte ni faite ; l'étoile et l'attente la refusent ; reprise, elle est ouverte ; faite malgré tout, l'abandon tombe ; une tâche faite ne s'abandonne pas ; un abandon mal formé refusé à l'import. | [MOD-028](manuels/types-de-module.md#mod-028) |
 
 ### Édition des stores — `tests/edition.test.js`
 
@@ -494,6 +495,7 @@ sans navigateur.
 | <a id="tu-mod-78"></a>`TU-MOD-78` | le mode Sources et les fragments d’un compteur s’activent aussi dans « régler », pas seulement par le modèle | Une collection et un compteur créés depuis leurs types vides : « régler » offre la case « Sources » et la case « Un carnet de fragments » ; cochées, `sources` et `scraps` passent à vrai, la liste des fragments existe, « Nom du carnet » paraît, et la Boîte propose de ranger vers le compteur. Échoue tant que ces modes ne viennent que des modèles. | [ESP-008](manuels/espaces.md#esp-008) |
 | <a id="tu-mod-79"></a>`TU-MOD-79` | E1, j’attends une réponse : une tâche en attente sort des échéances, revient le jour de la relance, se relance ou se lève | Une tâche propose « J'attends une réponse » ; le formulaire rempli (CAF, le 15) la met en attente, avec « Annuler » ; la vue la montre sous « En attente » (« chez CAF · relancer le 15 oct. »), plus dans les échéances ; la ligne de l'accueil dit « 1 en attente » ; aucune alerte le 14, une le 15 (« « Dossier CAF » : à relancer », boutons « relancé » et « réponse reçue ») ; « relancé » consigne et reporte, « Annuler » le défait ; « réponse reçue » lève l'attente et la section, « Annuler » la rend ; le tirage au sort ne tire pas une attente. | [MOD-027](manuels/types-de-module.md#mod-027) |
 | <a id="tu-mod-80"></a>`TU-MOD-80` | E2, une tâche datée s’ajoute au calendrier (.ics d’une journée) ; une adresse de sa note devient un lien (TU-MOD-80) | Une tâche datée propose « Ajouter à mon calendrier », une tâche sans date non ; l'adresse https de la note devient un lien (à part, `noopener`), sans le point qui la suit ; `javascript:`, une adresse http et une balise restent du texte ; le clic donne `nuit-de-la-poesie-2026-10-02.ics` : UID de la tâche, la journée, le titre, le lieu, le lien, la note en description. | [EXT-010](manuels/connexions.md#ext-010) |
+| <a id="tu-mod-81"></a>`TU-MOD-81` | abandonner une tâche : gardée sous « Abandonnées », hors des listes, du tirage, du budget et du résumé ; reprise ; Bilan (TU-MOD-81) | Une tâche ouverte propose « Abandonner » ; le formulaire rempli la garde sous « Abandonnées », avec son motif, avec « Annuler » ; elle quitte « Aujourd'hui », les échéances, le résumé du matin et le budget à venir ; « 0 à faire, 100 % fait » (elle sort du pourcentage) ; le Bilan dit « 1 tâche terminée, …, 1 abandonnée » ; « Annuler » la rend, étoile comprise ; « reprendre » la rouvre ; le tirage au sort ne la tire pas. | [MOD-028](manuels/types-de-module.md#mod-028) |
 
 ### Notes Markdown (Obsidian, Zettlr) — `tests/markdown.test.js`
 
@@ -971,6 +973,14 @@ publique) ; écran : T téléphone, O ordinateur.
 - **Conditions** : Programme commencé.
 - **Vérifie** : palier et critère affichés, rien de coché ; cocher ne fait pas avancer ; passer au palier : message, date, historique ; décision préremplie, rien d'enregistré avant validation ; suppression confirmée ; pas de débordement ; sur le jeu d'essai, Yoga : « Souffle », « 0 sur 2 critères coché. Coché ou non, rien ne fait avancer le palier à ta place. » ; les deux cochés, « 2 sur 2 critères cochés. Tous cochés. Le passage reste ton choix, pas une formalité automatique. », sans passage ; rechargé, toujours cochés ; « Passer au palier suivant » daté du jour, le formulaire « Noter la décision : « Souffle » » au titre prérempli « Palier « Souffle » atteint (Yoga) », sans bulle (C17) ; « Annuler » n'ajoute aucune décision (MOD-008). Mutation vérifiée : l'une ou l'autre phrase changée, et son contrôle échoue.
 - **Cas manuels** : [MOD-008](manuels/types-de-module.md#mod-008)
+
+<a id="tn-abandon"></a>
+#### `TN-abandon` — Abandonner une tâche
+
+- **Fichier** : [`tests/browser/abandon.js`](../../tests/browser/abandon.js) · **mode** A · **écran** T (390 × 844, tactile)
+- **Conditions** : Le jeu d'essai du cahier (`jeu-essai.json`), l'horloge figée au 17 octobre 2026 ; les gestes faits au toucher.
+- **Vérifie** : sur « Repeindre la rambarde du balcon », « Abandonner » ouvre le formulaire qui dit ce qui va se passer (étape 1) ; le motif saisi : la bulle, la section « Abandonnées » (« le 17 oct. · Le syndic repeint tout le balcon au printemps. »), la tâche hors des échéances (étape 2) ; le budget à venir baisse de 120 €, l'accueil compte un retard de moins (étape 3) ; le Bilan dit « 1 abandonnée » (étape 4) ; « reprendre » la rend aux échéances (étape 5) ; abandonnée de nouveau, « Annuler » la remet telle qu'elle était (étape 6) ; aucune erreur JavaScript. L'abandon s'écrit dans le « close » de la boîte : le scénario attend l'état, pas un délai (A52, A74). Mutation vérifiée : le résumé de l'accueil qui compte encore l'abandonnée (« non faite » au lieu d'« ouverte »), et l'étape 3 échoue.
+- **Cas manuels** : [MOD-028](manuels/types-de-module.md#mod-028)
 
 <a id="tn-attente"></a>
 #### `TN-attente` — J'attends une réponse

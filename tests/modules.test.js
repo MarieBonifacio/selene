@@ -1656,3 +1656,37 @@ test('E2, une tâche datée s’ajoute au calendrier (.ics d’une journée) ; u
     assert.ok(ics.split('\r\n').includes(l), `ligne attendue : ${l}`);
   assert.match(ics, /DESCRIPTION:Roubaix\\nle vendredi 2 octobre 2026\\nhttps:/);
 });
+
+test('abandonner une tâche : gardée sous « Abandonnées », hors des listes, du tirage, du budget et du résumé ; reprise ; Bilan (TU-MOD-81)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), ch = d.modules.chantier, T = app.TYPE_UI.taches, today = app.todayISO();
+  ch.config.costs = true; ch.entries = [];
+  app.addTask(ch.entries, { title: 'Repeindre la rambarde', due: today, cost: 120 }, 't1', '2026-09-01');
+  app.addTask(ch.entries, { title: 'Changer le joint', cost: 8 }, 't2', '2026-09-01');
+  app.setTaskToday(ch.entries, 't1', true);
+  app.setTaskDone(ch.entries, 't2', true, today);
+  const el = { dataset: { mod: 'chantier', task: 't1' }, closest(sel) { return sel === '[data-task]' || sel === '[data-mod]' ? this : null; } };
+  assert.match(app.taskHTML('chantier', ch.entries[0]), /data-act="task-drop"/, 'une tâche ouverte propose « Abandonner »');
+  assert.ok(app.dayDigest(today).some(x => x.includes('Repeindre')), 'avant : l’échéance est au résumé du matin');
+  app.CLICK['task-drop'](el);
+  app.submitModuleForm({ why: 'Le syndic repeint tout au printemps.' });
+  const t = ch.entries[0];
+  assert.equal(t.dropped.why, 'Le syndic repeint tout au printemps.');
+  assert.match(app.nodes.get('#toast').innerHTML, /data-act="undo"/, 'abandonner se défait');
+  const view = T.view('chantier'), i = view.indexOf('Abandonnées');
+  assert.ok(i > 0 && view.slice(i).includes('Repeindre la rambarde') && view.slice(i).includes('Le syndic repeint tout au printemps.'), 'une section « Abandonnées », avec le motif');
+  assert.ok(!view.slice(0, view.indexOf('Fait récemment')).includes('Repeindre la rambarde'), 'plus dans « Aujourd’hui » ni dans les échéances');
+  assert.equal(app.todayTasks().length, 0, 'plus une tâche du jour');
+  assert.match(T.summary('chantier', ch), /0 à faire, 100 % fait/, 'ni à faire, ni comptée contre le pourcentage');
+  assert.ok(!app.dayDigest(today).some(x => x.includes('Repeindre')), 'plus au résumé du matin');
+  assert.doesNotMatch(app.TYPE_UI.budget.view('budget'), /estiment encore/, 'son coût ne pèse plus sur le budget à venir');
+  assert.match(T.review(ch, '2026-01-01', '2100-01-01'), /1 tâche terminée.*1 abandonnée/, 'le Bilan compte aussi les renoncements');
+  app.CLICK.undo();
+  assert.ok(t.dropped === undefined && t.today === true, '« Annuler » la rend telle qu’elle était, étoile comprise');
+  app.CLICK['task-drop'](el); app.submitModuleForm({ why: '' });
+  app.CLICK['task-resume'](el);
+  assert.ok(t.dropped === undefined && app.taskOpen(t), '« reprendre » la rouvre');
+  app.dropTask(ch.entries, 't1', '', today);
+  app.pickTask('chantier');
+  assert.match(app.nodes.get('#toast').textContent + app.nodes.get('#toast').innerHTML, /Rien à tirer/, 'le tirage au sort ne la tire pas');
+});

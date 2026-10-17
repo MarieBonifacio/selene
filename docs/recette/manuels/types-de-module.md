@@ -39,6 +39,7 @@ Arc, Carnet, et une Boîte de six notes. Les opérations du Budget sont en septe
 | [MOD-025](#mod-025) | Longues listes : cent, puis « Voir les suivants » | P3 | Web, Mob |
 | [MOD-026](#mod-026) | Importer des notes Markdown (Obsidian, Zettlr) | P2 | Web, Mob, ART |
 | [MOD-027](#mod-027) | Tâches : « J'attends une réponse », la relance, la réponse reçue | P2 | Web, Mob |
+| [MOD-028](#mod-028) | Tâches : abandonner, avec un motif, puis reprendre | P2 | Web, Mob |
 
 Identifiants retirés : aucun.
 
@@ -734,3 +735,35 @@ Identifiants retirés : aucun.
 
 - **État final attendu** : la tâche en attente, relancée une fois.
 - **Nettoyage** : réimporter le jeu d'essai ; remettre l'horloge de l'appareil à l'heure.
+
+---
+
+<a id="mod-028"></a>
+### MOD-028 — Tâches : abandonner, avec un motif, puis reprendre
+
+- **Fonctionnalité et règle** : une tâche qu'on ne fera pas s'abandonne au lieu de se supprimer. Elle reste, datée, avec
+  son motif si l'on veut (200 caractères au plus), sous « Abandonnées ». Elle n'est ni à faire ni faite : elle quitte
+  « Aujourd'hui », les échéances, l'attente, le tirage au sort, le résumé du matin et le budget à venir, et sort du
+  pourcentage. Le Bilan compte les abandons de la période. « reprendre » la rouvre ; faite malgré tout, l'abandon tombe ;
+  une tâche faite ne s'abandonne pas. Ligne « Actif, pause, abandon » du tableau des manques de
+  l'[audit du 12 octobre](../../audit-fonctionnel-2026-10-12.md).
+- **Objectif, risque vérifié** : des listes qui grossissent de tâches mortes ; un renoncement sans trace (supprimer
+  efface jusqu'au souvenir d'avoir essayé) ; un coût abandonné qui pèse encore sur le budget.
+- **Priorité** : P2 · **Plateformes** : Web, Mob
+- **Préconditions** : jeu d'essai ; J désigne la date du jour (le scénario la fige au 17 octobre 2026).
+- **Données** : « Repeindre la rambarde du balcon » (Chantier, en retard, 120 €).
+- **Automatisés associés** : `TN-abandon`, `TU-MOD-81`, `TU-DOM-04`
+- **Source** : [DOC] [audit-fonctionnel-2026-10-12.md](../../audit-fonctionnel-2026-10-12.md), section C ; [TEST]
+  `tests/browser/abandon.js`, `tests/modules.test.js`, `tests/domain.test.js`.
+
+| Étape | Action précise | Résultat attendu observable |
+|---|---|---|
+| 1 | Chantier → toucher le titre « Repeindre la rambarde du balcon » → « Abandonner ». | Le formulaire « Abandonner la tâche » : « Elle quitte les listes sans compter comme faite, et reste sous « Abandonnées », d'où l'on peut la reprendre. » ; un champ « Pourquoi (facultatif) ». |
+| 2 | « Le syndic repeint tout le balcon au printemps. », « Enregistrer ». | « « Repeindre la rambarde du balcon » abandonnée. Elle reste sous « Abandonnées ». » avec « Annuler » ; une section « Abandonnées » : « le J · Le syndic repeint tout le balcon au printemps. » et « reprendre » ; la tâche n'est plus sous « En retard ». |
+| 3 | Budget, puis accueil. | Budget : « Les tâches en cours estiment encore … » a baissé de 120 € ; la ligne de Chantier compte un retard de moins. |
+| 4 | Bilan. | Chantier : « …, 1 abandonnée ». |
+| 5 | Chantier → « reprendre ». | « « Repeindre la rambarde du balcon » reprend du service. » ; la tâche est de nouveau sous « En retard ». |
+| 6 | L'abandonner de nouveau, puis « Annuler » dans la bulle. | La tâche revient telle qu'elle était ; la section « Abandonnées » disparaît. |
+
+- **État final attendu** : inchangé.
+- **Nettoyage** : aucun.

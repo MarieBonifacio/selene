@@ -61,7 +61,7 @@ disponible et le partiel ; l'envisagé figure ici pour qu'on ne le teste pas par
 | Réglages d'un espace sur place (« régler ») | disponible | en tête de l'espace | idem | — |
 | Boîte de réception (une seule), capture rapide, « Trier une à une » | disponible | accueil, ⊕, boîte | idem | — |
 | Capture qui comprend trois motifs (« 12 € courses », « 25 min … », « Module : texte ») | disponible | capture | idem | README |
-| Tâches : étoile « Aujourd'hui » plafonnée à trois tous modules confondus, étapes, coûts vers le budget, tirage au sort, pluie sur les tâches à ciel ouvert, « J'attends une réponse » (relance ramenée sur l'accueil) | disponible | espace Tâches | idem (pluie : Héb.) | — |
+| Tâches : étoile « Aujourd'hui » plafonnée à trois tous modules confondus, étapes, coûts vers le budget, tirage au sort, pluie sur les tâches à ciel ouvert, « J'attends une réponse » (relance ramenée sur l'accueil), abandonner (gardée, avec son motif) | disponible | espace Tâches | idem (pluie : Héb.) | — |
 | Budget : opérations, enveloppes, mois par mois | disponible | espace Budget | idem | — |
 | Programme : calendrier, séances, paliers cochés à la main, décision proposée | disponible | espace Programme | idem | — |
 | Objectif cumulatif : saisie en écart ou en total, chapitres, fragments, palimpseste, export Markdown, fin estimée | disponible | espace Écriture | idem | — |
