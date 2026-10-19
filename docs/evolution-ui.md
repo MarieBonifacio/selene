@@ -11,7 +11,7 @@ fonctionnement interne (voir [architecture.md](architecture.md)).
 ## Ce qu'on garde
 
 - **La scène** : la lune réelle au-dessus d'une lisière de sapins, un halo qui suit déjà la phase. C'est le totem.
-- **Les palettes alchimiques** (nigredo, albedo, citrinitas, rubedo : mousse, lichen, résine, amanite).
+- **Les palettes alchimiques** (nigredo, albedo, citrinitas, rubedo : mousse, lichen, pollen, framboise ; jusqu'au 17 octobre 2026, résine et amanite).
 - **La mise en page éditoriale** : des listes à filets plutôt que des cartes ; l'accueil est un sommaire, pas un tableau de bord.
 - **La sobriété** : rayons de 2 à 3 px, pas d'ombres portées, pas d'emoji.
 - **La microcopie cynique**, qui change seulement de place (voir Règles).
@@ -127,8 +127,10 @@ leurs teintes.** Une couleur ne porte jamais seule un sens : toujours doublée d
 | Ornement | `--bronze` | `#a88a5a` | `#8a6d3b` |
 
 Étiquettes : encre secondaire précédée d'un point de couleur. Graphiques : huit teintes minérales à luminance
-égale, doublées de plein / hachuré / pointillé. Limite connue : en citrinitas l'accent est proche de la
-résine, en rubedo du cinabre ; le mot et la graisse portent alors le sens.
+égale, doublées de plein / hachuré / pointillé. Jusqu'au 17 octobre 2026, l'accent de citrinitas était la résine de
+`--warn` elle-même (ΔE2000 2,3) et celui de rubedo un cousin du cinabre (8,5) ; le mot et la graisse portaient seuls le
+sens. Depuis, citrinitas tient du pollen (`#636301` / `#d9c84d`), rubedo de la framboise (`#a42b4a` / `#df627b`), et
+aucun accent n'est à moins de 10 d'une couleur d'état (`tests/palette.test.js`, TU-PAL-06).
 
 ### Matière
 

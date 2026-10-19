@@ -505,7 +505,7 @@ test('writing: a projected end date from the last 30 days, and honest when there
 test('home: a due reminder can be done, a session logged with the last duration, due items surface', () => {
   const app = launch(new Map(), { claude: { use: async () => null } });
   const d = app.S();
-  d.modules.kundalini.config.start = '2026-01-05';
+  Object.assign(d.modules.kundalini.config, { start: '2026-01-05', weeks: 520 }); // en cours : fini, il ne relancerait plus (A71)
   app.addJournalEntry(d.modules.kundalini, { date: '2026-01-05', value: 25 }, 'k1', '2026-01-05');
   app.saveCollectionItem(d.modules.moth, { title: 'Le lichen', due: '2020-01-01', status: 'Prêt' }, 'p1');
   app.location.hash = '#accueil'; app.render();
@@ -1114,7 +1114,7 @@ test('tiers: criteria are self-written and self-checked, the app never advances 
   app.CLICK['tier-advance'](ti);
   assert.equal(k.config.tiers[0].advancedAt, today());
   assert.equal(app.tierCurrent(k.config).name, 'Palier 2', 'moved on to the next tier');
-  assert.match(app.nodes.get('#toast').textContent, /Palier « Souffle » atteint\./);
+  assert.match(app.nodes.get('#toast').innerHTML, /Palier « Souffle » atteint\..*data-act="undo"/, 'un simple message, qui propose « Annuler »');
   app.render();
   assert.match(app.nodes.get('#main').innerHTML, /« Souffle » atteint le/);
 
@@ -1381,4 +1381,322 @@ test('une synchro pendant une frappe dans un champ sans identifiant ne redessine
     if (vue !== '#reglages') assert.notEqual(main.innerHTML, 'SAISIE_EN_COURS', `${vue} : un champ à identifiant est restauré, la vue se redessine`);
     app.document.activeElement = null;
   }
+});
+
+test('le journal des Rappels nomme chaque geste par son libellé, jamais par son identifiant (A68)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), id = app.slugId('Soins', d.config.modules.map(m => m.id));
+  app.createModuleInstance(d.modules, 'rappels', 'Soins', id);
+  const inst = d.modules[id];
+  // Un geste ajouté dans les Réglages reçoit un identifiant tiré au hasard (« typ-add ») : c'est le cas courant.
+  inst.config.types = [{ id: 'm40pghqd', label: 'Arroser le figuier', every: 3 }];
+  app.addJournalEntry(inst, { date: '2026-10-10', type: 'm40pghqd', note: '' }, 'j1', '2026-10-10');
+  app.addJournalEntry(inst, { date: '2026-10-11', type: 'note', note: 'Feuilles jaunes' }, 'j2', '2026-10-11');
+  app.addJournalEntry(inst, { date: '2026-10-09', type: 'k3j2h1x9', note: '' }, 'j3', '2026-10-09'); // geste supprimé depuis
+  const tags = [...app.TYPE_UI.rappels.view(id).matchAll(/<span class="tag">([^<]*)<\/span>/g)].map(m => m[1]);
+  assert.deepEqual(tags, ['Observation', 'Arroser le figuier', 'Geste supprimé']);
+  app.removeWithUndo(id, 'entries', 'j1');
+  assert.match(app.nodes.get('#toast').innerHTML, /Supprimé : « Arroser le figuier »/, 'la bulle « Annuler » le nomme aussi');
+});
+
+test('chercher ne mène pas dans un espace désactivé : il le dit, et dit où le rouvrir (A69)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  app.addCapture(d.modules.inbox.entries, 'Le héron revient à la même pierre', 'n1', '2026-09-02');
+  d.modules.ecriture.scraps.push({ id: 'f1', text: 'Un héron dans le chapitre deux', date: '2026-09-01' });
+  d.config.modules.find(m => m.id === 'ecriture').on = false; // Réglages → Espaces, la case décochée
+  assert.deepEqual([...app.searchAll('heron').map(h => h.id)], ['inbox'], 'la palette et Chercher ne proposent que ce qui s\'ouvre');
+  app.searchFresh('heron'); app.location.hash = '#recherche'; app.render();
+  const html = app.nodes.get('#main').innerHTML;
+  assert.doesNotMatch(html, /href="#ecriture/, 'aucun lien vers l\'espace fermé');
+  assert.match(html, /Aussi 1 résultat dans « Écriture », désactivé/, 'le résultat caché est compté et nommé');
+  assert.match(html, /href="#reglages"/, 'avec le chemin pour le rouvrir');
+});
+
+test('un programme dont la durée est écoulée ne relance plus chaque jour : il dit qu’il est terminé (A71)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), id = app.slugId('Course', d.config.modules.map(m => m.id));
+  app.createModuleInstance(d.modules, 'programme', 'Course', id);
+  const inst = d.modules[id];
+  Object.assign(inst.config, { start: '2020-01-06', weeks: 4, perWeek: 3, unitLabel: 'min' }); // fini le 2 février 2020
+  app.addJournalEntry(inst, { date: '2020-01-07', value: 20 }, 's1', '2020-01-07');
+  const T = app.TYPE_UI.programme;
+  assert.deepEqual([...T.alerts(id, inst, today())], [], 'plus de « Pas encore de séance » une fois la durée passée');
+  assert.match(T.summary(id, inst), /^Terminé le 2 févr\. 2020, 1 séance/, 'la ligne de l’accueil le dit, avec sa date');
+  const view = T.view(id);
+  assert.match(view, /Terminé le 2 févr\. 2020/, 'l’espace le dit');
+  assert.match(view, /data-act="goto-groups"/, 'et dit où le prolonger');
+  inst.config.weeks = 400; // prolongé : il reprend
+  assert.equal(T.alerts(id, inst, today()).length, 1, 'prolongé, l’alerte du jour revient');
+});
+
+test('ranger une note se défait : « Annuler » la remet à sa place, retire ce qui en est né et lui rend ses liens', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), box = d.modules.inbox;
+  app.addCapture(box.entries, 'premier', 'n1', '2026-09-01');
+  app.addCapture(box.entries, 'la phalène et la lampe', 'n2', '2026-09-02');
+  app.addCapture(box.entries, 'dernier', 'n3', '2026-09-03');
+  box.entries.find(e => e.id === 'n1').links = [{ type: 'echo', to: 'inbox/n2' }]; // une autre note la cite
+  const avant = d.modules.moth.entries.length, ordre = box.entries.map(e => e.id);
+  app.CLICK['note-to'](on({ mod: 'inbox', id: 'n2', to: 'moth' }));
+  const ne = d.modules.moth.entries.at(-1);
+  assert.equal(box.entries.find(e => e.id === 'n1').links[0].to, `moth/${ne.id}`, 'rangée, ses liens la suivent');
+  assert.match(app.nodes.get('#toast').innerHTML, /Rangé dans october\.moth\..*data-act="undo"/, '« Annuler » est proposé');
+  app.CLICK.undo();
+  assert.deepEqual(box.entries.map(e => e.id), ordre, 'la note revient à sa place dans la boîte');
+  assert.equal(d.modules.moth.entries.length, avant, 'l’élément né du rangement est retiré');
+  assert.equal(box.entries.find(e => e.id === 'n1').links[0].to, 'inbox/n2', 'les liens reviennent à la note');
+  // Un motif reconnu (« 12 € courses ») : la dépense née du rangement s'en va aussi.
+  app.addCapture(box.entries, '12 € courses', 'n4', '2026-09-04');
+  const ops = d.modules.budget.entries.length;
+  app.fileIntent(app.captureIntent('12 € courses'), 'inbox', 'n4');
+  assert.equal(d.modules.budget.entries.length, ops + 1);
+  app.CLICK.undo();
+  assert.equal(d.modules.budget.entries.length, ops, 'la dépense est retirée');
+  assert.ok(box.entries.some(e => e.id === 'n4'), 'la note est revenue');
+});
+
+test('passer un palier se défait : « Annuler » le rend en cours, critères compris', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const k = app.S().modules.kundalini;
+  k.config.tiers = [{ id: 't1', name: 'Souffle', criteria: [{ id: 'c1', text: 'vingt minutes', done: true }] }, { id: 't2', name: 'Posture', criteria: [] }];
+  app.CLICK['tier-advance'](on({ mod: 'kundalini' }));
+  assert.ok(k.config.tiers[0].advancedAt, 'franchi, daté');
+  assert.match(app.nodes.get('#toast').innerHTML, /Palier « Souffle » atteint\..*data-act="undo"/, '« Annuler » est proposé');
+  app.CLICK.undo();
+  assert.equal(k.config.tiers[0].advancedAt, undefined, 'le palier redevient celui en cours');
+  assert.equal(k.config.tiers[0].criteria[0].done, true, 'ses critères cochés le restent');
+  assert.equal(app.tierCurrent(k.config).id, 't1');
+});
+
+test('un lien se retire depuis la fiche, des deux côtés ; une tension posée par erreur se referme ; « Annuler » le rend', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const box = app.S().modules.inbox;
+  app.addCapture(box.entries, 'Le seuil est un lieu', 'n1', '2026-09-01');
+  app.addCapture(box.entries, 'Le seuil n’est pas un lieu', 'n2', '2026-09-02');
+  app.addLink(box.entries.find(e => e.id === 'n1'), 'inbox/n2', 'contredit', 'l1', '2026-09-03');
+  assert.equal(app.openTensions().length, 1, 'une tension ouverte');
+  const fiche = app.SHEETS.specimen('inbox/n2'); // vue depuis l'entrée visée : « contredit par »
+  assert.match(fiche, /data-act="link-del" data-from="inbox\/n1" data-to="inbox\/n2" data-type="contredit"/, 'retirer, aussi depuis l’autre bout');
+  app.CLICK['link-del']({ dataset: { from: 'inbox/n1', to: 'inbox/n2', type: 'contredit' } });
+  assert.equal((box.entries.find(e => e.id === 'n1').links || []).length, 0, 'le lien est retiré');
+  assert.equal(app.openTensions().length, 0, 'la tension se referme sans synthèse');
+  assert.match(app.nodes.get('#toast').innerHTML, /Lien retiré\..*data-act="undo"/);
+  app.CLICK.undo();
+  assert.deepEqual([...box.entries.find(e => e.id === 'n1').links.map(l => l.id)], ['l1'], '« Annuler » le rend tel quel');
+});
+
+test('les sessions d’un compteur se lisent et se corrigent : une faute de frappe se supprime, « Annuler » la rend', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const e = app.S().modules.ecriture; e.entries = []; e.config.entryMode = 'delta';
+  app.addJournalEntry(e, { date: '2026-09-10', value: 500 }, 's1', '2026-09-10');
+  app.addJournalEntry(e, { date: '2026-09-11', value: 50000 }, 's2', '2026-09-11'); // un zéro de trop
+  const view = app.TYPE_UI.cumul.view('ecriture');
+  assert.match(view, /<details class="sessions"><summary>Sessions \(2\)<\/summary>/, 'les sessions, repliées, comptées');
+  assert.ok(view.indexOf('data-id="s2"') < view.indexOf('data-id="s1"'), 'la plus récente d’abord');
+  assert.match(view, /data-id="s2"[^]*?data-act="entry-del" data-mod="ecriture"/, 'chacune se supprime');
+  app.removeWithUndo('ecriture', 'entries', 's2');
+  assert.equal(app.totalOf(e), 500, 'le total redevient juste');
+  assert.match(app.nodes.get('#toast').innerHTML, /Supprimé : « 11 sept\., \+50[\s ]000 mots »/, 'la bulle nomme la session');
+  app.CLICK.undo();
+  assert.equal(app.totalOf(e), 50500, '« Annuler » la rend');
+});
+
+test('les historiques ne s’arrêtent plus : tâches faites, journal des Rappels et séances d’un Programme se déroulent', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), T = app.TYPE_UI, day = i => `2026-0${1 + Math.floor(i / 28)}-${String(1 + (i % 28)).padStart(2, '0')}`;
+  d.modules.chantier.entries = Array.from({ length: 12 }, (_, i) => ({ id: `t${i}`, title: `Tâche ${i}`, room: '', cat: 'Général', due: null, effort: 1, cost: 0, note: '', today: false, done: true, doneAt: day(i), created: day(i), steps: [] }));
+  d.modules.phidippus.entries = Array.from({ length: 25 }, (_, i) => ({ id: `r${i}`, date: day(i), type: 'note', note: `obs ${i}` }));
+  d.modules.kundalini.config.start = '2026-01-05';
+  d.modules.kundalini.entries = Array.from({ length: 15 }, (_, i) => ({ id: `k${i}`, date: day(i), value: 20 }));
+  const count = (html, re) => (html.match(re) || []).length;
+  for (const [mod, re, first, rest] of [['chantier', /data-task="t\d+"/g, 8, 4], ['phidippus', /data-id="r\d+"/g, 20, 5], ['kundalini', /data-id="k\d+"/g, 12, 3]]) {
+    const ui = T[d.modules[mod].type];
+    let html = ui.view(mod);
+    assert.equal(count(html, re), first, `${mod} : la première page reste courte`);
+    const more = html.match(/data-act="page-more" data-k="([^"]+)" data-n="(\d+)"/);
+    assert.ok(more && html.includes(`Voir les ${rest} suivants`), `${mod} : « Voir les ${rest} suivants »`);
+    app.CLICK['page-more']({ dataset: { k: more[1], n: more[2] } });
+    html = ui.view(mod);
+    assert.equal(count(html, re), first + rest, `${mod} : tout se déroule`);
+  }
+});
+
+test('le fil des reprises se relit : ce qu’on comptait faire, quand, et ce qu’il en est advenu', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const c = app.S().modules.chantier;
+  app.setResume(c, 'Poncer la rambarde', '2026-09-01');
+  app.setResume(c, 'Acheter la sous-couche', '2026-09-05'); // remplacé
+  app.setResume(c, '', '2026-09-20'); // repris : plus de pont en cours
+  app.location.hash = '#chantier'; app.render();
+  const html = app.nodes.get('#main').innerHTML;
+  assert.match(html, /<details class="bridge-log"><summary>Fil des reprises \(2\)<\/summary>/, 'même sans pont en cours, le fil est là, replié');
+  const i = html.indexOf('Acheter la sous-couche'), j = html.indexOf('Poncer la rambarde');
+  assert.ok(i > 0 && j > i, 'le plus récent d’abord');
+  assert.match(html, /« Acheter la sous-couche »[^<]*<span class="hint">[^<]*repris le 20 sept\./, 'repris, et quand');
+  assert.match(html, /« Poncer la rambarde »[^<]*<span class="hint">[^<]*remplacé le 5 sept\./, 'remplacé, et quand');
+});
+
+test('un changement de statut se date : « depuis le … », et le Bilan d’une collection sans date compte les passages', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), m = d.modules.musique; // Musique : pas de champ date, donc jusqu'ici pas de ligne de Bilan
+  m.entries = [];
+  const e = app.saveCollectionItem(m, { title: 'Dead Can Dance' }, 'a1', '2026-09-01');
+  assert.equal(e.statusAt, '2026-09-01', 'né avec son statut, daté');
+  assert.equal(app.setCollectionStatus(e, 'Écouté', '2026-09-10'), true);
+  assert.equal(e.statusAt, '2026-09-10', 'le passage est daté');
+  assert.equal(app.setCollectionStatus(e, 'Écouté', '2026-09-12'), false, 'le même statut ne change rien');
+  assert.equal(e.statusAt, '2026-09-10');
+  const f = app.saveCollectionItem(m, { title: 'Arvo Pärt' }, 'a2', '2026-09-02');
+  app.saveCollectionItem(m, { title: 'Arvo Pärt', status: 'Retenu' }, 'a2', '2026-09-15'); // par le formulaire
+  assert.equal(f.statusAt, '2026-09-15');
+  app.location.hash = '#musique'; app.render();
+  assert.match(app.nodes.get('#main').innerHTML, /depuis le 10 sept\./, 'la liste dit depuis quand');
+  assert.equal(app.TYPE_UI.collection.review(m, '2026-09-08', '2026-10-01'), 'Écouté ×1, Retenu ×1', 'le Bilan compte les passages de la période');
+  assert.equal(app.TYPE_UI.collection.review(m, '2026-10-01', '2026-11-01'), null, 'rien dans la période : pas de ligne');
+  // La sauvegarde garde la date et refuse une date malformée.
+  assert.doesNotThrow(() => app.parseBackup(app.createBackup(app.board.data, d)));
+  const bad = JSON.parse(app.createBackup(app.board.data, d)); bad.site.modules.musique.entries[0].statusAt = 'hier';
+  assert.throws(() => app.parseBackup(JSON.stringify(bad)));
+});
+
+test('une collection vide dit par où commencer, en liste comme en colonnes ; un filtre vide reste un filtre vide', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const m = app.S().modules.musique, T = app.TYPE_UI.collection;
+  m.entries = [];
+  assert.match(T.view('musique'), /<li class="empty">Rien encore : « Ajouter un album », en haut, pour commencer\.<\/li>/, 'en liste : vide, pas « filtré »');
+  m.config.display = 'colonnes';
+  assert.match(T.view('musique'), /<p class="empty">Rien encore : « Ajouter un album », en haut, pour commencer\.<\/p>/, 'en colonnes : visible, pas seulement pour un lecteur d’écran');
+  m.config.display = 'liste';
+  app.saveCollectionItem(m, { title: 'Dead Can Dance' }, 'a1', '2026-09-01');
+  app.CHANGE['col-f'](on({ mod: 'musique' }, { value: 'Retenu' }));
+  assert.match(T.view('musique'), /Rien dans ce filtre\./, 'des éléments, mais aucun dans ce filtre');
+});
+
+test('le mode Sources et les fragments d’un compteur s’activent aussi dans « régler », pas seulement par le modèle', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  const colId = app.slugId('Lectures', d.config.modules.map(m => m.id));
+  app.createModuleInstance(d.modules, 'collection', 'Lectures', colId); // un type vide, pas le modèle « Sources »
+  assert.match(app.TYPE_UI.collection.settings(colId, d.modules[colId]), /data-act="col-sources"/, 'une case « Sources »');
+  app.CHANGE['col-sources'](on({ mod: colId }, { checked: true }));
+  assert.equal(d.modules[colId].config.sources, true);
+  const cumId = app.slugId('Mémoire', d.config.modules.map(m => m.id));
+  app.createModuleInstance(d.modules, 'cumul', 'Mémoire', cumId);
+  d.config.modules.push({ id: colId, on: true }, { id: cumId, on: true }); // affichés, comme depuis les Réglages
+  assert.ok(!app.noteTargets('inbox').includes(cumId), 'sans fragments, un compteur ne reçoit pas de notes');
+  assert.match(app.TYPE_UI.cumul.settings(cumId, d.modules[cumId]), /data-act="cum-scraps"/, 'une case « Fragments »');
+  app.CHANGE['cum-scraps'](on({ mod: cumId }, { checked: true }));
+  assert.equal(d.modules[cumId].config.scraps, true);
+  assert.ok(Array.isArray(d.modules[cumId].scraps), 'avec leur liste');
+  assert.match(app.TYPE_UI.cumul.settings(cumId, d.modules[cumId]), /data-set-mod="[^"]+\.scrapsLabel"/, 'et leur nom se règle');
+  assert.ok(app.noteTargets('inbox').includes(cumId), 'il reçoit désormais des notes');
+});
+
+test('E1, j’attends une réponse : une tâche en attente sort des échéances, revient le jour de la relance, se relance ou se lève', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), ch = d.modules.chantier, T = app.TYPE_UI.taches;
+  ch.entries = [];
+  app.addTask(ch.entries, { title: 'Dossier CAF', due: '2026-10-05', steps: [{ t: 'RIB', d: true }] }, 't1', '2026-10-01');
+  const el = { dataset: { mod: 'chantier', task: 't1' }, closest(sel) { return sel === '[data-task]' || sel === '[data-mod]' ? this : null; } };
+  assert.match(app.taskHTML('chantier', ch.entries[0]), /data-act="task-wait"/, 'la tâche propose « J’attends une réponse »');
+  app.CLICK['task-wait'](el);
+  app.submitModuleForm({ who: 'CAF', next: '2026-10-15' });
+  const t = ch.entries[0];
+  assert.equal(t.wait.who, 'CAF'); assert.equal(t.wait.next, '2026-10-15');
+  assert.match(app.nodes.get('#toast').innerHTML, /data-act="undo"/, 'mettre en attente se défait');
+  let view = T.view('chantier');
+  const enAttente = view.slice(view.indexOf('En attente'));
+  assert.ok(view.indexOf('En attente') > 0 && enAttente.includes('Dossier CAF'), 'une section « En attente »');
+  assert.ok(!view.slice(0, view.indexOf('En attente')).includes('Dossier CAF'), 'et plus dans les échéances');
+  assert.match(enAttente, /chez CAF · relancer le 15 oct\./);
+  assert.match(T.summary('chantier', ch), /1 en attente/, 'la ligne de l’accueil le compte');
+  assert.equal(T.alerts('chantier', ch, '2026-10-14').length, 0, 'rien avant la date de relance');
+  const [alerte] = T.alerts('chantier', ch, '2026-10-15');
+  assert.match(alerte.text, /« Dossier CAF » : à relancer/);
+  assert.match(alerte.actions, /data-act="task-relaunch" data-mod="chantier" data-task="t1"/);
+  assert.match(alerte.actions, /data-act="task-answer" data-mod="chantier" data-task="t1"/);
+  app.CLICK['task-relaunch'](el);
+  assert.equal(t.wait.log.length, 1, 'la relance est consignée');
+  assert.ok(t.wait.next > '2026-10-15', 'et reportée');
+  app.CLICK.undo();
+  assert.equal(t.wait.log.length, 0, '« Annuler » la défait');
+  app.CLICK['task-answer'](el);
+  assert.equal(t.wait, undefined, 'réponse reçue : l’attente est levée');
+  view = T.view('chantier');
+  assert.ok(!view.includes('En attente'), 'plus de section');
+  app.CLICK.undo();
+  assert.equal(t.wait.who, 'CAF', '« Annuler » la rend');
+  // Le tirage au sort ne tire pas une attente.
+  d.modules.chantier.entries = [t];
+  app.pickTask('chantier');
+  assert.match(app.nodes.get('#toast').textContent + app.nodes.get('#toast').innerHTML, /Rien à tirer/);
+});
+
+test('E2, une tâche datée s’ajoute au calendrier (.ics d’une journée) ; une adresse de sa note devient un lien (TU-MOD-80)', async () => {
+  const saved = [];
+  const app = launch(new Map(), { claude: { use: async ns => ns === 'downloads' ? { save: async f => { saved.push(f); } } : null } });
+  await new Promise(r => setTimeout(r, 0)); // l'artefact prête ses espaces de noms après le démarrage
+  const ch = app.S().modules.chantier;
+  ch.entries = [];
+  app.addTask(ch.entries, { title: 'Nuit de la poésie', due: '2026-10-02', room: 'La Condition publique', note: 'Roubaix\nle vendredi 2 octobre 2026\nhttps://openagenda.com/lille/events/2.' }, 't1', '2026-09-28');
+  app.addTask(ch.entries, { title: 'Sans date', note: 'voir <b>ici</b> : javascript:alert(1) et http://exemple.fr' }, 't2', '2026-09-28');
+  const html = app.taskHTML('chantier', ch.entries[0]);
+  assert.match(html, /data-act="task-ics"/, 'une tâche datée propose « Ajouter à mon calendrier »');
+  assert.doesNotMatch(app.taskHTML('chantier', ch.entries[1]), /data-act="task-ics"/, 'sans date, rien à ajouter');
+  assert.match(html, /<a href="https:\/\/openagenda\.com\/lille\/events\/2" target="_blank" rel="noopener noreferrer">https:\/\/openagenda\.com\/lille\/events\/2<\/a>\./, 'l’adresse devient un lien, sans le point qui la suit');
+  const other = app.taskHTML('chantier', ch.entries[1]);
+  assert.ok(!/<a /.test(other) && other.includes('&lt;b&gt;ici&lt;/b&gt;'), 'ni javascript:, ni http, ni balise : du texte');
+  const el = { dataset: { mod: 'chantier', task: 't1' }, closest(sel) { return sel === '[data-task]' || sel === '[data-mod]' ? this : null; } };
+  app.CLICK['task-ics'](el); await new Promise(r => setTimeout(r, 0));
+  assert.equal(saved.length, 1, 'un fichier est donné');
+  assert.equal(saved[0].filename, 'nuit-de-la-poesie-2026-10-02.ics');
+  const ics = saved[0].data;
+  for (const l of ['UID:t1.chantier@selene', 'DTSTART;VALUE=DATE:20261002', 'DTEND;VALUE=DATE:20261003', 'SUMMARY:Nuit de la poésie', 'LOCATION:La Condition publique', 'URL:https://openagenda.com/lille/events/2'])
+    assert.ok(ics.split('\r\n').includes(l), `ligne attendue : ${l}`);
+  assert.match(ics, /DESCRIPTION:Roubaix\\nle vendredi 2 octobre 2026\\nhttps:/);
+});
+
+test('abandonner une tâche : gardée sous « Abandonnées », hors des listes, du tirage, du budget et du résumé ; reprise ; Bilan (TU-MOD-81)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), ch = d.modules.chantier, T = app.TYPE_UI.taches, today = app.todayISO();
+  ch.config.costs = true; ch.entries = [];
+  app.addTask(ch.entries, { title: 'Repeindre la rambarde', due: today, cost: 120 }, 't1', '2026-09-01');
+  app.addTask(ch.entries, { title: 'Changer le joint', cost: 8 }, 't2', '2026-09-01');
+  app.setTaskToday(ch.entries, 't1', true);
+  app.setTaskDone(ch.entries, 't2', true, today);
+  const el = { dataset: { mod: 'chantier', task: 't1' }, closest(sel) { return sel === '[data-task]' || sel === '[data-mod]' ? this : null; } };
+  assert.match(app.taskHTML('chantier', ch.entries[0]), /data-act="task-drop"/, 'une tâche ouverte propose « Abandonner »');
+  assert.ok(app.dayDigest(today).some(x => x.includes('Repeindre')), 'avant : l’échéance est au résumé du matin');
+  app.CLICK['task-drop'](el);
+  app.submitModuleForm({ why: 'Le syndic repeint tout au printemps.' });
+  const t = ch.entries[0];
+  assert.equal(t.dropped.why, 'Le syndic repeint tout au printemps.');
+  assert.match(app.nodes.get('#toast').innerHTML, /data-act="undo"/, 'abandonner se défait');
+  const view = T.view('chantier'), i = view.indexOf('Abandonnées');
+  assert.ok(i > 0 && view.slice(i).includes('Repeindre la rambarde') && view.slice(i).includes('Le syndic repeint tout au printemps.'), 'une section « Abandonnées », avec le motif');
+  assert.ok(!view.slice(0, view.indexOf('Fait récemment')).includes('Repeindre la rambarde'), 'plus dans « Aujourd’hui » ni dans les échéances');
+  assert.equal(app.todayTasks().length, 0, 'plus une tâche du jour');
+  assert.match(T.summary('chantier', ch), /0 à faire, 100 % fait/, 'ni à faire, ni comptée contre le pourcentage');
+  assert.ok(!app.dayDigest(today).some(x => x.includes('Repeindre')), 'plus au résumé du matin');
+  assert.doesNotMatch(app.TYPE_UI.budget.view('budget'), /estiment encore/, 'son coût ne pèse plus sur le budget à venir');
+  assert.match(T.review(ch, '2026-01-01', '2100-01-01'), /1 tâche terminée.*1 abandonnée/, 'le Bilan compte aussi les renoncements');
+  app.CLICK.undo();
+  assert.ok(t.dropped === undefined && t.today === true, '« Annuler » la rend telle qu’elle était, étoile comprise');
+  app.CLICK['task-drop'](el); app.submitModuleForm({ why: '' });
+  app.CLICK['task-resume'](el);
+  assert.ok(t.dropped === undefined && app.taskOpen(t), '« reprendre » la rouvre');
+  app.dropTask(ch.entries, 't1', '', today);
+  app.pickTask('chantier');
+  assert.match(app.nodes.get('#toast').textContent + app.nodes.get('#toast').innerHTML, /Rien à tirer/, 'le tirage au sort ne la tire pas');
+});
+
+test('un carnet vide dit qu’une note ne se corrige pas, et où écrire un texte qui change ; la boîte garde sa phrase (TU-MOD-82)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S();
+  d.modules.carnet = { type: 'notes', label: 'Carnet', config: { inbox: false }, entries: [] }; d.config.modules.push({ id: 'carnet', on: true });
+  const carnet = ['carnet', d.modules.carnet], boite = ['inbox', d.modules.inbox];
+  boite[1].entries = [];
+  assert.match(app.TYPE_UI.notes.view(carnet[0]), /Une note ne se corrige pas : elle se garde ou s’efface\. Pour un texte qui change, les fragments d’un espace d’écriture gardent leurs versions\./);
+  assert.match(app.TYPE_UI.notes.view(boite[0]), /Le silence d'une clairière/, 'la boîte vide garde sa phrase');
 });

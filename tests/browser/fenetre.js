@@ -1,6 +1,10 @@
 /* Scénario de navigateur : la Fenêtre (évolution de l'interface, vague 3b : docs/evolution-ui.md). Lancé par tests/browser/run.js.
    Horloge simulée (heure de Paris) et Open-Meteo simulé : le test ne dépend ni de l'heure réelle ni du réseau. */
 const { engine, BASE, launchOptions, fixture, donnee, check } = require('./helpers');
+// Le rouge de Rubedo, lu dans la feuille de style : ce scénario prouve que la palette s'applique ; ses valeurs, elles,
+// sont éprouvées par tests/palette.test.js (contraste, distances). Les recopier ici les ferait diverger au prochain réglage.
+const RUBEDO = (() => { const m = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', '..', 'src', 'shell.html'), 'utf8').match(/\[data-palette="rubedo"\]\{--acc-l:(#[0-9a-f]{6});--acc-d:(#[0-9a-f]{6})\}/);
+  const rgb = h => `rgb(${[1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16)).join(', ')})`; return { clair: rgb(m[1]), sombre: rgb(m[2]) }; })();
 const demo = fixture();
 (async () => {
   const b = await engine.launch(launchOptions);
@@ -93,20 +97,50 @@ const demo = fixture();
   await a.click('[data-act="pal"][data-p="rubedo"]');
   await a.waitForFunction(() => document.documentElement.dataset.palette === 'rubedo', null, { timeout: 5000 }).catch(() => {});
   const rouge = await teintes();
-  ok(rouge.every(c => c === 'rgb(151, 58, 48)') && avant.every(c => c !== rouge[0]) && await a.$eval('[data-act="pal"][data-p="rubedo"]', el => el.classList.contains('on')),
-    `« Rubedo, amanite » : l’accent passe au rouge amanite dans la navigation et le contenu, sans recharger (${avant[0]} → ${rouge.join(', ')}) (étape 1)`);
+  ok(rouge.every(c => c === RUBEDO.clair) && avant.every(c => c !== rouge[0]) && await a.$eval('[data-act="pal"][data-p="rubedo"]', el => el.classList.contains('on')),
+    `« Rubedo, framboise » : l’accent passe au rouge framboise dans la navigation et le contenu, sans recharger (${avant[0]} → ${rouge.join(', ')}) (étape 1)`);
+  // A67 : pas seulement une variable. L'aperçu (vrai bouton principal, vraie jauge, vraie case cochée) et le filet de
+  // l'onglet actif prennent la couleur ; chaque pastille montre la couleur que sa palette donnera, dans ce mode.
+  const composants = () => a.evaluate(() => {
+    const cs = (s, p) => { const el = document.querySelector(s); return el ? getComputedStyle(el)[p] : null; };
+    return { bouton: cs('.pal-preview .btn.acc', 'backgroundColor'), jauge: cs('.pal-preview .bar i', 'backgroundColor'), onglet: cs('#nav a.on', 'borderLeftColor'), choisi: cs('.swatch.on', 'borderTopColor') };
+  });
+  const vus = await composants();
+  ok(Object.values(vus).every(c => c === RUBEDO.clair), `et sur les composants : bouton principal, jauge, onglet actif, bouton choisi (${Object.entries(vus).map(([k, v]) => `${k} ${v}`).join(', ')}) (étape 1, A67)`);
+  const fideles = async () => {
+    const out = [];
+    for (const p of ['nigredo', 'albedo', 'citrinitas', 'rubedo']) {
+      await a.click(`[data-act="pal"][data-p="${p}"]`); await a.waitForFunction(x => document.documentElement.dataset.palette === x, p);
+      out.push(await a.evaluate(x => [x, getComputedStyle(document.querySelector(`.swatch[data-p="${x}"] i`)).backgroundColor, getComputedStyle(document.querySelector('.pal-preview .btn.acc')).backgroundColor], p));
+    }
+    await a.click('[data-act="pal"][data-p="rubedo"]'); await a.waitForFunction(() => document.documentElement.dataset.palette === 'rubedo');
+    return out;
+  };
+  const pastillesClair = await fideles();
+  ok(pastillesClair.every(([, pastille, applique]) => pastille === applique) && new Set(pastillesClair.map(x => x[2])).size === 4,
+    `en clair, chaque pastille montre la couleur appliquée (${pastillesClair.map(([p, x]) => `${p} ${x}`).join(', ')}) (étape 1, A67)`);
   await a.selectOption('[data-set="config.mode"]', 'light');
   await a.waitForFunction(() => document.documentElement.dataset.mode === 'light', null, { timeout: 5000 }).catch(() => {});
   const clair = await lisible();
   await a.selectOption('[data-set="config.mode"]', 'dark');
   await a.waitForFunction(() => document.documentElement.dataset.mode === 'dark', null, { timeout: 5000 }).catch(() => {});
   const sombre = await lisible(), rougeSombre = await teintes();
-  ok(clair.mode === 'light' && sombre.mode === 'dark' && clair.fond !== sombre.fond && [clair.texte, clair.aide, sombre.texte, sombre.aide].every(r => r >= 4.5) && rougeSombre.every(c => c === 'rgb(213, 100, 85)'),
-    `« Toujours clair » puis « Toujours sombre » : le fond bascule (${clair.fond} → ${sombre.fond}), titre et aide lisibles (clair ${clair.texte}:1 et ${clair.aide}:1, sombre ${sombre.texte}:1 et ${sombre.aide}:1), l’amanite éclaircie (étape 2)`);
+  ok(clair.mode === 'light' && sombre.mode === 'dark' && clair.fond !== sombre.fond && [clair.texte, clair.aide, sombre.texte, sombre.aide].every(r => r >= 4.5) && rougeSombre.every(c => c === RUBEDO.sombre),
+    `« Toujours clair » puis « Toujours sombre » : le fond bascule (${clair.fond} → ${sombre.fond}), titre et aide lisibles (clair ${clair.texte}:1 et ${clair.aide}:1, sombre ${sombre.texte}:1 et ${sombre.aide}:1), la framboise éclaircie (étape 2)`);
+  const pastillesSombre = await fideles();
+  ok(pastillesSombre.every(([, pastille, applique]) => pastille === applique) && pastillesSombre.every((x, i) => x[2] !== pastillesClair[i][2]),
+    `en sombre aussi, et ce sont les valeurs sombres (${pastillesSombre.map(([p, x]) => `${p} ${x}`).join(', ')}) (étape 1, A67)`);
   await a.fill('[data-set="config.name"]', 'Herbier'); await a.press('[data-set="config.name"]', 'Tab');
   await a.waitForFunction(() => document.querySelector('#brandName').textContent === 'Herbier', null, { timeout: 5000 }).catch(() => {});
   const nom = await a.evaluate(() => [document.querySelector('#brandName').textContent, document.title, JSON.parse(localStorage.getItem('selene-site-v1')).config.name]);
   ok(nom[0] === 'Herbier' && / — Herbier$/.test(nom[1]) && nom[2] === 'Herbier', `« Herbier », le champ quitté : l’en-tête et l’onglet le disent (« ${nom[1]} ») (étape 4)`);
+  // Étape 5 : rechargée, puis ouverte dans un autre onglet, la palette est toujours appliquée, sur un vrai composant.
+  await a.reload(); await a.waitForSelector('.pal-preview .btn.acc');
+  const recharge = await a.evaluate(() => [document.documentElement.dataset.palette, getComputedStyle(document.querySelector('.pal-preview .btn.acc')).backgroundColor]);
+  const a2 = await cx.newPage(); await a2.goto(BASE + '/index.html#reglages'); await a2.waitForSelector('.pal-preview .btn.acc');
+  const onglet = await a2.evaluate(() => [document.documentElement.dataset.palette, getComputedStyle(document.querySelector('.pal-preview .btn.acc')).backgroundColor]);
+  ok(recharge[0] === 'rubedo' && recharge[1] === RUBEDO.sombre && onglet[0] === 'rubedo' && onglet[1] === RUBEDO.sombre,
+    `rechargée puis rouverte dans un autre onglet : Rubedo toujours appliquée (${recharge.join(', ')} ; ${onglet.join(', ')}) (étape 5)`);
 
   check(!errs.length, 'aucune erreur JavaScript' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

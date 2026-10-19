@@ -1,6 +1,7 @@
-/* ================= radar : événements culturels de la Métropole de Lille (pur, sans DOM ni réseau) =================
+/* ================= radar : événements culturels autour du lieu du ciel, en France (pur, sans DOM ni réseau) =================
    Source : le jeu national « evenements-publics-openagenda » du portail public d'Opendatasoft (API Explore v2.1, sans
-   clé, CORS ouvert). Jusqu'au 30 septembre 2026, le portail de la MEL (opendata.lillemetropole.fr) le servait ; il a
+   clé). Vérifié le 29 septembre 2026 : le portail n'envoie pas d'en-tête CORS ; la page tente la lecture directe, puis
+   passe par le passeur (features/radar.js, docs/connexions.md, 5d). Jusqu'au 30 septembre 2026, le portail de la MEL (opendata.lillemetropole.fr) le servait ; il a
    changé de logiciel et ne le sert plus (redirection vers l'accueil de data.lillemetropole.fr). Les événements de la
    Métropole sont les mêmes : ils viennent d'OpenAgenda. On demande une zone et une période, jamais les mots : le filtre par centres d'intérêt se
    fait ici, sur l'appareil. Tirer, jamais pousser : cinq au plus, pas de « voir plus ». Se teste seul (tests/radar.test.js). */

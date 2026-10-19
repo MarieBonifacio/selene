@@ -270,7 +270,7 @@
         "config": {
           "unitLabel": "min",
           "start": "2026-08-03",
-          "weeks": 12,
+          "weeks": 52,
           "perWeek": 3,
           "tiers": [
             {

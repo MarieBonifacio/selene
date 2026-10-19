@@ -134,3 +134,21 @@ test('une action qui échoue le dit : jamais un clic sans effet visible', async 
     assert.match(toast(), /n'a pas abouti : refusé plus tard/);
   } finally { console.error = quiet; }
 });
+
+test('résumé du matin : les retards y sont comptés, sans jamais sonner seuls (audit, section C)', () => {
+  const storage = new Map([['selene-notify', JSON.stringify({ on: true, at: '07:45' })]]);
+  const app = launch(storage), d = app.site.data;
+  for (const [k, m] of Object.entries(d.modules)) if (m.type !== 'taches') d.config.modules.find(x => x.id === k).on = false; // seules les tâches parlent
+  const t = new Date(); t.setHours(12, 0, 0, 0);
+  const day = n => { const x = new Date(t); x.setDate(t.getDate() + n); return x.toISOString().slice(0, 10); };
+  const ch = d.modules.chantier; ch.entries = [];
+  ch.entries.push({ id: 'l1', title: 'Repeindre la rambarde', due: day(-10), done: false }, { id: 'l2', title: 'Changer le joint', due: day(-2), done: false });
+  assert.equal(app.digestPlan(t.getTime()).length, 0, 'deux retards, rien d’autre : aucun jour ne sonne');
+  ch.entries.push({ id: 'v', title: 'Poser le Velux', due: day(2), done: false });
+  const n = app.digestPlan(t.getTime()).find(x => x.id === 102);
+  assert.ok(n && n.title === 'Selene : 1 chose ce jour', 'le jour de l’échéance sonne, pour cette seule chose');
+  assert.match(n.body, /Échéance : Poser le Velux · 2 tâches en retard$/, 'et le corps compte les retards');
+  ch.entries[1].dropped = { at: day(0), why: '' };
+  ch.entries.push({ id: 'w', title: 'Dossier CAF', due: day(-5), done: false, wait: { since: day(-6), who: '', next: null, log: [] } });
+  assert.match(app.digestPlan(t.getTime()).find(x => x.id === 102).body, /· 1 tâche en retard$/, 'ni une tâche abandonnée, ni une attente ne comptent comme retard');
+});

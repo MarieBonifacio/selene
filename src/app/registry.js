@@ -29,6 +29,7 @@ export const SAVED = [];
      accept(id, inst, note) recevoir une note triée depuis un module Notes ; canAccept(inst) pour conditionner
      badge(inst)           nombre affiché à côté du nom dans la navigation
      recent(inst)          derniers éléments, en texte (lignes dépliables de l'accueil)
+     entryName(inst, e)    le nom d'une entrée dans la bulle « Annuler », quand son titre, son texte ou sa note manque
      texts(inst)           textes parcourus par la recherche : [{ text, date?, ep?, eid? }] (eid : l'entrée, pour y mener)
      timerDone(id, inst)   suite proposée à la fin du minuteur quand ce module est ouvert
      review(inst, from, to) une ligne de bilan pour la période [from, to[ (dates ISO), ou null

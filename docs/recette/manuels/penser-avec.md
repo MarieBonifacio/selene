@@ -116,8 +116,8 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai (une tension ouverte).
 - **Données** : synthèse `La lisière est une frontière que le regard refuse de voir.`
-- **Automatisés associés** : `TU-MOD-49`, `TN-liaisons`
-- **Source** : [DOC] README, « Tensions » ; [TEST] `TU-MOD-49`, `tests/browser/liaisons.js`.
+- **Automatisés associés** : `TU-MOD-49`, `TU-MOD-72`, `TN-liaisons`
+- **Source** : [DOC] README, « Tensions » ; [TEST] `TU-MOD-49`, `TU-MOD-72`, `tests/browser/liaisons.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -126,8 +126,9 @@ Identifiants retirés : aucun.
 | 3 | Écrire la synthèse des données, « Garder ». | « Synthèse gardée. La tension est levée. » |
 | 4 | Revenir au Bilan. | Plus de tension ouverte. |
 | 5 | Sur un fragment, « lier… » → « contredit » → choisir un autre fragment. | « Tension ouverte. Elle attendra sa synthèse. » ; la tension apparaît au Bilan. |
+| 6 | Posée par erreur : « fiche » de l'un des deux fragments, « retirer » sur la ligne « contredit » (ou « contredit par »). | « Lien retiré. », avec « Annuler » ; la tension quitte le Bilan sans synthèse. |
 
-- **État final attendu** : une tension levée, une nouvelle ouverte.
+- **État final attendu** : une tension levée ; celle de l'étape 5, retirée.
 - **Nettoyage** : réimporter le jeu d'essai.
 
 ---
@@ -165,8 +166,8 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : `réécrire l'ouverture du chapitre 2`.
-- **Automatisés associés** : `TU-MOD-41`, `TN-pensee`
-- **Source** : [DOC] README, « Pont de reprise » ; [TEST] `TU-MOD-41`, `tests/browser/pensee.js`.
+- **Automatisés associés** : `TU-MOD-41`, `TU-MOD-75`, `TN-pensee`
+- **Source** : [DOC] README, « Pont de reprise » ; [TEST] `TU-MOD-41`, `TU-MOD-75`, `tests/browser/pensee.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -175,9 +176,10 @@ Identifiants retirés : aucun.
 | 3 | Ouvrir l'accueil. | Sous la ligne d'Écriture : « ↳ réécrire l'ouverture du chapitre 2 · aujourd'hui ». |
 | 4 | Dans Écriture, « fait ». | « Repris. Le pont est levé. » ; le pont disparaît. |
 | 5 | « Annuler » dans le message. | Le pont revient. |
+| 6 | « Je m'arrête ici… » de nouveau, un autre geste, « Garder » ; puis « fait » ; déplier « Fil des reprises ». | Sans pont en cours, « Fil des reprises (2) » reste sous la planche : le plus récent d'abord, chacun « noté le …, remplacé le … » ou « … repris le … ». |
 
-- **État final attendu** : pont présent.
-- **Nettoyage** : « fait ».
+- **État final attendu** : aucun pont en cours ; un fil de deux reprises.
+- **Nettoyage** : aucun (le fil garde trente reprises au plus).
 
 ---
 
@@ -190,14 +192,15 @@ Identifiants retirés : aucun.
 - **Priorité** : P3 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : fragment « La lisière n'est pas une frontière… ».
-- **Automatisés associés** : `TN-signatures`
-- **Source** : [DOC] README, « Fiche » ; [TEST] `tests/browser/signatures.js`.
+- **Automatisés associés** : `TN-signatures`, `TU-MOD-72`
+- **Source** : [DOC] README, « Fiche » ; [TEST] `tests/browser/signatures.js`, `TU-MOD-72`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Sur le fragment, « fiche ». | Un tiroir « Fiche de l'entrée », sans quitter l'espace : texte, liens entrants (dérive, contredit), motifs présents (« lisière »). |
 | 2 | Changer le statut depuis la fiche (« observé »). | La fiche se redessine ; l'histoire du statut montre le changement daté. |
-| 3 | « Voir dans Écriture ». | La fiche se ferme ; le fragment est surligné dans Écriture. |
+| 3 | Sur une ligne de lien de la fiche, « retirer », puis « Annuler » dans la bulle. | « Lien retiré. » ; la ligne disparaît de la fiche, puis revient, à sa place. |
+| 4 | « Voir dans Écriture ». | La fiche se ferme ; le fragment est surligné dans Écriture. |
 
 - **État final attendu** : statut « observé ».
 - **Nettoyage** : remettre le statut vide.
@@ -265,8 +268,8 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : mode « Mois », septembre 2026.
-- **Automatisés associés** : `TU-MOD-37`, `TU-MOD-38`, `TN-bilan`
-- **Source** : [DOC] README, « Bilan » ; [TEST] `TU-MOD-37`, `TU-MOD-38`, `tests/browser/bilan.js`.
+- **Automatisés associés** : `TU-MOD-37`, `TU-MOD-38`, `TU-MOD-76`, `TN-bilan`
+- **Source** : [DOC] README, « Bilan » ; [TEST] `TU-MOD-37`, `TU-MOD-38`, `TU-MOD-76`, `tests/browser/bilan.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|

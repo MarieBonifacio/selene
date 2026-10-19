@@ -57,6 +57,10 @@ const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
       src: { doi: '10.1016/j.concog.2020.102946', url: 'https://doi.org/10.1016/j.concog.2020.102946', site: 'Consciousness and Cognition', date: '2020-05-12' } },
     { id: 's2', title: 'La lisière', subtitle: '', tag: 'page', status: 'Lue', text: '', date: '2026-10-01', src: { url: 'https://www.sousbois.fr/lisiere', site: 'Revue des sous-bois' } }] };
   rempli.config.modules.push({ id: 'sources', on: true });
+  // Le jeu n'a aucune tâche : une ordinaire, et une en attente dont la relance est due (E1), pour mesurer leurs boutons
+  // sur Tâches (échéances, section « En attente ») et sur l'accueil (l'alerte de relance).
+  const tache = (id, title, extra) => ({ id, title, room: 'Salon', cat: 'Bricolage', due: '2026-12-01', effort: 1, cost: null, note: '', today: false, done: false, doneAt: null, created: '2026-09-01', steps: [], ...extra });
+  rempli.modules.chantier.entries.push(tache('c1', 'Poncer la porte'), tache('c2', 'Devis du ravalement', { wait: { since: '2026-09-01', who: 'Le syndic', next: '2026-09-15', log: [] } }));
   await p.evaluate(d => { localStorage.setItem('selene-site-v1', d); }, JSON.stringify(rempli));
   await p.reload(); await p.waitForTimeout(400);
   for (const [nom, hash] of [['accueil', 'accueil'], ['Réglages', 'reglages'], ['Tâches', 'chantier'], ['Écriture', 'ecriture'], ['Collection', 'moth'], ['Musique', 'musique'], ['Budget', 'budget'], ['Programme', 'kundalini'], ['Rappels', 'phidippus'], ['Boîte', 'inbox'], ['Sources', 'sources'], ['Bilan', 'bilan'], ['Recherche', 'recherche']]) await ecran(nom, hash);

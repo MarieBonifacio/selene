@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-vETm6IvcP/Y1EGnaNp7vu7oNJv6JDov7XB3nPV8ksN8=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-zWaKHdLIEUPxVBYsr2IsecZI8Ub5b9qjMpF4lO1UOYw=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -47,7 +47,7 @@
   --rule:#c1c9bc; --rule-strong:#75816f; --alarm:#a8431f; --ok:#2f6f62; --warn:#7d5a12; --info:#3f5d78;
   --moon:#f4f1e4; --moon-shadow:#b8c2b6; --glow:rgba(255,252,235,.0);
   --sky-top:#b9c7c0; --sky-bot:#dfe5dc; --tree-far:#8fa294; --tree-near:#3b4d40; --mist:rgba(226,230,222,.75); --star:0;
-  --acc-l:#3d6a45; --acc-d:#8fbf86; --accent:var(--acc-l);
+  --acc-l:#416a43; --acc-d:#8fbf86; --accent:var(--acc-l);
   --ease:cubic-bezier(.2,0,0,1); --t-1:120ms; --t-2:180ms; --t-3:260ms;
   /* Trois voix : l'éditorial parle (titres, textes), le fonctionnel agit (boutons, champs, données), l'étiquette classe. */
   --f-display:"Cormorant Garamond",Georgia,serif; --f-text:"Spectral",Georgia,"Times New Roman",serif;
@@ -57,9 +57,16 @@
   box-sizing:border-box; accent-color:var(--accent);
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
-:root[data-palette="albedo"]{--acc-l:#5a6a5c;--acc-d:#bccab8}
-:root[data-palette="citrinitas"]{--acc-l:#83631a;--acc-d:#d4a94c}
-:root[data-palette="rubedo"]{--acc-l:#973a30;--acc-d:#d56455}
+/* Les palettes (la couleur d'accent) : posées sur la racine, et sur chaque pastille des Réglages, qui montre ainsi la
+   couleur que sa palette donnera dans le mode en cours (A67). Chacune lisible sous du texte (4,5:1), loin du gris des
+   textes secondaires, des autres palettes et des couleurs d'état : tests/palette.test.js. Citrinitas tient du citron et du
+   pollen, pas de l'ambre de --warn ; Rubedo, du rubis et de la framboise (l'« iosis » des Grecs, le pourpre), pas du
+   cinabre de --alarm (17 octobre 2026). En clair, un jaune assez sombre pour 4,5:1 devient olive : c'est le prix. */
+[data-palette="nigredo"]{--acc-l:#416a43;--acc-d:#8fbf86}
+[data-palette="albedo"]{--acc-l:#3f5554;--acc-d:#d3dfcc}
+[data-palette="citrinitas"]{--acc-l:#636301;--acc-d:#d9c84d}
+[data-palette="rubedo"]{--acc-l:#a42b4a;--acc-d:#df627b}
+.swatch[data-palette]{--sw:var(--acc-l)}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]):not([data-mode="light"]){
     --bg:#0e1310; --surface:#151c17; --surface-2:#1a231d; --glass:rgba(14,19,16,.78); --ink:#dde2d6; --ink-2:#b4bdb0; --muted:#8c998a;
@@ -69,7 +76,9 @@
     --sky-top:#070b10; --sky-bot:#132019; --tree-far:#1d2b23; --tree-near:#0a0f0c; --mist:rgba(40,58,48,.55); --star:.8;
     --accent:var(--acc-d);
   }
+  :root:not([data-theme="light"]):not([data-mode="light"]) .swatch[data-palette]{--sw:var(--acc-d)}
 }
+:root[data-theme="dark"]:not([data-mode="light"]) .swatch[data-palette],:root[data-mode="dark"] .swatch[data-palette]{--sw:var(--acc-d)}
 :root[data-theme="dark"]:not([data-mode="light"]),:root[data-mode="dark"]{
   --bg:#0e1310; --surface:#151c17; --surface-2:#1a231d; --glass:rgba(14,19,16,.78); --ink:#dde2d6; --ink-2:#b4bdb0; --muted:#8c998a;
   --rule:#243029; --rule-strong:#56665a; --alarm:#e5785a; --ok:#6fb3a2; --warn:#d2a24c; --info:#8fa9c0;
@@ -230,6 +239,7 @@ dialog.sheet[open]{animation:sheet-in var(--t-3) var(--ease)}
 @media (max-width:640px){.carte-toggle{display:inline-flex;margin:6px 0}.carte:not(.show-sky) .carte-sky,.carte:not(.show-sky) .carte-legend{display:none}}
 .srow{display:flex;align-items:baseline;gap:12px;min-height:48px;padding:11px 2px;border-top:1px solid var(--rule);text-decoration:none}
 .srow b{font-family:"Cormorant Garamond",serif;font-size:1.3rem;font-weight:600}
+button.srow{width:100%;background:none;border:0;border-top:1px solid var(--rule);border-radius:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .srow .sub{color:var(--muted);font-size:.85rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .recents{display:flex;gap:8px;flex-wrap:wrap}.recents .btn{text-decoration:none}
 /* Palette de commandes (⌘K) : aller, agir, chercher. */
@@ -445,9 +455,9 @@ ul.plain>.item:last-child{border-bottom:1px solid var(--rule)}
 .item.motif{grid-template-columns:auto 1fr}.item.motif>.row{grid-column:2}.item.motif select{width:auto}
 .item>.row>select{width:auto;max-width:11em} /* un menu de statut ne doit pas écraser le titre de la ligne */
 .col-list>.item>.row{flex-wrap:wrap;justify-content:flex-end;max-width:15em} /* les actions cachées passent à la ligne plutôt que d'élargir la colonne */
-.check{appearance:none;width:21px;height:21px;border:1.5px solid var(--ink);border-radius:50%;margin:3px 0 0;display:grid;place-content:center;cursor:pointer;background:transparent}
-.check:checked{background:var(--accent);border-color:var(--accent)}
-.check:checked::after{content:"";width:9px;height:5px;border:2px solid var(--bg);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.check{appearance:none;width:21px;height:21px;padding:0;border:1.5px solid var(--ink);border-radius:50%;margin:3px 0 0;display:grid;place-content:center;cursor:pointer;background:transparent}
+.check:checked,.pv-check{background:var(--accent);border-color:var(--accent)}
+.check:checked::after,.pv-check::after{content:"";width:9px;height:5px;border:2px solid var(--bg);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
 .t-title{font-weight:500;background:none;border:0;padding:0;text-align:left;cursor:pointer}
 .done .t-title{text-decoration:line-through;color:var(--muted)}
 .meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:2px;font-size:.85rem;color:var(--muted)}
@@ -491,7 +501,7 @@ ul.dehors+ul.dehors,h3+ul.dehors{margin-top:0}
 .capture select{flex:0 1 auto;width:auto;max-width:11em}
 .agenda-ev{padding:3px 0}.agenda-ev .when{display:inline-block;min-width:7.5em;font-variant-numeric:tabular-nums;color:var(--muted)}
 .dehors .why{margin:4px 0 0;font-size:.85rem;color:var(--accent)}.cite-bar h4{margin:16px 0 4px;font-size:1rem}.cite-bar>.row{align-items:baseline;flex-wrap:wrap}ul.cite-pairs li,ul.cite-authors li{padding:3px 0}
-@media (max-width:640px){ul.dehors>.item,ul.dehors-cfg>.item,ul.zot-list>.item,ul.cite-list>.item,.col-list>.item{grid-template-columns:auto minmax(0,1fr)}ul.dehors>.item>.row,ul.dehors-cfg>.item>.row,ul.zot-list>.item>.row,ul.cite-list>.item>.row,.col-list>.item>.row{grid-column:2;justify-content:flex-start;max-width:none}
+@media (max-width:640px){ul.dehors>.item,ul.dehors-cfg>.item,ul.zot-list>.item,ul.cite-list>.item,.col-list>.item,ul.radar>.item{grid-template-columns:auto minmax(0,1fr)}ul.dehors>.item>.row,ul.dehors-cfg>.item>.row,ul.zot-list>.item>.row,ul.cite-list>.item>.row,.col-list>.item>.row,ul.radar>.item>.row{grid-column:2;justify-content:flex-start;max-width:none}
   .capture.capture-wrap{flex-wrap:wrap}.capture.capture-wrap input{flex:1 1 100%}}
 .meta .acts{margin-left:auto;display:inline-flex;gap:2px}.meta .acts .btn{padding:0 6px;font-size:.8rem}
 .marg .links{display:flex;flex-direction:column;gap:2px}
@@ -521,6 +531,7 @@ select.ep.on{color:var(--accent);border-color:var(--rule)}
 .bridge.off{justify-content:flex-end;margin-bottom:4px}
 .bridge input{flex:1 1 240px}
 .bridge.stale,.resume.stale{opacity:.6}
+.bridge-log{margin:-8px 0 16px;font-size:.9rem}.bridge-log summary{color:var(--muted);cursor:pointer}.bridge-log li{padding:2px 0}
 .over .resume{display:block;color:var(--ink);font-size:.88rem;margin-top:2px}
 
 /* overview rows */
@@ -623,7 +634,7 @@ dialog::backdrop{background:rgba(6,10,8,.55);-webkit-backdrop-filter:blur(4px);b
 dialog form{padding:22px;display:grid;gap:12px}
 label{display:grid;gap:4px;font-size:.88rem;font-weight:500}
 input,select,textarea{background:var(--bg);border:1px solid var(--rule-strong);padding:8px;border-radius:2px;width:100%}
-input[type=checkbox],input[type=radio]{width:auto}
+input[type=checkbox]:not(.check),input[type=radio]{width:auto}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:480px){.field-row{grid-template-columns:1fr}}
 .set{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--rule)}
@@ -653,7 +664,11 @@ input[type=checkbox],input[type=radio]{width:auto}
 .swatches{display:flex;gap:10px;flex-wrap:wrap}
 .swatch{display:flex;align-items:center;gap:8px;border:1px solid var(--rule);padding:8px 12px;cursor:pointer;background:var(--surface)}
 .swatch.on{border-color:var(--accent);outline:1px solid var(--accent)}
-.swatch i{width:14px;height:14px;border-radius:50%;display:block}
+.swatch i{width:14px;height:14px;border-radius:50%;display:block;background:var(--sw)}
+/* L'aperçu : les vrais composants que colore l'accent, inertes. */
+.pal-preview{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-top:12px;padding:10px 12px;border:1px dashed var(--rule);font-size:.9rem}
+.pal-preview .pv-on{padding:4px 10px;border-left:2px solid var(--accent);background:var(--surface)}
+.pal-preview .bar{width:90px;margin:0}
 .capture{display:flex;gap:8px}
 .capture input{flex:1}
 .toast{position:fixed;z-index:10;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:2px;font-size:.92rem;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center}
@@ -711,7 +726,9 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
   .btn{min-width:44px}a.btn{display:inline-block} /* un lien-bouton ne se coupe pas en deux lignes de cible */
   .btn,.star,.check{position:relative}
   .btn::after,.star::after{content:"";position:absolute;inset:min(-3px,calc(50% - 23px)) -3px}
-  .check::before{content:"";position:absolute;inset:-11px}
+  .star::after{inset:min(-3px,calc(50% - 23px))} /* l'étoile d'une tâche, étroite : sa zone s'élargit aussi */
+  .check::before{content:"";position:absolute;inset:-14px -12px -14px -16px} /* comptée depuis l'intérieur de la bordure : 18 px sous Firefox, qui garde 1,5 px de bordure (19 sous Chromium, qui l'arrondit) ; à droite, le titre à 10 px ; à gauche, la marge de la page */
+  .t-title{position:relative}.t-title::after{content:"";position:absolute;inset:min(-3px,calc(50% - 23px)) 0} /* le titre d'une tâche, qui la déplie */
   details.mreg>summary{min-height:44px;align-items:center}
   .reg-guide summary,.danger summary,details.rlm-privacy>summary,details.rlm-info>summary{padding-block:11px}
   .tap{display:grid;place-items:center;min-width:44px;min-height:44px}
@@ -752,7 +769,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "27a506e641";
+const SELENE_BUILD = "12e11d7c23";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1216,6 +1233,7 @@ var __selene = (() => {
     REGULATION_PAUSE_MS: () => REGULATION_PAUSE_MS,
     REGULATION_STORAGES: () => REGULATION_STORAGES,
     REGULATION_SUBJECTS: () => REGULATION_SUBJECTS,
+    RELAUNCH_DAYS: () => RELAUNCH_DAYS,
     S: () => S,
     SAVED: () => SAVED,
     SCHEMA_VERSION: () => SCHEMA_VERSION,
@@ -1289,6 +1307,7 @@ var __selene = (() => {
     bilanOffset: () => bilanOffset,
     board: () => board,
     bridgeBar: () => bridgeBar,
+    bridgeLog: () => bridgeLog,
     bridgeOpen: () => bridgeOpen,
     bridgeSave: () => bridgeSave,
     bridgeStale: () => bridgeStale,
@@ -1302,6 +1321,7 @@ var __selene = (() => {
     citeBar: () => citeBar,
     citeOwn: () => citeOwn,
     citeSources: () => citeSources,
+    clearTaskWaiting: () => clearTaskWaiting,
     clip: () => clip,
     clone: () => clone,
     closeOverlays: () => closeOverlays,
@@ -1352,6 +1372,7 @@ var __selene = (() => {
     downloadsNS: () => downloadsNS,
     driftSection: () => driftSection,
     driftWords: () => driftWords,
+    dropTask: () => dropTask,
     eclipseText: () => eclipseText,
     editFragmentText: () => editFragmentText,
     enabled: () => enabled,
@@ -1397,6 +1418,7 @@ var __selene = (() => {
     highlight: () => highlight,
     hm: () => hm,
     icsBetween: () => icsBetween,
+    icsEvent: () => icsEvent,
     icsParse: () => icsParse,
     idOf: () => idOf,
     igDay: () => igDay,
@@ -1528,6 +1550,7 @@ var __selene = (() => {
     radarFold: () => radarFold,
     radarMatch: () => radarMatch,
     radarPlace: () => radarPlace,
+    radarPossible: () => radarPossible,
     radarSettingsHTML: () => radarSettingsHTML,
     radarUrl: () => radarUrl,
     radarWords: () => radarWords,
@@ -1559,6 +1582,7 @@ var __selene = (() => {
     regulationSubjectConflict: () => regulationSubjectConflict,
     regulationSummary: () => regulationSummary,
     regulationSupports: () => regulationSupports,
+    relaunchTask: () => relaunchTask,
     rememberScroll: () => rememberScroll,
     removeWithUndo: () => removeWithUndo,
     render: () => render,
@@ -1566,6 +1590,7 @@ var __selene = (() => {
     reportError: () => reportError,
     requireText: () => requireText,
     reservedId: () => reservedId,
+    resumeTask: () => resumeTask,
     retargetLinks: () => retargetLinks,
     roman: () => roman,
     routeOf: () => routeOf,
@@ -1580,12 +1605,14 @@ var __selene = (() => {
     scrapsMarkdown: () => scrapsMarkdown,
     searchAll: () => searchAll,
     searchFresh: () => searchFresh,
+    searchHidden: () => searchHidden,
     searchQuery: () => searchQuery,
     seasonAt: () => seasonAt,
     sendChat: () => sendChat,
     setActivity: () => setActivity,
     setBilanOffset: () => setBilanOffset,
     setBridgeOpen: () => setBridgeOpen,
+    setCollectionStatus: () => setCollectionStatus,
     setEpStatus: () => setEpStatus,
     setErrorReports: () => setErrorReports,
     setOpenId: () => setOpenId,
@@ -1594,6 +1621,7 @@ var __selene = (() => {
     setSaving: () => setSaving,
     setTaskDone: () => setTaskDone,
     setTaskToday: () => setTaskToday,
+    setTaskWaiting: () => setTaskWaiting,
     setupRegulation: () => setupRegulation,
     sharePending: () => sharePending,
     shareSettingsHTML: () => shareSettingsHTML,
@@ -1638,8 +1666,10 @@ var __selene = (() => {
     summaryFor: () => summaryFor,
     sunPosition: () => sunPosition,
     taskFilters: () => taskFilters,
+    taskForm: () => taskForm,
     taskHTML: () => taskHTML,
     taskModules: () => taskModules,
+    taskOpen: () => taskOpen,
     tensionSection: () => tensionSection,
     texEscape: () => texEscape,
     textLang: () => textLang,
@@ -1864,6 +1894,9 @@ var __selene = (() => {
     "Clé effacée du serveur.": "Key erased from the server.",
     "Clé non effacée : {0}": "Key not erased: {0}",
     // features/bridge.js
+    "Fil des reprises ({0})": "Trail of resumptions ({0})",
+    "noté le {0}, repris le {1}": "noted {0}, resumed {1}",
+    "noté le {0}, remplacé le {1}": "noted {0}, replaced {1}",
     "Le prochain geste, pour la prochaine fois…": "The next step, for next time…",
     "Prochain geste": "Next step",
     "plus tard": "later",
@@ -2026,6 +2059,7 @@ var __selene = (() => {
     "Absent cette fois, fréquent avant": "Absent this time, frequent before",
     "{0} avant": "{0} before",
     // features/digest.js
+    "{0} tâche en retard": { one: "{0} task overdue", other: "{0} tasks overdue" },
     "Échéance : {0}": "Deadline: {0}",
     "Selene : {0} chose ce jour": { one: "Selene: {0} thing that day", other: "Selene: {0} things that day" },
     "Selene : {0} chose aujourd'hui": { one: "Selene: {0} thing today", other: "Selene: {0} things today" },
@@ -2047,6 +2081,7 @@ var __selene = (() => {
     "Chaque entrée porte sa date, son module et, s'il est indiqué, son statut épistémique : *observé* (ce qui s'est présenté), *hypothèse* (une conjecture à tester), *interprétation* (une lecture, un cadre appliqué), *inexpliqué* (laissé ouvert à dessein). Ne pas traiter une hypothèse comme un fait, ni combler un inexpliqué. Les renvois [n] désignent les entrées de ce dossier.": "Each entry carries its date, its module and, when given, its epistemic status: *observed* (what presented itself), *hypothesis* (a conjecture to test), *interpretation* (a reading, an applied frame), *unexplained* (left open on purpose). Do not treat a hypothesis as a fact, nor fill in an unexplained. References [n] point to the entries of this dossier.",
     "Références": "References",
     // features/links.js
+    "Lien retiré.": "Link removed.",
     "a donné": "gave rise to",
     "contredit par": "contradicted by",
     "écho de": "echo of",
@@ -2101,6 +2136,8 @@ var __selene = (() => {
     "Rien de neuf. Le silence est aussi une nouvelle.": "Nothing new. Silence is news too.",
     "{0} artiste sans réponse : réessaie plus tard.": { one: "{0} artist didn't answer: try again later.", other: "{0} artists didn't answer: try again later." },
     // features/radar.js
+    "L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas ouvert à ce compte.": "The events calendar can't be read directly by the browser, and the relay, which would read it for you, isn't open to this account.",
+    "L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas installé sur ce serveur.": "The events calendar can't be read directly by the browser, and the relay, which would read it for you, isn't installed on this server.",
     "L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).": "The events calendar can't be read directly by the browser: you need your relay (hosted version, signed in).",
     "L'agenda répond {0} (le portail a peut-être changé). Réessaie plus tard.": "The events calendar answers {0} (the portal may have changed). Try again later.",
     "L'agenda répond par une erreur (le portail a peut-être changé). Réessaie plus tard.": "The events calendar answers with an error (the portal may have changed). Try again later.",
@@ -2115,6 +2152,12 @@ var __selene = (() => {
     "du {0} au {1}": "from {0} to {1}",
     "Rien qui te ressemble, cette fois. La ville continuera sans toi, elle a l'habitude.": "Nothing that looks like you, this time. The city will carry on without you; it's used to it.",
     "gardé": "kept",
+    "le {0}": "on {0}",
+    "L'accueil ne le propose donc plus ; il réessaiera de lui-même dans une semaine.": "So the home page no longer offers it; it will try again on its own in a week.",
+    "sortie prévue": "outing planned",
+    "en faire une sortie": "plan an outing",
+    "En faire une sortie": "Plan an outing",
+    "Dans quel espace": "In which space",
     "{0} autre correspond aussi : des mots plus précis choisiraient mieux.": { one: "{0} other also matches: more precise words would choose better.", other: "{0} others also match: more precise words would choose better." },
     "Aucune boîte de réception où le garder. Crée un Carnet et fais-en ta boîte (Réglages).": "No inbox to keep it in. Create a Notebook and make it your inbox (Settings).",
     "Gardé dans {0}.": "Kept in {0}.",
@@ -2195,6 +2238,7 @@ var __selene = (() => {
     "Exporter en CSL-JSON": "Export as CSL-JSON",
     "Toutes les sources de cet espace, pour Zotero, Zettlr ou Pandoc": "All the sources in this space, for Zotero, Zettlr or Pandoc",
     // features/specimen.js
+    "retirer": "remove",
     "Cette entrée n'existe plus.": "This entry no longer exists.",
     "{0} : ": "{0}: ",
     "{0}, le {1}": "{0}, on {1}",
@@ -2307,6 +2351,11 @@ var __selene = (() => {
     "vent du nord-ouest {0} km/h": "north-west wind {0} km/h",
     "{0} : à remplir": "{0}: required",
     "Tâche introuvable": "Task not found",
+    "Une tâche faite n'attend plus rien": "A finished task isn't waiting for anything",
+    "Cette tâche n'est pas en attente": "This task isn't waiting for a reply",
+    "Une tâche abandonnée n'attend plus rien": "A dropped task isn't waiting for anything",
+    "Une tâche abandonnée ne se fait pas aujourd'hui : reprends-la d'abord": "A dropped task can't be done today: pick it up again first",
+    "Une tâche faite ne s'abandonne pas": "A finished task can't be dropped",
     "Trois tâches du jour maximum": "Three tasks for today at most",
     "Montant invalide": "Invalid amount",
     "Date invalide": "Invalid date",
@@ -2347,7 +2396,6 @@ var __selene = (() => {
     "Ce module a été supprimé entre-temps.": "This module was deleted in the meantime.",
     "Déjà à cette étape.": "Already at this stage.",
     "(supprimé)": "(deleted)",
-    "retirer": "remove",
     "Placer un élément": "Place an item",
     "Vide.": "Empty.",
     "Aucune étape pour l'instant. Ajoute-en dans {0}.": "No stages yet. Add some in {0}.",
@@ -2396,6 +2444,9 @@ var __selene = (() => {
     "Nouvelle enveloppe": "New envelope",
     "Supprimer l'enveloppe « {0} » ? Les opérations restent.": "Delete the envelope “{0}”? The transactions stay.",
     // modules/collection.js
+    "Sources : chaque élément est une source, gardée par un lien ou un DOI qui se complète, exportable en BibTeX et CSL-JSON, et qui documente tes notes et fragments": "Sources: each item is a source, kept from a link or a DOI that fills itself in, exportable as BibTeX and CSL-JSON, and documenting your notes and fragments",
+    "Rien encore : « {0} », en haut, pour commencer.": "Nothing yet: “{0}”, at the top, to begin.",
+    "depuis le {0}": "since {0}",
     "« {0} » est passé à « {1} ». Le monde n'a rien remarqué, comme prévu.": "“{0}” moved to “{1}”. The world didn't notice, as planned.",
     "« {0} » : {1}. Une chose de moins qui attend ton attention.": "“{0}”: {1}. One less thing waiting for your attention.",
     "{1} : « {0} ». L'Œuvre avance, à pas de lichen.": "{1}: “{0}”. The Work advances, at the pace of lichen.",
@@ -2467,6 +2518,9 @@ var __selene = (() => {
     "{0} publication importée dans {1}.": { one: "{0} post imported into {1}.", other: "{0} posts imported into {1}." },
     "« {0} » existe déjà.": "“{0}” already exists.",
     // modules/cumul.js
+    "Un carnet de fragments : des phrases à garder à côté du compteur, qui reçoivent aussi les notes triées": "A notebook of fragments: sentences kept alongside the counter, which also take sorted notes",
+    "Nom du carnet": "Notebook name",
+    "Sessions ({0})": "Sessions ({0})",
     "Objectif atteint. Le reste relève de l'orgueil, ou de la réécriture.": "Goal reached. Anything more is vanity, or rewriting.",
     "Pas assez d'élan ces 30 derniers jours pour prédire une fin. La prophétie attendra.": "Not enough momentum these last 30 days to predict an end. The prophecy will wait.",
     "Au rythme des 30 derniers jours ({0} {1} par jour), objectif atteint vers le {2}.": "At the pace of the last 30 days ({0} {1} a day), goal reached around {2}.",
@@ -2552,6 +2606,7 @@ var __selene = (() => {
     "Ranger : {0}": "File: {0}",
     "Garder comme source": "Keep as a source",
     "Vide. Le silence d'une clairière, ou celui d'un cerveau.": "Empty. The silence of a clearing, or of a brain.",
+    "Rien pour l'instant. Une note ne se corrige pas : elle se garde ou s’efface. Pour un texte qui change, les fragments d’un espace d’écriture gardent leurs versions.": "Nothing yet. A note can't be edited: you keep it or delete it. For a text that changes, the fragments of a writing space keep their versions.",
     "Boîte de réception : reçoit la capture rapide de l'accueil": "Inbox: receives the quick capture from Today",
     "Description": "Description",
     "Une phrase sous le titre": "A sentence under the title",
@@ -2560,6 +2615,8 @@ var __selene = (() => {
     "{0} note": { one: "{0} note", other: "{0} notes" },
     "Rangé dans {0}.": "Filed in {0}.",
     // modules/programme.js
+    "Terminé le {0}": "Finished on {0}",
+    "Pour continuer, allonge sa durée dans {0}.": "To keep going, extend its length in {0}.",
     "Semaine {0}": "Week {0}",
     "{0} sur {1} séances": "{0} of {1} sessions",
     "Par semaine": "By week",
@@ -2613,6 +2670,7 @@ var __selene = (() => {
     "Palier « {0} » atteint ({1})": "Tier “{0}” reached ({1})",
     "Noter la décision : « {0} »": "Write down the decision: “{0}”",
     // modules/rappels.js
+    "Geste supprimé": "Deleted type",
     "tous les {0} j": "every {0} d",
     "Fait aujourd'hui": "Done today",
     "Observation…": "Observation…",
@@ -2901,6 +2959,34 @@ var __selene = (() => {
     "Demain": "Tomorrow",
     "Dans {0} j": "In {0} d",
     "Prévision Open-Meteo pour {0}, cinq jours": "Open-Meteo forecast for {0}, five days",
+    "relancer le {0}": "chase on {0}",
+    "sans date de relance": "no chase date",
+    "relancé {0} fois": { one: "chased once", other: "chased {0} times" },
+    "J'attends une réponse": "Waiting for a reply",
+    "Qui doit répondre": "Who owes the reply",
+    "chez {0}": "with {0}",
+    "Relancer le": "Chase on",
+    "Cette tâche a été supprimée entre-temps.": "This task was deleted in the meantime.",
+    "« {0} » attend une réponse. Elle revient le jour de la relance.": "“{0}” is waiting for a reply. It comes back on the chase date.",
+    "La tâche sort des échéances et revient sur l'accueil le jour de la relance.": "The task leaves the deadlines and comes back on the home page on the chase date.",
+    "En attente": "Waiting",
+    "La balle est dans un autre camp. Elles reviennent sur l'accueil le jour de la relance.": "The ball is in someone else's court. They come back on the home page on the chase date.",
+    "relancé": "chased",
+    "réponse reçue": "reply received",
+    "Ajouter à mon calendrier": "Add to my calendar",
+    "Abandonner": "Drop",
+    "Abandonner la tâche": "Drop the task",
+    "Pourquoi (facultatif)": "Why (optional)",
+    "« {0} » abandonnée. Elle reste sous « Abandonnées ».": "“{0}” dropped. It stays under “Dropped”.",
+    "Elle quitte les listes sans compter comme faite, et reste sous « Abandonnées », d'où l'on peut la reprendre.": "It leaves the lists without counting as done, and stays under “Dropped”, where you can pick it up again.",
+    "Abandonnées": "Dropped",
+    "Renoncer n'est pas échouer : c'est trier, avec un peu de retard.": "Giving up isn't failing: it's sorting, a little late.",
+    "{0} abandonnée": { one: "{0} dropped", other: "{0} dropped" },
+    "« {0} » reprend du service.": "“{0}” is back on duty.",
+    "{0} en attente": "{0} waiting",
+    "« {0} » : à relancer ({1})": "“{0}”: chase it ({1})",
+    "Relancé. Prochaine relance le {0}.": "Chased. Next chase on {0}.",
+    "Réponse reçue : « {0} » revient dans les échéances.": "Reply received: “{0}” is back in the deadlines.",
     "sec jusqu'à {0}": "dry until {0}",
     "pluie prévue {0}, le jour prévu": "rain forecast {0}, on the planned day",
     "pluie prévue {0}": "rain forecast {0}",
@@ -3232,6 +3318,7 @@ var __selene = (() => {
     "Confirmer": "Confirm",
     "Je m'arrête ici…": "I'm stopping here…",
     // shell/sheets.js
+    "un espace, une action, un texte": "a space, an action, a text",
     "Récents": "Recent",
     "Système": "System",
     "Ce module n'existe plus.": "This module no longer exists.",
@@ -3363,6 +3450,7 @@ var __selene = (() => {
     "Un fichier .html autonome, si l'impression est bloquée": "A standalone .html file, if printing is blocked",
     "Télécharger": "Download",
     // views/recherche.js
+    "Aussi {0} résultat dans « {1} », désactivé : {2} → Espaces pour le rouvrir.": { one: "Also {0} result in “{1}”, turned off: {2} → Spaces to turn it back on.", other: "Also {0} results in “{1}”, turned off: {2} → Spaces to turn it back on." },
     "Tous les espaces": "All spaces",
     "Toute date": "Any date",
     "Depuis la nouvelle lune": "Since the new moon",
@@ -3389,7 +3477,7 @@ var __selene = (() => {
     "Ce qui relie Selene au reste : un lien envoyé d'ailleurs, ta bibliothèque Zotero, et le passeur qui lit pour toi ce que le navigateur ne peut pas lire.": "What links Selene to the rest: a link sent from elsewhere, your Zotero library, and the relay that reads for you what the browser cannot read.",
     "Compte et données": "Account and data",
     "Emporter tes données, les ramener, et, en dernier recours, tout effacer.": "Take your data away, bring it back, and, as a last resort, erase everything.",
-    "Les quatre étapes du Grand Œuvre des alchimistes : nigredo, l'œuvre au noir (la mousse) ; albedo, au blanc (le lichen) ; citrinitas, au jaune (la résine) ; rubedo, au rouge (l'amanite). Seul l'accent change : les couleurs qui informent (retard, succès, alerte) restent les mêmes.": "The four stages of the alchemists' Great Work: nigredo, the work in black (moss); albedo, in white (lichen); citrinitas, in yellow (resin); rubedo, in red (fly agaric). Only the accent changes: the colours that inform (overdue, success, alert) stay the same.",
+    "Les quatre étapes du Grand Œuvre des alchimistes : nigredo, l'œuvre au noir (la mousse) ; albedo, au blanc (le lichen) ; citrinitas, au jaune (le pollen) ; rubedo, au rouge (la framboise). Seul l'accent change : les couleurs qui informent (retard, succès, alerte) restent les mêmes.": "The four stages of the alchemists' Great Work: nigredo, the work in black (moss); albedo, in white (lichen); citrinitas, in yellow (pollen); rubedo, in red (raspberry). Only the accent changes: the colours that inform (overdue, success, alert) stay the same.",
     "« Suivre l'appareil » obéit au réglage clair ou sombre du système. « Suivre le soleil » passe en sombre au crépuscule et en clair à l'aube, au lieu réglé dans Ciel et alentours (à défaut, d'après ton fuseau horaire).": "“Follow the device” obeys the system's light or dark setting. “Follow the sun” turns dark at dusk and light at dawn, at the place set in Sky and surroundings (failing that, from your time zone).",
     "Le nom en tête de l'app et dans l'onglet du navigateur.": "The name at the top of the app and in the browser tab.",
     "Propre à cet appareil : le téléphone peut rouvrir le dernier espace où tu étais, et l'ordinateur toujours l'accueil.": "Specific to this device: the phone can reopen the last space you were in, and the computer always opens on Today.",
@@ -3446,7 +3534,7 @@ var __selene = (() => {
     "Les connexions (Envoyer à Selene, Zotero, le passeur, le calendrier) vivent dans la version web ou l'app installée. L'artefact claude.ai s'en passe.": "Connections (Send to Selene, Zotero, the relay, the calendar) live in the web version or the installed app. The claude.ai artifact does without them.",
     "Zone sensible": "Danger zone",
     // views/reglages.js
-    "Palette": "Palette",
+    "Couleur d'accent": "Accent colour",
     "Ouvrir sur": "Open on",
     "Sur claude.ai, il passe par ton compte. Dans la version hébergée, il faut ta propre clé API : vérifiée auprès d'Anthropic, elle est gardée chiffrée sur le serveur de Selene, attachée à ton compte, et ne revient jamais dans la page.": "On claude.ai, it goes through your account. In the hosted version, you need your own API key: checked with Anthropic, it is kept encrypted on Selene's server, tied to your account, and never comes back into the page.",
     "Autoriser Claude à modifier le tableau de bord": "Allow Claude to change the dashboard",
@@ -3456,10 +3544,12 @@ var __selene = (() => {
     "Langue de l'appareil": "Device language",
     "Nigredo, mousse": "Nigredo, moss",
     "Albedo, lichen": "Albedo, lichen",
-    "Citrinitas, résine": "Citrinitas, resin",
-    "Rubedo, amanite": "Rubedo, fly agaric",
+    "Citrinitas, pollen": "Citrinitas, pollen",
+    "Rubedo, framboise": "Rubedo, raspberry",
     "Tout ici s'applique immédiatement.": "Everything here applies immediately.",
-    "Quatre étapes de l'Œuvre, prises dans le sous-bois.": "Four stages of the Great Work, taken from the undergrowth.",
+    "Elle colore les repères : bouton principal, espace ouvert, jauges, cases cochées. Le fond, le texte et les couleurs d'alerte ne changent pas ; clair ou sombre se règle dans Mode.": "It colours the markers: main button, open space, gauges, ticked boxes. The background, the text and the warning colours stay as they are; light or dark is set in Mode.",
+    "Bouton principal": "Main button",
+    "Espace ouvert": "Open space",
     "Mode": "Mode",
     "Suivre l'appareil": "Follow the device",
     "Toujours sombre": "Always dark",
@@ -3678,9 +3768,9 @@ var __selene = (() => {
   }
   var PAGE = 100;
   var pageSize = {};
-  function paged(key, list) {
-    const n = pageSize[key] || PAGE, rest = list.length - n;
-    return { items: list.slice(0, n), more: rest > 0 ? `<li class="more-row"><button class="btn ghost sm" data-act="page-more" data-k="${esc(key)}">${tr`Voir les ${Math.min(PAGE, rest)} suivants (${rest.toLocaleString(uiLocale())} de plus)`}</button></li>` : "" };
+  function paged(key, list, first2 = PAGE) {
+    const n = pageSize[key] || first2, rest = list.length - n;
+    return { items: list.slice(0, n), more: rest > 0 ? `<li class="more-row"><button class="btn ghost sm" data-act="page-more" data-k="${esc(key)}" data-n="${n}">${tr`Voir les ${Math.min(PAGE, rest)} suivants (${rest.toLocaleString(uiLocale())} de plus)`}</button></li>` : "" };
   }
   function setSaving(t) {
     $("#saving").textContent = t;
@@ -4123,13 +4213,56 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     if (!t) throw coreError("task-missing", "Tâche introuvable");
     t.done = !!done;
     t.doneAt = done ? date : null;
-    if (done) t.today = false;
+    if (done) {
+      t.today = false;
+      delete t.wait;
+      delete t.dropped;
+    }
+    return t;
+  }
+  var taskOpen = (t) => !t.done && !t.dropped;
+  function dropTask(tasks, id, why, date) {
+    const t = tasks.find((x) => x.id === id);
+    if (!t) throw coreError("task-missing", "Tâche introuvable");
+    if (t.done) throw coreError("task-done-drop", "Une tâche faite ne s'abandonne pas");
+    t.dropped = { at: date, why: String(why || "").trim().slice(0, 200) };
+    t.today = false;
+    delete t.wait;
+    return t;
+  }
+  function resumeTask(tasks, id) {
+    const t = tasks.find((x) => x.id === id);
+    if (t) delete t.dropped;
+    return t;
+  }
+  var isoPlus = (d, n) => new Date(Date.parse(d + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+  var RELAUNCH_DAYS = 14;
+  function setTaskWaiting(tasks, id, input, date) {
+    const t = tasks.find((x) => x.id === id);
+    if (!t) throw coreError("task-missing", "Tâche introuvable");
+    if (t.done) throw coreError("task-done", "Une tâche faite n'attend plus rien");
+    if (t.dropped) throw coreError("task-dropped", "Une tâche abandonnée n'attend plus rien");
+    const who = String(input.who || "").trim().slice(0, 80), next = input.next && validDate(input.next) ? input.next : null;
+    t.wait = { since: t.wait ? t.wait.since : date, who, next, log: t.wait ? t.wait.log : [] };
+    t.today = false;
+    return t;
+  }
+  function relaunchTask(tasks, id, date, days = RELAUNCH_DAYS) {
+    const t = tasks.find((x) => x.id === id);
+    if (!t || !t.wait) throw coreError("task-not-waiting", "Cette tâche n'est pas en attente");
+    t.wait = { ...t.wait, next: isoPlus(date, days), log: [...t.wait.log || [], { date, kind: "relance" }].slice(-50) };
+    return t;
+  }
+  function clearTaskWaiting(tasks, id) {
+    const t = tasks.find((x) => x.id === id);
+    if (t) delete t.wait;
     return t;
   }
   function setTaskToday(tasks, id, value, elsewhere = 0) {
     const t = tasks.find((x) => x.id === id);
     if (!t) throw coreError("task-missing", "Tâche introuvable");
-    if (value && !t.today && tasks.filter((x) => !x.done && x.today).length + elsewhere >= 3) throw coreError("today-limit", "Trois tâches du jour maximum");
+    if (value && t.dropped) throw coreError("task-dropped-today", "Une tâche abandonnée ne se fait pas aujourd'hui : reprends-la d'abord");
+    if (value && !t.today && tasks.filter((x) => taskOpen(x) && x.today).length + elsewhere >= 3) throw coreError("today-limit", "Trois tâches du jour maximum");
     t.today = !!value;
     return t;
   }
@@ -4360,6 +4493,10 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
           if (t.due && !(typeof t.due === "string" && validDate(t.due))) v.fail("échéance");
           v.num(t.effort, "effort", 1, 3);
           v.num(t.cost, "coût", 0);
+          const w = t.wait;
+          if (w != null && (typeof w !== "object" || Array.isArray(w) || !validDate(w.since) || w.next != null && !validDate(w.next) || w.who != null && (typeof w.who !== "string" || w.who.length > 80) || w.log != null && (!Array.isArray(w.log) || w.log.some((x) => !x || !validDate(x.date) || typeof x.kind !== "string")))) v.fail("attente");
+          const d = t.dropped;
+          if (d != null && (typeof d !== "object" || Array.isArray(d) || !validDate(d.at) || typeof d.why !== "string" || d.why.length > 200)) v.fail("abandon");
         }
       }
     },
@@ -4437,6 +4574,7 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
           if (e.ig != null && !igValid(e.ig)) v.fail("Instagram");
           if (e.zot != null && !zotValid(e.zot)) v.fail("Zotero");
           if (e.kept != null && !(typeof e.kept === "string" && validDate(e.kept))) v.fail("date");
+          if (e.statusAt != null && !(typeof e.statusAt === "string" && validDate(e.statusAt))) v.fail("date");
         }
       }
     },
@@ -4482,14 +4620,21 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
       status: c.statuses.includes(input.status) ? input.status : item ? item.status : c.statuses[0]
     };
     if (item) {
-      const was = item.due;
+      const was = item.due, wasStatus = item.status;
       Object.assign(item, v);
       if (date && c.review && was && was <= date && item.due !== was) item.reviews = [...item.reviews || [], { date, verdict: "revue" }];
+      if (date && item.status !== wasStatus) item.statusAt = date;
       return item;
     }
-    const e = { id, ...v };
+    const e = { id, ...v, ...date ? { statusAt: date } : {} };
     inst.entries.push(e);
     return e;
+  }
+  function setCollectionStatus(item, status, date) {
+    if (item.status === status) return false;
+    item.status = status;
+    if (date) item.statusAt = date;
+    return true;
   }
   function srcValid(x) {
     const str = (v, n) => v == null || v === "" || typeof v === "string" && v.length <= n;
@@ -5072,6 +5217,11 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
   var CORE_ERRORS = {
     "required": (a) => tr`${tr(String(a.label))} : à remplir`,
     "task-missing": () => tr`Tâche introuvable`,
+    "task-done": () => tr`Une tâche faite n'attend plus rien`,
+    "task-not-waiting": () => tr`Cette tâche n'est pas en attente`,
+    "task-dropped": () => tr`Une tâche abandonnée n'attend plus rien`,
+    "task-dropped-today": () => tr`Une tâche abandonnée ne se fait pas aujourd'hui : reprends-la d'abord`,
+    "task-done-drop": () => tr`Une tâche faite ne s'abandonne pas`,
     "today-limit": () => tr`Trois tâches du jour maximum`,
     "amount": () => tr`Montant invalide`,
     "date": () => tr`Date invalide`,
@@ -5652,6 +5802,11 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     if (r) return `<div class="bridge on ${bridgeStale(r) ? "stale" : ""}"><span>↳ <b>${tr`Reprendre :`}</b> ${esc(r.text)} <span class="hint">· ${tr`noté ${ago(r.at)}`}</span></span><span class="acts"><button class="btn ghost sm" data-act="bridge-done" data-mod="${m}">${tr`fait`}</button><button class="btn ghost sm" data-act="bridge-edit" data-mod="${m}">${tr`modifier`}</button></span></div>`;
     return `<div class="bridge off"><button class="btn ghost sm" data-act="bridge-edit" data-mod="${m}">${tr`Je m'arrête ici…`}</button></div>`;
   }
+  function bridgeLog(inst) {
+    const log = [...inst.resumeLog || []].reverse();
+    if (!log.length) return "";
+    return `<details class="bridge-log"><summary>${tr`Fil des reprises (${log.length})`}</summary><ol class="plain">${log.map((x) => `<li>${tr`« ${esc(x.text)} »`} <span class="hint">${x.how === "repris" ? tr`noté le ${fmt(x.at)}, repris le ${fmt(x.end)}` : tr`noté le ${fmt(x.at)}, remplacé le ${fmt(x.end)}`}</span></li>`).join("")}</ol></details>`;
+  }
   function bridgeSave(id) {
     const inst = S().modules[id], inp = $("#bridgeIn");
     if (!inst || !inp) return;
@@ -6210,11 +6365,166 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     return JSON.stringify({ format: "selene-v1", exportedAt, board: boardData, site: siteData }, null, 2);
   }
 
+  // src/core/agenda.js
+  var ICS_DAYS = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
+  function zoned(y, mo, d, h, mi, s, tz) {
+    let t = Date.UTC(y, mo - 1, d, h, mi, s);
+    if (!tz) return t;
+    try {
+      const f = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      for (let i = 0; i < 2; i++) {
+        const p = Object.fromEntries(f.formatToParts(new Date(t)).map((x) => [x.type, +x.value]));
+        t -= Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Date.UTC(y, mo - 1, d, h, mi, s);
+      }
+    } catch {
+    }
+    return t;
+  }
+  function icsTime(v, params) {
+    const m = String(v || "").trim().match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z?))?$/);
+    if (!m) return null;
+    const [, y, mo, d, h, mi, s, z] = m;
+    if (h == null) return { t: new Date(+y, +mo - 1, +d).getTime(), allDay: true };
+    if (z) return { t: Date.UTC(+y, +mo - 1, +d, +h, +mi, +s), allDay: false };
+    const tz = (params.match(/TZID=("?)([^;:"]+)\1/) || [])[2];
+    return { t: tz ? zoned(+y, +mo, +d, +h, +mi, +s, tz) : new Date(+y, +mo - 1, +d, +h, +mi, +s).getTime(), allDay: false };
+  }
+  var icsUnescape = (s) => String(s || "").replace(/\\n/gi, " ").replace(/\\([,;\\])/g, "$1").replace(/\s+/g, " ").trim();
+  function icsParse(text) {
+    const lines = String(text || "").replace(/\r\n?/g, "\n").replace(/\n[ \t]/g, "").split("\n"), out = [];
+    let ev = null;
+    for (const line of lines) {
+      if (line === "BEGIN:VEVENT") {
+        ev = { exdates: [] };
+        continue;
+      }
+      if (line === "END:VEVENT") {
+        if (ev && ev.start && ev.status !== "CANCELLED") {
+          const end = ev.end ? ev.end.t : ev.start.t + (ev.start.allDay ? 864e5 : 36e5);
+          out.push({ uid: ev.uid || "", summary: ev.summary || "(sans titre)", location: ev.location || "", start: ev.start.t, end: Math.max(end, ev.start.t), allDay: ev.start.allDay, rrule: ev.rrule || "", exdates: ev.exdates, recurrenceId: ev.recurrenceId || null });
+        }
+        ev = null;
+        continue;
+      }
+      if (!ev) continue;
+      const i = line.indexOf(":");
+      if (i < 0) continue;
+      const head = line.slice(0, i), val = line.slice(i + 1), name = head.split(";")[0].toUpperCase(), params = head.slice(name.length);
+      if (name === "SUMMARY") ev.summary = icsUnescape(val).slice(0, 200);
+      else if (name === "LOCATION") ev.location = icsUnescape(val).slice(0, 200);
+      else if (name === "UID") ev.uid = val.trim().slice(0, 300);
+      else if (name === "STATUS") ev.status = val.trim().toUpperCase();
+      else if (name === "DTSTART") ev.start = icsTime(val, params);
+      else if (name === "DTEND") ev.end = icsTime(val, params);
+      else if (name === "RRULE") ev.rrule = val.trim();
+      else if (name === "RECURRENCE-ID") {
+        const r = icsTime(val, params);
+        if (r) ev.recurrenceId = r.t;
+      } else if (name === "EXDATE") for (const x of val.split(",")) {
+        const r = icsTime(x, params);
+        if (r) ev.exdates.push(r.t);
+      }
+    }
+    return out;
+  }
+  var icsEscape = (s) => String(s ?? "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+  var utf8Len = (ch) => {
+    const c = ch.codePointAt(0);
+    return c < 128 ? 1 : c < 2048 ? 2 : c < 65536 ? 3 : 4;
+  };
+  function icsFold(line) {
+    const out = [];
+    let cur = "", n = 0;
+    for (const ch of line) {
+      const b = utf8Len(ch);
+      if (n + b > 75) {
+        out.push(cur);
+        cur = " ";
+        n = 1;
+      }
+      cur += ch;
+      n += b;
+    }
+    out.push(cur);
+    return out.join("\r\n");
+  }
+  var icsDay = (d) => {
+    const t = Date.parse(d + "T12:00:00Z");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d)) || Number.isNaN(t) || new Date(t).toISOString().slice(0, 10) !== d) throw new Error("Date invalide");
+    return d.replace(/-/g, "");
+  };
+  var dayAfter = (d) => new Date(Date.parse(d + "T12:00:00Z") + 864e5).toISOString().slice(0, 10);
+  function icsEvent({ uid: uid2, stamp, start, end, summary, location: location2, url, description }) {
+    const last = end && end >= start ? end : start;
+    const lines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Selene//Selene//FR",
+      "CALSCALE:GREGORIAN",
+      "BEGIN:VEVENT",
+      `UID:${String(uid2).replace(/[\r\n]/g, "")}`,
+      `DTSTAMP:${new Date(stamp).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")}`,
+      `DTSTART;VALUE=DATE:${icsDay(start)}`,
+      `DTEND;VALUE=DATE:${icsDay(dayAfter(last))}`,
+      `SUMMARY:${icsEscape(summary)}`,
+      location2 ? `LOCATION:${icsEscape(location2)}` : "",
+      /^https:\/\/[^\s]+$/.test(url || "") ? `URL:${url}` : "",
+      description ? `DESCRIPTION:${icsEscape(description)}` : "",
+      "END:VEVENT",
+      "END:VCALENDAR"
+    ].filter(Boolean);
+    return lines.map(icsFold).join("\r\n") + "\r\n";
+  }
+  function icsExpand(e, from, to) {
+    const len = e.end - e.start, out = [];
+    if (!e.rrule) return e.end > from && e.start < to ? [{ ...e }] : [];
+    const r = Object.fromEntries(e.rrule.split(";").map((x) => x.split("=")).map(([k, v]) => [String(k).toUpperCase(), v || ""]));
+    const freq = r.FREQ, every = Math.max(1, +r.INTERVAL || 1), count = +r.COUNT || 0, until = r.UNTIL ? (icsTime(r.UNTIL, "") || {}).t : null;
+    const byday = (r.BYDAY || "").split(",").map((x) => ICS_DAYS[x.replace(/^[+-]?\d+/, "")]).filter((x) => x != null);
+    if (!["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].includes(freq)) return e.end > from && e.start < to ? [{ ...e }] : [];
+    const s0 = new Date(e.start), wall = (y, m, d) => new Date(y, m, d, s0.getHours(), s0.getMinutes(), s0.getSeconds()).getTime();
+    const ex = new Set(e.exdates);
+    let n = 0;
+    for (let i = 0; i < 800; i++) {
+      let cands;
+      if (freq === "DAILY") cands = [wall(s0.getFullYear(), s0.getMonth(), s0.getDate() + i * every)];
+      else if (freq === "WEEKLY") {
+        const monday = s0.getDate() - (s0.getDay() + 6) % 7 + i * 7 * every, days = byday.length ? byday : [s0.getDay()];
+        cands = days.map((d) => wall(s0.getFullYear(), s0.getMonth(), monday + (d + 6) % 7)).sort((a, b) => a - b);
+      } else if (freq === "MONTHLY") {
+        const t = new Date(s0.getFullYear(), s0.getMonth() + i * every, 1);
+        cands = t.getMonth() === new Date(s0.getFullYear(), s0.getMonth() + i * every, s0.getDate()).getMonth() ? [wall(t.getFullYear(), t.getMonth(), s0.getDate())] : [];
+      } else {
+        const y = s0.getFullYear() + i * every;
+        cands = new Date(y, s0.getMonth(), s0.getDate()).getMonth() === s0.getMonth() ? [wall(y, s0.getMonth(), s0.getDate())] : [];
+      }
+      for (const t of cands) {
+        if (t < e.start) continue;
+        if (until != null && t > until || count && n >= count || t >= to) return out;
+        n++;
+        if (!ex.has(t) && t + len > from) out.push({ ...e, start: t, end: t + len });
+      }
+    }
+    return out;
+  }
+  function icsBetween(events, from, to) {
+    const moved = new Set(events.filter((e) => e.recurrenceId != null).map((e) => `${e.uid}|${e.recurrenceId}`));
+    const all = [];
+    for (const e of events) {
+      if (e.recurrenceId != null) {
+        if (e.end > from && e.start < to) all.push({ ...e });
+        continue;
+      }
+      for (const o of icsExpand(e, from, to)) if (!moved.has(`${e.uid}|${o.start}`)) all.push(o);
+    }
+    return all.sort((a, b) => b.allDay - a.allDay || a.start - b.start);
+  }
+
   // src/app/modules/entries.js
   function removeWithUndo(id, list, itemId) {
     const inst = S().modules[id], i = inst[list].findIndex((x) => x.id === itemId);
     if (i < 0) return;
-    const item = inst[list][i], name = String(item.title || item.text || item.note || item.type || tr`l'élément`);
+    const item = inst[list][i], name = String(item.title || item.text || item.note || (TYPE_UI[inst.type].entryName || (() => item.type))(inst, item) || tr`l'élément`);
     inst[list] = inst[list].filter((x) => x.id !== itemId);
     site.save();
     render();
@@ -6290,113 +6600,6 @@ ${name} : suivi personnel autodéclaratif (${s.fr}, en ${s.unit}). Objectif choi
     }
     hits.sort((a, b) => (a.from || "9999").localeCompare(b.from || "9999") || a.title.localeCompare(b.title));
     return { items: hits.slice(0, n), total: hits.length };
-  }
-
-  // src/core/agenda.js
-  var ICS_DAYS = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
-  function zoned(y, mo, d, h, mi, s, tz) {
-    let t = Date.UTC(y, mo - 1, d, h, mi, s);
-    if (!tz) return t;
-    try {
-      const f = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      for (let i = 0; i < 2; i++) {
-        const p = Object.fromEntries(f.formatToParts(new Date(t)).map((x) => [x.type, +x.value]));
-        t -= Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Date.UTC(y, mo - 1, d, h, mi, s);
-      }
-    } catch {
-    }
-    return t;
-  }
-  function icsTime(v, params) {
-    const m = String(v || "").trim().match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z?))?$/);
-    if (!m) return null;
-    const [, y, mo, d, h, mi, s, z] = m;
-    if (h == null) return { t: new Date(+y, +mo - 1, +d).getTime(), allDay: true };
-    if (z) return { t: Date.UTC(+y, +mo - 1, +d, +h, +mi, +s), allDay: false };
-    const tz = (params.match(/TZID=("?)([^;:"]+)\1/) || [])[2];
-    return { t: tz ? zoned(+y, +mo, +d, +h, +mi, +s, tz) : new Date(+y, +mo - 1, +d, +h, +mi, +s).getTime(), allDay: false };
-  }
-  var icsUnescape = (s) => String(s || "").replace(/\\n/gi, " ").replace(/\\([,;\\])/g, "$1").replace(/\s+/g, " ").trim();
-  function icsParse(text) {
-    const lines = String(text || "").replace(/\r\n?/g, "\n").replace(/\n[ \t]/g, "").split("\n"), out = [];
-    let ev = null;
-    for (const line of lines) {
-      if (line === "BEGIN:VEVENT") {
-        ev = { exdates: [] };
-        continue;
-      }
-      if (line === "END:VEVENT") {
-        if (ev && ev.start && ev.status !== "CANCELLED") {
-          const end = ev.end ? ev.end.t : ev.start.t + (ev.start.allDay ? 864e5 : 36e5);
-          out.push({ uid: ev.uid || "", summary: ev.summary || "(sans titre)", location: ev.location || "", start: ev.start.t, end: Math.max(end, ev.start.t), allDay: ev.start.allDay, rrule: ev.rrule || "", exdates: ev.exdates, recurrenceId: ev.recurrenceId || null });
-        }
-        ev = null;
-        continue;
-      }
-      if (!ev) continue;
-      const i = line.indexOf(":");
-      if (i < 0) continue;
-      const head = line.slice(0, i), val = line.slice(i + 1), name = head.split(";")[0].toUpperCase(), params = head.slice(name.length);
-      if (name === "SUMMARY") ev.summary = icsUnescape(val).slice(0, 200);
-      else if (name === "LOCATION") ev.location = icsUnescape(val).slice(0, 200);
-      else if (name === "UID") ev.uid = val.trim().slice(0, 300);
-      else if (name === "STATUS") ev.status = val.trim().toUpperCase();
-      else if (name === "DTSTART") ev.start = icsTime(val, params);
-      else if (name === "DTEND") ev.end = icsTime(val, params);
-      else if (name === "RRULE") ev.rrule = val.trim();
-      else if (name === "RECURRENCE-ID") {
-        const r = icsTime(val, params);
-        if (r) ev.recurrenceId = r.t;
-      } else if (name === "EXDATE") for (const x of val.split(",")) {
-        const r = icsTime(x, params);
-        if (r) ev.exdates.push(r.t);
-      }
-    }
-    return out;
-  }
-  function icsExpand(e, from, to) {
-    const len = e.end - e.start, out = [];
-    if (!e.rrule) return e.end > from && e.start < to ? [{ ...e }] : [];
-    const r = Object.fromEntries(e.rrule.split(";").map((x) => x.split("=")).map(([k, v]) => [String(k).toUpperCase(), v || ""]));
-    const freq = r.FREQ, every = Math.max(1, +r.INTERVAL || 1), count = +r.COUNT || 0, until = r.UNTIL ? (icsTime(r.UNTIL, "") || {}).t : null;
-    const byday = (r.BYDAY || "").split(",").map((x) => ICS_DAYS[x.replace(/^[+-]?\d+/, "")]).filter((x) => x != null);
-    if (!["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].includes(freq)) return e.end > from && e.start < to ? [{ ...e }] : [];
-    const s0 = new Date(e.start), wall = (y, m, d) => new Date(y, m, d, s0.getHours(), s0.getMinutes(), s0.getSeconds()).getTime();
-    const ex = new Set(e.exdates);
-    let n = 0;
-    for (let i = 0; i < 800; i++) {
-      let cands;
-      if (freq === "DAILY") cands = [wall(s0.getFullYear(), s0.getMonth(), s0.getDate() + i * every)];
-      else if (freq === "WEEKLY") {
-        const monday = s0.getDate() - (s0.getDay() + 6) % 7 + i * 7 * every, days = byday.length ? byday : [s0.getDay()];
-        cands = days.map((d) => wall(s0.getFullYear(), s0.getMonth(), monday + (d + 6) % 7)).sort((a, b) => a - b);
-      } else if (freq === "MONTHLY") {
-        const t = new Date(s0.getFullYear(), s0.getMonth() + i * every, 1);
-        cands = t.getMonth() === new Date(s0.getFullYear(), s0.getMonth() + i * every, s0.getDate()).getMonth() ? [wall(t.getFullYear(), t.getMonth(), s0.getDate())] : [];
-      } else {
-        const y = s0.getFullYear() + i * every;
-        cands = new Date(y, s0.getMonth(), s0.getDate()).getMonth() === s0.getMonth() ? [wall(y, s0.getMonth(), s0.getDate())] : [];
-      }
-      for (const t of cands) {
-        if (t < e.start) continue;
-        if (until != null && t > until || count && n >= count || t >= to) return out;
-        n++;
-        if (!ex.has(t) && t + len > from) out.push({ ...e, start: t, end: t + len });
-      }
-    }
-    return out;
-  }
-  function icsBetween(events, from, to) {
-    const moved = new Set(events.filter((e) => e.recurrenceId != null).map((e) => `${e.uid}|${e.recurrenceId}`));
-    const all = [];
-    for (const e of events) {
-      if (e.recurrenceId != null) {
-        if (e.end > from && e.start < to) all.push({ ...e });
-        continue;
-      }
-      for (const o of icsExpand(e, from, to)) if (!moved.has(`${e.uid}|${o.start}`)) all.push(o);
-    }
-    return all.sort((a, b) => b.allDay - a.allDay || a.start - b.start);
   }
 
   // src/app/scene/sky.js
@@ -8324,15 +8527,32 @@ ${body}` : title, cut = false;
   function fileIntent(intent, fromId, noteId) {
     const s = S(), src = s.modules[fromId], note = src && src.entries.find((x) => x.id === noteId), target = s.modules[intent.to];
     if (!note || !target || intent.to === fromId) return;
-    let then;
-    if (intent.kind === "budget") addBudgetEntry(target.entries, { amount: intent.amount, type: "dépense", cat: intent.cat, note: intent.note, date: note.date }, uid(), todayISO());
-    else if (intent.kind === "minutes") addJournalEntry(target, { date: note.date, value: intent.value }, uid(), todayISO());
-    else then = acceptNote(intent.to, fromId, note, intent.text);
-    src.entries = src.entries.filter((x) => x.id !== noteId);
+    fileUndoable(fromId, note, intent.to, () => {
+      if (intent.kind === "budget") addBudgetEntry(target.entries, { amount: intent.amount, type: "dépense", cat: intent.cat, note: intent.note, date: note.date }, uid(), todayISO());
+      else if (intent.kind === "minutes") addJournalEntry(target, { date: note.date, value: intent.value }, uid(), todayISO());
+      else return acceptNote(intent.to, fromId, note, intent.text);
+    }, tr`Rangé : ${intent.say}.`);
+  }
+  function fileUndoable(fromId, note, toId, file, say) {
+    const s = S(), src = s.modules[fromId], target = s.modules[toId], at = src.entries.indexOf(note), before = entryIds(target);
+    const then = file();
+    const born = ["entries", "scraps"].flatMap((list) => (target[list] || []).filter((e) => !before.has(e.id)).map((e) => [list, e.id]));
+    src.entries = src.entries.filter((x) => x !== note);
     site.save();
     render();
+    toastUndo(say, () => {
+      const now = S(), from = now.modules[fromId], to = now.modules[toId];
+      if (!from) return;
+      if (to) for (const [list, id] of born) {
+        to[list] = (to[list] || []).filter((x) => x.id !== id);
+        retargetLinks(now.modules, `${toId}/${id}`, `${fromId}/${note.id}`);
+      }
+      if (!from.entries.some((x) => x.id === note.id)) from.entries.splice(Math.min(at, from.entries.length), 0, note);
+      site.save();
+      render();
+      toast(tr`Rétabli. Rien ne s'est passé.`);
+    });
     if (typeof then === "function") then();
-    else toast(tr`Rangé : ${intent.say}.`);
   }
   function acceptNote(toId, fromId, note, text = note.text) {
     const target = S().modules[toId], before = entryIds(target);
@@ -8419,7 +8639,7 @@ ${body}` : title, cut = false;
     ${sourcesModule() && (findDoi(x.text) || findUrl(x.text)) ? `<div class="row" style="margin-top:6px"><button class="btn sm" data-act="note-source">${tr`Garder comme source`}</button></div>` : ""}
     ${targets.length ? `<div class="row${c.inbox ? "" : " ra"}" style="margin-top:6px">${targets.map((k) => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
     ${margHTML(id, x, x.text)}<button class="btn ghost sm ra" data-act="note-del">${tr`suppr.`}</button></li>`;
-      }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? tr`Vide. Le silence d'une clairière, ou celui d'un cerveau.` : tr`Rien pour l'instant.`}</li>`}</ul></div>`;
+      }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? tr`Vide. Le silence d'une clairière, ou celui d'un cerveau.` : tr`Rien pour l'instant. Une note ne se corrige pas : elle se garde ou s’efface. Pour un texte qui change, les fragments d’un espace d’écriture gardent leurs versions.`}</li>`}</ul></div>`;
     },
     settings: (id, { config: c }) => `<label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="notes-inbox" data-mod="${esc(id)}" ${c.inbox ? "checked" : ""}>${tr`Boîte de réception : reçoit la capture rapide de l'accueil`}</label>
     <div class="field-row" style="margin-top:8px"><label>${tr`Description`}<input data-set-mod="${esc(id)}.description" value="${esc(c.description)}" placeholder="${tr`Une phrase sous le titre`}"></label><label>${tr`Texte d'invite`}<input data-set-mod="${esc(id)}.placeholder" value="${esc(c.placeholder)}" required></label></div>
@@ -8452,16 +8672,8 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
       },
       "note-del": (el) => removeWithUndo(modOf(el), "entries", idOf(el)),
       "note-to": (el) => {
-        const s = S(), src = s.modules[modOf(el)], note = src.entries.find((x) => x.id === idOf(el)), to = el.dataset.to;
-        const drop = () => {
-          src.entries = src.entries.filter((x) => x !== note);
-          site.save();
-        };
-        const then = acceptNote(to, modOf(el), note);
-        drop();
-        render();
-        if (typeof then === "function") then();
-        else toast(tr`Rangé dans ${label(to)}.`);
+        const from = modOf(el), note = S().modules[from].entries.find((x) => x.id === idOf(el)), to = el.dataset.to;
+        if (note) fileUndoable(from, note, to, () => acceptNote(to, from, note), tr`Rangé dans ${label(to)}.`);
       }
     },
     change: {
@@ -8487,20 +8699,40 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
   };
   var radarPlace = () => skyConf();
   var radarState = null;
+  function sansPasseur() {
+    const pourquoi = !hosted() || !authSession ? "" : passeurAcces();
+    return pourquoi === "refuse" ? tr`L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas ouvert à ce compte.` : pourquoi === "absent" ? tr`L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas installé sur ce serveur.` : tr`L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).`;
+  }
+  var DIRECT_KEY = "selene-radar-direct";
+  var DIRECT_TTL = 7 * 864e5;
   var radarDirect = true;
+  var directOuvert = () => {
+    if (!radarDirect) return false;
+    try {
+      const x = JSON.parse(platform.storage.get(DIRECT_KEY) || "null"), age = x ? Date.now() - x.at : NaN;
+      return !(age > -3e5 && age < DIRECT_TTL);
+    } catch {
+      return true;
+    }
+  };
+  var radarPossible = () => directOuvert() || passeurPret();
   async function radarGet(url) {
-    if (radarDirect) {
+    if (directOuvert()) {
       const ac = new AbortController(), t = setTimeout(() => ac.abort(), 1e4);
       try {
         const r = await fetch(url, { signal: ac.signal });
         return { status: r.status, json: r.ok ? await r.json() : null };
       } catch {
         radarDirect = false;
+        try {
+          platform.storage.set(DIRECT_KEY, JSON.stringify({ at: Date.now() }));
+        } catch {
+        }
       } finally {
         clearTimeout(t);
       }
     }
-    if (!passeurPret()) throw new Error(tr`L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).`);
+    if (!passeurPret()) throw new Error(sansPasseur());
     const q = await passeurFetch(url, "json");
     return { status: q.status || 0, json: q.status === 200 && typeof q.texte === "string" ? JSON.parse(q.texte) : null };
   }
@@ -8528,6 +8760,11 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     if (x.to === x.from) return fmt(x.from, { weekday: "long", day: "numeric", month: "long" });
     return tr`du ${dm(x.from)} au ${dm(x.to)}`;
   }
+  function radarSpan(x) {
+    const full = (d) => fmt(d, { day: "numeric", month: "long", year: "numeric" });
+    if (!x.from) return "";
+    return x.to && x.to !== x.from ? tr`du ${fmt(x.from, { day: "numeric", month: "long" })} au ${full(x.to)}` : tr`le ${fmt(x.from, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`;
+  }
   SHEETS.radar = () => {
     const st = radarState, c = radarPlace();
     if (!st) return "";
@@ -8541,7 +8778,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     return head + `<ul class="plain radar">${st.items.map((x) => `<li class="item" data-rid="${esc(x.id)}"><span></span><div><b>${esc(x.title)}</b>
       <div class="meta"><span>${esc(radarWhen(x, today))}</span>${x.place || x.city ? `<span>${esc([x.place, x.city].filter(Boolean).join(", "))}</span>` : ""}${x.on.map((w) => `<span class="tag">${esc(st.said[w] || w)}</span>`).join("")}</div>
       ${x.text ? `<p class="hint" style="margin:4px 0 0">${esc(x.text)}</p>` : ""}</div>
-      <div class="row">${/^https:\/\//.test(x.url) ? `<a class="btn ghost sm" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${tr`voir`}</a>` : ""}${st.kept.has(x.id) ? `<span class="hint">${tr`gardé`}</span>` : `<button class="btn sm" data-act="radar-keep">${tr`garder`}</button>`}</div></li>`).join("")}</ul>` + (st.total > st.items.length ? `<p class="hint">${trn(st.total - st.items.length, "{0} autre correspond aussi : des mots plus précis choisiraient mieux.", "{0} autres correspondent aussi : des mots plus précis choisiraient mieux.")}</p>` : "") + foot;
+      <div class="row">${/^https:\/\//.test(x.url) ? `<a class="btn ghost sm" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${tr`voir`}</a>` : ""}${!taskModules().length ? "" : st.out.has(x.id) ? `<span class="hint">${tr`sortie prévue`}</span>` : `<button class="btn ghost sm" data-act="radar-out">${tr`en faire une sortie`}</button>`}${st.kept.has(x.id) ? `<span class="hint">${tr`gardé`}</span>` : `<button class="btn sm" data-act="radar-keep">${tr`garder`}</button>`}</div></li>`).join("")}</ul>` + (st.total > st.items.length ? `<p class="hint">${trn(st.total - st.items.length, "{0} autre correspond aussi : des mots plus précis choisiraient mieux.", "{0} autres correspondent aussi : des mots plus précis choisiraient mieux.")}</p>` : "") + foot;
   };
   CLICK["radar-open"] = async () => {
     const c = radarPlace(), words2 = radarWords(radarConf().words);
@@ -8551,7 +8788,7 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
       const t = w.trim();
       if (t.length > 1 && !said2[radarFold(t)]) said2[radarFold(t)] = t;
     }
-    radarState = { busy: true, err: "", items: [], total: 0, words: words2, said: said2, kept: /* @__PURE__ */ new Set() };
+    radarState = { busy: true, err: "", items: [], total: 0, words: words2, said: said2, kept: /* @__PURE__ */ new Set(), out: /* @__PURE__ */ new Set() };
     if ($("#sheet").open && sheetKind === "radar") $("#sheetBody").innerHTML = SHEETS.radar();
     else openSheet("radar");
     let events = null, err = "";
@@ -8576,11 +8813,30 @@ ${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map((x) => x.tex
     $("#sheetBody").innerHTML = SHEETS.radar();
     toast(tr`Gardé dans ${label(box)}.`);
   };
+  CLICK["radar-out"] = (el) => {
+    const st = radarState, x = st && st.items.find((i) => i.id === el.closest("[data-rid]").dataset.rid), mods = taskModules();
+    if (!x || !mods.length) return;
+    const make = (id) => {
+      const inst = S().modules[id];
+      if (!inst || inst.type !== "taches") return;
+      const today = todayISO(), due = x.from && x.from >= today ? x.from : x.to && x.to >= today ? x.to : x.from || null;
+      const cat = inst.config.cats.find((k) => /sortie|culture|loisir/.test(radarFold(k))) || inst.config.cats[0];
+      const t = addTask(inst.entries, { title: x.title.slice(0, 140), due, room: x.place, cat, note: [x.city, radarSpan(x), x.url].filter(Boolean).join("\n") }, uid(), today);
+      st.out.add(x.id);
+      site.save();
+      render();
+      if ($("#sheet").open && sheetKind === "radar") $("#sheetBody").innerHTML = SHEETS.radar();
+      taskForm(id, t);
+    };
+    if (mods.length === 1) return make(mods[0]);
+    openForm(tr`En faire une sortie`, [{ n: "mod", l: tr`Dans quel espace`, t: "select", o: mods.map((m) => [m, label(m)]) }], { mod: mods[0] }, (v) => make(v.mod));
+  };
   function radarSettingsHTML() {
     const c = radarPlace();
     return `<section id="radar"><h4>${tr`Radar culturel`}</h4><p class="hint">${tr`Sur demande, depuis l'accueil : les événements à 20 km du lieu réglé dans Ciel (OpenAgenda, partout en France) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification. Changer de lieu, c'est changer de radar.`}</p>
     <label>${tr`Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)`}<input data-act="radar-words" value="${esc(radarConf().words)}" placeholder="${tr`poésie, jazz, photographie, lecture…`}" maxlength="300" autocomplete="off"></label>
-    ${c ? `<p class="hint" style="margin-top:6px">${tr`Autour de ${esc(c.name)}.`}</p>` : `<p class="hint" style="margin-top:6px">${tr`Il lui faut un lieu : règle-le dans Ciel, ci-dessus.`}</p>`}</section>`;
+    ${c ? `<p class="hint" style="margin-top:6px">${tr`Autour de ${esc(c.name)}.`}</p>` : `<p class="hint" style="margin-top:6px">${tr`Il lui faut un lieu : règle-le dans Ciel, ci-dessus.`}</p>`}
+    ${c && radarWords(radarConf().words).length && !radarPossible() ? `<p class="hint" style="margin-top:6px">${esc(sansPasseur())} ${tr`L'accueil ne le propose donc plus ; il réessaiera de lui-même dans une semaine.`}</p>` : ""}</section>`;
   }
 
   // src/app/features/relecture.js
@@ -9130,7 +9386,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       ${!tod.length ? taskModules().length ? `<p class="empty">${tr`Aucune tâche choisie.`} <button class="btn ghost sm" data-act="task-pick">${tr`Tirer une petite tâche au sort`}</button></p>` : `<p class="empty">${tr`Rien de prévu. Un module de tâches remplirait cet espace, si tu y tiens.`}</p>` : ""}
       ${agendaHTML()}
       ${dehorsLine()}
-      ${radarPlace() && radarWords(radarConf().words).length ? `<p class="hint radar-go">${tr`${`<button class="btn ghost sm" data-act="radar-open">${tr`Radar culturel`}</button>`} ce qui, près d'ici, parle de tes mots`}</p>` : ""}
+      ${radarPlace() && radarWords(radarConf().words).length && radarPossible() ? `<p class="hint radar-go">${tr`${`<button class="btn ghost sm" data-act="radar-open">${tr`Radar culturel`}</button>`} ce qui, près d'ici, parle de tes mots`}</p>` : ""}
     </section>
     <section class="capsec"><h2>${tr`Capturer`}</h2><p class="hint">${tr`Dépose-le ici comme une feuille morte, tu trieras l'humus plus tard.`}</p>
       ${inbox ? `<div class="capture"><input id="capIn" data-draft placeholder="${esc(s.modules[inbox].config.placeholder)}" aria-label="${tr`Capture rapide`}"><button class="btn acc" data-act="cap-add">${tr`Garder`}</button></div>
@@ -9209,9 +9465,10 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     for (const [id, inst] of Object.entries(s.modules)) if (enabled(id) && TYPE_UI[inst.type].alerts) {
       for (const a of TYPE_UI[inst.type].alerts(id, inst, day)) if (a.actions) out.push(plainText(a.text));
     }
-    for (const [id, t] of allTasks()) if (enabled(id) && !t.done && t.due === day) out.push(tr`Échéance : ${t.title}`);
+    for (const [id, t] of allTasks()) if (enabled(id) && taskOpen(t) && !t.wait && t.due === day) out.push(tr`Échéance : ${t.title}`);
     return out;
   }
+  var lateOn = (day) => allTasks().filter(([id, t]) => enabled(id) && taskOpen(t) && !t.wait && t.due && t.due < day).length;
   function digestPlan(nowMs = Date.now(), days = 7) {
     const { on, at } = notifyConf();
     if (!on) return [];
@@ -9223,11 +9480,12 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       if (d.getTime() <= nowMs) continue;
       const items = dayDigest(iso(d));
       if (!items.length) continue;
+      const late = lateOn(iso(d));
       plan.push({
         id: 100 + i,
         at: d.toISOString(),
         title: i ? trn(items.length, "Selene : {0} chose ce jour", "Selene : {0} choses ce jour") : trn(items.length, "Selene : {0} chose aujourd'hui", "Selene : {0} choses aujourd'hui"),
-        body: items.slice(0, 3).join(" · ") + (items.length > 3 ? " · " + tr`et ${items.length - 3} de plus` : "")
+        body: items.slice(0, 3).join(" · ") + (items.length > 3 ? " · " + tr`et ${items.length - 3} de plus` : "") + (late ? " · " + trn(late, "{0} tâche en retard", "{0} tâches en retard") : "")
       });
     }
     return plan;
@@ -9498,7 +9756,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   ];
   var TIPS = {
     get palette() {
-      return tr`Les quatre étapes du Grand Œuvre des alchimistes : nigredo, l'œuvre au noir (la mousse) ; albedo, au blanc (le lichen) ; citrinitas, au jaune (la résine) ; rubedo, au rouge (l'amanite). Seul l'accent change : les couleurs qui informent (retard, succès, alerte) restent les mêmes.`;
+      return tr`Les quatre étapes du Grand Œuvre des alchimistes : nigredo, l'œuvre au noir (la mousse) ; albedo, au blanc (le lichen) ; citrinitas, au jaune (le pollen) ; rubedo, au rouge (la framboise). Seul l'accent change : les couleurs qui informent (retard, succès, alerte) restent les mêmes.`;
     },
     get mode() {
       return tr`« Suivre l'appareil » obéit au réglage clair ou sombre du système. « Suivre le soleil » passe en sombre au crépuscule et en clair à l'aube, au lieu réglé dans Ciel et alentours (à défaut, d'après ton fuseau horaire).`;
@@ -9658,7 +9916,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   };
 
   // src/app/views/reglages.js
-  var PALETTES = [["nigredo", N_("Nigredo, mousse"), "#6f9a68"], ["albedo", N_("Albedo, lichen"), "#aab7a6"], ["citrinitas", N_("Citrinitas, résine"), "#c99a3c"], ["rubedo", N_("Rubedo, amanite"), "#c0554a"]];
+  var PALETTES = [["nigredo", N_("Nigredo, mousse")], ["albedo", N_("Albedo, lichen")], ["citrinitas", N_("Citrinitas, pollen")], ["rubedo", N_("Rubedo, framboise")]];
   var privacyUrl = () => `https://mariebonifacio.github.io/selene/${uiLang() === "en" ? "privacy" : "confidentialite"}.html`;
   var signedIn = () => hosted() && authReady() && authSession;
   var about = (subject) => TEXTS.tipAbout(subject);
@@ -9694,8 +9952,9 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   }
   var langField = (c) => langChoices().length < 2 ? "<span></span>" : field(tr`Langue`, (id) => `<select aria-labelledby="${id}" data-set="config.lang">${opt("", tr`Langue de l'appareil`, c.lang || "")}${langChoices().map(([k, n]) => `<option value="${k}" lang="${k}" ${c.lang === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>`, { tip: TIPS.langue });
   function apparenceHTML(c) {
-    return `${sub(tr`Palette`, TIPS.palette)}<p class="hint">${tr`Quatre étapes de l'Œuvre, prises dans le sous-bois.`}</p>
-    <div class="swatches">${PALETTES.map(([id, n, col]) => `<button class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}"><i style="background:${col}"></i>${tr(n)}</button>`).join("")}</div>
+    return `${sub(tr`Couleur d'accent`, TIPS.palette)}<p class="hint">${tr`Elle colore les repères : bouton principal, espace ouvert, jauges, cases cochées. Le fond, le texte et les couleurs d'alerte ne changent pas ; clair ou sombre se règle dans Mode.`}</p>
+    <div class="swatches">${PALETTES.map(([id, n]) => `<button type="button" class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}" data-palette="${id}" aria-pressed="${c.palette === id}"><i></i>${tr(n)}</button>`).join("")}</div>
+    <div class="pal-preview" aria-hidden="true" inert><span class="btn acc sm">${tr`Bouton principal`}</span><span class="pv-on">${tr`Espace ouvert`}</span><span class="bar"><i style="width:60%"></i></span><span class="check pv-check"></span></div>
     <div class="field-row" style="margin-top:18px">${field(tr`Mode`, (id) => `<select aria-labelledby="${id}" data-set="config.mode">${opt("auto", tr`Suivre l'appareil`, c.mode)}${opt("dark", tr`Toujours sombre`, c.mode)}${opt("light", tr`Toujours clair`, c.mode)}${opt("sun", tr`Suivre le soleil`, c.mode)}</select>`, { tip: TIPS.mode })}
     ${field(tr`Nom affiché`, (id) => `<input aria-labelledby="${id}" data-set="config.name" value="${esc(c.name)}">`, { tip: TIPS.name })}</div>
     <div class="field-row" style="margin-top:12px">${field(tr`Ouvrir sur`, (id) => `<select aria-labelledby="${id}" data-act="open-on">${opt("accueil", tr`L'accueil`, openOn())}${opt("last", tr`Là où j'en étais`, openOn())}</select>`, { tip: TIPS.openOn, local: true })}${langField(c)}</div>
@@ -9974,7 +10233,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       return `<h2 id="sheetTitle">${tr`Espaces`}</h2>
       ${rec.length ? `<p class="grp">${tr`Récents`}</p><div class="recents">${rec.map((r) => `<a class="btn" href="#${esc(r.id)}">${esc(label(r.id))}</a>`).join("")}</div>` : ""}
       ${domains().map((d) => `<p class="grp">${esc(d.name || tr`Espaces`)}</p>${d.ids.map(row).join("")}`).join("")}
-      <p class="grp">${tr`Système`}</p>${enabled("assistant") ? `<a class="srow" href="#assistant"><b>${esc(label("assistant"))}</b></a>` : ""}<a class="srow" href="#reglages"><b>${tr`Réglages`}</b></a>`;
+      <p class="grp">${tr`Système`}</p>${dehorsOn() ? `<a class="srow" href="#dehors"><b>${tr`Nouveautés`}</b><span class="sub">${tr`Dehors`}</span></a>` : ""}${enabled("assistant") ? `<a class="srow" href="#assistant"><b>${esc(label("assistant"))}</b></a>` : ""}
+      <button type="button" class="srow" data-act="palette-open"><b>${tr`Aller à…`}</b><span class="sub">${tr`un espace, une action, un texte`}</span></button><a class="srow" href="#reglages"><b>${tr`Réglages`}</b></a>`;
     },
     module(mod) {
       if (!Object.hasOwn(S().modules, mod)) return `<p class="empty">${tr`Ce module n'existe plus.`}</p>`;
@@ -10092,7 +10352,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   // src/app/modules/taches.js
   var taskModules = () => Object.keys(S().modules).filter((k) => S().modules[k].type === "taches" && enabled(k));
   var allTasks = () => taskModules().flatMap((id) => S().modules[id].entries.map((t) => [id, t]));
-  var todayTasks = () => allTasks().filter(([, t]) => !t.done && t.today);
+  var todayTasks = () => allTasks().filter(([, t]) => taskOpen(t) && t.today);
   var todayElsewhere = (id) => todayTasks().filter(([m]) => m !== id).length;
   var byDue = (a, b) => (a.due || "9999").localeCompare(b.due || "9999");
   var taskFilters = {};
@@ -10117,6 +10377,12 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     if (n <= 7) return { txt: tr`Dans ${n} j`, cls: "soon" };
     return { txt: fmt(t.due), cls: "" };
   }
+  var waitMeta = (t, withNext = true) => [
+    tr`depuis le ${fmt(t.wait.since)}`,
+    t.wait.who && tr`chez ${esc(t.wait.who)}`,
+    withNext && (t.wait.next ? tr`relancer le ${fmt(t.wait.next)}` : tr`sans date de relance`),
+    (t.wait.log || []).length && trn(t.wait.log.length, "relancé {0} fois", "relancé {0} fois")
+  ].filter(Boolean).join(" · ");
   function outdoorRain(c, t) {
     if (t.done) return "";
     const words2 = String(c.outdoor || "").split(",").map((w2) => fold(w2.trim())).filter((w2) => w2.length > 1), f = fold(`${t.title} ${t.room || ""}`);
@@ -10129,6 +10395,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     const when = esc(rain.map(day).join(", "));
     return `<span class="wx rain" ${tip2}>${t.due && rain.includes(t.due) ? tr`pluie prévue ${when}, le jour prévu` : tr`pluie prévue ${when}`}</span>`;
   }
+  var URL_RE = /(https:\/\/[^\s<>"']*[^\s<>"'.,;:!?)])/;
+  var noteHTML = (s) => String(s).split(URL_RE).map((x, i) => i % 2 ? `<a href="${esc(x)}" target="_blank" rel="noopener noreferrer">${esc(x)}</a>` : esc(x)).join("");
   function taskHTML(id, t) {
     const c = S().modules[id].config, d = dueLabel(t), sd = (t.steps || []).filter((x) => x.d).length, ef = Math.min(3, Math.max(1, Math.round(+t.effort) || 1));
     return `<li class="item ${t.done ? "done" : ""} ${openId === t.id ? "open" : ""}" data-task="${esc(t.id)}" data-mod="${esc(id)}">
@@ -10138,8 +10406,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     <button class="star ${t.today ? "on" : ""}" data-act="task-today" title="${tr`Faire aujourd'hui`}" aria-label="${tr`Faire aujourd'hui`}" aria-pressed="${t.today ? "true" : "false"}">★</button>
     <div class="details">
       ${(t.steps || []).length ? `<ul class="steps">${t.steps.map((x, i) => `<li><input type="checkbox" data-act="task-step" data-i="${i}" ${x.d ? "checked" : ""} id="s${esc(t.id)}-${i}"><label for="s${esc(t.id)}-${i}" style="font-weight:400;display:inline">${esc(x.t)}</label></li>`).join("")}</ul>` : ""}
-      ${t.note ? `<p class="note">${esc(t.note)}</p>` : ""}${t.origin ? `<p class="meta">${originHTML(t, t.title)}</p>` : ""}
-      <div class="row"><button class="btn ghost sm" data-act="task-edit">${tr`Modifier`}</button><button class="btn ghost sm" data-act="task-del">${tr`Supprimer`}</button></div>
+      ${t.note ? `<p class="note">${noteHTML(t.note)}</p>` : ""}${t.origin ? `<p class="meta">${originHTML(t, t.title)}</p>` : ""}
+      <div class="row"><button class="btn ghost sm" data-act="task-edit">${tr`Modifier`}</button>${t.done || t.wait ? "" : `<button class="btn ghost sm" data-act="task-wait">${tr`J'attends une réponse`}</button>`}${t.due && !t.done ? `<button class="btn ghost sm" data-act="task-ics">${tr`Ajouter à mon calendrier`}</button>` : ""}${taskOpen(t) ? `<button class="btn ghost sm" data-act="task-drop">${tr`Abandonner`}</button>` : ""}<button class="btn ghost sm" data-act="task-del">${tr`Supprimer`}</button></div>
     </div></li>`;
   }
   function taskForm(id, t) {
@@ -10167,6 +10435,50 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       render();
     });
   }
+  var keepWait = (t) => t.wait ? { ...t.wait, log: [...t.wait.log || []] } : null;
+  var putWait = (t, w) => {
+    if (w) t.wait = w;
+    else delete t.wait;
+  };
+  function waitForm(id, t) {
+    openForm(
+      tr`J'attends une réponse`,
+      [{ row: [{ n: "who", l: tr`Qui doit répondre` }, { n: "next", l: tr`Relancer le`, t: "date" }] }],
+      { who: t.wait ? t.wait.who : "", next: t.wait ? t.wait.next || "" : addDaysTo(todayISO(), RELAUNCH_DAYS) },
+      (v) => {
+        const inst = S().modules[id], cur = inst && inst.entries.find((x) => x.id === t.id);
+        if (!cur) return toast(tr`Cette tâche a été supprimée entre-temps.`);
+        const before = keepWait(cur), today = cur.today;
+        setTaskWaiting(inst.entries, cur.id, v, todayISO());
+        site.save();
+        render();
+        toastUndo(tr`« ${cur.title} » attend une réponse. Elle revient le jour de la relance.`, () => {
+          putWait(cur, before);
+          cur.today = today;
+          site.save();
+          render();
+        });
+      },
+      tr`La tâche sort des échéances et revient sur l'accueil le jour de la relance.`
+    );
+  }
+  function dropForm(id, t) {
+    openForm(tr`Abandonner la tâche`, [{ n: "why", l: tr`Pourquoi (facultatif)`, t: "textarea", rows: 2 }], { why: "" }, (v) => {
+      const inst = S().modules[id], cur = inst && inst.entries.find((x) => x.id === t.id);
+      if (!cur) return toast(tr`Cette tâche a été supprimée entre-temps.`);
+      const before = { today: cur.today, wait: keepWait(cur) };
+      dropTask(inst.entries, cur.id, v.why, todayISO());
+      site.save();
+      render();
+      toastUndo(tr`« ${cur.title} » abandonnée. Elle reste sous « Abandonnées ».`, () => {
+        delete cur.dropped;
+        cur.today = before.today;
+        putWait(cur, before.wait);
+        site.save();
+        render();
+      });
+    }, tr`Elle quitte les listes sans compter comme faite, et reste sous « Abandonnées », d'où l'on peut la reprendre.`);
+  }
   var WORKS = /\b(?:travaux|renovation|repairs?|home improvement)\b/;
   function costEnvelope(id, bud) {
     const c = S().modules[id].config, envs = bud ? S().modules[bud].config.envelopes : [];
@@ -10174,7 +10486,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   }
   function pickTask(only) {
     if (todayTasks().length >= 3) return toast(tr`Aujourd'hui est plein. Le hasard respecte les plafonds.`);
-    const o = allTasks().filter(([m, t2]) => !t2.done && !t2.today && (!only || m === only));
+    const o = allTasks().filter(([m, t2]) => taskOpen(t2) && !t2.today && !t2.wait && (!only || m === only));
     if (!o.length) return toast(tr`Rien à tirer.`);
     const small = o.filter(([, t2]) => t2.effort === 1), pool = (small.length ? small : o).sort(([, a], [, b]) => byDue(a, b)).slice(0, 5);
     const [id, t] = pool[Math.floor(Math.random() * pool.length)];
@@ -10185,7 +10497,8 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   }
   registerType("taches", {
     view(id) {
-      const inst = S().modules[id], c = inst.config, now = todayISO(), o = inst.entries.filter((t) => !t.done), f = tf(id);
+      const inst = S().modules[id], c = inst.config, now = todayISO(), o = inst.entries.filter((t) => taskOpen(t) && !t.wait), f = tf(id);
+      const waiting = inst.entries.filter((t) => taskOpen(t) && t.wait).sort((a, b) => (a.wait.next || "9999").localeCompare(b.wait.next || "9999"));
       const tod = o.filter((t) => t.today);
       const cats = [...new Set(inst.entries.map((t) => t.cat))];
       const filtered = o.filter((t) => !t.today && (!f.room || t.room === f.room) && (!f.cat || t.cat === f.cat) && gMatch(id, t)).sort(byDue);
@@ -10199,8 +10512,9 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
         const it = filtered.filter(fn);
         return it.length ? `<div style="margin-bottom:22px"><h3 class="${late ? "late" : ""}">${n} <span class="hint" style="font-size:1rem">${it.length}</span></h3><p class="hint">${h}</p><ul class="plain">${it.map((t) => taskHTML(id, t)).join("")}</ul></div>` : "";
       }).join("");
-      const spent = inst.entries.filter((t) => t.done && t.cost).reduce((a, t) => a + +t.cost, 0), left2 = o.filter((t) => t.cost).reduce((a, t) => a + +t.cost, 0);
-      const done = inst.entries.filter((t) => t.done).sort((a, b) => (b.doneAt || "").localeCompare(a.doneAt || "")).slice(0, 8);
+      const spent = inst.entries.filter((t) => t.done && t.cost).reduce((a, t) => a + +t.cost, 0), left2 = inst.entries.filter((t) => taskOpen(t) && t.cost).reduce((a, t) => a + +t.cost, 0);
+      const done = paged(`done:${id}`, inst.entries.filter((t) => t.done).sort((a, b) => (b.doneAt || "").localeCompare(a.doneAt || "")), 8);
+      const dropped = paged(`drop:${id}`, inst.entries.filter((t) => t.dropped && !t.done).sort((a, b) => b.dropped.at.localeCompare(a.dropped.at)), 8);
       return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:24px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn solid" data-act="task-new">${tr`Ajouter une tâche`}</button><button class="btn" data-act="task-pick">${tr`Tirer au sort`}</button></div>
   <div class="two"><div>
     <section><h3>${tr`Aujourd'hui`}</h3><p class="hint">${tr`Trois tâches maximum, tous modules confondus. Au-delà, c'est une liste de reproches.`}</p><ul class="plain">${tod.map((t) => taskHTML(id, t)).join("") || `<li class="empty">${tr`Coche l'étoile d'une tâche.`}</li>`}</ul></section>
@@ -10208,10 +10522,12 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
       <select data-act="f-room" aria-label="${esc(c.groupLabel)}"><option value="">${tr`${esc(c.groupLabel)} : tout`}</option>${roomsOf(id).map((r) => `<option ${r === f.room ? "selected" : ""}>${esc(r)}</option>`).join("")}</select>
       <select data-act="f-cat" aria-label="${esc(c.catLabel)}"><option value="">${tr`${esc(c.catLabel)} : tout`}</option>${cats.map((x) => `<option ${x === f.cat ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div>
       ${groups || `<p class="empty">${tr`Plus rien ici. Soit c'est fini, soit tu as filtré trop fort.`}</p>`}</section>
+    ${waiting.length ? `<section><h3>${tr`En attente`} <span class="hint" style="font-size:1rem">${waiting.length}</span></h3><p class="hint">${tr`La balle est dans un autre camp. Elles reviennent sur l'accueil le jour de la relance.`}</p><ul class="plain">${waiting.map((t) => `<li class="item" data-task="${esc(t.id)}" data-mod="${esc(id)}"><span></span><div>${esc(t.title)}<div class="meta"><span class="${t.wait.next && t.wait.next <= now ? "late" : ""}">${waitMeta(t)}</span></div></div><div class="row"><button class="btn ghost sm" data-act="task-relaunch">${tr`relancé`}</button><button class="btn ghost sm" data-act="task-answer">${tr`réponse reçue`}</button></div></li>`).join("")}</ul></section>` : ""}
   </div><aside>
     ${groupPanel(id, tr`La mousse gagne à mesure que tu finis. Clique pour filtrer.`)}
     ${c.costs && (spent || left2) ? `<p class="hint">${tr`Budget estimé : ${spent} € engagés, ${left2} € encore à prévoir.`}</p>` : ""}
-    <section><h3>${tr`Fait récemment`}</h3><ul class="plain">${done.map((t) => `<li class="item" data-task="${esc(t.id)}" data-mod="${esc(id)}"><span></span><div>${esc(t.title)}<div class="meta">${fmt(t.doneAt)}</div></div><button class="btn ghost sm" data-act="task-undo">${tr`annuler`}</button></li>`).join("") || `<li class="empty">${tr`Rien pour l'instant. L'histoire ne retiendra rien.`}</li>`}</ul></section>
+    <section><h3>${tr`Fait récemment`}</h3><ul class="plain">${done.items.map((t) => `<li class="item" data-task="${esc(t.id)}" data-mod="${esc(id)}"><span></span><div>${esc(t.title)}<div class="meta">${fmt(t.doneAt)}</div></div><button class="btn ghost sm" data-act="task-undo">${tr`annuler`}</button></li>`).join("") + done.more || `<li class="empty">${tr`Rien pour l'instant. L'histoire ne retiendra rien.`}</li>`}</ul></section>
+    ${dropped.items.length ? `<section><h3>${tr`Abandonnées`}</h3><p class="hint">${tr`Renoncer n'est pas échouer : c'est trier, avec un peu de retard.`}</p><ul class="plain">${dropped.items.map((t) => `<li class="item" data-task="${esc(t.id)}" data-mod="${esc(id)}"><span></span><div>${esc(t.title)}<div class="meta">${tr`le ${fmt(t.dropped.at)}`}${t.dropped.why ? ` · ${esc(t.dropped.why)}` : ""}</div></div><button class="btn ghost sm" data-act="task-resume">${tr`reprendre`}</button></li>`).join("") + dropped.more}</ul></section>` : ""}
   </aside></div></div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>${tr`Nom du regroupement`}<input data-set-mod="${esc(id)}.groupLabel" value="${esc(c.groupLabel)}" placeholder="${tr`Pièce, lieu, client…`}" required></label><label>${tr`Nom des types`}<input data-set-mod="${esc(id)}.catLabel" value="${esc(c.catLabel)}" required></label></div>
@@ -10221,14 +10537,22 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
     <label style="display:flex;gap:8px;align-items:center;align-self:start;margin-top:26px"><input type="checkbox" data-act="task-costs" data-mod="${esc(id)}" ${c.costs ? "checked" : ""}>${tr`Suivre les coûts estimés`}</label></div>
     ${c.costs && firstOfType("budget") ? `<div class="field-row" style="margin-top:8px"><label>${tr`Enveloppe du budget pour les coûts`}<input data-set-mod="${esc(id)}.costEnvelope" value="${esc(costEnvelope(id, firstOfType("budget")))}" list="env-${esc(id)}" placeholder="${tr`aucune`}"><datalist id="env-${esc(id)}">${S().modules[firstOfType("budget")].config.envelopes.map((v) => `<option value="${esc(v.name)}">`).join("")}</datalist></label><span></span></div>` : ""}`,
     summary(id, inst) {
-      const now = todayISO(), o = inst.entries.filter((t) => !t.done), late = o.filter((t) => t.due && t.due < now).length, all = inst.entries.length;
-      return `${late ? `<span class="late">${tr`${late} en retard`}</span>, ` : ""}${tr`${o.length} à faire, ${all ? Math.round(100 * (all - o.length) / all) : 0} % fait`}`;
+      const now = todayISO(), open = inst.entries.filter(taskOpen), o = open.filter((t) => !t.wait), late = o.filter((t) => t.due && t.due < now).length;
+      const done = inst.entries.filter((t) => t.done).length, counted = done + open.length, w = open.length - o.length;
+      return `${late ? `<span class="late">${tr`${late} en retard`}</span>, ` : ""}${tr`${o.length} à faire, ${counted ? Math.round(100 * done / counted) : 0} % fait`}${w ? ", " + tr`${w} en attente` : ""}`;
+    },
+    // Une ligne par tâche dont la relance est due : elle ne dépend pas de soi, mais la relancer, si.
+    alerts(id, inst, now) {
+      return inst.entries.filter((t) => taskOpen(t) && t.wait && t.wait.next && t.wait.next <= now).map((t) => ({
+        text: `${tr`« ${esc(t.title)} » : à relancer (${esc(label(id))})`} · ${waitMeta(t, false)}`,
+        actions: `<button class="btn sm" data-act="task-relaunch" data-mod="${esc(id)}" data-task="${esc(t.id)}">${tr`relancé`}</button><button class="btn ghost sm" data-act="task-answer" data-mod="${esc(id)}" data-task="${esc(t.id)}">${tr`réponse reçue`}</button>`
+      }));
     },
     context(inst, nm) {
-      const o = inst.entries.filter((t) => !t.done).sort(byDue), c = inst.config;
+      const o = inst.entries.filter(taskOpen).sort(byDue), c = inst.config;
       return `
 ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 40).map((t) => `
-- [${t.id}] ${t.title} | ${t.room || "?"} | ${t.due ? "échéance " + t.due : "sans date"}${t.today ? " | choisie pour aujourd'hui" : ""}${c.costs && t.cost ? " | " + t.cost + " €" : ""}`).join("");
+- [${t.id}] ${t.title} | ${t.room || "?"} | ${t.due ? "échéance " + t.due : "sans date"}${t.today ? " | choisie pour aujourd'hui" : ""}${t.wait ? " | en attente d'une réponse" + (t.wait.who ? " de " + t.wait.who : "") + (t.wait.next ? ", relance le " + t.wait.next : "") : ""}${c.costs && t.cost ? " | " + t.cost + " €" : ""}`).join("");
     },
     grouper: (inst, id) => {
       const c = inst.config, fields = { room: c.groupLabel, cat: c.catLabel, effort: tr`Effort` };
@@ -10240,13 +10564,13 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
         items: () => inst.entries,
         key,
         store: () => site,
-        groups: (f) => itemGroups(inst.entries, (t) => key(t, f), (t) => t.done)
+        groups: (f) => itemGroups(inst.entries, (t) => key(t, f), (t) => !taskOpen(t))
       };
     },
-    recent: (inst) => inst.entries.filter((t) => !t.done).sort(byDue).slice(0, 3).map((t) => `${t.title} · ${dueLabel(t).txt}`),
+    recent: (inst) => inst.entries.filter((t) => taskOpen(t) && !t.wait).sort(byDue).slice(0, 3).map((t) => `${t.title} · ${dueLabel(t).txt}`),
     review: (inst, from, to) => {
-      const done = within(inst.entries, from, to, "doneAt"), cost = done.reduce((a, t) => a + (+t.cost || 0), 0);
-      return trn(done.length, "{0} tâche terminée", "{0} tâches terminées") + (inst.config.costs && cost ? ", " + tr`${money(cost)} de coûts estimés` : "");
+      const done = within(inst.entries, from, to, "doneAt"), cost = done.reduce((a, t) => a + (+t.cost || 0), 0), dropped = inst.entries.filter((t) => t.dropped && t.dropped.at >= from && t.dropped.at < to).length;
+      return trn(done.length, "{0} tâche terminée", "{0} tâches terminées") + (inst.config.costs && cost ? ", " + tr`${money(cost)} de coûts estimés` : "") + (dropped ? ", " + trn(dropped, "{0} abandonnée", "{0} abandonnées") : "");
     },
     texts: (inst) => inst.entries.map((t) => ({ text: [t.title, t.room, t.note, ...(t.steps || []).map((x) => x.t)].filter(Boolean).join(" · "), date: t.due || t.created, eid: t.id })),
     accept(id, inst, note) {
@@ -10277,6 +10601,57 @@ ${nm} : ${o.length} tâches ouvertes sur ${inst.entries.length}.` + o.slice(0, 4
         render();
       },
       "task-new": (el) => taskForm(modOf(el), null),
+      "task-wait": (el) => waitForm(taskMod(el), taskOf(el)),
+      "task-drop": (el) => dropForm(taskMod(el), taskOf(el)),
+      "task-resume": (el) => {
+        const t = taskOf(el);
+        if (!t) return;
+        resumeTask(S().modules[taskMod(el)].entries, t.id);
+        site.save();
+        render();
+        toast(tr`« ${t.title} » reprend du service.`);
+      },
+      // Un fichier .ics d'une journée, que la personne ouvre dans son agenda : aucun compte, aucune API (E2).
+      "task-ics": (el) => {
+        const id = taskMod(el), t = taskOf(el);
+        if (!t || !t.due) return;
+        const name = fold(t.title).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "selene";
+        downloadFile(`${name}-${t.due}.ics`, icsEvent({
+          uid: `${t.id}.${id}@selene`,
+          stamp: Date.now(),
+          start: t.due,
+          summary: t.title,
+          location: t.room,
+          url: (String(t.note || "").match(URL_RE) || [])[1] || "",
+          description: t.note
+        }), "text/calendar", t.title);
+      },
+      "task-relaunch": (el) => {
+        const t = taskOf(el);
+        if (!t || !t.wait) return;
+        const before = keepWait(t);
+        relaunchTask(S().modules[taskMod(el)].entries, t.id, todayISO());
+        site.save();
+        render();
+        toastUndo(tr`Relancé. Prochaine relance le ${fmt(t.wait.next)}.`, () => {
+          putWait(t, before);
+          site.save();
+          render();
+        });
+      },
+      "task-answer": (el) => {
+        const t = taskOf(el);
+        if (!t || !t.wait) return;
+        const before = keepWait(t);
+        clearTaskWaiting(S().modules[taskMod(el)].entries, t.id);
+        site.save();
+        render();
+        toastUndo(tr`Réponse reçue : « ${t.title} » revient dans les échéances.`, () => {
+          putWait(t, before);
+          site.save();
+          render();
+        });
+      },
       "task-pick": (el) => pickTask(el.closest("[data-mod]") ? modOf(el) : null)
     },
     change: {
@@ -11214,7 +11589,7 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
   CLICK["cap-sheet-add"] = () => capture($("#capSheetIn"));
   CLICK["page-more"] = (el) => {
     const k = el.dataset.k;
-    pageSize[k] = (pageSize[k] || PAGE) + PAGE;
+    pageSize[k] = (+el.dataset.n || pageSize[k] || PAGE) + PAGE;
     render();
   };
   CLICK["entry-add"] = (el) => entryAdd(el.dataset.mod);
@@ -11657,8 +12032,7 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
     const inst = S().modules[mod], e = inst && inst.type === "collection" && inst.entries.find((x) => x.id === id);
     if (!e) return;
     const c = inst.config, i = Math.max(0, Math.min(c.statuses.length - 1, ci));
-    if (c.statuses[i] === e.status) return;
-    e.status = c.statuses[i];
+    if (!setCollectionStatus(e, c.statuses[i], todayISO())) return;
     site.save();
     render();
     if (i === c.statuses.length - 1) toast(tr(collectionDoneLines[Math.floor(Math.random() * collectionDoneLines.length)], e.title, e.status));
@@ -11696,11 +12070,12 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
       const head = `<div class="row" style="margin-bottom:${c.display === "colonnes" ? 20 : 8}px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="col-new">${esc(c.addLabel)}</button></div>${c.description ? `<p class="hint">${esc(c.description)}</p>` : ""}${c.sources ? sourceBar(id) : ""}${c.music && inst.entries.some((e) => e.mb && e.mb.a) ? `<div class="row" style="margin:-2px 0 12px"><button class="btn ghost sm" data-act="mb-new" title="${tr`Demande à MusicBrainz ce qu'ont publié tes artistes reliés depuis ta dernière vérification`}">${tr`Nouvelles sorties`}</button></div>` : ""}`;
       if (c.concordance) return concordanceView(id, inst, head);
       const panel = groupPanel(id, tr`Part arrivée à « ${esc(c.statuses[c.doneFrom])} » dans chaque groupe. Clique pour filtrer.`);
+      const empty = inst.entries.length ? "" : tr`Rien encore : « ${esc(c.addLabel)} », en haut, pour commencer.`;
       if (c.display === "colonnes") {
         const byDue2 = (a, b) => (a.due || "9999").localeCompare(b.due || "9999");
         const tab = Math.min(c.statuses.length - 1, colTab[id] || 0);
         const seg = `<div class="seg" role="tablist" aria-label="${esc(c.statusLabel)}">${c.statuses.map((st, ci) => `<button type="button" role="tab" aria-selected="${ci === tab}" class="${ci === tab ? "on" : ""}" data-act="col-tab" data-i="${ci}">${esc(st)} <span>${items.filter((e) => e.status === st).length}</span></button>`).join("")}</div>`;
-        return `<div data-mod="${esc(id)}">${head}${seg}<div class="board" style="margin-bottom:34px">${c.statuses.map((st, ci) => {
+        return `<div data-mod="${esc(id)}">${head}${seg}${empty ? `<p class="empty">${empty}</p>` : ""}<div class="board" style="margin-bottom:34px">${c.statuses.map((st, ci) => {
           const col = items.filter((e) => e.status === st).sort(byDue2);
           return `<div class="col ${ci === tab ? "on" : ""}" data-ci="${ci}"><h3>${esc(st)} <span class="hint" style="font-size:.95rem">${col.length}</span></h3>${col.map((e) => collectionCard(id, e, ci, c.statuses.length - 1)).join("") || `<p class="col-empty"><span class="sr">${tr`Aucun élément.`}</span></p>`}</div>`;
         }).join("")}</div>${panel}</div>`;
@@ -11709,7 +12084,7 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
       return `<div data-mod="${esc(id)}">${head}
   <div class="row" style="margin-bottom:10px"><select data-act="col-f" aria-label="${tr`Filtrer`}"><option value="">${tr`Tous`}</option>${c.statuses.map((st) => `<option ${st === filter ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${c.sources && inst.entries.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="src-bib" title="${tr`Toutes les sources de cet espace, pour LaTeX (BibTeX, biblatex)`}">${tr`Exporter en BibTeX`}</button><button class="btn ghost sm" data-act="src-csl" aria-label="${tr`Exporter en CSL-JSON`}" title="${tr`Toutes les sources de cet espace, pour Zotero, Zettlr ou Pandoc`}">CSL-JSON</button>` : ""}</div>
   <div class="two"><div><ul class="plain col-list">${((pg) => pg.items.map((e) => `<li class="item" data-id="${esc(e.id)}"><span>${c.music && e.mb && e.mb.rg ? coverImg(e.mb.rg) : ""}</span><div><b>${esc(e.title)}</b>${f.subtitle ? e.subtitle ? `, <i>${esc(e.subtitle)}</i>${c.music && e.mb && e.mb.y ? ` <span class="hint">(${esc(e.mb.y)})</span>` : ""}` : c.music ? ` <button class="btn ghost sm" data-act="mb-open">${tr`préciser ${esc(f.subtitle.toLowerCase())}`}</button>` : ` <span class="hint">${tr`${esc(f.subtitle.toLowerCase())} à préciser`}</span>` : ""}${f.tag && e.tag ? ` <span class="tag">${esc(e.tag)}</span>` : ""}${f.due && e.due ? ` <span class="hint">${c.review ? tr`à réexaminer le ${fmt(e.due)}` : fmt(e.due)}</span>` : ""}${f.text && e.text ? `<div class="note" style="margin:2px 0 0">${esc(e.text)}</div>` : ""}${reviewedHTML(e) || e.origin || e.src ? `<div class="meta">${srcMeta(e)}${reviewedHTML(e)}${originHTML(e, e.title)}</div>` : ""}${c.sources && (e.links || []).length ? `<div class="meta src-docs">${e.links.map((l) => `<span>${esc(LINK_TYPES[l.type])} ${refHTML(l.to)}</span>`).join("")}</div>` : ""}</div>
-    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map((st) => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select><button class="btn ghost sm ra" data-act="specimen">${tr`fiche`}</button>${c.music ? `<button class="btn ghost sm ra" data-act="mb-open">${tr`discographie`}</button>` : ""}${c.sources ? `<button class="btn ghost sm ra" data-act="src-link">${tr`documente…`}</button>` : ""}<button class="btn ghost sm ra" data-act="col-edit">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="col-del">${tr`suppr.`}</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">${tr`Rien dans ce filtre.`}</li>`}</ul></div><div>${panel}</div></div></div>`;
+    <div class="row"><select data-act="col-st" aria-label="${esc(c.statusLabel)}">${c.statuses.map((st) => `<option ${st === e.status ? "selected" : ""}>${esc(st)}</option>`).join("")}</select>${e.statusAt ? `<span class="hint" style="margin:0">${tr`depuis le ${fmt(e.statusAt)}`}</span>` : ""}<button class="btn ghost sm ra" data-act="specimen">${tr`fiche`}</button>${c.music ? `<button class="btn ghost sm ra" data-act="mb-open">${tr`discographie`}</button>` : ""}${c.sources ? `<button class="btn ghost sm ra" data-act="src-link">${tr`documente…`}</button>` : ""}<button class="btn ghost sm ra" data-act="col-edit">${tr`modifier`}</button><button class="btn ghost sm ra" data-act="col-del">${tr`suppr.`}</button></div></li>`).join("") + pg.more)(paged(`col:${id}`, shown)) || `<li class="empty">${empty || tr`Rien dans ce filtre.`}</li>`}</ul></div><div>${panel}</div></div></div>`;
     },
     settings: (id, { config: c }) => {
       const f = c.fields, fid = esc(id);
@@ -11725,22 +12100,28 @@ ${name} : suivi gardé sur un autre appareil ; aucun résumé n'est disponible i
     <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-concordance" data-mod="${fid}" ${c.concordance ? "checked" : ""}>${tr`Concordance : chaque élément est un motif, compté dans les textes de tous les autres modules (variantes dans le sous-titre)`}</label>
     ${c.concordance ? `<div class="field-row" style="margin-top:8px"><label>${tr`En jachère après (jours d'absence)`}<input type="number" min="1" max="3650" data-set-mod="${fid}.fallowDays" value="${esc(c.fallowDays)}"></label><span></span></div>` : ""}
     <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-music" data-mod="${fid}" ${c.music ? "checked" : ""}>${tr`Musique : le titre est un artiste, le sous-titre un album, précisés par MusicBrainz (discographie, pochettes, nouvelles sorties)`}</label>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="col-sources" data-mod="${fid}" ${c.sources ? "checked" : ""}>${tr`Sources : chaque élément est une source, gardée par un lien ou un DOI qui se complète, exportable en BibTeX et CSL-JSON, et qui documente tes notes et fragments`}</label>
     <div style="margin-top:12px"><label class="btn sm" style="display:inline-block;font-weight:500">${tr`Importer un export Instagram`}<input type="file" accept="application/json,.json" multiple data-act="col-ig" data-mod="${fid}" style="display:none"></label>
       <p class="hint" style="margin:4px 0 0">${tr`Import manuel de tes publications : aucune connexion à Instagram, aucune synchronisation automatique. Choisis le compte voulu lors de l’export Meta. Pour plusieurs comptes, crée une collection par compte et donne-lui son nom ; les archives ne sont pas vérifiées par compte. Légende et date uniquement (pas de lien, l’export n’en contient pas). Centre de comptes Meta → Tes informations et autorisations → Télécharger tes informations, format JSON ; puis ${"<code>posts_1.json</code>"} et ${"<code>reels.json</code>"} (dossier ${"<code>your_instagram_activity/media</code>"}). Le fichier est lu sur cet appareil ; les publications importées sont ensuite enregistrées dans ton espace et suivent sa synchronisation. Un second import dans la même collection n’ajoute que les nouvelles.`}</p></div>
     <label style="display:flex;gap:8px;align-items:center;margin:10px 0 8px;font-weight:400"><input type="checkbox" data-act="col-review" data-mod="${fid}" ${c.review ? "checked" : ""}>${tr`La date est un rendez-vous de révision : elle revient sur l'accueil quel que soit le ${esc(c.statusLabel.toLowerCase())}, sauf le dernier`}</label>`;
     },
     accept: (id, inst, note) => {
-      saveCollectionItem(inst, { title: note.text }, uid());
+      saveCollectionItem(inst, { title: note.text }, uid(), todayISO());
     },
     recent: (inst) => inst.entries.slice(-3).reverse().map((e) => `${e.title}${e.subtitle ? " – " + e.subtitle : ""} · ${e.status}`),
-    // Sans date de changement de statut, le bilan ne peut compter que ce qui était prévu dans la période.
+    /* Avec une date prévue : ce qui était prévu dans la période. Sans elle (Sources, Musique, À découvrir) : les passages
+       datés de la période (statusAt), par statut atteint ; aucun, pas de ligne. */
     review: (inst, from, to) => {
       const c = inst.config;
       if (c.concordance) {
         const ms = motifsIn(inst, from, to);
         return ms.length ? ms.slice(0, 5).map((x) => `${x.name} ×${x.n}`).join(", ") : tr`Aucun motif rencontré`;
       }
-      if (!c.fields.due) return null;
+      if (!c.fields.due) {
+        const moved = within(inst.entries, from, to, "statusAt");
+        if (!moved.length) return null;
+        return c.statuses.map((st) => [st, moved.filter((e) => e.status === st).length]).filter(([, n]) => n).map(([st, n]) => `${st} ×${n}`).join(", ");
+      }
       if (c.review) {
         const due = within(inst.entries, from, to, "due").filter((e) => e.status !== c.statuses.at(-1)).length, done = inst.entries.flatMap((e) => within(e.reviews || [], from, to)).length;
         return due || done ? tr`${due} à réexaminer, ${trn(done, "{0} réexamen fait", "{0} réexamens faits")}` : tr`Rien à réexaminer`;
@@ -11850,9 +12231,10 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
         render();
       },
       "col-st": (el) => {
-        itemOf(el).status = el.value;
-        site.save();
-        render();
+        if (setCollectionStatus(itemOf(el), el.value, todayISO())) {
+          site.save();
+          render();
+        }
       },
       "col-done": (el) => {
         instOf(el).config.doneFrom = +el.value;
@@ -11871,6 +12253,11 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
       },
       "col-music": (el) => {
         instOf(el).config.music = el.checked;
+        site.save();
+        render();
+      },
+      "col-sources": (el) => {
+        instOf(el).config.sources = el.checked;
         site.save();
         render();
       },
@@ -11979,7 +12366,7 @@ ${nm}${c.description ? ` (${c.description})` : ""} : ${inst.entries.map((e) => `
       const inst = S().modules[id], m = monthOf(id), es = inMonth(inst, m), out = sumOf2(es, "dépense"), inn = sumOf2(es, "revenu");
       const shown = es.filter((e) => gMatch(id, e)).sort((a, x) => x.date.localeCompare(a.date));
       const mLabel = (/* @__PURE__ */ new Date(m + "-15")).toLocaleDateString(uiLocale(), { month: "long", year: "numeric" });
-      const tasksLeft = allTasks().filter(([m2, t]) => !t.done && t.cost && S().modules[m2].config.costs).reduce((a, [, t]) => a + +t.cost, 0);
+      const tasksLeft = allTasks().filter(([m2, t]) => taskOpen(t) && t.cost && S().modules[m2].config.costs).reduce((a, [, t]) => a + +t.cost, 0);
       const defDate = m === todayISO().slice(0, 7) ? todayISO() : m + "-01";
       return `<div data-mod="${esc(id)}"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span>
     <button class="btn ghost" data-act="bud-month" data-d="-1" aria-label="${tr`Mois précédent`}">‹</button><b style="min-width:9ch;text-align:center;text-transform:capitalize">${mLabel}</b><button class="btn ghost" data-act="bud-month" data-d="1" aria-label="${tr`Mois suivant`}">›</button></div>
@@ -12146,6 +12533,13 @@ ${nm} (${mo}) : dépenses ${sumOf2(es, "dépense")} €, revenus ${sumOf2(es, "r
     const box = inboxId(S().modules), n = box && !inst.scraps.length ? S().modules[box].entries.length : 0;
     return n ? `<p class="hint" style="margin-top:10px">${trn(n, "{0} idée notée par Capturer attend dans la boîte de réception.", "{0} idées notées par Capturer attendent dans la boîte de réception.")} <button class="btn sm" data-act="vasculum">${tr`Les trier`}</button></p>` : "";
   }
+  var signed = (v, unit) => `${+v > 0 ? "+" : ""}${(+v || 0).toLocaleString(uiLocale())} ${unit}`;
+  function sessionsHTML(id, inst) {
+    const c = inst.config, list = [...inst.entries].reverse().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+    if (!list.length) return "";
+    const cat = (x) => x.category ? (c.categories.find((k) => k.id === x.category) || {}).name : "";
+    return `<details class="sessions"><summary>${tr`Sessions (${list.length})`}</summary><ul class="plain">${((pg) => pg.items.map((x) => `<li class="item" data-id="${esc(x.id)}"><span class="jdate">${fmt(x.date)}</span><div>${esc(signed(x.value, c.unitLabel))}${cat(x) ? ` <span class="tag">${esc(cat(x))}</span>` : ""}${x.note ? `<div class="note" style="margin:2px 0 0">${esc(x.note)}</div>` : ""}</div><button class="btn ghost sm" data-act="entry-del" data-mod="${esc(id)}">${tr`suppr.`}</button></li>`).join("") + pg.more)(paged(`cumul:${id}`, list))}</ul></details>`;
+  }
   registerType("cumul", {
     view(id) {
       const inst = S().modules[id], c = inst.config;
@@ -12159,6 +12553,7 @@ ${nm} (${mo}) : dépenses ${sumOf2(es, "dépense")} €, revenus ${sumOf2(es, "r
     <div class="big">${tot.toLocaleString(uiLocale())} <span class="hint" style="font-size:1.1rem">${trp("cumul", "{0} sur {1}", esc(c.unitLabel), (+c.goal).toLocaleString(uiLocale()))}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
     <p class="hint">${tr`Dernière session ${ago(last)}.`} ${trn(streakOf(inst.entries.map((x) => x.date)), "Série de {0} jour.", "Série de {0} jours.")} ${esc(projection(inst))}</p>
     <div class="row"><input type="number" id="cumIn" min="${total ? 0 : 1}" placeholder="${total ? tr`Total atteint (${esc(c.unitLabel)})` : tr`${esc(c.unitLabel)} aujourd'hui`}" style="max-width:200px" inputmode="numeric" aria-label="${total ? tr`Total atteint` : tr`Ajout du jour`}">${c.categories.length ? `<select id="cumCat" aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">${tr`Hors ${esc(c.categoryLabel).toLowerCase()}`}</option>${c.categories.map((x) => `<option value="${esc(x.id)}" ${x.id === lastCat ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>` : ""}<button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">${tr`Ajouter`}</button></div>
+    ${sessionsHTML(id, inst)}
     <div style="margin-top:28px">${c.categories.length ? cumulGroupPanel(id) : `<p class="hint">${tr`Ajoute des ${`${esc(c.categoryLabel).toLowerCase()}s`} dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`} pour suivre chacune en pourcentage.`}</p>`}</div>
   </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">${tr`Une phrase qui passe, avant qu'elle ne reparte. Un « ? » devant en fait une hypothèse.`}</p>
     ${deriveBanner(id)}<textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="${tr`Nouveau`}"></textarea><div class="row" style="margin-top:8px">${catSelect("scrapCat", "", lastScrapCat)}<button class="btn" data-act="scrap-add" data-mod="${esc(id)}">${tr`Garder`}</button></div>
@@ -12170,6 +12565,8 @@ ${nm} (${mo}) : dépenses ${sumOf2(es, "dépense")} €, revenus ${sumOf2(es, "r
     settings: (id, { config: c }) => `<div class="field-row"><label>${tr`Titre / sous-titre`}<input data-set-mod="${esc(id)}.title" value="${esc(c.title || "")}"></label><label>${tr`Objectif`}<input type="number" min="1" data-set-mod="${esc(id)}.goal" value="${esc(c.goal)}"></label></div>
     <div class="field-row" style="margin-top:8px"><label>${tr`Je saisis`}<select data-set-mod="${esc(id)}.entryMode"><option value="delta" ${c.entryMode !== "total" ? "selected" : ""}>${tr`Ce que j'ai fait aujourd'hui`}</option><option value="total" ${c.entryMode === "total" ? "selected" : ""}>${tr`Le total atteint (l'app calcule la différence)`}</option></select></label><span></span></div>
     <div class="field-row" style="margin-top:8px"><label>${tr`Unité`}<input data-set-mod="${esc(id)}.unitLabel" value="${esc(c.unitLabel)}" placeholder="${tr`mots`}"></label><label>${tr`Nom des catégories`}<input data-set-mod="${esc(id)}.categoryLabel" value="${esc(c.categoryLabel)}" placeholder="${tr`Chapitre`}"></label></div>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="cum-scraps" data-mod="${esc(id)}" ${c.scraps ? "checked" : ""}>${tr`Un carnet de fragments : des phrases à garder à côté du compteur, qui reçoivent aussi les notes triées`}</label>
+    ${c.scraps ? `<div class="field-row" style="margin-top:8px"><label>${tr`Nom du carnet`}<input data-set-mod="${esc(id)}.scrapsLabel" value="${esc(c.scrapsLabel)}" placeholder="${tr`Fragments`}"></label><span></span></div>` : ""}
     <div style="margin-top:10px"><span class="hint" style="margin:0">${esc(c.categoryLabel)}s</span>${c.categories.map((cat, i) => `<div class="set" data-ci="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="cat-name" data-mod="${esc(id)}" value="${esc(cat.name)}" aria-label="${tr`Nom`}"><input type="number" min="0" data-act="cat-goal" data-mod="${esc(id)}" value="${esc(cat.goal || "")}" placeholder="${tr`Objectif`}" aria-label="${tr`Objectif`}"><div class="row"><button class="btn ghost sm" data-act="cat-up" data-mod="${esc(id)}" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="cat-del" data-mod="${esc(id)}">${tr`suppr.`}</button></div></div>`).join("")}<button class="btn sm" data-act="cat-add" data-mod="${esc(id)}" style="margin-top:8px">${tr`Ajouter`}</button></div>`,
     summary(id, inst) {
       const c = inst.config;
@@ -12181,6 +12578,7 @@ ${nm} (${mo}) : dépenses ${sumOf2(es, "dépense")} €, revenus ${sumOf2(es, "r
 ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur ${c.goal}. ${projection(inst)}${c.categories.length ? ` ${c.categoryLabel}s : ${c.categories.map((x) => x.name).join(", ")}.` : ""}${c.scraps ? ` Derniers ${c.scrapsLabel.toLowerCase()} : ${inst.scraps.slice(-3).map((f) => f.text.slice(0, 200)).join(" / ") || "aucun"}` : ""}`;
     },
     recent: (inst) => recentBy(inst.entries).map((x) => `${fmt(x.date)} · ${x.value > 0 ? "+" : ""}${x.value ?? "?"} ${inst.config.unitLabel}`),
+    entryName: (inst, x) => `${fmt(x.date)}, ${signed(x.value, inst.config.unitLabel)}`,
     review: (inst, from, to) => {
       const n = within(inst.entries, from, to).reduce((a, x) => a + (+x.value || 0), 0), f = within(inst.scraps || [], from, to).length;
       return `${n > 0 ? "+" : ""}${n.toLocaleString(uiLocale())} ${inst.config.unitLabel}${inst.config.scraps ? `, ${plural(f, inst.config.scrapsLabel.toLowerCase().replace(/s$/, ""))}` : ""}`;
@@ -12277,6 +12675,14 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       }
     },
     change: {
+      // Un carnet de fragments, aussi pour un compteur créé vide (jusqu'ici, seul le modèle « Écriture » l'avait).
+      "cum-scraps": (el) => {
+        const inst = instOf(el);
+        inst.config.scraps = el.checked;
+        if (!Array.isArray(inst.scraps)) inst.scraps = [];
+        site.save();
+        render();
+      },
       "scrap-cat": (el) => {
         const f = instOf(el).scraps.find((x) => x.id === idOf(el));
         if (f) {
@@ -12519,11 +12925,18 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     const q = w.slice(w.indexOf(":") + 1);
     return q && Object.keys(EP_STATUS).find((k) => fold(EP_STATUS[k]).startsWith(q) || fold(epLabel(k)).startsWith(q)) || null;
   };
-  function searchAll(q) {
+  var searchAll = (q) => searchIn(q, (m) => enabled(m.id));
+  var searchHidden = (q) => {
+    const n = {};
+    for (const h of searchIn(q, (m) => !m.on && !absentModule(m.id))) n[h.id] = (n[h.id] || 0) + 1;
+    return Object.entries(n).map(([id, count]) => ({ id, count }));
+  };
+  function searchIn(q, keep) {
     const words2 = fold(q).split(/\s+/).filter(Boolean), st = words2.find(isEpWord), want = st ? epQuery(st) : null;
     const terms = words2.filter((w) => !isEpWord(w)), out = [];
     if (st && !want || !terms.length && !want) return out;
     for (const m of S().config.modules) {
+      if (!keep(m)) continue;
       const inst = Object.hasOwn(S().modules, m.id) ? S().modules[m.id] : null, ui = inst && TYPE_UI[inst.type];
       if (!ui || !ui.texts) continue;
       for (const t of ui.texts(inst)) {
@@ -12576,10 +12989,11 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       return shown.length ? `<p class="grp search-grp ${tintOf(id)}">${sigil(id)}${esc(label(id))} <span>${l.length}</span></p><ul class="plain">${shown.map((h) => `<li class="item"><span class="jdate">${h.date ? fmt(h.date) : ""}</span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}${h.ep ? `<div class="meta"><span>${epGlyph(h.ep)}${esc(epLabel(h.ep))}</span></div>` : ""}</div><a class="btn ghost sm" href="#${esc(h.id)}${h.eid ? "/" + esc(h.eid) : ""}">${tr`ouvrir`}</a></li>`).join("")}</ul>` : "";
     }).join("");
     const filtered = hits.length !== all.length;
+    const hidden = searchHidden(searchQuery).map((h) => `<p class="hint">${trn(h.count, "Aussi {0} résultat dans « {1} », désactivé : {2} → Espaces pour le rouvrir.", "Aussi {0} résultats dans « {1} », désactivé : {2} → Espaces pour le rouvrir.", esc(label(h.id)), `<a href="#reglages">${tr`Réglages`}</a>`)}</p>`).join("");
     return `<h2>${tr`Chercher`}</h2><p class="hint">${tr`Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « ${`${trp("recherche", "statut")}:${epLabel("hyp")}`} » ne garde que les hypothèses (de même pour ${["obs", "int", "inx"].map(epLabel).join(", ")}). Touche « / » pour venir ici.`}</p>
   <input id="searchIn" type="search" value="${esc(searchQuery)}" placeholder="${tr`Un mot, un bout de phrase…`}" aria-label="${tr`Chercher`}" autocomplete="off" style="max-width:520px">
   ${searchQuery.trim() ? `<div class="row" style="margin-top:12px"><p class="hint" style="margin:0">${hits.length ? filtered ? trn(hits.length, "{0} résultat sur {1}", "{0} résultats sur {1}", all.length) : trn(hits.length, "{0} résultat", "{0} résultats") : all.length ? tr`Rien avec ces filtres.` : tr`Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire.`}</p>${hits.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="search-dossier" title="${tr`Les résultats affichés, avec dates, statuts, provenance et liens, pour une lecture assistée`}">${tr`Exporter en dossier`}</button>` : ""}</div>
-  ${facets}${groups}` : ""}`;
+  ${hidden}${facets}${groups}` : ""}`;
   };
   CLICK["search-dossier"] = () => {
     const q = searchQuery.trim(), thoughts = thoughtItems();
@@ -12812,6 +13226,26 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     render();
   };
   CLICK["link-form"] = (el) => linkForm(el.dataset.mod, idOf(el));
+  CLICK["link-del"] = (el) => {
+    const { from, to, type } = el.dataset, hit = refFind(from);
+    if (!hit) return;
+    const links = hit.e.links || [], i = links.findIndex((l) => l.to === to && l.type === type);
+    if (i < 0) return;
+    const link = links[i];
+    hit.e.links = links.filter((l) => l !== link);
+    site.save();
+    render();
+    toastUndo(tr`Lien retiré.`, () => {
+      const cur = refFind(from);
+      if (!cur || (cur.e.links || []).some((l) => l.to === to && l.type === type)) return;
+      const ls = [...cur.e.links || []];
+      ls.splice(Math.min(i, ls.length), 0, link);
+      cur.e.links = ls;
+      site.save();
+      render();
+      toast(tr`Rétabli. Rien ne s'est passé.`);
+    });
+  };
   CLICK["tension-resolve"] = (el) => {
     const a = el.dataset.a, b = el.dataset.b, hit = refFind(a);
     if (!hit) return;
@@ -13679,7 +14113,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     }
     const back = backTo && backTo.to === view ? `<a class="back" href="#${esc(backTo.from)}">‹ ${esc(backTo.label)}</a>` : "";
     const bridgeable = inst && !TYPE_UI[inst.type].sensitive, bridging = bridgeable && (inst.resume || bridgeOpen === view);
-    $("#main").innerHTML = back + (inst ? `<div class="view ${tintOf(view)}">${plateHTML(view, bridging || !bridgeable ? "" : `<button class="btn ghost sm" data-act="bridge-edit" data-mod="${esc(view)}">${tr`Je m'arrête ici…`}</button>`)}${bridging ? bridgeBar(view, inst) : ""}${TYPE_UI[inst.type].view(view)}</div>` : VIEWS[view]());
+    $("#main").innerHTML = back + (inst ? `<div class="view ${tintOf(view)}">${plateHTML(view, bridging || !bridgeable ? "" : `<button class="btn ghost sm" data-act="bridge-edit" data-mod="${esc(view)}">${tr`Je m'arrête ici…`}</button>`)}${bridging ? bridgeBar(view, inst) : ""}${bridgeable ? bridgeLog(inst) : ""}${TYPE_UI[inst.type].view(view)}</div>` : VIEWS[view]());
     const fa = document.activeElement, typingSheet = fa && fa.closest && fa.closest("#sheet") && (fa.tagName === "TEXTAREA" || fa.tagName === "INPUT" && !["checkbox", "radio"].includes(fa.type));
     if (["module", "specimen", "vasculum"].includes(sheetKind) && $("#sheet").open && !typingSheet) $("#sheetBody").innerHTML = SHEETS[sheetKind](sheetArg);
     const h2 = $("#main h2"), here = h2 && String(h2.textContent || "").replace(/\s+/g, " ").trim();
@@ -13960,6 +14394,12 @@ ${nm} : arc de ${c.stations.length} étapes (${c.stations.map((s) => s.name).joi
     return `<section><h3 style="margin:0 0 4px">${tr`Par semaine`}</h3><p class="hint">${tr`Objectif : ${esc(c.perWeek)} séances par semaine, réglable dans Réglages.`}</p>
     <div class="rooms">${out.map((g) => `<div class="room ${g.pct > 100 ? "over" : ""}"><div class="fill" style="width:${Math.min(100, g.pct)}%"></div><small>${esc(g.name)}</small><b>${tr`${g.pct} %`}</b><small>${esc(g.sub)}</small></div>`).join("") || `<p class="empty">${tr`Rien à regrouper pour l'instant.`}</p>`}</div></section>`;
   }
+  var lastDayOf = (c) => c.start ? addDaysTo(c.start, Math.max(1, Math.round(+c.weeks) || 12) * 7 - 1) : null;
+  var endedOn = (c, now = todayISO()) => {
+    const last = lastDayOf(c);
+    return last && now > last ? last : null;
+  };
+  var endedText = (last) => tr`Terminé le ${fmt(last, { day: "numeric", month: "short", year: "numeric" })}`;
   var tierCurrent = (c) => (c.tiers || []).find((t) => !t.advancedAt) || null;
   var firstDecisions = () => (S().config.modules.find((m) => shownModule(m) && S().modules[m.id].type === "collection" && S().modules[m.id].config.review) || {}).id || null;
   function tiersPanel(id) {
@@ -13990,16 +14430,16 @@ ${nm} : arc de ${c.stations.length} étapes (${c.stations.map((s) => s.name).joi
           cal += `<i class="${days.has(day) ? "on" : ""} ${day === now ? "today" : ""} ${day > now ? "future" : ""}" title="${fmt(day)}"></i>`;
         }
       }
-      const recent = [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12);
+      const recent = paged(`prog:${id}`, [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)), 12), ended = endedOn(c, now);
       return `<div class="row" style="margin-bottom:20px"><h2 style="margin:0">${esc(label(id))}</h2><span class="spacer"></span><button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">${tr`Noter une séance`}</button></div>
   <div class="two"><section>
-    <div class="big">${tr`Semaine ${week}`} <span class="hint" style="font-size:1.1rem">${tr`sur ${W}`}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
+    ${ended ? `<div class="big">${endedText(ended)}</div><p class="hint">${tr`Pour continuer, allonge sa durée dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`}.`}</p>` : `<div class="big">${tr`Semaine ${week}`} <span class="hint" style="font-size:1.1rem">${tr`sur ${W}`}</span></div><div class="bar"><i style="width:${pct}%"></i></div>`}
     <p class="hint">${trn(inst.entries.length, "{0} séance, {1} {2} au total, série actuelle de {3}.", "{0} séances, {1} {2} au total, série actuelle de {3}.", totalOf(inst), esc(c.unitLabel), trn(streakOf([...days]), "{0} jour", "{0} jours"))}</p>
     <div class="cal">${cal}</div>
     <div style="margin-top:28px">${programmeGroupPanel(id)}</div>
     ${tiersPanel(id)}
   </section><section><h3>${tr`Journal`}</h3><p class="hint">${tr`Ce que le corps a fait, ce que la tête en a pensé.`}</p>
-    <ul class="plain">${recent.map((x) => `<li class="item" data-id="${esc(x.id)}"><span class="jdate">${fmt(x.date, { weekday: "short", day: "numeric", month: "short" })}</span><div>${esc(x.value ?? "?")} ${esc(c.unitLabel)}${x.note ? `<div class="note" style="margin:2px 0 0">${esc(x.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">${tr`suppr.`}</button></li>`).join("") || `<li class="empty">${tr`Aucune séance notée.`}</li>`}</ul>
+    <ul class="plain">${recent.items.map((x) => `<li class="item" data-id="${esc(x.id)}"><span class="jdate">${fmt(x.date, { weekday: "short", day: "numeric", month: "short" })}</span><div>${esc(x.value ?? "?")} ${esc(c.unitLabel)}${x.note ? `<div class="note" style="margin:2px 0 0">${esc(x.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">${tr`suppr.`}</button></li>`).join("") + recent.more || `<li class="empty">${tr`Aucune séance notée.`}</li>`}</ul>
   </section></div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>${tr`Début du protocole`}<input type="date" data-set-mod="${esc(id)}.start" value="${esc(c.start || "")}"></label><label>${tr`Durée (semaines)`}<input type="number" min="1" max="520" data-set-mod="${esc(id)}.weeks" value="${esc(c.weeks)}"></label></div>
@@ -14013,11 +14453,13 @@ ${nm} : arc de ${c.stations.length} étapes (${c.stations.map((s) => s.name).joi
     summary(id, inst) {
       const c = inst.config;
       if (!c.start) return tr`Pas encore commencé`;
+      const ended = endedOn(c);
+      if (ended) return [endedText(ended), trn(inst.entries.length, "{0} séance", "{0} séances")].join(", ");
       const w = Math.min(c.weeks, Math.floor(diffDays(todayISO(), c.start) / 7) + 1), cur = tierCurrent(c);
       return [tr`Semaine ${w} sur ${esc(c.weeks)}`, trn(inst.entries.length, "{0} séance", "{0} séances"), tr`série de ${streakOf(inst.entries.map((x) => x.date))} j`, ...cur ? [tr`palier « ${esc(cur.name)} »`] : []].join(", ");
     },
     alerts(id, inst, now) {
-      if (!inst.config.start) return [];
+      if (!inst.config.start || endedOn(inst.config, now)) return [];
       const done = inst.entries.some((x) => x.date === now), name = esc(label(id)).toLowerCase(), last = lastValue(inst), m = esc(id);
       const actions = done ? "" : last != null ? `<button class="btn sm" data-act="prog-quick" data-mod="${m}">${tr`Noter ${esc(last)} ${esc(inst.config.unitLabel)}`}</button><button class="btn ghost sm" data-act="entry-add" data-mod="${m}">${tr`autre…`}</button>` : `<button class="btn ghost sm" data-act="entry-add" data-mod="${m}">${tr`noter`}</button>`;
       return [{ text: done ? tr`Séance de ${name} faite.` : tr`Pas encore de séance de ${name} aujourd'hui.`, actions }];
@@ -14103,14 +14545,23 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
         render();
       },
       // Le passage est le geste ; la décision reste à rédiger, jamais créée toute seule.
+      /* Un passage voulu, mais pas sans retour : sa bulle propose « Annuler », qui le rend en cours (relu au moment
+         d'annuler). Avec un espace Décisions, le formulaire de la décision s'ouvre seul, sans bulle (C17). */
       "tier-advance": (el) => {
-        const inst = instOf(el), cur = tierCurrent(inst.config);
+        const id = el.dataset.mod, inst = instOf(el), cur = tierCurrent(inst.config);
         if (!cur) return;
         cur.advancedAt = todayISO();
         site.save();
         render();
         const dec = firstDecisions();
-        if (!dec) return toast(tr`Palier « ${cur.name} » atteint.`);
+        if (!dec) return toastUndo(tr`Palier « ${cur.name} » atteint.`, () => {
+          const t = ((S().modules[id] || {}).config.tiers || []).find((x) => x.id === cur.id);
+          if (!t || !t.advancedAt) return;
+          delete t.advancedAt;
+          site.save();
+          render();
+          toast(tr`Rétabli. Rien ne s'est passé.`);
+        });
         const dc = S().modules[dec].config;
         collectionForm(dec, { title: tr`Palier « ${cur.name} » atteint (${label(el.dataset.mod)})`, status: dc.statuses[Math.min(1, dc.statuses.length - 1)] }, tr`Noter la décision : « ${cur.name} »`);
       }
@@ -14143,6 +14594,7 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
   });
 
   // src/app/modules/rappels.js
+  var typeLabel2 = (inst, t) => t === "note" ? tr`Observation` : (inst.config.types.find((y) => y.id === t) || {}).label || tr`Geste supprimé`;
   registerType("rappels", {
     view(id) {
       const inst = S().modules[id], c = inst.config, now = todayISO();
@@ -14150,13 +14602,13 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
         const l = lastOf(inst, t.id), due = t.every && (!l || diffDays(now, l) >= t.every);
         return `<div class="set"><span class="${due ? "late" : ""}">${esc(t.label)}</span><span class="hint" style="margin:0">${ago(l)}${t.every ? `, ${tr`tous les ${esc(t.every)} j`}` : ""}</span><button class="btn sm" data-act="entry-log" data-mod="${esc(id)}" data-t="${esc(t.id)}">${tr`Fait aujourd'hui`}</button></div>`;
       };
-      const recent = [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
+      const recent = paged(`rap:${id}`, [...inst.entries].sort((a, b) => b.date.localeCompare(a.date)), 20);
       return `<h2>${esc(label(id))}${c.subtitle ? ` <span class="hint" style="font-size:1.2rem">${esc(c.subtitle)}</span>` : ""}</h2>
   <div class="two"><section>
     ${c.types.map(line).join("")}
     <div class="row" style="margin-top:14px"><input id="rapNote" data-draft placeholder="${tr`Observation…`}" aria-label="${tr`Observation`}"><button class="btn" data-act="entry-note" data-mod="${esc(id)}">${tr`Noter`}</button></div>
     <p class="hint" style="margin-top:10px">${tr`Réglable dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`}.`}</p>
-  </section><section><h3>${tr`Journal`}</h3><ul class="plain">${recent.map((l) => `<li class="item" data-id="${esc(l.id)}"><span class="jdate">${fmt(l.date)}</span><div><span class="tag">${esc(l.type)}</span>${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}${l.origin ? `<div class="meta">${originHTML(l, l.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">${tr`suppr.`}</button></li>`).join("") || `<li class="empty">${tr`Aucune entrée.`}</li>`}</ul></section></div>`;
+  </section><section><h3>${tr`Journal`}</h3><ul class="plain">${recent.items.map((l) => `<li class="item" data-id="${esc(l.id)}"><span class="jdate">${fmt(l.date)}</span><div><span class="tag">${esc(typeLabel2(inst, l.type))}</span>${l.note ? `<div class="note" style="margin:2px 0 0">${esc(l.note)}</div>` : ""}${l.origin ? `<div class="meta">${originHTML(l, l.note)}</div>` : ""}</div><button class="btn ghost sm ra" data-act="entry-del" data-mod="${esc(id)}">${tr`suppr.`}</button></li>`).join("") + recent.more || `<li class="empty">${tr`Aucune entrée.`}</li>`}</ul></section></div>`;
     },
     settings: (id, { config: c }) => `<div class="field-row"><label>${tr`Sous-titre (ex. nom propre)`}<input data-set-mod="${esc(id)}.subtitle" value="${esc(c.subtitle || "")}"></label><span></span></div>
     <div style="margin-top:10px"><span class="hint" style="margin:0">${tr`Types et rappels`}</span>${c.types.map((t, i) => `<div class="set" data-ti="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="typ-name" data-mod="${esc(id)}" value="${esc(t.label)}" aria-label="${tr`Nom`}"><input type="number" min="0" data-act="typ-every" data-mod="${esc(id)}" value="${esc(t.every || "")}" placeholder="${tr`tous les X j`}" aria-label="${tr`Fréquence`}"><button class="btn ghost sm" data-act="typ-del" data-mod="${esc(id)}">${tr`suppr.`}</button></div>`).join("")}<button class="btn sm" data-act="typ-add" data-mod="${esc(id)}" style="margin-top:8px">${tr`Ajouter un type`}</button></div>`,
@@ -14180,11 +14632,12 @@ ${nm} : ${c.start ? `protocole de ${c.weeks} semaines commencé le ${c.start}, $
     accept: (id, inst, note) => {
       addJournalEntry(inst, { date: note.date, type: "note", note: note.text }, uid(), todayISO());
     },
-    recent: (inst) => recentBy(inst.entries).map((x) => `${fmt(x.date)} · ${(inst.config.types.find((t) => t.id === x.type) || {}).label || x.type}${x.note ? " · " + x.note : ""}`),
+    entryName: (inst, e) => typeLabel2(inst, e.type),
+    recent: (inst) => recentBy(inst.entries).map((x) => `${fmt(x.date)} · ${typeLabel2(inst, x.type)}${x.note ? " · " + x.note : ""}`),
     review: (inst, from, to) => {
       const es = within(inst.entries, from, to);
       if (!es.length) return tr`Rien de noté`;
-      const by = [...new Set(es.map((x) => x.type))].map((t) => `${((inst.config.types.find((y) => y.id === t) || {}).label || t).toLowerCase()} ×${es.filter((x) => x.type === t).length}`);
+      const by = [...new Set(es.map((x) => x.type))].map((t) => `${typeLabel2(inst, t).toLowerCase()} ×${es.filter((x) => x.type === t).length}`);
       return by.join(", ");
     },
     texts: (inst) => inst.entries.filter((x) => x.note).map((x) => ({ text: x.note, date: x.date, eid: x.id })),
@@ -14382,7 +14835,8 @@ ${nm}${c.subtitle ? ` (${c.subtitle})` : ""} : ${c.types.map((t) => `${t.label.t
     const thought = inst.type === "notes" || inst.type === "cumul" && (inst.scraps || []).includes(e);
     const long = (d) => fmt(d, { day: "numeric", month: "long", year: "numeric" }), when = e.date || e.due || e.created;
     const chapter2 = inst.type === "cumul" && e.category ? (c.categories.find((x) => x.id === e.category) || {}).name : "";
-    const links = [...(e.links || []).map((l) => `<li>${esc(linkLabel(l.type))} ${refHTML(l.to)}</li>`), ...(backlinks().get(`${mod}/${e.id}`) || []).map((b) => `<li>${esc(tr(LINK_BACK[b.type]))} ${refHTML(b.from)}</li>`)];
+    const self = `${mod}/${e.id}`, del = (from, to, type) => `<button class="btn ghost sm" data-act="link-del" data-from="${esc(from)}" data-to="${esc(to)}" data-type="${esc(type)}">${tr`retirer`}</button>`;
+    const links = [...(e.links || []).map((l) => `<li>${esc(linkLabel(l.type))} ${refHTML(l.to)} ${del(self, l.to, l.type)}</li>`), ...(backlinks().get(self) || []).map((b) => `<li>${esc(tr(LINK_BACK[b.type]))} ${refHTML(b.from)} ${del(b.from, self, b.type)}</li>`)];
     const motifs = motifsOf([e.title, e.subtitle, text].filter(Boolean).join(" "));
     const log = [...e.epLog || []].reverse().map((x) => `<li>${x.date ? tr`${long(x.date)} : ` : ""}${esc(epLabel(x.from))} → ${epGlyph(x.to)}${esc(epLabel(x.to))}</li>`);
     const reviews = [...e.reviews || []].reverse().map((r) => `<li>${tr`${esc(r.verdict === "maintenue" ? tr`maintenue` : r.verdict)}, le ${long(r.date)}`}</li>`);

@@ -38,6 +38,8 @@ Arc, Carnet, et une Boîte de six notes. Les opérations du Budget sont en septe
 | [MOD-024](#mod-024) | Minuteur de quinze minutes et la suite proposée | P3 | Web, Mob |
 | [MOD-025](#mod-025) | Longues listes : cent, puis « Voir les suivants » | P3 | Web, Mob |
 | [MOD-026](#mod-026) | Importer des notes Markdown (Obsidian, Zettlr) | P2 | Web, Mob, ART |
+| [MOD-027](#mod-027) | Tâches : « J'attends une réponse », la relance, la réponse reçue | P2 | Web, Mob |
+| [MOD-028](#mod-028) | Tâches : abandonner, avec un motif, puis reprendre | P2 | Web, Mob |
 
 Identifiants retirés : aucun.
 
@@ -191,13 +193,13 @@ Identifiants retirés : aucun.
 ### MOD-007 — Programme : séance notée, calendrier, « Noter N min » depuis l'accueil
 
 - **Fonctionnalité et règle** : un protocole de N semaines, un calendrier, un objectif de séances par semaine ; l'accueil
-  propose « Noter N min » avec la dernière durée.
-- **Objectif, risque vérifié** : séance non enregistrée, ou à la mauvaise date.
+  propose « Noter N min » avec la dernière durée. Sa durée passée, il est terminé : il le dit, et ne relance plus (A71).
+- **Objectif, risque vérifié** : séance non enregistrée, ou à la mauvaise date ; un programme fini qui relance chaque jour.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai ; aucune séance de Yoga aujourd'hui.
 - **Données** : séance de `30` min, hier.
-- **Automatisés associés** : `TN-quotidien`, `TN-types`, `TU-MOD-30`
-- **Source** : [DOC] README, « Accueil » ; [TEST] `TU-MOD-30`, `tests/browser/quotidien.js`.
+- **Automatisés associés** : `TN-quotidien`, `TN-types`, `TU-MOD-30`, `TU-MOD-69`
+- **Source** : [DOC] README, « Accueil » ; [TEST] `TU-MOD-30`, `TU-MOD-69`, `tests/browser/quotidien.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -205,9 +207,11 @@ Identifiants retirés : aucun.
 | 2 | Cliquer « Noter 25 min ». | « Séance de yoga faite. » (l'app écrit le nom de l'espace en minuscules) ; dans Yoga, une séance de 25 min datée d'aujourd'hui. |
 | 3 | Dans Yoga, « Noter une séance » : 30 min, date d'hier. | La séance apparaît à la date d'hier dans le journal et le calendrier. |
 | 4 | Recharger. | Les deux séances sont là. |
+| 5 | Réglages → « régler » sous Yoga : début `2026-01-05`, durée `4` semaines ; ouvrir l'accueil, puis Yoga. | L'accueil ne propose plus de séance pour Yoga ; « Où en sont les choses » et Yoga disent « Terminé le 1 févr. 2026 », Yoga avec « Pour continuer, allonge sa durée dans Réglages. » (A71). |
+| 6 | Remettre la durée à `52`, puis le début à `2026-08-03`. | L'accueil propose de nouveau « Noter … min » pour Yoga. |
 
-- **État final attendu** : deux séances de plus.
-- **Nettoyage** : les supprimer.
+- **État final attendu** : deux séances de plus ; Yoga en cours.
+- **Nettoyage** : supprimer les deux séances.
 
 ---
 
@@ -216,13 +220,14 @@ Identifiants retirés : aucun.
 
 - **Fonctionnalité et règle** : des critères écrits et cochés par la personne ; rien ne fait franchir un palier
   automatiquement ; « Passer au palier suivant » est le seul geste qui compte ; avec un module Décisions actif, une décision
-  préremplie s'ouvre, jamais enregistrée sans validation.
+  préremplie s'ouvre, jamais enregistrée sans validation. Sans module Décisions, la bulle « Palier « … » atteint. »
+  propose « Annuler », qui rend le palier en cours.
 - **Objectif, risque vérifié** : l'app décide à la place de la personne ; décision enregistrée à son insu.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai (palier « Souffle », deux critères, et un module Décisions).
 - **Données** : aucune.
-- **Automatisés associés** : `TN-paliers`, `TU-MOD-56`
-- **Source** : [DOC] README, « Paliers » ; [TEST] `tests/browser/paliers.js`, `TU-MOD-56`.
+- **Automatisés associés** : `TN-paliers`, `TU-MOD-56`, `TU-MOD-71`
+- **Source** : [DOC] README, « Paliers » ; [TEST] `tests/browser/paliers.js`, `TU-MOD-56`, `TU-MOD-71`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -231,9 +236,10 @@ Identifiants retirés : aucun.
 | 3 | Recharger. | Toujours « Souffle », critères cochés. |
 | 4 | « Passer au palier suivant ». | Un formulaire « Noter la décision : « Souffle » » s'ouvre, titre prérempli « Palier « Souffle » atteint (Yoga) », sans autre message (sans espace Décisions, c'est la bulle « Palier « Souffle » atteint. » qui le dit, C17) ; derrière lui, « « Souffle » atteint le [date du jour] » dans l'historique. |
 | 5 | Annuler le formulaire. | Aucune décision ajoutée dans Décisions. |
+| 6 | Décocher « Activer Décisions » (Réglages → Espaces) ; dans Yoga, « Passer au palier suivant », puis « Annuler » dans la bulle. | La bulle dit « Palier « … » atteint. » avec « Annuler » ; annulé, le palier redevient celui en cours, ses critères tels quels. |
 
 - **État final attendu** : palier franchi, aucune décision nouvelle.
-- **Nettoyage** : réimporter le jeu d'essai.
+- **Nettoyage** : recocher « Activer Décisions » ; réimporter le jeu d'essai.
 
 ---
 
@@ -246,8 +252,8 @@ Identifiants retirés : aucun.
 - **Priorité** : P1 · **Plateformes** : Web, Mob, ART
 - **Préconditions** : jeu d'essai (total actuel 5 300 mots).
 - **Données** : totaux `6000`, puis `5800`, puis `5800`.
-- **Automatisés associés** : `TU-MOD-28`, `TN-quotidien`
-- **Source** : [DOC] README, « Écriture » ; [TEST] `TU-MOD-28`.
+- **Automatisés associés** : `TU-MOD-28`, `TU-MOD-73`, `TN-quotidien`
+- **Source** : [DOC] README, « Écriture » ; [TEST] `TU-MOD-28`, `TU-MOD-73`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -255,9 +261,10 @@ Identifiants retirés : aucun.
 | 2 | Saisir `6000`, « Ajouter ». | « +700 mots. Ça avance, que tu y croies ou non. » ; total 6 000. |
 | 3 | Saisir `5800`. | « -200 mots. Couper, c'est aussi écrire. » ; total 5 800. |
 | 4 | Saisir `5800`. | « Même total qu'avant. Rien de neuf, ou alors en silence. » ; aucune entrée ajoutée. |
+| 5 | Déplier « Sessions », supprimer la session « −200 mots », puis « Annuler ». | Les sessions, la plus récente d'abord ; supprimée, le total remonte à 6 000 et la bulle la nomme ; annulée, il redescend à 5 800. |
 
 - **État final attendu** : deux entrées (+700, −200).
-- **Nettoyage** : les supprimer.
+- **Nettoyage** : les supprimer, depuis « Sessions ».
 
 ---
 
@@ -340,19 +347,20 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai (Arrosage tous les 3 jours, dernier le 1er septembre 2026).
 - **Données** : observation `Nouvelle pousse sur le ficus`.
-- **Automatisés associés** : `TN-types`, `TN-quotidien`, `TN-interface`, `TU-MOD-30`
-- **Source** : [DOC] README, « Accueil » ; [TEST] `tests/browser/types.js`, `TU-MOD-30`.
+- **Automatisés associés** : `TN-types`, `TN-quotidien`, `TN-interface`, `TU-MOD-30`, `TU-MOD-67`
+- **Source** : [DOC] README, « Accueil » ; [TEST] `tests/browser/types.js`, `TU-MOD-30`, `TU-MOD-67`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Ouvrir l'accueil. | Dans « Aujourd'hui », une ligne pour Plantes (Arrosage en retard) avec « fait ». |
 | 2 | Cliquer « fait ». | La ligne disparaît ; dans Plantes, « Arrosage » et « aujourd'hui, tous les 3 j ». |
-| 3 | Dans Plantes, noter l'observation des données. | Elle apparaît au journal, datée d'aujourd'hui. |
+| 3 | Dans Plantes, noter l'observation des données. | Elle apparaît au journal, datée d'aujourd'hui, sous l'étiquette « Observation ». |
 | 4 | Réglages → « régler » sous Plantes : fréquence d'Arrosage à `1`. | Le lendemain (ou en avançant la date de l'appareil d'un jour), le rappel revient sur l'accueil. |
 | 5 | Rempotage (fréquence 0) : vérifier l'accueil. | Jamais de rappel pour Rempotage. |
+| 6 | Réglages → « régler » sous Plantes → « Ajouter un type », le nommer `Tailler`, fréquence `1` ; le lendemain, « fait » depuis l'accueil, puis supprimer cette ligne du journal. | Au journal, l'étiquette dit « Tailler », jamais un code de huit caractères ; la bulle dit « Supprimé : « Tailler » » (A68). |
 
 - **État final attendu** : Arrosage fait aujourd'hui.
-- **Nettoyage** : remettre la fréquence à 3.
+- **Nettoyage** : remettre la fréquence à 3 ; supprimer le type `Tailler`.
 
 ---
 
@@ -372,7 +380,7 @@ Identifiants retirés : aucun.
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Capturer `8,40 € courses légumes`. | La note est dans la boîte ; un bandeau propose « 8,40 € en dépense dans Budget (Courses) ? ». |
-| 2 | Accepter le bandeau. | « Rangé : 8,40 € en dépense dans Budget (Courses). » ; la note quitte la boîte ; la dépense est dans le Budget du mois. |
+| 2 | Accepter le bandeau. | « Rangé : 8,40 € en dépense dans Budget (Courses). », avec « Annuler » ; la note quitte la boîte ; la dépense est dans le Budget du mois. |
 | 3 | Capturer `20 min yoga`, ignorer le bandeau. | La note reste dans la boîte, avec un bouton « Ranger : 20 min dans Yoga ». |
 | 4 | Dans la boîte, cliquer ce bouton. | Une séance de 20 min dans Yoga, à la date de la note ; la note quitte la boîte. |
 | 5 | Capturer `Plantes : feuilles jaunes`, ranger. | Une observation « feuilles jaunes » dans le journal de Plantes. |
@@ -388,19 +396,21 @@ Identifiants retirés : aucun.
 
 - **Fonctionnalité et règle** : chaque note propose « → module » vers les espaces qui savent la recevoir (tâches, cumul avec
   carnet, collections, rappels, autres notes ; ni un programme, ni la boîte elle-même) ; vers des tâches, le formulaire
-  s'ouvre pour compléter.
-- **Objectif, risque vérifié** : note perdue au rangement ; destination absurde.
+  s'ouvre pour compléter. Ranger se défait : « Annuler » (six secondes, ou ⌘Z / Ctrl+Z) remet la note à sa place et
+  retire ce qui en est né.
+- **Objectif, risque vérifié** : note perdue au rangement ; destination absurde ; rangement irréversible.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : note « Penser à rappeler la quincaillerie ».
-- **Automatisés associés** : `TU-MOD-19`, `TN-notes`
-- **Source** : [DOC] [architecture.md](../../architecture.md#modules) ; [TEST] `TU-MOD-19`, `tests/browser/notes.js`.
+- **Automatisés associés** : `TU-MOD-19`, `TU-MOD-70`, `TN-notes`
+- **Source** : [DOC] [architecture.md](../../architecture.md#modules) ; [TEST] `TU-MOD-19`, `TU-MOD-70`, `tests/browser/notes.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Ouvrir la boîte, regarder les boutons sous la note. | « → Chantier », « → Écriture », « → Tableau », « → Plantes », « → Carnet »… ; ni « → Yoga », ni « → Boîte ». |
 | 2 | « → Chantier ». | La tâche est créée et la note quitte la boîte ; le formulaire « Modifier la tâche » s'ouvre pour la compléter, titre prérempli. |
 | 3 | « Enregistrer ». | La tâche est dans Chantier ; la note a quitté la boîte. |
+| 4 | Une autre note : « → Tableau », puis « Annuler » dans la bulle « Rangé dans Tableau. ». | La note revient à sa place dans la boîte ; Tableau n'a pas d'élément de plus. |
 
 - **État final attendu** : une tâche de plus, une note de moins.
 - **Nettoyage** : réimporter le jeu d'essai.
@@ -467,8 +477,8 @@ Identifiants retirés : aucun.
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu d'essai.
 - **Données** : collection Musique ; nouveau statut `À réécouter`.
-- **Automatisés associés** : `TN-collections`, `TU-MOD-14`, `TU-MOD-15`
-- **Source** : [DOC] README, « Collection » ; [TEST] `tests/browser/collections.js`, `TU-MOD-14`.
+- **Automatisés associés** : `TN-collections`, `TU-MOD-14`, `TU-MOD-15`, `TU-MOD-76`
+- **Source** : [DOC] README, « Collection » ; [TEST] `tests/browser/collections.js`, `TU-MOD-14`, `TU-MOD-76`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
@@ -476,7 +486,8 @@ Identifiants retirés : aucun.
 | 2 | « Ajouter un statut », le nommer `À réécouter`. | Le statut apparaît dans les filtres et le formulaire. |
 | 3 | Mettre « Dead Can Dance » à « À réécouter », puis supprimer ce statut. | Confirmation « Supprimer le statut « À réécouter » ? » avec « 1 élément passera à « … ». » ; après accord, Dead Can Dance a un statut existant. |
 | 4 | Modifier « Kate Bush », vider le titre, « Enregistrer ». | Refus : « Artiste : à remplir » ; le titre reste. |
-| 5 | Supprimer des statuts jusqu'à n'en garder qu'un. | Refus : « Deux statuts minimum : sinon rien ne peut avancer. » |
+| 5 | Remettre « Kate Bush » ; passer « Dead Can Dance » à « Écouté » par son menu. | Sous l'élément : « depuis le » et la date du jour. Renommer ensuite un statut dans « régler » ne change pas cette date. |
+| 6 | Supprimer des statuts jusqu'à n'en garder qu'un. | Refus : « Deux statuts minimum : sinon rien ne peut avancer. » |
 
 - **État final attendu** : Musique avec ses statuts d'origine, champ « Note » masqué.
 - **Nettoyage** : réimporter le jeu d'essai.
@@ -639,20 +650,22 @@ Identifiants retirés : aucun.
 <a id="mod-025"></a>
 ### MOD-025 — Longues listes : cent, puis « Voir les suivants »
 
-- **Fonctionnalité et règle** : fragments, notes, collections : cent éléments, du plus récent, puis « Voir les 100 suivants
-  (N de plus) ».
+- **Fonctionnalité et règle** : fragments, notes, collections, sessions : cent éléments, du plus récent, puis « Voir les 100 suivants
+  (N de plus) » ; les historiques courts (tâches faites, journal des Rappels, séances d'un Programme) : 8, 20 ou 12, puis
+  la suite de même.
 - **Objectif, risque vérifié** : liste interminable qui fige le téléphone ; éléments anciens inaccessibles.
 - **Priorité** : P3 · **Plateformes** : Web, Mob
 - **Préconditions** : jeu de volume importé ([donnees/README.md](../donnees/README.md#volume)).
 - **Données** : la boîte (1 506 notes : les 1 500 du jeu de volume et les 6 du jeu d'essai) ou Écriture (4 006 fragments).
-- **Automatisés associés** : `TU-MOD-54`, `TN-navigation`, `TN-notes`
-- **Source** : [DOC] README, « Longues listes » ; [TEST] `TU-MOD-54`.
+- **Automatisés associés** : `TU-MOD-54`, `TU-MOD-74`, `TN-navigation`, `TN-notes`
+- **Source** : [DOC] README, « Longues listes » ; [TEST] `TU-MOD-54`, `TU-MOD-74`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Ouvrir la boîte. | Cent notes, puis « Voir les 100 suivants (1 406 de plus) ». |
 | 2 | Cliquer le bouton. | Deux cents notes ; le bouton se met à jour. |
-| 3 | Mesurer à l'œil le temps d'ouverture de la boîte sur téléphone. | Moins de deux secondes (repère indicatif, voir TRV-007). |
+| 3 | Ouvrir Chantier (« Fait récemment »), Plantes (« Journal ») et Yoga (« Journal ») après plus de 8, 20 et 12 entrées. | Huit tâches faites, vingt lignes, douze séances, puis « Voir les N suivants » ; tout se déroule, rien ne reste hors d'atteinte. |
+| 4 | Mesurer à l'œil le temps d'ouverture de la boîte sur téléphone. | Moins de deux secondes (repère indicatif, voir TRV-007). |
 
 - **État final attendu** : inchangé.
 - **Nettoyage** : réimporter le jeu d'essai.
@@ -690,3 +703,67 @@ Identifiants retirés : aucun.
 - **Un fichier illisible** (déplacé ou supprimé après son choix, resté dans un nuage hors ligne) est ignoré et compté : « … 1 fichier illisible, ignoré. » à la confirmation et après l'import ; si aucun fichier n'est lisible : « Aucun de ces fichiers n'a pu être lu : ils ont peut-être été déplacés ou supprimés depuis leur choix. ». Pas reproductible à la main de façon fiable : couvert par `TN-import-markdown` et `TU-MKD-05` (anomalie A8, corrigée).
 - **État final attendu** : le Carnet a quatre notes.
 - **Nettoyage** : réimporter le jeu d'essai.
+
+---
+
+<a id="mod-027"></a>
+### MOD-027 — Tâches : « J'attends une réponse », la relance, la réponse reçue
+
+- **Fonctionnalité et règle** : une tâche dont la suite dépend de quelqu'un d'autre (un devis, un dossier, un rendez-vous
+  à confirmer) se met en attente : qui doit répondre et quand relancer (dans quatorze jours, par défaut), deux champs
+  facultatifs. Elle quitte « Aujourd'hui », les échéances et le tirage au sort pour une section « En attente » ; la ligne
+  de l'accueil la compte. Le jour de la relance, l'accueil la ramène, avec « relancé » (la relance consignée, la suivante
+  quatorze jours plus tard) et « réponse reçue » (la tâche revient dans les échéances). Chaque geste se défait par
+  « Annuler ». Une tâche faite n'attend plus rien. Idée E1 de l'[audit du 12 octobre](../../audit-fonctionnel-2026-10-12.md).
+- **Objectif, risque vérifié** : une attente noyée parmi les retards (une culpabilité qui n'est pas la sienne, puis
+  l'oubli) ; une relance qui ne revient jamais ; un geste sans retour.
+- **Priorité** : P2 · **Plateformes** : Web, Mob
+- **Préconditions** : jeu d'essai ; J désigne la date du jour (le scénario la fige au 17 octobre 2026).
+- **Données** : « Repeindre la rambarde du balcon » (Chantier, en retard).
+- **Automatisés associés** : `TN-attente`, `TU-MOD-79`, `TU-DOM-03`, `TN-cibles`
+- **Source** : [DOC] [audit-fonctionnel-2026-10-12.md](../../audit-fonctionnel-2026-10-12.md), E1 ; [TEST] `tests/browser/attente.js`,
+  `tests/modules.test.js`, `tests/domain.test.js`.
+
+| Étape | Action précise | Résultat attendu observable |
+|---|---|---|
+| 1 | Chantier → toucher le titre « Repeindre la rambarde du balcon » → « J'attends une réponse ». | Le formulaire « J'attends une réponse » : « La tâche sort des échéances et revient sur l'accueil le jour de la relance. » ; « Qui doit répondre » vide ; « Relancer le » à J + 14. |
+| 2 | « le syndic », relance à J + 3, « Enregistrer ». | « « Repeindre la rambarde du balcon » attend une réponse. Elle revient le jour de la relance. » avec « Annuler » ; une section « En attente » : « depuis le J · chez le syndic · relancer le J + 3 » ; la tâche n'est plus sous « En retard ». |
+| 3 | Accueil. | La ligne de Chantier dit « 1 en attente » ; aucune ligne « à relancer ». |
+| 4 | Le jour J + 3 (horloge de l'appareil avancée), accueil, puis « relancé ». | Avant le geste : « « Repeindre la rambarde du balcon » : à relancer (Chantier) · depuis le J · chez le syndic » ; après : « Relancé. Prochaine relance le J + 17. », et la ligne disparaît. |
+| 5 | Chantier, puis « réponse reçue ». | Avant le geste, la section dit « relancé 1 fois ». Après : « Réponse reçue : « Repeindre la rambarde du balcon » revient dans les échéances. » ; la tâche est de nouveau sous « En retard », la section « En attente » a disparu. |
+| 6 | « Annuler » dans la bulle. | La tâche revient en attente, chez le syndic, sa relance consignée. |
+
+- **État final attendu** : la tâche en attente, relancée une fois.
+- **Nettoyage** : réimporter le jeu d'essai ; remettre l'horloge de l'appareil à l'heure.
+
+---
+
+<a id="mod-028"></a>
+### MOD-028 — Tâches : abandonner, avec un motif, puis reprendre
+
+- **Fonctionnalité et règle** : une tâche qu'on ne fera pas s'abandonne au lieu de se supprimer. Elle reste, datée, avec
+  son motif si l'on veut (200 caractères au plus), sous « Abandonnées ». Elle n'est ni à faire ni faite : elle quitte
+  « Aujourd'hui », les échéances, l'attente, le tirage au sort, le résumé du matin et le budget à venir, et sort du
+  pourcentage. Le Bilan compte les abandons de la période. « reprendre » la rouvre ; faite malgré tout, l'abandon tombe ;
+  une tâche faite ne s'abandonne pas. Ligne « Actif, pause, abandon » du tableau des manques de
+  l'[audit du 12 octobre](../../audit-fonctionnel-2026-10-12.md).
+- **Objectif, risque vérifié** : des listes qui grossissent de tâches mortes ; un renoncement sans trace (supprimer
+  efface jusqu'au souvenir d'avoir essayé) ; un coût abandonné qui pèse encore sur le budget.
+- **Priorité** : P2 · **Plateformes** : Web, Mob
+- **Préconditions** : jeu d'essai ; J désigne la date du jour (le scénario la fige au 17 octobre 2026).
+- **Données** : « Repeindre la rambarde du balcon » (Chantier, en retard, 120 €).
+- **Automatisés associés** : `TN-abandon`, `TU-MOD-81`, `TU-DOM-04`
+- **Source** : [DOC] [audit-fonctionnel-2026-10-12.md](../../audit-fonctionnel-2026-10-12.md), section C ; [TEST]
+  `tests/browser/abandon.js`, `tests/modules.test.js`, `tests/domain.test.js`.
+
+| Étape | Action précise | Résultat attendu observable |
+|---|---|---|
+| 1 | Chantier → toucher le titre « Repeindre la rambarde du balcon » → « Abandonner ». | Le formulaire « Abandonner la tâche » : « Elle quitte les listes sans compter comme faite, et reste sous « Abandonnées », d'où l'on peut la reprendre. » ; un champ « Pourquoi (facultatif) ». |
+| 2 | « Le syndic repeint tout le balcon au printemps. », « Enregistrer ». | « « Repeindre la rambarde du balcon » abandonnée. Elle reste sous « Abandonnées ». » avec « Annuler » ; une section « Abandonnées » : « le J · Le syndic repeint tout le balcon au printemps. » et « reprendre » ; la tâche n'est plus sous « En retard ». |
+| 3 | Budget, puis accueil. | Budget : « Les tâches en cours estiment encore … » a baissé de 120 € ; la ligne de Chantier compte un retard de moins. |
+| 4 | Bilan. | Chantier : « …, 1 abandonnée ». |
+| 5 | Chantier → « reprendre ». | « « Repeindre la rambarde du balcon » reprend du service. » ; la tâche est de nouveau sous « En retard ». |
+| 6 | L'abandonner de nouveau, puis « Annuler » dans la bulle. | La tâche revient telle qu'elle était ; la section « Abandonnées » disparaît. |
+
+- **État final attendu** : inchangé.
+- **Nettoyage** : aucun.

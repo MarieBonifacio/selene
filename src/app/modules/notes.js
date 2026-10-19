@@ -4,7 +4,7 @@ import { addBudgetEntry, addCapture, addJournalEntry, addLink, entryIds, epPrefi
 import { mdImport, mdReadFiles } from "../../core/markdown.js";
 import { findDoi, findUrl } from "../../core/sources.js";
 import { TYPE_UI, registerType } from "../registry.js";
-import { $, esc, paged, toast, toastAction } from "../lib/dom.js";
+import { $, esc, paged, toast, toastAction, toastUndo } from "../lib/dom.js";
 import { fmt, money, todayISO, uid } from "../lib/format.js";
 import { tr, trn, uiLocale } from "../i18n/index.js";
 import { firstOfType } from "../features/assistant.js";
@@ -52,12 +52,27 @@ export function captureIntent(text) {
 export function fileIntent(intent, fromId, noteId) {
   const s = S(), src = s.modules[fromId], note = src && src.entries.find(x => x.id === noteId), target = s.modules[intent.to];
   if (!note || !target || intent.to === fromId) return;
-  let then;
-  if (intent.kind === "budget") addBudgetEntry(target.entries, { amount: intent.amount, type: "dépense", cat: intent.cat, note: intent.note, date: note.date }, uid(), todayISO());
-  else if (intent.kind === "minutes") addJournalEntry(target, { date: note.date, value: intent.value }, uid(), todayISO());
-  else then = acceptNote(intent.to, fromId, note, intent.text);
-  src.entries = src.entries.filter(x => x.id !== noteId); site.save(); render();
-  if (typeof then === "function") then(); else toast(tr`Rangé : ${intent.say}.`);
+  fileUndoable(fromId, note, intent.to, () => {
+    if (intent.kind === "budget") addBudgetEntry(target.entries, { amount: intent.amount, type: "dépense", cat: intent.cat, note: intent.note, date: note.date }, uid(), todayISO());
+    else if (intent.kind === "minutes") addJournalEntry(target, { date: note.date, value: intent.value }, uid(), todayISO());
+    else return acceptNote(intent.to, fromId, note, intent.text);
+  }, tr`Rangé : ${intent.say}.`);
+}
+/* Ranger se défait comme on supprime (« Annuler », six secondes, ⌘Z) : la note revient à sa place, ce qui est né du
+   rangement s'en va, et les liens qui l'avaient suivie lui reviennent. Relu au moment d'annuler : une synchro a pu passer.
+   Une suite (le formulaire d'une tâche née de la note) s'ouvre après la proposition d'annuler. */
+function fileUndoable(fromId, note, toId, file, say) {
+  const s = S(), src = s.modules[fromId], target = s.modules[toId], at = src.entries.indexOf(note), before = entryIds(target);
+  const then = file();
+  const born = ["entries", "scraps"].flatMap(list => (target[list] || []).filter(e => !before.has(e.id)).map(e => [list, e.id]));
+  src.entries = src.entries.filter(x => x !== note); site.save(); render();
+  toastUndo(say, () => {
+    const now = S(), from = now.modules[fromId], to = now.modules[toId]; if (!from) return;
+    if (to) for (const [list, id] of born) { to[list] = (to[list] || []).filter(x => x.id !== id); retargetLinks(now.modules, `${toId}/${id}`, `${fromId}/${note.id}`); }
+    if (!from.entries.some(x => x.id === note.id)) from.entries.splice(Math.min(at, from.entries.length), 0, note);
+    site.save(); render(); toast(tr`Rétabli. Rien ne s'est passé.`);
+  });
+  if (typeof then === "function") then();
 }
 /* Confie une note à un autre module ; ce qui en naît garde sa provenance (et son statut, là où il se lit). */
 function acceptNote(toId, fromId, note, text = note.text) {
@@ -149,7 +164,7 @@ registerType("notes", {
     ${intent && intent.to !== id ? `<div class="row" style="margin-top:6px"><button class="btn sm acc" data-act="note-file">${tr`Ranger : ${esc(intent.say)}`}</button></div>` : ""}
     ${sourcesModule() && (findDoi(x.text) || findUrl(x.text)) ? `<div class="row" style="margin-top:6px"><button class="btn sm" data-act="note-source">${tr`Garder comme source`}</button></div>` : ""}
     ${targets.length ? `<div class="row${c.inbox ? "" : " ra"}" style="margin-top:6px">${targets.map(k => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
-    ${margHTML(id, x, x.text)}<button class="btn ghost sm ra" data-act="note-del">${tr`suppr.`}</button></li>`; }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? tr`Vide. Le silence d'une clairière, ou celui d'un cerveau.` : tr`Rien pour l'instant.`}</li>`}</ul></div>`;
+    ${margHTML(id, x, x.text)}<button class="btn ghost sm ra" data-act="note-del">${tr`suppr.`}</button></li>`; }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? tr`Vide. Le silence d'une clairière, ou celui d'un cerveau.` : tr`Rien pour l'instant. Une note ne se corrige pas : elle se garde ou s’efface. Pour un texte qui change, les fragments d’un espace d’écriture gardent leurs versions.`}</li>`}</ul></div>`;
   },
   settings: (id, { config: c }) => `<label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="notes-inbox" data-mod="${esc(id)}" ${c.inbox ? "checked" : ""}>${tr`Boîte de réception : reçoit la capture rapide de l'accueil`}</label>
     <div class="field-row" style="margin-top:8px"><label>${tr`Description`}<input data-set-mod="${esc(id)}.description" value="${esc(c.description)}" placeholder="${tr`Une phrase sous le titre`}"></label><label>${tr`Texte d'invite`}<input data-set-mod="${esc(id)}.placeholder" value="${esc(c.placeholder)}" required></label></div>
@@ -171,11 +186,8 @@ registerType("notes", {
     "note-file": el => { const id = modOf(el), note = S().modules[id].entries.find(x => x.id === idOf(el)), intent = note && captureIntent(note.text); if (intent) fileIntent(intent, id, note.id); },
     "note-del": el => removeWithUndo(modOf(el), "entries", idOf(el)),
     "note-to": el => {
-      const s = S(), src = s.modules[modOf(el)], note = src.entries.find(x => x.id === idOf(el)), to = el.dataset.to;
-      const drop = () => { src.entries = src.entries.filter(x => x !== note); site.save(); };
-      const then = acceptNote(to, modOf(el), note);
-      drop(); render();
-      if (typeof then === "function") then(); else toast(tr`Rangé dans ${label(to)}.`);
+      const from = modOf(el), note = S().modules[from].entries.find(x => x.id === idOf(el)), to = el.dataset.to;
+      if (note) fileUndoable(from, note, to, () => acceptNote(to, from, note), tr`Rangé dans ${label(to)}.`);
     }
   },
   change: {

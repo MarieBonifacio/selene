@@ -11,14 +11,14 @@ treize espaces, dont deux domaines (« Maison », « Création »), des fragment
 |---|---|---|---|
 | [NAV-001](#nav-001) | Téléphone : barre basse, feuille Espaces, voile qui ferme | P1 | Mob, AND, IOS |
 | [NAV-002](#nav-002) | Ordinateur : barre latérale, onglet actif annoncé | P2 | Web, WIN, ART |
-| [NAV-003](#nav-003) | Palette de commandes (⌘K ou Ctrl+K) | P2 | Web, WIN, ART |
+| [NAV-003](#nav-003) | Palette de commandes (⌘K ou Ctrl+K) | P2 | Web, Mob, WIN, ART |
 | [NAV-004](#nav-004) | Chercher : sans accents ni casse, tous les mots, surlignage, touche « / » | P1 | Web, Mob, AND, IOS, WIN, ART |
 | [NAV-005](#nav-005) | Chercher : facettes d'espace, de période et de statut | P2 | Web, Mob |
 | [NAV-006](#nav-006) | « ouvrir » un résultat mène à l'entrée, même lointaine ; retour à la recherche | P2 | Web, Mob |
 | [NAV-007](#nav-007) | Réglages : six chapitres, sommaire, chaque espace une seule fois | P2 | Web, Mob |
 | [NAV-008](#nav-008) | Infobulles « ? » des Réglages | P3 | Web, Mob |
 | [NAV-009](#nav-009) | Langue de l'interface : appareil, choix du compte, bascule sans recharger | P2 | Web, Mob, AND, IOS |
-| [NAV-010](#nav-010) | Apparence : palette, mode, « Suivre le soleil », nom affiché | P3 | Web, Mob |
+| [NAV-010](#nav-010) | Apparence : palette, mode, « Suivre le soleil », nom affiché | P3 | Web, Mob, IOS |
 | [NAV-011](#nav-011) | « Ouvrir sur » et le bloc « Reprendre » de l'accueil | P3 | Web, Mob |
 | [NAV-012](#nav-012) | Routes inconnues, piégées ou masquées | P2 | Web |
 | [NAV-013](#nav-013) | Chaque vue retrouve sa position de défilement | P3 | Web, Mob |
@@ -80,10 +80,10 @@ Identifiants retirés : aucun.
 ### NAV-003 — Palette de commandes (⌘K ou Ctrl+K)
 
 - **Fonctionnalité et règle** : la palette va à un espace, lance le minuteur, garde une phrase dans la boîte, retrouve un
-  texte et y mène.
-- **Objectif, risque vérifié** : raccourci inopérant ; une phrase gardée au mauvais endroit.
-- **Priorité** : P2 · **Plateformes** : Web, WIN, ART
-- **Préconditions** : jeu d'essai ; ordinateur.
+  texte et y mène. Sur téléphone, sans clavier, « Aller à… » de la feuille Espaces l'ouvre (A70).
+- **Objectif, risque vérifié** : raccourci inopérant ; une phrase gardée au mauvais endroit ; palette inatteignable sans clavier.
+- **Priorité** : P2 · **Plateformes** : Web, Mob, WIN, ART
+- **Préconditions** : jeu d'essai ; ordinateur (étapes 1 à 6), téléphone (étape 7).
 - **Données** : `plant`, `phrase NAV-003 gardée`, `hésite`.
 - **Automatisés associés** : `TN-navigation`
 - **Source** : [DOC] README, « Palette » ; [TEST] `tests/browser/navigation.js`.
@@ -96,6 +96,7 @@ Identifiants retirés : aucun.
 | 4 | Rouvrir, taper `hésite`, choisir le texte trouvé (fragment d'Écriture). | L'Écriture s'ouvre sur le fragment « La lisière n'est pas une frontière, c'est un lieu où l'on hésite. », surligné. |
 | 5 | Rouvrir, choisir « Lancer le minuteur (15 min) ». | Le minuteur démarre (temps qui reste et « Pause »). |
 | 6 | Rouvrir, taper `zzzz`. | Deux lignes seulement : « Garder « zzzz » dans Boîte » et « Chercher « zzzz » partout » (C12) ; Échap ferme la palette. |
+| 7 | Sur téléphone : « Espaces » dans la barre basse, puis « Aller à… » sous « Système ». | La feuille se ferme, la palette s'ouvre, son champ prêt (A70). |
 
 - **État final attendu** : une phrase de plus dans la boîte ; minuteur lancé.
 - **Nettoyage** : supprimer la phrase ; remettre le minuteur à zéro.
@@ -257,22 +258,29 @@ Identifiants retirés : aucun.
 <a id="nav-010"></a>
 ### NAV-010 — Apparence : palette, mode, « Suivre le soleil », nom affiché
 
-- **Fonctionnalité et règle** : quatre palettes (Nigredo, Albedo, Citrinitas, Rubedo) ; mode « Suivre l'appareil »,
+- **Fonctionnalité et règle** : « Couleur d'accent », quatre palettes (Nigredo, Albedo, Citrinitas, Rubedo) : seul
+  l'accent change (bouton principal, espace ouvert, jauges, cases cochées), jamais le fond, le texte ni les couleurs
+  d'alerte, auxquelles aucun accent ne ressemble (Citrinitas tient du pollen, pas de l'ambre des avertissements ;
+  Rubedo, de la framboise, pas du cinabre des retards) ; un aperçu montre ces composants, et chaque pastille la couleur que sa palette donnera (A67) ; mode « Suivre l'appareil »,
   « Toujours sombre », « Toujours clair », « Suivre le soleil » (sombre au crépuscule, clair à l'aube, d'après le lieu du ciel) ;
   « Nom affiché » en tête de l'app et dans l'onglet.
-- **Objectif, risque vérifié** : réglage sans effet ; texte illisible dans un thème.
-- **Priorité** : P3 · **Plateformes** : Web, Mob
-- **Préconditions** : jeu d'essai ; pour « Suivre le soleil », un lieu réglé (EXT-007).
+- **Objectif, risque vérifié** : réglage sans effet, ou si discret qu'on le croit sans effet (A67) ; aperçu qui ne montre
+  pas la couleur obtenue ; texte illisible dans un thème ; choix perdu au rechargement.
+- **Priorité** : P3 · **Plateformes** : Web, Mob, IOS
+- **Préconditions** : jeu d'essai ; pour « Suivre le soleil », un lieu réglé (EXT-007). Sur iPhone, un vrai appareil :
+  l'émulation ne remplace pas Safari.
 - **Données** : nom `Herbier`.
-- **Automatisés associés** : `TN-fenetre`
-- **Source** : [DOC] README, « Le ciel de l'accueil » ; [TEST] `tests/browser/fenetre.js`.
+- **Automatisés associés** : `TN-fenetre`, `TU-PAL-01`, `TU-PAL-02`, `TU-PAL-03`, `TU-PAL-04`, `TU-PAL-06`
+- **Source** : [DOC] README, « Le ciel de l'accueil » ; [DOC] [audit du 12 octobre](../../audit-fonctionnel-2026-10-12.md#a-diagnostic-des-couleurs) ;
+  [TEST] `tests/browser/fenetre.js`, `tests/palette.test.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Réglages → Apparence et rythme → Palette « Rubedo, amanite ». | L'accent passe au rouge amanite partout, aussitôt. |
+| 1 | Réglages → Apparence et rythme → Couleur d'accent « Rubedo, framboise ». | Aussitôt, l'aperçu (bouton principal, espace ouvert, jauge, case cochée), le bouton choisi, l'onglet actif, puis le bouton « Garder » de l'accueil et la jauge d'un Programme passent au rouge framboise. Le fond, le texte, « En retard » et les teintes des espaces rangés dans un domaine ne changent pas, et « En retard » (cinabre) ne se confond pas avec l'accent (framboise). Palette par palette, en clair puis en sombre, la pastille de chaque bouton a la couleur de l'aperçu ; les quatre se distinguent l'une de l'autre et du texte gris. |
 | 2 | Mode « Toujours clair », puis « Toujours sombre ». | Fond et texte basculent ; le texte reste lisible dans les deux. |
 | 3 | Mode « Suivre le soleil », de jour puis après le coucher du soleil du lieu réglé. | Clair de jour, sombre après le crépuscule. |
 | 4 | « Nom affiché » : `Herbier`, quitter le champ. | L'en-tête dit « Herbier » ; l'onglet du navigateur, « Réglages — Herbier » (l'écran, puis le nom). |
+| 5 | Recharger la page, puis ouvrir Selene dans un autre onglet. | Rubedo toujours appliquée, sur l'aperçu comme ailleurs. |
 
 - **État final attendu** : palette, mode et nom modifiés.
 - **Nettoyage** : remettre Nigredo, « Suivre l'appareil », « Selene ».

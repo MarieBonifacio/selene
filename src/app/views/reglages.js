@@ -33,7 +33,8 @@ import { openForm } from "../ui/dialogs.js";
 import { tip } from "../ui/tips.js";
 import { CHAPTERS, GUIDE, TEXTS, TIPS, glossary } from "./reglages-aide.js";
 
-const PALETTES = [["nigredo", N_("Nigredo, mousse"), "#6f9a68"], ["albedo", N_("Albedo, lichen"), "#aab7a6"], ["citrinitas", N_("Citrinitas, résine"), "#c99a3c"], ["rubedo", N_("Rubedo, amanite"), "#c0554a"]];
+// Leurs couleurs sont dans src/shell.html seulement : la pastille de chaque bouton les y lit (data-palette, A67).
+const PALETTES = [["nigredo", N_("Nigredo, mousse")], ["albedo", N_("Albedo, lichen")], ["citrinitas", N_("Citrinitas, pollen")], ["rubedo", N_("Rubedo, framboise")]];
 // La politique de confidentialité, dans la langue de l'interface quand elle existe (confidentialite.html, privacy.html).
 const privacyUrl = () => `https://mariebonifacio.github.io/selene/${uiLang() === "en" ? "privacy" : "confidentialite"}.html`;
 const signedIn = () => hosted() && authReady() && authSession;
@@ -75,8 +76,11 @@ function tocHTML() {
 const langField = c => langChoices().length < 2 ? "<span></span>"
   : field(tr`Langue`, id => `<select aria-labelledby="${id}" data-set="config.lang">${opt("", tr`Langue de l'appareil`, c.lang || "")}${langChoices().map(([k, n]) => `<option value="${k}" lang="${k}" ${c.lang === k ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>`, { tip: TIPS.langue });
 function apparenceHTML(c) {
-  return `${sub(tr`Palette`, TIPS.palette)}<p class="hint">${tr`Quatre étapes de l'Œuvre, prises dans le sous-bois.`}</p>
-    <div class="swatches">${PALETTES.map(([id, n, col]) => `<button class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}"><i style="background:${col}"></i>${tr(n)}</button>`).join("")}</div>
+  /* « Couleur d'accent », et ce qu'elle colore, en clair : appelée « Palette », elle laissait attendre un thème entier, et
+     son effet, réel mais menu, passait pour une panne (A67). L'aperçu montre les vrais composants qu'elle colore. */
+  return `${sub(tr`Couleur d'accent`, TIPS.palette)}<p class="hint">${tr`Elle colore les repères : bouton principal, espace ouvert, jauges, cases cochées. Le fond, le texte et les couleurs d'alerte ne changent pas ; clair ou sombre se règle dans Mode.`}</p>
+    <div class="swatches">${PALETTES.map(([id, n]) => `<button type="button" class="swatch ${c.palette === id ? "on" : ""}" data-act="pal" data-p="${id}" data-palette="${id}" aria-pressed="${c.palette === id}"><i></i>${tr(n)}</button>`).join("")}</div>
+    <div class="pal-preview" aria-hidden="true" inert><span class="btn acc sm">${tr`Bouton principal`}</span><span class="pv-on">${tr`Espace ouvert`}</span><span class="bar"><i style="width:60%"></i></span><span class="check pv-check"></span></div>
     <div class="field-row" style="margin-top:18px">${field(tr`Mode`, id => `<select aria-labelledby="${id}" data-set="config.mode">${opt("auto", tr`Suivre l'appareil`, c.mode)}${opt("dark", tr`Toujours sombre`, c.mode)}${opt("light", tr`Toujours clair`, c.mode)}${opt("sun", tr`Suivre le soleil`, c.mode)}</select>`, { tip: TIPS.mode })}
     ${field(tr`Nom affiché`, id => `<input aria-labelledby="${id}" data-set="config.name" value="${esc(c.name)}">`, { tip: TIPS.name })}</div>
     <div class="field-row" style="margin-top:12px">${field(tr`Ouvrir sur`, id => `<select aria-labelledby="${id}" data-act="open-on">${opt("accueil", tr`L'accueil`, openOn())}${opt("last", tr`Là où j'en étais`, openOn())}</select>`, { tip: TIPS.openOn, local: true })}${langField(c)}</div>

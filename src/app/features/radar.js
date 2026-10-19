@@ -1,17 +1,20 @@
 /* Le radar culturel : les sorties près de chez toi (OpenAgenda, par le portail public d'Opendatasoft), triées par tes mots. */
-import { platform } from "../../platform.js";
-import { inboxId } from "../../core/domain.js";
+import { hosted, platform } from "../../platform.js";
+import { addTask, inboxId } from "../../core/domain.js";
 import { radarEvents, radarFold, radarMatch, radarUrl, radarWords } from "../../core/radar.js";
 import { CLICK, SHEETS } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
-import { fmt, todayISO } from "../lib/format.js";
+import { fmt, todayISO, uid } from "../lib/format.js";
 import { tr, trn } from "../i18n/index.js";
 import { addNote } from "../modules/notes.js";
+import { taskForm, taskModules } from "../modules/taches.js";
 import { skyConf } from "../scene/sky.js";
-import { passeurFetch, passeurPret } from "../services/passeur.js";
+import { authSession } from "../services/auth.js";
+import { passeurAcces, passeurFetch, passeurPret } from "../services/passeur.js";
 import { render } from "../shell/render.js";
 import { openSheet, sheetKind } from "../shell/sheets.js";
 import { S, label, site } from "../state/site.js";
+import { openForm } from "../ui/dialogs.js";
 
 /* ---- Radar culturel (radar.js) : sur demande, ce qui se tient autour du lieu du ciel et parle de tes mots ----
    Le portail reçoit la zone (lieu du ciel, arrondi) et les dates ; les mots restent ici, le tri se fait sur l'appareil. */
@@ -19,18 +22,35 @@ export const RADAR_KEY = "selene-radar"; // cache de l'appareil : { at, key, eve
 export const radarConf = () => { const r = S().config.radar; return { words: r && typeof r.words === "string" ? r.words : "" }; };
 // Le lieu réglé dans Ciel, où qu'il soit : OpenAgenda couvre la France entière (et un peu au-delà, peu).
 export const radarPlace = () => skyConf();
-let radarState = null; // { busy, err, items, total, words, kept } : la feuille en cours
-/* Une lecture de l'agenda : directe (le portail envoie l'en-tête CORS) ; si le navigateur n'a pas le droit d'en lire la
-   réponse (l'ancien portail de la MEL ne l'envoyait pas), par le passeur, qui lit du JSON pour toi. L'échec direct est
-   retenu pour la session : on ne refrappe pas à une porte qu'on sait fermée. */
+let radarState = null; // { busy, err, items, total, words, kept, out } : la feuille en cours
+/* Une lecture de l'agenda : directe d'abord (si un jour le portail envoie l'en-tête CORS ; il ne l'envoyait pas le
+   29 septembre 2026) ; si le navigateur n'a pas le droit d'en lire la réponse, par le passeur, qui lit du JSON pour toi.
+   L'échec direct est retenu pour la session : on ne refrappe pas à une porte qu'on sait fermée. Sans passeur, la raison
+   dite est la vraie : pas de compte, ou un passeur fermé à ce compte, ou absent du serveur (A72). */
+function sansPasseur() {
+  const pourquoi = !hosted() || !authSession ? "" : passeurAcces();
+  return pourquoi === "refuse" ? tr`L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas ouvert à ce compte.`
+    : pourquoi === "absent" ? tr`L'agenda ne se laisse pas lire directement par le navigateur, et le passeur, qui le lirait à ta place, n'est pas installé sur ce serveur.`
+    : tr`L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).`;
+}
+/* La porte fermée est aussi retenue sur l'appareil, sept jours : sans passeur, le radar ne peut alors rien lire, et
+   l'accueil cesse de le proposer (les Réglages disent pourquoi). Au bout d'une semaine, on refrappe : le portail aura
+   peut-être changé. */
+const DIRECT_KEY = "selene-radar-direct", DIRECT_TTL = 7 * 86400000;
 let radarDirect = true;
+const directOuvert = () => {
+  if (!radarDirect) return false;
+  try { const x = JSON.parse(platform.storage.get(DIRECT_KEY) || "null"), age = x ? Date.now() - x.at : NaN; return !(age > -300000 && age < DIRECT_TTL); } catch { return true; }
+};
+// Le radar peut-il lire quelque chose ? Tant qu'on ne sait pas la porte directe fermée, oui ; ensuite, par le passeur seul.
+export const radarPossible = () => directOuvert() || passeurPret();
 async function radarGet(url) {
-  if (radarDirect) {
+  if (directOuvert()) {
     const ac = new AbortController(), t = setTimeout(() => ac.abort(), 10000);
     try { const r = await fetch(url, { signal: ac.signal }); return { status: r.status, json: r.ok ? await r.json() : null }; }
-    catch { radarDirect = false; } finally { clearTimeout(t); }
+    catch { radarDirect = false; try { platform.storage.set(DIRECT_KEY, JSON.stringify({ at: Date.now() })); } catch {} } finally { clearTimeout(t); }
   }
-  if (!passeurPret()) throw new Error(tr`L'agenda ne se laisse pas lire directement par le navigateur : il faut ton passeur (version hébergée, connectée).`);
+  if (!passeurPret()) throw new Error(sansPasseur());
   const q = await passeurFetch(url, "json");
   return { status: q.status || 0, json: q.status === 200 && typeof q.texte === "string" ? JSON.parse(q.texte) : null };
 }
@@ -51,6 +71,12 @@ function radarWhen(x, today) {
   if (x.to === x.from) return fmt(x.from, { weekday: "long", day: "numeric", month: "long" });
   return tr`du ${dm(x.from)} au ${dm(x.to)}`;
 }
+/* Les dates d'un événement, en entier, pour une note qui se relira plus tard (« en cours » n'y voudrait plus rien dire). */
+function radarSpan(x) {
+  const full = d => fmt(d, { day: "numeric", month: "long", year: "numeric" });
+  if (!x.from) return "";
+  return x.to && x.to !== x.from ? tr`du ${fmt(x.from, { day: "numeric", month: "long" })} au ${full(x.to)}` : tr`le ${fmt(x.from, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`;
+}
 SHEETS.radar = () => {
   const st = radarState, c = radarPlace(); if (!st) return "";
   const said = esc(st.words.map(w => st.said[w] || w).join(", "));
@@ -63,13 +89,13 @@ SHEETS.radar = () => {
   return head + `<ul class="plain radar">${st.items.map(x => `<li class="item" data-rid="${esc(x.id)}"><span></span><div><b>${esc(x.title)}</b>
       <div class="meta"><span>${esc(radarWhen(x, today))}</span>${x.place || x.city ? `<span>${esc([x.place, x.city].filter(Boolean).join(", "))}</span>` : ""}${x.on.map(w => `<span class="tag">${esc(st.said[w] || w)}</span>`).join("")}</div>
       ${x.text ? `<p class="hint" style="margin:4px 0 0">${esc(x.text)}</p>` : ""}</div>
-      <div class="row">${/^https:\/\//.test(x.url) ? `<a class="btn ghost sm" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${tr`voir`}</a>` : ""}${st.kept.has(x.id) ? `<span class="hint">${tr`gardé`}</span>` : `<button class="btn sm" data-act="radar-keep">${tr`garder`}</button>`}</div></li>`).join("")}</ul>`
+      <div class="row">${/^https:\/\//.test(x.url) ? `<a class="btn ghost sm" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${tr`voir`}</a>` : ""}${!taskModules().length ? "" : st.out.has(x.id) ? `<span class="hint">${tr`sortie prévue`}</span>` : `<button class="btn ghost sm" data-act="radar-out">${tr`en faire une sortie`}</button>`}${st.kept.has(x.id) ? `<span class="hint">${tr`gardé`}</span>` : `<button class="btn sm" data-act="radar-keep">${tr`garder`}</button>`}</div></li>`).join("")}</ul>`
     + (st.total > st.items.length ? `<p class="hint">${trn(st.total - st.items.length, "{0} autre correspond aussi : des mots plus précis choisiraient mieux.", "{0} autres correspondent aussi : des mots plus précis choisiraient mieux.")}</p>` : "") + foot;
 };
 CLICK["radar-open"] = async () => {
   const c = radarPlace(), words = radarWords(radarConf().words); if (!c || !words.length) return;
   const said = Object.create(null); for (const w of radarConf().words.split(",")) { const t = w.trim(); if (t.length > 1 && !said[radarFold(t)]) said[radarFold(t)] = t; } // pour l'affichage : tes mots tels que tu les écris
-  radarState = { busy: true, err: "", items: [], total: 0, words, said, kept: new Set() };
+  radarState = { busy: true, err: "", items: [], total: 0, words, said, kept: new Set(), out: new Set() };
   if ($("#sheet").open && sheetKind === "radar") $("#sheetBody").innerHTML = SHEETS.radar(); else openSheet("radar");
   let events = null, err = "";
   try { events = await radarFetch(c, todayISO()); } catch (e) { err = e.message || tr`L'agenda ne répond pas. Réessaie plus tard.`; }
@@ -83,9 +109,28 @@ CLICK["radar-keep"] = el => {
   addNote(S().modules[box], [x.title, radarWhen(x, todayISO()), [x.place, x.city].filter(Boolean).join(", "), x.url].filter(Boolean).join(" — ").slice(0, 2000));
   st.kept.add(x.id); site.save(); render(); $("#sheetBody").innerHTML = SHEETS.radar(); toast(tr`Gardé dans ${label(box)}.`);
 };
+/* « En faire une sortie » (E2) : une tâche datée dans un espace Tâches (choisi s'il y en a plusieurs), puis son
+   formulaire, prérempli, pour y ajouter « réserver » en étape et le prix en coût. Échéance : le premier jour ; pour ce
+   qui a déjà commencé (une exposition), le dernier, sinon la tâche naîtrait en retard. Lieu : la salle ; note : la ville,
+   les dates en entier, le lien. Comme une note rangée depuis la boîte, la tâche existe dès le clic : « Annuler » dans le
+   formulaire la garde telle quelle, « Supprimer » la retire. */
+CLICK["radar-out"] = el => {
+  const st = radarState, x = st && st.items.find(i => i.id === el.closest("[data-rid]").dataset.rid), mods = taskModules(); if (!x || !mods.length) return;
+  const make = id => {
+    const inst = S().modules[id]; if (!inst || inst.type !== "taches") return;
+    const today = todayISO(), due = x.from && x.from >= today ? x.from : x.to && x.to >= today ? x.to : x.from || null;
+    const cat = inst.config.cats.find(k => /sortie|culture|loisir/.test(radarFold(k))) || inst.config.cats[0];
+    const t = addTask(inst.entries, { title: x.title.slice(0, 140), due, room: x.place, cat, note: [x.city, radarSpan(x), x.url].filter(Boolean).join("\n") }, uid(), today);
+    st.out.add(x.id); site.save(); render(); if ($("#sheet").open && sheetKind === "radar") $("#sheetBody").innerHTML = SHEETS.radar();
+    taskForm(id, t);
+  };
+  if (mods.length === 1) return make(mods[0]);
+  openForm(tr`En faire une sortie`, [{ n: "mod", l: tr`Dans quel espace`, t: "select", o: mods.map(m => [m, label(m)]) }], { mod: mods[0] }, v => make(v.mod));
+};
 export function radarSettingsHTML() {
   const c = radarPlace();
   return `<section id="radar"><h4>${tr`Radar culturel`}</h4><p class="hint">${tr`Sur demande, depuis l'accueil : les événements à 20 km du lieu réglé dans Ciel (OpenAgenda, partout en France) des deux semaines à venir qui parlent de tes mots. Cinq au plus, jamais de notification. Changer de lieu, c'est changer de radar.`}</p>
     <label>${tr`Tes mots, séparés par des virgules (cherchés dans le titre, les mots-clés, la description et le lieu)`}<input data-act="radar-words" value="${esc(radarConf().words)}" placeholder="${tr`poésie, jazz, photographie, lecture…`}" maxlength="300" autocomplete="off"></label>
-    ${c ? `<p class="hint" style="margin-top:6px">${tr`Autour de ${esc(c.name)}.`}</p>` : `<p class="hint" style="margin-top:6px">${tr`Il lui faut un lieu : règle-le dans Ciel, ci-dessus.`}</p>`}</section>`;
+    ${c ? `<p class="hint" style="margin-top:6px">${tr`Autour de ${esc(c.name)}.`}</p>` : `<p class="hint" style="margin-top:6px">${tr`Il lui faut un lieu : règle-le dans Ciel, ci-dessus.`}</p>`}
+    ${c && radarWords(radarConf().words).length && !radarPossible() ? `<p class="hint" style="margin-top:6px">${esc(sansPasseur())} ${tr`L'accueil ne le propose donc plus ; il réessaiera de lui-même dans une semaine.`}</p>` : ""}</section>`;
 }

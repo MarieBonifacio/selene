@@ -37,3 +37,24 @@ test('récurrences : hebdomadaire par jours, quotidienne limitée, exception dé
   const monthly = A.icsParse(cal(['UID:m', 'SUMMARY:Loyer', 'DTSTART;VALUE=DATE:20260131', 'RRULE:FREQ=MONTHLY']));
   assert.deepEqual([...A.icsBetween(monthly, new Date(2026, 1, 1).getTime(), new Date(2026, 3, 1).getTime()).map(o => `${new Date(o.start).getMonth() + 1}/${new Date(o.start).getDate()}`)], ['3/31'], 'un 31 n’existe pas en février : sauté ; le 31 mars, si');
 });
+
+test('écriture : un événement en journées entières, relu tel quel ; échappements, repli à 75 octets, fin exclue (TU-AGD-03)', () => {
+  const ics = A.icsEvent({ uid: 't1.chantier@selene', stamp: Date.UTC(2026, 9, 17, 8, 0, 0), start: '2026-11-14', end: '2026-11-15',
+    summary: 'Exposition « Lumières du Nord », salle 2; étage \\ fin', location: 'La Condition publique, Roubaix',
+    url: 'https://openagenda.com/lille/events/3', description: 'Roubaix\ndu 14 au 15 novembre 2026\n' + 'é'.repeat(60) + '🌙'.repeat(30) });
+  const lines = ics.split('\r\n');
+  assert.equal(lines.pop(), '', 'chaque ligne finit par CRLF');
+  assert.ok(lines.every(l => Buffer.byteLength(l) <= 75), 'aucune ligne au-delà de 75 octets');
+  assert.ok(!ics.replace(/\r\n/g, '').includes('\n') && !ics.includes('�'), 'pas de saut nu, aucun caractère coupé');
+  for (const l of ['BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT', 'UID:t1.chantier@selene', 'DTSTAMP:20261017T080000Z', 'DTSTART;VALUE=DATE:20261114',
+    'DTEND;VALUE=DATE:20261116', 'SUMMARY:Exposition « Lumières du Nord »\\, salle 2\\; étage \\\\ fin', 'URL:https://openagenda.com/lille/events/3', 'END:VCALENDAR'])
+    assert.ok(lines.includes(l), `ligne attendue : ${l}`);
+  const [e] = A.icsParse(ics);
+  assert.equal(e.summary, 'Exposition « Lumières du Nord », salle 2; étage \\ fin');
+  assert.equal(e.location, 'La Condition publique, Roubaix');
+  assert.ok(e.allDay && e.end - e.start === 2 * 86400000, 'deux journées entières, la fin exclue');
+  // Une seule journée : DTEND au lendemain ; une fin avant le début compte pour une journée ; une adresse http est écartée.
+  const one = A.icsEvent({ uid: 'x', stamp: 0, start: '2026-12-31', end: '2026-12-01', summary: 'Réveillon', url: 'http://exemple.fr' });
+  assert.ok(one.includes('DTEND;VALUE=DATE:20270101\r\n') && !one.includes('URL:') && !one.includes('LOCATION:'), 'une journée, sans adresse non sûre ni lieu vide');
+  assert.throws(() => A.icsEvent({ uid: 'x', stamp: 0, start: '2026-02-30', summary: 'x' }), /Date invalide/);
+});

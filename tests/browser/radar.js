@@ -1,5 +1,5 @@
 /* Scénario de navigateur : Radar culturel (connexions externes, phase 1, vague 5d : docs/connexions.md). Lancé par tests/browser/run.js. */
-const { storeSet, storeJSON, until, fauxSupabase, engine, BASE, launchOptions, fixture, check } = require('./helpers');
+const { storeSet, storeJSON, until, fauxSupabase, ouvrir, entree, engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const LILLE = { name: 'Lille, Hauts-de-France, France', lat: 50.6, lon: 3.1, weather: false, realMoon: true };
 const site = (sky, words) => { const d = JSON.parse(fixture()); d.config.sky = sky; if (words) d.config.radar = { words }; return JSON.stringify(d); };
 const rec = (uid, title, from, to, extra = {}) => ({ uid, title_fr: title, firstdate_begin: from + 'T18:00:00+00:00', lastdate_end: (to || from) + 'T22:00:00+00:00',
@@ -58,6 +58,53 @@ const RESULTS = [
   await p.click('[data-act="radar-open"]'); await p.waitForTimeout(300);
   ok(p.asked.length === 1 && (await p.$$('#sheet .radar li')).length === 5, 'rouvert dans l’heure : servi par le cache de l’appareil, sans nouvel appel');
 
+  console.log('en faire une sortie, puis l’ajouter au calendrier (E2)');
+  // Le jeu de démo n'a qu'un espace Tâches, Chantier : la sortie y va sans question.
+  const expo = p.locator('#sheet .radar li', { hasText: 'Exposition' });
+  ok(await expo.locator('[data-act="radar-out"]').count() === 1 && await expo.locator('[data-act="radar-keep"]').count() === 1, '« en faire une sortie » à côté de « garder »');
+  await expo.locator('[data-act="radar-out"]').click(); await p.waitForSelector('#dlg[open]');
+  ok((await p.textContent('#dlg h2')) === 'Modifier la tâche' && await p.inputValue('#dlg [name="title"]') === 'Exposition « Lumières du Nord »', 'le formulaire s’ouvre, prérempli');
+  // L'enregistrement se fait dans l'événement « close » de la boîte, qui passe par la file d'attente : on attend l'état,
+  // pas un délai (A52).
+  await p.fill('#dlg [name="steps"]', 'Réserver'); await p.fill('#dlg [name="cost"]', '12'); await p.click('#dlg button[value="save"]');
+  await p.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.chantier.entries.some(t => (t.steps || []).length), null, { timeout: 10000 }).catch(() => {});
+  let taches = (await storeJSON(p, 'selene-site-v1')).modules.chantier.entries;
+  const e1 = taches.find(x => x.title.startsWith('Exposition'));
+  ok(e1 && e1.due === '2026-11-15' && e1.room === 'La Condition publique' && /^Roubaix\ndu 1(er)? septembre au 15 novembre 2026\nhttps:\/\/openagenda\.com\/lille\/events\/3$/.test(e1.note) && (e1.steps || [])[0]?.t === 'Réserver' && e1.cost === 12,
+    `déjà commencée : échéance au dernier jour, la salle en lieu, la ville, les dates et le lien en note (${JSON.stringify(e1 && { due: e1.due, room: e1.room, note: e1.note })})`);
+  ok((await expo.textContent()).includes('sortie prévue'), 'la feuille le dit');
+  await p.locator('#sheet .radar li', { hasText: 'Soirée jazz manouche' }).locator('[data-act="radar-out"]').click(); await p.waitForSelector('#dlg[open]');
+  await p.click('#dlg button[value="cancel"]'); await p.waitForTimeout(250);
+  taches = (await storeJSON(p, 'selene-site-v1')).modules.chantier.entries;
+  const e2 = taches.find(x => x.title === 'Soirée jazz manouche');
+  ok(e2 && e2.due === '2026-10-06' && e2.room === 'Le Biplan' && e2.note.startsWith('Lille\nle mardi 6 octobre 2026'), 'à venir : échéance au premier jour ; « Annuler » dans le formulaire garde la tâche, comme un rangement depuis la boîte');
+  await p.keyboard.press('Escape'); await p.evaluate(() => { location.hash = 'chantier'; }); await p.waitForTimeout(300);
+  const li = p.locator('#main li[data-task]', { hasText: 'Soirée jazz manouche' }).first();
+  await li.locator('[data-act="task-open"]').click();
+  ok(await li.locator('.note a[href="https://openagenda.com/lille/events/4"]').count() === 1, 'dans la tâche, le lien de l’événement se clique');
+  const [dl] = await Promise.all([p.waitForEvent('download'), li.locator('[data-act="task-ics"]').click()]);
+  const ics = require('node:fs').readFileSync(await dl.path(), 'utf8'), [ev] = require('../../src/core/agenda.js').icsParse(ics);
+  ok(dl.suggestedFilename() === 'soiree-jazz-manouche-2026-10-06.ics' && ics.includes('DTSTART;VALUE=DATE:20261006\r\n') && ics.includes('URL:https://openagenda.com/lille/events/4\r\n') && ev && ev.summary === 'Soirée jazz manouche' && ev.location === 'Le Biplan' && ev.allDay,
+    `« Ajouter à mon calendrier » donne un .ics d’une journée, relu tel quel (${dl.suggestedFilename()})`);
+  // Sans espace Tâches : « garder » seul.
+  await p.evaluate(() => { const d = JSON.parse(localStorage.getItem('selene-site-v1')); d.config.modules.find(m => m.id === 'chantier').on = false; localStorage.setItem('selene-site-v1', JSON.stringify(d)); });
+  await p.goto(BASE + '/index.html'); await p.waitForTimeout(400); await p.click('[data-act="radar-open"]'); await p.waitForTimeout(300);
+  ok(!(await p.$('#sheet [data-act="radar-out"]')) && (await p.$$('#sheet [data-act="radar-keep"]')).length > 0, 'sans espace Tâches : pas de « en faire une sortie », « garder » reste');
+
+  // Deux espaces Tâches : on choisit où, puis le formulaire de la tâche suit ; un type « Sortie » est pris s'il existe.
+  const deux = await open(LILLE, 'jazz');
+  await deux.evaluate(() => { const d = JSON.parse(localStorage.getItem('selene-site-v1')); d.modules.sorties = { type: 'taches', label: 'Sorties', config: { ...d.modules.chantier.config, cats: ['Billet', 'Sortie'] }, entries: [] }; d.config.modules.push({ id: 'sorties', on: true }); localStorage.setItem('selene-site-v1', JSON.stringify(d)); });
+  await deux.goto(BASE + '/index.html'); await deux.waitForTimeout(400); await deux.click('[data-act="radar-open"]'); await deux.waitForTimeout(300);
+  await deux.locator('#sheet .radar li', { hasText: 'Soirée jazz manouche' }).locator('[data-act="radar-out"]').click(); await deux.waitForSelector('#dlg[open]');
+  ok((await deux.textContent('#dlg h2')) === 'En faire une sortie' && (await deux.$$eval('#dlg [name="mod"] option', o => o.map(x => x.textContent))).join() === 'Chantier,Sorties', 'deux espaces Tâches : on choisit lequel');
+  // Le formulaire de la tâche s'ouvre dans le « close » du choix, par la file d'attente : on l'attend, sans délai fixe.
+  await deux.selectOption('#dlg [name="mod"]', 'sorties'); await deux.click('#dlg button[value="save"]');
+  await deux.waitForFunction(() => (document.querySelector('#dlg[open] h2') || {}).textContent === 'Modifier la tâche', null, { timeout: 10000 }).catch(() => {});
+  ok(await deux.isVisible('#dlg[open]') && (await deux.textContent('#dlg h2')) === 'Modifier la tâche', 'puis le formulaire de la tâche');
+  await deux.click('#dlg button[value="save"]'); await deux.waitForTimeout(250);
+  const so = (await storeJSON(deux, 'selene-site-v1')).modules;
+  ok(so.sorties.entries.length === 1 && so.sorties.entries[0].cat === 'Sortie' && !so.chantier.entries.length, 'la sortie va dans l’espace choisi, au type « Sortie »');
+
   console.log('portail changé, portail muet');
   const r = await open(LILLE, 'jazz', 'renamed');
   await r.click('[data-act="radar-open"]'); await r.waitForTimeout(400);
@@ -73,9 +120,30 @@ const RESULTS = [
   ok(c.asked.length === 1 && c.passeur.length === 1 && c.passeur[0].genre === 'json' && c.passeur[0].url.startsWith('https://public.opendatasoft.com/') && (await c.$$('#sheet .radar li')).length === 5, 'lecture directe refusée : le passeur lit l’agenda (genre json), les événements s’affichent');
   await c.keyboard.press('Escape'); await storeSet(c, 'selene-radar', null); await c.click('[data-act="radar-open"]'); await c.waitForTimeout(500);
   ok(c.asked.length === 1 && c.passeur.length === 2, 'la porte fermée est retenue : ensuite, directement par le passeur');
+  // Recharger, c'est attendre l'app démarrée, et en hébergé la session rendue (A16) : le bouton dépend du passeur prêt.
+  await c.keyboard.press('Escape'); await ouvrir(c, null, entree); await c.waitForSelector('[data-act="radar-open"]', { timeout: 10000 }).catch(() => {});
+  ok(await c.isVisible('[data-act="radar-open"]') && c.asked.length === 1, 'rechargé : la porte reste retenue fermée (sur l’appareil), mais le passeur lit : le radar reste proposé');
   const a = await open(LILLE, 'jazz', 'cors');
   await a.click('[data-act="radar-open"]'); await a.waitForTimeout(400);
   ok((await sheet(a)).includes('il faut ton passeur'), 'sans passeur (artefact claude.ai) : dit ce qui manque');
+  // Ni lecture directe, ni passeur : le radar ne peut rien lire ; l'accueil cesse de le proposer, les Réglages disent pourquoi.
+  // Un bouton absent ne prouve quelque chose qu'une fois l'accueil rendu : on attend l'app démarrée, pas un délai.
+  await a.keyboard.press('Escape'); await ouvrir(a, null);
+  ok(!(await a.$('[data-act="radar-open"]')), 'ensuite, plus de bouton « Radar culturel » sur l’accueil, même rechargé');
+  await a.evaluate(() => { location.hash = 'reglages'; }); await a.waitForSelector('#radar');
+  const reg = (await a.textContent('#radar')).replace(/\s+/g, ' ');
+  ok(reg.includes('il faut ton passeur') && reg.includes('L\'accueil ne le propose donc plus ; il réessaiera de lui-même dans une semaine.'), `les Réglages disent pourquoi (« ${reg.slice(-170)} »)`);
+  await a.evaluate(() => { const x = JSON.parse(localStorage.getItem('selene-radar-direct')); x.at -= 8 * 86400000; localStorage.setItem('selene-radar-direct', JSON.stringify(x)); location.hash = ''; });
+  await ouvrir(a, null); await a.waitForSelector('[data-act="radar-open"]', { timeout: 10000 }).catch(() => {});
+  ok(await a.isVisible('[data-act="radar-open"]'), 'une semaine plus tard, il se propose de nouveau : le portail a peut-être changé');
+  // Connectée, mais le passeur n'est pas ouvert à ce compte (refus retenu) : ne pas lui dire de se connecter (A72).
+  const f = await open(LILLE, 'jazz', 'cors', '', true);
+  await storeSet(f, 'selene-passeur-acces', JSON.stringify({ uid: '0b8f0c2e-1111-2222-3333-444455556666', etat: 'refuse', at: Date.now() }));
+  await f.click('[data-act="radar-open"]'); await f.waitForFunction(() => (document.querySelector('#sheetBody') || {}).textContent.includes('passeur'), null, { timeout: 5000 }).catch(() => {});
+  const dit = await sheet(f);
+  ok(dit.includes("n'est pas ouvert à ce compte") && !dit.includes('version hébergée, connectée') && !f.passeur.length, `connectée, passeur fermé à ce compte : le dit, sans renvoyer à une connexion déjà faite (A72) (« ${dit.slice(0, 160)} »)`);
+  await f.keyboard.press('Escape'); await ouvrir(f, null, entree);
+  ok(!(await f.$('[data-act="radar-open"]')), 'passeur fermé à ce compte et lecture directe refusée : l’accueil ne propose plus le radar');
 
   console.log('réglages');
   const n = await open(LILLE, '', 'ok', '#reglages');

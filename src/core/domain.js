@@ -29,14 +29,58 @@ export function setTaskDone(tasks, id, done, date) {
   if (!t) throw coreError("task-missing", "Tâche introuvable");
   t.done = !!done;
   t.doneAt = done ? date : null;
-  if (done) t.today = false;
+  if (done) { t.today = false; delete t.wait; delete t.dropped; } // faite, elle n'attend plus rien, et n'est plus abandonnée
+  return t;
+}
+/* ---- abandonner une tâche : la garder, datée, avec son motif si l'on veut, au lieu de la supprimer ----
+   `dropped` : { at, why }. Une tâche abandonnée n'est ni ouverte ni faite : elle quitte les listes, le tirage et le
+   compte des tâches à faire, sans entrer dans celui des tâches faites. Reprise, ou faite malgré tout, l'abandon tombe. */
+export const taskOpen = t => !t.done && !t.dropped;
+export function dropTask(tasks, id, why, date) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) throw coreError("task-missing", "Tâche introuvable");
+  if (t.done) throw coreError("task-done-drop", "Une tâche faite ne s'abandonne pas");
+  t.dropped = { at: date, why: String(why || "").trim().slice(0, 200) };
+  t.today = false; delete t.wait;
+  return t;
+}
+export function resumeTask(tasks, id) {
+  const t = tasks.find(x => x.id === id);
+  if (t) delete t.dropped;
+  return t;
+}
+/* ---- attendre une réponse : une tâche dont on a fait sa part, et dont la suite dépend de quelqu'un d'autre ----
+   `wait` : depuis quand (since), de qui (who, facultatif), quand relancer (next, facultatif), et les relances faites
+   (log). Une attente n'est ni une échéance ni une tâche du jour ; la réponse reçue la lève, la tâche reprend son cours. */
+const isoPlus = (d, n) => new Date(Date.parse(d + "T12:00:00Z") + n * 86400000).toISOString().slice(0, 10);
+export const RELAUNCH_DAYS = 14;
+export function setTaskWaiting(tasks, id, input, date) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) throw coreError("task-missing", "Tâche introuvable");
+  if (t.done) throw coreError("task-done", "Une tâche faite n'attend plus rien");
+  if (t.dropped) throw coreError("task-dropped", "Une tâche abandonnée n'attend plus rien");
+  const who = String(input.who || "").trim().slice(0, 80), next = input.next && validDate(input.next) ? input.next : null;
+  t.wait = { since: t.wait ? t.wait.since : date, who, next, log: t.wait ? t.wait.log : [] };
+  t.today = false;
+  return t;
+}
+export function relaunchTask(tasks, id, date, days = RELAUNCH_DAYS) {
+  const t = tasks.find(x => x.id === id);
+  if (!t || !t.wait) throw coreError("task-not-waiting", "Cette tâche n'est pas en attente");
+  t.wait = { ...t.wait, next: isoPlus(date, days), log: [...(t.wait.log || []), { date, kind: "relance" }].slice(-50) };
+  return t;
+}
+export function clearTaskWaiting(tasks, id) {
+  const t = tasks.find(x => x.id === id);
+  if (t) delete t.wait;
   return t;
 }
 /* `elsewhere` : tâches du jour déjà choisies dans les autres modules de tâches (le plafond de trois est global). */
 export function setTaskToday(tasks, id, value, elsewhere = 0) {
   const t = tasks.find(x => x.id === id);
   if (!t) throw coreError("task-missing", "Tâche introuvable");
-  if (value && !t.today && tasks.filter(x => !x.done && x.today).length + elsewhere >= 3) throw coreError("today-limit", "Trois tâches du jour maximum");
+  if (value && t.dropped) throw coreError("task-dropped-today", "Une tâche abandonnée ne se fait pas aujourd'hui : reprends-la d'abord");
+  if (value && !t.today && tasks.filter(x => taskOpen(x) && x.today).length + elsewhere >= 3) throw coreError("today-limit", "Trois tâches du jour maximum");
   t.today = !!value;
   return t;
 }
@@ -226,6 +270,12 @@ export const MODULE_TYPES = {
         if (t.steps != null && (!Array.isArray(t.steps) || t.steps.some(x => !x || typeof x.t !== "string"))) v.fail("étapes");
         if (t.due && !(typeof t.due === "string" && validDate(t.due))) v.fail("échéance");
         v.num(t.effort, "effort", 1, 3); v.num(t.cost, "coût", 0);
+        const w = t.wait;
+        if (w != null && (typeof w !== "object" || Array.isArray(w) || !validDate(w.since) || (w.next != null && !validDate(w.next)) ||
+            (w.who != null && (typeof w.who !== "string" || w.who.length > 80)) ||
+            (w.log != null && (!Array.isArray(w.log) || w.log.some(x => !x || !validDate(x.date) || typeof x.kind !== "string"))))) v.fail("attente");
+        const d = t.dropped;
+        if (d != null && (typeof d !== "object" || Array.isArray(d) || !validDate(d.at) || typeof d.why !== "string" || d.why.length > 200)) v.fail("abandon");
       }
     }
   },
@@ -285,6 +335,7 @@ export const MODULE_TYPES = {
         if (e.ig != null && !igValid(e.ig)) v.fail("Instagram");
         if (e.zot != null && !zotValid(e.zot)) v.fail("Zotero");
         if (e.kept != null && !(typeof e.kept === "string" && validDate(e.kept))) v.fail("date");
+        if (e.statusAt != null && !(typeof e.statusAt === "string" && validDate(e.statusAt))) v.fail("date");
       }
     }
   },
@@ -326,14 +377,22 @@ export function saveCollectionItem(inst, input, id, date = null) {
     status: c.statuses.includes(input.status) ? input.status : item ? item.status : c.statuses[0]
   };
   if (item) {
-    const was = item.due;
+    const was = item.due, wasStatus = item.status;
     Object.assign(item, v);
     if (date && c.review && was && was <= date && item.due !== was) item.reviews = [...(item.reviews || []), { date, verdict: "revue" }];
+    if (date && item.status !== wasStatus) item.statusAt = date;
     return item;
   }
-  const e = { id, ...v };
+  const e = { id, ...v, ...(date ? { statusAt: date } : {}) };
   inst.entries.push(e);
   return e;
+}
+/* Le statut d'un élément change : le passage est daté (statusAt), pour dire « depuis le … » et compter au Bilan ce qui
+   a changé dans la période. Rend vrai s'il a changé. Renommer un statut n'est pas un passage : statusAt ne bouge pas. */
+export function setCollectionStatus(item, status, date) {
+  if (item.status === status) return false;
+  item.status = status; if (date) item.statusAt = date;
+  return true;
 }
 /* Les références d'une source : une adresse http(s) seulement (jamais « javascript: », qui deviendrait un lien
    exécutable), un DOI, un site, une date de publication (année, mois ou jour). Tout est facultatif. */

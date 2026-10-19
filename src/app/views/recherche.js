@@ -9,7 +9,7 @@ import { dossierFile } from "../features/dossier.js";
 import { epGlyph, thoughtItems } from "../features/links.js";
 import { render } from "../shell/render.js";
 import { sigil, tintOf } from "../shell/sigils.js";
-import { S, label } from "../state/site.js";
+import { S, absentModule, enabled, label } from "../state/site.js";
 import { periodOf } from "./bilan.js";
 
 /* Recherche.
@@ -41,11 +41,20 @@ export const fold = s => {
    (« status:hypothesis »). Un statut inconnu ou vide ne trouve rien, plutôt que d'être ignoré en silence. */
 const isEpWord = w => /^statu[ts]:/.test(w) || w.startsWith(fold(trp("recherche", "statut")) + ":");
 const epQuery = w => { const q = w.slice(w.indexOf(":") + 1); return (q && Object.keys(EP_STATUS).find(k => fold(EP_STATUS[k]).startsWith(q) || fold(epLabel(k)).startsWith(q))) || null; };
-export function searchAll(q) {
+/* Seuls les espaces qui s'ouvrent : un résultat dans un espace désactivé menait à l'accueil (A69). Ceux-là sont
+   comptés à part (searchHidden), pour dire qu'ils existent et où rouvrir leur espace. */
+export const searchAll = q => searchIn(q, m => enabled(m.id));
+export const searchHidden = q => {
+  const n = {};
+  for (const h of searchIn(q, m => !m.on && !absentModule(m.id))) n[h.id] = (n[h.id] || 0) + 1;
+  return Object.entries(n).map(([id, count]) => ({ id, count }));
+};
+function searchIn(q, keep) {
   const words = fold(q).split(/\s+/).filter(Boolean), st = words.find(isEpWord), want = st ? epQuery(st) : null;
   const terms = words.filter(w => !isEpWord(w)), out = [];
   if ((st && !want) || (!terms.length && !want)) return out;
   for (const m of S().config.modules) {
+    if (!keep(m)) continue;
     const inst = Object.hasOwn(S().modules, m.id) ? S().modules[m.id] : null, ui = inst && TYPE_UI[inst.type];
     if (!ui || !ui.texts) continue;
     for (const t of ui.texts(inst)) { const f = fold(t.text); if ((!want || t.ep === want) && terms.every(w => f.includes(w))) out.push({ id: m.id, ...t }); }
@@ -85,10 +94,12 @@ VIEWS.recherche = () => {
     return shown.length ? `<p class="grp search-grp ${tintOf(id)}">${sigil(id)}${esc(label(id))} <span>${l.length}</span></p><ul class="plain">${shown.map(h => `<li class="item"><span class="jdate">${h.date ? fmt(h.date) : ""}</span><div>${highlight(h.text.length > 240 ? h.text.slice(0, 240) + "…" : h.text, searchQuery)}${h.ep ? `<div class="meta"><span>${epGlyph(h.ep)}${esc(epLabel(h.ep))}</span></div>` : ""}</div><a class="btn ghost sm" href="#${esc(h.id)}${h.eid ? "/" + esc(h.eid) : ""}">${tr`ouvrir`}</a></li>`).join("")}</ul>` : "";
   }).join("");
   const filtered = hits.length !== all.length;
+  // Ce qui dort dans un espace désactivé : compté, nommé, sans lien qui mènerait à l'accueil (A69).
+  const hidden = searchHidden(searchQuery).map(h => `<p class="hint">${trn(h.count, "Aussi {0} résultat dans « {1} », désactivé : {2} → Espaces pour le rouvrir.", "Aussi {0} résultats dans « {1} », désactivé : {2} → Espaces pour le rouvrir.", esc(label(h.id)), `<a href="#reglages">${tr`Réglages`}</a>`)}</p>`).join("");
   return `<h2>${tr`Chercher`}</h2><p class="hint">${tr`Dans tous tes modules : notes, fragments, tâches, légendes, journaux. Les accents ne comptent pas. « ${`${trp("recherche", "statut")}:${epLabel("hyp")}`} » ne garde que les hypothèses (de même pour ${["obs", "int", "inx"].map(epLabel).join(", ")}). Touche « / » pour venir ici.`}</p>
   <input id="searchIn" type="search" value="${esc(searchQuery)}" placeholder="${tr`Un mot, un bout de phrase…`}" aria-label="${tr`Chercher`}" autocomplete="off" style="max-width:520px">
   ${searchQuery.trim() ? `<div class="row" style="margin-top:12px"><p class="hint" style="margin:0">${hits.length ? filtered ? trn(hits.length, "{0} résultat sur {1}", "{0} résultats sur {1}", all.length) : trn(hits.length, "{0} résultat", "{0} résultats") : all.length ? tr`Rien avec ces filtres.` : tr`Rien. Soit ça n'existe pas, soit tu l'as pensé sans l'écrire.`}</p>${hits.length ? `<span class="spacer"></span><button class="btn ghost sm" data-act="search-dossier" title="${tr`Les résultats affichés, avec dates, statuts, provenance et liens, pour une lecture assistée`}">${tr`Exporter en dossier`}</button>` : ""}</div>
-  ${facets}${groups}` : ""}`;
+  ${hidden}${facets}${groups}` : ""}`;
 };
 // Tous les résultats (pas seulement les 80 affichés), dans l'ordre du temps ; un fragment ou une note garde ses
 // statut, provenance et liens (retrouvés par module et texte : la recherche ne renvoie que des textes).

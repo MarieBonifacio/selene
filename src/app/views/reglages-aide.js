@@ -17,7 +17,7 @@ export const CHAPTERS = [
 
 /* Les infobulles : ce qui ne va pas de soi, en quelques lignes. */
 export const TIPS = {
-  get palette() { return tr`Les quatre étapes du Grand Œuvre des alchimistes : nigredo, l'œuvre au noir (la mousse) ; albedo, au blanc (le lichen) ; citrinitas, au jaune (la résine) ; rubedo, au rouge (l'amanite). Seul l'accent change : les couleurs qui informent (retard, succès, alerte) restent les mêmes.`; },
+  get palette() { return tr`Les quatre étapes du Grand Œuvre des alchimistes : nigredo, l'œuvre au noir (la mousse) ; albedo, au blanc (le lichen) ; citrinitas, au jaune (le pollen) ; rubedo, au rouge (la framboise). Seul l'accent change : les couleurs qui informent (retard, succès, alerte) restent les mêmes.`; },
   get mode() { return tr`« Suivre l'appareil » obéit au réglage clair ou sombre du système. « Suivre le soleil » passe en sombre au crépuscule et en clair à l'aube, au lieu réglé dans Ciel et alentours (à défaut, d'après ton fuseau horaire).`; },
   get name() { return tr`Le nom en tête de l'app et dans l'onglet du navigateur.`; },
   get openOn() { return tr`Propre à cet appareil : le téléphone peut rouvrir le dernier espace où tu étais, et l'ordinateur toujours l'accueil.`; },

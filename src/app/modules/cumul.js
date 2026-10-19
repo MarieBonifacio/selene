@@ -56,6 +56,16 @@ function waitingHTML(inst) {
   const box = inboxId(S().modules), n = box && !inst.scraps.length ? S().modules[box].entries.length : 0;
   return n ? `<p class="hint" style="margin-top:10px">${trn(n, "{0} idée notée par Capturer attend dans la boîte de réception.", "{0} idées notées par Capturer attendent dans la boîte de réception.")} <button class="btn sm" data-act="vasculum">${tr`Les trier`}</button></p>` : "";
 }
+/* Une session, en clair : « +500 mots », « -200 mots ». */
+const signed = (v, unit) => `${+v > 0 ? "+" : ""}${(+v || 0).toLocaleString(uiLocale())} ${unit}`;
+/* Les sessions, repliées sous le compteur, la plus récente d'abord : une faute de frappe (un zéro de trop) se voit et se
+   supprime (« Annuler »), au lieu d'une valeur négative pour la compenser. */
+function sessionsHTML(id, inst) {
+  const c = inst.config, list = [...inst.entries].reverse().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  if (!list.length) return "";
+  const cat = x => x.category ? (c.categories.find(k => k.id === x.category) || {}).name : "";
+  return `<details class="sessions"><summary>${tr`Sessions (${list.length})`}</summary><ul class="plain">${(pg => pg.items.map(x => `<li class="item" data-id="${esc(x.id)}"><span class="jdate">${fmt(x.date)}</span><div>${esc(signed(x.value, c.unitLabel))}${cat(x) ? ` <span class="tag">${esc(cat(x))}</span>` : ""}${x.note ? `<div class="note" style="margin:2px 0 0">${esc(x.note)}</div>` : ""}</div><button class="btn ghost sm" data-act="entry-del" data-mod="${esc(id)}">${tr`suppr.`}</button></li>`).join("") + pg.more)(paged(`cumul:${id}`, list))}</ul></details>`;
+}
 registerType("cumul", {
   view(id) {
     const inst = S().modules[id], c = inst.config;
@@ -70,6 +80,7 @@ registerType("cumul", {
     <div class="big">${tot.toLocaleString(uiLocale())} <span class="hint" style="font-size:1.1rem">${trp("cumul", "{0} sur {1}", esc(c.unitLabel), (+c.goal).toLocaleString(uiLocale()))}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
     <p class="hint">${tr`Dernière session ${ago(last)}.`} ${trn(streakOf(inst.entries.map(x => x.date)), "Série de {0} jour.", "Série de {0} jours.")} ${esc(projection(inst))}</p>
     <div class="row"><input type="number" id="cumIn" min="${total ? 0 : 1}" placeholder="${total ? tr`Total atteint (${esc(c.unitLabel)})` : tr`${esc(c.unitLabel)} aujourd'hui`}" style="max-width:200px" inputmode="numeric" aria-label="${total ? tr`Total atteint` : tr`Ajout du jour`}">${c.categories.length ? `<select id="cumCat" aria-label="${esc(c.categoryLabel)}" style="max-width:220px"><option value="">${tr`Hors ${esc(c.categoryLabel).toLowerCase()}`}</option>${c.categories.map(x => `<option value="${esc(x.id)}" ${x.id === lastCat ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>` : ""}<button class="btn acc" data-act="entry-add" data-mod="${esc(id)}">${tr`Ajouter`}</button></div>
+    ${sessionsHTML(id, inst)}
     <div style="margin-top:28px">${c.categories.length ? cumulGroupPanel(id) : `<p class="hint">${tr`Ajoute des ${`${esc(c.categoryLabel).toLowerCase()}s`} dans ${`<a href="#reglages" data-act="goto-groups" data-mod="${esc(id)}">${tr`Réglages`}</a>`} pour suivre chacune en pourcentage.`}</p>`}</div>
   </section>${c.scraps ? `<section><h3>${esc(c.scrapsLabel)}</h3><p class="hint">${tr`Une phrase qui passe, avant qu'elle ne reparte. Un « ? » devant en fait une hypothèse.`}</p>
     ${deriveBanner(id)}<textarea id="scrapIn" data-draft rows="3" placeholder="…" aria-label="${tr`Nouveau`}"></textarea><div class="row" style="margin-top:8px">${catSelect("scrapCat", "", lastScrapCat)}<button class="btn" data-act="scrap-add" data-mod="${esc(id)}">${tr`Garder`}</button></div>
@@ -81,6 +92,8 @@ registerType("cumul", {
   settings: (id, { config: c }) => `<div class="field-row"><label>${tr`Titre / sous-titre`}<input data-set-mod="${esc(id)}.title" value="${esc(c.title || "")}"></label><label>${tr`Objectif`}<input type="number" min="1" data-set-mod="${esc(id)}.goal" value="${esc(c.goal)}"></label></div>
     <div class="field-row" style="margin-top:8px"><label>${tr`Je saisis`}<select data-set-mod="${esc(id)}.entryMode"><option value="delta" ${c.entryMode !== "total" ? "selected" : ""}>${tr`Ce que j'ai fait aujourd'hui`}</option><option value="total" ${c.entryMode === "total" ? "selected" : ""}>${tr`Le total atteint (l'app calcule la différence)`}</option></select></label><span></span></div>
     <div class="field-row" style="margin-top:8px"><label>${tr`Unité`}<input data-set-mod="${esc(id)}.unitLabel" value="${esc(c.unitLabel)}" placeholder="${tr`mots`}"></label><label>${tr`Nom des catégories`}<input data-set-mod="${esc(id)}.categoryLabel" value="${esc(c.categoryLabel)}" placeholder="${tr`Chapitre`}"></label></div>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" data-act="cum-scraps" data-mod="${esc(id)}" ${c.scraps ? "checked" : ""}>${tr`Un carnet de fragments : des phrases à garder à côté du compteur, qui reçoivent aussi les notes triées`}</label>
+    ${c.scraps ? `<div class="field-row" style="margin-top:8px"><label>${tr`Nom du carnet`}<input data-set-mod="${esc(id)}.scrapsLabel" value="${esc(c.scrapsLabel)}" placeholder="${tr`Fragments`}"></label><span></span></div>` : ""}
     <div style="margin-top:10px"><span class="hint" style="margin:0">${esc(c.categoryLabel)}s</span>${c.categories.map((cat, i) => `<div class="set" data-ci="${i}" style="grid-template-columns:1fr 130px auto"><input data-act="cat-name" data-mod="${esc(id)}" value="${esc(cat.name)}" aria-label="${tr`Nom`}"><input type="number" min="0" data-act="cat-goal" data-mod="${esc(id)}" value="${esc(cat.goal || "")}" placeholder="${tr`Objectif`}" aria-label="${tr`Objectif`}"><div class="row"><button class="btn ghost sm" data-act="cat-up" data-mod="${esc(id)}" aria-label="${tr`Monter`}">↑</button><button class="btn ghost sm" data-act="cat-del" data-mod="${esc(id)}">${tr`suppr.`}</button></div></div>`).join("")}<button class="btn sm" data-act="cat-add" data-mod="${esc(id)}" style="margin-top:8px">${tr`Ajouter`}</button></div>`,
   summary(id, inst) {
     const c = inst.config;
@@ -91,6 +104,7 @@ registerType("cumul", {
     return `\n${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur ${c.goal}. ${projection(inst)}${c.categories.length ? ` ${c.categoryLabel}s : ${c.categories.map(x => x.name).join(", ")}.` : ""}${c.scraps ? ` Derniers ${c.scrapsLabel.toLowerCase()} : ${inst.scraps.slice(-3).map(f => f.text.slice(0, 200)).join(" / ") || "aucun"}` : ""}`;
   },
   recent: inst => recentBy(inst.entries).map(x => `${fmt(x.date)} · ${x.value > 0 ? "+" : ""}${x.value ?? "?"} ${inst.config.unitLabel}`),
+  entryName: (inst, x) => `${fmt(x.date)}, ${signed(x.value, inst.config.unitLabel)}`,
   review: (inst, from, to) => { const n = within(inst.entries, from, to).reduce((a, x) => a + (+x.value || 0), 0), f = within(inst.scraps || [], from, to).length; return `${n > 0 ? "+" : ""}${n.toLocaleString(uiLocale())} ${inst.config.unitLabel}${inst.config.scraps ? `, ${plural(f, inst.config.scrapsLabel.toLowerCase().replace(/s$/, ""))}` : ""}`; },
   texts: inst => [...(inst.scraps || []).map(f => ({ text: f.text, date: f.date, ep: f.ep, eid: f.id })), ...inst.config.categories.map(c => ({ text: c.name }))],
   timerDone(id, inst) {
@@ -142,6 +156,8 @@ registerType("cumul", {
     "cat-up": el => { const a = instOf(el).config.categories, i = +el.closest("[data-ci]").dataset.ci; if (i > 0) { [a[i - 1], a[i]] = [a[i], a[i - 1]]; site.save(); render(); } }
   },
   change: {
+    // Un carnet de fragments, aussi pour un compteur créé vide (jusqu'ici, seul le modèle « Écriture » l'avait).
+    "cum-scraps": el => { const inst = instOf(el); inst.config.scraps = el.checked; if (!Array.isArray(inst.scraps)) inst.scraps = []; site.save(); render(); },
     "scrap-cat": el => { const f = instOf(el).scraps.find(x => x.id === idOf(el)); if (f) { if (el.value) f.category = el.value; else delete f.category; site.save(); render(); } },
     "scrap-f": el => { fragFilter[el.dataset.mod] = el.value; render(); },
     "cat-name": el => { const cat = instOf(el).config.categories[+el.closest("[data-ci]").dataset.ci]; cat.name = el.value.trim() || cat.name; site.save(); el.blur(); render(); },

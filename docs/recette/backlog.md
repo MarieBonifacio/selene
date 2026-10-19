@@ -85,9 +85,27 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 ### À décider
 
-| Question | Proposition | Ce qui suit | Détail |
-|---|---|---|---|
-| ~~La « version courte » des deux politiques dit que Selene « ne mesure rien » (*measures nothing*), alors que la même page décrit la mesure d'usage de la bêta et l'audience de la page de test : la corriger ?~~ Oui, décidé le 12 octobre 2026 par la responsable | « Selene ne vend rien, ne montre aucune publicité et n'a aucun traceur. Elle ne compte que deux choses, sans rien lire de ce que tu écris : tes jours d'usage pendant la bêta, si tu ne coupes pas cette mesure, et les ouvertures de sa page de présentation. » (constaté le 12 octobre 2026) | **fait** le 12 octobre 2026 : `confidentialite.html` et `privacy.html` ; le 13, la base légale des échanges à l'adresse de contact (6.1.c, 6.1.f) les rejoint, et `TU-BLD-04` l'exige | [rgpd.md](../rgpd.md#points-à-trancher) |
+Rien pour l'instant.
+
+### Décidé le 17 octobre 2026
+
+- **Citrinitas et Rubedo, voisines des couleurs d'état** (A67) : **réadaptées**, sur décision de la responsable. Citrinitas
+  était l'ambre de `--warn` (ΔE2000 2,3 en clair, 2,7 en sombre), Rubedo un cousin du cinabre de `--alarm` (8,5 et 7,1).
+  Nouvelles valeurs, cherchées dans l'espace LCh sous toutes les contraintes (texte sur accent ≥ 4,5:1, gris ≥ 10, autres
+  palettes ≥ 15, couleurs d'état ≥ 12 pour la marge) puis jugées à l'œil, ancien et nouveau côte à côte : Citrinitas
+  `#636301` / `#d9c84d` (« pollen », citron tirant au vert : en clair, un jaune assez sombre pour 4,5:1 devient olive),
+  Rubedo `#a42b4a` / `#df627b` (« framboise », rubis tirant au pourpre, l'*iosis* des alchimistes grecs). Nigredo clair
+  passe de `#3d6a45` à `#416a43` (ΔE 1,1, invisible) pour quitter le vert de `--ok` (9,7 → 10,6). `TU-PAL-06` étend
+  `TU-PAL-03` aux quatre couleurs d'état, en clair et en sombre. Reste à voir sur un vrai téléphone.
+
+### Décidé le 12 octobre 2026
+
+- **La « version courte » des politiques disait que Selene « ne mesure rien »** (*measures nothing*), alors que la
+  même page décrit la mesure d'usage de la bêta et l'audience de la page de test : **corrigée**, sur décision de la
+  responsable. Elle dit désormais : « Selene ne vend rien, ne montre aucune publicité et n'a aucun traceur. Elle ne
+  compte que deux choses, sans rien lire de ce que tu écris : tes jours d'usage pendant la bêta, si tu ne coupes pas
+  cette mesure, et les ouvertures de sa page de présentation. » Le 13, la base légale des échanges à l'adresse de
+  contact (6.1.c, 6.1.f) rejoint les deux politiques, et `TU-BLD-04` l'exige ([rgpd.md](../rgpd.md#points-à-trancher)).
 
 ### Décidé le 7 octobre 2026
 

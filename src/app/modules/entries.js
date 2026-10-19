@@ -3,6 +3,7 @@
 import { esc, toast, toastUndo } from "../lib/dom.js";
 import { fmt } from "../lib/format.js";
 import { tr } from "../i18n/index.js";
+import { TYPE_UI } from "../registry.js";
 import { render } from "../shell/render.js";
 import { S, site } from "../state/site.js";
 
@@ -10,7 +11,7 @@ import { S, site } from "../state/site.js";
 export function removeWithUndo(id, list, itemId) {
   const inst = S().modules[id], i = inst[list].findIndex(x => x.id === itemId);
   if (i < 0) return;
-  const item = inst[list][i], name = String(item.title || item.text || item.note || item.type || tr`l'élément`);
+  const item = inst[list][i], name = String(item.title || item.text || item.note || (TYPE_UI[inst.type].entryName || (() => item.type))(inst, item) || tr`l'élément`);
   inst[list] = inst[list].filter(x => x.id !== itemId); site.save(); render();
   toastUndo(tr`Supprimé : « ${name.length > 40 ? name.slice(0, 40) + "…" : name} ».`, () => {
     const cur = S().modules[id]; // relu : une synchro a pu passer entre-temps

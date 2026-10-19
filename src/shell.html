@@ -12,7 +12,7 @@
   --rule:#c1c9bc; --rule-strong:#75816f; --alarm:#a8431f; --ok:#2f6f62; --warn:#7d5a12; --info:#3f5d78;
   --moon:#f4f1e4; --moon-shadow:#b8c2b6; --glow:rgba(255,252,235,.0);
   --sky-top:#b9c7c0; --sky-bot:#dfe5dc; --tree-far:#8fa294; --tree-near:#3b4d40; --mist:rgba(226,230,222,.75); --star:0;
-  --acc-l:#3d6a45; --acc-d:#8fbf86; --accent:var(--acc-l);
+  --acc-l:#416a43; --acc-d:#8fbf86; --accent:var(--acc-l);
   --ease:cubic-bezier(.2,0,0,1); --t-1:120ms; --t-2:180ms; --t-3:260ms;
   /* Trois voix : l'éditorial parle (titres, textes), le fonctionnel agit (boutons, champs, données), l'étiquette classe. */
   --f-display:"Cormorant Garamond",Georgia,serif; --f-text:"Spectral",Georgia,"Times New Roman",serif;
@@ -22,9 +22,16 @@
   box-sizing:border-box; accent-color:var(--accent);
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
-:root[data-palette="albedo"]{--acc-l:#5a6a5c;--acc-d:#bccab8}
-:root[data-palette="citrinitas"]{--acc-l:#83631a;--acc-d:#d4a94c}
-:root[data-palette="rubedo"]{--acc-l:#973a30;--acc-d:#d56455}
+/* Les palettes (la couleur d'accent) : posées sur la racine, et sur chaque pastille des Réglages, qui montre ainsi la
+   couleur que sa palette donnera dans le mode en cours (A67). Chacune lisible sous du texte (4,5:1), loin du gris des
+   textes secondaires, des autres palettes et des couleurs d'état : tests/palette.test.js. Citrinitas tient du citron et du
+   pollen, pas de l'ambre de --warn ; Rubedo, du rubis et de la framboise (l'« iosis » des Grecs, le pourpre), pas du
+   cinabre de --alarm (17 octobre 2026). En clair, un jaune assez sombre pour 4,5:1 devient olive : c'est le prix. */
+[data-palette="nigredo"]{--acc-l:#416a43;--acc-d:#8fbf86}
+[data-palette="albedo"]{--acc-l:#3f5554;--acc-d:#d3dfcc}
+[data-palette="citrinitas"]{--acc-l:#636301;--acc-d:#d9c84d}
+[data-palette="rubedo"]{--acc-l:#a42b4a;--acc-d:#df627b}
+.swatch[data-palette]{--sw:var(--acc-l)}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]):not([data-mode="light"]){
     --bg:#0e1310; --surface:#151c17; --surface-2:#1a231d; --glass:rgba(14,19,16,.78); --ink:#dde2d6; --ink-2:#b4bdb0; --muted:#8c998a;
@@ -34,7 +41,9 @@
     --sky-top:#070b10; --sky-bot:#132019; --tree-far:#1d2b23; --tree-near:#0a0f0c; --mist:rgba(40,58,48,.55); --star:.8;
     --accent:var(--acc-d);
   }
+  :root:not([data-theme="light"]):not([data-mode="light"]) .swatch[data-palette]{--sw:var(--acc-d)}
 }
+:root[data-theme="dark"]:not([data-mode="light"]) .swatch[data-palette],:root[data-mode="dark"] .swatch[data-palette]{--sw:var(--acc-d)}
 :root[data-theme="dark"]:not([data-mode="light"]),:root[data-mode="dark"]{
   --bg:#0e1310; --surface:#151c17; --surface-2:#1a231d; --glass:rgba(14,19,16,.78); --ink:#dde2d6; --ink-2:#b4bdb0; --muted:#8c998a;
   --rule:#243029; --rule-strong:#56665a; --alarm:#e5785a; --ok:#6fb3a2; --warn:#d2a24c; --info:#8fa9c0;
@@ -195,6 +204,7 @@ dialog.sheet[open]{animation:sheet-in var(--t-3) var(--ease)}
 @media (max-width:640px){.carte-toggle{display:inline-flex;margin:6px 0}.carte:not(.show-sky) .carte-sky,.carte:not(.show-sky) .carte-legend{display:none}}
 .srow{display:flex;align-items:baseline;gap:12px;min-height:48px;padding:11px 2px;border-top:1px solid var(--rule);text-decoration:none}
 .srow b{font-family:"Cormorant Garamond",serif;font-size:1.3rem;font-weight:600}
+button.srow{width:100%;background:none;border:0;border-top:1px solid var(--rule);border-radius:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .srow .sub{color:var(--muted);font-size:.85rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .recents{display:flex;gap:8px;flex-wrap:wrap}.recents .btn{text-decoration:none}
 /* Palette de commandes (⌘K) : aller, agir, chercher. */
@@ -410,9 +420,9 @@ ul.plain>.item:last-child{border-bottom:1px solid var(--rule)}
 .item.motif{grid-template-columns:auto 1fr}.item.motif>.row{grid-column:2}.item.motif select{width:auto}
 .item>.row>select{width:auto;max-width:11em} /* un menu de statut ne doit pas écraser le titre de la ligne */
 .col-list>.item>.row{flex-wrap:wrap;justify-content:flex-end;max-width:15em} /* les actions cachées passent à la ligne plutôt que d'élargir la colonne */
-.check{appearance:none;width:21px;height:21px;border:1.5px solid var(--ink);border-radius:50%;margin:3px 0 0;display:grid;place-content:center;cursor:pointer;background:transparent}
-.check:checked{background:var(--accent);border-color:var(--accent)}
-.check:checked::after{content:"";width:9px;height:5px;border:2px solid var(--bg);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.check{appearance:none;width:21px;height:21px;padding:0;border:1.5px solid var(--ink);border-radius:50%;margin:3px 0 0;display:grid;place-content:center;cursor:pointer;background:transparent}
+.check:checked,.pv-check{background:var(--accent);border-color:var(--accent)}
+.check:checked::after,.pv-check::after{content:"";width:9px;height:5px;border:2px solid var(--bg);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
 .t-title{font-weight:500;background:none;border:0;padding:0;text-align:left;cursor:pointer}
 .done .t-title{text-decoration:line-through;color:var(--muted)}
 .meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:2px;font-size:.85rem;color:var(--muted)}
@@ -456,7 +466,7 @@ ul.dehors+ul.dehors,h3+ul.dehors{margin-top:0}
 .capture select{flex:0 1 auto;width:auto;max-width:11em}
 .agenda-ev{padding:3px 0}.agenda-ev .when{display:inline-block;min-width:7.5em;font-variant-numeric:tabular-nums;color:var(--muted)}
 .dehors .why{margin:4px 0 0;font-size:.85rem;color:var(--accent)}.cite-bar h4{margin:16px 0 4px;font-size:1rem}.cite-bar>.row{align-items:baseline;flex-wrap:wrap}ul.cite-pairs li,ul.cite-authors li{padding:3px 0}
-@media (max-width:640px){ul.dehors>.item,ul.dehors-cfg>.item,ul.zot-list>.item,ul.cite-list>.item,.col-list>.item{grid-template-columns:auto minmax(0,1fr)}ul.dehors>.item>.row,ul.dehors-cfg>.item>.row,ul.zot-list>.item>.row,ul.cite-list>.item>.row,.col-list>.item>.row{grid-column:2;justify-content:flex-start;max-width:none}
+@media (max-width:640px){ul.dehors>.item,ul.dehors-cfg>.item,ul.zot-list>.item,ul.cite-list>.item,.col-list>.item,ul.radar>.item{grid-template-columns:auto minmax(0,1fr)}ul.dehors>.item>.row,ul.dehors-cfg>.item>.row,ul.zot-list>.item>.row,ul.cite-list>.item>.row,.col-list>.item>.row,ul.radar>.item>.row{grid-column:2;justify-content:flex-start;max-width:none}
   .capture.capture-wrap{flex-wrap:wrap}.capture.capture-wrap input{flex:1 1 100%}}
 .meta .acts{margin-left:auto;display:inline-flex;gap:2px}.meta .acts .btn{padding:0 6px;font-size:.8rem}
 .marg .links{display:flex;flex-direction:column;gap:2px}
@@ -486,6 +496,7 @@ select.ep.on{color:var(--accent);border-color:var(--rule)}
 .bridge.off{justify-content:flex-end;margin-bottom:4px}
 .bridge input{flex:1 1 240px}
 .bridge.stale,.resume.stale{opacity:.6}
+.bridge-log{margin:-8px 0 16px;font-size:.9rem}.bridge-log summary{color:var(--muted);cursor:pointer}.bridge-log li{padding:2px 0}
 .over .resume{display:block;color:var(--ink);font-size:.88rem;margin-top:2px}
 
 /* overview rows */
@@ -588,7 +599,7 @@ dialog::backdrop{background:rgba(6,10,8,.55);-webkit-backdrop-filter:blur(4px);b
 dialog form{padding:22px;display:grid;gap:12px}
 label{display:grid;gap:4px;font-size:.88rem;font-weight:500}
 input,select,textarea{background:var(--bg);border:1px solid var(--rule-strong);padding:8px;border-radius:2px;width:100%}
-input[type=checkbox],input[type=radio]{width:auto}
+input[type=checkbox]:not(.check),input[type=radio]{width:auto}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:480px){.field-row{grid-template-columns:1fr}}
 .set{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--rule)}
@@ -618,7 +629,11 @@ input[type=checkbox],input[type=radio]{width:auto}
 .swatches{display:flex;gap:10px;flex-wrap:wrap}
 .swatch{display:flex;align-items:center;gap:8px;border:1px solid var(--rule);padding:8px 12px;cursor:pointer;background:var(--surface)}
 .swatch.on{border-color:var(--accent);outline:1px solid var(--accent)}
-.swatch i{width:14px;height:14px;border-radius:50%;display:block}
+.swatch i{width:14px;height:14px;border-radius:50%;display:block;background:var(--sw)}
+/* L'aperçu : les vrais composants que colore l'accent, inertes. */
+.pal-preview{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-top:12px;padding:10px 12px;border:1px dashed var(--rule);font-size:.9rem}
+.pal-preview .pv-on{padding:4px 10px;border-left:2px solid var(--accent);background:var(--surface)}
+.pal-preview .bar{width:90px;margin:0}
 .capture{display:flex;gap:8px}
 .capture input{flex:1}
 .toast{position:fixed;z-index:10;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:2px;font-size:.92rem;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center}
@@ -676,7 +691,9 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
   .btn{min-width:44px}a.btn{display:inline-block} /* un lien-bouton ne se coupe pas en deux lignes de cible */
   .btn,.star,.check{position:relative}
   .btn::after,.star::after{content:"";position:absolute;inset:min(-3px,calc(50% - 23px)) -3px}
-  .check::before{content:"";position:absolute;inset:-11px}
+  .star::after{inset:min(-3px,calc(50% - 23px))} /* l'étoile d'une tâche, étroite : sa zone s'élargit aussi */
+  .check::before{content:"";position:absolute;inset:-14px -12px -14px -16px} /* comptée depuis l'intérieur de la bordure : 18 px sous Firefox, qui garde 1,5 px de bordure (19 sous Chromium, qui l'arrondit) ; à droite, le titre à 10 px ; à gauche, la marge de la page */
+  .t-title{position:relative}.t-title::after{content:"";position:absolute;inset:min(-3px,calc(50% - 23px)) 0} /* le titre d'une tâche, qui la déplie */
   details.mreg>summary{min-height:44px;align-items:center}
   .reg-guide summary,.danger summary,details.rlm-privacy>summary,details.rlm-info>summary{padding-block:11px}
   .tap{display:grid;place-items:center;min-width:44px;min-height:44px}
