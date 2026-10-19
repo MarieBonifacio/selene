@@ -131,10 +131,11 @@ async function importMarkdown(mod, list) {
   if (fresh.some(n => n.cut)) q += " " + tr`Les plus longues sont coupées à 20 000 caractères.`;
   if (total > DOC_WARN) q += " " + tr`Ton espace pèserait ${mo(total)} Mo : au-delà de ${mo(DOC_MAX)} Mo, le serveur ne le garde plus (il reste sur cet appareil).`;
   if (!await ask(q)) return;
-  const today = todayISO(), ids = r.notes.map(n => have.get(n.text) || null);
+  // Chaque note du lot porte son étiquette (imp) : « Annuler le dernier import » la retrouve, même après une synchro.
+  const today = todayISO(), ids = r.notes.map(n => have.get(n.text) || null), batch = `md:${today}:${uid()}`;
   r.notes.forEach((n, i) => {
     if (ids[i]) return;
-    const e = { id: uid(), text: n.text, date: n.date || today };
+    const e = { id: uid(), text: n.text, date: n.date || today, imp: batch };
     if (n.ep) e.ep = n.ep;
     inst.entries.push(e); ids[i] = e.id;
   });
@@ -145,6 +146,15 @@ async function importMarkdown(mod, list) {
   for (const [i, k] of r.knownLinks.filter(fromFresh)) link(i, inst.entries[k] && inst.entries[k].id);
   site.save(); render();
   toast(trn(fresh.length, "{0} note importée dans {1}.", "{0} notes importées dans {1}.", label(mod)) + (linked ? " " + trn(linked, "{0} lien.", "{0} liens.") : "") + lost);
+}
+/* Le dernier import Markdown d'un module : son étiquette, son nombre de notes, sa date. Une note écrite à la main n'a pas
+   d'étiquette : elle ne part jamais avec un lot. Annulé, le lot d'avant devient le dernier. */
+function lastImport(inst) {
+  for (let i = inst.entries.length - 1; i >= 0; i--) {
+    const b = inst.entries[i].imp; if (!b) continue;
+    return { b, n: inst.entries.filter(e => e.imp === b).length, date: b.split(":")[1] };
+  }
+  return null;
 }
 /* Où une note peut être rangée : les modules actifs qui savent la recevoir, dans l'ordre de la navigation.
    Un type peut renvoyer une suite à donner (le formulaire d'une tâche, pour la compléter). */
@@ -166,10 +176,11 @@ registerType("notes", {
     ${targets.length ? `<div class="row${c.inbox ? "" : " ra"}" style="margin-top:6px">${targets.map(k => `<button class="btn sm" data-act="note-to" data-to="${esc(k)}">→ ${esc(label(k))}</button>`).join("")}</div>` : ""}</div>
     ${margHTML(id, x, x.text)}<button class="btn ghost sm ra" data-act="note-del">${tr`suppr.`}</button></li>`; }).join("") + pg.more)(paged(`notes:${id}`, [...inst.entries].reverse())) || `<li class="empty">${c.inbox ? tr`Vide. Le silence d'une clairière, ou celui d'un cerveau.` : tr`Rien pour l'instant. Une note ne se corrige pas : elle se garde ou s’efface. Pour un texte qui change, les fragments d’un espace d’écriture gardent leurs versions.`}</li>`}</ul></div>`;
   },
-  settings: (id, { config: c }) => `<label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="notes-inbox" data-mod="${esc(id)}" ${c.inbox ? "checked" : ""}>${tr`Boîte de réception : reçoit la capture rapide de l'accueil`}</label>
+  settings: (id, { config: c, ...inst }) => `<label style="display:flex;gap:8px;align-items:center;font-size:1rem"><input type="checkbox" data-act="notes-inbox" data-mod="${esc(id)}" ${c.inbox ? "checked" : ""}>${tr`Boîte de réception : reçoit la capture rapide de l'accueil`}</label>
     <div class="field-row" style="margin-top:8px"><label>${tr`Description`}<input data-set-mod="${esc(id)}.description" value="${esc(c.description)}" placeholder="${tr`Une phrase sous le titre`}"></label><label>${tr`Texte d'invite`}<input data-set-mod="${esc(id)}.placeholder" value="${esc(c.placeholder)}" required></label></div>
     <div class="row" style="margin-top:12px"><label class="btn sm" style="display:inline-block;font-weight:500">${tr`Importer des notes Markdown`}<input type="file" accept=".md,.markdown,text/markdown" multiple data-act="notes-md" data-mod="${esc(id)}" style="display:none"></label><label class="btn ghost sm" style="display:inline-block;font-weight:500">${tr`…ou tout un dossier`}<input type="file" webkitdirectory multiple data-act="notes-md" data-mod="${esc(id)}" style="display:none"></label></div>
-    <p class="hint" style="margin:4px 0 0">${tr`Un coffre Obsidian, un dossier Zettlr ou quelques fichiers .md : chaque fichier devient une note, son titre en première ligne, datée par son en-tête (date, created), sinon par son nom, sinon par le fichier. « statut: hypothèse » (ou status: hypothesis) lui donne son statut ; un lien [[…]] vers une autre note du lot devient « fait écho à ». Les fichiers sont lus sur cet appareil ; un second import n'ajoute que ce qui manque.`}</p>`,
+    <p class="hint" style="margin:4px 0 0">${tr`Un coffre Obsidian, un dossier Zettlr ou quelques fichiers .md : chaque fichier devient une note, son titre en première ligne, datée par son en-tête (date, created), sinon par son nom, sinon par le fichier. « statut: hypothèse » (ou status: hypothesis) lui donne son statut ; un lien [[…]] vers une autre note du lot devient « fait écho à ». Les fichiers sont lus sur cet appareil ; un second import n'ajoute que ce qui manque.`}</p>
+    ${(li => li ? `<div class="row" style="margin-top:6px"><button class="btn ghost sm" data-act="notes-md-undo" data-mod="${esc(id)}">${trn(li.n, "Annuler le dernier import ({0} note, le {1})", "Annuler le dernier import ({0} notes, le {1})", fmt(li.date))}</button></div>` : "")(lastImport(inst))}`,
   summary: (id, inst) => inst.config.inbox ? tr`${inst.entries.length} à trier` : trn(inst.entries.length, "{0} note", "{0} notes"),
   context: (inst, nm) => `\n${nm}${inst.config.inbox ? " (à trier)" : ""} : ${inst.entries.map(x => x.text).join(" ; ") || "vide"}`,
   badge: inst => inst.config.inbox ? inst.entries.length : 0,
@@ -188,6 +199,21 @@ registerType("notes", {
     "note-to": el => {
       const from = modOf(el), note = S().modules[from].entries.find(x => x.id === idOf(el)), to = el.dataset.to;
       if (note) fileUndoable(from, note, to, () => acceptNote(to, from, note), tr`Rangé dans ${label(to)}.`);
+    },
+    // Le lot entier, d'un geste, avec « Annuler » : chaque note garde sa place ; une note écrite à la main ne part jamais.
+    "notes-md-undo": async el => {
+      const mod = el.dataset.mod, inst = S().modules[mod], li = inst && lastImport(inst);
+      if (!li || !await ask(trn(li.n, "Retirer la note importée le {1} dans {2} ? Les notes écrites à la main restent.", "Retirer les {0} notes importées le {1} dans {2} ? Les notes écrites à la main restent.", fmt(li.date), label(mod)))) return;
+      const cur = S().modules[mod]; if (!cur) return; // relu : une synchro a pu passer pendant la question
+      const gone = cur.entries.map((e, i) => [i, e]).filter(([, e]) => e.imp === li.b);
+      if (!gone.length) return;
+      cur.entries = cur.entries.filter(e => e.imp !== li.b); site.save(); render();
+      toastUndo(trn(gone.length, "{0} note retirée de {1}.", "{0} notes retirées de {1}.", label(mod)), () => {
+        const back = S().modules[mod];
+        if (!back || back.entries.some(e => e.imp === li.b)) return;
+        for (const [i, e] of gone) back.entries.splice(Math.min(i, back.entries.length), 0, e);
+        site.save(); render(); toast(tr`Rétabli. Rien ne s'est passé.`);
+      });
     }
   },
   change: {

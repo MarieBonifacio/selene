@@ -192,27 +192,87 @@ export function skyMotion({ wind = 8, dir = 270, precip = 0, lat = 45 } = {}) {
    selon le calendrier de l'IMO (Organisation internationale des météores) : jour du maximum et taux horaire zénithal
    (ZHR), un maximum théorique sous un ciel parfaitement noir, radiant au zénith ; on en voit toujours moins. */
 const SHOWERS = [["Quadrantides", 1, 4, 110], ["Lyrides", 4, 22, 18], ["Perséides", 8, 12, 100], ["Orionides", 10, 21, 20], ["Léonides", 11, 17, 15], ["Géminides", 12, 14, 150]];
-/* Éclipses visibles depuis Lille jusqu'en 2030 (visibilité locale recoupée : icalendrier.fr, lunettes-eclipse.fr,
-   eclipse.previplus.fr ; à prolonger au-delà). Valables pour le Nord de la France et la Belgique seulement. */
-const ECLIPSES = [
-  ["2026-08-12", "soleil", "partielle", "90 % du Soleil masqué, maximum vers 20 h 14"], ["2026-08-28", "lune", "partielle", ""],
-  ["2027-02-20", "lune", "pénombre", ""], ["2027-08-02", "soleil", "partielle", ""], ["2028-01-12", "lune", "partielle", ""],
-  ["2028-01-26", "soleil", "partielle", ""], ["2028-07-06", "lune", "pénombre", ""], ["2028-12-31", "lune", "totale", ""],
-  ["2029-06-26", "lune", "totale", ""], ["2029-12-20", "lune", "totale", ""], ["2030-06-01", "soleil", "partielle", ""],
-  ["2030-06-15", "lune", "pénombre", ""], ["2030-12-09", "lune", "pénombre", ""]];
-export const nearLille = (lat, lon) => lat >= 48.5 && lat <= 52.5 && lon >= 0.5 && lon <= 6.5;
+/* Éclipses de Lune : calculées, pour tout lieu, jusqu'à l'année prochaine (Meeus, « Astronomical Algorithms », 2e éd.,
+   chap. 54 : l'instant du maximum à quelques minutes près, les magnitudes à quelques centièmes ; recoupé avec les
+   tables de la NASA, tests/sky.test.js). Une éclipse de Lune se voit de partout où la Lune est levée : on cherche, sur
+   la durée de l'éclipse, la phase la plus profonde qui s'y passe Lune levée (un « 2028-07-06 » partiel ne montre à
+   Lille que la fin de la pénombre : la Lune s'y lève après l'ombre). */
+const LUNAR = [], lunarYears = new Set();
+const ECLIPSE_PHASES = ["pénombre", "partielle", "totale"];
+function lunarEclipsesOf(year) {
+  if (lunarYears.has(year)) return LUNAR.filter(e => e.year === year);
+  lunarYears.add(year);
+  const sin = x => Math.sin(x * RAD), cos = x => Math.cos(x * RAD);
+  for (let k = Math.floor((year - 2000) * 12.3685) - 1 + 0.5; k < (year + 1 - 2000) * 12.3685 + 1; k++) {
+    const T = k / 1236.85, F = 160.7108 + 390.67050284 * k - 0.0016118 * T * T - 0.00000227 * T ** 3 + 0.000000011 * T ** 4;
+    if (Math.abs(sin(F)) > 0.36) continue; // pleine lune trop loin d'un nœud : pas d'éclipse
+    const M = 2.5534 + 29.10535670 * k - 0.0000014 * T * T - 0.00000011 * T ** 3;
+    const Mp = 201.5643 + 385.81693528 * k + 0.0107582 * T * T + 0.00001238 * T ** 3 - 0.000000058 * T ** 4;
+    const Om = 124.7746 - 1.56375588 * k + 0.0020672 * T * T + 0.00000215 * T ** 3;
+    const E = 1 - 0.002516 * T - 0.0000074 * T * T, F1 = F - 0.02665 * sin(Om), A1 = 299.77 + 0.107408 * k - 0.009173 * T * T;
+    const jde = 2451550.09766 + 29.530588861 * k + 0.00015437 * T * T - 0.000000150 * T ** 3 + 0.00000000073 * T ** 4
+      - 0.4065 * sin(Mp) + 0.1727 * E * sin(M) + 0.0161 * sin(2 * Mp) - 0.0097 * sin(2 * F1) + 0.0073 * E * sin(Mp - M)
+      - 0.0050 * E * sin(Mp + M) - 0.0023 * sin(Mp - 2 * F1) + 0.0021 * E * sin(2 * M) + 0.0012 * sin(Mp + 2 * F1)
+      + 0.0006 * E * sin(2 * Mp + M) - 0.0004 * sin(3 * Mp) - 0.0003 * E * sin(M + 2 * F1) + 0.0003 * sin(A1)
+      - 0.0002 * E * sin(M - 2 * F1) - 0.0002 * E * sin(2 * Mp - M) - 0.0002 * sin(Om);
+    const P = 0.2070 * E * sin(M) + 0.0024 * E * sin(2 * M) - 0.0392 * sin(Mp) + 0.0116 * sin(2 * Mp) - 0.0073 * E * sin(Mp + M) + 0.0067 * E * sin(Mp - M) + 0.0118 * sin(2 * F1);
+    const Q = 5.2207 - 0.0048 * E * cos(M) + 0.0020 * E * cos(2 * M) - 0.3299 * cos(Mp) - 0.0060 * E * cos(Mp + M) + 0.0041 * E * cos(Mp - M);
+    const gamma = (P * cos(F1) + Q * sin(F1)) * (1 - 0.0048 * Math.abs(cos(F1)));
+    const u = 0.0059 + 0.0046 * E * cos(M) - 0.0182 * cos(Mp) + 0.0004 * cos(2 * Mp) - 0.0005 * cos(M + Mp);
+    // Distances au centre de l'ombre, en rayons terrestres, sous lesquelles la Lune touche la pénombre, l'ombre, y entre toute.
+    const reach = [1.5573 + u, 1.0128 - u, 0.4678 - u], g = Math.abs(gamma);
+    if (g >= reach[0]) continue;
+    const t = (jde - 2440587.5) * 86400000 - 70000; // temps dynamique → temps universel (ΔT ≈ 70 s vers 2026-2030)
+    const at = new Date(t);
+    if (at.getUTCFullYear() !== year || LUNAR.some(e => Math.abs(e.t - t) < 864e5)) continue;
+    LUNAR.push({ year, t, gamma, n: 0.5458 + 0.0400 * cos(Mp), reach, umbral: (1.0128 - u - g) / 0.5450, penumbral: (1.5573 + u - g) / 0.5450,
+      type: ECLIPSE_PHASES[reach.filter(r => g < r).length - 1] });
+  }
+  return LUNAR.filter(e => e.year === year);
+}
+export const lunarEclipses = year => lunarEclipsesOf(year).map(e => ({ ...e, reach: [...e.reach] }));
+// La durée d'une phase, en minutes : celle où la Lune reste à moins de `r` du centre de l'ombre.
+export const phaseMinutes = (e, i) => e.reach[i] > Math.abs(e.gamma) ? 120 * Math.sqrt(e.reach[i] ** 2 - e.gamma ** 2) / e.n : 0;
+/* Ce qu'on en voit d'un lieu : la phase la plus profonde vécue Lune levée (pas de cinq minutes), ou null. */
+export function lunarEclipseFrom(e, lat, lon) {
+  const half = phaseMinutes(e, 0) / 2;
+  let best = -1;
+  for (let m = -half; m <= half; m += 5) {
+    const d = Math.hypot(e.gamma, e.n * m / 60), phase = e.reach.filter(r => d < r).length - 1;
+    if (phase > best && moonPosition(e.t + m * 60000, lat, lon).alt > 0) best = phase;
+  }
+  return best < 0 ? null : ECLIPSE_PHASES[best];
+}
+/* Éclipses de Soleil : leur visibilité dépend du lieu à quelques kilomètres près (éléments de Bessel) ; Selene n'en a
+   qu'une table régionale, pour le Nord de la France et la Belgique, jusqu'en 2030 (visibilité recoupée depuis Lille :
+   icalendrier.fr, lunettes-eclipse.fr, eclipse.previplus.fr). Ailleurs, elles ne sont pas annoncées, et Réglages →
+   Ciel le dit. */
+const SOLAR_NORTH = [
+  ["2026-08-12", "partielle", "90 % du Soleil masqué, maximum vers 20 h 14"], ["2027-08-02", "partielle", ""],
+  ["2028-01-26", "partielle", ""], ["2030-06-01", "partielle", ""]];
+export const solarTableCovers = (lat, lon) => lat >= 48.5 && lat <= 52.5 && lon >= 0.5 && lon <= 6.5;
 const dayDiff = (a, b) => Math.round((Date.parse(b + "T12:00:00Z") - Date.parse(a + "T12:00:00Z")) / 86400000);
+// La date d'un instant, dans le fuseau de l'appareil : celui de `today`.
+const localDay = t => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 /* Ce qui mérite une ligne sous le ciel, d'aujourd'hui (AAAA-MM-JJ) : une pluie d'étoiles filantes la veille ou le
-   jour de son maximum ; une éclipse visible d'ici dans les sept jours (seulement près de Lille, là où la table vaut). */
+   jour de son maximum ; une éclipse visible d'ici dans les sept jours (de Lune partout, de Soleil dans la table). */
 export function skyEvents(today, place) {
   const out = [], y = +today.slice(0, 4);
   for (const [name, m, d, zhr] of SHOWERS) {
     for (const yy of [y, y + 1]) { const peak = `${yy}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`, n = dayDiff(today, peak); if (n === 0 || n === 1) out.push({ kind: "shower", name, zhr, inDays: n, date: peak }); }
   }
-  if (place && nearLille(place.lat, place.lon)) for (const [date, body, type, note] of ECLIPSES) {
-    const n = dayDiff(today, date); if (n >= 0 && n <= 7) out.push({ kind: "eclipse", body, type, note, inDays: n, date });
+  if (!place) return out;
+  const eclipses = [];
+  for (const e of [...lunarEclipsesOf(y), ...lunarEclipsesOf(y + 1)]) {
+    const date = localDay(e.t), n = dayDiff(today, date);
+    if (n < 0 || n > 7) continue;
+    const type = lunarEclipseFrom(e, place.lat, place.lon);
+    if (type) eclipses.push({ kind: "eclipse", body: "lune", type, note: "", inDays: n, date });
   }
-  return out;
+  if (solarTableCovers(place.lat, place.lon)) for (const [date, type, note] of SOLAR_NORTH) {
+    const n = dayDiff(today, date); if (n >= 0 && n <= 7) eclipses.push({ kind: "eclipse", body: "soleil", type, note, inDays: n, date });
+  }
+  return [...out, ...eclipses.sort((a, b) => a.inDays - b.inDays)];
 }
 /* Les jours de pluie à venir d'une prévision quotidienne [{ d, mm, pp }] : 1 mm au moins, ou 60 % de probabilité. */
 export const rainDays = (days, from, n = 5) => (days || []).filter(x => x && x.d >= from && dayDiff(from, x.d) < n && ((+x.mm || 0) >= 1 || (+x.pp || 0) >= 60)).map(x => x.d);

@@ -1700,3 +1700,68 @@ test('un carnet vide dit qu’une note ne se corrige pas, et où écrire un text
   assert.match(app.TYPE_UI.notes.view(carnet[0]), /Une note ne se corrige pas : elle se garde ou s’efface\. Pour un texte qui change, les fragments d’un espace d’écriture gardent leurs versions\./);
   assert.match(app.TYPE_UI.notes.view(boite[0]), /Le silence d'une clairière/, 'la boîte vide garde sa phrase');
 });
+
+test('Dehors → Sources : « garder » va dans le projet du flux s’il est un espace Sources, sinon dans le premier, et la provenance garde le projet (TU-MOD-83)', () => {
+  const item = (id, title) => ({ id, title, link: `https://revue.example/${id}`, date: '2026-10-18T08:00:00Z', text: '' });
+  const storage = new Map([['selene-dehors', JSON.stringify({ at: Date.now(), hidden: [], feeds: { f1: { items: [item('a', 'Les phalènes')] }, f2: { items: [item('b', 'Le seuil'), item('c', 'La lisière')] } } })]]);
+  const app = launch(storage, { claude: { use: async () => null } });
+  const d = app.S(), cfg = { ...JSON.parse(JSON.stringify(d.modules.musique.config)), music: false, display: 'liste', sources: true, statuses: ['À lire', 'Lue'], doneFrom: 1, fields: { title: 'Titre', subtitle: 'Auteurs', tag: 'Type', due: '', text: 'Résumé' } };
+  for (const [id, nom] of [['sources', 'Sources'], ['these', 'Sources de la thèse']]) { d.modules[id] = { type: 'collection', label: nom, config: JSON.parse(JSON.stringify(cfg)), entries: [] }; d.config.modules.push({ id, on: true }); }
+  d.config.dehors = { feeds: [{ id: 'f1', title: 'Revue des lisières', url: 'https://revue.example/feed.xml', mod: 'these', seen: 0 }, { id: 'f2', title: 'Revue du seuil', url: 'https://seuil.example/feed.xml', mod: 'ecriture', seen: 0 }] };
+  const el = (feed, it) => ({ dataset: {}, closest: () => ({ dataset: { feed, item: it } }) });
+  // La vue Dehors n'existe qu'en hébergé (le passeur) : le libellé du bouton se lit ici par sa fonction ; le parcours entier
+  // est celui de tests/browser/dehors.js.
+  assert.equal(app.keepLabel(d.config.dehors.feeds[0]), 'garder dans Sources de la thèse', 'deux espaces Sources : le bouton dit où il garde');
+  app.CLICK['dehors-keep'](el('f1', 'a'));
+  assert.equal(d.modules.these.entries.length, 1, 'le projet du flux est un espace Sources : la source y va');
+  assert.equal(d.modules.sources.entries.length, 0);
+  app.CLICK['dehors-keep'](el('f2', 'b'));
+  const s = d.modules.sources.entries[0];
+  assert.ok(s && s.title === 'Le seuil', 'un projet qui n’est pas un espace Sources : le premier espace Sources');
+  assert.match(s.origin.text, /Revue du seuil \(projet : Écriture\)/, 'et la provenance garde le projet');
+  d.config.modules.find(m => m.id === 'these').on = false;
+  assert.equal(app.keepLabel(d.config.dehors.feeds[0]), 'garder', 'un seul espace Sources ouvert : « garder », sans plus');
+});
+
+test('annuler le dernier import Markdown : le lot part, le reste demeure ; « Annuler » le rend ; le lot d’avant suit (TU-MOD-84)', async () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), tick = () => new Promise(r => setTimeout(r, 0));
+  d.modules.carnet = { type: 'notes', label: 'Carnet', config: { inbox: false }, entries: [{ id: 'n0', text: 'Une note à moi', date: '2026-10-01' }] }; d.config.modules.push({ id: 'carnet', on: true });
+  const file = (name, text) => ({ name, text: async () => text });
+  const confirmer = async () => { for (let i = 0; i < 50 && !(app.nodes.get('#cdlg') || {}).onclose; i++) await tick(); const c = app.nodes.get('#cdlg'), f = c.onclose; c.onclose = null; c.returnValue = 'ok'; f(); for (let i = 0; i < 5; i++) await tick(); };
+  const textes = () => d.modules.carnet.entries.map(e => e.text.split('\n')[0]);
+  app.CHANGE['notes-md']({ dataset: { mod: 'carnet' }, files: [file('Le seuil.md', '# Le seuil\nLe paratexte comme lisière.'), file('La lisière.md', '# La lisière\nRenvoie au [[Le seuil]].')], value: '' });
+  await confirmer();
+  app.CHANGE['notes-md']({ dataset: { mod: 'carnet' }, files: [file('Idée.md', '# Idée\nUne idée de plus.')], value: '' });
+  await confirmer();
+  assert.equal(d.modules.carnet.entries.length, 4, 'deux imports : trois notes de plus');
+  assert.match(app.TYPE_UI.notes.settings('carnet', d.modules.carnet), /data-act="notes-md-undo"[^>]*>Annuler le dernier import \(1 note, le /, '« régler » propose d’annuler le dernier import, et dit lequel');
+  app.CLICK['notes-md-undo']({ dataset: { mod: 'carnet' } });
+  await confirmer();
+  assert.deepEqual([...textes()], ['Une note à moi', 'Le seuil', 'La lisière'], 'le dernier lot part, le reste demeure');
+  assert.match(app.nodes.get('#toast').innerHTML, /data-act="undo"/, 'et cela se défait');
+  app.CLICK.undo();
+  assert.deepEqual([...textes()], ['Une note à moi', 'Le seuil', 'La lisière', 'Idée'], '« Annuler » le rend, à sa place');
+  app.CLICK['notes-md-undo']({ dataset: { mod: 'carnet' } }); await confirmer();
+  assert.match(app.TYPE_UI.notes.settings('carnet', d.modules.carnet), /Annuler le dernier import \(2 notes, le /, 'ensuite, le lot d’avant');
+  app.CLICK['notes-md-undo']({ dataset: { mod: 'carnet' } }); await confirmer();
+  assert.deepEqual([...textes()], ['Une note à moi'], 'la note écrite à la main ne part jamais');
+  assert.doesNotMatch(app.TYPE_UI.notes.settings('carnet', d.modules.carnet), /notes-md-undo/, 'plus rien à annuler');
+  // Une étiquette de lot mal formée est refusée à l'import d'une sauvegarde.
+  const site = JSON.parse(JSON.stringify(d)); site.modules.carnet.entries[0].imp = 5;
+  assert.throws(() => app.parseBackup(app.createBackup(app.board.data, site)), /import/);
+});
+
+test('Calendrier : l’exemple de préfixe prend le nom d’un espace de la personne, pas un espace inventé (TU-MOD-85)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), hint = () => app.agendaSettingsHTML().replace(/\s+/g, ' ');
+  const first = d.config.modules.find(m => m.on && d.modules[m.id]);
+  assert.ok(hint().includes(`Un titre « ${d.modules[first.id].label} : rendez-vous » se range sous ${d.modules[first.id].label}.`), 'le premier espace de la navigation');
+  d.modules.lisiere = { type: 'notes', label: 'La lisière', config: { inbox: false }, entries: [] }; d.config.modules.unshift({ id: 'lisiere', on: true });
+  assert.ok(hint().includes('Un titre « La lisière : rendez-vous » se range sous La lisière.'), 'il suit l’ordre de la navigation');
+  d.modules.lisiere.label = 'R&D <b>';
+  assert.ok(hint().includes('« R&amp;D &lt;b&gt; : rendez-vous »'), 'le nom choisi par la personne est échappé');
+  for (const m of d.config.modules) m.on = false;
+  assert.ok(hint().includes('Un titre « Nom d&#39;un espace : rendez-vous » se range sous Nom d&#39;un espace.'), 'sans espace ouvert : un nom générique');
+  assert.ok(!hint().includes('plombier'), 'plus de « Chantier : plombier » pour qui n’a pas de chantier');
+});

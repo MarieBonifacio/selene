@@ -112,10 +112,18 @@ Reste ouvert après le lot 4, à décider ou à valider plutôt qu'à coder :
 - ~~**Citrinitas et Rubedo** voisines des couleurs d'état~~ : réadaptées le 17 octobre 2026, sur décision de la responsable
   (Citrinitas « pollen » `#636301` / `#d9c84d`, Rubedo « framboise » `#a42b4a` / `#df627b`, Nigredo clair `#416a43`) ;
   aucun accent à moins de ΔE2000 10 d'une couleur d'état (`TU-PAL-06`). Détail au [backlog](recette/backlog.md#décidé-le-17-octobre-2026) ;
-- **Dehors → Sources** (choisir l'espace cible), **« Annuler le dernier import Markdown »**, **références régionales**
-  (éclipses « visibles depuis Lille ») : P3, sans signal d'usage ;
+- ~~**Dehors → Sources**, **« Annuler le dernier import Markdown »**, **références régionales**~~ : faits au lot 5
+  (ci-dessous) ;
 - **Arc, liens et sources entre tous les types** : à valider (section G, page de projet) ;
 - **l'utilité de E1, E2 et de l'abandon** : aucune donnée d'usage ; la bêta (E4 de [validation.md](validation.md)) le dira.
+
+Le lot 5 traite les trois P3 restées ouvertes du tableau C, sans nouveau module :
+
+| Ligne de C | Ce qui change | Tests |
+|---|---|---|
+| Dehors → Sources | « garder » va dans le projet du flux quand c'est un espace Sources (le bouton le nomme : « garder dans Sources de la thèse ») ; sinon dans le premier, et la provenance garde le projet (« Revue du seuil (projet : Écriture) ») | `TU-MOD-83` |
+| Imports | « Annuler le dernier import » dans les réglages d'un module de notes : chaque note importée porte l'étiquette de son lot (`imp`), le lot entier part d'un geste, avec « Annuler » ; une note écrite à la main ne part jamais ; le lot d'avant devient le dernier. La sauvegarde JSON reste un remplacement total : elle a déjà sa confirmation, et une copie de l'espace remplacé serait une seconde sauvegarde à gérer | `TU-MOD-84`, `TN-import-markdown` |
+| Références personnelles | Éclipses de Lune **calculées** pour tout lieu (Meeus, chap. 54 : magnitudes à 0,02 près, durées à 5 minutes, recoupées avec la NASA), avec la phase vue Lune levée ; depuis Lille, le calcul retrouve exactement la table recoupée à la main. Les éclipses de Soleil, dont la visibilité tient à quelques kilomètres, restent une **table régionale**, nommée comme telle dans Réglages → Ciel. L'exemple « Chantier : plombier » du Calendrier prend le nom du premier espace de la personne. Gardés : les sigils déduits de « moth » ou « phidippus » (des mots-clés de repli, parmi des mots génériques, sans rien afficher ; les retirer changerait sans prévenir l'icône d'espaces existants) et les commentaires du radar sur Lille (l'histoire de la source de données, pas un contenu) | `TU-SKY-14`, `TU-SKY-16`, `TU-MOD-85`, `TN-ciel-chantier` |
 
 ---
 

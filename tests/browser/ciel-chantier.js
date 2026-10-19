@@ -36,8 +36,16 @@ const week = (wet = {}) => { const time = ['2026-09-28', '2026-09-29', '2026-09-
   p = await open('2028-12-28T18:00:00+01:00', LILLE);
   ev = await events(p);
   ok(ev.length === 1 && ev[0].includes('Éclipse totale de Lune dans 3 jours (31 décembre)') && !ev[0].includes('lunettes'), 'une éclipse de Lune annoncée trois jours avant, sans lunettes (on la regarde à l’œil nu)');
+  // La Lune se calcule pour tout lieu ; le Soleil n'a qu'une table régionale (Nord de la France, Belgique), et les Réglages le disent.
   p = await open('2028-12-28T18:00:00+01:00', MARSEILLE);
-  ok(!(await events(p)).length, 'depuis Marseille : rien (la table ne vaut que pour Lille et ses environs)');
+  ev = await events(p);
+  ok(ev.length === 1 && ev[0].includes('Éclipse totale de Lune dans 3 jours (31 décembre)'), `depuis Marseille aussi, l’éclipse de Lune (${ev.join(' | ')})`);
+  p = await open('2026-08-11T12:00:00+02:00', MARSEILLE, undefined, 'reglages');
+  const ciel = (await p.textContent('#ciel')).replace(/\s+/g, ' ');
+  ok(ciel.includes('Celles de Soleil ne sont annoncées que dans le Nord de la France et en Belgique (une table régionale) : ici, rien ne les signale.'), 'depuis Marseille, Réglages → Ciel dit que le Soleil n’est pas annoncé ici');
+  await p.evaluate(() => location.hash = 'accueil'); await p.waitForTimeout(300);
+  ev = await events(p);
+  ok(ev.some(t => t.startsWith('Perséides demain soir')) && !ev.some(t => t.includes('de Soleil')), 'et l’accueil n’annonce pas l’éclipse de Soleil du 12 août 2026 (hors de la table régionale)');
   p = await open('2026-10-10T18:00:00+02:00', LILLE);
   ok(!(await events(p)).length, 'un soir ordinaire : aucune ligne de plus');
 

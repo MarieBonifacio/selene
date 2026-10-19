@@ -48,7 +48,7 @@ const WORK = (n, extra = {}) => ({ id: `https://openalex.org/W${n}`, doi: `https
   ok((await p.textContent('#main h3')).includes('Écriture'), 'rangés sous leur projet');
   await p.click('[data-item="W1"] [data-act="dehors-keep"]'); await p.waitForTimeout(250);
   const s = (await data()).modules.sources.entries[0];
-  ok(s && s.src.doi === '10.1000/test.1' && s.src.url === 'https://doi.org/10.1000/test.1' && s.src.site === 'Consciousness and Cognition' && s.subtitle === 'Anna Ciaunica' && s.origin.from === 'Veille' && s.origin.text === 'depersonalization', 'garder : une source avec son DOI, sa revue, son autrice, et sa provenance « Veille »');
+  ok(s && s.src.doi === '10.1000/test.1' && s.src.url === 'https://doi.org/10.1000/test.1' && s.src.site === 'Consciousness and Cognition' && s.subtitle === 'Anna Ciaunica' && s.origin.from === 'Veille' && s.origin.text === 'depersonalization (projet : Écriture)', 'garder : une source avec son DOI, sa revue, son autrice, et sa provenance « Veille », qui nomme le projet (Écriture, pas un espace Sources)');
   ok((await p.getAttribute('[data-item="W2"] a', 'href')) === 'https://openalex.org/W2', 'sans DOI : la notice OpenAlex');
 
   console.log('un auteur, avec une clé');

@@ -38,7 +38,9 @@ export async function agendaRefresh(force = false) {
   try { platform.storage.set(ICS_CACHE, JSON.stringify(c)); } catch {}
   agendaBusy = false; render();
 }
-/* « Chantier : plombier » → l'espace Chantier, et « plombier ». */
+/* « Chantier : plombier » → l'espace Chantier, et « plombier ». L'exemple des Réglages prend le nom d'un des espaces de la
+   personne (le premier de la navigation) : un exemple qui parle de ses propres espaces, pas de ceux de quelqu'un d'autre. */
+const routeExample = () => { const m = S().config.modules.find(shownModule); return m ? label(m.id) : tr`Nom d'un espace`; };
 function agendaRoute(summary) {
   const m = String(summary).match(/^([^:]{2,40}?)\s*:\s*(.+)$/); if (!m) return { mod: "", text: summary };
   const mod = S().config.modules.find(x => shownModule(x) && fold(label(x.id)) === fold(m[1].trim()));
@@ -58,8 +60,8 @@ export function agendaHTML() {
   return block(0, tr`Aujourd'hui, au calendrier`) + block(1, tr`Demain`);
 }
 export function agendaSettingsHTML() {
-  const c = icsCache(), has = !!icsUrl();
-  return `<section id="agenda"><h4>${tr`Calendrier`}</h4><p class="hint">${tr`Un seul calendrier, dédié (crée-en un « Selene ») : aujourd'hui et demain s'affichent sous « Aujourd'hui ». Un titre « Chantier : plombier » se range sous Chantier. Google : paramètres de l'agenda → Intégrer l'agenda → Adresse secrète au format iCal. Apple : partager en public, lien webcal.`}</p>
+  const c = icsCache(), has = !!icsUrl(), ex = esc(routeExample());
+  return `<section id="agenda"><h4>${tr`Calendrier`}</h4><p class="hint">${tr`Un seul calendrier, dédié (crée-en un « Selene ») : aujourd'hui et demain s'affichent sous « Aujourd'hui ». Un titre « ${ex} : rendez-vous » se range sous ${ex}. Google : paramètres de l'agenda → Intégrer l'agenda → Adresse secrète au format iCal. Apple : partager en public, lien webcal.`}</p>
     <label>${tr`Adresse iCal secrète`}<input type="password" data-act="ics-url" value="${has ? "••••••••" : ""}" autocomplete="off" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"></label>
     <p class="hint" style="margin-top:6px">${tr`Qui possède cette adresse lit tout le calendrier : elle reste dans ce navigateur, n'est jamais synchronisée, ne passe que par ton passeur (qui ne garde rien), et s'efface à la déconnexion. Si elle fuit, réinitialise-la dans l'agenda.`}</p>
     ${has ? `<p class="row" style="margin:0"><span>${esc(agendaBusy ? tr`Lecture…` : c.err ? tr`Ne répond pas : ${c.err}` : c.at ? trn(c.events.length, "Lu {1} : {0} événement à venir ou récurrent.", "Lu {1} : {0} événements à venir ou récurrents.", dehorsWhen(c.at)) : tr`Pas encore lu.`)}</span><button class="btn sm" data-act="ics-check">${tr`Relire`}</button><button class="btn ghost sm" data-act="ics-forget">${tr`oublier`}</button></p>` : ""}</section>`;

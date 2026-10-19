@@ -680,14 +680,15 @@ Identifiants retirés : aucun.
   en-tête (`date`, `created`), sinon par son nom (date ou identifiant Zettlr), sinon par le fichier ; `statut: hypothèse`
   lui donne son statut ; un lien `[[…]]` vers une autre note du lot (ou déjà importée) devient « fait écho à » ; une image
   intégrée et les commentaires disparaissent ; `.obsidian` et `.trash` sont ignorés ; une confirmation dit combien, de
-  quand à quand, où ; un second import n'ajoute que ce qui manque ; tout est lu sur l'appareil.
+  quand à quand, où ; un second import n'ajoute que ce qui manque ; tout est lu sur l'appareil. « Annuler le dernier
+  import » retire le dernier lot entier, d'un geste, avec « Annuler » ; une note écrite à la main ne part jamais.
 - **Objectif, risque vérifié** : notes perdues ou dupliquées à l'import ; dates fausses ; réglages de l'éditeur importés
-  comme des notes ; texte piégé interprété ; contenu envoyé à un service.
+  comme des notes ; texte piégé interprété ; contenu envoyé à un service ; un import raté qu'il faudrait défaire note à note.
 - **Priorité** : P2 · **Plateformes** : Web, Mob, ART
 - **Préconditions** : jeu d'essai (le Carnet n'a qu'une note) ; le dossier [`donnees/coffre-markdown/`](../donnees/coffre-markdown/)
   copié sur l'appareil (trois notes et un `.obsidian/workspace.md`) ; Network ouvert.
 - **Données** : les fichiers `Le seuil.md`, `2024-02-10 Lecture.md`, `202403011530 Idée.md`, puis le dossier entier.
-- **Automatisés associés** : `TN-import-markdown`, `TU-MKD-01`, `TU-MKD-02`, `TU-MKD-03`, `TU-MKD-04`, `TU-MKD-05`
+- **Automatisés associés** : `TN-import-markdown`, `TU-MKD-01`, `TU-MKD-02`, `TU-MKD-03`, `TU-MKD-04`, `TU-MKD-05`, `TU-MOD-84`
 - **Source** : [DOC] [connexions.md](../../connexions.md) (venir d'Obsidian ou de Zettlr) ; [TEST] `tests/browser/import-markdown.js`,
   `tests/markdown.test.js` ; textes vérifiés par une sonde Chromium le 5 octobre 2026.
 
@@ -699,6 +700,8 @@ Identifiants retirés : aucun.
 | 4 | Refaire l'étape 2, « Confirmer ». | « 3 notes importées dans Carnet. 2 liens. » ; aucune requête dans Network. |
 | 5 | Ouvrir le Carnet. | « Le seuil » (5 janv.) : « Le paratexte comme lisière du texte. », statut hypothèse, « fait écho à « La lisière… » » ; « La lisière » (10 févr.) : « Renvoie au Seuil. », sans « schema.png », et `<img src=x onerror=alert('recette')>` affiché en texte, sans alerte ; « 202403011530 Idée » (1er mars 2024) sans « commentaire privé ». |
 | 6 | Réglages → « …ou tout un dossier » → choisir le dossier `coffre-markdown`. | « Rien de nouveau : ces notes sont déjà là. », sans question ; `workspace.md` n'est pas devenu une note. |
+| 7 | Sous Carnet, « Annuler le dernier import (3 notes, le … ) » (la date du jour de l'étape 4) → « Confirmer ». | La question : « Retirer les 3 notes importées le … dans Carnet ? Les notes écrites à la main restent. » ; puis « 3 notes retirées de Carnet. » avec « Annuler » ; le Carnet n'a plus que sa note du jeu d'essai ; le bouton a disparu. |
+| 8 | « Annuler » dans la bulle. | Les trois notes reviennent, à leur place, avec leurs liens « fait écho à » ; le bouton revient. |
 
 - **Un fichier illisible** (déplacé ou supprimé après son choix, resté dans un nuage hors ligne) est ignoré et compté : « … 1 fichier illisible, ignoré. » à la confirmation et après l'import ; si aucun fichier n'est lisible : « Aucun de ces fichiers n'a pu être lu : ils ont peut-être été déplacés ou supprimés depuis leur choix. ». Pas reproductible à la main de façon fiable : couvert par `TN-import-markdown` et `TU-MKD-05` (anomalie A8, corrigée).
 - **État final attendu** : le Carnet a quatre notes.

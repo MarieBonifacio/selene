@@ -18,7 +18,7 @@
    Lancé par tests/browser/run.js. */
 const fs = require('node:fs');
 const path = require('node:path');
-const { engine, ENGINE, BASE, launchOptions, check, storeGet, storeJSON, storeSet, ouvrir, entree } = require('./helpers');
+const { engine, ENGINE, BASE, launchOptions, check, storeGet, storeJSON, storeSet, ouvrir, entree, suivre, calme } = require('./helpers');
 const rows = new Map();
 const COMPTES = { 'p@exemple.org': { id: 'u5', personnel: true }, 'a@exemple.org': { id: 'u6' } }; // RLM-027 : P, puis A
 const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
@@ -47,13 +47,16 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
     const ctx = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 1280, height: 900 }, acceptDownloads: true });
     await ctx.route('https://*.supabase.co/**', supabase);
     await ctx.addInitScript(s => { if (!localStorage.getItem('selene-auth-session')) { localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', 'u1'); } }, session);
-    const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
+    const p = suivre(await ctx.newPage()); p.on('pageerror', e => errs.push(e.message));
     await ouvrir(p, BASE + '/index.html', entree); // connecté : l'app, pas l'écran d'entrée (A16)
     const settle = () => p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     const go = async h => { await p.evaluate(x => { location.hash = x; }, h); await p.waitForFunction(x => location.hash === '#' + x, h); await settle(); };
     const submit = async () => { await p.click('#form button[value="save"]'); await settle(); };
     const ask = async ok => { await p.waitForSelector('#cdlg[open]'); const msg = await p.textContent('#cmsg'); await p.click(`#cdlg button[value="${ok ? 'ok' : 'cancel'}"]`); await settle(); return msg; };
     const waitServer = async test => { for (let i = 0; i < 60 && !test(server()); i++) await p.waitForTimeout(100); return test(server()); };
+    /* Connectée au faux Supabase : un rechargement qui coupe une requête en vol, WebKit le compte comme une erreur de la
+       page (A50, second temps ; A19). Le calme d'abord, puis le stockage effacé : le suivi local n'a pas de chemin
+       distant, son effacement n'envoie rien, et le rechargement suit aussitôt. */
     const reload = () => ouvrir(p, null, entree);
     const main = async () => (await p.textContent('#main')).replace(/\s+/g, ' ');
 
@@ -74,7 +77,7 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
 
     console.log('le stockage du suivi effacé, l’appareil gardé');
     const device = await storeGet(p, 'selene-device-id');
-    await storeSet(p, 'selene-local-v1', null); await reload(); await go('reprendre-la-main');
+    await calme(p); await storeSet(p, 'selene-local-v1', null); await reload(); await go('reprendre-la-main');
     const lost = await main();
     check(lost.includes('Ce suivi devait être gardé sur cet appareil, mais ses données n\'y sont plus') && lost.includes('Une sauvegarde complète faite ici peut les restaurer'), 'l’espace avoue la perte, et dit quoi faire');
     check(!lost.includes('NOTE_RLM029') && !lost.includes('gardé sur un autre de tes appareils'), 'ni contenu, ni l’explication d’un autre appareil : c’est bien celui-ci');
@@ -93,7 +96,7 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
     check(!server().includes('NOTE_RLM029'), 'la restauration n’envoie pas le contenu au compte');
 
     console.log('perdu encore, puis retiré');
-    await storeSet(p, 'selene-local-v1', null); await reload(); await go('reglages');
+    await calme(p); await storeSet(p, 'selene-local-v1', null); await reload(); await go('reglages');
     await p.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
     await p.locator('.set.mod:has(input[data-act="mod-label"][value="Carnet du soir"]) [data-act="mod-del"]').click();
     await p.waitForFunction(() => document.querySelector('#dlg').open);
@@ -115,7 +118,7 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
       await p.selectOption('#form [name="mode"]', 'observer'); await submit();
       check(await waitServer(s => s.includes('Carnet du matin') && s.includes('"holder"')), 'recréé, configuré : le compte en a le talon, et son détenteur');
       const avant4 = await storeGet(p, 'selene-device-id');
-      const cdp = await ctx.newCDPSession(p);
+      await calme(p); const cdp = await ctx.newCDPSession(p);
       await cdp.send('Storage.clearDataForOrigin', { origin: new URL(BASE).origin, storageTypes: 'all' });
       await reload(); // la session reposée au chargement : de nouveau connectée au même compte
       await go(id4); await p.waitForFunction(() => document.querySelector('#main').textContent.includes('gardé sur un autre de tes appareils'), null, { timeout: 10000 }).catch(() => {});
@@ -135,7 +138,7 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
     await cx.route('https://*.supabase.co/**', supabase);
     const sessionP = JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'u5', email: 'p@exemple.org', personnel: true } });
     await cx.addInitScript(s => { if (!sessionStorage.getItem('rlm027')) { sessionStorage.setItem('rlm027', '1'); localStorage.setItem('selene-auth-session', s); localStorage.setItem('selene-auth-last-uid', 'u5'); } }, sessionP);
-    const z = await cx.newPage(); z.on('pageerror', e => errs.push(e.message));
+    const z = suivre(await cx.newPage()); z.on('pageerror', e => errs.push(e.message));
     const vers = async (h, sel) => { await z.evaluate(x => { location.hash = x; }, h); await z.waitForSelector(sel, { state: 'attached' }); };
     await ouvrir(z, BASE + '/index.html', entree);
     await z.waitForSelector('#welcome-all', { state: 'attached' }); await z.evaluate(() => { document.getElementById('welcome-all').open = true; });
@@ -157,7 +160,7 @@ const server = () => JSON.stringify((rows.get('u1') || {}).site || {});
       await z.waitForFunction(() => !!document.querySelector('#nav > *') && !document.querySelector('#authForm'), null, { timeout: 30000 }).catch(() => {});
     };
     await jusqua27(async () => (await kv('selene-local-v1') || '').includes('NOTE-RLM027')); // la saisie écrite sur l'appareil
-    await z.evaluate(() => localStorage.removeItem('selene-auth-session'));
+    await calme(z); await z.evaluate(() => localStorage.removeItem('selene-auth-session'));
     await z.reload(); await z.waitForSelector('#authForm, [data-act="auth-open"], [data-act="auth-local"]', { timeout: 10000 }).catch(() => {});
     const dehors27 = await z.evaluate(() => ({ entree: !!document.querySelector('#authForm, [data-act="auth-local"]'), nav: (document.querySelector('#nav') || {}).textContent || '' }));
     check(dehors27.entree && !dehors27.nav.includes('Carnet du soir'), 'session retirée, rechargée : l’app n’est plus connectée, l’écran d’entrée (RLM-027, étape 1)');

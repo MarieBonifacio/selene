@@ -43,9 +43,12 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
 - [x] Étoiles filantes : les six grandes pluies (calendrier de l'IMO), une ligne sous le ciel la veille et le soir du
       maximum, avec leur taux théorique (ZHR) et la réserve qui s'impose : bien moins en ville, et la lune en efface
       la plupart quand elle est éclairée à plus de 60 %.
-- [x] Éclipses visibles depuis Lille jusqu'en 2030, en table fixe (aucun réseau), annoncées une semaine avant ;
-      seulement si le lieu réglé est dans le Nord de la France ou en Belgique, là où la table vaut. « Jamais sans
-      lunettes d'éclipse » pour le Soleil. Une ligne d'événement renforce le voile de lecture (elle descend sur les arbres).
+- [x] Éclipses annoncées une semaine avant, sans réseau. De Lune : calculées pour le lieu réglé, partout (Meeus,
+      « Astronomical Algorithms », chap. 54, recoupé avec les tables de la NASA), visibles si la Lune y est levée, avec
+      la phase qu'on y voit (une éclipse partielle dont la Lune ne se lève qu'après l'ombre n'y est que « par la
+      pénombre »). De Soleil : leur visibilité tient à quelques kilomètres près ; Selene n'en a qu'une table régionale
+      (Nord de la France et Belgique, jusqu'en 2030), et Réglages → Ciel dit, ailleurs, qu'elles n'y sont pas annoncées.
+      « Jamais sans lunettes d'éclipse » pour le Soleil. Une ligne d'événement renforce le voile de lecture (elle descend sur les arbres).
 - [x] Pluie sur une tâche à ciel ouvert : des mots réglables par module (« extérieur, balcon, jardin… », cherchés dans
       le titre et le lieu) ; la pluie des cinq prochains jours (1 mm ou 60 % au moins), « le jour prévu » si l'échéance
       tombe dessus, sinon « sec jusqu'à ». Aucun appel de plus : la prévision quotidienne vient avec la météo du ciel.
@@ -227,6 +230,7 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
       ligne), il devient « fait écho à ». Une image intégrée (`![[schema.png]]`) et les commentaires (`%% … %%`,
       `<!-- … -->`) sont retirés.
 - [x] Une note dont le texte est déjà dans le module n'est pas recréée : un second import n'ajoute que ce qui manque.
+- [x] « Annuler le dernier import » (dans « régler ») retire le dernier lot entier, d'un geste, avec « Annuler » ; une note écrite à la main ne part jamais, et le lot d'avant devient le dernier. Chaque note importée porte l'étiquette de son lot (`imp`), qui suit la synchronisation et les sauvegardes.
       Au-delà de 20 000 caractères, une note est coupée (et la confirmation le dit) ; si l'espace devait dépasser
       3 Mo, elle prévient que le serveur n'en garde que 5.
 - [x] À l'écran, une note longue montre son début (400 caractères environ, jusqu'à une fin de paragraphe) et le reste
