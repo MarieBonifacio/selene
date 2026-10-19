@@ -15,7 +15,7 @@ import { motifsOf } from "./concordance.js";
 import { dehorsNew, feedMerge, parseFeed } from "./dehors-feed.js";
 import { excerpt, sourceItems } from "./links.js";
 import { MB_SEEN, mbFetch } from "./musique.js";
-import { findSourceDup, keepSource, pubDate, sourcesModule } from "./sources.js";
+import { findSourceDup, keepSource, pubDate, sourcesModule, sourcesModules } from "./sources.js";
 import { addNote } from "../modules/notes.js";
 import { hm } from "../scene/sky.js";
 import { authReady, authSession } from "../services/auth.js";
@@ -207,7 +207,7 @@ VIEWS.dehors = () => {
       ${why.length ? `<p class="why">${tr`parce que : ${why.map(esc).join(" · ")}`}</p>` : ""}
       ${x.text ? `<p class="hint" style="margin:4px 0 0">${esc(x.text)}</p>` : ""}</div>
     <div class="row">${x.mb ? (Object.hasOwn(S().modules, x.mb.mod) && S().modules[x.mb.mod].entries.some(e => e.mb && e.mb.rg === x.mb.rg) ? `<span class="hint">${tr`déjà dans ${esc(label(x.mb.mod))}`}</span>` : Object.hasOwn(S().modules, x.mb.mod) ? `<button class="btn sm" data-act="dehors-mb-add">${tr`ajouter à ${esc(label(x.mb.mod))}`}</button>` : "")
-      : sourcesModule() && x.link ? (findSourceDup({ url: x.link, doi: (x.oa && x.oa.doi) || findDoi(x.link) }) ? `<span class="hint">${tr`déjà gardée`}</span>` : `<button class="btn sm" data-act="dehors-keep">${tr`garder`}</button>`) : ""}${inboxId(S().modules) ? `<button class="btn ghost sm" data-act="dehors-note">${tr`vers une note`}</button>` : ""}<button class="btn ghost sm" data-act="dehors-hide" aria-label="${tr`Écarter`}">${tr`vu`}</button></div></li>`;
+      : keepTarget(f) && x.link ? (findSourceDup({ url: x.link, doi: (x.oa && x.oa.doi) || findDoi(x.link) }) ? `<span class="hint">${tr`déjà gardée`}</span>` : `<button class="btn sm" data-act="dehors-keep">${keepLabel(f)}</button>`) : ""}${inboxId(S().modules) ? `<button class="btn ghost sm" data-act="dehors-note">${tr`vers une note`}</button>` : ""}<button class="btn ghost sm" data-act="dehors-hide" aria-label="${tr`Écarter`}">${tr`vu`}</button></div></li>`;
   const list = !dehorsAll().length ? `<p class="empty">${ferme ? tr`Rien de suivi pour l'instant. La veille de recherche, plus bas, t'apporte chaque semaine ce qui vient de paraître.` : tr`Aucun flux suivi. Colle ci-dessous l'adresse d'un site, d'une revue, d'une chaîne : Selene trouve son flux.`}</p>`
     : !items.length ? `<p class="empty">${dehorsBusy ? tr`Lecture des flux…` : tr`Rien de neuf. Le monde a pu se passer de toi, et toi de lui.`}</p>`
     : [...byMod].map(([k, its]) => `<h3>${esc(k ? label(k) : tr`Sans projet`)}</h3><ul class="plain dehors">${its.map(itemHTML).join("")}</ul>`).join("")
@@ -235,6 +235,11 @@ VIEWS.dehors = () => {
         <div class="row"><select data-act="dehors-mod" aria-label="${tr`Projet de ce flux`}">${opts(f.mod)}</select><button class="btn ghost sm" data-act="dehors-del">${tr`retirer`}</button></div></li>`).join("")}</ul>
     </details>` : ""}</div>`;
 };
+/* Où va ce qu'on garde d'un flux : dans son projet, si c'est un espace Sources ; sinon dans le premier. Avec plusieurs
+   espaces Sources, le bouton le dit (« garder dans … ») ; et quand la source ne va pas dans le projet, sa provenance le
+   nomme : le projet du flux n'est plus perdu en chemin (audit du 12 octobre 2026, section C). */
+export const keepTarget = f => f.mod && sourcesModules().includes(f.mod) ? f.mod : sourcesModule();
+export const keepLabel = f => sourcesModules().length > 1 ? tr`garder dans ${esc(label(keepTarget(f)))}` : tr`garder`;
 const dehorsHit = el => { const li = el.closest("[data-feed]"), f = dehorsAll().find(x => x.id === li.dataset.feed); const fc = f && dehorsCache().feeds[f.id]; return { li, f, x: fc && li.dataset.item ? fc.items.find(i => i.id === li.dataset.item) : null }; };
 const dehorsHideItem = (f, x) => { const c = dehorsCache(), k = dehorsKey(x); c.hidden.push(`${f.id}|${x.id}`); if (k) c.hidden.push(`k|${k}`); dehorsStore(c); };
  // avec sa clé : écarté ici, il ne revient pas par un autre flux
@@ -256,12 +261,13 @@ CLICK["dehors-note"] = el => {
   addNote(S().modules[box], [x.title, x.link].filter(Boolean).join(" — ").slice(0, 2000)); dehorsHideItem(f, x); site.save(); render(); toast(tr`Dans ${label(box)}.`);
 };
 CLICK["dehors-keep"] = el => {
-  const { f, x } = dehorsHit(el), to = sourcesModule(); if (!x || !to) return;
+  const { f, x } = dehorsHit(el), to = f && keepTarget(f); if (!x || !to) return;
   const src = x.oa ? { title: x.title, url: x.link, doi: x.oa.doi || null, site: x.oa.site, date: x.oa.day, kind: x.oa.kind === "article" ? "article" : x.oa.kind || "article", authors: x.oa.authors, abstract: x.text }
     : { title: x.title, url: normalizeUrl(x.link), doi: findDoi(x.link), site: f.title, date: x.date.slice(0, 10), kind: "page", abstract: x.text };
   const dup = findSourceDup(src);
   if (dup) { dehorsHideItem(f, x); render(); return toast(tr`Déjà gardée dans ${label(dup.mod)}.`); }
-  const e = keepSource(to, src, { from: f.research ? tr`Veille` : tr`Dehors`, text: f.research ? f.research.name || f.research.q : f.title, date: todayISO() }); dehorsHideItem(f, x); site.save(); render(); toast(tr`Gardée dans ${label(to)} : « ${excerpt(e, 50)} ».`);
+  const d = f.research ? f.research.name || f.research.q : f.title, projet = f.mod && f.mod !== to && Object.hasOwn(S().modules, f.mod) ? label(f.mod) : "";
+  const e = keepSource(to, src, { from: f.research ? tr`Veille` : tr`Dehors`, text: projet ? tr`${d} (projet : ${projet})` : d, date: todayISO() }); dehorsHideItem(f, x); site.save(); render(); toast(tr`Gardée dans ${label(to)} : « ${excerpt(e, 50)} ».`);
 };
 CLICK["dehors-del"] = async el => {
   const { f } = dehorsHit(el); if (!f || !await ask(tr`Ne plus suivre « ${f.title} » ?`)) return;

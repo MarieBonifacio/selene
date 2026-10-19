@@ -350,21 +350,22 @@ Identifiants retirés : aucun.
 ### EXT-013 — Dehors : suivre, lire, garder, marquer comme vu
 
 - **Fonctionnalité et règle** : les flux suivis, rangés par projet ; seulement le nouveau depuis la dernière visite, douze au
-  plus, d'abord ce qui croise ce que la personne garde, avec la raison en toutes lettres ; « garder » en fait une source, « vers
-  une note », « vu » ; « Tout marquer comme vu » ; sur l'accueil, une ligne de texte s'il y a du nouveau, jamais de pastille ;
+  plus, d'abord ce qui croise ce que la personne garde, avec la raison en toutes lettres ; « garder » en fait une source,
+  dans le projet du flux s'il est un espace Sources, sinon dans le premier (le bouton nomme l'espace dès qu'il y en a
+  deux, et la provenance nomme le projet quand la source n'y va pas) ; « vers une note », « vu » ; « Tout marquer comme vu » ; sur l'accueil, une ligne de texte s'il y a du nouveau, jamais de pastille ;
   relecture au plus toutes les trois heures.
 - **Objectif, risque vérifié** : fil infini, notifications intrusives, élément revenu après « vu ».
 - **Priorité** : P2 · **Plateformes** : Web, Mob
 - **Préconditions** : connectée, passeur ouvert au compte.
 - **Données** : adresse de site `https://www.inrae.fr` (ou toute revue qui annonce un flux) ; projet `Écriture`.
-- **Automatisés associés** : `TN-dehors`, `TN-dehors-croise`, `TU-DEH-01`, `TU-DEH-02`, `TU-DEH-03`
+- **Automatisés associés** : `TN-dehors`, `TN-dehors-croise`, `TU-DEH-01`, `TU-DEH-02`, `TU-DEH-03`, `TU-MOD-83`
 - **Source** : [DOC] README, « Dehors » ; [DOC] [connexions.md](../../connexions.md), 6b et 7c ; [TEST] `tests/browser/dehors.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
 | 1 | Navigation → « Nouveautés · Dehors » (sur téléphone : « Espaces » dans la barre basse, puis « Nouveautés » sous « Système », A70). | « Aucun flux suivi… » et le champ « L'adresse d'un site ou d'un flux… ». |
 | 2 | Coller l'adresse, choisir le projet, « Suivre ». | « Suivi : … » ; les éléments de la semaine écoulée, douze au plus, du plus récent au plus ancien (ou par raison de croisement), rangés sous le projet ; « Et N autres, qui attendront. » s'il y en a plus. |
-| 3 | « garder » sur un élément. | Il devient une source (provenance « Dehors ») et quitte Dehors. |
+| 3 | « garder » sur un élément. | Il devient une source (provenance « Dehors », « Revue … (projet : Écriture) » : le projet n'étant pas un espace Sources, elle va dans le premier) et quitte Dehors. Avec un second espace Sources choisi comme projet d'un flux, ses éléments disent « garder dans … » et y vont. |
 | 4 | « vu » sur un autre. | Il disparaît. |
 | 5 | Accueil. | Une ligne « Dehors : N nouveautés » s'il en reste ; aucune pastille numérique dans la navigation. |
 | 6 | « Tout marquer comme vu ». | « Tout est vu. Dehors se tait jusqu'à la prochaine parution. » ; l'accueil se tait. |

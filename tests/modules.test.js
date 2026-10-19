@@ -1700,3 +1700,25 @@ test('un carnet vide dit qu’une note ne se corrige pas, et où écrire un text
   assert.match(app.TYPE_UI.notes.view(carnet[0]), /Une note ne se corrige pas : elle se garde ou s’efface\. Pour un texte qui change, les fragments d’un espace d’écriture gardent leurs versions\./);
   assert.match(app.TYPE_UI.notes.view(boite[0]), /Le silence d'une clairière/, 'la boîte vide garde sa phrase');
 });
+
+test('Dehors → Sources : « garder » va dans le projet du flux s’il est un espace Sources, sinon dans le premier, et la provenance garde le projet (TU-MOD-83)', () => {
+  const item = (id, title) => ({ id, title, link: `https://revue.example/${id}`, date: '2026-10-18T08:00:00Z', text: '' });
+  const storage = new Map([['selene-dehors', JSON.stringify({ at: Date.now(), hidden: [], feeds: { f1: { items: [item('a', 'Les phalènes')] }, f2: { items: [item('b', 'Le seuil'), item('c', 'La lisière')] } } })]]);
+  const app = launch(storage, { claude: { use: async () => null } });
+  const d = app.S(), cfg = { ...JSON.parse(JSON.stringify(d.modules.musique.config)), music: false, display: 'liste', sources: true, statuses: ['À lire', 'Lue'], doneFrom: 1, fields: { title: 'Titre', subtitle: 'Auteurs', tag: 'Type', due: '', text: 'Résumé' } };
+  for (const [id, nom] of [['sources', 'Sources'], ['these', 'Sources de la thèse']]) { d.modules[id] = { type: 'collection', label: nom, config: JSON.parse(JSON.stringify(cfg)), entries: [] }; d.config.modules.push({ id, on: true }); }
+  d.config.dehors = { feeds: [{ id: 'f1', title: 'Revue des lisières', url: 'https://revue.example/feed.xml', mod: 'these', seen: 0 }, { id: 'f2', title: 'Revue du seuil', url: 'https://seuil.example/feed.xml', mod: 'ecriture', seen: 0 }] };
+  const el = (feed, it) => ({ dataset: {}, closest: () => ({ dataset: { feed, item: it } }) });
+  // La vue Dehors n'existe qu'en hébergé (le passeur) : le libellé du bouton se lit ici par sa fonction ; le parcours entier
+  // est celui de tests/browser/dehors.js.
+  assert.equal(app.keepLabel(d.config.dehors.feeds[0]), 'garder dans Sources de la thèse', 'deux espaces Sources : le bouton dit où il garde');
+  app.CLICK['dehors-keep'](el('f1', 'a'));
+  assert.equal(d.modules.these.entries.length, 1, 'le projet du flux est un espace Sources : la source y va');
+  assert.equal(d.modules.sources.entries.length, 0);
+  app.CLICK['dehors-keep'](el('f2', 'b'));
+  const s = d.modules.sources.entries[0];
+  assert.ok(s && s.title === 'Le seuil', 'un projet qui n’est pas un espace Sources : le premier espace Sources');
+  assert.match(s.origin.text, /Revue du seuil \(projet : Écriture\)/, 'et la provenance garde le projet');
+  d.config.modules.find(m => m.id === 'these').on = false;
+  assert.equal(app.keepLabel(d.config.dehors.feeds[0]), 'garder', 'un seul espace Sources ouvert : « garder », sans plus');
+});

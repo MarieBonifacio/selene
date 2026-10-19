@@ -27,7 +27,8 @@ import { openForm } from "../ui/dialogs.js";
    est dans sources.js ; la validation de `src`, dans domain.js. */
 const srcPreview = {};
  // aperçu en cours, par module (propre à l'appareil, oublié au rechargement)
-export const sourcesModule = () => S().config.modules.map(m => m.id).find(k => enabled(k) && Object.hasOwn(S().modules, k) && S().modules[k].type === "collection" && S().modules[k].config.sources) || null;
+export const sourcesModules = () => S().config.modules.map(m => m.id).filter(k => enabled(k) && Object.hasOwn(S().modules, k) && S().modules[k].type === "collection" && S().modules[k].config.sources);
+export const sourcesModule = () => sourcesModules()[0] || null;
 export function pubDate(d) {
   if (!d) return "";
   if (d.length === 10) return fmt(d, { day: "numeric", month: "short", year: "numeric" });

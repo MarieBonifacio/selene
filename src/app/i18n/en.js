@@ -246,6 +246,8 @@ export default {
   "aussi dans {0}": "also in {0}",
 
   // features/dehors.js
+  "garder dans {0}": "keep in {0}",
+  "{0} (projet : {1})": "{0} (project: {1})",
   "Sorties de tes artistes": "New releases from your artists",
   "Veille : {0}": "Watch: {0}",
   "auteur de tes sources : {1}": { one: "author of your sources: {1}", other: "authors of your sources: {1}" },

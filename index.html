@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-zWaKHdLIEUPxVBYsr2IsecZI8Ub5b9qjMpF4lO1UOYw=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-JFWfub3BYP+IDChkOMqIj0f/7ZnJTrgGSYqMLY/W53M=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -769,7 +769,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "12e11d7c23";
+const SELENE_BUILD = "8aa51b75f9";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1434,7 +1434,9 @@ var __selene = (() => {
     iso: () => iso,
     itemGroups: () => itemGroups,
     keepHere: () => keepHere,
+    keepLabel: () => keepLabel,
     keepSource: () => keepSource,
+    keepTarget: () => keepTarget,
     keepTrackersHere: () => keepTrackersHere,
     keptText: () => keptText,
     label: () => label,
@@ -1655,6 +1657,7 @@ var __selene = (() => {
     sourcesCsl: () => sourcesCsl,
     sourcesCslJson: () => sourcesCslJson,
     sourcesModule: () => sourcesModule,
+    sourcesModules: () => sourcesModules,
     splitAuthors: () => splitAuthors,
     splitLocal: () => splitLocal,
     srcMeta: () => srcMeta,
@@ -1965,6 +1968,8 @@ var __selene = (() => {
     "motif : {0}": "motif: {0}",
     "aussi dans {0}": "also in {0}",
     // features/dehors.js
+    "garder dans {0}": "keep in {0}",
+    "{0} (projet : {1})": "{0} (project: {1})",
     "Sorties de tes artistes": "New releases from your artists",
     "Veille : {0}": "Watch: {0}",
     "auteur de tes sources : {1}": { one: "author of your sources: {1}", other: "authors of your sources: {1}" },
@@ -8334,7 +8339,8 @@ ${body}` : title, cut = false;
 
   // src/app/features/sources.js
   var srcPreview = {};
-  var sourcesModule = () => S().config.modules.map((m) => m.id).find((k) => enabled(k) && Object.hasOwn(S().modules, k) && S().modules[k].type === "collection" && S().modules[k].config.sources) || null;
+  var sourcesModules = () => S().config.modules.map((m) => m.id).filter((k) => enabled(k) && Object.hasOwn(S().modules, k) && S().modules[k].type === "collection" && S().modules[k].config.sources);
+  var sourcesModule = () => sourcesModules()[0] || null;
   function pubDate(d) {
     if (!d) return "";
     if (d.length === 10) return fmt(d, { day: "numeric", month: "short", year: "numeric" });
@@ -13745,7 +13751,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       <div class="meta"><span>${esc(f.title)}</span><span>${esc(dehorsWhen(t))}</span></div>
       ${why.length ? `<p class="why">${tr`parce que : ${why.map(esc).join(" · ")}`}</p>` : ""}
       ${x.text ? `<p class="hint" style="margin:4px 0 0">${esc(x.text)}</p>` : ""}</div>
-    <div class="row">${x.mb ? Object.hasOwn(S().modules, x.mb.mod) && S().modules[x.mb.mod].entries.some((e) => e.mb && e.mb.rg === x.mb.rg) ? `<span class="hint">${tr`déjà dans ${esc(label(x.mb.mod))}`}</span>` : Object.hasOwn(S().modules, x.mb.mod) ? `<button class="btn sm" data-act="dehors-mb-add">${tr`ajouter à ${esc(label(x.mb.mod))}`}</button>` : "" : sourcesModule() && x.link ? findSourceDup({ url: x.link, doi: x.oa && x.oa.doi || findDoi(x.link) }) ? `<span class="hint">${tr`déjà gardée`}</span>` : `<button class="btn sm" data-act="dehors-keep">${tr`garder`}</button>` : ""}${inboxId(S().modules) ? `<button class="btn ghost sm" data-act="dehors-note">${tr`vers une note`}</button>` : ""}<button class="btn ghost sm" data-act="dehors-hide" aria-label="${tr`Écarter`}">${tr`vu`}</button></div></li>`;
+    <div class="row">${x.mb ? Object.hasOwn(S().modules, x.mb.mod) && S().modules[x.mb.mod].entries.some((e) => e.mb && e.mb.rg === x.mb.rg) ? `<span class="hint">${tr`déjà dans ${esc(label(x.mb.mod))}`}</span>` : Object.hasOwn(S().modules, x.mb.mod) ? `<button class="btn sm" data-act="dehors-mb-add">${tr`ajouter à ${esc(label(x.mb.mod))}`}</button>` : "" : keepTarget(f) && x.link ? findSourceDup({ url: x.link, doi: x.oa && x.oa.doi || findDoi(x.link) }) ? `<span class="hint">${tr`déjà gardée`}</span>` : `<button class="btn sm" data-act="dehors-keep">${keepLabel(f)}</button>` : ""}${inboxId(S().modules) ? `<button class="btn ghost sm" data-act="dehors-note">${tr`vers une note`}</button>` : ""}<button class="btn ghost sm" data-act="dehors-hide" aria-label="${tr`Écarter`}">${tr`vu`}</button></div></li>`;
     const list = !dehorsAll().length ? `<p class="empty">${ferme ? tr`Rien de suivi pour l'instant. La veille de recherche, plus bas, t'apporte chaque semaine ce qui vient de paraître.` : tr`Aucun flux suivi. Colle ci-dessous l'adresse d'un site, d'une revue, d'une chaîne : Selene trouve son flux.`}</p>` : !items.length ? `<p class="empty">${dehorsBusy ? tr`Lecture des flux…` : tr`Rien de neuf. Le monde a pu se passer de toi, et toi de lui.`}</p>` : [...byMod].map(([k, its]) => `<h3>${esc(k ? label(k) : tr`Sans projet`)}</h3><ul class="plain dehors">${its.map(itemHTML).join("")}</ul>`).join("") + `<div class="row" style="margin-top:12px">${total > items.length ? `<span class="hint" style="margin:0">${trn(total - items.length, "Et {0} autre, qui attendra.", "Et {0} autres, qui attendront.")}</span>` : ""}<span class="spacer"></span><button class="btn sm" data-act="dehors-seen">${tr`Tout marquer comme vu`}</button></div>`;
     const opts = (sel) => `<option value="">${tr`Sans projet`}</option>${mods.map((m) => `<option value="${esc(m)}" ${sel === m ? "selected" : ""}>${esc(label(m))}</option>`).join("")}`;
     const state = (f) => {
@@ -13781,6 +13787,8 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
         <div class="row"><select data-act="dehors-mod" aria-label="${tr`Projet de ce flux`}">${opts(f.mod)}</select><button class="btn ghost sm" data-act="dehors-del">${tr`retirer`}</button></div></li>`).join("")}</ul>
     </details>` : ""}</div>`;
   };
+  var keepTarget = (f) => f.mod && sourcesModules().includes(f.mod) ? f.mod : sourcesModule();
+  var keepLabel = (f) => sourcesModules().length > 1 ? tr`garder dans ${esc(label(keepTarget(f)))}` : tr`garder`;
   var dehorsHit = (el) => {
     const li = el.closest("[data-feed]"), f = dehorsAll().find((x) => x.id === li.dataset.feed);
     const fc = f && dehorsCache().feeds[f.id];
@@ -13832,7 +13840,7 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
     toast(tr`Dans ${label(box)}.`);
   };
   CLICK["dehors-keep"] = (el) => {
-    const { f, x } = dehorsHit(el), to = sourcesModule();
+    const { f, x } = dehorsHit(el), to = f && keepTarget(f);
     if (!x || !to) return;
     const src = x.oa ? { title: x.title, url: x.link, doi: x.oa.doi || null, site: x.oa.site, date: x.oa.day, kind: x.oa.kind === "article" ? "article" : x.oa.kind || "article", authors: x.oa.authors, abstract: x.text } : { title: x.title, url: normalizeUrl(x.link), doi: findDoi(x.link), site: f.title, date: x.date.slice(0, 10), kind: "page", abstract: x.text };
     const dup = findSourceDup(src);
@@ -13841,7 +13849,8 @@ ${nm}${c.title ? ` « ${c.title} »` : ""} : ${totalOf(inst)} ${c.unitLabel} sur
       render();
       return toast(tr`Déjà gardée dans ${label(dup.mod)}.`);
     }
-    const e = keepSource(to, src, { from: f.research ? tr`Veille` : tr`Dehors`, text: f.research ? f.research.name || f.research.q : f.title, date: todayISO() });
+    const d = f.research ? f.research.name || f.research.q : f.title, projet = f.mod && f.mod !== to && Object.hasOwn(S().modules, f.mod) ? label(f.mod) : "";
+    const e = keepSource(to, src, { from: f.research ? tr`Veille` : tr`Dehors`, text: projet ? tr`${d} (projet : ${projet})` : d, date: todayISO() });
     dehorsHideItem(f, x);
     site.save();
     render();
