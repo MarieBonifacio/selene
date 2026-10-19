@@ -93,7 +93,7 @@ test('politique de confidentialité : ce que demande l’article 13 du RGPD, dan
     assert.match(x, /Marie Bonifacio/, 'la responsable du traitement, nommée');
     assert.match(x, /href="mailto:mariebonifacio\.pro@gmail\.com"/, 'une adresse de contact privée');
     assert.doesNotMatch(x, /\/issues/, 'jamais une demande sur ses données par ticket public');
-    for (const base of [/6[.(]1[.)]?\(?a/, /6[.(]1[.)]?\(?b/, /9[.(]2[.)]?\(?a/, /6[.(]1[.)]?\(?f/]) assert.match(x, base, `base légale ${base}`);
+    for (const base of [/6[.(]1[.)]?\(?a/, /6[.(]1[.)]?\(?b/, /6[.(]1[.)]?\(?c/, /9[.(]2[.)]?\(?a/, /6[.(]1[.)]?\(?f/]) assert.match(x, base, `base légale ${base}`);
     assert.match(x, /Paris/, 'où sont les données du compte');
     assert.match(x, /href="https:\/\/www\.cnil\.fr\/fr\/plaintes"/, 'le droit de réclamation auprès de la CNIL');
   }
