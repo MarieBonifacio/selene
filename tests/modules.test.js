@@ -1751,3 +1751,17 @@ test('annuler le dernier import Markdown : le lot part, le reste demeure ; « An
   const site = JSON.parse(JSON.stringify(d)); site.modules.carnet.entries[0].imp = 5;
   assert.throws(() => app.parseBackup(app.createBackup(app.board.data, site)), /import/);
 });
+
+test('Calendrier : l’exemple de préfixe prend le nom d’un espace de la personne, pas un espace inventé (TU-MOD-85)', () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), hint = () => app.agendaSettingsHTML().replace(/\s+/g, ' ');
+  const first = d.config.modules.find(m => m.on && d.modules[m.id]);
+  assert.ok(hint().includes(`Un titre « ${d.modules[first.id].label} : rendez-vous » se range sous ${d.modules[first.id].label}.`), 'le premier espace de la navigation');
+  d.modules.lisiere = { type: 'notes', label: 'La lisière', config: { inbox: false }, entries: [] }; d.config.modules.unshift({ id: 'lisiere', on: true });
+  assert.ok(hint().includes('Un titre « La lisière : rendez-vous » se range sous La lisière.'), 'il suit l’ordre de la navigation');
+  d.modules.lisiere.label = 'R&D <b>';
+  assert.ok(hint().includes('« R&amp;D &lt;b&gt; : rendez-vous »'), 'le nom choisi par la personne est échappé');
+  for (const m of d.config.modules) m.on = false;
+  assert.ok(hint().includes('Un titre « Nom d&#39;un espace : rendez-vous » se range sous Nom d&#39;un espace.'), 'sans espace ouvert : un nom générique');
+  assert.ok(!hint().includes('plombier'), 'plus de « Chantier : plombier » pour qui n’a pas de chantier');
+});

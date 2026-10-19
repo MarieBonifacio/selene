@@ -236,14 +236,16 @@ Identifiants retirés : aucun.
 ### EXT-009 — Étoiles filantes, éclipses, pluie sur les tâches
 
 - **Fonctionnalité et règle** : une ligne sous le ciel la veille et le soir d'une grande pluie d'étoiles filantes (partout), ou
-  dans la semaine d'une éclipse visible depuis Lille et ses environs (table fixe jusqu'en 2030, sans réseau) ; une tâche à
+  dans la semaine d'une éclipse : de Lune, calculée pour le lieu réglé (visible si la Lune y est levée, avec la phase
+  qu'on y voit) ; de Soleil, seulement dans le Nord de la France et en Belgique (table régionale jusqu'en 2030, que
+  Réglages → Ciel nomme ailleurs) ; tout sans réseau ; une tâche à
   ciel ouvert (« balcon », « jardin »… dans le titre ou le lieu) montre la pluie prévue sur cinq jours.
 - **Objectif, risque vérifié** : annonce fausse ou hors zone ; appel météo supplémentaire.
 - **Priorité** : P3 · **Plateformes** : Web, Mob
 - **Préconditions** : EXT-007 étape 2 ; jeu d'essai (« Repeindre la rambarde du balcon », « Nettoyer les gouttières du
   jardin », « Poser une étagère » au Salon).
 - **Données** : pour les étoiles filantes, régler la date de l'appareil au 13 décembre (veille du maximum des Géminides, le 14).
-- **Automatisés associés** : `TN-ciel-chantier`, `TU-SKY-13`, `TU-SKY-14`, `TU-SKY-15`
+- **Automatisés associés** : `TN-ciel-chantier`, `TU-SKY-13`, `TU-SKY-14`, `TU-SKY-15`, `TU-SKY-16`
 - **Source** : [DOC] README, « Ciel et chantier » ; [DOC] [connexions.md](../../connexions.md), 5c ; [TEST] `tests/browser/ciel-chantier.js`.
 
 | Étape | Action précise | Résultat attendu observable |
@@ -251,7 +253,7 @@ Identifiants retirés : aucun.
 | 1 | Ouvrir Chantier. | Sous « Repeindre la rambarde du balcon » et « Nettoyer les gouttières du jardin » : « pluie prévue … » ou « sec jusqu'à … » ; rien sous « Poser une étagère » ; une seule requête Open-Meteo pour le ciel et ces prévisions. |
 | 2 | « régler » Chantier : la ligne « Tâches à ciel ouvert (mots…) » propose des mots par défaut ; y ajouter `salon`. | « Poser une étagère » montre aussi la prévision. |
 | 3 | Date de l'appareil au 13 décembre, accueil (C10). | Une ligne sur les Géminides (taux théorique et réserve sur la lune et la ville). |
-| 4 | Lieu réglé à `Marseille`, date de l'appareil sept jours avant une éclipse de la table (par exemple le 5 août 2026). | Aucune ligne d'éclipse depuis Marseille (la table ne vaut que pour Lille et ses environs). |
+| 4 | Lieu réglé à `Marseille` : Réglages → Ciel ; puis date de l'appareil au 11 août 2026, accueil ; puis au 28 décembre 2028. | Sous le lieu : « Éclipses : de Lune, calculées pour ce lieu. Celles de Soleil ne sont annoncées que dans le Nord de la France et en Belgique (une table régionale) : ici, rien ne les signale. » ; le 11 août, les Perséides, pas d'éclipse de Soleil ; le 28 décembre : « Éclipse totale de Lune dans 3 jours (31 décembre). » |
 
 - **État final attendu** : mots « à ciel ouvert » modifiés.
 - **Nettoyage** : retirer `salon` ; remettre la date automatique et le lieu Lille.
@@ -407,18 +409,19 @@ Identifiants retirés : aucun.
 
 - **Fonctionnalité et règle** : l'adresse iCal secrète d'un calendrier « Selene », gardée dans ce navigateur seulement (jamais
   synchronisée, jamais réaffichée, effacée à la déconnexion) ; lue par le passeur au plus une fois par heure ; aujourd'hui et
-  demain s'affichent sous « Aujourd'hui » ; « Chantier : plombier » se range sous Chantier.
+  demain s'affichent sous « Aujourd'hui » ; « Chantier : plombier » se range sous Chantier ; l'explication donne en exemple
+  le premier espace de la navigation.
 - **Objectif, risque vérifié** : adresse secrète synchronisée ou affichée ; événement passé encore montré.
 - **Priorité** : P3 · **Plateformes** : Web, Mob
 - **Préconditions** : connectée, passeur ouvert ; un calendrier Google ou Apple de recette avec, aujourd'hui dans plus d'une
   heure, l'événement `Chantier : plombier`, et demain un événement d'une journée entière `Marché`.
 - **Données** : l'adresse iCal secrète du calendrier (Google : « Adresse secrète au format iCal » ; Apple : lien `webcal://`).
-- **Automatisés associés** : `TN-agenda`, `TU-AGD-01`, `TU-AGD-02`
+- **Automatisés associés** : `TN-agenda`, `TU-AGD-01`, `TU-AGD-02`, `TU-MOD-85`
 - **Source** : [DOC] README, « Calendrier dédié » ; [DOC] [connexions.md](../../connexions.md), 6e ; [TEST] `tests/browser/agenda.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Réglages → Connexions → Calendrier : coller l'adresse. | « Adresse gardée dans ce navigateur. Lecture… » puis « Lu … : N événements à venir ou récurrents. » ; l'adresse n'est plus affichée dans le champ. |
+| 1 | Réglages → Connexions → Calendrier : lire l'explication, puis coller l'adresse. | « Un titre « Chantier : rendez-vous » se range sous Chantier. » (Chantier, premier espace du jeu d'essai) ; puis « Adresse gardée dans ce navigateur. Lecture… » puis « Lu … : N événements à venir ou récurrents. » ; l'adresse n'est plus affichée dans le champ. |
 | 2 | Accueil. | Sous « Aujourd'hui » : « plombier » à son heure, rangé sous Chantier ; « Demain » : « Marché », journée entière. |
 | 3 | Exporter une sauvegarde, y chercher l'adresse. | Absente. |
 | 4 | « oublier ». | « Calendrier oublié sur cet appareil. » ; l'accueil ne montre plus le calendrier. |

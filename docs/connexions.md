@@ -43,9 +43,12 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
 - [x] Étoiles filantes : les six grandes pluies (calendrier de l'IMO), une ligne sous le ciel la veille et le soir du
       maximum, avec leur taux théorique (ZHR) et la réserve qui s'impose : bien moins en ville, et la lune en efface
       la plupart quand elle est éclairée à plus de 60 %.
-- [x] Éclipses visibles depuis Lille jusqu'en 2030, en table fixe (aucun réseau), annoncées une semaine avant ;
-      seulement si le lieu réglé est dans le Nord de la France ou en Belgique, là où la table vaut. « Jamais sans
-      lunettes d'éclipse » pour le Soleil. Une ligne d'événement renforce le voile de lecture (elle descend sur les arbres).
+- [x] Éclipses annoncées une semaine avant, sans réseau. De Lune : calculées pour le lieu réglé, partout (Meeus,
+      « Astronomical Algorithms », chap. 54, recoupé avec les tables de la NASA), visibles si la Lune y est levée, avec
+      la phase qu'on y voit (une éclipse partielle dont la Lune ne se lève qu'après l'ombre n'y est que « par la
+      pénombre »). De Soleil : leur visibilité tient à quelques kilomètres près ; Selene n'en a qu'une table régionale
+      (Nord de la France et Belgique, jusqu'en 2030), et Réglages → Ciel dit, ailleurs, qu'elles n'y sont pas annoncées.
+      « Jamais sans lunettes d'éclipse » pour le Soleil. Une ligne d'événement renforce le voile de lecture (elle descend sur les arbres).
 - [x] Pluie sur une tâche à ciel ouvert : des mots réglables par module (« extérieur, balcon, jardin… », cherchés dans
       le titre et le lieu) ; la pluie des cinq prochains jours (1 mm ou 60 % au moins), « le jour prévu » si l'échéance
       tombe dessus, sinon « sec jusqu'à ». Aucun appel de plus : la prévision quotidienne vient avec la météo du ciel.

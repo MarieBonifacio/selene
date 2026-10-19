@@ -1,6 +1,6 @@
 /* La Fenêtre : le lieu choisi, la météo (Open-Meteo), la scène du moment (soleil, lune, temps) et ses réglages. */
 import { platform } from "../../platform.js";
-import { WEATHER, approxPlace, moonPlacement, moonPosition, nextCrossing, seasonAt, skyEvents, skyMotion, skyScene, sunPosition, weatherState } from "../../core/sky.js";
+import { WEATHER, approxPlace, moonPlacement, moonPosition, nextCrossing, seasonAt, skyEvents, skyMotion, skyScene, solarTableCovers, sunPosition, weatherState } from "../../core/sky.js";
 import { CLICK } from "../registry.js";
 import { $, esc, toast } from "../lib/dom.js";
 import { fmt, todayISO } from "../lib/format.js";
@@ -98,7 +98,8 @@ let skyResults = [];
 export function skySettingsHTML() {
   const c = skyConf(), f = v => (+v).toLocaleString(uiLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   return `<section id="ciel"><h4>${tr`Ciel`}</h4><p class="hint">${tr`La scène de l'accueil montre le dehors réel : l'heure par le soleil, la lune à sa place, le temps qu'il fait. Sans lieu, l'heure est estimée d'après le fuseau horaire (à trois quarts d'heure près), et il n'y a pas de météo.`}</p>
-    ${c ? `<p class="row" style="margin:0 0 10px">${tr`Lieu : ${`<b>${esc(c.name)}</b>`}`} <span class="hint" style="margin:0">${tr`(${f(c.lat)} ; ${f(c.lon)}, arrondis à une dizaine de kilomètres)`}</span><button class="btn ghost sm" data-act="sky-clear">${tr`retirer`}</button></p>` : ""}
+    ${c ? `<p class="row" style="margin:0 0 10px">${tr`Lieu : ${`<b>${esc(c.name)}</b>`}`} <span class="hint" style="margin:0">${tr`(${f(c.lat)} ; ${f(c.lon)}, arrondis à une dizaine de kilomètres)`}</span><button class="btn ghost sm" data-act="sky-clear">${tr`retirer`}</button></p>
+    <p class="hint" style="margin:-4px 0 10px">${solarTableCovers(+c.lat, +c.lon) ? tr`Éclipses : de Lune, calculées pour ce lieu ; de Soleil, d'après une table régionale (Nord de la France et Belgique, jusqu'en 2030).` : tr`Éclipses : de Lune, calculées pour ce lieu. Celles de Soleil ne sont annoncées que dans le Nord de la France et en Belgique (une table régionale) : ici, rien ne les signale.`}</p>` : ""}
     <div class="row"><input id="skyCity" placeholder="${c ? tr`Changer de ville…` : tr`Une ville…`}" aria-label="${tr`Ville`}" autocomplete="off" style="max-width:260px"><button class="btn sm" data-act="sky-search">${tr`Chercher`}</button><button class="btn ghost sm" data-act="sky-locate">${tr`Utiliser ma position`}</button></div>
     ${skyResults.length ? `<ul class="plain" style="margin-top:8px">${skyResults.map((r, i) => `<li class="item"><span></span><div>${esc(r.name)}</div><button class="btn sm" data-act="sky-pick" data-i="${i}">${tr`Choisir`}</button></li>`).join("")}</ul>` : ""}
     ${c ? `<label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:400"><input type="checkbox" data-act="sky-weather" ${c.weather !== false ? "checked" : ""}>${tr`Météo en direct`}</label>

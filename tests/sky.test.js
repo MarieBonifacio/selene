@@ -133,13 +133,43 @@ test('ciel des jours qui viennent : étoiles filantes la veille et le jour du ma
   assert.deepEqual([...S.skyEvents('2025-12-31', null).map(e => e.date)], [], 'le passage d’année ne décale rien');
 });
 
-test('éclipses : visibles depuis Lille, annoncées sept jours avant, jamais ailleurs', () => {
-  const lille = { lat: 50.6, lon: 3.1 }, marseille = { lat: 43.3, lon: 5.4 };
-  const e = S.skyEvents('2028-12-24', lille);
-  assert.equal(e.length, 1); assert.equal(e[0].body, 'lune'); assert.equal(e[0].type, 'totale'); assert.equal(e[0].inDays, 7);
-  assert.equal(S.skyEvents('2028-12-23', lille).length, 0, 'huit jours avant : pas encore');
-  assert.equal(S.skyEvents('2028-12-31', marseille).length, 0, 'la table ne vaut que pour le Nord');
-  assert.ok(S.skyEvents('2026-08-12', lille).some(x => x.body === 'soleil' && x.note.includes('90 %')));
+test('éclipses de Lune calculées : recoupées avec les tables de la NASA', () => {
+  // Magnitude de l'ombre, durées de la phase partielle et de la totalité (NASA, « Lunar Eclipses: 2021 - 2030 »,
+  // eclipse.gsfc.nasa.gov) ; instants du maximum, en temps universel, pour trois éclipses récentes.
+  const nasa = [['2021-05-26', 1.009, 187, 15], ['2021-11-19', 0.974, 208, 0], ['2022-05-16', 1.414, 207, 85], ['2022-11-08', 1.359, 220, 85],
+    ['2023-05-05', -0.046, 0, 0], ['2023-10-28', 0.122, 77, 0], ['2024-03-25', -0.132, 0, 0], ['2028-12-31', 1.246, 209, 71]];
+  const all = []; for (let y = 2021; y <= 2030; y++) all.push(...S.lunarEclipses(y));
+  for (const [date, umbral, partial, total] of nasa) {
+    const e = all.find(x => new Date(x.t).toISOString().startsWith(date));
+    assert.ok(e, date);
+    assert.ok(Math.abs(e.umbral - umbral) < 0.02, `${date} : magnitude ${e.umbral.toFixed(3)} pour ${umbral}`);
+    assert.ok(Math.abs(S.phaseMinutes(e, 1) - partial) < 5 && Math.abs(S.phaseMinutes(e, 2) - total) < 5, `${date} : durées`);
+  }
+  for (const iso of ['2025-03-14T06:58:43Z', '2025-09-07T18:11:48Z', '2026-03-03T11:33:42Z'])
+    assert.ok(all.some(e => Math.abs(e.t - Date.parse(iso)) < 5 * 60000), `maximum à cinq minutes près : ${iso}`);
+  assert.deepEqual([...S.lunarEclipses(2028).map(e => e.type)], ['partielle', 'partielle', 'totale']);
+});
+
+test('éclipses : celles de Lune pour tout lieu où elle est levée, celles de Soleil dans la table régionale, sept jours avant', () => {
+  const prev = process.env.TZ; process.env.TZ = 'Europe/Paris';
+  try {
+    const lille = { lat: 50.6, lon: 3.1 }, marseille = { lat: 43.3, lon: 5.4 }, losAngeles = { lat: 34.1, lon: -118.2 };
+    const e = S.skyEvents('2028-12-24', lille);
+    assert.equal(e.length, 1); assert.equal(e[0].body, 'lune'); assert.equal(e[0].type, 'totale'); assert.equal(e[0].inDays, 7);
+    assert.equal(S.skyEvents('2028-12-23', lille).length, 0, 'huit jours avant : pas encore');
+    assert.ok(S.skyEvents('2026-08-12', lille).some(x => x.body === 'soleil' && x.note.includes('90 %')));
+    // Depuis Lille, le calcul retrouve la table d'éclipses de Lune recoupée à la main (icalendrier.fr, lunettes-eclipse.fr) :
+    // la phase qu'on y voit Lune levée, pas celle de l'éclipse (2028-07-06 est partielle, Lille n'en voit que la pénombre).
+    const seen = []; for (let y = 2026; y <= 2030; y++) for (const x of S.lunarEclipses(y)) { const t = S.lunarEclipseFrom(x, lille.lat, lille.lon); if (t) seen.push(`${new Date(x.t).toISOString().slice(0, 10)} ${t}`); }
+    assert.deepEqual(seen, ['2026-08-28 partielle', '2027-02-20 pénombre', '2028-01-12 partielle', '2028-07-06 pénombre', '2028-12-31 totale',
+      '2029-06-26 totale', '2029-12-20 totale', '2030-06-15 pénombre', '2030-12-09 pénombre']);
+    const mars = S.skyEvents('2028-12-31', marseille);
+    assert.ok(mars.some(x => x.body === 'lune' && x.type === 'totale'), 'ailleurs, la Lune aussi : Marseille');
+    assert.ok(!S.skyEvents('2026-08-12', marseille).some(x => x.body === 'soleil'), 'le Soleil, hors de la table régionale, n’est pas annoncé');
+    assert.ok(S.skyEvents('2026-03-03', losAngeles).some(x => x.body === 'lune' && x.type === 'totale'), 'la totale du 3 mars 2026 se voit d’Amérique');
+    assert.ok(!S.skyEvents('2026-03-03', lille).some(x => x.kind === 'eclipse'), '… pas de Lille, où la Lune est couchée');
+    assert.equal(S.solarTableCovers(50.6, 3.1), true); assert.equal(S.solarTableCovers(43.3, 5.4), false);
+  } finally { if (prev === undefined) delete process.env.TZ; else process.env.TZ = prev; }
 });
 
 test('pluie : 1 mm ou 60 % de probabilité, dans les cinq jours', () => {
