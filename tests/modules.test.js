@@ -1722,3 +1722,32 @@ test('Dehors → Sources : « garder » va dans le projet du flux s’il est un 
   d.config.modules.find(m => m.id === 'these').on = false;
   assert.equal(app.keepLabel(d.config.dehors.feeds[0]), 'garder', 'un seul espace Sources ouvert : « garder », sans plus');
 });
+
+test('annuler le dernier import Markdown : le lot part, le reste demeure ; « Annuler » le rend ; le lot d’avant suit (TU-MOD-84)', async () => {
+  const app = launch(new Map(), { claude: { use: async () => null } });
+  const d = app.S(), tick = () => new Promise(r => setTimeout(r, 0));
+  d.modules.carnet = { type: 'notes', label: 'Carnet', config: { inbox: false }, entries: [{ id: 'n0', text: 'Une note à moi', date: '2026-10-01' }] }; d.config.modules.push({ id: 'carnet', on: true });
+  const file = (name, text) => ({ name, text: async () => text });
+  const confirmer = async () => { for (let i = 0; i < 50 && !(app.nodes.get('#cdlg') || {}).onclose; i++) await tick(); const c = app.nodes.get('#cdlg'), f = c.onclose; c.onclose = null; c.returnValue = 'ok'; f(); for (let i = 0; i < 5; i++) await tick(); };
+  const textes = () => d.modules.carnet.entries.map(e => e.text.split('\n')[0]);
+  app.CHANGE['notes-md']({ dataset: { mod: 'carnet' }, files: [file('Le seuil.md', '# Le seuil\nLe paratexte comme lisière.'), file('La lisière.md', '# La lisière\nRenvoie au [[Le seuil]].')], value: '' });
+  await confirmer();
+  app.CHANGE['notes-md']({ dataset: { mod: 'carnet' }, files: [file('Idée.md', '# Idée\nUne idée de plus.')], value: '' });
+  await confirmer();
+  assert.equal(d.modules.carnet.entries.length, 4, 'deux imports : trois notes de plus');
+  assert.match(app.TYPE_UI.notes.settings('carnet', d.modules.carnet), /data-act="notes-md-undo"[^>]*>Annuler le dernier import \(1 note, le /, '« régler » propose d’annuler le dernier import, et dit lequel');
+  app.CLICK['notes-md-undo']({ dataset: { mod: 'carnet' } });
+  await confirmer();
+  assert.deepEqual([...textes()], ['Une note à moi', 'Le seuil', 'La lisière'], 'le dernier lot part, le reste demeure');
+  assert.match(app.nodes.get('#toast').innerHTML, /data-act="undo"/, 'et cela se défait');
+  app.CLICK.undo();
+  assert.deepEqual([...textes()], ['Une note à moi', 'Le seuil', 'La lisière', 'Idée'], '« Annuler » le rend, à sa place');
+  app.CLICK['notes-md-undo']({ dataset: { mod: 'carnet' } }); await confirmer();
+  assert.match(app.TYPE_UI.notes.settings('carnet', d.modules.carnet), /Annuler le dernier import \(2 notes, le /, 'ensuite, le lot d’avant');
+  app.CLICK['notes-md-undo']({ dataset: { mod: 'carnet' } }); await confirmer();
+  assert.deepEqual([...textes()], ['Une note à moi'], 'la note écrite à la main ne part jamais');
+  assert.doesNotMatch(app.TYPE_UI.notes.settings('carnet', d.modules.carnet), /notes-md-undo/, 'plus rien à annuler');
+  // Une étiquette de lot mal formée est refusée à l'import d'une sauvegarde.
+  const site = JSON.parse(JSON.stringify(d)); site.modules.carnet.entries[0].imp = 5;
+  assert.throws(() => app.parseBackup(app.createBackup(app.board.data, site)), /import/);
+});

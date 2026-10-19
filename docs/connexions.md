@@ -227,6 +227,7 @@ L'artefact claude.ai ne sort pas : ces fonctions n'existent que dans la version 
       ligne), il devient « fait écho à ». Une image intégrée (`![[schema.png]]`) et les commentaires (`%% … %%`,
       `<!-- … -->`) sont retirés.
 - [x] Une note dont le texte est déjà dans le module n'est pas recréée : un second import n'ajoute que ce qui manque.
+- [x] « Annuler le dernier import » (dans « régler ») retire le dernier lot entier, d'un geste, avec « Annuler » ; une note écrite à la main ne part jamais, et le lot d'avant devient le dernier. Chaque note importée porte l'étiquette de son lot (`imp`), qui suit la synchronisation et les sauvegardes.
       Au-delà de 20 000 caractères, une note est coupée (et la confirmation le dit) ; si l'espace devait dépasser
       3 Mo, elle prévient que le serveur n'en garde que 5.
 - [x] À l'écran, une note longue montre son début (400 caractères environ, jusqu'à une fin de paragraphe) et le reste

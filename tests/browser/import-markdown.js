@@ -1,6 +1,7 @@
 /* Scénario de navigateur : venir d'Obsidian ou de Zettlr, l'import de notes Markdown (idée 1 de l'audit,
    docs/connexions.md). Des fichiers, puis un dossier : confirmation, dates, statut, liens [[…]] devenus « fait écho
-   à », note longue repliée, doublons ignorés, rien sur le réseau. Lancé par tests/browser/run.js. */
+   à », note longue repliée, doublons ignorés, rien sur le réseau ; le dernier lot se retire, et revient. Lancé par
+   tests/browser/run.js. */
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
 const { engine, BASE, launchOptions, fixture, check } = require('./helpers');
 const md = (name, text) => ({ name, mimeType: 'text/markdown', buffer: Buffer.from(text, 'utf8') });
@@ -75,6 +76,23 @@ const C = md('Long.md', '---\ncreated: 2024-03-01\n---\n' + Array.from({ length:
   ok((await notes()).length === 5 && t3.includes('1 note importée dans Carnet.') && t3.includes('1 fichier illisible, ignoré.'), `le fichier lisible est importé, et le message le dit (${t3})`);
   await p.setInputFiles(input, [X]); await p.waitForTimeout(300);
   ok(!(await p.isVisible('#cdlg')) && (await p.textContent('#toast')).includes('Aucun de ces fichiers n\'a pu être lu') && (await notes()).length === 5, 'aucun lisible : un message, rien n\'est importé, aucune erreur muette');
+
+  console.log('annuler le dernier import');
+  // Le dernier lot est « Troisième » (une note) ; le retirer laisse le dossier d'avant, puis « Annuler » le rend.
+  if (!(await p.$eval('#mreg-carnet', d => d.open))) await p.click('#mreg-carnet summary');
+  const annuler = p.locator('#mreg-carnet [data-act="notes-md-undo"]');
+  ok(/^Annuler le dernier import \(1 note, le .+\)$/.test((await annuler.textContent()).trim()), `« régler » propose d’annuler le dernier import, et dit lequel (${(await annuler.textContent()).trim()})`);
+  await annuler.click(); await p.waitForSelector('#cdlg[open]');
+  const q4 = await p.textContent('#cmsg');
+  ok(q4.includes('Retirer la note importée le') && q4.includes('dans Carnet ? Les notes écrites à la main restent.'), `la question dit quoi, de quand, d’où (${q4})`);
+  await p.click('#cdlg button[value=ok]');
+  // Le retrait s'écrit dans l'événement « close » de la boîte : on attend l'état, pas un délai (A52, A74).
+  await p.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.carnet.entries.length === 4, null, { timeout: 10000 }).catch(() => {});
+  const t4 = await p.textContent('#toast');
+  ok(!(await notes()).some(e => e.text.startsWith('Troisième')) && (await notes()).length === 4 && t4.includes('1 note retirée de Carnet.') && !!(await p.$('#toast [data-act="undo"]')), `le lot part, les autres restent, et cela se défait (${t4})`);
+  await p.click('#toast [data-act="undo"]');
+  await p.waitForFunction(() => JSON.parse(localStorage.getItem('selene-site-v1')).modules.carnet.entries.length === 5, null, { timeout: 10000 }).catch(() => {});
+  ok((await notes()).length === 5 && (await notes())[4].text === 'Troisième\n\nUne note de plus, lisible.', '« Annuler » le rend, à sa place');
 
   check(!errs.length, 'aucune erreur JavaScript ni appel réseau' + (errs.length ? ' : ' + errs.join(' | ') : ''));
   await b.close();

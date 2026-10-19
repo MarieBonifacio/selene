@@ -97,6 +97,8 @@ function checkBackup(data) {
       for (const x of [...inst.entries, ...(inst.scraps || [])]) if (x.links != null && (!Array.isArray(x.links) || x.links.some(l => !record(l) ||
           typeof l.id !== "string" || !l.id || l.id.length > 64 || !Object.hasOwn(LINK_TYPES, l.type) || typeof l.to !== "string" || !LINK_REF.test(l.to) ||
           (l.date != null && !(typeof l.date === "string" && validDate(l.date)))))) fail("liaison");
+      // L'étiquette d'un lot importé (md:date:nonce) : « Annuler le dernier import » en lit la date.
+      for (const x of inst.entries) if (x.imp != null && (typeof x.imp !== "string" || !/^md:\d{4}-\d{2}-\d{2}:[a-z0-9]{1,16}$/.test(x.imp) || !validDate(x.imp.slice(3, 13)))) fail("lot d'import");
       if (inst.resume != null && (!record(inst.resume) || typeof inst.resume.text !== "string" || typeof inst.resume.at !== "string" || !validDate(inst.resume.at))) fail("pont de reprise");
       if (inst.resumeLog != null) collection(inst.resumeLog, `${where} ponts`);
       // Palimpseste : les versions antérieures d'un fragment (cumul.scraps uniquement).
