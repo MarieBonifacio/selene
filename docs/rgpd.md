@@ -14,6 +14,7 @@ une nouvelle donnée gardée, une durée changée, et ce fichier change dans la 
 | Version | Date | Par | Ce qui change |
 |---|---|---|---|
 | Brouillon | 12 octobre 2026 | une session Claude Code | Première rédaction |
+| Brouillon | 19 octobre 2026 | une session Claude Code | T13, le magicien d'Oz d'E6 |
 | **À COMPLÉTER** | | la responsable | Relu et validé |
 
 ## Le registre des activités de traitement (article 30)
@@ -179,6 +180,38 @@ claude.ai, hors de portée de la responsable (ADR 33) ; à réexaminer s'il est 
 - **Données** : l'adresse, les messages échangés, les réponses aux trois questions.
 - **Durée** : les réponses, **À COMPLÉTER** (proposition : jusqu'au journal des décisions d'E4, puis seules les synthèses
   sans nom).
+
+### T13 — Le magicien d'Oz de « reprendre selon le temps » (E6)
+
+- **Finalité** : savoir, avant de la développer, si une fonction qui répond au temps et à l'élan déclarés sert vraiment ;
+  une personne la joue à la main pendant trois semaines ([validation.md](validation.md#e6--reprendre-selon-le-temps-en-magicien-doz)).
+- **Base légale** : le consentement (article 6.1.a), par un accord écrit donné avant la carte d'état, retirable à tout
+  moment.
+- **Personnes** : cinq participants actifs de la bêta (E4), volontaires, codés P1 à P5.
+- **Données** :
+  - la carte d'état, dictée écran partagé : les ponts de reprise ouverts (espace, première ligne, date), les tâches
+    ouvertes (titre, effort, échéance, en attente ou non), le nombre de notes de la boîte, les décisions échues. Un titre
+    peut être remplacé par une étiquette neutre (« tâche A ») ;
+  - les déclarations et réponses envoyées par message (temps, élan, choix, « commencé ») ;
+  - la grille : une ligne par déclaration (date et heure, code, temps, élan, délai, propositions, choix, erreurs du
+    magicien, un mot de la personne) ;
+  - les réponses aux trois questions de chaque semaine.
+
+  Jamais un espace sensible, jamais une sauvegarde exportée : elle contient le suivi « Reprendre la main ».
+- **Destinataires** : la responsable seule, qui joue le magicien. Les messages passent par Signal, chiffré de bout en
+  bout : Signal ne lit pas leur contenu. L'outil de visio de la carte d'état et des points de la semaine : **À COMPLÉTER**,
+  avec l'enregistrement coupé.
+- **Durée** : la carte, les messages et la grille, effacés à la fin du test, conversations Signal comprises ; seule
+  reste la grille anonymisée. Anonymisée, et plus seulement pseudonymisée, si la correspondance entre les codes et les
+  personnes est détruite elle aussi : tant qu'elle existe, la grille codée reste une donnée personnelle.
+- **L'information à donner (article 13)**, avec l'accord écrit :
+
+  > Pendant trois semaines, je joue à la main une fonction que Selene n'a pas encore. Pour cela, je note sous le code
+  > Px, sans votre nom, ce que vous me dictez de vos espaces (jamais un espace sensible), vos messages et vos choix.
+  > Cela sert à décider si la fonction vaut d'être construite, et à rien d'autre ; personne d'autre ne le voit. À la fin
+  > du test, j'efface la carte, la grille et nos messages, sauf une grille sans aucun moyen de savoir qui est qui. Vous
+  > pouvez arrêter quand vous voulez, sans vous justifier, et demander à voir ou à effacer ce qui vous concerne en
+  > m'écrivant à mariebonifacio.pro@gmail.com ; la CNIL reçoit les réclamations.
 
 ### À venir, hors du registre tant qu'ils n'existent pas
 
