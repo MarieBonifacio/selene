@@ -109,7 +109,9 @@ Le lot 4 reprend ce que le tableau des manques (C) laissait encore ouvert, sans 
 | Documentation (P3) | Le README décrit `src/app/` et les quatorze modèles | — |
 
 Reste ouvert après le lot 4, à décider ou à valider plutôt qu'à coder :
-- **Citrinitas et Rubedo** voisines des couleurs d'état : une décision de design, au [backlog](recette/backlog.md#à-décider) ;
+- ~~**Citrinitas et Rubedo** voisines des couleurs d'état~~ : réadaptées le 17 octobre 2026, sur décision de la responsable
+  (Citrinitas « pollen » `#636301` / `#d9c84d`, Rubedo « framboise » `#a42b4a` / `#df627b`, Nigredo clair `#416a43`) ;
+  aucun accent à moins de ΔE2000 10 d'une couleur d'état (`TU-PAL-06`). Détail au [backlog](recette/backlog.md#décidé-le-17-octobre-2026) ;
 - **Dehors → Sources** (choisir l'espace cible), **« Annuler le dernier import Markdown »**, **références régionales**
   (éclipses « visibles depuis Lille ») : P3, sans signal d'usage ;
 - **Arc, liens et sources entre tous les types** : à valider (section G, page de projet) ;

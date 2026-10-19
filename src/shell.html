@@ -12,7 +12,7 @@
   --rule:#c1c9bc; --rule-strong:#75816f; --alarm:#a8431f; --ok:#2f6f62; --warn:#7d5a12; --info:#3f5d78;
   --moon:#f4f1e4; --moon-shadow:#b8c2b6; --glow:rgba(255,252,235,.0);
   --sky-top:#b9c7c0; --sky-bot:#dfe5dc; --tree-far:#8fa294; --tree-near:#3b4d40; --mist:rgba(226,230,222,.75); --star:0;
-  --acc-l:#3d6a45; --acc-d:#8fbf86; --accent:var(--acc-l);
+  --acc-l:#416a43; --acc-d:#8fbf86; --accent:var(--acc-l);
   --ease:cubic-bezier(.2,0,0,1); --t-1:120ms; --t-2:180ms; --t-3:260ms;
   /* Trois voix : l'éditorial parle (titres, textes), le fonctionnel agit (boutons, champs, données), l'étiquette classe. */
   --f-display:"Cormorant Garamond",Georgia,serif; --f-text:"Spectral",Georgia,"Times New Roman",serif;
@@ -24,11 +24,13 @@
 }
 /* Les palettes (la couleur d'accent) : posées sur la racine, et sur chaque pastille des Réglages, qui montre ainsi la
    couleur que sa palette donnera dans le mode en cours (A67). Chacune lisible sous du texte (4,5:1), loin du gris des
-   textes secondaires et des autres palettes : tests/palette.test.js. */
-[data-palette="nigredo"]{--acc-l:#3d6a45;--acc-d:#8fbf86}
+   textes secondaires, des autres palettes et des couleurs d'état : tests/palette.test.js. Citrinitas tient du citron et du
+   pollen, pas de l'ambre de --warn ; Rubedo, du rubis et de la framboise (l'« iosis » des Grecs, le pourpre), pas du
+   cinabre de --alarm (17 octobre 2026). En clair, un jaune assez sombre pour 4,5:1 devient olive : c'est le prix. */
+[data-palette="nigredo"]{--acc-l:#416a43;--acc-d:#8fbf86}
 [data-palette="albedo"]{--acc-l:#3f5554;--acc-d:#d3dfcc}
-[data-palette="citrinitas"]{--acc-l:#806017;--acc-d:#d4a94c}
-[data-palette="rubedo"]{--acc-l:#973a30;--acc-d:#d56455}
+[data-palette="citrinitas"]{--acc-l:#636301;--acc-d:#d9c84d}
+[data-palette="rubedo"]{--acc-l:#a42b4a;--acc-d:#df627b}
 .swatch[data-palette]{--sw:var(--acc-l)}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]):not([data-mode="light"]){

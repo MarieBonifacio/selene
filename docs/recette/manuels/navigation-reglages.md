@@ -260,7 +260,8 @@ Identifiants retirés : aucun.
 
 - **Fonctionnalité et règle** : « Couleur d'accent », quatre palettes (Nigredo, Albedo, Citrinitas, Rubedo) : seul
   l'accent change (bouton principal, espace ouvert, jauges, cases cochées), jamais le fond, le texte ni les couleurs
-  d'alerte ; un aperçu montre ces composants, et chaque pastille la couleur que sa palette donnera (A67) ; mode « Suivre l'appareil »,
+  d'alerte, auxquelles aucun accent ne ressemble (Citrinitas tient du pollen, pas de l'ambre des avertissements ;
+  Rubedo, de la framboise, pas du cinabre des retards) ; un aperçu montre ces composants, et chaque pastille la couleur que sa palette donnera (A67) ; mode « Suivre l'appareil »,
   « Toujours sombre », « Toujours clair », « Suivre le soleil » (sombre au crépuscule, clair à l'aube, d'après le lieu du ciel) ;
   « Nom affiché » en tête de l'app et dans l'onglet.
 - **Objectif, risque vérifié** : réglage sans effet, ou si discret qu'on le croit sans effet (A67) ; aperçu qui ne montre
@@ -269,13 +270,13 @@ Identifiants retirés : aucun.
 - **Préconditions** : jeu d'essai ; pour « Suivre le soleil », un lieu réglé (EXT-007). Sur iPhone, un vrai appareil :
   l'émulation ne remplace pas Safari.
 - **Données** : nom `Herbier`.
-- **Automatisés associés** : `TN-fenetre`, `TU-PAL-01`, `TU-PAL-02`, `TU-PAL-03`, `TU-PAL-04`
+- **Automatisés associés** : `TN-fenetre`, `TU-PAL-01`, `TU-PAL-02`, `TU-PAL-03`, `TU-PAL-04`, `TU-PAL-06`
 - **Source** : [DOC] README, « Le ciel de l'accueil » ; [DOC] [audit du 12 octobre](../../audit-fonctionnel-2026-10-12.md#a-diagnostic-des-couleurs) ;
   [TEST] `tests/browser/fenetre.js`, `tests/palette.test.js`.
 
 | Étape | Action précise | Résultat attendu observable |
 |---|---|---|
-| 1 | Réglages → Apparence et rythme → Couleur d'accent « Rubedo, amanite ». | Aussitôt, l'aperçu (bouton principal, espace ouvert, jauge, case cochée), le bouton choisi, l'onglet actif, puis le bouton « Garder » de l'accueil et la jauge d'un Programme passent au rouge amanite. Le fond, le texte, « En retard » et les teintes des espaces rangés dans un domaine ne changent pas. Palette par palette, en clair puis en sombre, la pastille de chaque bouton a la couleur de l'aperçu ; les quatre se distinguent l'une de l'autre et du texte gris. |
+| 1 | Réglages → Apparence et rythme → Couleur d'accent « Rubedo, framboise ». | Aussitôt, l'aperçu (bouton principal, espace ouvert, jauge, case cochée), le bouton choisi, l'onglet actif, puis le bouton « Garder » de l'accueil et la jauge d'un Programme passent au rouge framboise. Le fond, le texte, « En retard » et les teintes des espaces rangés dans un domaine ne changent pas, et « En retard » (cinabre) ne se confond pas avec l'accent (framboise). Palette par palette, en clair puis en sombre, la pastille de chaque bouton a la couleur de l'aperçu ; les quatre se distinguent l'une de l'autre et du texte gris. |
 | 2 | Mode « Toujours clair », puis « Toujours sombre ». | Fond et texte basculent ; le texte reste lisible dans les deux. |
 | 3 | Mode « Suivre le soleil », de jour puis après le coucher du soleil du lieu réglé. | Clair de jour, sombre après le crépuscule. |
 | 4 | « Nom affiché » : `Herbier`, quitter le champ. | L'en-tête dit « Herbier » ; l'onglet du navigateur, « Réglages — Herbier » (l'écran, puis le nom). |

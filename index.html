@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-JBIy1iMzYf9voQuFJobszwPOTHRpeM5p5aqjc7HBEWs=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-zWaKHdLIEUPxVBYsr2IsecZI8Ub5b9qjMpF4lO1UOYw=' 'sha256-0ft7oT2Qw9p3jPtpCxlT1a6MJAisrgdczu+MO24GokA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://coverartarchive.org https://*.archive.org; connect-src 'self' https://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.crossref.org https://api.microlink.io https://musicbrainz.org https://public.opendatasoft.com https://api.openalex.org https://api.zotero.org; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -47,7 +47,7 @@
   --rule:#c1c9bc; --rule-strong:#75816f; --alarm:#a8431f; --ok:#2f6f62; --warn:#7d5a12; --info:#3f5d78;
   --moon:#f4f1e4; --moon-shadow:#b8c2b6; --glow:rgba(255,252,235,.0);
   --sky-top:#b9c7c0; --sky-bot:#dfe5dc; --tree-far:#8fa294; --tree-near:#3b4d40; --mist:rgba(226,230,222,.75); --star:0;
-  --acc-l:#3d6a45; --acc-d:#8fbf86; --accent:var(--acc-l);
+  --acc-l:#416a43; --acc-d:#8fbf86; --accent:var(--acc-l);
   --ease:cubic-bezier(.2,0,0,1); --t-1:120ms; --t-2:180ms; --t-3:260ms;
   /* Trois voix : l'éditorial parle (titres, textes), le fonctionnel agit (boutons, champs, données), l'étiquette classe. */
   --f-display:"Cormorant Garamond",Georgia,serif; --f-text:"Spectral",Georgia,"Times New Roman",serif;
@@ -59,11 +59,13 @@
 }
 /* Les palettes (la couleur d'accent) : posées sur la racine, et sur chaque pastille des Réglages, qui montre ainsi la
    couleur que sa palette donnera dans le mode en cours (A67). Chacune lisible sous du texte (4,5:1), loin du gris des
-   textes secondaires et des autres palettes : tests/palette.test.js. */
-[data-palette="nigredo"]{--acc-l:#3d6a45;--acc-d:#8fbf86}
+   textes secondaires, des autres palettes et des couleurs d'état : tests/palette.test.js. Citrinitas tient du citron et du
+   pollen, pas de l'ambre de --warn ; Rubedo, du rubis et de la framboise (l'« iosis » des Grecs, le pourpre), pas du
+   cinabre de --alarm (17 octobre 2026). En clair, un jaune assez sombre pour 4,5:1 devient olive : c'est le prix. */
+[data-palette="nigredo"]{--acc-l:#416a43;--acc-d:#8fbf86}
 [data-palette="albedo"]{--acc-l:#3f5554;--acc-d:#d3dfcc}
-[data-palette="citrinitas"]{--acc-l:#806017;--acc-d:#d4a94c}
-[data-palette="rubedo"]{--acc-l:#973a30;--acc-d:#d56455}
+[data-palette="citrinitas"]{--acc-l:#636301;--acc-d:#d9c84d}
+[data-palette="rubedo"]{--acc-l:#a42b4a;--acc-d:#df627b}
 .swatch[data-palette]{--sw:var(--acc-l)}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]):not([data-mode="light"]){
@@ -767,7 +769,7 @@ details.rlm-privacy>summary,details.rlm-info>summary{cursor:pointer;font-family:
 
 <script>
 (() => {
-const SELENE_BUILD = "df6b675050";
+const SELENE_BUILD = "12e11d7c23";
 var __platform = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -3475,7 +3477,7 @@ var __selene = (() => {
     "Ce qui relie Selene au reste : un lien envoyé d'ailleurs, ta bibliothèque Zotero, et le passeur qui lit pour toi ce que le navigateur ne peut pas lire.": "What links Selene to the rest: a link sent from elsewhere, your Zotero library, and the relay that reads for you what the browser cannot read.",
     "Compte et données": "Account and data",
     "Emporter tes données, les ramener, et, en dernier recours, tout effacer.": "Take your data away, bring it back, and, as a last resort, erase everything.",
-    "Les quatre étapes du Grand Œuvre des alchimistes : nigredo, l'œuvre au noir (la mousse) ; albedo, au blanc (le lichen) ; citrinitas, au jaune (la résine) ; rubedo, au rouge (l'amanite). Seul l'accent change : les couleurs qui informent (retard, succès, alerte) restent les mêmes.": "The four stages of the alchemists' Great Work: nigredo, the work in black (moss); albedo, in white (lichen); citrinitas, in yellow (resin); rubedo, in red (fly agaric). Only the accent changes: the colours that inform (overdue, success, alert) stay the same.",
+    "Les quatre étapes du Grand Œuvre des alchimistes : nigredo, l'œuvre au noir (la mousse) ; albedo, au blanc (le lichen) ; citrinitas, au jaune (le pollen) ; rubedo, au rouge (la framboise). Seul l'accent change : les couleurs qui informent (retard, succès, alerte) restent les mêmes.": "The four stages of the alchemists' Great Work: nigredo, the work in black (moss); albedo, in white (lichen); citrinitas, in yellow (pollen); rubedo, in red (raspberry). Only the accent changes: the colours that inform (overdue, success, alert) stay the same.",
     "« Suivre l'appareil » obéit au réglage clair ou sombre du système. « Suivre le soleil » passe en sombre au crépuscule et en clair à l'aube, au lieu réglé dans Ciel et alentours (à défaut, d'après ton fuseau horaire).": "“Follow the device” obeys the system's light or dark setting. “Follow the sun” turns dark at dusk and light at dawn, at the place set in Sky and surroundings (failing that, from your time zone).",
     "Le nom en tête de l'app et dans l'onglet du navigateur.": "The name at the top of the app and in the browser tab.",
     "Propre à cet appareil : le téléphone peut rouvrir le dernier espace où tu étais, et l'ordinateur toujours l'accueil.": "Specific to this device: the phone can reopen the last space you were in, and the computer always opens on Today.",
@@ -3542,8 +3544,8 @@ var __selene = (() => {
     "Langue de l'appareil": "Device language",
     "Nigredo, mousse": "Nigredo, moss",
     "Albedo, lichen": "Albedo, lichen",
-    "Citrinitas, résine": "Citrinitas, resin",
-    "Rubedo, amanite": "Rubedo, fly agaric",
+    "Citrinitas, pollen": "Citrinitas, pollen",
+    "Rubedo, framboise": "Rubedo, raspberry",
     "Tout ici s'applique immédiatement.": "Everything here applies immediately.",
     "Elle colore les repères : bouton principal, espace ouvert, jauges, cases cochées. Le fond, le texte et les couleurs d'alerte ne changent pas ; clair ou sombre se règle dans Mode.": "It colours the markers: main button, open space, gauges, ticked boxes. The background, the text and the warning colours stay as they are; light or dark is set in Mode.",
     "Bouton principal": "Main button",
@@ -9754,7 +9756,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   ];
   var TIPS = {
     get palette() {
-      return tr`Les quatre étapes du Grand Œuvre des alchimistes : nigredo, l'œuvre au noir (la mousse) ; albedo, au blanc (le lichen) ; citrinitas, au jaune (la résine) ; rubedo, au rouge (l'amanite). Seul l'accent change : les couleurs qui informent (retard, succès, alerte) restent les mêmes.`;
+      return tr`Les quatre étapes du Grand Œuvre des alchimistes : nigredo, l'œuvre au noir (la mousse) ; albedo, au blanc (le lichen) ; citrinitas, au jaune (le pollen) ; rubedo, au rouge (la framboise). Seul l'accent change : les couleurs qui informent (retard, succès, alerte) restent les mêmes.`;
     },
     get mode() {
       return tr`« Suivre l'appareil » obéit au réglage clair ou sombre du système. « Suivre le soleil » passe en sombre au crépuscule et en clair à l'aube, au lieu réglé dans Ciel et alentours (à défaut, d'après ton fuseau horaire).`;
@@ -9914,7 +9916,7 @@ ${PLANCHE_CSS}</style></head><body>${plancheHTML(p)}</body></html>`;
   };
 
   // src/app/views/reglages.js
-  var PALETTES = [["nigredo", N_("Nigredo, mousse")], ["albedo", N_("Albedo, lichen")], ["citrinitas", N_("Citrinitas, résine")], ["rubedo", N_("Rubedo, amanite")]];
+  var PALETTES = [["nigredo", N_("Nigredo, mousse")], ["albedo", N_("Albedo, lichen")], ["citrinitas", N_("Citrinitas, pollen")], ["rubedo", N_("Rubedo, framboise")]];
   var privacyUrl = () => `https://mariebonifacio.github.io/selene/${uiLang() === "en" ? "privacy" : "confidentialite"}.html`;
   var signedIn = () => hosted() && authReady() && authSession;
   var about = (subject) => TEXTS.tipAbout(subject);
