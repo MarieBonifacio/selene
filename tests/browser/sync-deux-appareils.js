@@ -200,9 +200,15 @@ const capture = async (p, text) => { await p.fill('#capIn', text); await p.click
     await P.page.$eval(`li.item[data-task="${t}"] [data-act="task-del"]`, x => x.click()); // « Annuler » laissé passer
     await P.page.waitForFunction(x => !document.querySelector(`li.item[data-task="${x}"]`), t, { timeout: 5000 }).catch(() => {});
   }
-  const p2 = (await taches(P)).map(e => e.id);
-  check(!p2.includes('t3') && !p2.includes('t2') && !(await P.page.$('li.item[data-task="t3"], li.item[data-task="t2"]')) && await nonSynchro(P),
-    `P : « Appeler le plombier » et « Poser une étagère » quittent la liste ; « ${await synchro(P.page)} » (SYN-003, étape 2)`);
+  // IndexedDB reçoit chaque écriture sans que l'app l'attende (platform.js) : une lecture aussitôt après les clics a
+  // échoué sous Firefox, l'indicateur disant encore « Enregistrement… » (CI du 20 octobre 2026, A78). Lu jusqu'à ce que
+  // les deux suppressions y soient, comme à SYN-002 (A63) ; une suppression perdue échoue toujours, et dit où.
+  let p2 = (await taches(P)).map(e => e.id);
+  await jusqua(async () => { p2 = (await taches(P)).map(e => e.id); return !p2.includes('t3') && !p2.includes('t2'); });
+  const suppP = !p2.includes('t3') && !p2.includes('t2');
+  const listeP = !(await P.page.$('li.item[data-task="t3"], li.item[data-task="t2"]')), horsP = await nonSynchro(P);
+  check(suppP && listeP && horsP,
+    `P : « Appeler le plombier » et « Poser une étagère » quittent la liste ; « ${await synchro(P.page)} » (SYN-003, étape 2)` + (suppP && listeP && horsP ? '' : ` [stockage : ${suppP} ; liste : ${listeP} ; non synchronisé : ${horsP}]`));
   await Q.page.$eval('li.item[data-task="t3"] [data-act="task-edit"]', x => x.click()); await Q.page.waitForFunction(() => document.querySelector('#dlg').open);
   await Q.page.fill('#form [name="note"]', 'urgent, mardi'); await Q.page.click('#form button[value="save"]'); await Q.page.waitForFunction(() => !document.querySelector('#dlg').open);
   await Q.page.click('li.item[data-task="t3"] [data-act="task-open"]');

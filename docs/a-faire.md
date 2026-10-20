@@ -4,12 +4,12 @@ Ce que ni le code ni la CI ne peuvent faire : essayer Selene sur de vrais appare
 stores, tenir les obligations de la responsable du traitement. Une case par démarche, avec un lien vers le détail.
 Une démarche faite : cocher la case, ou retirer la ligne, de préférence dans la PR qui la rend inutile.
 
-Tenue à jour le 12 octobre 2026. Les étapes marquées *(si ce n'est pas déjà fait)* sont des réglages de mise en place
+Tenue à jour le 20 octobre 2026. Les étapes marquées *(si ce n'est pas déjà fait)* sont des réglages de mise en place
 dont le dépôt ne peut pas savoir s'ils ont eu lieu.
 
 **Un workflow vert n'est pas un workflow qui a travaillé.** *Sauvegarde*, *Isolation*, *Compte* et *Assistant* sautent
-leurs étapes, avec un simple avis, quand il leur manque un réglage : la course reste verte. Le lundi 12 octobre 2026,
-*Sauvegarde* et *Isolation* ont ainsi « réussi » sans rien faire. Seul le contenu le dit : l'artefact `selene-base` en
+leurs étapes, avec un simple avis, quand il leur manque un réglage : la course reste verte. Les lundis 12 et 19 octobre
+2026, *Sauvegarde* et *Isolation* ont ainsi « réussi » sans rien faire. Seul le contenu le dit : l'artefact `selene-base` en
 bas de la page d'une sauvegarde, la ligne « Douze requêtes qui doivent être refusées » exécutée (et non grisée) dans le
 journal d'un test d'isolation.
 
@@ -19,7 +19,9 @@ journal d'un test d'isolation.
   `https://www.assurance-maladie.ameli.fr/index.php/assure/sante/themes/alcool-sante/definition-reperes-consommation`).
   Le workflow *Liens* du 3 octobre 2026 a reçu un refus (403) : le site bloque le robot de GitHub, ce qui ne dit rien
   de la page. L'ouvrir dans un navigateur : si elle s'affiche, rien à faire ; sinon, remplacer l'adresse dans
-  `docs/regulation.md`. Ce lien n'apparaît pas dans l'interface.
+  `docs/regulation.md`. Ce lien n'apparaît pas dans l'interface. Le 13 octobre 2026, une session au réseau ouvert vers
+  ce site a reçu la page « Vérification de sécurité » d'un contrôle anti-robot : aucun programme ne tranchera, seul un
+  navigateur le peut.
 
 - [ ] **L'artefact claude.ai, à publier avec `db` et `user`** (ADR 33 de [architecture.md](architecture.md)). Plus
   rien ne l'empêche : la correction d'A17 est fusionnée depuis le 6 octobre 2026 (PR #121 : un ancien suivi
@@ -38,10 +40,11 @@ journal d'un test d'isolation.
   7 octobre 2026 : vingt passages consécutifs sans cet avertissement depuis la correction d'A16 (PR #120, le 6 octobre). Si elle est remplie, retirer la ligne `continue-on-error` du job `browser`
   dans `.github/workflows/check.yml` (une session Claude Code peut le faire : « Firefox devient bloquant ») ; sinon,
   chaque échec propre à Firefox devient une anomalie du cahier, corrigée avant de retirer la ligne, quitte à décaler la
-  date. **Au 12 octobre 2026 : 5 passages consécutifs sur 20.** Le dernier échec date du 7 octobre (23 h 27 UTC,
-  `fermeture.js`, sur une PR) ; d'autres l'ont précédé depuis la PR #120 (`reseau-ferme.js`, `cites.js` deux fois,
-  `import-markdown.js`). Et rien n'a tourné depuis le 8 octobre : la CI ne passe qu'avec une PR ou une fusion, si bien
-  que le compteur n'avance pas tout seul. Sans une quinzaine de courses d'ici le 20, la date est à décaler.
+  date. **Le 20 octobre 2026 : condition non remplie.** La série, à 11 depuis l'échec de
+  `regulation-appareil.js` sur `main` le 17 octobre (A77, une fois), retombe à 0 le 20 : `sync-deux-appareils.js` (A78,
+  corrigé côté test). Toute la CI depuis la PR #120 a été lue : 21 échecs
+  Firefox, dix-neuf les 6 et 7 octobre, puis deux le 17, puis A78 ([BL-13](recette/backlog.md#bl-13)). Prochain point proposé :
+  **le lundi 26 octobre 2026**, même condition, à décider ([backlog, « À décider »](recette/backlog.md#à-décider)).
 
 - [ ] **Fin octobre 2026 : la carte céleste** (la « carte du voisinage » d'une fiche Spécimen, la « carte » d'un motif).
   Décidé le 7 octobre 2026 : retirée si personne ne l'a ouverte pendant un mois. La mesure d'usage ne compte pas les
@@ -49,7 +52,7 @@ journal d'un test d'isolation.
   session Claude Code « Retire la carte céleste (critère de fin octobre) » ; sinon, cocher ici qu'elle reste.
 
 - [ ] **Protéger la branche `main`** (dix minutes, droits d'administration du dépôt) : `main` n'est toujours pas
-  protégée au 12 octobre 2026, alors que le contrôle du cahier a été décidé obligatoire. *Settings* → *Rules* →
+  protégée au 19 octobre 2026, alors que le contrôle du cahier a été décidé obligatoire. *Settings* → *Rules* →
   *Rulesets* → *New branch ruleset*, cible : la branche par défaut ; cocher *Require a pull request before merging*
   (sans approbation obligatoire), *Require status checks to pass* avec `recette` et `build-and-test`, et *Require
   branches to be up to date before merging* ; ne jamais y mettre `apk`, `simulator` ni `windows`, qui ne tournent pas sur toutes les PR et
@@ -117,11 +120,14 @@ faire) : [backlog de la recette](recette/backlog.md#reste-a-faire).
   *Sauvegarde* la copie chiffrée chaque lundi, une fois réglés une clé age, la variable `SAUVEGARDE_CLE_AGE` et le
   secret `SUPABASE_DB_URL` (dix minutes) ; puis un *Run workflow*, et un exercice de restauration sur un projet neuf,
   supprimé ensuite ([compte.md](compte.md#sauvegarder-la-base), cas [TRV-017](recette/manuels/transverse.md#trv-017)). La clé privée ne va jamais dans GitHub : la perdre rend
-  toutes les sauvegardes illisibles. **Aucune sauvegarde n'existe au 12 octobre 2026** : le premier passage du lundi a
-  sauté toutes ses étapes, faute des deux réglages.
+  toutes les sauvegardes illisibles. **Aucune sauvegarde n'existe au 19 octobre 2026** : les passages des lundis 12 et
+  19 octobre ont sauté toutes leurs étapes, faute des deux réglages.
 - [ ] **L'offre Pro de Supabase** (25 $ par mois : une sauvegarde par jour, pas de mise en pause), **avant d'inviter les
   bêta-testeurs** : leurs données ne doivent pas dépendre d'un vidage hebdomadaire. Décidé le 7 octobre 2026 : oui ;
   reste à la souscrire (tableau de bord Supabase → l'organisation → *Billing*), ce que seule la personne qui paie peut faire.
+  Le 13 octobre 2026, le projet de l'app était **en pause** (une semaine sans activité, sur l'offre gratuite) : il ne
+  répondait plus, la synchronisation était coupée et aucune sauvegarde n'était possible. Il répond de nouveau le
+  19 octobre.
 - [ ] **Mettre Postgres à jour** (*Project Settings* → *General* → *Service versions*), **après** une sauvegarde
   réussie, jamais avant : aucun retour en arrière n'est possible. Le projet tournait en 17.6 le 2 octobre, 17.11 était
   proposée (T18 de l'audit).
@@ -135,7 +141,9 @@ faire) : [backlog de la recette](recette/backlog.md#reste-a-faire).
 - [ ] **Les mots de passe, côté serveur** : *Authentication → Sign In / Providers → Email*, *Minimum password length* à
   `10` et *Require current password when updating* activé ([compte.md](compte.md#mots-de-passe)). Pour une bêta
   fermée, couper aussi *Allow new users to sign up* et inviter les comptes un par un
-  ([compte.md](compte.md#mot-de-passe-oublié-invitation)).
+  ([compte.md](compte.md#mot-de-passe-oublié-invitation)) : les inscriptions sont **ouvertes** au 19 octobre 2026
+  (`disable_signup` à `false` dans `/auth/v1/settings`), et la confirmation par e-mail exigée, qu'aucun SMTP n'envoie
+  encore à un inconnu.
 - [x] **L'assistant hébergé : pas déployé pour la bêta** (décidé le 7 octobre 2026 : il n'est pas prioritaire ; sans
   lui, pas de clés d'API à garder ni de traitement de plus au registre RGPD). Rien à faire. Le jour où c'est oui : la mise en place de [assistant.md](assistant.md#mettre-en-place-une-fois) (le secret
   `ASSISTANT_KEY_SECRET`, la table des clés), puis [AST-001](recette/manuels/assistant.md#ast-001) à
@@ -144,7 +152,8 @@ faire) : [backlog de la recette](recette/backlog.md#reste-a-faire).
   à la main, l'app dit « Assistant non déployé ».
 - [ ] **La fonction `compte`** déployée (workflow *Compte*), puis un essai : créer un compte jetable, le supprimer
   depuis l'app, vérifier qu'il a disparu ([compte.md](compte.md#déployer)). Le déploiement a eu lieu le 1er octobre
-  2026 (l'étape « Déployer » de la course a tourné, et la fonction n'a pas changé depuis) : reste l'essai.
+  2026 (l'étape « Déployer » de la course a tourné, et la fonction n'a pas changé depuis), et elle répond le 19 octobre,
+  comme `passeur` ; `assistant` ne répond pas, comme décidé : reste l'essai.
 - [ ] **Marquer le compte personnel**, une fois, dans l'éditeur SQL : sans cette marque, « Reprendre la main » n'est
   proposé à personne ([regulation.md](regulation.md#hors-de-loffre-publique)). Ne pas se déconnecter pour l'obtenir
   plus vite : la déconnexion vide l'appareil.
@@ -155,17 +164,18 @@ faire) : [backlog de la recette](recette/backlog.md#reste-a-faire).
   celles de la production ([compte.md](compte.md#vérifier-lisolation-entre-comptes)). Ensuite, les six valeurs de
   `.env.isolation` en secrets du dépôt (`ISOLATION_*`, dix minutes) : le workflow *Isolation* le rejoue alors chaque
   lundi et à chaque changement des règles, et écrit par e-mail s'il échoue
-  ([compte.md](compte.md#vérifier-lisolation-entre-comptes), « Chaque semaine, sans y penser »). Le 12 octobre 2026,
-  son passage du lundi a sauté le test, faute des secrets.
+  ([compte.md](compte.md#vérifier-lisolation-entre-comptes), « Chaque semaine, sans y penser »). Les 12 et
+  19 octobre 2026, ses passages du lundi ont sauté le test, faute des secrets.
 - [ ] **La table du journal des erreurs** : coller la partie « Le journal des erreurs » de `supabase/schema.sql` dans
   l'éditeur SQL. D'ici là, l'app reçoit un refus et n'envoie rien, sans gêne pour personne
-  ([compte.md](compte.md#journal-des-erreurs)).
+  ([compte.md](compte.md#journal-des-erreurs)). Absente au 19 octobre 2026.
 - [ ] **Les deux tables de la page de test** (`attente`, `audience`) : coller la partie « La page publique de test » de
   `supabase/schema.sql`. Sans elles, la page s'affiche mais l'inscription échoue
-  ([essai.md](essai.md#mettre-en-place-une-fois-dix-minutes)).
+  ([essai.md](essai.md#mettre-en-place-une-fois-dix-minutes)). Absentes au 19 octobre 2026 : la page en ligne ne peut
+  donc inscrire personne, à régler avant toute diffusion.
 - [ ] **La table de la mesure d'usage** (`activite`), avant d'inviter les bêta-testeurs : coller la partie « La mesure
   d'usage de la bêta » de `supabase/schema.sql`. Sans elle, rien n'est compté, et la bêta (E4) n'a pas de chiffres
-  ([compte.md](compte.md#mesure-dusage-bêta)).
+  ([compte.md](compte.md#mesure-dusage-bêta)). Absente au 19 octobre 2026.
 
 ## Valider le problème et le parcours (E1, E2)
 
@@ -189,7 +199,8 @@ dans [essai.md](essai.md).
 - [ ] **Vérifier la page**, après la création des tables : une inscription et une visite de test sous `?src=essai-perso`,
   lues dans l'éditeur SQL, puis effacées ; l'aperçu (image, titre) dans un message
   ([essai.md](essai.md#mettre-en-place-une-fois-dix-minutes)).
-- [ ] **Si la table `audience` existait avant le 6 octobre 2026 au soir : retirer les visites de la CI.** Du 3 octobre
+- [x] **Si la table `audience` existait avant le 6 octobre 2026 au soir : retirer les visites de la CI.** Sans objet :
+  la table n'existe pas au 19 octobre 2026 (l'API répond qu'elle est introuvable), la CI n'a donc rien pu y écrire. Du 3 octobre
   (23 h 55 UTC) à la fusion de la PR #124, chaque passage des scénarios sous WebKit a pu y écrire une « visite » de
   `essai.html`, sans `source` (A20 du [cahier de recette](recette/perimetre.md#anomalies-et-observations) ; le réseau
   des scénarios est fermé depuis, BL-21). La page n'étant pas encore diffusée, une visite sans `source` d'avant la
@@ -245,9 +256,9 @@ brouillon le 12 octobre 2026 dans [rgpd.md](rgpd.md) : à relire, compléter (le
 
 - [ ] **Le registre des activités de traitement** (article 30). La dispense des structures de moins de 250 personnes
   ne s'applique pas à un traitement qui n'est pas occasionnel, comme un compte synchronisé en continu. Le brouillon
-  suit le modèle de la CNIL : douze fiches (le compte, les suivis de santé encore synchronisés, l'assistant, le passeur,
+  suit le modèle de la CNIL : treize fiches (le compte, les suivis de santé encore synchronisés, l'assistant, le passeur,
   la sécurité, le journal des erreurs, la mesure d'usage, la liste d'attente, l'audience, le contact, les entretiens,
-  la bêta), les sous-traitants, la sécurité et un registre des violations
+  la bêta, le magicien d'Oz d'E6), les sous-traitants, la sécurité et un registre des violations
   ([rgpd.md](rgpd.md#le-registre-des-activités-de-traitement-article-30)).
 - [ ] **L'analyse d'impact (AIPD, article 35)** : évaluer si elle est obligatoire, et écrire la conclusion avec ses
   raisons, même négative. Le brouillon conclut que non : un seul des neuf critères européens est rempli (un carnet

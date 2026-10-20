@@ -11,7 +11,7 @@ parcours essentiel ; P2 : une fonction importante ; P3 : du confort.
 <a id="reste-a-faire"></a>
 ## Reste à faire, d'un coup d'œil
 
-Tout ce qui reste ouvert, du plus urgent au moins urgent dans chaque groupe, tenu à jour le 12 octobre 2026. Une ligne
+Tout ce qui reste ouvert, du plus urgent au moins urgent dans chaque groupe, tenu à jour le 20 octobre 2026. Une ligne
 renvoie à son détail, qui fait foi ; une chose faite est barrée et datée ici comme dans son détail, jamais retirée. Les
 démarches à la main qui ne touchent pas la qualité (stores, RGPD, validation du marché) restent dans
 [a-faire.md](../a-faire.md) seulement. « Une session » : une session Claude Code ouverte sur ce dépôt, qui fait le
@@ -21,6 +21,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
+| ~~A78 : `tests/browser/sync-deux-appareils.js` instable sous Firefox (SYN-003 étape 2, le stockage lu une seule fois)~~ (fait le 20 octobre 2026, PR #167, côté test) | une session | P3 | — | [A78](perimetre.md#anomalies-et-observations) |
 | A45 : `tests/browser/regulation-appareil.js` instable sous WebKit (RLM-015, le bouton d'objectif introuvable après les refus), outillé ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A45](perimetre.md#anomalies-et-observations) |
 | ~~A44 : suivre un flux pendant une relecture de Dehors effaçait ses éléments~~ (fait le 7 octobre 2026, PR #141) | une session | P2 | — | [A44](perimetre.md#anomalies-et-observations) |
 | A43 : `tests/browser/regulation.js` instable sous Firefox (« les quatre actions ont une cible de 44 px au moins »), revenu le 7 octobre avec 0 px (la vue n'était pas affichée), outillé davantage ; établir la cause s'il échoue encore | une session | P3 | au prochain échec de ce contrôle | [A43](perimetre.md#anomalies-et-observations) |
@@ -67,7 +68,7 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
-| La sauvegarde de la base, réglée puis restaurée sur un projet neuf ([TRV-017](manuels/transverse.md#trv-017)) | la personne qui administre Supabase | P1 | avant tout autre réglage du projet : au 12 octobre 2026, le workflow *Sauvegarde* saute toutes ses étapes faute de réglages, et aucune sauvegarde n'existe | [a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait) |
+| La sauvegarde de la base, réglée puis restaurée sur un projet neuf ([TRV-017](manuels/transverse.md#trv-017)) | la personne qui administre Supabase | P1 | avant tout autre réglage du projet : aux 12 et 19 octobre 2026, le workflow *Sauvegarde* a sauté toutes ses étapes faute de réglages, et aucune sauvegarde n'existe | [a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait) |
 | L'isolation entre comptes sur la préproduction ([TRV-016](manuels/transverse.md#trv-016)) | la personne qui administre Supabase | P1 | avant d'inviter les bêta-testeurs | [compte.md](../compte.md#vérifier-lisolation-entre-comptes) |
 | La première smoke : aucun des 192 cas n'a encore été exécuté | la responsable | P1 | avant la prochaine mise en ligne qui change un comportement | [campagnes.md](campagnes.md#smoke) |
 | Les appareils réels : [PLT-001](manuels/plateformes.md#plt-001), [PLT-003](manuels/plateformes.md#plt-003), [PLT-008](manuels/plateformes.md#plt-008), [PLT-010](manuels/plateformes.md#plt-010) ; [TRV-007](manuels/transverse.md#trv-007) sur un téléphone d'entrée de gamme ; une heure de lecteur d'écran ([TRV-001](manuels/transverse.md#trv-001)) | la responsable | P1 et P2 | avant la bêta | [a-faire.md](../a-faire.md#essayer-sur-de-vrais-appareils) |
@@ -79,13 +80,15 @@ travail dans une PR ; « la responsable » : la responsable du produit.
 | Quoi | Qui | Priorité | Échéance ou condition | Détail |
 |---|---|---|---|---|
 | Les six secrets `ISOLATION_*` du workflow *Isolation* (les valeurs de `.env.isolation`) | la personne qui administre Supabase | P1 | après le premier `npm run isolation` réussi à la main (TRV-016) | [compte.md](../compte.md#vérifier-lisolation-entre-comptes), [BL-03](#bl-03) |
-| Protéger `main` : PR obligatoire, contrôles `recette` et `build-and-test` requis | la personne qui administre le dépôt | P2 | dès que possible : `main` n'est toujours pas protégée au 12 octobre 2026 | [BL-12](#bl-12), [a-faire.md](../a-faire.md#tout-de-suite-une-minute) |
-| Firefox bloquant : retirer `continue-on-error` de `check.yml` | une session, à la demande | P2 | le 20 octobre 2026, si la condition décidée le 7 octobre est remplie : au 12 octobre, 5 passages consécutifs sur 20 (dernier échec le 7 octobre, `fermeture.js`), et aucune course depuis le 8 | [BL-13](#bl-13) |
+| Protéger `main` : PR obligatoire, contrôles `recette` et `build-and-test` requis | la personne qui administre le dépôt | P2 | dès que possible : `main` n'est toujours pas protégée au 19 octobre 2026 | [BL-12](#bl-12), [a-faire.md](../a-faire.md#tout-de-suite-une-minute) |
+| Firefox bloquant : retirer `continue-on-error` de `check.yml` | une session, à la demande | P2 | condition non remplie le 20 octobre 2026 : 11 passages consécutifs sur 20 (dernier échec le 17 octobre, `regulation-appareil.js` sur `main`, A77) ; nouvelle date [à décider](#à-décider) | [BL-13](#bl-13) |
 | Les réglages du projet Supabase (SMTP, mots de passe, essai de la fonction `compte`, tables, plafond `app_state_taille`, compte personnel marqué, Postgres, offre Pro) | la personne qui administre Supabase | P1 et P2 | voir chaque ligne | [a-faire.md](../a-faire.md#régler-le-projet-supabase-si-ce-nest-pas-déjà-fait) |
 
 ### À décider
 
-Rien pour l'instant.
+| Question | Proposition | Ce qui suit | Détail |
+|---|---|---|---|
+| Firefox bloquant : quelle nouvelle date ? La condition du 7 octobre n'est pas remplie au 20 octobre 2026 : la série, à 11 depuis l'échec de `regulation-appareil.js` sur `main` le 17 octobre (A77), retombe à 0 le 20 (A78, corrigée) | Un nouveau point le **lundi 26 octobre 2026**, même condition : vingt passages consécutifs, et A77 non reproduite. Deux instables en trois jours : la série n'y sera peut-être pas, et c'est le signe qu'il reste à corriger, pas à bloquer | sur décision de la responsable : un rappel ce jour-là ; les textes de `check.yml`, du README, d'`architecture.md` et de [campagnes.md](campagnes.md) qui disent « jusqu'au 20 octobre » prennent la date choisie | [BL-13](#bl-13) |
 
 ### Décidé le 17 octobre 2026
 
@@ -124,10 +127,11 @@ Les six propositions ci-dessous, validées par la responsable le 7 octobre 2026.
 
 | Quoi | Depuis | Ce qui clôt | Détail |
 |---|---|---|---|
-| A2 : `secours.js`, deux échecs sur sa propre branche | 4 octobre 2026 | aucun échec jusqu'au 20 octobre : classer « non reproduit » | [perimetre.md](perimetre.md#anomalies-et-observations) |
-| A9 : `regulation.js` sous WebKit, un clic perdu | 5 octobre 2026 | aucun échec jusqu'au 20 octobre : confirmée | [perimetre.md](perimetre.md#anomalies-et-observations) |
-| A66 : `import-markdown.js` sous WebKit, l'envoi d'un dossier resté sans réponse de Playwright (contourné dans le test) | 8 octobre 2026 | aucun « [Playwright : … » dans son résultat jusqu'au 20 octobre : classer « contourné » ; sinon, chercher plus loin | [perimetre.md](perimetre.md#anomalies-et-observations) |
-| `sync-deux-appareils.js` : deux échecs sur une branche en cours, jamais sur `main` | 3 octobre 2026 | aucun échec jusqu'au 20 octobre : classer « non reproduit » | [perimetre.md](perimetre.md#anomalies-et-observations) |
+| ~~A2 : `secours.js`, deux échecs sur sa propre branche~~ (classé « non reproduit » le 20 octobre 2026) | 4 octobre 2026 | aucun échec jusqu'au 20 octobre : classer « non reproduit » | [perimetre.md](perimetre.md#anomalies-et-observations) |
+| ~~A9 : `regulation.js` sous WebKit, un clic perdu~~ (confirmée le 20 octobre 2026) | 5 octobre 2026 | aucun échec jusqu'au 20 octobre : confirmée | [perimetre.md](perimetre.md#anomalies-et-observations) |
+| ~~A66 : `import-markdown.js` sous WebKit, l'envoi d'un dossier resté sans réponse de Playwright (contourné dans le test)~~ (classé « contourné » le 20 octobre 2026 : 24 passages WebKit sans « [Playwright : … ») | 8 octobre 2026 | aucun « [Playwright : … » dans son résultat jusqu'au 20 octobre : classer « contourné » ; sinon, chercher plus loin | [perimetre.md](perimetre.md#anomalies-et-observations) |
+| ~~`sync-deux-appareils.js` : deux échecs sur une branche en cours, jamais sur `main`~~ (classé « non reproduit » le 20 octobre 2026 ; A63, une autre cause, corrigée le 7 ; A78, le 20, corrigée) | 3 octobre 2026 | aucun échec jusqu'au 20 octobre : classer « non reproduit » | [perimetre.md](perimetre.md#anomalies-et-observations) |
+| A77 : `regulation-appareil.js` sous Firefox, RLM-026 étape 2, « Nom incorrect » pas venu (une fois, `main`, 17 octobre) | 20 octobre 2026 | aucun échec jusqu'à la nouvelle date de BL-13 : classer « non reproduit » ; sinon, établir la cause avant que Firefox devienne bloquant | [perimetre.md](perimetre.md#anomalies-et-observations) |
 
 ### Moins urgent, sans décision à prendre
 
@@ -406,6 +410,16 @@ et Linux ([perimetre.md](perimetre.md#cibles)).
   consécutifs sans échec : l'avertissement de [BL-17](#bl-17) absent, ou « 84 scénarios, tous verts. » (81 avant le 7 octobre 2026 au soir, 82 avec `TN-fermeture`, 83 avec `TN-campagne`, 84 avec `TN-artefact`) à la fin du
   journal du pas ; sinon, décaler la date plutôt que rendre bloquant un scénario instable, qui apprendrait à
   relancer la CI sans la lire.
+- **Le 20 octobre 2026 : condition non remplie.** Toute la CI depuis la PR #120 lue (285 courses *Check* et *Pages*
+  depuis le 3 octobre, 172 jobs Firefox) : 21 échecs Firefox. Dix-neuf les 6 et 7 octobre, dix-sept sur la branche en
+  cours de l'audit et deux sur `main` (`dehors.js`, `import-markdown.js`) : `cites.js`, `dehors.js`, `veille.js`,
+  `regulation.js`, `regulation-appareil.js`, `import-markdown.js`, `reseau-ferme.js`, `liaisons.js`, `ecran-lu.js`,
+  `fermeture.js`. Plusieurs ont depuis leur anomalie corrigée (A27 pour `cites.js`, A44 pour `dehors.js`, A40 pour
+  `regulation.js`), d'autres seulement outillées (A36 pour `veille.js`, A43 pour `regulation.js`). Puis plus rien pendant dix jours. Deux le 17 octobre : `cibles.js`
+  sur la branche de l'autre session (« Marquer comme fait » à 44 × 43 px, A73 en cours) et `regulation-appareil.js` sur
+  `main` (A77). Puis 11 passages consécutifs, jusqu'au 19 octobre ; le 20, sur la PR #167 (documentation seule),
+  `sync-deux-appareils.js` (A78, le stockage lu une seule fois, corrigé côté test dans la même PR) : **la série retombe
+  à 0**. Prochain point proposé : le 26 octobre 2026 ([à décider](#à-décider)).
 
 <a id="bl-14"></a>
 ### BL-14 — La sauvegarde complète dans un vrai navigateur, sur deux appareils
