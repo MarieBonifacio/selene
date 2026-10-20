@@ -40,9 +40,10 @@ journal d'un test d'isolation.
   7 octobre 2026 : vingt passages consécutifs sans cet avertissement depuis la correction d'A16 (PR #120, le 6 octobre). Si elle est remplie, retirer la ligne `continue-on-error` du job `browser`
   dans `.github/workflows/check.yml` (une session Claude Code peut le faire : « Firefox devient bloquant ») ; sinon,
   chaque échec propre à Firefox devient une anomalie du cahier, corrigée avant de retirer la ligne, quitte à décaler la
-  date. **Le 20 octobre 2026 : condition non remplie, 11 passages consécutifs sur 20.** Le dernier échec date du
-  17 octobre, sur `main` : `regulation-appareil.js` (A77, une fois). Toute la CI depuis la PR #120 a été lue : 21 échecs
-  Firefox, dix-neuf les 6 et 7 octobre, puis deux le 17 ([BL-13](recette/backlog.md#bl-13)). Nouvelle date proposée :
+  date. **Le 20 octobre 2026 : condition non remplie.** La série, à 11 depuis l'échec de
+  `regulation-appareil.js` sur `main` le 17 octobre (A77, une fois), retombe à 0 le 20 : `sync-deux-appareils.js` (A78,
+  corrigé côté test). Toute la CI depuis la PR #120 a été lue : 21 échecs
+  Firefox, dix-neuf les 6 et 7 octobre, puis deux le 17, puis A78 ([BL-13](recette/backlog.md#bl-13)). Prochain point proposé :
   **le lundi 26 octobre 2026**, même condition, à décider ([backlog, « À décider »](recette/backlog.md#à-décider)).
 
 - [ ] **Fin octobre 2026 : la carte céleste** (la « carte du voisinage » d'une fiche Spécimen, la « carte » d'un motif).
