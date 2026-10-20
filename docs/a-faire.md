@@ -4,7 +4,7 @@ Ce que ni le code ni la CI ne peuvent faire : essayer Selene sur de vrais appare
 stores, tenir les obligations de la responsable du traitement. Une case par démarche, avec un lien vers le détail.
 Une démarche faite : cocher la case, ou retirer la ligne, de préférence dans la PR qui la rend inutile.
 
-Tenue à jour le 19 octobre 2026. Les étapes marquées *(si ce n'est pas déjà fait)* sont des réglages de mise en place
+Tenue à jour le 20 octobre 2026. Les étapes marquées *(si ce n'est pas déjà fait)* sont des réglages de mise en place
 dont le dépôt ne peut pas savoir s'ils ont eu lieu.
 
 **Un workflow vert n'est pas un workflow qui a travaillé.** *Sauvegarde*, *Isolation*, *Compte* et *Assistant* sautent
@@ -40,10 +40,10 @@ journal d'un test d'isolation.
   7 octobre 2026 : vingt passages consécutifs sans cet avertissement depuis la correction d'A16 (PR #120, le 6 octobre). Si elle est remplie, retirer la ligne `continue-on-error` du job `browser`
   dans `.github/workflows/check.yml` (une session Claude Code peut le faire : « Firefox devient bloquant ») ; sinon,
   chaque échec propre à Firefox devient une anomalie du cahier, corrigée avant de retirer la ligne, quitte à décaler la
-  date. **Au 12 octobre 2026 : 5 passages consécutifs sur 20.** Le dernier échec date du 7 octobre (23 h 27 UTC,
-  `fermeture.js`, sur une PR) ; d'autres l'ont précédé depuis la PR #120 (`reseau-ferme.js`, `cites.js` deux fois,
-  `import-markdown.js`). Et rien n'a tourné depuis le 8 octobre : la CI ne passe qu'avec une PR ou une fusion, si bien
-  que le compteur n'avance pas tout seul. Sans une quinzaine de courses d'ici le 20, la date est à décaler.
+  date. **Le 20 octobre 2026 : condition non remplie, 11 passages consécutifs sur 20.** Le dernier échec date du
+  17 octobre, sur `main` : `regulation-appareil.js` (A77, une fois). Toute la CI depuis la PR #120 a été lue : 21 échecs
+  Firefox, dix-neuf les 6 et 7 octobre, puis deux le 17 ([BL-13](recette/backlog.md#bl-13)). Nouvelle date proposée :
+  **le lundi 26 octobre 2026**, même condition, à décider ([backlog, « À décider »](recette/backlog.md#à-décider)).
 
 - [ ] **Fin octobre 2026 : la carte céleste** (la « carte du voisinage » d'une fiche Spécimen, la « carte » d'un motif).
   Décidé le 7 octobre 2026 : retirée si personne ne l'a ouverte pendant un mois. La mesure d'usage ne compte pas les
